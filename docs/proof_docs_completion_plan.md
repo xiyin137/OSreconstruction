@@ -892,21 +892,24 @@ The remaining Lean transcript for constructing
    `Matrix (Fin r) (Fin r) ℂ`, use the checked finite-dimensional complete
    instance for the symmetric submodule, and prove
    `HasStrictFDerivAt (sourceHeadSliceGramPolynomial d r hrD)
-   (sourceHeadSliceGramPolynomialDerivEquiv r : _ →L[ℂ] _) 0`.  The remaining
-   proof is an elementwise finite-dimensional quadratic-map estimate under the
-   elementwise matrix norm: for
-   `Q(K) = K * η * K`, prove
-   `Q(X) - Q(Y) = (X - Y) * η * X + Y * η * (X - Y)` and use the finite-entry
-   matrix norm bound to show this is `o(‖X - Y‖)` as `(X,Y) → (0,0)`.
-   The derivative of the affine-linear part is exactly `K ↦ 2K`, already
-   bundled as `sourceHeadSliceGramPolynomialDerivEquiv`.  No analytic or
-   OS-specific theorem is hidden here; it is a finite-dimensional quadratic
-   estimate.
+   (sourceHeadSliceGramPolynomialDerivEquiv r : _ →L[ℂ] _) 0`.  This is now
+   checked in Lean.  The implementation avoids changing to
+   `Matrix.Norms.Operator`: it builds the ambient continuous bilinear map
+   `(K,L) ↦ K * η * L` from `IsBilinearMap.toContinuousBilinearMap` in finite
+   dimension, proves the quadratic term has zero strict derivative at the
+   origin, codomain-restricts back to the symmetric submodule, and adds the
+   affine-linear derivative `K ↦ 2K`.
 2. Apply
    `HasStrictFDerivAt.toOpenPartialHomeomorph` to get an open partial
    homeomorphism `e` on `sourceSymmetricMatrixSubmodule r` with forward map
    `sourceHeadSliceGramPolynomial d r hrD`, source containing `0`, and target
-   containing `sourceHeadMetricSymmSubmodule d r hrD`.
+   containing `sourceHeadMetricSymmSubmodule d r hrD`.  This chart and its
+   source/target neighborhood lemmas are now checked as
+   `sourceHeadSliceGramPolynomialOpenPartialHomeomorph`,
+   `sourceHeadSliceGramPolynomial_zero_mem_chartSource`,
+   `sourceHeadSliceGramPolynomial_center_mem_chartTarget`,
+   `sourceHeadSliceGramPolynomial_chartSource_mem_nhds_zero`, and
+   `sourceHeadSliceGramPolynomial_chartTarget_mem_nhds_center`.
 3. Convert the target from the symmetric submodule to
    `SourceSymmetricMatrixCoord r` via
    `sourceSymmetricMatrixCoordToSubmodule.symm`.  Define
@@ -939,10 +942,10 @@ The remaining Lean transcript for constructing
 This transcript is the finite-dimensional local-inverse construction needed
 for the sliced local-image producer.  It is independent of BHW continuation,
 OS positivity, Wightman functions, and the later monodromy atlas.  The
-coordinate-window neighborhood-basis helper is now checked.  The remaining
-implementation-level local-producer item is the strict-derivative estimate for
-the quadratic term under the elementwise matrix norm, followed by the
-mechanical `OpenPartialHomeomorph` packaging and determinant-unit shrink.
+coordinate-window neighborhood-basis helper, strict derivative, and raw
+`OpenPartialHomeomorph` packaging are now checked.  The remaining
+implementation-level local-producer item is the determinant-unit shrink and
+the final `SourceRankDeficientHeadSliceGaugeData` structure fill.
 
 The first normal-parameter support layer is now checked in
 `SourceOrientedNormalParameter.lean`.  The file supplies the finite head/tail

@@ -1,6 +1,9 @@
 import Mathlib.Analysis.Calculus.InverseFunctionTheorem.FDeriv
+import Mathlib.Analysis.Calculus.FDeriv.Bilinear
 import Mathlib.Analysis.Matrix.Normed
 import Mathlib.Analysis.Normed.Group.Submodule
+import Mathlib.LinearAlgebra.Matrix.Gershgorin
+import Mathlib.Topology.Algebra.Module.FiniteDimensionBilinear
 import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SourceOrientedHeadGauge
 import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SourceOrientedRankDeficientTailWindow
 
@@ -427,6 +430,62 @@ theorem exists_sourceHeadGaugeSliceCoordinateWindow_subset_of_mem_nhds_center
   have hWin : e H ∈ W := hρsub hK
   simpa [W] using hWin
 
+/-- A sufficiently small identity-centered slice coordinate window consists of
+invertible head factors. -/
+theorem sourceHeadGaugeSliceCoordinateWindow_det_isUnit
+    (d r : ℕ)
+    (hrD : r < d + 1)
+    {ρ : ℝ}
+    (hρ : 0 < ρ)
+    (hρ_half : ρ < (1 : ℝ) / 2)
+    (hcardρ : (Fintype.card (Fin r) : ℝ) * ρ < (1 : ℝ) / 2)
+    {H : SourceHeadGaugeSlice d r hrD}
+    (hH : H ∈ sourceHeadGaugeSliceCoordinateWindow d r hrD ρ) :
+    IsUnit H.1.det := by
+  have hdet_ne :
+      H.1.det ≠ 0 :=
+    det_ne_zero_of_sum_row_lt_diag (A := H.1) (fun k => by
+      have hsum_le :
+          (∑ j ∈ Finset.univ.erase k, ‖H.1 k j‖) ≤
+            (Fintype.card (Fin r) : ℝ) * ρ := by
+        calc
+          (∑ j ∈ Finset.univ.erase k, ‖H.1 k j‖) ≤
+              ∑ _j ∈ Finset.univ.erase k, ρ := by
+                refine Finset.sum_le_sum ?_
+                intro j hj
+                have hjne : j ≠ k := (Finset.mem_erase.mp hj).1
+                have hentry : ‖H.1 k j‖ < ρ := by
+                  have hkj := hH k j
+                  simpa [sourceHeadGaugeSliceCoordinateWindow,
+                    sourceHeadFactorCoordinateWindow, Matrix.one_apply, hjne.symm]
+                    using hkj
+                exact le_of_lt hentry
+          _ = ((Finset.univ.erase k).card : ℝ) * ρ := by
+                simp [Finset.sum_const, nsmul_eq_mul]
+          _ ≤ (Fintype.card (Fin r) : ℝ) * ρ := by
+                gcongr
+                exact_mod_cast (Finset.univ.erase k).card_le_univ
+      have hsum_half :
+          (∑ j ∈ Finset.univ.erase k, ‖H.1 k j‖) < (1 : ℝ) / 2 :=
+        lt_of_le_of_lt hsum_le hcardρ
+      have hdiagdiff : ‖H.1 k k - (1 : ℂ)‖ < ρ := by
+        have hkk := hH k k
+        simpa [sourceHeadGaugeSliceCoordinateWindow,
+          sourceHeadFactorCoordinateWindow, Matrix.one_apply] using hkk
+      have hdiag_gt_half : (1 : ℝ) / 2 < ‖H.1 k k‖ := by
+        have hnorm_one :
+            (1 : ℝ) ≤ ‖H.1 k k‖ + ‖H.1 k k - (1 : ℂ)‖ := by
+          calc
+            (1 : ℝ) = ‖(1 : ℂ)‖ := by norm_num
+            _ = ‖H.1 k k - (H.1 k k - (1 : ℂ))‖ := by
+                  congr 1
+                  ring
+            _ ≤ ‖H.1 k k‖ + ‖H.1 k k - (1 : ℂ)‖ :=
+                  norm_sub_le _ _
+        nlinarith
+      exact lt_trans hsum_half hdiag_gt_half)
+  exact isUnit_iff_ne_zero.mpr hdet_ne
+
 /-- The sliced Gram map in symmetric `K = H * η - η` coordinates. -/
 def sourceHeadSliceGramPolynomial
     (d r : ℕ)
@@ -510,5 +569,285 @@ def sourceHeadSliceGramPolynomialDerivEquiv
     sourceSymmetricMatrixSubmodule r ≃L[ℂ]
       sourceSymmetricMatrixSubmodule r :=
   ContinuousLinearEquiv.smulLeft (Units.mk0 (2 : ℂ) (by norm_num))
+
+/-- Local codomain restriction for strict derivatives into a submodule. -/
+theorem hasStrictFDerivAt_submodule_codRestrict_local
+    {𝕜 E F : Type*} [NontriviallyNormedField 𝕜]
+    [NormedAddCommGroup E] [NormedSpace 𝕜 E]
+    [NormedAddCommGroup F] [NormedSpace 𝕜 F]
+    (S : Submodule 𝕜 F)
+    {f : E → F} {f' : E →L[𝕜] F} {x : E}
+    (hf : HasStrictFDerivAt f f' x)
+    (hmem : ∀ y, f y ∈ S)
+    (hderiv : ∀ y, f' y ∈ S) :
+    HasStrictFDerivAt (fun y => ⟨f y, hmem y⟩ : E → S)
+      (f'.codRestrict S hderiv) x := by
+  refine HasStrictFDerivAt.of_isLittleO ?_
+  have hfo := hf.isLittleO
+  rw [Asymptotics.isLittleO_iff] at hfo ⊢
+  intro c hc
+  filter_upwards [hfo hc] with p hp
+  simpa using hp
+
+/-- The ambient continuous bilinear map `(K,L) ↦ K * η * L` used for the
+quadratic Gram correction.  The finite-dimensional constructor keeps the
+existing elementwise matrix norm in force. -/
+noncomputable def sourceHeadMetricQuadraticBilinear
+    (d r : ℕ)
+    (hrD : r < d + 1) :
+    sourceSymmetricMatrixSubmodule r →L[ℂ]
+      sourceSymmetricMatrixSubmodule r →L[ℂ]
+        Matrix (Fin r) (Fin r) ℂ :=
+  (show IsBilinearMap ℂ
+      (fun K L : sourceSymmetricMatrixSubmodule r =>
+        K.1 * sourceHeadMetric d r hrD * L.1) from by
+    refine
+      { add_left := ?_
+        smul_left := ?_
+        add_right := ?_
+        smul_right := ?_ }
+    · intro K₁ K₂ L
+      simp [Matrix.add_mul, Matrix.mul_assoc]
+    · intro c K L
+      simp [Matrix.mul_assoc]
+    · intro K L₁ L₂
+      simp [Matrix.mul_add, Matrix.mul_assoc]
+    · intro c K L
+      simp [Matrix.mul_assoc])
+    |>.toContinuousBilinearMap
+
+@[simp]
+theorem sourceHeadMetricQuadraticBilinear_apply
+    (d r : ℕ)
+    (hrD : r < d + 1)
+    (K L : sourceSymmetricMatrixSubmodule r) :
+    sourceHeadMetricQuadraticBilinear d r hrD K L =
+      K.1 * sourceHeadMetric d r hrD * L.1 :=
+  rfl
+
+/-- The symmetric quadratic part `K ↦ K * η * K` of the slice Gram polynomial. -/
+def sourceHeadMetricQuadraticSymm
+    (d r : ℕ)
+    (hrD : r < d + 1)
+    (K : sourceSymmetricMatrixSubmodule r) :
+    sourceSymmetricMatrixSubmodule r :=
+  ⟨K.1 * sourceHeadMetric d r hrD * K.1, by
+    change
+      (K.1 * sourceHeadMetric d r hrD * K.1)ᵀ =
+        K.1 * sourceHeadMetric d r hrD * K.1
+    rw [Matrix.transpose_mul, Matrix.transpose_mul,
+      sourceHeadMetric_transpose d r hrD, K.2]
+    simp [Matrix.mul_assoc]⟩
+
+@[simp]
+theorem sourceHeadMetricQuadraticSymm_apply
+    (d r : ℕ)
+    (hrD : r < d + 1)
+    (K : sourceSymmetricMatrixSubmodule r) :
+    (sourceHeadMetricQuadraticSymm d r hrD K :
+        Matrix (Fin r) (Fin r) ℂ) =
+      K.1 * sourceHeadMetric d r hrD * K.1 :=
+  rfl
+
+/-- The quadratic correction has zero strict derivative at the origin, in the
+ambient matrix codomain. -/
+theorem sourceHeadMetricQuadratic_ambient_hasStrictFDerivAt_zero
+    (d r : ℕ)
+    (hrD : r < d + 1) :
+    HasStrictFDerivAt
+      (fun K : sourceSymmetricMatrixSubmodule r =>
+        K.1 * sourceHeadMetric d r hrD * K.1)
+      (0 : sourceSymmetricMatrixSubmodule r →L[ℂ]
+        Matrix (Fin r) (Fin r) ℂ) 0 := by
+  let S := sourceSymmetricMatrixSubmodule r
+  let B := sourceHeadMetricQuadraticBilinear d r hrD
+  have hid : HasStrictFDerivAt (fun K : S => K) (1 : S →L[ℂ] S) 0 :=
+    (1 : S →L[ℂ] S).hasStrictFDerivAt
+  have hB : HasStrictFDerivAt (fun K : S => B K K)
+      (B.precompR S (0 : S) (1 : S →L[ℂ] S) +
+        B.precompL S (1 : S →L[ℂ] S) (0 : S)) 0 :=
+    B.hasStrictFDerivAt_of_bilinear hid hid
+  have hderiv :
+      B.precompR S (0 : S) (1 : S →L[ℂ] S) +
+          B.precompL S (1 : S →L[ℂ] S) (0 : S) =
+        (0 : S →L[ℂ] Matrix (Fin r) (Fin r) ℂ) := by
+    ext K a b
+    change (B (0 : S) K + B K (0 : S)) a b = 0
+    simp [B, sourceHeadMetricQuadraticBilinear]
+  simpa [S, B, sourceHeadMetricQuadraticBilinear] using hB.congr_fderiv hderiv
+
+/-- The symmetric quadratic correction has zero strict derivative at the origin. -/
+theorem sourceHeadMetricQuadraticSymm_hasStrictFDerivAt_zero
+    (d r : ℕ)
+    (hrD : r < d + 1) :
+    HasStrictFDerivAt
+      (sourceHeadMetricQuadraticSymm d r hrD)
+      (0 : sourceSymmetricMatrixSubmodule r →L[ℂ]
+        sourceSymmetricMatrixSubmodule r) 0 := by
+  let S := sourceSymmetricMatrixSubmodule r
+  let zeroCLM : S →L[ℂ] Matrix (Fin r) (Fin r) ℂ := 0
+  have hamb :
+      HasStrictFDerivAt
+        (fun K : S => K.1 * sourceHeadMetric d r hrD * K.1)
+        zeroCLM 0 := by
+    simpa [S, zeroCLM] using
+      sourceHeadMetricQuadratic_ambient_hasStrictFDerivAt_zero d r hrD
+  have hzeroMem : ∀ K : S, zeroCLM K ∈ S := by
+    intro K
+    change (0 : Matrix (Fin r) (Fin r) ℂ) ∈ sourceSymmetricMatrixSubmodule r
+    simp [sourceSymmetricMatrixSubmodule]
+  have hcod :
+      HasStrictFDerivAt
+        (fun K : S =>
+          ⟨K.1 * sourceHeadMetric d r hrD * K.1,
+            (sourceHeadMetricQuadraticSymm d r hrD K).2⟩ :
+            S → S)
+        (zeroCLM.codRestrict S hzeroMem) 0 :=
+    hasStrictFDerivAt_submodule_codRestrict_local S hamb
+      (fun K => (sourceHeadMetricQuadraticSymm d r hrD K).2)
+      hzeroMem
+  have hzero :
+      zeroCLM.codRestrict S hzeroMem =
+        (0 : S →L[ℂ] S) := by
+    ext K
+    rfl
+  simpa [S, sourceHeadMetricQuadraticSymm] using hcod.congr_fderiv hzero
+
+/-- The sliced Gram polynomial has strict derivative `K ↦ 2K` at the origin. -/
+theorem sourceHeadSliceGramPolynomial_hasStrictFDerivAt
+    (d r : ℕ)
+    (hrD : r < d + 1) :
+    HasStrictFDerivAt
+      (sourceHeadSliceGramPolynomial d r hrD)
+      (sourceHeadSliceGramPolynomialDerivEquiv r :
+        sourceSymmetricMatrixSubmodule r →L[ℂ]
+          sourceSymmetricMatrixSubmodule r) 0 := by
+  let S := sourceSymmetricMatrixSubmodule r
+  let ηS := sourceHeadMetricSymmSubmodule d r hrD
+  let D : S →L[ℂ] S :=
+    (sourceHeadSliceGramPolynomialDerivEquiv r :
+      S →L[ℂ] S)
+  let Q := sourceHeadMetricQuadraticSymm d r hrD
+  have hlin : HasStrictFDerivAt (fun K : S => D K) D 0 :=
+    D.hasStrictFDerivAt
+  have hquad : HasStrictFDerivAt Q (0 : S →L[ℂ] S) 0 := by
+    simpa [S, Q] using
+      sourceHeadMetricQuadraticSymm_hasStrictFDerivAt_zero d r hrD
+  have hsum : HasStrictFDerivAt (fun K : S => D K + Q K) D 0 := by
+    have hsum0 := hlin.add hquad
+    have hD : D + (0 : S →L[ℂ] S) = D := by
+      ext K
+      simp
+    simpa [Pi.add_apply] using hsum0.congr_fderiv hD
+  have hconst : HasStrictFDerivAt (fun K : S => ηS + (D K + Q K)) D 0 :=
+    hsum.const_add ηS
+  refine hconst.congr_of_eventuallyEq ?_
+  filter_upwards with K
+  apply Subtype.ext
+  simp [sourceHeadSliceGramPolynomial, sourceHeadMetricQuadraticSymm,
+    sourceHeadMetricSymmSubmodule, D, sourceHeadSliceGramPolynomialDerivEquiv,
+    ηS, Q, add_assoc]
+
+/-- The inverse-function-theorem local chart for the sliced head Gram
+polynomial. -/
+noncomputable def sourceHeadSliceGramPolynomialOpenPartialHomeomorph
+    (d r : ℕ)
+    (hrD : r < d + 1) :
+    OpenPartialHomeomorph
+      (sourceSymmetricMatrixSubmodule r)
+      (sourceSymmetricMatrixSubmodule r) := by
+  have hderiv :
+      HasStrictFDerivAt
+        (sourceHeadSliceGramPolynomial d r hrD)
+        (sourceHeadSliceGramPolynomialDerivEquiv r :
+          sourceSymmetricMatrixSubmodule r →L[ℂ]
+            sourceSymmetricMatrixSubmodule r) 0 :=
+    sourceHeadSliceGramPolynomial_hasStrictFDerivAt d r hrD
+  exact
+    @HasStrictFDerivAt.toOpenPartialHomeomorph ℂ _
+      (sourceSymmetricMatrixSubmodule r) _ _
+      (sourceSymmetricMatrixSubmodule r) _ _
+      (sourceHeadSliceGramPolynomial d r hrD)
+      (sourceHeadSliceGramPolynomialDerivEquiv r) 0
+      (sourceSymmetricMatrixSubmodule_completeSpace r)
+      hderiv
+
+@[simp]
+theorem sourceHeadSliceGramPolynomialOpenPartialHomeomorph_coe
+    (d r : ℕ)
+    (hrD : r < d + 1) :
+    (sourceHeadSliceGramPolynomialOpenPartialHomeomorph d r hrD :
+      sourceSymmetricMatrixSubmodule r → sourceSymmetricMatrixSubmodule r) =
+      sourceHeadSliceGramPolynomial d r hrD :=
+  rfl
+
+theorem sourceHeadSliceGramPolynomial_zero_mem_chartSource
+    (d r : ℕ)
+    (hrD : r < d + 1) :
+    (0 : sourceSymmetricMatrixSubmodule r) ∈
+      (sourceHeadSliceGramPolynomialOpenPartialHomeomorph d r hrD).source := by
+  have hderiv :
+      HasStrictFDerivAt
+        (sourceHeadSliceGramPolynomial d r hrD)
+        (sourceHeadSliceGramPolynomialDerivEquiv r :
+          sourceSymmetricMatrixSubmodule r →L[ℂ]
+            sourceSymmetricMatrixSubmodule r) 0 :=
+    sourceHeadSliceGramPolynomial_hasStrictFDerivAt d r hrD
+  unfold sourceHeadSliceGramPolynomialOpenPartialHomeomorph
+  simp only [HasStrictFDerivAt.toOpenPartialHomeomorph,
+    ApproximatesLinearOn.toOpenPartialHomeomorph_source]
+  exact (Classical.choose_spec hderiv.approximates_deriv_on_open_nhds).1
+
+theorem sourceHeadSliceGramPolynomial_center_mem_chartTarget
+    (d r : ℕ)
+    (hrD : r < d + 1) :
+    sourceHeadMetricSymmSubmodule d r hrD ∈
+      (sourceHeadSliceGramPolynomialOpenPartialHomeomorph d r hrD).target := by
+  have hsource :=
+    sourceHeadSliceGramPolynomial_zero_mem_chartSource d r hrD
+  have htarget :=
+    (sourceHeadSliceGramPolynomialOpenPartialHomeomorph d r hrD).map_source
+      hsource
+  simpa using htarget
+
+theorem sourceHeadSliceGramPolynomial_chartSource_mem_nhds_zero
+    (d r : ℕ)
+    (hrD : r < d + 1) :
+    (sourceHeadSliceGramPolynomialOpenPartialHomeomorph d r hrD).source ∈
+      𝓝 (0 : sourceSymmetricMatrixSubmodule r) :=
+  (sourceHeadSliceGramPolynomialOpenPartialHomeomorph d r hrD).open_source.mem_nhds
+    (sourceHeadSliceGramPolynomial_zero_mem_chartSource d r hrD)
+
+theorem sourceHeadSliceGramPolynomial_chartTarget_mem_nhds_center
+    (d r : ℕ)
+    (hrD : r < d + 1) :
+    (sourceHeadSliceGramPolynomialOpenPartialHomeomorph d r hrD).target ∈
+      𝓝 (sourceHeadMetricSymmSubmodule d r hrD) :=
+  (sourceHeadSliceGramPolynomialOpenPartialHomeomorph d r hrD).open_target.mem_nhds
+    (sourceHeadSliceGramPolynomial_center_mem_chartTarget d r hrD)
+
+theorem sourceHeadSliceGramPolynomial_right_inv_on_chartTarget
+    (d r : ℕ)
+    (hrD : r < d + 1)
+    {A : sourceSymmetricMatrixSubmodule r}
+    (hA : A ∈
+      (sourceHeadSliceGramPolynomialOpenPartialHomeomorph d r hrD).target) :
+    sourceHeadSliceGramPolynomial d r hrD
+        ((sourceHeadSliceGramPolynomialOpenPartialHomeomorph d r hrD).symm A) =
+      A := by
+  simpa [sourceHeadSliceGramPolynomialOpenPartialHomeomorph_coe] using
+    (sourceHeadSliceGramPolynomialOpenPartialHomeomorph d r hrD).right_inv hA
+
+theorem sourceHeadSliceGramPolynomial_left_inv_on_chartSource
+    (d r : ℕ)
+    (hrD : r < d + 1)
+    {K : sourceSymmetricMatrixSubmodule r}
+    (hK : K ∈
+      (sourceHeadSliceGramPolynomialOpenPartialHomeomorph d r hrD).source) :
+    (sourceHeadSliceGramPolynomialOpenPartialHomeomorph d r hrD).symm
+        (sourceHeadSliceGramPolynomial d r hrD K) =
+      K := by
+  simpa [sourceHeadSliceGramPolynomialOpenPartialHomeomorph_coe] using
+    (sourceHeadSliceGramPolynomialOpenPartialHomeomorph d r hrD).left_inv hK
 
 end BHW
