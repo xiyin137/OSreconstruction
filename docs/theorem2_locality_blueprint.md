@@ -124,13 +124,31 @@ Research interaction
 
 Current critical-path ledger for the `2 <= d` implementation:
 
-1. construct `SelectedAdjacentDistributionalJostAnchorData OS lgc n` from the
-   OS45 local common-chart/EOW packet plus the Hall-Wightman scalar-product
-   real-environment theorem for the chosen Jost patch;
-2. project that data to
+1. prove the direct OS I §4.5/BHW-Jost compact source-patch equality
+   `BHW.os45Figure24_sourcePatch_pairing_eq_swappedSourcePatch_of_OSI45`,
+   using the checked carrier/algebra layer
+   `BHW.OS45SourcePatchBHWJostPairData` and
+   `BHW.integral_realSourceBranchDifference_eq_zero_to_pairing_eq`, plus the
+   checked source-patch/compact bridge
+   `BHW.os45CompactFigure24WickPairingEq_of_realSourceBranchDifference_zero`
+   and the checked carrier consumer
+   `BHW.os45CompactFigure24WickPairingEq_of_pairData_difference_zero`;
+   a full adjacent family of those carriers now feeds the checked direct
+   source anchor through
+   `BHW.bvt_F_distributionalJostAnchor_of_pairData_difference_zero`;
+   package
+   the resulting compact equality as a full adjacent family of
+   `BHW.OS45CompactFigure24WickPairingEq`, and then use the checked compact
+   bridges in `OSToWightmanLocalityOS45Compact.lean`, which now produce both
+   the older
+   `SelectedAdjacentDistributionalJostAnchorData OS lgc n` surface and the
+   direct source anchor;
+2. project selected data, when the older selected-witness API is needed, to
    `BHW.SourceDistributionalAdjacentTubeAnchor (d := d) n (bvt_F OS lgc n)`
    by the checked bridge
-   `bvt_F_distributionalJostAnchor_of_selectedJostData`;
+   `bvt_F_distributionalJostAnchor_of_selectedJostData`, or bypass that
+   surface by using the checked
+   `BHW.bvt_F_distributionalJostAnchor_of_compactWickPairingEq`;
 3. use `BHWPermutation/SourceExtension.lean` only for checked local source
    support.  The real-environment uniqueness step
    `sourceScalarRepresentative_adjacent_eq_on_overlap_of_realEnvironment` is now
@@ -505,11 +523,11 @@ branch-difference argument, not a same-shell Wick-to-real equality.
    then continues Wick-trace zero to the real Jost edge.
 
 3. **Distributional Jost-anchor packaging.**
-   Package the resulting compact-test equality on one real-open Jost slice
-   together with the Hall-Wightman scalar-product real environment as
-   `SelectedAdjacentDistributionalJostAnchorData`, then pass it through the
-   already checked bridge
-   `bvt_F_distributionalJostAnchor_of_selectedJostData`.
+   Package the resulting compact-test equality first as
+   `BHW.OS45CompactFigure24WickPairingEq`; the checked compact bridges then
+   recover `SelectedAdjacentDistributionalJostAnchorData` for legacy selected
+   consumers and the direct `BHW.SourceDistributionalAdjacentTubeAnchor` for
+   the source-side BHW theorem.
 
 4. **Checked PET/BHW branch-gluing layer.**
    Feed the adjacent selected data into the already-checked selected-branch and
@@ -41155,7 +41173,9 @@ Proof decomposition of this theorem, without hiding the analytic work:
       | `BHW.OS45BHWJostLocalContinuationData` and `BHW.os45_BHWJostLocalContinuationData_from_OSI45` | Split required by the route-cycle correction; production Lean not started. | The upstream BHW/Jost hull and branch-continuation pieces may feed `BHW.OS45SourcePatchBHWJostPairData`: `os45_BHWJostHullData_of_figure24`, `os45_BHWJostBranch_onLocalHull_of_OSI45`, the ordinary and selected adjacent branch continuations, holomorphy, complex-Lorentz invariance, and the Wick/real trace formulas from OS I equations (4.1), (4.12), and (4.14).  The full local-continuation data package, including `os45_BHWJostRealBoundaryEq_of_OSI45`, `os45_BHWJostLiftTransport_onSupport_of_OSI45`, and `os45_BHWJostLiftPairing_of_OSI45`, is downstream of the direct source-patch compact theorem and may consume it later.  No source scalar representative, PET independence, EOW envelope, `bvt_W`, final locality, or oriented common-boundary envelope. |
       | `BHW.OS45Figure24AdjacentBranchData` and `BHW.os45Figure24_adjacentBranchData_of_OSI45` | Assembly transcript pinned once the local continuation carrier above is supplied; production Lean not started. | OS I §4.5 equations (4.1), (4.12), (4.14), compact zero-diagonal Euclidean symmetry, and BHW continuation of the adjacent branch, split through `OS45AdjacentPermutedTubeBoundaryFunctional`, `OS45AdjacentPermutedTubeLorentzInvariantBranch`, `os45Figure24_adjacentBHWContinuation_to_JostDomain`, the continuation-data producer `os45_bhwJostContinuation_adjacentPermutedBranch`, the assembly theorem `os45_BHWJost_continue_adjacentBranch_from_OSI45`, and the lower carrier theorem `os45_BHWJostLocalContinuationData_from_OSI45`.  The data must carry `adjacent_realBoundary_eq_ordinary` for every compact test supported in `hChart.V0`; this is source content consumed by generic Jost/Ruelle uniqueness, not a consequence of the final lift pairing. |
       | `BHW.os45Figure24_realBoundaryEq_of_OSI45` | Mechanical extraction from adjacent branch provenance; production Lean not started. | Rewrite `Dord.ordinaryBranch` by `Dord.ordinaryBranch_def` and use `Dadj.adjacent_realBoundary_eq_ordinary`.  The source proof is in the adjacent BHW/Jost continuation packet; no scalar representative, local source equality, separate source-branch `= OS.S`, PET independence, or final locality. |
-      | `BHW.os45Figure24_sourcePatch_pairing_eq_swappedSourcePatch_of_OSI45` | Route-cycle corrected; production Lean not started. | Direct OS I §4.5/BHW-Jost compact producer: checked Wick compact equality for every compact test supported in the chart, zero-diagonal conversion through equations (4.1), (4.12), and (4.14), construction of `BHW.OS45SourcePatchBHWJostPairData`, construction of `BHW.OS45SourcePatchBHWJostDifferenceData` by subtraction, direct edge/totally-real uniqueness on that carrier, and real-trace integration.  It must not call `BHW.os45_adjacent_commonBoundaryEnvelope`, the oriented branch-germ suppliers, the oriented adjacent `S'_n` seed/path package, individual real-branch `= OS.S` statements, PET independence, final locality, or the later OS-specific `JostRuelleCompactBoundaryData` package that consumes this compact theorem. |
+      | `BHW.os45Figure24_sourcePatch_pairing_eq_swappedSourcePatch_of_OSI45` | Route-cycle corrected; first BHW/Jost carrier/algebra layer checked, OS I §4.5 producer not started. | Direct OS I §4.5/BHW-Jost compact producer: checked Wick compact equality for every compact test supported in the chart, zero-diagonal conversion through equations (4.1), (4.12), and (4.14), construction of the checked `BHW.OS45SourcePatchBHWJostPairData`, checked subtraction through `BHW.OS45SourcePatchBHWJostPairData.difference`, direct edge/totally-real uniqueness on that carrier, and checked real-trace integration via `BHW.os45CompactFigure24WickPairingEq_of_pairData_difference_zero`.  A separate difference-data wrapper is optional only if it stores additional source provenance.  It must not call `BHW.os45_adjacent_commonBoundaryEnvelope`, the oriented branch-germ suppliers, the oriented adjacent `S'_n` seed/path package, individual real-branch `= OS.S` statements, PET independence, final locality, or the later OS-specific `JostRuelleCompactBoundaryData` package that consumes this compact theorem. |
+      | `BHW.OS45SourcePatchBHWJostPairData`, `BHW.OS45SourcePatchBHWJostPairData.restrict`, `BHW.OS45SourcePatchBHWJostPairData.restrict_figure24SourcePatch`, `BHW.OS45SourcePatchBHWJostPairData.difference`, `BHW.OS45SourcePatchBHWJostPairData.difference_holo`, `BHW.OS45SourcePatchBHWJostPairData.difference_wick_trace`, `BHW.OS45SourcePatchBHWJostPairData.difference_real_trace`, `BHW.realSourceBranchDifference_zero_of_pairData_difference_zero`, `BHW.integral_realSourceBranchDifference_eq_zero_to_pairing_eq`, `BHW.os45Figure24_sourcePatch_pairing_eq_of_realSourceBranchDifference_zero`, `BHW.os45CompactFigure24WickPairingEq_of_realSourceBranchDifference_zero`, `BHW.os45CompactFigure24WickPairingEq_of_pairData_difference_zero`, `BHW.os45CompactFigure24WickPairingEq_family_of_pairData_difference_zero`, `BHW.sourceDistributionalAdjacentTubeAnchor_of_pairData_difference_zero`, `BHW.bvt_F_selectedAdjacentDistributionalJostAnchorData_of_pairData_difference_zero`, and `BHW.bvt_F_distributionalJostAnchor_of_pairData_difference_zero` | Checked in `OSToWightmanLocalityOS45BHWJost.lean`. | This is the honest lower support layer for the compact source-patch theorem.  It stores two holomorphic branches on the same connected hull, their Wick traces, and their real source traces; the checked constructors restrict such a carrier to smaller open source patches, especially the canonical Figure-2-4 source patch.  The checked theorems subtract the branches, rewrite the abstract difference to the explicit `extendF` source difference under tests supported in the carrier patch, turn zero of the integrated real difference into equality of the compact real source pairings, package that equality into `BHW.OS45CompactFigure24WickPairingEq`, and fold a full adjacent family into both selected and direct source-anchor surfaces.  Integrability is still an explicit input.  The layer does not construct the pair from OS I §4.5, prove zero of the real difference integral, or establish Hall-Wightman closed-loop single-valuedness; those remain the next source obligations. |
+      | `BHW.OS45CompactFigure24WickPairingEq`, `BHW.os45CompactFigure24WickPairingEq_of_sourcePatchPairing`, `BHW.sourceDistributionalAdjacentTubeAnchor_of_compactWickPairingEq`, `BHW.bvt_F_selectedAdjacentDistributionalJostAnchorData_of_compactWickPairingEq`, and `BHW.bvt_F_distributionalJostAnchor_of_compactWickPairingEq` | Checked in `OSToWightmanLocalityOS45Compact.lean`. | This is a packaging layer after the direct source-patch compact theorem, not a proof of that theorem.  The constructor uses `os45CompactRealPatch_pullbackSchwartz` to move arbitrary `π`-labelled compact tests to the canonical source patch; a full adjacent family then produces the existing `SourceDistributionalAdjacentTubeAnchor` by using the Gram images of the unlabelled left source patches as uniqueness environments.  The selected-witness bridge takes the identity-labelled compact patch as the base patch and reuses the same compact equality, so downstream OS-II code can consume either the older `SelectedAdjacentDistributionalJostAnchorData` surface or the direct source anchor.  It supplies ordinary source-distributional anchor data; the oriented adjacent `S'_n` real-seed layer still requires determinant-regular shrinking and oriented source equality. |
       | `BHW.os45CommonBoundary_wickTrace_zero_of_compactPairing_zero` and `BHW.os45CommonBoundary_identity_of_wickTrace_zero` | Proof transcript pinned; production Lean not started. | Genuine analytic extraction from the common-boundary envelope: universal compact Wick branch-difference vanishing gives pointwise zero on the Wick trace by `SCV.eqOn_open_of_compactSupport_schwartz_integral_eq_of_continuousOn`, then holomorphic identity on the connected common chart by `BHW.identity_theorem_totally_real_product` after the complex-linear Wick-time chart calculation. |
       | `BHW.os45CanonicalAdjacentBranchBoundaryData_of_OSI45` | Assembly transcript pinned; production Lean not started. | Field-by-field construction of `JostRuelleCompactBoundaryData`, `jr_lift_eq`, ordinary lift equality on the deterministic lift, and adjacent lift pairing `= OS.S n ψZ`, after the domain, ordinary-branch, adjacent-branch, and real-boundary packets above. It no longer carries individual source-to-Schwinger or lift-to-source PET-overlap fields. |
       | `BHW.jostRuelle_uniqueContinuation_compactBoundary` | OS-free analytic theorem; transcript pinned; production Lean not started. | `SCV.eqOn_open_of_compactSupport_schwartz_integral_eq_of_continuousOn`, `BHW.identity_theorem_totally_real_product`, support restriction via `tsupport`, and no OS/theorem-2 inputs. |
@@ -56880,11 +56900,16 @@ supplied from the OS-II construction:
       π ρ z hzπ hzρ
 ```
 
-The new proof-doc target `bvt_F_distributionalJostAnchor_of_OSII` is not a
-wrapper.  It is the OS-II content that turns the reconstructed Schwinger
-distributions, OS E3 symmetry, and the OS45 local real-edge construction into
-the compact-test real-environment data used by Hall-Wightman/EOW.  It must
-return adjacent, permutation-indexed real-open patches, scalar-product real
+The older proof-doc target `bvt_F_distributionalJostAnchor_of_OSII` is now a
+selected-witness compatibility surface, not the first strict-route target.
+The active compact route first proves
+`BHW.os45Figure24_sourcePatch_pairing_eq_swappedSourcePatch_of_OSI45`,
+packages the result as `BHW.OS45CompactFigure24WickPairingEq`, and then uses
+the checked compact bridges
+`BHW.bvt_F_selectedAdjacentDistributionalJostAnchorData_of_compactWickPairingEq`
+and `BHW.bvt_F_distributionalJostAnchor_of_compactWickPairingEq`.  Any
+remaining OS-II selected-data constructor still represents real mathematical
+content: it must return adjacent real-open Jost patches, scalar-product real
 environments, and distributional equality of selected adjacent branch boundary
 values there; it must not manufacture a pointwise Schwinger function or a
 single real set lying in all permuted sectors.  A theorem named

@@ -41,12 +41,39 @@ theorem diffCoordEquiv_action (Λ : ComplexLorentzGroup d)
       complexLorentzAction Λ (diffCoordEquiv n d z) := by
   ext k μ
   by_cases hk : k.val = 0
-  · simp [hk, complexLorentzAction, diffCoordEquiv_apply]
-  · simp [hk, complexLorentzAction, diffCoordEquiv_apply]
-    rw [← Finset.sum_sub_distrib]
-    congr 1
-    ext ν
-    ring
+  · have hleft :
+        diffCoordEquiv n d (complexLorentzAction Λ z) k μ =
+          complexLorentzVectorAction Λ (z k) μ := by
+      rw [diffCoordEquiv_apply]
+      simp [hk, complexLorentzAction]
+    have hright :
+        complexLorentzAction Λ (diffCoordEquiv n d z) k μ =
+          complexLorentzVectorAction Λ (z k) μ := by
+      have hcoord : (diffCoordEquiv n d z) k = z k := by
+        ext ν
+        rw [diffCoordEquiv_apply]
+        simp [hk]
+      simp [complexLorentzAction, hcoord]
+    rw [hleft, hright]
+  · have hleft :
+        diffCoordEquiv n d (complexLorentzAction Λ z) k μ =
+          complexLorentzVectorAction Λ (z k) μ -
+            complexLorentzVectorAction Λ (z ⟨k.val - 1, by omega⟩) μ := by
+      rw [diffCoordEquiv_apply]
+      simp [hk, complexLorentzAction]
+    have hright :
+        complexLorentzAction Λ (diffCoordEquiv n d z) k μ =
+          complexLorentzVectorAction Λ (z k) μ -
+            complexLorentzVectorAction Λ (z ⟨k.val - 1, by omega⟩) μ := by
+      have hcoord :
+          (diffCoordEquiv n d z) k =
+            fun ν => z k ν - z ⟨k.val - 1, by omega⟩ ν := by
+        ext ν
+        rw [diffCoordEquiv_apply]
+        simp [hk]
+      simp [complexLorentzAction, hcoord, complexLorentzVectorAction, mul_sub,
+        Finset.sum_sub_distrib]
+    rw [hleft, hright]
 
 /-- Drop the basepoint difference coordinate `ξ₀`, keeping `ξ₁, ..., ξ_{n-1}`. -/
 noncomputable def tailDiffProj (n d : ℕ) :

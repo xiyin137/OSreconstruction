@@ -565,7 +565,7 @@ private theorem complexLorentzAction_hermitianTwistCLG {d n : ℕ} [NeZero d]
     (z : Fin n → Fin (d + 1) → ℂ) (k : Fin n) (μ : Fin (d + 1)) :
     BHW.complexLorentzAction (hermitianTwistCLG d) z k μ =
       (if μ = 0 ∨ μ = oneFin d then (-1 : ℂ) else 1) * z k μ := by
-  simp [BHW.complexLorentzAction, hermitianTwistCLG_val]
+  simp [BHW.complexLorentzAction, BHW.complexLorentzVectorAction, hermitianTwistCLG_val]
 
 private def spatialFlipOne {d : ℕ} [NeZero d]
     (x : Fin (d + 1) → ℝ) : Fin (d + 1) → ℝ :=
@@ -692,9 +692,9 @@ private theorem hermitianReverse_complexLorentzAction_pureImag_rapidity
     apply Complex.ext <;> simp [Complex.sin_ofReal_re, Complex.sin_ofReal_im]
   ext k μ
   fin_cases μ
-  · simp [hermitianReverse, BHW.complexLorentzAction,
+  · simp [hermitianReverse, BHW.complexLorentzAction, BHW.complexLorentzVectorAction,
       rapidityElementD1_val_zero_zero, rapidityElementD1_val_zero_one, hcosh, hsinh]
-  · simp [hermitianReverse, BHW.complexLorentzAction,
+  · simp [hermitianReverse, BHW.complexLorentzAction, BHW.complexLorentzVectorAction,
       rapidityElementD1_val_one_zero, rapidityElementD1_val_one_one, hcosh, hsinh]
 
 private theorem hermitianReverseOverlap_pureImag_rapidity_invariant
@@ -728,7 +728,8 @@ private theorem complexLorentzAction_rapidityElementD1_pi_I
       fun k μ => -(z k μ) := by
   ext k μ
   fin_cases μ <;>
-    simp [BHW.complexLorentzAction, rapidityElementD1_val_zero_zero,
+    simp [BHW.complexLorentzAction, BHW.complexLorentzVectorAction,
+      rapidityElementD1_val_zero_zero,
       rapidityElementD1_val_zero_one, rapidityElementD1_val_one_zero,
       rapidityElementD1_val_one_one, Complex.cosh_mul_I, Complex.sinh_mul_I,
       Complex.cos_pi, Complex.sin_pi]
@@ -808,7 +809,7 @@ private theorem mixedWickPoint_rapidity_plus_im
           (BHW.rapidityElementD1 θ)
           (fun _ : Fin 1 => mixedWickPoint x) 0 1 =
         Complex.exp θ * ((x 0 : ℂ) + (x 1 : ℂ) * Complex.I) := by
-    simp [BHW.complexLorentzAction, mixedWickPoint, θ,
+    simp [BHW.complexLorentzAction, BHW.complexLorentzVectorAction, mixedWickPoint, θ,
       rapidityElementD1_val_zero_zero, rapidityElementD1_val_zero_one,
       rapidityElementD1_val_one_zero, rapidityElementD1_val_one_one]
     change
@@ -845,7 +846,7 @@ private theorem mixedWickPoint_rapidity_minus_im
           (BHW.rapidityElementD1 θ)
           (fun _ : Fin 1 => mixedWickPoint x) 0 1 =
         Complex.exp (-θ) * ((x 0 : ℂ) - (x 1 : ℂ) * Complex.I) := by
-    simp [BHW.complexLorentzAction, mixedWickPoint, θ,
+    simp [BHW.complexLorentzAction, BHW.complexLorentzVectorAction, mixedWickPoint, θ,
       rapidityElementD1_val_zero_zero, rapidityElementD1_val_zero_one,
       rapidityElementD1_val_one_zero, rapidityElementD1_val_one_one]
     change
@@ -974,9 +975,10 @@ private theorem diffCoordFun_complexLorentzAction
       BHW.complexLorentzAction Λ (BHW.diffCoordFun n 1 z) := by
   ext k μ
   by_cases hk : k.val = 0
-  · simp [BHW.diffCoordFun, BHW.complexLorentzAction, hk]
-  · simp [BHW.diffCoordFun, BHW.complexLorentzAction, hk]
-    ring_nf
+  · simp [BHW.diffCoordFun, BHW.complexLorentzAction,
+      BHW.complexLorentzVectorAction, hk]
+  · simp [BHW.diffCoordFun, BHW.complexLorentzAction,
+      BHW.complexLorentzVectorAction, hk, mul_sub, Finset.sum_sub_distrib]
 
 private theorem diffCoordFun_realEmbed_im_zero
     {n : ℕ} (x : NPointDomain 1 n) (k : Fin n) (μ : Fin (1 + 1)) :
@@ -1193,7 +1195,8 @@ private theorem extendedTube_d1_common_lightCone_phase
           complexLorentzActionVec
             (BHW.rapidityElementD1 ((a : ℂ) + (b0 : ℂ) * Complex.I)) ξ := by
       ext μ
-      simpa [ξ, BHW.complexLorentzAction, complexLorentzActionVec] using
+      simpa [ξ, BHW.complexLorentzAction, BHW.complexLorentzVectorAction,
+        complexLorentzActionVec] using
         (congrArg (fun t : Fin n → Fin (1 + 1) → ℂ => t k μ) hdiff_eq)
     have hplus_eq :
         lightConePlus (BHW.diffCoordFun n 1 z k) =
@@ -1287,7 +1290,8 @@ private theorem extendedTube_d1_common_lightCone_phase
       have hact :
           BHW.diffCoordFun n 1 w k = complexLorentzActionVec Λ ξ := by
         ext μ
-        simpa [ξ, BHW.complexLorentzAction, complexLorentzActionVec] using
+        simpa [ξ, BHW.complexLorentzAction, BHW.complexLorentzVectorAction,
+          complexLorentzActionVec] using
           (congrArg (fun t : Fin n → Fin (1 + 1) → ℂ => t k μ) hdiff_eq)
       have hplus_eq :
           lightConePlus (BHW.diffCoordFun n 1 w k) =
@@ -1357,13 +1361,15 @@ private theorem realExtendedTube_d1_consecutiveDiff_mul_sin_sign
       complexLorentzActionVec
           (BHW.rapidityElementD1 ((a : ℂ) + (b : ℂ) * Complex.I)) ξ 0 =
         BHW.diffCoordFun n 1 (BHW.realEmbed x) k 0 := by
-    simpa [ξ, BHW.complexLorentzAction, complexLorentzActionVec] using
+    simpa [ξ, BHW.complexLorentzAction, BHW.complexLorentzVectorAction,
+      complexLorentzActionVec] using
       (congrArg (fun z : Fin n → Fin (1 + 1) → ℂ => z k 0) hdiff_eq).symm
   have hact1 :
       complexLorentzActionVec
           (BHW.rapidityElementD1 ((a : ℂ) + (b : ℂ) * Complex.I)) ξ 1 =
         BHW.diffCoordFun n 1 (BHW.realEmbed x) k 1 := by
-    simpa [ξ, BHW.complexLorentzAction, complexLorentzActionVec] using
+    simpa [ξ, BHW.complexLorentzAction, BHW.complexLorentzVectorAction,
+      complexLorentzActionVec] using
       (congrArg (fun z : Fin n → Fin (1 + 1) → ℂ => z k 1) hdiff_eq).symm
   have hreal0 :
       (complexLorentzActionVec
@@ -1871,16 +1877,19 @@ private theorem hermitianTwistCLG_hermitianReverse_smul_add_realEmbed {d n : ℕ
   by_cases hμ0 : μ = 0
   · subst hμ0
     simp [complexLorentzAction_hermitianTwistCLG, BHW.realEmbed, hermitianTwistRealN,
+      BHW.complexLorentzAction, BHW.complexLorentzVectorAction, hermitianTwistCLG_val,
       hermitianTwistReal, spatialFlipOne, oneFin, timeReflection]
     ring
   · by_cases hμ1 : μ = oneFin d
     · subst hμ1
       simp [complexLorentzAction_hermitianTwistCLG, BHW.realEmbed, hermitianTwistRealN,
+        BHW.complexLorentzAction, BHW.complexLorentzVectorAction, hermitianTwistCLG_val,
         hermitianTwistReal, spatialFlipOne, oneFin, timeReflection]
       ring
     · have hμ1' : μ ≠ ⟨1, Nat.succ_lt_succ (NeZero.pos d)⟩ := by
         simpa [oneFin] using hμ1
       simp [complexLorentzAction_hermitianTwistCLG, BHW.realEmbed, hermitianTwistRealN,
+        BHW.complexLorentzAction, BHW.complexLorentzVectorAction, hermitianTwistCLG_val,
         hermitianTwistReal, spatialFlipOne, oneFin, timeReflection, hμ0, hμ1']
 
 private theorem joinedIn_hermitianReverseOverlap_of_dual_permutedForwardTube
