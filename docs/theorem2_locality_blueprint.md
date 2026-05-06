@@ -46285,6 +46285,35 @@ Proof decomposition of this theorem, without hiding the analytic work:
             `BHWJostOrientedMaxRankClosedLoopSeed.exists_of_connectedDomainPropagation`
             with the fields of `P`.
 
+            The terminal monodromy consumers are checked directly as well:
+
+            ```lean
+            theorem BHW.BHWJostOrientedFiniteOverlapPropagationData
+                .to_orientedMonodromy
+                (P : BHW.BHWJostOrientedFiniteOverlapPropagationData L)
+                (hclosing_max_conn :
+                  IsConnected
+                    (L.closing_orientedPatch ∩
+                      {G | BHW.SourceOrientedMaxRankAt d n G})) :
+                Set.EqOn
+                  (L.chain.localChart (Fin.last L.chain.m)).Psi
+                  (L.chain.localChart 0).Psi
+                  L.closing_orientedPatch
+
+            theorem BHW.BHWJostOrientedFiniteOverlapPropagationData
+                .to_sourceMonodromy_headSliceIFT
+                (P : BHW.BHWJostOrientedFiniteOverlapPropagationData L) :
+                Set.EqOn
+                  (L.chain.branch (Fin.last L.chain.m))
+                  B0
+                  L.closing_patch
+            ```
+
+            Therefore a patch-by-patch accumulated-germ construction may stop
+            at `BHWJostOrientedFiniteOverlapPropagationData L` and close
+            source monodromy by `P.to_sourceMonodromy_headSliceIFT`, without
+            routing through the stronger large-start-domain package below.
+
             The ordered finite induction has also been checked:
 
             ```lean
@@ -46556,7 +46585,8 @@ Proof decomposition of this theorem, without hiding the analytic work:
             `to_finiteOverlapPropagationData`, `to_closedLoopSeed`,
             `to_orientedMonodromy_headSliceIFT`, and
             `to_sourceMonodromy_headSliceIFT` are then pure packaging.  In
-            particular, after the source-backed BHW/Jost construction returns
+            particular, if the source-backed BHW/Jost construction returns
+            genuine large-start-domain finite-overlap data
             `P : BHWJostOrientedClosedLoopPreconnectedFiniteOverlapDomainData L`,
             closed-loop source monodromy is:
 
@@ -46572,6 +46602,23 @@ Proof decomposition of this theorem, without hiding the analytic work:
             split into multiple components.  The source-backed strict
             OS I §4.5 path/atlas construction must supply the package above,
             or the theorem must take it explicitly.
+
+            A follow-up theorem-shape audit also isolates the precise
+            load-bearing field in the current checked consumer:
+            `stepDomain_sub_start`.  The induction in
+            `exists_terminalSeed_of_finiteOverlapDomains` fixes
+            `Φ := (L.chain.localChart 0).Psi`; therefore every positive-length
+            `stepDomain j` must really be contained in
+            `(L.chain.localChart 0).orientedDomain`, so `Φ` is holomorphic
+            there.  This is acceptable only as explicit source-backed
+            large-start-domain data.  It must not be inferred from a local
+            closed continuation loop.  If the OS I §4.5 construction supplies
+            only patch-by-patch continuation, the next theorem surface should
+            carry an accumulated germ/branch along the chain and target
+            `BHWJostOrientedFiniteOverlapPropagationData L` directly; the
+            terminal source-monodromy call is then the checked
+            `P.to_sourceMonodromy_headSliceIFT`, not the stronger
+            `stepDomain_sub_start` consumer.
 
             The zero-transition branch is already checked at this
             producer-facing layer:

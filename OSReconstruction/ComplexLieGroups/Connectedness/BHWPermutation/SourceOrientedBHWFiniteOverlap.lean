@@ -397,6 +397,68 @@ theorem to_closedLoopSeed
     P.terminalSeed_eq
     P.closingPatch_sub_terminalDomain
 
+/-- Terminal finite-overlap propagation data gives oriented monodromy on the
+closing patch once the closing max-rank stratum is connected. -/
+theorem to_orientedMonodromy
+    (P : BHWJostOrientedFiniteOverlapPropagationData L)
+    (hclosing_max_conn :
+      IsConnected
+        (L.closing_orientedPatch ∩ {G | SourceOrientedMaxRankAt d n G})) :
+    Set.EqOn
+      (L.chain.localChart (Fin.last L.chain.m)).Psi
+      (L.chain.localChart 0).Psi
+      L.closing_orientedPatch := by
+  rcases P.to_closedLoopSeed with ⟨S⟩
+  exact
+    bhw_jost_closedChain_orientedMonodromy_of_seed
+      (d := d) (n := n) P.hn L hclosing_max_conn S
+
+/-- Terminal finite-overlap propagation data gives source-branch monodromy on
+the closing source patch once the closing max-rank stratum is connected. -/
+theorem to_sourceMonodromy
+    (P : BHWJostOrientedFiniteOverlapPropagationData L)
+    (hclosing_max_conn :
+      IsConnected
+        (L.closing_orientedPatch ∩ {G | SourceOrientedMaxRankAt d n G})) :
+    Set.EqOn
+      (L.chain.branch (Fin.last L.chain.m))
+      B0
+      L.closing_patch := by
+  rcases P.to_closedLoopSeed with ⟨S⟩
+  exact
+    bhw_jost_closedChain_sourceMonodromy_of_seed
+      (d := d) (n := n) P.hn L hclosing_max_conn S
+
+/-- Terminal finite-overlap propagation data gives oriented monodromy with no
+extra closing-patch connectedness hypothesis.  The stored closing oriented
+patch is nonempty and preconnected, and the checked sliced-head IFT producer
+turns that into connectedness of its max-rank part. -/
+theorem to_orientedMonodromy_headSliceIFT
+    (P : BHWJostOrientedFiniteOverlapPropagationData L) :
+    Set.EqOn
+      (L.chain.localChart (Fin.last L.chain.m)).Psi
+      (L.chain.localChart 0).Psi
+      L.closing_orientedPatch :=
+  P.to_orientedMonodromy
+    (sourceOrientedGramVariety_maxRank_inter_relOpen_isConnected_of_headSliceIFT
+      (d := d) (n := n) hd P.hn L.closing_orientedPatch_relOpen
+      ⟨L.closing_orientedPatch_nonempty,
+        L.closing_orientedPatch_preconnected⟩)
+
+/-- Terminal finite-overlap propagation data gives source-branch monodromy
+with no extra closing-patch connectedness hypothesis. -/
+theorem to_sourceMonodromy_headSliceIFT
+    (P : BHWJostOrientedFiniteOverlapPropagationData L) :
+    Set.EqOn
+      (L.chain.branch (Fin.last L.chain.m))
+      B0
+      L.closing_patch :=
+  P.to_sourceMonodromy
+    (sourceOrientedGramVariety_maxRank_inter_relOpen_isConnected_of_headSliceIFT
+      (d := d) (n := n) hd P.hn L.closing_orientedPatch_relOpen
+      ⟨L.closing_orientedPatch_nonempty,
+        L.closing_orientedPatch_preconnected⟩)
+
 end BHWJostOrientedFiniteOverlapPropagationData
 
 namespace BHWJostOrientedSourcePatchContinuationChain
@@ -1055,7 +1117,14 @@ the ordinary topological domains that local source-normal-form shrinkage is
 expected to produce: relatively open, nonempty, preconnected step and closing
 domains, together with the ordered containment transcript.  The checked
 consumer below converts these fields to the max-rank-connected closed-loop
-finite-overlap data using the sliced-head IFT local-image theorem. -/
+finite-overlap data using the sliced-head IFT local-image theorem.
+
+The fields `stepDomain_sub_start` and `closingDomain_sub_start` are
+load-bearing: they assert that the starting oriented branch is defined on the
+whole finite-overlap ribbon.  They are not consequences of an arbitrary closed
+loop of local charts; the strict source-backed BHW/Jost producer must either
+construct such a large starting domain explicitly or use a different
+accumulated-germ monodromy surface. -/
 structure BHWJostOrientedClosedLoopPreconnectedFiniteOverlapDomainData
     [NeZero d] {hd : 2 ≤ d} {τ : Equiv.Perm (Fin n)}
     {Ω0 U : Set (Fin n → Fin (d + 1) → ℂ)}

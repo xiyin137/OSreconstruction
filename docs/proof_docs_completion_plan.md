@@ -276,7 +276,12 @@ it provides
 `BHW.sourceOrientedGramVariety_maxRank_inter_relOpen_isConnected_of_exceptionalLocalBasis`,
 `BHW.sourceOrientedGramVariety_maxRank_inter_relOpen_isConnected_of_rankDeficientMaxRankLocalImageProducer`,
 `BHW.BHWJostOrientedFiniteOverlapPropagationData`,
-`BHW.BHWJostOrientedFiniteOverlapPropagationData.to_closedLoopSeed`, and
+`BHW.BHWJostOrientedFiniteOverlapPropagationData.to_closedLoopSeed`,
+`BHW.BHWJostOrientedFiniteOverlapPropagationData.to_orientedMonodromy`,
+`BHW.BHWJostOrientedFiniteOverlapPropagationData.to_sourceMonodromy`,
+`BHW.BHWJostOrientedFiniteOverlapPropagationData.to_orientedMonodromy_headSliceIFT`,
+`BHW.BHWJostOrientedFiniteOverlapPropagationData.to_sourceMonodromy_headSliceIFT`,
+and
 `BHW.exists_preconnectedRelOpen_maxRankSeed_inside`, plus
 `BHW.BHWJostOrientedSourcePatchContinuationChain.exists_terminalSeed_of_finiteOverlapDomains`,
 which iterates the checked one-step propagation theorem across an ordered
@@ -376,7 +381,8 @@ extracts a new nonempty preconnected relatively open max-rank seed inside that
    the resulting terminal
    seed into `BHWJostOrientedFiniteOverlapPropagationData`; once that data is
    available, `to_closedLoopSeed` feeds it into the checked closing-domain seed
-   package.  This introduces no new `sorry`.
+   package, and `to_sourceMonodromy_headSliceIFT` feeds it directly into the
+   checked source-monodromy endpoint.  This introduces no new `sorry`.
 
 The rank bridge file
 `OSReconstruction/ComplexLieGroups/Connectedness/BHWPermutation/SourceOrientedRankBridge.lean`
@@ -1031,9 +1037,11 @@ is now
    `BHWJostOrientedClosedLoopFiniteOverlapDomainData.exists_of_preconnectedDomains_headSliceIFT`,
    then apply
    `BHWJostOrientedClosedLoopFiniteOverlapDomainData.to_sourceMonodromy_headSliceIFT`.
-   Therefore the remaining strict OS I §4.5 BHW/Jost producer theorem should
-   output this preconnected data structure for the specific source-backed
-   closed loop; once it does, monodromy is a mechanical one-line consumer.
+   Therefore, if the remaining strict OS I §4.5 BHW/Jost construction
+   produces a genuine large starting branch domain covering the finite-overlap
+   ribbon, the producer theorem should output this preconnected data structure
+   for the specific source-backed closed loop; once it does, monodromy is a
+   mechanical one-line consumer.
    The stable public consumer name is checked as
    `BHW.bhw_jost_closedChain_sourceMonodromy_of_preconnectedFiniteOverlapData`:
    its proof is just `P.to_sourceMonodromy_headSliceIFT`.
@@ -1049,6 +1057,19 @@ is now
    `hn` is too strong, because chart intersections can have multiple
    components and the finite-overlap ribbon is supplied by the source-backed
    path/atlas construction, not by the abstract loop fields alone.
+   Follow-up route audit on the same date flagged the load-bearing role of
+   `stepDomain_sub_start`: the checked induction fixes
+   `Φ := (L.chain.localChart 0).Psi`, so every positive-length step domain
+   must genuinely lie in the starting oriented branch domain.  This is not a
+   harmless bookkeeping field.  The strict BHW/Jost producer must either
+   construct that large source-backed starting domain explicitly, or the
+   positive-length theorem should target
+   `BHWJostOrientedFiniteOverlapPropagationData L` directly via an
+   accumulated-germ chain that carries the continued branch step by step.  In
+   that patch-by-patch route, the terminal call is now checked as
+   `P.to_sourceMonodromy_headSliceIFT`, with no detour through
+   `stepDomain_sub_start`.  No production theorem may infer
+   `stepDomain_sub_start` from an arbitrary closed loop.
 
 The first normal-parameter support layer is now checked in
 `SourceOrientedNormalParameter.lean`.  The file supplies the finite head/tail
@@ -9097,6 +9118,36 @@ common-boundary envelope, or any theorem that already assumes locality.
    applied to the fields of `P`.  This structure is not the hard theorem; it
    is the honest terminal interface for the hard theorem.
 
+   The terminal monodromy consumers are also checked directly:
+
+   ```lean
+   theorem BHW.BHWJostOrientedFiniteOverlapPropagationData
+       .to_orientedMonodromy
+       (P : BHW.BHWJostOrientedFiniteOverlapPropagationData L)
+       (hclosing_max_conn :
+         IsConnected
+           (L.closing_orientedPatch ∩
+             {G | BHW.SourceOrientedMaxRankAt d n G})) :
+       Set.EqOn
+         (L.chain.localChart (Fin.last L.chain.m)).Psi
+         (L.chain.localChart 0).Psi
+         L.closing_orientedPatch
+
+   theorem BHW.BHWJostOrientedFiniteOverlapPropagationData
+       .to_sourceMonodromy_headSliceIFT
+       (P : BHW.BHWJostOrientedFiniteOverlapPropagationData L) :
+       Set.EqOn
+         (L.chain.branch (Fin.last L.chain.m))
+         B0
+         L.closing_patch
+   ```
+
+   Thus an accumulated-germ finite-overlap proof may target
+   `BHWJostOrientedFiniteOverlapPropagationData L` directly and close the
+   source monodromy goal with `P.to_sourceMonodromy_headSliceIFT`, without
+   proving that every intermediate step domain lies in the original chart-0
+   domain.
+
    The ordered finite induction has also been checked:
 
    ```lean
@@ -9497,6 +9548,18 @@ common-boundary envelope, or any theorem that already assumes locality.
    Lean boundary: the source-backed construction proves the ordered
    relatively open nonempty preconnected domains and containment transcript;
    the checked consumer converts it to monodromy.
+   However, this package is still a strong source-backed input, not a theorem
+   about arbitrary chart loops: the fields
+   `stepDomain_sub_start : ∀ j, stepDomain j ⊆
+   (L.chain.localChart 0).orientedDomain` and
+   `closingDomain_sub_start` are what make
+   `Φ := (L.chain.localChart 0).Psi` holomorphic on every finite-overlap
+   domain.  If the strict OS I §4.5 construction cannot provide a starting
+   oriented domain covering the whole positive-length ribbon, the correct
+   Lean replacement is an accumulated-germ continuation chain whose step `j`
+   carries a branch already constructed on the current domain and compares it
+   to the next branch on the next overlap.  The current checked consumer is
+   sound only as a conditional consumer of the large-start-domain data.
    The zero-transition case of this package is already discharged:
    `BHWJostOrientedClosedLoopPreconnectedFiniteOverlapDomainData.exists_of_zeroTransitions`
    fills the empty step family by `Fin.elim0`, chooses
