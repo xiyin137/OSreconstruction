@@ -996,6 +996,81 @@ theorem continuedValue_eq
       bhw_continuedValueAlongOrientedChain hd n τ Ω0 U B0 C₂ :=
   P.terminal_branches_eq P.endpoint_mem
 
+/-- Same-endpoint comparison of two terminal-retargeted transfer traces gives
+the local chart comparison required by the trace-atlas overlap field.  This is
+the mechanical endpoint conversion after the closed-path theorem has compared
+the retargeted chains. -/
+noncomputable def ofRetargetedTerminalPointTraceComparison
+    {y : Fin n → Fin (d + 1) → ℂ}
+    (T₁ T₂ :
+      BHWJostOrientedTransferTerminalPointTrace
+        hd n τ Ω0 U B0 p0 y)
+    (P :
+      BHWOrientedTerminalChainComparisonData
+        (T₁.trace.chain.retargetTerminal T₁.point_mem)
+        (T₂.trace.chain.retargetTerminal T₂.point_mem)) :
+    BHWLocalChartTerminalComparisonData
+      (T₁.trace.chain.localChart (Fin.last T₁.trace.chain.m))
+      (T₂.trace.chain.localChart (Fin.last T₂.trace.chain.m)) y where
+  terminalPatch := P.terminalPatch
+  endpoint_mem := P.endpoint_mem
+  terminalPatch_open := P.terminalPatch_open
+  terminalPatch_preconnected := P.terminalPatch_preconnected
+  terminalPatch_sub_left := by
+    intro x hx
+    simpa [BHWJostOrientedSourcePatchContinuationChain.retargetTerminal,
+      BHWJostOrientedSourcePatchContinuationChain.snoc] using
+      P.terminalPatch_sub_left hx
+  terminalPatch_sub_right := by
+    intro x hx
+    simpa [BHWJostOrientedSourcePatchContinuationChain.retargetTerminal,
+      BHWJostOrientedSourcePatchContinuationChain.snoc] using
+      P.terminalPatch_sub_right hx
+  terminal_branches_eq := by
+    intro x hx
+    simpa [BHWJostOrientedSourcePatchContinuationChain.retargetTerminal,
+      BHWJostOrientedSourcePatchContinuationChain.snoc] using
+      P.terminal_branches_eq hx
+
+/-- Certified variant of
+`ofRetargetedTerminalPointTraceComparison`.  The proof only forgets the
+certificates after the two certified traces have been retargeted to the common
+terminal point; the one-step uniqueness content remains available to the
+closed-path theorem that supplies `P`. -/
+noncomputable def ofCertifiedRetargetedTerminalPointTraceComparison
+    {y : Fin n → Fin (d + 1) → ℂ}
+    (T₁ T₂ :
+      BHWJostOrientedCertifiedTransferTerminalPointTrace
+        hd n τ Ω0 U B0 p0 y)
+    (P :
+      BHWOrientedTerminalChainComparisonData
+        (T₁.trace.trace.chain.retargetTerminal T₁.point_mem)
+        (T₂.trace.trace.chain.retargetTerminal T₂.point_mem)) :
+    BHWLocalChartTerminalComparisonData
+      (T₁.trace.trace.chain.localChart
+        (Fin.last T₁.trace.trace.chain.m))
+      (T₂.trace.trace.chain.localChart
+        (Fin.last T₂.trace.trace.chain.m)) y where
+  terminalPatch := P.terminalPatch
+  endpoint_mem := P.endpoint_mem
+  terminalPatch_open := P.terminalPatch_open
+  terminalPatch_preconnected := P.terminalPatch_preconnected
+  terminalPatch_sub_left := by
+    intro x hx
+    simpa [BHWJostOrientedSourcePatchContinuationChain.retargetTerminal,
+      BHWJostOrientedSourcePatchContinuationChain.snoc] using
+      P.terminalPatch_sub_left hx
+  terminalPatch_sub_right := by
+    intro x hx
+    simpa [BHWJostOrientedSourcePatchContinuationChain.retargetTerminal,
+      BHWJostOrientedSourcePatchContinuationChain.snoc] using
+      P.terminalPatch_sub_right hx
+  terminal_branches_eq := by
+    intro x hx
+    simpa [BHWJostOrientedSourcePatchContinuationChain.retargetTerminal,
+      BHWJostOrientedSourcePatchContinuationChain.snoc] using
+      P.terminal_branches_eq hx
+
 end BHWOrientedTerminalChainComparisonData
 
 namespace BHWOrientedContinuationChainAtlasData
@@ -1180,5 +1255,129 @@ noncomputable def ofSameEndpointComparisonsAndInitialChart
     (fun z hz => initial_branch_agree z hz)
 
 end BHWOrientedContinuationChainAtlasData
+
+/-- A path-connected branch-free transfer cover whose center-forgotten
+controls are uniqueness-certified, plus same-endpoint comparison for the two
+terminal-retargeted certified traces, gives the glued holomorphic source-patch
+branch on `U`.
+
+This is the monodromy-facing variant of
+`bhw_jost_orientedGluedBranch_of_pathConnected_certifiedTransferCover`: the
+closed-path theorem may compare retargeted chains, and the local terminal
+chart comparison required by the atlas is then obtained mechanically. -/
+theorem bhw_jost_orientedGluedBranch_of_pathConnected_certifiedTransferCover_retargetedComparisons
+    [NeZero d] {hd : 2 ≤ d} {τ : Equiv.Perm (Fin n)}
+    {Ω0 U : Set (Fin n → Fin (d + 1) → ℂ)}
+    {B0 : (Fin n → Fin (d + 1) → ℂ) → ℂ}
+    (p0 : Fin n → Fin (d + 1) → ℂ)
+    (base_mem : p0 ∈ Ω0 ∩ U)
+    (hU_path : IsPathConnected U)
+    (T :
+      ∀ z, z ∈ U →
+        BHWJostOrientedBranchFreeTransferNeighborhood hd n τ U z)
+    (T_unique :
+      ∀ z (hz : z ∈ U),
+        BHWJostOrientedTransferControlHasUniqueNext
+          (BHWJostOrientedBranchFreeTransferNeighborhood.toTransferControl
+            (T z hz)))
+    (retargetedComparison :
+      ∀ {y : Fin n → Fin (d + 1) → ℂ}
+        (T₁ T₂ :
+          BHWJostOrientedCertifiedTransferTerminalPointTrace
+            hd n τ Ω0 U B0 p0 y),
+        BHWOrientedTerminalChainComparisonData
+          (T₁.trace.trace.chain.retargetTerminal T₁.point_mem)
+          (T₂.trace.trace.chain.retargetTerminal T₂.point_mem))
+    (C0 : BHWJostLocalOrientedContinuationChart hd n τ U)
+    (hp0C : p0 ∈ C0.carrier)
+    (start_patch : Set (Fin n → Fin (d + 1) → ℂ))
+    (hstart_open : IsOpen start_patch)
+    (hstart_preconnected : IsPreconnected start_patch)
+    (hstart_nonempty : start_patch.Nonempty)
+    (hstart_mem : p0 ∈ start_patch)
+    (hstart_sub : start_patch ⊆ Ω0 ∩ C0.carrier)
+    (hstart_agree : ∀ y, y ∈ start_patch → C0.branch y = B0 y)
+    (initial_chart_mem :
+      ∀ z, z ∈ Ω0 ∩ U → z ∈ C0.carrier)
+    (initial_branch_agree :
+      ∀ z, z ∈ Ω0 ∩ U → C0.branch z = B0 z) :
+    ∃ B : (Fin n → Fin (d + 1) → ℂ) → ℂ,
+      DifferentiableOn ℂ B U ∧
+      (∀ z, z ∈ Ω0 → z ∈ U → B z = B0 z) :=
+  bhw_jost_orientedGluedBranch_of_pathConnected_certifiedTransferCover
+    (hd := hd) (τ := τ) (Ω0 := Ω0) (U := U) (B0 := B0)
+    p0 base_mem hU_path T T_unique
+    (fun T₁ T₂ =>
+      BHWOrientedTerminalChainComparisonData.ofCertifiedRetargetedTerminalPointTraceComparison
+        T₁ T₂ (retargetedComparison T₁ T₂))
+    C0 hp0C start_patch hstart_open hstart_preconnected hstart_nonempty
+    hstart_mem hstart_sub hstart_agree initial_chart_mem
+    initial_branch_agree
+
+/-- Source-normal-form producer form with the monodromy-facing retargeted
+comparison input.  After the source-normal-form patch producer and one-step
+uniqueness theorem are available, the only remaining comparison theorem has to
+compare the two terminal-retargeted certified chains. -/
+theorem bhw_jost_orientedGluedBranch_of_pathConnected_sourceNormalFormProducer_retargetedComparisons
+    [NeZero d] {hd : 2 ≤ d} {τ : Equiv.Perm (Fin n)}
+    {Ω0 U : Set (Fin n → Fin (d + 1) → ℂ)}
+    {B0 : (Fin n → Fin (d + 1) → ℂ) → ℂ}
+    (p0 : Fin n → Fin (d + 1) → ℂ)
+    (base_mem : p0 ∈ Ω0 ∩ U)
+    (hU_path : IsPathConnected U)
+    (patchAt :
+      ∀ {center : Fin n → Fin (d + 1) → ℂ}, center ∈ U →
+        BHWJostOrientedSourceNormalFormGeometryPatch hd n τ U center)
+    (uniformDescent :
+      ∀ {center : Fin n → Fin (d + 1) → ℂ}
+        (hcenter : center ∈ U),
+        ∀ p q,
+          p ∈ (patchAt hcenter).carrier → p ∈ U →
+          q ∈ (patchAt hcenter).carrier → q ∈ U →
+          ∀ Cprev : BHWJostLocalOrientedContinuationChart hd n τ U,
+            p ∈ Cprev.carrier →
+              Σ Cnext : BHWJostLocalOrientedContinuationChart hd n τ U,
+                BHWJostOrientedTransitionData hd n τ U Cprev Cnext p q)
+    (uniformDescent_unique :
+      ∀ z (hz : z ∈ U),
+        BHWJostOrientedTransferControlHasUniqueNext
+          (BHWJostOrientedBranchFreeTransferNeighborhood.toTransferControl
+            (bhw_jost_orientedBranchFreeTransferNeighborhood_at_of_sourceNormalFormProducer
+              (hd := hd) (τ := τ) (U := U)
+              patchAt uniformDescent hz)))
+    (retargetedComparison :
+      ∀ {y : Fin n → Fin (d + 1) → ℂ}
+        (T₁ T₂ :
+          BHWJostOrientedCertifiedTransferTerminalPointTrace
+            hd n τ Ω0 U B0 p0 y),
+        BHWOrientedTerminalChainComparisonData
+          (T₁.trace.trace.chain.retargetTerminal T₁.point_mem)
+          (T₂.trace.trace.chain.retargetTerminal T₂.point_mem))
+    (C0 : BHWJostLocalOrientedContinuationChart hd n τ U)
+    (hp0C : p0 ∈ C0.carrier)
+    (start_patch : Set (Fin n → Fin (d + 1) → ℂ))
+    (hstart_open : IsOpen start_patch)
+    (hstart_preconnected : IsPreconnected start_patch)
+    (hstart_nonempty : start_patch.Nonempty)
+    (hstart_mem : p0 ∈ start_patch)
+    (hstart_sub : start_patch ⊆ Ω0 ∩ C0.carrier)
+    (hstart_agree : ∀ y, y ∈ start_patch → C0.branch y = B0 y)
+    (initial_chart_mem :
+      ∀ z, z ∈ Ω0 ∩ U → z ∈ C0.carrier)
+    (initial_branch_agree :
+      ∀ z, z ∈ Ω0 ∩ U → C0.branch z = B0 z) :
+    ∃ B : (Fin n → Fin (d + 1) → ℂ) → ℂ,
+      DifferentiableOn ℂ B U ∧
+      (∀ z, z ∈ Ω0 → z ∈ U → B z = B0 z) :=
+  bhw_jost_orientedGluedBranch_of_pathConnected_certifiedTransferCover_retargetedComparisons
+    (hd := hd) (τ := τ) (Ω0 := Ω0) (U := U) (B0 := B0)
+    p0 base_mem hU_path
+    (fun _ hz =>
+      bhw_jost_orientedBranchFreeTransferNeighborhood_at_of_sourceNormalFormProducer
+        (hd := hd) (τ := τ) (U := U)
+        patchAt uniformDescent hz)
+    uniformDescent_unique retargetedComparison C0 hp0C start_patch
+    hstart_open hstart_preconnected hstart_nonempty hstart_mem hstart_sub
+    hstart_agree initial_chart_mem initial_branch_agree
 
 end BHW

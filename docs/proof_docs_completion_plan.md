@@ -330,8 +330,12 @@ provides
 `BHW.bhw_jost_orientedGluedBranch_of_certifiedTraces`,
 `BHW.bhw_jost_orientedGluedBranch_of_pathConnected_certifiedTransferCover`,
 `BHW.bhw_jost_orientedGluedBranch_of_pathConnected_sourceNormalFormProducer`,
+`BHW.bhw_jost_orientedGluedBranch_of_pathConnected_certifiedTransferCover_retargetedComparisons`,
+`BHW.bhw_jost_orientedGluedBranch_of_pathConnected_sourceNormalFormProducer_retargetedComparisons`,
 `BHW.BHWOrientedTerminalChainComparisonData`, and
 `BHW.BHWOrientedTerminalChainComparisonData.ofLocalChartComparison`,
+`BHW.BHWOrientedTerminalChainComparisonData.ofRetargetedTerminalPointTraceComparison`,
+`BHW.BHWOrientedTerminalChainComparisonData.ofCertifiedRetargetedTerminalPointTraceComparison`,
 `BHW.BHWOrientedTerminalChainComparisonData.continuedValue_eq`, which
 turn selected terminal chains plus same-endpoint comparison/base agreement
 into the checked source-patch atlas and glued branch, turn selected transfer
@@ -353,6 +357,13 @@ surface by requiring each selected trace to carry
 `HasUniqueSteps`; the terminal comparison theorem then consumes certified
 terminal-point traces, not raw observations.  This keeps the carrier/API file
 below the hard-frontier size limit and introduces no new analytic assumption.
+The monodromy-facing certified variants now take comparison of the two
+terminal-retargeted certified chains as the hard input; the conversion from
+that chain comparison to `BHWLocalChartTerminalComparisonData` for the two
+original terminal local charts is checked by the two retargeted-comparison
+constructors above.  Thus the future closed-path theorem can target the
+natural same-endpoint chain object and does not also need to prove the atlas
+local-chart packaging.
 
 The open-chart BHW near-identity input is now checked in
 `OSReconstruction/ComplexLieGroups/Connectedness/BHWPermutation/SourceOrientedBHWInvariance.lean`.
@@ -8387,11 +8398,30 @@ common-boundary envelope, or any theorem that already assumes locality.
    is retained only as a raw-trace convenience wrapper when an unbundled
    terminal-point trace comparison theorem is already available.
 
+   The monodromy-facing bridge is now checked as
+   `BHWOrientedTerminalChainComparisonData.ofCertifiedRetargetedTerminalPointTraceComparison`.
+   Given two certified terminal-point observations `T₁ T₂` at the same source
+   point `y`, the closed-path comparison theorem may first retarget
+   `T₁.trace.trace.chain` and `T₂.trace.trace.chain` to endpoint `y` using
+   `retargetTerminal Tᵢ.point_mem` and return
+   `BHWOrientedTerminalChainComparisonData` for those two same-endpoint
+   retargeted chains.  The checked bridge rewrites the final chart and final
+   branch of each retargeted chain by
+   `BHWJostOrientedSourcePatchContinuationChain.retargetTerminal` and `snoc`,
+   producing exactly the `BHWLocalChartTerminalComparisonData` between the
+   original terminal local charts.  The raw bridge
+   `BHWOrientedTerminalChainComparisonData.ofRetargetedTerminalPointTraceComparison`
+   is identical without the stored uniqueness certificates.
+
    Consequently the checked atlas assembly now has exactly two remaining
    non-mechanical inputs: a source-normal-form/uniform-descent producer of
    branch-free transfer neighborhoods on `U` whose stored controls carry
-   `HasUniqueSteps`, and the hard certified theorem
-   `bhw_jost_orientedTerminalPointComparison_of_transferTraces`.  The checked
+   `HasUniqueSteps`, and the hard certified retargeted-chain comparison
+   theorem for two certified terminal-point observations.  A local
+   `bhw_jost_orientedTerminalPointComparison_of_transferTraces` remains a
+   valid derived theorem, but it should be proved by the checked retargeted
+   bridge after closed-path monodromy has produced the same-endpoint
+   comparison data.  The checked
    theorem `BHW.bhw_jost_orientedGluedBranch_of_certifiedTraces` composes
    certified selected traces, certified terminal-point comparison, and the
    initial chart to produce the glued holomorphic source-patch branch on `U`.
@@ -8399,12 +8429,21 @@ common-boundary envelope, or any theorem that already assumes locality.
    `BHW.bhw_jost_orientedGluedBranch_of_pathConnected_certifiedTransferCover`
    first selects the certified traces from a path-connected uniqueness-certified
    transfer cover and then applies that certified glue theorem.  The checked
+   monodromy-facing theorem
+   `BHW.bhw_jost_orientedGluedBranch_of_pathConnected_certifiedTransferCover_retargetedComparisons`
+   has the same hypotheses except that the comparison input is already the
+   retargeted same-endpoint chain comparison.  The checked
    source-normal-form theorem
    `BHW.bhw_jost_orientedGluedBranch_of_pathConnected_sourceNormalFormProducer`
    specializes this to the source-normal-form patch producer plus uniform
    descent input; after that reduction, the non-mechanical inputs are exactly
    the one-step uniqueness theorem for the produced transfer controls and the
-   certified terminal-point comparison theorem.
+   certified terminal-point comparison theorem.  The newest source-normal-form
+   endpoint
+   `BHW.bhw_jost_orientedGluedBranch_of_pathConnected_sourceNormalFormProducer_retargetedComparisons`
+   is the preferred strict-route target: its final hard comparison hypothesis
+   is the closed-path comparison of the two terminal-retargeted certified
+   chains, while terminal-chart packaging is entirely mechanical.
    The raw theorem `BHW.bhw_jost_orientedGluedBranch_of_pathConnected_transferCover`
    remains a convenience surface when one has an unbundled terminal-point
    comparison theorem, but the strict route should target the certified
