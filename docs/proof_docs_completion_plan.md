@@ -702,10 +702,16 @@ canonical-image theorem is just the two checked inclusions above with
 `Ω := sourceOrientedHeadGaugeSchurExtractedImage ...`.  Finally,
 `SourceOrientedRankDeficientAlgebraicNormalFormData.maxRankLocalImageData_of_headGaugeSchurWindow`
 feeds the canonical-image theorem into the checked Schur-window shrink and
-transport adapters.  The next producer-level blocker is no longer openness or
-surjectivity of the canonical image; it is supplying the local
-`SourceRankDeficientHeadGaugeData` at the canonical head metric, then invoking
-this checked head-gauge local-image packet.
+transport adapters, but this last wrapper is only conditional on the legacy
+full-matrix head-gauge interface.  A sanity check with Gemini on 2026-05-05
+confirmed the mathematical issue: for `r >= 2`, `H ↦ H η Hᵀ` is not locally
+injective on any full open matrix neighborhood of `1`, because of the local
+complex orthogonal stabilizer.  Therefore the constructible route must replace
+the full head window by a transverse slice.  The next producer-level blocker is
+not canonical-image openness or surjectivity; it is the sliced head-gauge
+chart, stated in Lean as `SourceRankDeficientHeadSliceGaugeData`, followed by
+the sliced Schur parameter-window version of the checked canonical-image
+packet.
 
 The downstream transport adapter for that producer is now checked in
 `SourceOrientedRankDeficientLocalImageTransport.lean`.  The theorems
@@ -737,25 +743,30 @@ For the strengthened max-rank packet, the checked adapter
 now takes the connectedness hypothesis in the final residual-tail form:
 `parameterBox ∩ {p | rank (sourceOrientedNormalParameterSchurTail p) =
 d + 1 - N.r}`.  The producer no longer has to restate that as a transported
-`SourceOrientedMaxRankAt` preimage, and the new Schur-window shrink theorem
-now supplies that connectedness for the same parameterBox used for ambient
-containment.  The only remaining local-image inputs are the canonical normal
-image `Omega`, its openness in `SourceOrientedVariety d n`, and the two
-Schur-extraction inclusions `Omega ⊆ normalImage '' parameterBox` and
-`normalImage parameterBox ⊆ Omega`.
+`SourceOrientedMaxRankAt` preimage.  On the corrected route the parameter box
+is not the full head-matrix polydisc: its head coordinate is an open connected
+neighborhood inside the slice source of `SourceRankDeficientHeadSliceGaugeData`.
+The remaining local-image inputs are the sliced canonical normal image
+`Omega`, its openness in `SourceOrientedVariety d n`, and the two
+Schur-extraction inclusions between `Omega` and the sliced parameter window.
 
 The head-gauge shrink layer is now checked in
 `SourceOrientedHeadGaugeSupport.lean`:
 `BHW.sourceRankDeficientHeadGauge_factor_continuousAt_center`,
 `BHW.sourceRankDeficientHeadGauge_exists_factor_nhds`,
 `BHW.sourceRankDeficientHeadGauge_exists_factor_coordinate_bound`.  These do
-not assert existence of a head-gauge chart; they say that once the chart data
-are supplied, continuity on the open chart lets production Lean shrink around
-the canonical head metric so the gauge factor stays in any prescribed
-neighborhood, in particular entrywise close to the identity.  The bridge
+not assert existence of a head-gauge chart, and they are tied to the legacy
+full-matrix data surface.  They remain useful only as conditional shrink
+support until refactored to the slice domain.  The corrected source file now
+adds `SourceHeadGaugeSlice`, `sourceHeadGaugeSliceCenter`,
+`sourceHeadGaugeSliceCoordinateWindow`,
+`isOpen_sourceHeadGaugeSliceCoordinateWindow`, and
+`SourceRankDeficientHeadSliceGaugeData`.  The future head-gauge existence
+theorem must construct this sliced data by the inverse-function theorem on the
+linear slice `H * η = (H * η)ᵀ`, not a full-matrix local inverse.  The bridge
 `BHW.sourceRankDeficientHeadGauge_exists_matrix_nhds_factor_coordinate_bound`
-is the checked subtype-to-full-matrix conversion used by the head-gauge-aware
-normal-ball shrink.
+must likewise be replaced by a slice-to-matrix conversion for the sliced
+parameter box.
 
 The first normal-parameter support layer is now checked in
 `SourceOrientedNormalParameter.lean`.  The file supplies the finite head/tail

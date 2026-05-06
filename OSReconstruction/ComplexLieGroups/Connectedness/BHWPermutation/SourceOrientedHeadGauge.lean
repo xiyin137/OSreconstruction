@@ -4,10 +4,10 @@ import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SourceOrie
 # Source-oriented rank-deficient head gauge interface
 
 This file isolates the local head-gauge surface used by the Schur residual
-producer.  The analytic existence of the gauge is a later inverse-function
-theorem; here we record the exact data interface and the checked algebraic
-constructor reducing Schur residual production to the shifted residual-tail
-membership statement.
+producer.  The mathematically viable gauge is a local inverse-function chart on
+a transverse slice through the `H ↦ H * η * Hᵀ` map; a full-matrix open
+neighborhood cannot carry a left inverse because of the local complex
+orthogonal stabilizer.
 -/
 
 noncomputable section
@@ -49,6 +49,64 @@ def sourceHeadFactorCoordinateWindow
     Set (Matrix (Fin r) (Fin r) ℂ) :=
   {H | ∀ a b, ‖H a b - (1 : Matrix (Fin r) (Fin r) ℂ) a b‖ < ρ}
 
+/-- The honest local head-gauge source is a slice through the
+`H ↦ H * η * Hᵀ` map, not an open set in the full matrix space.  We use the
+linear slice `H * η` symmetric, which is transverse to the local complex
+orthogonal stabilizer at the identity. -/
+abbrev SourceHeadGaugeSlice
+    (d r : ℕ)
+    (hrD : r < d + 1) :=
+  {H : Matrix (Fin r) (Fin r) ℂ //
+    H * sourceHeadMetric d r hrD =
+      (H * sourceHeadMetric d r hrD)ᵀ}
+
+/-- The identity head factor as a point of the slice. -/
+def sourceHeadGaugeSliceCenter
+    (d r : ℕ)
+    (hrD : r < d + 1) :
+    SourceHeadGaugeSlice d r hrD :=
+  ⟨1, by simp [sourceHeadMetric_transpose d r hrD]⟩
+
+/-- Entrywise window in the slice topology. -/
+def sourceHeadGaugeSliceCoordinateWindow
+    (d r : ℕ)
+    (hrD : r < d + 1)
+    (ρ : ℝ) :
+    Set (SourceHeadGaugeSlice d r hrD) :=
+  {H | H.1 ∈ sourceHeadFactorCoordinateWindow r ρ}
+
+/-- The slice-coordinate window is open in the slice topology. -/
+theorem isOpen_sourceHeadGaugeSliceCoordinateWindow
+    (d r : ℕ)
+    (hrD : r < d + 1)
+    (ρ : ℝ) :
+    IsOpen (sourceHeadGaugeSliceCoordinateWindow d r hrD ρ) := by
+  have hfull :
+      IsOpen
+        {H : Matrix (Fin r) (Fin r) ℂ |
+          ∀ a b, ‖H a b -
+            (1 : Matrix (Fin r) (Fin r) ℂ) a b‖ < ρ} := by
+    simp only [Set.setOf_forall]
+    exact isOpen_iInter_of_finite fun a =>
+      isOpen_iInter_of_finite fun b =>
+        isOpen_lt
+          (by
+            fun_prop)
+          continuous_const
+  exact hfull.preimage continuous_subtype_val
+
+/-- The slice center belongs to every positive slice-coordinate window. -/
+theorem sourceHeadGaugeSliceCenter_mem_coordinateWindow
+    (d r : ℕ)
+    (hrD : r < d + 1)
+    {ρ : ℝ}
+    (hρ : 0 < ρ) :
+    sourceHeadGaugeSliceCenter d r hrD ∈
+      sourceHeadGaugeSliceCoordinateWindow d r hrD ρ := by
+  intro a b
+  simpa [sourceHeadGaugeSliceCenter, sourceHeadGaugeSliceCoordinateWindow,
+    sourceHeadFactorCoordinateWindow] using hρ
+
 /-- The selected Schur head block of a source-variety point, bundled with its
 symmetry. -/
 def sourceOrientedSchurHeadBlockSymm
@@ -78,8 +136,11 @@ theorem sourceOrientedSchurHeadBlockSymm_coe
       sourceOrientedSchurHeadBlock n r hrn G := by
   rfl
 
-/-- Local head-gauge data for the signature-relative factorization
-`A = H * η * Hᵀ` near the canonical head metric. -/
+/-- Legacy full-matrix head-gauge data for the signature-relative
+factorization.  This interface is too strong to be constructible for
+`r >= 2`: the map `H ↦ H * η * Hᵀ` is not locally injective on the full matrix
+space.  New route code should use `SourceRankDeficientHeadSliceGaugeData`
+below, where the source domain is a transverse slice. -/
 structure SourceRankDeficientHeadGaugeData
     (d r : ℕ)
     (hrD : r < d + 1) where
@@ -104,6 +165,39 @@ structure SourceRankDeficientHeadGaugeData
     ∀ H ∈ factorDomain,
       factor (sourceHeadFactorGramSymmCoord d r hrD H) = H
   factor_det_unit : ∀ A ∈ U, IsUnit (factor A).det
+
+/-- Corrected local head-gauge data on a transverse slice.  This is the
+mathematically viable replacement for trying to invert
+`H ↦ H * η * Hᵀ` on an open neighborhood in the full matrix space: the
+complex orthogonal stabilizer prevents full-space local injectivity when
+`r >= 2`, but the slice admits an inverse-function chart. -/
+structure SourceRankDeficientHeadSliceGaugeData
+    (d r : ℕ)
+    (hrD : r < d + 1) where
+  factorDomain : Set (SourceHeadGaugeSlice d r hrD)
+  factorDomain_open : IsOpen factorDomain
+  factorDomain_center_mem : sourceHeadGaugeSliceCenter d r hrD ∈ factorDomain
+  factorDomain_coordinate :
+    ∃ ρ : ℝ, 0 < ρ ∧
+      sourceHeadGaugeSliceCoordinateWindow d r hrD ρ ⊆ factorDomain
+  U : Set (SourceSymmetricMatrixCoord r)
+  U_open : IsOpen U
+  center_mem : sourceHeadMetricSymmCoord d r hrD ∈ U
+  factor : SourceSymmetricMatrixCoord r → SourceHeadGaugeSlice d r hrD
+  factor_mem_domain : ∀ A ∈ U, factor A ∈ factorDomain
+  factor_continuousOn : ContinuousOn factor U
+  factor_center : factor (sourceHeadMetricSymmCoord d r hrD) =
+    sourceHeadGaugeSliceCenter d r hrD
+  factor_gram :
+    ∀ A ∈ U,
+      (factor A).1 * sourceHeadMetric d r hrD * (factor A).1ᵀ =
+        (A : Matrix (Fin r) (Fin r) ℂ)
+  factorDomain_mem :
+    ∀ H ∈ factorDomain, sourceHeadFactorGramSymmCoord d r hrD H.1 ∈ U
+  factor_left_inverse :
+    ∀ H ∈ factorDomain,
+      factor (sourceHeadFactorGramSymmCoord d r hrD H.1) = H
+  factor_det_unit : ∀ A ∈ U, IsUnit ((factor A).1).det
 
 /-- The explicit residual-tail datum associated to a selected head factor. -/
 def sourceOrientedSchurResidualTailData
