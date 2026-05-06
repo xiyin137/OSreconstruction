@@ -44499,56 +44499,60 @@ Proof decomposition of this theorem, without hiding the analytic work:
                 BHW.BHWJostOrientedSourcePatchContinuationChain
                   hd n τ Ω0 U B0 p0 (γ 1)
 
-            noncomputable def BHW.bhw_jost_orientedContinuationChain_of_compactPath
+            noncomputable def BHW.bhw_jost_orientedContinuationChain_of_transferCover
                 [NeZero d] (hd : 2 <= d)
                 (n : Nat) (τ : Equiv.Perm (Fin n))
                 (Ω0 U : Set (Fin n -> Fin (d + 1) -> ℂ))
                 (B0 : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
-                (hΩ0_open : IsOpen Ω0)
-                (hU_open : IsOpen U)
-                (hΩ0_sub_ambient :
-                  Ω0 ⊆ BHW.os45SourcePatchBHWJostAmbient d n τ)
-                (hU_sub_ambient :
-                  U ⊆ BHW.os45SourcePatchBHWJostAmbient d n τ)
-                (hB0_holo : DifferentiableOn ℂ B0 Ω0)
-                (hB0_realLorentz :
-                  ∀ R : RestrictedLorentzGroup d, ∀ z, z ∈ Ω0 ->
-                    BHW.complexLorentzAction
-                        (ComplexLorentzGroup.ofReal R) z ∈ Ω0 ->
-                      B0 (BHW.complexLorentzAction
-                          (ComplexLorentzGroup.ofReal R) z) = B0 z)
-                {p z : Fin n -> Fin (d + 1) -> ℂ}
-                (hp0 : p ∈ Ω0 ∩ U)
-                (γ : Path p z)
-                (hγU : ∀ t, γ t ∈ U) :
+                {p0 : Fin n -> Fin (d + 1) -> ℂ}
+                (γ : unitInterval -> Fin n -> Fin (d + 1) -> ℂ)
+                (hγ : Continuous γ)
+                (hγ_zero : γ 0 = p0)
+                (hγU : ∀ t : unitInterval, γ t ∈ U)
+                (T :
+                  ∀ t : unitInterval,
+                    BHW.BHWJostOrientedBranchFreeTransferNeighborhood
+                      hd n τ U (γ t))
+                (C0 : BHW.BHWJostLocalOrientedContinuationChart hd n τ U)
+                (hbase : p0 ∈ Ω0 ∩ U)
+                (hp0C : p0 ∈ C0.carrier)
+                (start_patch : Set (Fin n -> Fin (d + 1) -> ℂ))
+                (hstart_open : IsOpen start_patch)
+                (hstart_preconnected : IsPreconnected start_patch)
+                (hstart_nonempty : start_patch.Nonempty)
+                (hstart_mem : p0 ∈ start_patch)
+                (hstart_sub : start_patch ⊆ Ω0 ∩ C0.carrier)
+                (hstart_agree :
+                  ∀ y, y ∈ start_patch -> C0.branch y = B0 y) :
                 BHW.BHWJostOrientedSourcePatchContinuationChain
-                  hd n τ Ω0 U B0 p z
+                  hd n τ Ω0 U B0 p0 (γ 1)
 
-            noncomputable def BHW.bhw_sourcePatchHull_orientedContinuationChainData
+            noncomputable def
+                BHW.bhw_jost_orientedContinuationChainAt_of_pathConnected_transferCover
                 [NeZero d] (hd : 2 <= d)
                 (n : Nat) (τ : Equiv.Perm (Fin n))
                 (Ω0 U : Set (Fin n -> Fin (d + 1) -> ℂ))
                 (B0 : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
-                (hΩ0_open : IsOpen Ω0)
-                (hΩ0_sub_ambient :
-                  Ω0 ⊆ BHW.os45SourcePatchBHWJostAmbient d n τ)
-                (hU_open : IsOpen U)
-                (hU_connected : IsConnected U)
-                (hU_hull :
-                  ∃ z0, U = BHW.os45SourcePatchBHWJostHull d n τ z0)
-                (hΩ0_meets_U : (Ω0 ∩ U).Nonempty)
-                (hB0_holo : DifferentiableOn ℂ B0 Ω0)
-                (hB0_realLorentz :
-                  ∀ R : RestrictedLorentzGroup d, ∀ z, z ∈ Ω0 ->
-                    BHW.complexLorentzAction
-                        (ComplexLorentzGroup.ofReal R) z ∈ Ω0 ->
-                      B0 (BHW.complexLorentzAction
-                          (ComplexLorentzGroup.ofReal R) z) = B0 z) :
-                Σ p0 : Fin n -> Fin (d + 1) -> ℂ,
-                  (p0 ∈ Ω0 ∩ U) ×
+                {p0 : Fin n -> Fin (d + 1) -> ℂ}
+                (hU_path : IsPathConnected U)
+                (T :
                   ∀ z, z ∈ U ->
-                    BHW.BHWJostOrientedSourcePatchContinuationChain
-                      hd n τ Ω0 U B0 p0 z
+                    BHW.BHWJostOrientedBranchFreeTransferNeighborhood
+                      hd n τ U z)
+                (C0 : BHW.BHWJostLocalOrientedContinuationChart hd n τ U)
+                (hbase : p0 ∈ Ω0 ∩ U)
+                (hp0C : p0 ∈ C0.carrier)
+                (start_patch : Set (Fin n -> Fin (d + 1) -> ℂ))
+                (hstart_open : IsOpen start_patch)
+                (hstart_preconnected : IsPreconnected start_patch)
+                (hstart_nonempty : start_patch.Nonempty)
+                (hstart_mem : p0 ∈ start_patch)
+                (hstart_sub : start_patch ⊆ Ω0 ∩ C0.carrier)
+                (hstart_agree :
+                  ∀ y, y ∈ start_patch -> C0.branch y = B0 y) :
+                ∀ z, z ∈ U ->
+                  BHW.BHWJostOrientedSourcePatchContinuationChain
+                    hd n τ Ω0 U B0 p0 z
 
             noncomputable def BHW.bhw_continuedValueAlongOrientedChain
                 [NeZero d] (hd : 2 <= d)
