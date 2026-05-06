@@ -281,6 +281,8 @@ it provides
 `BHW.BHWJostOrientedFiniteOverlapPropagationData.to_sourceMonodromy`,
 `BHW.BHWJostOrientedFiniteOverlapPropagationData.to_orientedMonodromy_headSliceIFT`,
 `BHW.BHWJostOrientedFiniteOverlapPropagationData.to_sourceMonodromy_headSliceIFT`,
+`BHW.BHWJostOrientedFiniteOverlapPropagationData.of_terminalSeedOnClosingPatch_headSliceIFT`,
+`BHW.BHWJostOrientedFiniteOverlapPropagationData.sourceMonodromy_of_terminalSeedOnClosingPatch_headSliceIFT`,
 and
 `BHW.exists_preconnectedRelOpen_maxRankSeed_inside`, plus
 `BHW.BHWJostOrientedSourcePatchContinuationChain.exists_terminalSeed_of_finiteOverlapDomains`,
@@ -1068,8 +1070,11 @@ is now
    accumulated-germ chain that carries the continued branch step by step.  In
    that patch-by-patch route, the terminal call is now checked as
    `P.to_sourceMonodromy_headSliceIFT`, with no detour through
-   `stepDomain_sub_start`.  No production theorem may infer
-   `stepDomain_sub_start` from an arbitrary closed loop.
+   `stepDomain_sub_start`.  If the accumulated propagation reaches the closing
+   oriented patch itself, the even smaller checked exit is
+   `BHWJostOrientedFiniteOverlapPropagationData.sourceMonodromy_of_terminalSeedOnClosingPatch_headSliceIFT`.
+   No production theorem may infer `stepDomain_sub_start` from an arbitrary
+   closed loop.
 
 The first normal-parameter support layer is now checked in
 `SourceOrientedNormalParameter.lean`.  The file supplies the finite head/tail
@@ -9147,6 +9152,19 @@ common-boundary envelope, or any theorem that already assumes locality.
    source monodromy goal with `P.to_sourceMonodromy_headSliceIFT`, without
    proving that every intermediate step domain lies in the original chart-0
    domain.
+
+   The smaller terminal-seed boundary is checked too.  If the accumulated-germ
+   proof has already reached a nonempty relatively open max-rank seed
+   `terminalSeed ⊆ L.closing_orientedPatch` on which the terminal and initial
+   oriented germs agree, then
+   `BHWJostOrientedFiniteOverlapPropagationData.of_terminalSeedOnClosingPatch_headSliceIFT`
+   chooses `L.closing_orientedPatch` as the terminal domain, derives its
+   max-rank connectedness by the head-slice IFT theorem, and packages the data.
+   The one-line source-monodromy endpoint is
+   `BHWJostOrientedFiniteOverlapPropagationData.sourceMonodromy_of_terminalSeedOnClosingPatch_headSliceIFT`.
+   Therefore the accumulated-germ positive-length proof does not have to
+   manufacture a separate terminal domain if its final equality seed already
+   lies inside the closing oriented patch.
 
    The ordered finite induction has also been checked:
 

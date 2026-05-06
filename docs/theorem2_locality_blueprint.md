@@ -46314,6 +46314,43 @@ Proof decomposition of this theorem, without hiding the analytic work:
             source monodromy by `P.to_sourceMonodromy_headSliceIFT`, without
             routing through the stronger large-start-domain package below.
 
+            A smaller checked boundary is available when the accumulated-germ
+            proof has already produced a nonempty relatively open max-rank
+            equality seed in the closing oriented patch:
+
+            ```lean
+            theorem BHW.BHWJostOrientedFiniteOverlapPropagationData
+                .sourceMonodromy_of_terminalSeedOnClosingPatch_headSliceIFT
+                (hn : d + 1 <= n)
+                {terminalSeed :
+                  Set (BHW.SourceOrientedGramData d n)}
+                (terminalSeed_relOpen :
+                  BHW.IsRelOpenInSourceOrientedGramVariety d n
+                    terminalSeed)
+                (terminalSeed_nonempty : terminalSeed.Nonempty)
+                (terminalSeed_sub_closing :
+                  terminalSeed ⊆ L.closing_orientedPatch)
+                (terminalSeed_sub_max :
+                  terminalSeed ⊆
+                    {G | BHW.SourceOrientedMaxRankAt d n G})
+                (terminalSeed_eq :
+                  Set.EqOn
+                    (L.chain.localChart (Fin.last L.chain.m)).Psi
+                    (L.chain.localChart 0).Psi
+                    terminalSeed) :
+                Set.EqOn
+                  (L.chain.branch (Fin.last L.chain.m))
+                  B0
+                  L.closing_patch
+            ```
+
+            Its proof packages `terminalSeed` by choosing
+            `L.closing_orientedPatch` as the terminal domain and deriving the
+            needed closing max-rank connectedness from the checked head-slice
+            IFT theorem.  Thus the hard accumulated-germ proof need not
+            introduce a separate terminal domain once it has reached the
+            closing oriented patch.
+
             The ordered finite induction has also been checked:
 
             ```lean
@@ -46618,7 +46655,10 @@ Proof decomposition of this theorem, without hiding the analytic work:
             `BHWJostOrientedFiniteOverlapPropagationData L` directly; the
             terminal source-monodromy call is then the checked
             `P.to_sourceMonodromy_headSliceIFT`, not the stronger
-            `stepDomain_sub_start` consumer.
+            `stepDomain_sub_start` consumer.  If the accumulated propagation
+            produces the terminal equality seed inside
+            `L.closing_orientedPatch`, the still smaller checked endpoint is
+            `BHWJostOrientedFiniteOverlapPropagationData.sourceMonodromy_of_terminalSeedOnClosingPatch_headSliceIFT`.
 
             The zero-transition branch is already checked at this
             producer-facing layer:

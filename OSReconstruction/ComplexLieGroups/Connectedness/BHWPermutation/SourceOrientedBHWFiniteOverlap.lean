@@ -459,6 +459,74 @@ theorem to_sourceMonodromy_headSliceIFT
       ⟨L.closing_orientedPatch_nonempty,
         L.closing_orientedPatch_preconnected⟩)
 
+/-- A terminal equality seed that already lies in the closing oriented patch
+packages as terminal finite-overlap propagation data.  This is the direct
+consumer for an accumulated-germ proof that carries equality all the way to a
+max-rank seed in the closing patch. -/
+def of_terminalSeedOnClosingPatch_headSliceIFT
+    (hn : d + 1 ≤ n)
+    {terminalSeed : Set (SourceOrientedGramData d n)}
+    (terminalSeed_relOpen :
+      IsRelOpenInSourceOrientedGramVariety d n terminalSeed)
+    (terminalSeed_nonempty : terminalSeed.Nonempty)
+    (terminalSeed_sub_closing :
+      terminalSeed ⊆ L.closing_orientedPatch)
+    (terminalSeed_sub_max :
+      terminalSeed ⊆ {G | SourceOrientedMaxRankAt d n G})
+    (terminalSeed_eq :
+      Set.EqOn
+        (L.chain.localChart (Fin.last L.chain.m)).Psi
+        (L.chain.localChart 0).Psi
+        terminalSeed) :
+    BHWJostOrientedFiniteOverlapPropagationData L where
+  hn := hn
+  terminalDomain := L.closing_orientedPatch
+  terminalDomain_relOpen := L.closing_orientedPatch_relOpen
+  terminalDomain_maxRank_connected :=
+    sourceOrientedGramVariety_maxRank_inter_relOpen_isConnected_of_headSliceIFT
+      (d := d) (n := n) hd hn L.closing_orientedPatch_relOpen
+      ⟨L.closing_orientedPatch_nonempty,
+        L.closing_orientedPatch_preconnected⟩
+  terminalDomain_sub_final := L.closing_orientedPatch_sub_final
+  terminalDomain_sub_start := L.closing_orientedPatch_sub_start
+  terminalSeed := terminalSeed
+  terminalSeed_relOpen := terminalSeed_relOpen
+  terminalSeed_nonempty := terminalSeed_nonempty
+  terminalSeed_sub_domain := terminalSeed_sub_closing
+  terminalSeed_sub_max := terminalSeed_sub_max
+  terminalSeed_eq := terminalSeed_eq
+  closingPatch_sub_terminalDomain := by
+    intro G hG
+    exact hG
+
+/-- A terminal equality seed in the closing oriented patch gives source
+monodromy directly.  The hard theorem still has to produce the seed; this
+wrapper only removes the terminal-domain bookkeeping. -/
+theorem sourceMonodromy_of_terminalSeedOnClosingPatch_headSliceIFT
+    (hn : d + 1 ≤ n)
+    {terminalSeed : Set (SourceOrientedGramData d n)}
+    (terminalSeed_relOpen :
+      IsRelOpenInSourceOrientedGramVariety d n terminalSeed)
+    (terminalSeed_nonempty : terminalSeed.Nonempty)
+    (terminalSeed_sub_closing :
+      terminalSeed ⊆ L.closing_orientedPatch)
+    (terminalSeed_sub_max :
+      terminalSeed ⊆ {G | SourceOrientedMaxRankAt d n G})
+    (terminalSeed_eq :
+      Set.EqOn
+        (L.chain.localChart (Fin.last L.chain.m)).Psi
+        (L.chain.localChart 0).Psi
+        terminalSeed) :
+    Set.EqOn
+      (L.chain.branch (Fin.last L.chain.m))
+      B0
+      L.closing_patch :=
+  (of_terminalSeedOnClosingPatch_headSliceIFT
+    (d := d) (n := n) (hd := hd) (τ := τ)
+    (Ω0 := Ω0) (U := U) (B0 := B0) (p0 := p0) (L := L)
+    hn terminalSeed_relOpen terminalSeed_nonempty terminalSeed_sub_closing
+    terminalSeed_sub_max terminalSeed_eq).to_sourceMonodromy_headSliceIFT
+
 end BHWJostOrientedFiniteOverlapPropagationData
 
 namespace BHWJostOrientedSourcePatchContinuationChain
