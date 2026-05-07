@@ -59,129 +59,115 @@ namespace OSReconstruction
 
 variable {d : ℕ} [NeZero d]
 
-/-! ### Ruelle's uniform polynomial bound -/
+/-! ### Ruelle hypotheses (textbook content as conditional structure)
 
-/-- **Ruelle's analytic cluster bound** (Ruelle 1962, Jost VI.1).
+The textbook content of Ruelle 1962 / Araki-Hepp-Ruelle 1962 (the
+analytic cluster theorem on the standard forward tube, with
+spectral-gap-driven uniform decay along spacelike directions) is
+packaged here as a **conditional structure** rather than as production
+axioms.
 
-For a Wightman family `Wfn` satisfying R0–R4, the analytic continuation
-`W_analytic_BHW Wfn (n+m)` admits a *uniform-in-a* polynomial bound on
-spatially-separated arguments. Specifically, there exist constants
-`C > 0`, `N : ℕ`, and `R > 0` such that for any
-`z₁ : Fin n → Fin (d+1) → ℂ` in `ForwardTube d n`,
-`z₂ : Fin m → Fin (d+1) → ℂ` in `ForwardTube d m`, and any spatial
-translation `a` with `|⃗a| > R`:
+Downstream theorems in this file consume `RuelleAnalyticClusterHypotheses`
+as an explicit parameter; the trust boundary is therefore visible at
+every call site, and the cluster proof is a *conditional* result.
 
-```
-‖(W_analytic_BHW Wfn (n+m)).val
-    (Fin.append z₁ (fun k μ => z₂ k μ + (if μ = 0 then 0 else (a μ : ℂ))))‖
-  ≤ C * (1 + ‖z₁‖ + ‖z₂‖) ^ N.
-```
+This is the project's preferred trust pattern for QFT-specific
+textbook statements (per the axiom-gate policy): rather than extending
+the production trusted core with QFT-level reconstruction assertions,
+we keep them as named hypotheses that downstream callers can either
+discharge from a future formalization or accept locally as project-side
+inputs.
 
-The crucial property: `C` and `N` do **not** depend on `a`.
+References for the underlying textbook content (no production-axiom
+status):
+* Ruelle 1962, *On the asymptotic condition in quantum field theory*,
+  Helvetica Physica Acta 35.
+* Araki-Hepp-Ruelle 1962, *On the asymptotic behaviour of Wightman
+  functions in space-like directions*, Helv. Phys. Acta 35, 164,
+  Theorem 2 (the pointwise version on the standard forward tube).
+* Jost, *The General Theory of Quantized Fields*, §VI.1.
+* Streater-Wightman §3.4.
 
-This is the spectral-gap content of R4: the distributional cluster
-property (`Wfn.cluster`) implies an isolated δ-function at `P = 0` in
-the joint energy-momentum spectrum, which translates (via Ruelle's
-argument) into uniform decay/boundedness of the analytic continuation
-in spacelike directions.
+The two field statements assume joint analytic-domain membership
+(`PermutedExtendedTube d (n+m)`) where the underlying analytic
+continuation is well-defined; the cluster proof discharges this via
+`joint_wick_config_in_PET` for OPTR-supported Wick configurations with
+AE-distinct joint times. -/
 
-**References**: Ruelle 1962, *On the asymptotic condition in quantum
-field theory*, Helvetica Physica Acta 35; Jost, *The General Theory
-of Quantized Fields*, §VI.1; Streater-Wightman §3.4.
+/-- **Ruelle 1962 analytic cluster hypotheses** (conditional structure
+holding the textbook content as named hypotheses, *not* as production
+axioms).
 
-**Discharge plan**: full proof requires the momentum-space spectral
-theory of Wightman functions (~1500+ lines of Lean), specifically:
-the Källén-Lehmann-style spectral support property for truncated W,
-and the Laplace transform bounds. Routed to a separate sub-project. -/
-axiom ruelle_analytic_cluster_bound
-    (Wfn : WightmanFunctions d) (n m : ℕ) :
-    ∃ (C : ℝ) (N : ℕ) (R : ℝ),
-      0 < C ∧ 0 < R ∧
-      ∀ (z₁ : Fin n → Fin (d + 1) → ℂ),
-      ∀ (z₂ : Fin m → Fin (d + 1) → ℂ),
-        z₁ ∈ ForwardTube d n →
-        z₂ ∈ ForwardTube d m →
-        ∀ (a : SpacetimeDim d), a 0 = 0 →
-          (∑ i : Fin d, (a (Fin.succ i)) ^ 2) > R ^ 2 →
-          -- Joint analytic-domain hypothesis: the appended config must
-          -- lie in the natural domain (PET) of `W_analytic_BHW (n+m)`.
-          -- For OPTR-supported Wick configurations with AE-distinct joint
-          -- times, this is established via `joint_wick_config_in_PET`.
-          -- (Without this hypothesis, the LHS evaluates `.val` outside
-          -- its analytic domain and the bound is meaningless.)
-          (Fin.append z₁
-              (fun k μ => z₂ k μ +
-                (if μ = 0 then (0 : ℂ) else (a μ : ℂ)))) ∈
-            PermutedExtendedTube d (n + m) →
-          ‖(W_analytic_BHW Wfn (n + m)).val
-              (Fin.append z₁
-                (fun k μ => z₂ k μ +
-                  (if μ = 0 then (0 : ℂ) else (a μ : ℂ))))‖
-            ≤ C * (1 + ‖z₁‖ + ‖z₂‖) ^ N
+* `bound`: uniform-in-`a` polynomial bound on the analytic continuation
+  for spatially separated arguments, on configs in the joint analytic
+  domain.
+* `pointwise`: pointwise factorization as `|⃗a| → ∞` along spacelike
+  directions, hypothesizing eventual joint-PET membership.
 
-/-! ### Pointwise analytic cluster
+A `RuelleAnalyticClusterHypotheses Wfn n m` value can be supplied by:
+1. A future formalization of Ruelle's argument from R4 + spectral
+   support (~1500+ lines of momentum-space spectral theory; routed as
+   a separate sub-project).
+2. A textbook acceptance at the call site (locally `axiom` declaration
+   if a downstream consumer wants production trust for a specific
+   `Wfn`), which makes the trust boundary visible to that consumer
+   rather than baked into this file's production surface.
+3. A model-specific construction (e.g., free fields, generalized free
+   fields, exactly solvable QFTs).
 
-The pointwise convergence `W_analytic(z₁, z₂ + a) → W_analytic(z₁) ·
-W_analytic(z₂)` as `|⃗a| → ∞` for each fixed `(z₁, z₂)`. This is the
-analytic-continuation lift of R4's distributional cluster.
+The structure deliberately keeps both fields' joint-PET hypotheses
+explicit so the call-site obligations match the textbook statement:
+the analytic continuation is meaningful only on PET. -/
+structure RuelleAnalyticClusterHypotheses
+    (Wfn : WightmanFunctions d) (n m : ℕ) : Prop where
+  /-- Uniform-in-`a` polynomial bound (Ruelle 1962 / Streater-Wightman §3.4).
 
-The project has `bhw_pointwise_cluster_forwardTube`
-(`SchwingerAxioms.lean:3613`), but it requires the JOINT config to be
-in `ForwardTube d (n+m)`, which OPTR-supported test functions don't
-guarantee globally (inter-block time ordering not enforced).
-
-For our dominated-convergence application, we need pointwise cluster
-on the configurations the Wick rotation produces — including those
-where `Fin.append z₁ z₂` lies in `PermutedExtendedTube` (a permuted
-forward tube) but not in the strict `ForwardTube`.
-
-We axiomatize this generalization as a companion to Ruelle's bound;
-it has the same textbook citation. -/
-
-/-- **Pointwise analytic cluster on PET configurations**.
-
-Pointwise companion to `ruelle_analytic_cluster_bound`. For
-`z₁ ∈ ForwardTube d n` and `z₂ ∈ ForwardTube d m` (separately, no
-joint condition), the joint analytic continuation factorizes
-asymptotically as the m-block is spatially translated to infinity:
-
-```
-lim_{|⃗a| → ∞, a⁰ = 0}
-   (W_analytic_BHW Wfn (n+m)).val (z₁, z₂ + a)
-  = (W_analytic_BHW Wfn n).val z₁ · (W_analytic_BHW Wfn m).val z₂.
-```
-
-This is the analytic-continuation lift of R4's distributional cluster
-(`Wfn.cluster`), via Ruelle's argument: the spectral gap at `P = 0`
-forces the truncated analytic continuation to vanish at infinity in
-spacelike directions.
-
-**References**: same as `ruelle_analytic_cluster_bound`. -/
-axiom ruelle_analytic_cluster_pointwise
-    (Wfn : WightmanFunctions d) (n m : ℕ)
-    (z₁ : Fin n → Fin (d + 1) → ℂ) (z₂ : Fin m → Fin (d + 1) → ℂ)
-    (hz₁ : z₁ ∈ ForwardTube d n) (hz₂ : z₂ ∈ ForwardTube d m)
-    -- Joint analytic-domain hypothesis: eventually-in-`a` (along the
-    -- spatial-cobounded filter), the appended config lies in PET.
-    -- For OPTR-supported Wick configurations with AE-distinct joint
-    -- times, this holds for all such `a` (via `joint_wick_config_in_PET`).
-    (h_joint_PET : ∀ᶠ a : SpacetimeDim d in
-        Filter.principal {a : SpacetimeDim d | a 0 = 0} ⊓
-          Bornology.cobounded (SpacetimeDim d),
-      (Fin.append z₁
-          (fun k μ => z₂ k μ +
-            (if μ = 0 then (0 : ℂ) else (a μ : ℂ)))) ∈
-        PermutedExtendedTube d (n + m)) :
-    Filter.Tendsto
-      (fun a : SpacetimeDim d =>
-        (W_analytic_BHW Wfn (n + m)).val
-          (Fin.append z₁
+  There exist constants `C > 0, N, R > 0` such that for forward-tube
+  `z₁, z₂` and spatial `a` with `|⃗a| > R`, *if* the appended config
+  lies in the joint analytic domain (PET), the bound holds with
+  `C, N` independent of `a`. -/
+  bound : ∃ (C : ℝ) (N : ℕ) (R : ℝ),
+    0 < C ∧ 0 < R ∧
+    ∀ (z₁ : Fin n → Fin (d + 1) → ℂ),
+    ∀ (z₂ : Fin m → Fin (d + 1) → ℂ),
+      z₁ ∈ ForwardTube d n →
+      z₂ ∈ ForwardTube d m →
+      ∀ (a : SpacetimeDim d), a 0 = 0 →
+        (∑ i : Fin d, (a (Fin.succ i)) ^ 2) > R ^ 2 →
+        (Fin.append z₁
             (fun k μ => z₂ k μ +
-              (if μ = 0 then (0 : ℂ) else (a μ : ℂ)))))
-      (Filter.principal {a : SpacetimeDim d | a 0 = 0} ⊓
-        Bornology.cobounded (SpacetimeDim d))
-      (nhds ((W_analytic_BHW Wfn n).val z₁ *
-             (W_analytic_BHW Wfn m).val z₂))
+              (if μ = 0 then (0 : ℂ) else (a μ : ℂ)))) ∈
+          PermutedExtendedTube d (n + m) →
+        ‖(W_analytic_BHW Wfn (n + m)).val
+            (Fin.append z₁
+              (fun k μ => z₂ k μ +
+                (if μ = 0 then (0 : ℂ) else (a μ : ℂ))))‖
+          ≤ C * (1 + ‖z₁‖ + ‖z₂‖) ^ N
+  /-- Pointwise analytic cluster (Araki-Hepp-Ruelle 1962 Theorem 2).
+
+  For forward-tube `z₁, z₂` with eventual joint-PET membership of the
+  appended config, the joint analytic continuation factorizes
+  asymptotically along the spatial-cobounded filter. -/
+  pointwise :
+    ∀ (z₁ : Fin n → Fin (d + 1) → ℂ) (z₂ : Fin m → Fin (d + 1) → ℂ),
+      z₁ ∈ ForwardTube d n → z₂ ∈ ForwardTube d m →
+      (∀ᶠ a : SpacetimeDim d in
+          Filter.principal {a : SpacetimeDim d | a 0 = 0} ⊓
+            Bornology.cobounded (SpacetimeDim d),
+        (Fin.append z₁
+            (fun k μ => z₂ k μ +
+              (if μ = 0 then (0 : ℂ) else (a μ : ℂ)))) ∈
+          PermutedExtendedTube d (n + m)) →
+      Filter.Tendsto
+        (fun a : SpacetimeDim d =>
+          (W_analytic_BHW Wfn (n + m)).val
+            (Fin.append z₁
+              (fun k μ => z₂ k μ +
+                (if μ = 0 then (0 : ℂ) else (a μ : ℂ)))))
+        (Filter.principal {a : SpacetimeDim d | a 0 = 0} ⊓
+          Bornology.cobounded (SpacetimeDim d))
+        (nhds ((W_analytic_BHW Wfn n).val z₁ *
+               (W_analytic_BHW Wfn m).val z₂))
 
 /-! ### Wick rotation preserves Pi sup-norm -/
 
@@ -659,6 +645,7 @@ cluster bound (this file's axiom).
    `W_analytic_cluster_integral`. -/
 theorem W_analytic_cluster_integral_via_ruelle
     (Wfn : WightmanFunctions d) (n m : ℕ)
+    (hRuelle : RuelleAnalyticClusterHypotheses Wfn n m)
     (f : SchwartzNPoint d n) (g : SchwartzNPoint d m)
     (hsupp_f : tsupport ((f : SchwartzNPoint d n) : NPointDomain d n → ℂ) ⊆
       OrderedPositiveTimeRegion d n)
@@ -855,9 +842,9 @@ theorem W_analytic_cluster_integral_via_ruelle
           · intro a ha₀
             exact joint_wick_config_in_PET n m p.1 p.2 a ha₀ hp1_pos hp2_pos
               h_distinct_joint
-        -- The Ruelle pointwise axiom gives Tendsto for W_analytic_BHW.
+        -- Ruelle pointwise hypothesis gives Tendsto for W_analytic_BHW.
         have h_ruelle_pt :=
-          ruelle_analytic_cluster_pointwise Wfn n m _ _ hw1 hw2 h_joint_PET_eventually
+          hRuelle.pointwise _ _ hw1 hw2 h_joint_PET_eventually
         unfold clusterIntegrand clusterLimitIntegrand
         -- Bridge: F_ext_on_translatedPET_total = W_analytic_BHW on each config.
         -- Single n-config: wick(p.1) ∈ ForwardTube ⊆ PET.
@@ -932,7 +919,7 @@ theorem W_analytic_cluster_integral_via_ruelle
   -- Step 4 (dominator): construct a uniform-in-a integrable dominator on
   -- (NPointDomain d n × NPointDomain d m), valid for `|⃗a|` large enough.
   obtain ⟨C_R, N_R, R_R, hC_R_pos, hR_R_pos, h_ruelle⟩ :=
-    ruelle_analytic_cluster_bound Wfn n m
+    hRuelle.bound
   -- The dominator: C_R · (1+‖x_n‖+‖y‖)^N_R · |f(x_n)| · |g(y)|.
   -- Schwartz seminorms make this integrable when N_R is absorbed by f's
   -- and g's seminorms.
@@ -1341,6 +1328,7 @@ OPTR-supported subset (e.g., density of OPTR-supported in
 `ZeroDiagonalSchwartz` plus continuity of the Schwinger functional);
 that extension is left for follow-up. -/
 theorem W_analytic_cluster_integral (Wfn : WightmanFunctions d) (n m : ℕ)
+    (hRuelle : RuelleAnalyticClusterHypotheses Wfn n m)
     (f : SchwartzNPoint d n) (g : SchwartzNPoint d m)
     (hsupp_f : tsupport ((f : SchwartzNPoint d n) : NPointDomain d n → ℂ) ⊆
       OrderedPositiveTimeRegion d n)
@@ -1361,7 +1349,7 @@ theorem W_analytic_cluster_integral (Wfn : WightmanFunctions d) (n m : ℕ)
             (∫ x : NPointDomain d m,
               F_ext_on_translatedPET_total Wfn
                 (fun k => wickRotatePoint (x k)) * g x)‖ < ε :=
-  W_analytic_cluster_integral_via_ruelle Wfn n m f g hsupp_f hsupp_g ε hε
+  W_analytic_cluster_integral_via_ruelle Wfn n m hRuelle f g hsupp_f hsupp_g ε hε
 
 /-- Cluster of the Wick-rotated boundary pairing for OPTR-supported test
 functions (the `wickRotatedBoundaryPairing` form of
@@ -1372,7 +1360,8 @@ analytic-cluster ingredient for E4, not the full
 `OsterwalderSchraderAxioms.E4_cluster` field — see that theorem's
 docstring for the bridging work needed. -/
 theorem wickRotatedBoundaryPairing_cluster (Wfn : WightmanFunctions d)
-    (n m : ℕ) (f : SchwartzNPoint d n) (g : SchwartzNPoint d m)
+    (n m : ℕ) (hRuelle : RuelleAnalyticClusterHypotheses Wfn n m)
+    (f : SchwartzNPoint d n) (g : SchwartzNPoint d m)
     (hsupp_f : tsupport ((f : SchwartzNPoint d n) : NPointDomain d n → ℂ) ⊆
       OrderedPositiveTimeRegion d n)
     (hsupp_g : tsupport ((g : SchwartzNPoint d m) : NPointDomain d m → ℂ) ⊆
@@ -1386,7 +1375,7 @@ theorem wickRotatedBoundaryPairing_cluster (Wfn : WightmanFunctions d)
             wickRotatedBoundaryPairing Wfn n f *
             wickRotatedBoundaryPairing Wfn m g‖ < ε := by
   simp only [wickRotatedBoundaryPairing]
-  exact W_analytic_cluster_integral Wfn n m f g hsupp_f hsupp_g ε hε
+  exact W_analytic_cluster_integral Wfn n m hRuelle f g hsupp_f hsupp_g ε hε
 
 /-! ### Bridge to the public `OsterwalderSchraderAxioms.E4_cluster` surface
 
@@ -1426,6 +1415,7 @@ The bridge:
 3. Unfold `constructSchwingerFunctions` to `wickRotatedBoundaryPairing`. -/
 theorem schwinger_E4_cluster_OPTR_case
     (Wfn : WightmanFunctions d) (n m : ℕ)
+    (hRuelle : RuelleAnalyticClusterHypotheses Wfn n m)
     (f : ZeroDiagonalSchwartz d n) (g : ZeroDiagonalSchwartz d m)
     (hsupp_f : tsupport ((f.1 : SchwartzNPoint d n) :
       NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
@@ -1444,7 +1434,7 @@ theorem schwinger_E4_cluster_OPTR_case
               constructSchwingerFunctions Wfn n f *
               constructSchwingerFunctions Wfn m g‖ < ε := by
   obtain ⟨R, hR, hcluster⟩ :=
-    wickRotatedBoundaryPairing_cluster Wfn n m f.1 g.1 hsupp_f hsupp_g ε hε
+    wickRotatedBoundaryPairing_cluster Wfn n m hRuelle f.1 g.1 hsupp_f hsupp_g ε hε
   refine ⟨R, hR, ?_⟩
   intro a ha₀ ha_large g_a hg_a fg_a hfg_a
   -- Apply the cluster theorem at the SchwartzNPoint level using g_a.1.
