@@ -485,6 +485,98 @@ def os45_sourcePatch_bhwJostHullData_on_figure24SourcePatch
       BHW.os45Figure24SourcePatch_permAct_realEmbed_mem_extendedTube
         (d := d) hd n i hi x hx
 
+namespace OS45SourcePatchBHWJostHullData
+
+variable {hd : 2 ≤ d}
+variable {OS : OsterwalderSchraderAxioms d}
+variable {lgc : OSLinearGrowthCondition d OS}
+variable {i : Fin n} {hi : i.val + 1 < n}
+variable {V : Set (NPointDomain d n)}
+
+/-- The stored complex carrier is definitionally a source-patch hull. -/
+theorem U_hull
+    (H : BHW.OS45SourcePatchBHWJostHullData
+      (d := d) hd OS lgc n i hi V) :
+    ∃ z0, H.U = BHW.os45SourcePatchBHWJostHull d n H.τ z0 :=
+  ⟨H.z0, H.U_eq⟩
+
+/-- The selected Wick seed lies in the stored hull. -/
+theorem base_wick_mem_U
+    (H : BHW.OS45SourcePatchBHWJostHullData
+      (d := d) hd OS lgc n i hi V) :
+    H.z0 ∈ H.U := by
+  rw [H.z0_eq]
+  exact H.wick_id_mem H.x0 H.x0_mem
+
+/-- The selected Wick seed lies in the ordinary extended tube. -/
+theorem base_wick_mem_extendedTube
+    (H : BHW.OS45SourcePatchBHWJostHullData
+      (d := d) hd OS lgc n i hi V) :
+    H.z0 ∈ BHW.ExtendedTube d n := by
+  rw [H.z0_eq]
+  exact H.wick_id_ET H.x0 H.x0_mem
+
+/-- The selected real seed lies in the stored hull. -/
+theorem base_real_mem_U
+    (H : BHW.OS45SourcePatchBHWJostHullData
+      (d := d) hd OS lgc n i hi V) :
+    BHW.realEmbed H.x0 ∈ H.U :=
+  H.real_id_mem H.x0 H.x0_mem
+
+/-- The selected real seed lies in the ordinary extended tube. -/
+theorem base_real_mem_extendedTube
+    (H : BHW.OS45SourcePatchBHWJostHullData
+      (d := d) hd OS lgc n i hi V) :
+    BHW.realEmbed H.x0 ∈ BHW.ExtendedTube d n :=
+  H.real_id_ET H.x0 H.x0_mem
+
+/-- The selected real seed lies in the adjacent preimage of the ordinary
+extended tube. -/
+theorem base_real_mem_adjacentExtendedTubePreimage
+    (H : BHW.OS45SourcePatchBHWJostHullData
+      (d := d) hd OS lgc n i hi V) :
+    BHW.permAct (d := d) H.τ (BHW.realEmbed H.x0) ∈
+      BHW.ExtendedTube d n :=
+  H.real_tau_ET H.x0 H.x0_mem
+
+/-- The ordinary extended tube is contained in the OS45 BHW/Jost ambient. -/
+theorem extendedTube_subset_ambient
+    (H : BHW.OS45SourcePatchBHWJostHullData
+      (d := d) hd OS lgc n i hi V) :
+    BHW.ExtendedTube d n ⊆
+      BHW.os45SourcePatchBHWJostAmbient d n H.τ := by
+  intro z hz
+  exact Or.inl hz
+
+/-- The adjacent preimage of the ordinary extended tube is contained in the
+OS45 BHW/Jost ambient. -/
+theorem adjacentExtendedTubePreimage_subset_ambient
+    (H : BHW.OS45SourcePatchBHWJostHullData
+      (d := d) hd OS lgc n i hi V) :
+    {z | BHW.permAct (d := d) H.τ z ∈ BHW.ExtendedTube d n} ⊆
+      BHW.os45SourcePatchBHWJostAmbient d n H.τ := by
+  intro z hz
+  exact Or.inr hz
+
+/-- The ordinary extended tube meets the stored source-patch hull. -/
+theorem extendedTube_meets_U
+    (H : BHW.OS45SourcePatchBHWJostHullData
+      (d := d) hd OS lgc n i hi V) :
+    (BHW.ExtendedTube d n ∩ H.U).Nonempty :=
+  ⟨BHW.realEmbed H.x0, H.base_real_mem_extendedTube, H.base_real_mem_U⟩
+
+/-- The adjacent preimage of the ordinary extended tube meets the stored
+source-patch hull. -/
+theorem adjacentExtendedTubePreimage_meets_U
+    (H : BHW.OS45SourcePatchBHWJostHullData
+      (d := d) hd OS lgc n i hi V) :
+    ({z | BHW.permAct (d := d) H.τ z ∈ BHW.ExtendedTube d n} ∩
+        H.U).Nonempty :=
+  ⟨BHW.realEmbed H.x0, H.base_real_mem_adjacentExtendedTubePreimage,
+    H.base_real_mem_U⟩
+
+end OS45SourcePatchBHWJostHullData
+
 /-- Pair of ordinary/adjacent BHW-Jost branches on one selected OS45 source
 patch hull.
 

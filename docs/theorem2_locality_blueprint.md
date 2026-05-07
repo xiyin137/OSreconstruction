@@ -47441,15 +47441,20 @@ Proof decomposition of this theorem, without hiding the analytic work:
             `Ω0 := BHW.ExtendedTube d n` and
             `B0 := BHW.extendF (bvt_F OS lgc n)`; its real trace uses the
             continuation agreement field on `H.real_id_ET`, not a separate
-            boundary theorem.  The adjacent theorem
+            boundary theorem.  The continuation-theorem inputs are the checked
+            accessors `H.U_hull`, `H.extendedTube_subset_ambient`, and
+            `H.extendedTube_meets_U`.  The adjacent theorem
             applies it with
             `Ω0 := {z | BHW.permAct (d := d) H.τ z ∈ BHW.ExtendedTube d n}`
             and
             `B0 z := BHW.extendF (bvt_F OS lgc n)
               (BHW.permAct (d := d) H.τ z)`.  The initial holomorphy is
             `BHW.extendF_holomorphicOn` composed with `permAct`; the real trace
-            rewrite uses `BHW.permAct_realEmbed` and the tube fields in `H`,
-            while the adjacent Wick trace is supplied by the OS-I/BHW
+            rewrite uses `BHW.permAct_realEmbed` and the tube fields in `H`.
+            The continuation-theorem inputs are `H.U_hull`,
+            `H.adjacentExtendedTubePreimage_subset_ambient`, and
+            `H.adjacentExtendedTubePreimage_meets_U`, while the adjacent Wick
+            trace is supplied by the OS-I/BHW
             continuation datum rather than by a direct `wick_tau_ET` field.
             After these three lower surfaces, the pair-data producer is
             field-copying: build `H`, obtain `Bord` and `Btau`, and call the

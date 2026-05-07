@@ -10493,12 +10493,17 @@ common-boundary envelope, or any theorem that already assumes locality.
    The ordinary proof applies the local BHW continuation theorem with
    `Ω0 := BHW.ExtendedTube d n`, `B0 := BHW.extendF (bvt_F OS lgc n)`, and
    traces supplied by `BHW.extendF_eq_on_forwardTube` and the continuation
-   agreement field on `H.real_id_ET`.  The adjacent proof applies the same theorem
+   agreement field on `H.real_id_ET`.  Its continuation-theorem inputs are now
+   checked accessors: `H.U_hull`, `H.extendedTube_subset_ambient`, and
+   `H.extendedTube_meets_U`.  The adjacent proof applies the same theorem
    with `Ω0 := {z | BHW.permAct (d := d) H.τ z ∈ BHW.ExtendedTube d n}` and
    `B0 z := BHW.extendF (bvt_F OS lgc n) (BHW.permAct (d := d) H.τ z)`.
    Holomorphy is `BHW.extendF_holomorphicOn.comp` with the continuous linear
-   permutation map.  The real trace rewrite uses `BHW.permAct_realEmbed` and
-   `H.real_tau_ET`; the adjacent Wick trace is not obtained from a direct
+   permutation map.  Its continuation-theorem inputs are
+   `H.U_hull`, `H.adjacentExtendedTubePreimage_subset_ambient`, and
+   `H.adjacentExtendedTubePreimage_meets_U`.  The real trace rewrite uses
+   `BHW.permAct_realEmbed` and `H.real_tau_ET`; the adjacent Wick trace is not
+   obtained from a direct
    `H.wick_tau_ET` field, but from the OS-I/BHW continuation datum that
    transports the adjacent ordered Wick boundary formula to the selected hull.
    The OS-I input is exactly this covariance/branch-selection used to justify
