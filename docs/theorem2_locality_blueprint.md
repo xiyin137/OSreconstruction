@@ -24980,6 +24980,88 @@ Proof decomposition of this theorem, without hiding the analytic work:
       made that an arbitrary complex null vector has spacelike normal form
       from vacuous tube data.
 
+      Implementation ladder for this block.  The first Lean file is a small
+      API bridge, not the Hall-Wightman geometry itself.  It introduces only
+      consequences of existing definitions and checked Lorentz invariance:
+
+      ```lean
+      theorem BHW.complexLorentzAction_add
+          (Λ : ComplexLorentzGroup d)
+          (z w : Fin n -> Fin (d + 1) -> ℂ) :
+          BHW.complexLorentzAction Λ
+              (fun i μ => z i μ + w i μ) =
+            fun i μ =>
+              BHW.complexLorentzAction Λ z i μ +
+              BHW.complexLorentzAction Λ w i μ
+
+      theorem BHW.complexLorentzAction_smul_vector
+          (Λ : ComplexLorentzGroup d)
+          (c : Fin n -> ℂ)
+          (v : Fin (d + 1) -> ℂ) :
+          BHW.complexLorentzAction Λ
+              (fun i μ => c i * v μ) =
+            fun i μ => c i * BHW.complexLorentzVectorAction Λ v μ
+
+      theorem BHW.complexLorentzAction_cancel_left
+          (Λ : ComplexLorentzGroup d)
+          {z w : Fin n -> Fin (d + 1) -> ℂ}
+          (h :
+            BHW.complexLorentzAction Λ z =
+              BHW.complexLorentzAction Λ w) :
+          z = w
+
+      theorem BHW.sourceComplexMinkowskiInner_complexLorentzVectorAction
+          (Λ : ComplexLorentzGroup d)
+          (u v : Fin (d + 1) -> ℂ) :
+          BHW.sourceComplexMinkowskiInner d
+              (BHW.complexLorentzVectorAction Λ u)
+              (BHW.complexLorentzVectorAction Λ v) =
+            BHW.sourceComplexMinkowskiInner d u v
+
+      theorem BHW.tendsto_singleResidual_exp_neg_zero
+          (b : Fin n -> ℂ)
+          (q : Fin (d + 1) -> ℂ) :
+          Tendsto
+            (fun t : ℝ =>
+              fun i μ => (Real.exp (-t) : ℂ) * b i * q μ)
+            atTop
+            (nhds (0 : Fin n -> Fin (d + 1) -> ℂ))
+      ```
+
+      These are now checked in
+      `BHWPermutation/SourceHWTubeCoefficient.lean`.  The same file also
+      introduces the production definitions
+      `BHW.HWNullResidualNormalForm` and `BHW.realNullCollinear`, and checks
+      the first elementary null-split helpers:
+      `BHW.complexNull_iff_real_imag_equal_orthogonal`,
+      `BHW.real_imag_nonzero_of_complex_ne_zero`,
+      `BHW.realNullCollinear_commonVector`,
+      `BHW.realNullCollinear_scalar_ne_zero_of_nonzero_direction`, and
+      `BHW.sum_sq_eq_zero`.  The same checked elementary cone layer now also
+      includes `BHW.abs_sum_mul_le_sqrt_mul_sqrt`,
+      `BHW.realNull_abs_time_eq_spatial_norm`,
+      `BHW.realNullCollinear_orthogonal_forwardTube_differences`,
+      `BHW.realNull_not_orthogonal_to_forwardCone`, and
+      `BHW.nonzero_realNull_not_orthogonal_to_forwardCone_differences`.
+      The time-orientation helper
+      `BHW.forwardCone_timeOrientation_constant_on_timelike_segment` is
+      checked there as well.  The null-plane relation
+      `BHW.hw_nullPlane_orthogonality_relation` is also checked there, with
+      the corrected required hypothesis `α ≠ 0`; so is
+      `BHW.imag_difference_orthogonal_realVector`, and
+      `BHW.imag_nullNormalForm_coefficients`.
+      The proofs are purely
+      definitional/topological: they use `complexLorentzVectorAction_add`,
+      `complexLorentzVectorAction_smul`, `complexLorentzAction_inv`,
+      `sourceMinkowskiGram_complexLorentzAction` specialized to two source
+      labels, and `Real.tendsto_exp_atBot.comp
+      tendsto_neg_atTop_atBot` with finite product continuity.  After this
+      bridge, the first genuine Hall-Wightman theorem is
+      `BHW.hw_secondRemark_forwardTube_singleNullResidual_normalForm`; its
+      proof is decomposed below into the real/imaginary null split,
+      lightlike-collinear exclusion, spacelike two-plane normalization,
+      coefficient projection, and the equation-(41) cone-removal lemma.
+
       ```lean
       /-- Normal form used in Hall-Wightman's second and third remarks after
       Lemma 2.  Either `q = 0`, or `q = α (u + i v)` with `u,v` real
@@ -25225,6 +25307,89 @@ Proof decomposition of this theorem, without hiding the analytic work:
             MinkowskiSpace.minkowskiInner d v v = 1 ∧
             MinkowskiSpace.minkowskiInner d u v = 0
 
+      Lean proof plan for
+      `BHW.realImag_null_not_collinear_to_spacelike_orthonormal`.
+      Set
+      `A := MinkowskiSpace.minkowskiInner d qre qre`; then
+      `hnull_real.1` rewrites `MinkowskiSpace.minkowskiInner d qim qim`
+      to `A`, and `hnull_real.2` gives the orthogonality.  The proof is the
+      Lorentz-index-one dichotomy:
+
+      ```lean
+      theorem BHW.realNull_orthogonal_collinear
+          [NeZero d]
+          {x y : Fin (d + 1) -> ℝ}
+          (hx_null : MinkowskiSpace.minkowskiInner d x x = 0)
+          (hy_null : MinkowskiSpace.minkowskiInner d y y = 0)
+          (hxy : MinkowskiSpace.minkowskiInner d x y = 0)
+          (hne : x ≠ 0 ∨ y ≠ 0) :
+          BHW.realNullCollinear d x y
+
+      theorem BHW.real_orthogonal_equalNorm_not_collinear_positive
+          [NeZero d]
+          {x y : Fin (d + 1) -> ℝ}
+          (hne : x ≠ 0 ∨ y ≠ 0)
+          (heq :
+            MinkowskiSpace.minkowskiInner d x x =
+              MinkowskiSpace.minkowskiInner d y y)
+          (hxy : MinkowskiSpace.minkowskiInner d x y = 0)
+          (hnot : ¬ BHW.realNullCollinear d x y) :
+          0 < MinkowskiSpace.minkowskiInner d x x
+      ```
+
+      Proof of `realNull_orthogonal_collinear`: use
+      `MinkowskiSpace.minkowskiInner_decomp` on `x.x`, `y.y`, and `x.y`.
+      The null equations give
+      `|x 0| = sqrt (∑ i, x_i^2)` and
+      `|y 0| = sqrt (∑ i, y_i^2)` via the checked
+      `BHW.realNull_abs_time_eq_spatial_norm`; the orthogonality equation
+      gives `∑ i, x_i y_i = x 0 * y 0`.  Apply the checked finite
+      Cauchy-Schwarz inequality to the spatial parts.  Equality in
+      Cauchy-Schwarz is then forced.  Use the standard finite-dimensional
+      equality case, exposed as
+
+      ```lean
+      theorem BHW.real_cauchy_eq_collinear_of_abs_dot_eq_norms
+          {ι : Type} [Fintype ι]
+          {x y : ι -> ℝ}
+          (heq :
+            |∑ i, x i * y i| =
+              Real.sqrt (∑ i, x i ^ 2) *
+                Real.sqrt (∑ i, y i ^ 2)) :
+          ∃ a b : ℝ,
+            (a ≠ 0 ∨ b ≠ 0) ∧
+            (∀ i, b * x i = a * y i)
+      ```
+
+      together with the time-coordinate equations to produce one real null
+      vector `ℓ` and scalars `a,b` satisfying the definition of
+      `BHW.realNullCollinear`.  The zero-spatial-vector subcases are closed
+      by `BHW.sum_sq_eq_zero`, which forces the whole null vector to vanish;
+      the hypothesis `hne` then selects the nonzero common direction.
+
+      Proof of
+      `real_orthogonal_equalNorm_not_collinear_positive`: trichotomize
+      `A := MinkowskiSpace.minkowskiInner d x x`.
+      If `A = 0`, then both vectors are null and orthogonal, so
+      `realNull_orthogonal_collinear` contradicts `hnot`.  If `A < 0`,
+      then whichever of `x,y` is nonzero is timelike up to time orientation;
+      if its time component is negative, replace it by `-x`.  Apply
+      `MinkowskiSpace.minkowskiInner_orthogonal_to_timelike_nonneg` to the
+      other vector and the timelike vector.  This gives the other vector's
+      square `>= 0`, contradicting `heq : other.square = A < 0`.  Hence
+      only `0 < A` remains.
+
+      With `hA_pos : 0 < A`, define
+      `s : ℝ := Real.sqrt A`, `α : ℂ := (s : ℂ)`,
+      `u := fun μ => qre μ / s`, and `v := fun μ => qim μ / s`.  The
+      checked positivity gives `s ≠ 0` and `s^2 = A`.  Bilinearity of
+      `MinkowskiSpace.minkowskiInner` gives
+      `u.u = A / s^2 = 1`, `v.v = A / s^2 = 1`, and
+      `u.v = 0 / s^2 = 0`.  Finally extensionality and field simplification
+      give
+      `fun μ => (qre μ : ℂ) + I * (qim μ : ℂ) =
+       fun μ => α * ((u μ : ℂ) + I * (v μ : ℂ))`.
+
       theorem BHW.forwardCone_timeOrientation_constant_on_timelike_segment
           [NeZero d]
           {γ : ℝ -> Fin (d + 1) -> ℝ}
@@ -25256,6 +25421,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
           [NeZero d]
           {q ξ : Fin (d + 1) -> ℂ}
           {α : ℂ} {u v : Fin (d + 1) -> ℝ}
+          (hα : α ≠ 0)
           (hq :
             q = fun μ => α * ((u μ : ℂ) + Complex.I * (v μ : ℂ)))
           (huu : MinkowskiSpace.minkowskiInner d u u = 1)
@@ -25472,7 +25638,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
           -- `hq`, give `cv (ξ i) = Complex.I * cu (ξ i)`.
           have hcv_relation : cv (ξ i) = Complex.I * cu (ξ i) :=
             BHW.hw_nullPlane_orthogonality_relation
-              (d := d) hq huu hvv huv horth_i
+              (d := d) hα hq huu hvv huv horth_i
           simp [η, β, cv, BHW.sourceComplexMinkowskiInner_sub_right,
             BHW.sourceComplexMinkowskiInner_smul_right, hcv_q,
             hcv_relation, hα]
