@@ -12948,15 +12948,9 @@ Proof decomposition of this theorem, without hiding the analytic work:
       def BHW.sourceOrientedAlgebraicRelations
           (d n : Nat)
           (G : BHW.SourceOrientedGramData d n) : Prop :=
-        (∀ i j, G.gram i j = G.gram j i) ∧
-        BHW.sourceGramMatrixRank n G.gram <= d + 1 ∧
-        (∀ (ι κ : Fin (d + 1) ↪ Fin n),
-          Matrix.det (fun a b => G.gram (ι a) (κ b)) =
-            BHW.minkowskiMetricDet d * G.det ι * G.det κ) ∧
-        (∀ (ι : Fin (d + 1) ↪ Fin n)
-          (ρ : Equiv.Perm (Fin (d + 1))),
-          G.det ((ρ.toEmbedding).trans ι) =
-            (ρ.sign : ℂ) * G.det ι)
+        G.gram ∈ BHW.sourceSymmetricRankLEVariety n (d + 1) ∧
+        BHW.sourceOrientedDetAlternating d n G ∧
+        BHW.sourceOrientedCauchyBinetRelations d n G
 
       theorem BHW.sourceMatrixMinor_sourceMinkowskiGram_fullFrame
           (d n : Nat)
@@ -12979,6 +12973,20 @@ Proof decomposition of this theorem, without hiding the analytic work:
       def BHW.sourceOrientedAlgebraicVariety
           (d n : Nat) : Set (BHW.SourceOrientedGramData d n) :=
         {G | BHW.sourceOrientedAlgebraicRelations d n G}
+
+      theorem BHW.sourceOrientedMinkowskiInvariant_mem_algebraicRelations
+          (d n : Nat) (z : Fin n -> Fin (d + 1) -> ℂ) :
+          BHW.sourceOrientedAlgebraicRelations d n
+            (BHW.sourceOrientedMinkowskiInvariant d n z)
+
+      theorem BHW.sourceOrientedGramVariety_subset_algebraicVariety
+          (d n : Nat) :
+          BHW.sourceOrientedGramVariety d n ⊆
+            BHW.sourceOrientedAlgebraicVariety d n
+
+      theorem BHW.isClosed_sourceOrientedAlgebraicVariety
+          (d n : Nat) :
+          IsClosed (BHW.sourceOrientedAlgebraicVariety d n)
 
       theorem BHW.sourceOrientedGramVariety_eq_algebraic
           (d n : Nat) :
@@ -13006,6 +13014,13 @@ Proof decomposition of this theorem, without hiding the analytic work:
       `Matrix.det_transpose`, and the definition of `minkowskiMetricDet`.
       The determinant alternation equation is likewise checked by
       `Matrix.det_permute` on the row-permuted selected full-frame matrix.
+      `SourceOrientedAlgebraicRelations.lean` now checks the exact forward
+      algebraic support: actual oriented source invariants satisfy
+      `sourceSymmetricRankLEVariety n (d + 1)`, alternation, and Cauchy-Binet;
+      `sourceOrientedGramVariety_subset_algebraicVariety` follows by range
+      elimination; and `isClosed_sourceOrientedAlgebraicVariety` is the finite
+      closed-intersection proof using the checked continuity of source minors
+      and determinant-coordinate projections.
       The theorem `sourceOrientedGramVariety_eq_algebraic` is the
       source-coordinate form of the first fundamental theorem for the special
       complex orthogonal/Lorentz group on tuples.  The normality theorem must
