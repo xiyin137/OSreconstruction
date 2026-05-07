@@ -4821,9 +4821,9 @@ implementation contract is:
    `BHW.sourcePrincipalGramMatrix`,
    `BHW.hw_selectedSpanCoeff`,
    `BHW.hw_selectedSpanCoeff_projection_eq`,
-   `BHW.hw_lowRank_selected_residual_orthogonal`,
+   `BHW.hwLemma3_selectedResidual_inner_head`,
    `BHW.hw_lowRank_residual_pairing_eq_of_sameSourceGram`,
-   `BHW.hw_lowRank_selected_residual_pairing_zero`,
+   `BHW.hwLemma3_selectedResidual_inner_residual_eq_zero`,
    `BHW.ComplexMinkowskiTotallyIsotropicSubspace`,
    `BHW.HWLowRankSelectedSpanAlignment`,
    `BHW.hw_lowRank_selectedSpanAlignment_of_selectedSpanFrame`,
@@ -4905,28 +4905,27 @@ implementation contract is:
    `base_mem`,
    `contracted_left_mem`, and `contracted_right_mem` are theorem outputs, not
    assumptions and not consequences of closedness of the open extended tube.
-   The selected-span step is also explicit: the coefficients are the inverse
+   The selected-span step is now checked in
+   `SourceHWSelectedProjection.lean`.  The coefficients are the inverse
    principal-Gram-block formula
    `hw_selectedSpanCoeff n r I G i = row_i(G) * A⁻¹`, where
    `A = sourcePrincipalGramMatrix n r I G`; residual orthogonality is the
-   finite identity `row_i * A⁻¹ * A = row_i`, and residual pairing equality
-   follows by expanding both sides as polynomials in the common source Gram
-   entries and rewriting by `hgram`.  The residual-residual pairings are
-   zero, not merely equal: with the selected principal block invertible and
-   the full source Gram matrix of rank exactly `r`, the checked theorem
-   `BHW.rank_eq_card_iff_reindexed_rect_schur_complement_eq_zero` kills the
-   rectangular Schur complement after reindexing by
-   `BHW.selectedIndexSumEquiv I hI`.  The blueprint now pins the exact
-   bridge: `hI` is derived from `hminor` by
-   `BHW.sourceMatrixMinor_ne_zero_left_injective`, the upper-left unit is
-   supplied by `BHW.isUnit_selectedIndexSumEquiv_toBlocks₁₁_det`, selected
-   residuals are zero by `BHW.hw_selected_residual_selected_eq_zero`, and
-   complementary residual pairings are identified entrywise with
-   `BHW.reindexedRectSchurComplement` by
-   `BHW.hw_lowRank_selected_complement_residual_pairing_eq_schur`.  Thus
-   `BHW.hw_lowRank_selected_residual_pairing_zero` is a genuine indexed
-   Schur argument over all original indices, not a hidden complement-choice
-   slogan.
+   finite identity `row_i * A⁻¹ * A = row_i`.  The checked residual-pairing
+   bridge derives `hI : Function.Injective I` from `hminor` by
+   `BHW.sourceMatrixMinor_ne_zero_left_injective`, obtains the upper-left
+   unit from `BHW.isUnit_selectedIndexSumEquiv_toBlocks₁₁_det`, identifies
+   complementary residual pairings with `BHW.reindexedRectSchurComplement` by
+   `BHW.hwLemma3_selectedComplement_residual_inner_residual_eq_schur`, and
+   kills them using
+   `BHW.rank_eq_card_iff_reindexed_rect_schur_complement_eq_zero`.  The
+   resulting checked theorem
+   `BHW.hwLemma3_selectedResidual_inner_residual_eq_zero` is indexed over all
+   original labels, with selected cases closed by
+   `BHW.hwLemma3_selectedResidual_selected`.  The same file also checks
+   `BHW.hwLemma3_selectedProjection_gram_eq` and
+   `BHW.hwLemma3_selectedProjection_span_finrank_eq_rank`, so the selected
+   projection tuple is a same-Gram adapted-rank representative once the
+   extended-tube membership of the zero-residual coefficient choice is proved.
    The common residual frame is a separate two-stage Witt-geometric theorem:
    `BHW.hw_lowRank_selectedSpanAlignment_of_selectedSpanFrame` first builds
    the Lorentz transform aligning the selected `z` span with the selected `w`
@@ -5092,7 +5091,7 @@ implementation contract is:
    | High-rank kernel transport | Implemented and exact-file checked in `BHWPermutation/SourceRank.lean`. | Defines `ComplexMinkowskiNondegenerateSubspace`; proves that a degenerate restricted span has positive radical finrank, hence restricted rank below span dimension, span dimension `<= n` and `<= d`, scalar rank `< min d n`, high-rank span nondegeneracy, `ker evalZ = gramKernel`, and same-Gram transport `ker evalZ = ker evalW`. |
    | High-rank span isometry data | Implemented and exact-file checked in `BHWPermutation/SourceRank.lean`. | Constructs the quotient-induced isometry as `hwHighRankSpanIsometryOfKernelEq`, proves `hwHighRankSpanIsometry_apply_eval`, packages `HWHighRankSpanIsometryData` by `hw_highRank_spanIsometryData_of_sameSourceGram`, and proves `HWHighRankSpanIsometryData_sourceGram_eq`.  This closes the well-defined coefficient-quotient part before any Witt extension. |
    | High-rank determinant/Witt orbit theorem | Full transcript pinned; production Lean not started. | Starting from `HWHighRankSpanIsometryData`, split the Witt extension into determinant-`1` proper orbit and determinant-`-1` improper full-complex-orthogonal orbit.  The full-complex extension now decomposes through source span plus orthogonal complement, complement-isometry classification over `ℂ`, product assembly, and conversion from inner-preserving linear equivalence to `HallWightmanFullComplexLorentzGroup`; the classification proof is pinned by orthogonal bases, complex square-root normalization, and the coordinate-sum identity.  The full-frame determinant ratio is pinned by the unique selected-frame isometry, same-Gram extension from the selected full frame to all source vectors, and determinant action on frame matrices.  The proper-span determinant repair decomposes through `sourceSpan_orthogonalComplement_nontrivial_of_proper`, nonisotropic-vector polarization, and the Householder/module-reflection determinant via line-plus-quotient.  The final public orbit and orbit-or-improper theorems only assemble the span-isometry data, consume the appropriate determinant-sensitive Witt producer, and rewrite vectorwise action equality to configuration equality.  No theorem-shape gap remains in this high-rank row; the conditional pure-Gram fork still needs Hall-Wightman's space-inversion/improper-component source input. |
-   | Low-rank selected principal block | Selected coefficient/projection cancellation checked in `BHWPermutation/SourceHWSelectedProjection.lean`; principal-minor extraction checked locally. | The checked layer defines `sourcePrincipalGramMatrix`, `hw_selectedSpanCoeff`, `hwLemma3_selectedProjection`, and `hwLemma3_selectedResidual`; proves selected rows are fixed, `row_i * A⁻¹ * A = row_i`, and residuals are orthogonal to selected vectors.  Remaining finite algebra is the Schur-zero residual-residual theorem, projection Gram equality, and span-finrank equality. |
+   | Low-rank selected principal block | Checked in `BHWPermutation/SourceHWSelectedProjection.lean`; principal-minor extraction checked locally. | The checked layer defines `sourcePrincipalGramMatrix`, `hw_selectedSpanCoeff`, `hwLemma3_selectedProjection`, and `hwLemma3_selectedResidual`; proves selected rows are fixed, `row_i * A⁻¹ * A = row_i`, selected/projection-residual orthogonality, the complementary residual-Schur entry theorem, rank-`r` residual-residual zero, original/residual orthogonality, projection Gram equality, and projected-span finrank `r`.  Remaining low-rank work starts at residual-frame alignment and extended-tube coefficient freedom, not selected Schur algebra. |
    | Low-rank residual-frame alignment | Proof transcript pinned; production Lean not started. | Align selected spans first, extract the residual span, choose an independent common isotropic frame `q`, store explicit coefficient functions for both residual families, and prove pairwise isotropy plus orthogonality to the selected block from the zero Schur complement. |
    | Dual frame and contraction family | Proof transcript pinned; production Lean not started. | Store `qDual_pair_zero`, `q_dual`, `qDual_orth`, build the finite partial boost scaling `q`/`qDual`, and Witt-extend it; the dual frame is used only for null-boost contraction and the two-curve value equality/limit, not for the coefficient-freedom membership theorem. |
    | Tube stability and singular limit | Proof transcript pinned; corrected target for arbitrary endpoints is `ExtendedTube`, not `ForwardTube`. | Split off the trivial `n = 0` case.  For `[NeZero n]`, prove Hall-Wightman's second remark as `hw_secondRemark_forwardTube_singleNullResidual_normalForm`: real/imaginary null split, rule out the lightlike-collinear case by strict forward-cone non-orthogonality, project to `η + β q`, and apply the equation-(41) cone lemma.  Then prove the third-remark scaling theorem by the explicit complex two-plane rotation fixing the orthogonal complement and scaling `u + i v` by `exp t`; transport the one-null-vector coefficient theorem from a forward representative to an arbitrary extended-tube endpoint, and finite-induct to `hw_isotropicFrame_allCoefficients_mem_extendedTube`. |
@@ -5208,15 +5207,23 @@ implementation contract is:
    `BHW.hwLemma3_selectedResidual`,
    `BHW.hwLemma3_selectedProjection_selected`,
    `BHW.hwLemma3_selectedProjection_inner_head`,
-   `BHW.hwLemma3_selectedResidual_inner_head`, and
-   `BHW.hwLemma3_selectedResidual_head_inner`.  This checks the inverse
-   principal-block cancellation `row_i * A⁻¹ * A = row_i` and the selected
-   residual orthogonality fields.  The remaining adapted representative
-   construction is decomposed through
+   `BHW.hwLemma3_selectedResidual_inner_head`,
+   `BHW.hwLemma3_selectedResidual_head_inner`,
+   `BHW.hwLemma3_selectedResidual_selected`,
+   `BHW.hwLemma3_selectedProjection_inner_residual`,
+   `BHW.hwLemma3_selectedResidual_inner_projection`,
+   `BHW.hwLemma3_selectedComplement_residual_inner_residual_eq_schur`,
+   `BHW.hwLemma3_selectedResidual_inner_residual_eq_zero`,
+   `BHW.hwLemma3_selectedProjection_add_residual`,
+   `BHW.hwLemma3_selectedResidual_inner_original_eq_zero`,
+   `BHW.hwLemma3_original_inner_selectedResidual_eq_zero`,
    `BHW.hwLemma3_selectedProjection_gram_eq`,
-   `BHW.hwLemma3_selectedProjection_span_finrank_eq_rank`, and
-   `BHW.hwLemma3_selectedResidual_isotropicFrameData`: extend selected
-   residual orthogonality to the residual-residual Schur-zero theorem, express
+   and `BHW.hwLemma3_selectedProjection_span_finrank_eq_rank`.  This checks
+   the inverse principal-block cancellation `row_i * A⁻¹ * A = row_i`,
+   selected residual orthogonality, indexed residual-residual Schur zero, the
+   projected same-Gram equation, and the projected source-span rank.  The
+   remaining adapted representative construction is now decomposed through
+   `BHW.hwLemma3_selectedResidual_isotropicFrameData`: express
    that residual span in a finite totally isotropic frame, and then use the
    Hall-Wightman all-coefficients extended-tube theorem with zero
    coefficients.  The

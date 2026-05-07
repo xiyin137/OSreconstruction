@@ -23994,54 +23994,46 @@ Proof decomposition of this theorem, without hiding the analytic work:
           BHW.hw_selectedSpanCoeff n r I G (I a) b =
             if a = b then 1 else 0
 
-      theorem BHW.hw_selected_residual_selected_eq_zero
-          [NeZero d]
-          {z : Fin n -> Fin (d + 1) -> ℂ}
-          {I : Fin r -> Fin n}
-          (hunit :
-            IsUnit
-              (BHW.sourcePrincipalGramMatrix n r I
-                (BHW.sourceMinkowskiGram d n z)).det)
+      theorem BHW.hwLemma3_selectedResidual_selected
+          (d n r : Nat)
+          (I : Fin r -> Fin n)
+          (z : Fin n -> Fin (d + 1) -> ℂ)
+          (hminor :
+            BHW.sourceMatrixMinor n r I I
+              (BHW.sourceMinkowskiGram d n z) ≠ 0)
           (a : Fin r) :
-          z (I a) -
-              ∑ b : Fin r,
-                BHW.hw_selectedSpanCoeff n r I
-                  (BHW.sourceMinkowskiGram d n z) (I a) b • z (I b) =
-            0
+          BHW.hwLemma3_selectedResidual d n r I
+            (BHW.sourceMinkowskiGram d n z) z (I a) = 0
 
-      theorem BHW.hw_lowRank_selected_residual_orthogonal
-          [NeZero d]
-          {z : Fin n -> Fin (d + 1) -> ℂ}
-          {I : Fin r -> Fin n}
-          (hunit :
-            IsUnit
-              (BHW.sourcePrincipalGramMatrix n r I
-                (BHW.sourceMinkowskiGram d n z)).det) :
-          ∀ i a,
-            BHW.sourceComplexMinkowskiInner d
-              (z i -
-                ∑ b : Fin r,
-                  BHW.hw_selectedSpanCoeff n r I
-                    (BHW.sourceMinkowskiGram d n z) i b • z (I b))
-              (z (I a)) = 0
+      theorem BHW.hwLemma3_selectedResidual_inner_head
+          (d n r : Nat)
+          (I : Fin r -> Fin n)
+          (z : Fin n -> Fin (d + 1) -> ℂ)
+          (hminor :
+            BHW.sourceMatrixMinor n r I I
+              (BHW.sourceMinkowskiGram d n z) ≠ 0)
+          (i : Fin n) (a : Fin r) :
+          BHW.sourceComplexMinkowskiInner d
+            (BHW.hwLemma3_selectedResidual d n r I
+              (BHW.sourceMinkowskiGram d n z) z i)
+            (z (I a)) = 0
 
-      theorem BHW.hw_lowRank_selected_complement_residual_pairing_eq_schur
-          [NeZero d]
-          {z : Fin n -> Fin (d + 1) -> ℂ}
-          {I : Fin r -> Fin n}
+      theorem BHW.hwLemma3_selectedComplement_residual_inner_residual_eq_schur
+          (d n r : Nat)
+          (I : Fin r -> Fin n)
+          (z : Fin n -> Fin (d + 1) -> ℂ)
           (hI : Function.Injective I)
+          (hminor :
+            BHW.sourceMatrixMinor n r I I
+              (BHW.sourceMinkowskiGram d n z) ≠ 0)
           (u v : BHW.selectedIndexComplement I) :
           let G := BHW.sourceMinkowskiGram d n z
           let e := BHW.selectedIndexSumEquiv I hI
           BHW.sourceComplexMinkowskiInner d
-            (z (e.symm (Sum.inr u)) -
-              ∑ b : Fin r,
-                BHW.hw_selectedSpanCoeff n r I G
-                  (e.symm (Sum.inr u)) b • z (I b))
-            (z (e.symm (Sum.inr v)) -
-              ∑ b : Fin r,
-                BHW.hw_selectedSpanCoeff n r I G
-                  (e.symm (Sum.inr v)) b • z (I b)) =
+            (BHW.hwLemma3_selectedResidual d n r I G z
+              (e.symm (Sum.inr u)))
+            (BHW.hwLemma3_selectedResidual d n r I G z
+              (e.symm (Sum.inr v))) =
           BHW.reindexedRectSchurComplement
             (Matrix.of fun i j : Fin n => G i j) e e u v
 
@@ -24076,10 +24068,10 @@ Proof decomposition of this theorem, without hiding the analytic work:
                   BHW.hw_selectedSpanCoeff n r I
                     (BHW.sourceMinkowskiGram d n z) j b • w (I b))
 
-      theorem BHW.hw_lowRank_selected_residual_pairing_zero
-          [NeZero d]
-          {z : Fin n -> Fin (d + 1) -> ℂ}
-          {I : Fin r -> Fin n}
+      theorem BHW.hwLemma3_selectedResidual_inner_residual_eq_zero
+          (d n r : Nat)
+          (I : Fin r -> Fin n)
+          (z : Fin n -> Fin (d + 1) -> ℂ)
           (hrank :
             BHW.sourceGramMatrixRank n
               (BHW.sourceMinkowskiGram d n z) = r)
@@ -24088,14 +24080,10 @@ Proof decomposition of this theorem, without hiding the analytic work:
               (BHW.sourceMinkowskiGram d n z) ≠ 0) :
           ∀ i j,
             BHW.sourceComplexMinkowskiInner d
-              (z i -
-                ∑ b : Fin r,
-                  BHW.hw_selectedSpanCoeff n r I
-                    (BHW.sourceMinkowskiGram d n z) i b • z (I b))
-              (z j -
-                ∑ b : Fin r,
-                  BHW.hw_selectedSpanCoeff n r I
-                    (BHW.sourceMinkowskiGram d n z) j b • z (I b)) = 0
+              (BHW.hwLemma3_selectedResidual d n r I
+                (BHW.sourceMinkowskiGram d n z) z i)
+              (BHW.hwLemma3_selectedResidual d n r I
+                (BHW.sourceMinkowskiGram d n z) z j) = 0
 
       theorem BHW.hw_lowRank_selectedSpanFrame_of_sameSourceGram
           [NeZero d]
@@ -29794,7 +29782,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
                 (z i - ∑ b : Fin r, coeff i b • z (I b))
                 (z (I a)) = 0 := by
           simpa [coeff, G] using
-            BHW.hw_lowRank_selected_residual_orthogonal
+            BHW.hwLemma3_selectedResidual_inner_head
               (d := d) (n := n) (r := r) (z := z) (I := I)
               hunit
         have hright_orth :
@@ -29810,7 +29798,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
                   (BHW.sourceMinkowskiGram d n w)).det := by
             simpa [G, hgram] using hunit
           simpa [coeff, G, hgram] using
-            BHW.hw_lowRank_selected_residual_orthogonal
+            BHW.hwLemma3_selectedResidual_inner_head
               (d := d) (n := n) (r := r) (z := w) (I := I)
               hunitW
         have hres_pair :
@@ -29831,7 +29819,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
                 (z i - ∑ b : Fin r, coeff i b • z (I b))
                 (z j - ∑ b : Fin r, coeff j b • z (I b)) = 0 := by
           simpa [coeff, G] using
-            BHW.hw_lowRank_selected_residual_pairing_zero
+            BHW.hwLemma3_selectedResidual_inner_residual_eq_zero
               (d := d) (n := n) (r := r) (z := z) (I := I)
               (by rfl) hminor
         have hright_pair_zero :
@@ -29856,7 +29844,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
       The support theorem
       `BHW.hw_selectedSpanCoeff_projection_eq` is just
       `row_i * A⁻¹ * A = row_i` for the selected principal Gram matrix
-      `A`; `BHW.hw_lowRank_selected_residual_orthogonal` expands the
+      `A`; `BHW.hwLemma3_selectedResidual_inner_head` expands the
       bilinear pairing and applies that identity.  The residual pairing
       equality theorem expands both residual pairings into a finite polynomial
       in the common source Gram entries and the common coefficient formula,
@@ -29880,14 +29868,15 @@ Proof decomposition of this theorem, without hiding the analytic work:
       For arbitrary `i j : Fin n`, case-split on `e i` and `e j`.  If either
       index is `Sum.inl a`, rewrite that original index to `I a` using
       `BHW.selectedIndexSumEquiv_apply_selected` and close by
-      `BHW.hw_selected_residual_selected_eq_zero`.  If both are complementary
+      `BHW.hwLemma3_selectedResidual_selected`.  If both are complementary
       indices `Sum.inr u` and `Sum.inr v`, use
-      `BHW.hw_lowRank_selected_complement_residual_pairing_eq_schur` and the
+      `BHW.hwLemma3_selectedComplement_residual_inner_residual_eq_schur` and the
       zero Schur-complement entry.  Thus the residual-residual Gram matrix is
       zero at every pair of original indices, with no hidden complement choice.
 
-      Lean-shaped core of
-      `BHW.hw_lowRank_selected_residual_pairing_zero`:
+      Production Lean now checks this core in
+      `SourceHWSelectedProjection.lean` as
+      `BHW.hwLemma3_selectedResidual_inner_residual_eq_zero`; the transcript is:
 
       ```lean
       have hI : Function.Injective I :=
@@ -29923,7 +29912,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
               rw [Equiv.symm_apply_eq]
               exact (BHW.selectedIndexSumEquiv_apply_selected I hI a).symm
         subst i
-        simp [BHW.hw_selected_residual_selected_eq_zero hunit a]
+        simp [BHW.hwLemma3_selectedResidual_selected hminor a]
       · rcases hj : e j with b | v
         · have hjI : j = I b := by
             calc
@@ -29933,10 +29922,11 @@ Proof decomposition of this theorem, without hiding the analytic work:
                 rw [Equiv.symm_apply_eq]
                 exact (BHW.selectedIndexSumEquiv_apply_selected I hI b).symm
           subst j
-          simp [BHW.hw_selected_residual_selected_eq_zero hunit b]
+          simp [BHW.hwLemma3_selectedResidual_selected hminor b]
         · have hpair :=
-            BHW.hw_lowRank_selected_complement_residual_pairing_eq_schur
-              (d := d) (n := n) (r := r) (z := z) (I := I) hI u v
+            BHW.hwLemma3_selectedComplement_residual_inner_residual_eq_schur
+              (d := d) (n := n) (r := r) (z := z) (I := I)
+              hI hminor u v
           have hentry :
               BHW.reindexedRectSchurComplement M e e u v = 0 := by
             simpa [M, e] using congrFun (congrFun hschur u) v
@@ -31444,29 +31434,32 @@ Proof decomposition of this theorem, without hiding the analytic work:
                 (BHW.sourceMinkowskiGram d n z0) z0 i) = 0
 
       theorem BHW.hwLemma3_selectedProjection_gram_eq
-          [NeZero d] (hd : 2 <= d)
-          (n r : Nat)
-          {z0 : Fin n -> Fin (d + 1) -> ℂ}
-          (hr :
-            r = BHW.sourceGramMatrixRank n
+          (d n r : Nat)
+          (I : Fin r -> Fin n)
+          (z0 : Fin n -> Fin (d + 1) -> ℂ)
+          (hrank :
+            BHW.sourceGramMatrixRank n
               (BHW.sourceMinkowskiGram d n z0))
-          {I : Fin r -> Fin n}
+              = r)
           (hminor :
             BHW.sourceMatrixMinor n r I I
               (BHW.sourceMinkowskiGram d n z0) ≠ 0) :
-          BHW.sourceMinkowskiGram d n
-            (BHW.hwLemma3_selectedProjection d n r I
-              (BHW.sourceMinkowskiGram d n z0) z0) =
-          BHW.sourceMinkowskiGram d n z0
+          ∀ i j,
+            BHW.sourceComplexMinkowskiInner d
+              (BHW.hwLemma3_selectedProjection d n r I
+                (BHW.sourceMinkowskiGram d n z0) z0 i)
+              (BHW.hwLemma3_selectedProjection d n r I
+                (BHW.sourceMinkowskiGram d n z0) z0 j) =
+            BHW.sourceMinkowskiGram d n z0 i j
 
       theorem BHW.hwLemma3_selectedProjection_span_finrank_eq_rank
-          [NeZero d] (hd : 2 <= d)
-          (n r : Nat)
-          {z0 : Fin n -> Fin (d + 1) -> ℂ}
-          (hr :
-            r = BHW.sourceGramMatrixRank n
+          (d n r : Nat)
+          (I : Fin r -> Fin n)
+          (z0 : Fin n -> Fin (d + 1) -> ℂ)
+          (hrank :
+            BHW.sourceGramMatrixRank n
               (BHW.sourceMinkowskiGram d n z0))
-          {I : Fin r -> Fin n}
+              = r)
           (hminor :
             BHW.sourceMatrixMinor n r I I
               (BHW.sourceMinkowskiGram d n z0) ≠ 0) :
@@ -31568,13 +31561,16 @@ Proof decomposition of this theorem, without hiding the analytic work:
          exactly `r` and the selected principal block is invertible, so the
          Schur complement of that block is zero.  Expanding the Schur
          complement in the selected coefficients is precisely the residual
-         pairing.  Consequently `sourceMinkowskiGram d n ξ = G`; this is
-         exposed as `BHW.hwLemma3_selectedProjection_gram_eq`.
+         pairing.  Consequently the projection tuple has the same scalar Gram
+         entries as `z0`; this is exposed as the checked entrywise theorem
+         `BHW.hwLemma3_selectedProjection_gram_eq`.
       5. The vectors `ξ i` lie in the span of the selected vectors
-         `z0 (I a)`, while the selected principal minor proves those selected
-         vectors are linearly independent.  Hence the source span of `ξ` has
-         finrank `r`; the same Gram equality identifies this with
-         `sourceGramMatrixRank n G`.  This is
+         `z0 (I a)`, so their source span has finrank at most `r` by the
+         finite `r`-generator bound.  The checked Gram equality and the
+         general rank bound
+         `sourceGramMatrixRank_eq_restrictedMinkowskiRank_range` give the
+         lower bound `r <= finrank (range (sourceCoefficientEval d n ξ))`.
+         Hence the source span of `ξ` has finrank exactly `r`.  This is
          `BHW.hwLemma3_selectedProjection_span_finrank_eq_rank`.
       6. Choose a finite independent frame `q : Fin s -> Fin (d + 1) -> ℂ`
          for the span of the residuals `ρ i`, and coefficients
@@ -31629,12 +31625,15 @@ Proof decomposition of this theorem, without hiding the analytic work:
             (d := d) hd hendpoint hq_pair_zero hq_orth_ξ with
           ⟨hbase_mem, _hall_coefficients⟩
         exact ⟨ξ, hbase_mem,
-          BHW.hwLemma3_selectedProjection_gram_eq
-            (d := d) hd n r (z0 := z0) (by rfl) hminor,
+          by
+            ext i j
+            simpa [ξ, G, BHW.sourceMinkowskiGram_apply_eq_complexInner] using
+              BHW.hwLemma3_selectedProjection_gram_eq
+                d n r I z0 (by rfl) hminor i j,
           by
             simpa [ξ, G, r] using
               BHW.hwLemma3_selectedProjection_span_finrank_eq_rank
-                (d := d) hd n r (z0 := z0) (by rfl) hminor⟩
+                d n r I z0 (by rfl) hminor⟩
       ```
 
       The call to `hw_isotropicFrame_allCoefficients_mem_extendedTube` uses
@@ -34056,8 +34055,8 @@ Proof decomposition of this theorem, without hiding the analytic work:
       | --- | --- | --- |
       | Definitional subset and connectedness of `sourceExtendedTubeGramDomain` | Mechanically ready with checked support. | Use the image definition of `sourceExtendedTubeGramDomain`, the range definition of `sourceComplexGramVariety`, `BHW.isConnected_extendedTube`, and `BHW.contDiff_sourceMinkowskiGram`. |
       | Pointwise-to-global relative-open assembly | Mechanically ready after local realization. | Choose explicit neighborhoods from `sourceExtendedTubeGramDomain_relOpen_at`, form the subtype-indexed union, and use `sourceExtendedTubeGramDomain_subset_sourceComplexGramVariety`; no Hall-Wightman geometry occurs here. |
-      | Adapted same-Gram representative `hwLemma3_extendedTube_adaptedRankRepresentative` | Proof transcript pinned; production Lean not started. | Reduced to the Lemma-2 residual-frame/all-coefficients extended-tube theorem, checked selected projection/selected-orthogonality support, Schur-zero residual theorem, and span-rank equality; the blueprint explicitly forbids source-changing an arbitrary representative to zero tail. |
-      | Principal block, projection, and Schur-zero residual algebra | Selected coefficient/projection cancellation checked in `SourceHWSelectedProjection.lean`; principal-minor extraction checked locally. | The checked layer defines the principal block, selected coefficients, projection, and residual; proves selected rows are fixed and residuals are orthogonal to selected vectors.  Remaining finite algebra is residual-residual zero via the Schur complement, projection Gram equality, and span-finrank equality. |
+      | Adapted same-Gram representative `hwLemma3_extendedTube_adaptedRankRepresentative` | Proof transcript pinned; production Lean not started. | Reduced to the Lemma-2 residual-frame/all-coefficients extended-tube theorem, checked selected projection/selected-orthogonality support, checked Schur-zero residual theorem, and checked span-rank equality; the blueprint explicitly forbids source-changing an arbitrary representative to zero tail. |
+      | Principal block, projection, and Schur-zero residual algebra | Checked in `SourceHWSelectedProjection.lean`. | The checked layer defines the principal block, selected coefficients, projection, and residual; proves selected rows are fixed, residuals are orthogonal to selected vectors and selected projections, complementary residual pairings are the reindexed rectangular Schur complement, rank-`r` residual pairings vanish over all original labels, original vectors are orthogonal to residuals, the selected projection preserves the full scalar Gram matrix, and the projected source span has finrank `r`.  The checked theorem names are `hwLemma3_selectedResidual_selected`, `hwLemma3_selectedProjection_inner_residual`, `hwLemma3_selectedResidual_inner_projection`, `hwLemma3_selectedComplement_residual_inner_residual_eq_schur`, `hwLemma3_selectedResidual_inner_residual_eq_zero`, `hwLemma3_selectedProjection_gram_eq`, and `hwLemma3_selectedProjection_span_finrank_eq_rank`. |
       | Normal-form source transport | Core finite source-change, head-normalization, adaptedness preservation, tail-zero, selected-head Witt/Lorentz orbit layer, Cauchy-Binet determinant transport, variety-relative source-matrix transport, exceptional-to-canonical source transport, subtype-valued normal-image transport, local-image transport adapters, invertible-head principal-Schur equality, transported max-rank-to-tail-rank rewrite, residual-tail exact-rank connectedness, final Schur-window shrink/topology packet, extracted-image inclusions, extracted-image openness, the corrected slice-gauge data surface, sliced forward residual/mixed extraction, sliced Witt/head-normalizer residual-tail membership, sliced extracted-image openness/reverse inclusion, sliced Schur parameter-window/local-image assembly, the finite-dimensional IFT producer `sourceRankDeficientHeadSliceGaugeData`, the concrete `maxRankLocalImageData_of_headSliceIFTSchurWindow` wrapper, the arbitrary exceptional-rank producer `sourceOrientedRankDeficientMaxRankLocalImageData_of_headSliceIFT`, the hard-range connectedness consumer `sourceOrientedGramVariety_maxRank_inter_relOpen_isConnected_of_headSliceIFT`, and the connected/preconnected-domain finite-overlap constructors checked in `SourceNormalFormTransport.lean`, `SourceOrientedRankDeficientNormalImage.lean`, `SourceOrientedRankDeficientLocalImageTransport.lean`, `SourceOrientedRankDeficientTailRankConnected.lean`, `SourceOrientedRankDeficientSliceParameter.lean`, `SourceOrientedRankDeficientSchurWindowShrink.lean`, `SourceOrientedRankDeficientCanonicalImage.lean`, `SourceOrientedHeadGauge.lean`, `SourceOrientedSchurTailSliceNormal.lean`, `SourceOrientedHeadGaugeNormal.lean`, `SourceOrientedBHWFiniteOverlap.lean`, and `SourceOrientedHeadSliceGaugeIFT.lean`. | The checked layer builds the source permutation, projection matrix, invertible symmetric congruence to `sourceHeadMetric`, canonical Gram congruence, coefficient-span/rank preservation under invertible source matrices, nondegeneracy from adaptedness, the concrete normal-form source-change tail-zero theorem, the complex Lorentz transport to `hwLemma3CanonicalSource`, `sourceOrientedMinkowskiInvariant_sourceTupleLinearChange`, `sourceOrientedVarietySourceMatrixTransportEquivOfMatrix`, `sourceOriented_lowRank_exists_normalFormSourceMatrix_to_canonical`, `sourceOriented_lowRank_exists_normalFormVarietyTransport_from_canonical`, `sourceOrientedNormalParameterVarietyPoint`, `SourceOrientedRankDeficientAlgebraicNormalFormData.originalNormalVarietyPoint`, `sourceOrientedNormalParameterVarietyPoint_eq_sourcePrincipalSchurGraph`, `SourceOrientedRankDeficientAlgebraicNormalFormData.parameterBox_maxRank_preimage_eq_tailRank`, the normal-image transport adapters, residual-tail exact-rank connectedness, the legacy head-domain shrink layer, the legacy forward residual/mixed bridges, the canonical extracted-image theorem, the sliced forward extraction bridges, the minimal head-factor refactor that gives the sliced residual-tail packet, the sliced extracted-image inclusions, the sliced parameter window topology, the sliced strengthened local-image wrapper, the concrete sliced-head IFT producer, the public canonical local-image wrapper that supplies it, the arbitrary exceptional-rank local-image producer, the hard-range connectedness theorem consuming it, and the finite-overlap constructors that now accept ordinary connected or nonempty preconnected domains.  The prior full-matrix `SourceRankDeficientHeadGaugeData` local-image wrapper is now classified as a conditional legacy surface, not a constructible endpoint.  Remaining work is the genuine Hall-Wightman/Jost geometric producer of nonempty preconnected finite-overlap domains and ordered containments.  It is not an ambient determinant-coordinate transport field, transported openness bookkeeping, separate transported-containment proof, source-change max-rank rewrite, radial endpoint argument, residual-tail middle-path topology, parameter-set shrink compatibility, extracted-image openness, sliced parameter-window assembly, sliced-head IFT problem, normal-form transport problem, local-image hypothesis problem, or max-rank-connectedness hypothesis problem. |
       | Near-identity selected-block square root | Proof transcript pinned; pure matrix analysis. | Define the finite matrix binomial series for `(1 + B)^(1/2)`, prove convergence via a scalar power-series majorant, transpose compatibility, square identity, and entrywise smallness via `matrix_opNorm_le_card_mul_sup_entry`. |
       | Schur-rank bound and Takagi residual factorization | Proof transcript pinned; pure finite linear algebra. | Prove block Gaussian rank equality, Autonne-Takagi with rank support and explicit entry-L1 control, small factorization, and tail embedding with coordinate estimates. |
