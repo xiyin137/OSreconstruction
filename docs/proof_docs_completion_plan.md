@@ -3355,14 +3355,20 @@ implementation contract is:
    `BHW.sourceOrientedExtendedTubeLocalRealizationData_of_fullFrameDetNonzero`,
    and
    `BHW.sourceOrientedExtendedTubeLocalRealizationData_of_fullFrameMaxRank`.
-   The checked proof uses `isOpen_extendedTube`, pulls an open model
+   The small-arity max-rank reducer and the full max-rank dispatcher are now
+   checked as
+   `BHW.sourceComplexGramRegularAt_of_HWSourceGramMaxRankAt_any`,
+   `BHW.sourceOrientedExtendedTubeLocalRealizationData_of_smallArityMaxRank`,
+   and `BHW.sourceOrientedExtendedTubeLocalRealizationData_of_maxRank`.
+   The full-frame proof uses `isOpen_extendedTube`, pulls an open model
    neighborhood back through the reconstructed-vector map, and uses the stored
-   chart inverse to recover the oriented invariant.  The final no-parameter
-   public theorem is therefore blocked only by the remaining cases of the
-   actual producer `SourceOrientedExtendedTubeLocalRealizationProducer d n`:
-   the small-arity ordinary-Gram max-rank reducer and the rank-deficient
-   residual extended-tube realization.  No downstream proof should re-prove
-   the open-union argument or hide this datum behind a scalar representative.
+   chart inverse to recover the oriented invariant.  The small-arity proof
+   uses the ordinary source-Gram local image theorem inside `ExtendedTube` and
+   the fact that there are no embeddings `Fin (d + 1) ↪ Fin n` when
+   `n < d + 1`.  The final no-parameter public theorem is therefore blocked
+   only by the rank-deficient residual extended-tube realization and the final
+   max-rank/rank-deficient dispatch.  No downstream proof should re-prove the
+   open-union argument or hide this datum behind a scalar representative.
    The oriented branch-law surface has been tightened: it must return an
    actual `∃ Λ : ComplexLorentzGroup d, w = complexLorentzAction Λ z` orbit
    alternative or the singular contraction data.  Returning only
@@ -3383,9 +3389,9 @@ implementation contract is:
    are no full-frame determinant coordinates; when `d + 1 <= n`, the checked
    full-frame local-realization def above supplies the actual
    extended-tube-valued local section at the `SourceOrientedExtendedTubeLocalRealizationData`
-   interface.  The remaining Lean work for the global producer is therefore
-   dispatch, small-arity support, and rank-deficient residual realization, not
-   another full-frame tube-shrink argument.
+   interface.  The max-rank dispatcher is checked, so the remaining Lean work
+   for the global producer is rank-deficient residual realization plus the
+   final case split, not another max-rank tube-shrink argument.
    full-frame chart must use `SourceOrientedFullFrameGaugeChartData`, a
    gauge-fixed special-orthogonal section with determinant coordinate
    `G.det ι`.  The rank-deficient half is named separately as

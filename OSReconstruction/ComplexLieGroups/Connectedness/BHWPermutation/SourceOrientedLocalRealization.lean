@@ -48,6 +48,40 @@ theorem continuousOn_sourceFullFrameGauge_reconstructVector_on_modelDetNonzero
   (differentiableOn_sourceFullFrameGauge_reconstructVector_on_modelDetNonzero
     d n ι M0 S).continuousOn
 
+/-- The older scalar max-rank predicate already forces maximal complex source
+span in all arities. -/
+theorem sourceComplexGramRegularAt_of_HWSourceGramMaxRankAt_any
+    (d n : ℕ)
+    {z : Fin n → Fin (d + 1) → ℂ}
+    (hmax : HWSourceGramMaxRankAt d n z) :
+    SourceComplexGramRegularAt d n z := by
+  let S : Submodule ℂ (Fin (d + 1) → ℂ) :=
+    sourceComplexConfigurationSpan d n z
+  have hrank_ge :
+      min (d + 1) n ≤
+        (Matrix.of fun i j : Fin n => sourceMinkowskiGram d n z i j).rank := by
+    simpa [HWSourceGramMaxRankAt, HWSourceGramMaxRank, sourceGramMatrixRank]
+      using hmax
+  have hrank_le :
+      (Matrix.of fun i j : Fin n => sourceMinkowskiGram d n z i j).rank ≤
+        Module.finrank ℂ S := by
+    simpa [S] using
+      sourceMinkowskiGram_rank_le_sourceComplexConfigurationSpan_finrank d n z
+  have hge : min (d + 1) n ≤ Module.finrank ℂ S :=
+    le_trans hrank_ge hrank_le
+  have hge' : min n (d + 1) ≤ Module.finrank ℂ S := by
+    simpa [Nat.min_comm] using hge
+  have hle_n : Module.finrank ℂ S ≤ n := by
+    simpa [S, sourceComplexConfigurationSpan] using
+      (finrank_range_le_card (R := ℂ) (b := z))
+  have hle_d : Module.finrank ℂ S ≤ d + 1 := by
+    have h := Submodule.finrank_le S
+    simpa [S, sourceComplexConfigurationSpan, Module.finrank_fin_fun] using h
+  have hle : Module.finrank ℂ S ≤ min n (d + 1) := le_min hle_n hle_d
+  unfold SourceComplexGramRegularAt
+  simpa [S, sourceComplexConfigurationSpan] using
+    le_antisymm hle hge'
+
 /-- Full-frame, selected-determinant-nonzero local realization of nearby
 oriented source data by actual extended-tube source tuples.
 
@@ -225,6 +259,109 @@ noncomputable def sourceOrientedExtendedTubeLocalRealizationData_of_fullFrameMax
   exact
     sourceOrientedExtendedTubeLocalRealizationData_of_fullFrameDetNonzero
       ι hz0 hdet
+
+/-- In the small-arity max-rank case, there are no full-frame determinant
+coordinates.  The ordinary source-Gram local image theorem inside the open
+extended tube therefore gives the oriented local realization directly. -/
+noncomputable def sourceOrientedExtendedTubeLocalRealizationData_of_smallArityMaxRank
+    {d n : ℕ}
+    (hn : n < d + 1)
+    {z0 : Fin n → Fin (d + 1) → ℂ}
+    (hz0 : z0 ∈ ExtendedTube d n)
+    (hmax :
+      SourceOrientedMaxRankAt d n
+        (sourceOrientedMinkowskiInvariant d n z0)) :
+    SourceOrientedExtendedTubeLocalRealizationData d n z0 := by
+  classical
+  have hHW : HWSourceGramMaxRankAt d n z0 :=
+    (sourceOrientedMaxRankAt_invariant_iff_hwSourceGramMaxRankAt d n z0).1
+      hmax
+  have hreg : SourceComplexGramRegularAt d n z0 :=
+    sourceComplexGramRegularAt_of_HWSourceGramMaxRankAt_any d n hHW
+  let hex :=
+    sourceComplexGramMap_localRelOpenImage_in_open_of_complexRegular
+      d n hreg (isOpen_extendedTube (d := d) (n := n)) hz0
+  let U : Set (Fin n → Fin (d + 1) → ℂ) := Classical.choose hex
+  have hU_spec :
+      IsOpen U ∧ z0 ∈ U ∧ U ⊆ ExtendedTube d n ∧
+        ∃ O : Set (Fin n → Fin n → ℂ),
+          sourceMinkowskiGram d n z0 ∈ O ∧
+          IsRelOpenInSourceComplexGramVariety d n O ∧
+          O ⊆ sourceMinkowskiGram d n '' U ∧
+          ∀ G ∈ O, ∃ z ∈ U, sourceMinkowskiGram d n z = G :=
+    Classical.choose_spec hex
+  have hU_ET : U ⊆ ExtendedTube d n := hU_spec.2.2.1
+  let hexO := hU_spec.2.2.2
+  let O : Set (Fin n → Fin n → ℂ) := Classical.choose hexO
+  have hO_spec :
+      sourceMinkowskiGram d n z0 ∈ O ∧
+        IsRelOpenInSourceComplexGramVariety d n O ∧
+        O ⊆ sourceMinkowskiGram d n '' U ∧
+        ∀ G ∈ O, ∃ z ∈ U, sourceMinkowskiGram d n z = G :=
+    Classical.choose_spec hexO
+  have hO_center : sourceMinkowskiGram d n z0 ∈ O := hO_spec.1
+  have hO_rel : IsRelOpenInSourceComplexGramVariety d n O := hO_spec.2.1
+  have hO_surj :
+      ∀ G ∈ O, ∃ z ∈ U, sourceMinkowskiGram d n z = G :=
+    hO_spec.2.2.2
+  let O0 : Set (Fin n → Fin n → ℂ) := Classical.choose hO_rel
+  have hO0_spec : IsOpen O0 ∧ O = O0 ∩ sourceComplexGramVariety d n :=
+    Classical.choose_spec hO_rel
+  have hO0_open : IsOpen O0 := hO0_spec.1
+  have hO_eq : O = O0 ∩ sourceComplexGramVariety d n := hO0_spec.2
+  let Ω : Set (SourceOrientedGramData d n) := {G | G.gram ∈ O0}
+  have hΩ_open : IsOpen Ω := by
+    exact hO0_open.preimage
+      (continuous_sourceOrientedGramData_gram (d := d) (n := n))
+  have hcenterΩ :
+      sourceOrientedMinkowskiInvariant d n z0 ∈ Ω := by
+    have hcenterO0 : sourceMinkowskiGram d n z0 ∈ O0 := by
+      have htmp := hO_center
+      rw [hO_eq] at htmp
+      exact htmp.1
+    simpa [Ω, sourceOrientedMinkowskiInvariant, SourceOrientedGramData.gram]
+      using hcenterO0
+  refine
+    { Ω := Ω
+      Ω_open := hΩ_open
+      center_mem := hcenterΩ
+      realizes := ?_ }
+  intro G hG
+  have hGgram_var : G.gram ∈ sourceComplexGramVariety d n := by
+    rcases hG.2 with ⟨w, rfl⟩
+    exact ⟨w, by
+      simp [sourceOrientedMinkowskiInvariant, SourceOrientedGramData.gram]⟩
+  have hGgram_O : G.gram ∈ O := by
+    rw [hO_eq]
+    exact ⟨hG.1, hGgram_var⟩
+  rcases hO_surj G.gram hGgram_O with ⟨z, hzU, hzGram⟩
+  refine ⟨z, hU_ET hzU, ?_⟩
+  apply SourceOrientedGramData.ext
+  · simpa [sourceOrientedMinkowskiInvariant, SourceOrientedGramData.gram]
+      using hzGram
+  · funext ι
+    have hle : d + 1 ≤ n := by
+      simpa using Fintype.card_le_of_embedding ι
+    exact False.elim (by omega)
+
+/-- Max-rank local realization, split by whether a full spacetime source frame
+can be selected from the source labels. -/
+noncomputable def sourceOrientedExtendedTubeLocalRealizationData_of_maxRank
+    {d n : ℕ}
+    {z0 : Fin n → Fin (d + 1) → ℂ}
+    (hz0 : z0 ∈ ExtendedTube d n)
+    (hmax :
+      SourceOrientedMaxRankAt d n
+        (sourceOrientedMinkowskiInvariant d n z0)) :
+    SourceOrientedExtendedTubeLocalRealizationData d n z0 := by
+  classical
+  by_cases hn : n < d + 1
+  · exact
+      sourceOrientedExtendedTubeLocalRealizationData_of_smallArityMaxRank
+        hn hz0 hmax
+  · exact
+      sourceOrientedExtendedTubeLocalRealizationData_of_fullFrameMaxRank
+        (Nat.le_of_not_lt hn) hz0 hmax
 
 /-- Relative openness of the oriented extended-tube image, once local
 realization is supplied at every extended-tube source tuple. -/
