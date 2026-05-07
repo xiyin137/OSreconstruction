@@ -38,6 +38,81 @@ theorem continuous_wickRotateRealConfig :
       (Complex.continuous_ofReal.comp
         ((continuous_apply μ).comp (continuous_apply k)))
 
+omit [NeZero d] in
+/-- Permuting point labels is complex differentiable in the finite product
+configuration space. -/
+theorem differentiable_permAct (σ : Equiv.Perm (Fin n)) :
+    Differentiable ℂ (BHW.permAct (d := d) σ) := by
+  rw [differentiable_pi]
+  intro k
+  simpa [BHW.permAct] using
+    (differentiable_apply (σ k) :
+      Differentiable ℂ
+        (fun z : Fin n → Fin (d + 1) → ℂ => z (σ k)))
+
+omit [NeZero d] in
+/-- The adjacent preimage of the ordinary extended tube under a finite source
+permutation is open. -/
+theorem isOpen_permAct_preimage_extendedTube
+    (σ : Equiv.Perm (Fin n)) :
+    IsOpen {z : Fin n → Fin (d + 1) → ℂ |
+      BHW.permAct (d := d) σ z ∈ BHW.ExtendedTube d n} :=
+  BHW.isOpen_extendedTube.preimage
+    (BHW.continuous_permAct (d := d) (n := n) σ)
+
+/-- The BHW extension of the selected boundary-value witness is holomorphic on
+the ordinary extended tube. -/
+theorem differentiableOn_extendF_bvt_F_extendedTube
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (n : ℕ) :
+    DifferentiableOn ℂ (BHW.extendF (bvt_F OS lgc n))
+      (BHW.ExtendedTube d n) := by
+  have hF_holo_BHW :
+      DifferentiableOn ℂ (bvt_F OS lgc n) (BHW.ForwardTube d n) := by
+    simpa [BHW_forwardTube_eq (d := d) (n := n)] using
+      bvt_F_holomorphic (d := d) OS lgc n
+  have hF_cinv_BHW :
+      ∀ (Λ : ComplexLorentzGroup d) (z : Fin n → Fin (d + 1) → ℂ),
+        z ∈ BHW.ForwardTube d n →
+        BHW.complexLorentzAction Λ z ∈ BHW.ForwardTube d n →
+        bvt_F OS lgc n (BHW.complexLorentzAction Λ z) =
+          bvt_F OS lgc n z := by
+    intro Λ z hz hΛz
+    exact bvt_F_complexLorentzInvariant_forwardTube
+      (d := d) OS lgc n Λ z
+      ((BHW_forwardTube_eq (d := d) (n := n)) ▸ hz)
+      ((BHW_forwardTube_eq (d := d) (n := n)) ▸ hΛz)
+  exact BHW.extendF_holomorphicOn n (bvt_F OS lgc n)
+    hF_holo_BHW hF_cinv_BHW
+
+/-- The adjacent initial branch obtained by precomposing `extendF` with a
+source permutation is holomorphic on the corresponding preimage of the
+ordinary extended tube. -/
+theorem differentiableOn_extendF_bvt_F_permAct_preimageExtendedTube
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (n : ℕ) (σ : Equiv.Perm (Fin n)) :
+    DifferentiableOn ℂ
+      (fun z : Fin n → Fin (d + 1) → ℂ =>
+        BHW.extendF (bvt_F OS lgc n) (BHW.permAct (d := d) σ z))
+      {z | BHW.permAct (d := d) σ z ∈ BHW.ExtendedTube d n} := by
+  have hExtend :=
+    BHW.differentiableOn_extendF_bvt_F_extendedTube
+      (d := d) OS lgc n
+  have hperm_diff := BHW.differentiable_permAct (d := d) (n := n) σ
+  have hmaps :
+      Set.MapsTo
+        (fun z : Fin n → Fin (d + 1) → ℂ =>
+          BHW.permAct (d := d) σ z)
+        {z | BHW.permAct (d := d) σ z ∈ BHW.ExtendedTube d n}
+        (BHW.ExtendedTube d n) := by
+    intro z hz
+    exact hz
+  intro z hz
+  exact (hExtend _ (hmaps hz)).comp z
+    ((hperm_diff z).differentiableWithinAt) hmaps
+
 /-- On an open Euclidean ordered source patch, the identity Wick trace is
 integrable against every compactly supported Schwartz test supported in the
 patch. -/
@@ -515,6 +590,17 @@ theorem base_wick_mem_extendedTube
     H.z0 ∈ BHW.ExtendedTube d n := by
   rw [H.z0_eq]
   exact H.wick_id_ET H.x0 H.x0_mem
+
+/-- The stored source-patch hull is path-connected. -/
+theorem U_isPathConnected
+    (H : BHW.OS45SourcePatchBHWJostHullData
+      (d := d) hd OS lgc n i hi V) :
+    IsPathConnected H.U := by
+  rw [H.U_eq]
+  exact
+    BHW.os45SourcePatchBHWJostHull_isPathConnected
+      (d := d) (n := n) H.τ H.z0
+      (Or.inl H.base_wick_mem_extendedTube)
 
 /-- The selected real seed lies in the stored hull. -/
 theorem base_real_mem_U
