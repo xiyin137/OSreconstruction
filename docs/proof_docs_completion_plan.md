@@ -4118,12 +4118,10 @@ implementation contract is:
    the older `SourceOrientedInvariantTransportEquiv` shortcut is not permitted
    for source changes.  The remaining extended-tube residual-chart surfaces are
    `SourceOrientedRankDeficientNormalFormData`,
-   `sourceOriented_rankDeficient_normalFormData`,
+   `SourceOrientedRankDeficientNormalFormData.exists_ofExtendedTube`,
    `SourceOrientedResidualPolydiscData`,
-   `sourceOriented_residualPolydiscData`,
-   `sourceOriented_residualPolydisc_tubeStability`,
-   `sourceOriented_residualPolydisc_imageSurj`, and
-   `sourceOriented_residualPolydisc_maxRankDense`.  These surfaces force the
+   `sourceOriented_rankDeficient_tubeResidualPolydisc`, and
+   `SourceOrientedRankDeficientTubeResidualPolydiscProducer`.  These surfaces force the
    ordinary Hall-Wightman adapted normal form, the residual coefficient
    polydisc, the extended-tube stability shrink, Schur-tail image
    surjectivity, and max-rank density to be proved before the residual chart
@@ -4156,11 +4154,48 @@ implementation contract is:
    `sourceOriented_rankDeficient_tubeResidualPolydisc` theorem.  That theorem
    uses head-factor, mixed-coefficient, and tail residual-vector coordinates;
    it is not allowed to recover surjectivity later from an arbitrary compact
-   parameter set.  Its max-rank-density field is pinned by
-   `sourceShiftedTailOrientedMaxRank_dense_in_parameterOpen` plus
-   `sourceOrientedNormalParameterVector_maxRank_iff_tail`, so the density
-   argument perturbs only the Schur tail while the invertible head block stays
-   fixed.  The downstream compactness support is also explicit:
+   parameter set.  Its first Lean support helpers are now exact:
+   `BHW.SourceOrientedRankDeficientNormalFormData.toAlgebraicNormalFormData`
+   builds the already checked algebraic normal-form packet from the tube
+   packet by reusing `r`, `hrD`, `hrn`, and `varietyTransport`; the center
+   equation follows from `N.toOriginal_oriented`, `N.normalBase_eq`, and
+   `N.toOriginal_normalBase_invariant`.  The companion bridge
+   `BHW.SourceOrientedRankDeficientNormalFormData.originalNormalVarietyPoint_eq_toOriginal`
+   identifies the algebraic transported normal image with the actual
+   original-coordinate invariant
+   `sourceOrientedMinkowskiInvariant d n (N.toOriginal
+   (sourceOrientedNormalParameterVector d n N.r N.hrD N.hrn p))`.
+   The extended-tube compact shrink is now started by the checked helpers
+   `BHW.SourceOrientedRankDeficientNormalFormData.toOriginal_normalParameterVector_center`,
+   `BHW.SourceOrientedRankDeficientNormalFormData.continuous_toOriginal_normalParameterVector`,
+   `BHW.SourceOrientedRankDeficientNormalFormData.toOriginal_normalParameterVector_mem_ET_mem_nhds_center`,
+   and
+   `BHW.SourceOrientedRankDeficientNormalFormData.exists_normalParameterBall_toOriginal_mem_ET`.
+   These use `BHW.isOpen_extendedTube`,
+   `BHW.continuous_sourceOrientedNormalParameterVector`, and
+   `N.toOriginal_continuous`; they do not use any normal-form source change as
+   a tube-preserving map.  The finite `Fin m -> ℂ` coordinate model for the
+   eventual compact/open parameter pair is also checked in
+   `SourceOrientedNormalParameterFinCoord.lean`, via
+   `BHW.sourceOrientedNormalParameterFinCoordHomeomorph`,
+   `BHW.isOpen_sourceOrientedNormalParameterFinCoordOpenBall`,
+   `BHW.isCompact_sourceOrientedNormalParameterFinCoordClosedBall`, and
+   `BHW.sourceOrientedNormalParameterFinCoordOpenBall_subset_closedBall`.
+   The all-arity rank bridge
+   `BHW.sourceOrientedNormalParameterVector_maxRank_iff_tail` is also
+   checked: on the invertible-head normal-parameter locus, max rank of the
+   full oriented image is equivalent to max rank of the shifted residual-tail
+   invariant.  The original-coordinate version needed by the tube producer is
+   checked as
+   `BHW.SourceOrientedRankDeficientNormalFormData.toOriginal_normalParameterVector_maxRank_iff_tail`.
+   Its max-rank-density field is pinned, in the hard full-frame range, by the
+   checked relative-open max-rank density theorem on the transported original
+   image (`sourceOrientedMaxRank_dense_in_relOpen_inter`), then rewritten
+   through the same normal-parameter image.  The complementary small-arity
+   branch still needs the corresponding chart-density support theorem, or an
+   all-arity replacement density theorem, before the residual-polydisc
+   producer is production-complete.  The downstream compactness support is
+   also explicit:
    Lean checkpoint: `SourceOrientedRankDeficientTubeResidual.lean` now checks
    this corrected interface as data, not as a hidden axiom.  It introduces
    `BHW.SourceOrientedRankDeficientNormalFormData` with an actual
@@ -4181,12 +4216,13 @@ implementation contract is:
    which packages the existing Schur normal-form source matrix construction
    and Lorentz/Witt normalization into an existential source-level
    normal-form packet once an adapted extended-tube base with strict
-   source-rank deficiency is already supplied.  The adapted ET base itself is
-   still the separate hard Hall-Wightman representative theorem.
-   The remaining hard theorem is the producer of this data; the checked
-   reducer only proves that no ambient source-matrix invariant transport is
-   needed after those fields are available.
-   the checked theorem
+   source-rank deficiency is already supplied, and
+   `BHW.SourceOrientedRankDeficientNormalFormData.exists_ofExtendedTube`,
+   which now combines the checked adapted ET representative with the
+   rank-deficient same-oriented-invariant conversion.  The remaining hard
+   theorem is the tube-valued residual-polydisc producer; the checked reducer
+   and normal-form producer prove that no ambient source-matrix invariant
+   transport is needed after those fields are available.  The checked theorem
    `BHW.isConnected_sourcePrincipalSchur_varietyTransported_orientedMaxRank_preimage_of_eq`
    is the connectedness form to call once the normal-parameter vector has been
    packaged as a `BHW.SourceOrientedVariety d n` point, identified with the

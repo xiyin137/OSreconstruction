@@ -1,4 +1,5 @@
 import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SourceOrientedLocalRealization
+import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SourceOrientedNormalParameterBall
 import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SourceOrientedRankDeficientNormalImage
 import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SourceHWAdaptedTubeRepresentative
 
@@ -284,6 +285,174 @@ theorem exists_ofExtendedTube
     ⟨N, _hN_adapted⟩
   exact ⟨N, N.adaptedBase_mem⟩
 
+/-- Forget the extended-tube return map and keep the checked algebraic
+normal-image transport carried by the same normal-form packet. -/
+noncomputable def toAlgebraicNormalFormData
+    {d n : ℕ}
+    {z0 : Fin n → Fin (d + 1) → ℂ}
+    (N : SourceOrientedRankDeficientNormalFormData d n z0) :
+    SourceOrientedRankDeficientAlgebraicNormalFormData d n
+      (sourceOrientedMinkowskiInvariant d n z0) where
+  r := N.r
+  hrD := N.hrD
+  hrn := N.hrn
+  varietyTransport := N.varietyTransport
+  canonical_to_original := by
+    have hcanon :
+        sourceTupleOrientedVarietyPoint d n N.normalBase =
+          hwLemma3CanonicalSourceOrientedVariety d n N.r := by
+      rw [N.normalBase_eq]
+      rfl
+    calc
+      (N.varietyTransport.invFun
+          (hwLemma3CanonicalSourceOrientedVariety d n N.r)).1 =
+          (N.varietyTransport.invFun
+            (sourceTupleOrientedVarietyPoint d n N.normalBase)).1 := by
+            rw [hcanon]
+      _ =
+          sourceOrientedMinkowskiInvariant d n
+            (N.toOriginal N.normalBase) := by
+            exact (congrArg Subtype.val
+              (N.toOriginal_oriented N.normalBase)).symm
+      _ = sourceOrientedMinkowskiInvariant d n z0 :=
+          N.toOriginal_normalBase_invariant
+
+@[simp]
+theorem toAlgebraicNormalFormData_r
+    {d n : ℕ}
+    {z0 : Fin n → Fin (d + 1) → ℂ}
+    (N : SourceOrientedRankDeficientNormalFormData d n z0) :
+    N.toAlgebraicNormalFormData.r = N.r :=
+  rfl
+
+@[simp]
+theorem toAlgebraicNormalFormData_varietyTransport
+    {d n : ℕ}
+    {z0 : Fin n → Fin (d + 1) → ℂ}
+    (N : SourceOrientedRankDeficientNormalFormData d n z0) :
+    N.toAlgebraicNormalFormData.varietyTransport = N.varietyTransport :=
+  rfl
+
+/-- The algebraic transported normal image attached to a tube normal-form
+packet is the actual original-coordinate invariant of the returned source
+tuple. -/
+theorem originalNormalVarietyPoint_eq_toOriginal
+    {d n : ℕ}
+    {z0 : Fin n → Fin (d + 1) → ℂ}
+    (N : SourceOrientedRankDeficientNormalFormData d n z0)
+    (p : SourceOrientedRankDeficientNormalParameter d n N.r N.hrD N.hrn) :
+    (N.toAlgebraicNormalFormData.originalNormalVarietyPoint p).1 =
+      sourceOrientedMinkowskiInvariant d n
+        (N.toOriginal
+          (sourceOrientedNormalParameterVector d n N.r N.hrD N.hrn p)) := by
+  have h :=
+    congrArg Subtype.val
+      (N.toOriginal_oriented
+        (sourceOrientedNormalParameterVector d n N.r N.hrD N.hrn p))
+  simpa [toAlgebraicNormalFormData, sourceOrientedNormalParameterVarietyPoint,
+    sourceTupleOrientedVarietyPoint] using h.symm
+
+/-- For the actual original-coordinate normal image, max-rank is exactly
+max-rank of the shifted residual tail, provided the head factor is invertible. -/
+theorem toOriginal_normalParameterVector_maxRank_iff_tail
+    {d n : ℕ}
+    {z0 : Fin n → Fin (d + 1) → ℂ}
+    (N : SourceOrientedRankDeficientNormalFormData d n z0)
+    (p : SourceOrientedRankDeficientNormalParameter d n N.r N.hrD N.hrn)
+    (hH : IsUnit p.head.det) :
+    SourceOrientedMaxRankAt d n
+        (sourceOrientedMinkowskiInvariant d n
+          (N.toOriginal
+            (sourceOrientedNormalParameterVector d n N.r N.hrD N.hrn p))) ↔
+      SourceShiftedTailOrientedMaxRankAt d N.r N.hrD (n - N.r)
+        (sourceShiftedTailOrientedInvariant d N.r N.hrD (n - N.r) p.tail) := by
+  rw [← N.originalNormalVarietyPoint_eq_toOriginal p]
+  rw [N.toAlgebraicNormalFormData.originalNormalVarietyPoint_maxRank_iff p]
+  exact
+    sourceOrientedNormalParameterVector_maxRank_iff_tail
+      d n N.r N.hrD N.hrn p hH
+
+/-- The actual returned normal-parameter source tuple is centered at the
+adapted extended-tube representative. -/
+theorem toOriginal_normalParameterVector_center
+    {d n : ℕ}
+    {z0 : Fin n → Fin (d + 1) → ℂ}
+    (N : SourceOrientedRankDeficientNormalFormData d n z0) :
+    N.toOriginal
+        (sourceOrientedNormalParameterVector d n N.r N.hrD N.hrn
+          (sourceOrientedNormalCenterParameter d n N.r N.hrD N.hrn)) =
+      N.adaptedBase := by
+  rw [sourceOrientedNormalParameterVector_center]
+  rw [← N.normalBase_eq]
+  exact N.toOriginal_normalBase_eq_adaptedBase
+
+/-- The returned normal-parameter source tuple is continuous in the normal
+parameter. -/
+theorem continuous_toOriginal_normalParameterVector
+    {d n : ℕ}
+    {z0 : Fin n → Fin (d + 1) → ℂ}
+    (N : SourceOrientedRankDeficientNormalFormData d n z0) :
+    Continuous
+      (fun p : SourceOrientedRankDeficientNormalParameter d n N.r N.hrD N.hrn =>
+        N.toOriginal
+          (sourceOrientedNormalParameterVector d n N.r N.hrD N.hrn p)) :=
+  N.toOriginal_continuous.comp
+    (continuous_sourceOrientedNormalParameterVector d n N.r N.hrD N.hrn)
+
+/-- The original-coordinate invariant of the returned normal-parameter tuple
+is continuous. -/
+theorem continuous_originalNormalInvariant
+    {d n : ℕ}
+    {z0 : Fin n → Fin (d + 1) → ℂ}
+    (N : SourceOrientedRankDeficientNormalFormData d n z0) :
+    Continuous
+      (fun p : SourceOrientedRankDeficientNormalParameter d n N.r N.hrD N.hrn =>
+        sourceOrientedMinkowskiInvariant d n
+          (N.toOriginal
+            (sourceOrientedNormalParameterVector d n N.r N.hrD N.hrn p))) :=
+  (continuous_sourceOrientedMinkowskiInvariant (d := d) (n := n)).comp
+    N.continuous_toOriginal_normalParameterVector
+
+/-- The normal-parameter preimage of the extended tube is a neighborhood of
+the normal center after returning to original source coordinates. -/
+theorem toOriginal_normalParameterVector_mem_ET_mem_nhds_center
+    {d n : ℕ}
+    {z0 : Fin n → Fin (d + 1) → ℂ}
+    (N : SourceOrientedRankDeficientNormalFormData d n z0) :
+    {p : SourceOrientedRankDeficientNormalParameter d n N.r N.hrD N.hrn |
+      N.toOriginal
+          (sourceOrientedNormalParameterVector d n N.r N.hrD N.hrn p) ∈
+        ExtendedTube d n} ∈
+      𝓝 (sourceOrientedNormalCenterParameter d n N.r N.hrD N.hrn) := by
+  have hcenter :
+      N.toOriginal
+          (sourceOrientedNormalParameterVector d n N.r N.hrD N.hrn
+            (sourceOrientedNormalCenterParameter d n N.r N.hrD N.hrn)) ∈
+        ExtendedTube d n := by
+    rw [N.toOriginal_normalParameterVector_center]
+    exact N.adaptedBase_mem
+  exact
+    N.continuous_toOriginal_normalParameterVector.continuousAt
+      ((isOpen_extendedTube (d := d) (n := n)).mem_nhds hcenter)
+
+/-- Choose a positive normal-parameter ball on which the returned source
+tuples remain in the extended tube. -/
+theorem exists_normalParameterBall_toOriginal_mem_ET
+    {d n : ℕ}
+    {z0 : Fin n → Fin (d + 1) → ℂ}
+    (N : SourceOrientedRankDeficientNormalFormData d n z0) :
+    ∃ ε : ℝ,
+      0 < ε ∧
+        sourceOrientedNormalParameterBall (d := d) (n := n) (r := N.r)
+          (hrD := N.hrD) (hrn := N.hrn) ε ⊆
+          {p : SourceOrientedRankDeficientNormalParameter d n N.r N.hrD N.hrn |
+            N.toOriginal
+                (sourceOrientedNormalParameterVector d n N.r N.hrD N.hrn p) ∈
+              ExtendedTube d n} :=
+  exists_sourceOrientedNormalParameterBall_subset_of_mem_nhds_center
+    d n N.r N.hrD N.hrn
+    N.toOriginal_normalParameterVector_mem_ET_mem_nhds_center
+
 end SourceOrientedRankDeficientNormalFormData
 
 /-- Compact residual-polydisc data in normal source coordinates, with all
@@ -383,6 +552,57 @@ noncomputable def to_residualChart
     exact D.maxRank_dense_original c hc
 
 end SourceOrientedResidualPolydiscData
+
+/-- Field accessor for the tube-stability part of a corrected residual
+polydisc. -/
+theorem sourceOriented_residualPolydisc_tubeStability
+    {d n : ℕ}
+    {z0 : Fin n → Fin (d + 1) → ℂ}
+    (N : SourceOrientedRankDeficientNormalFormData d n z0)
+    (D : SourceOrientedResidualPolydiscData d n N) :
+    ∀ c, c ∈ D.K →
+      N.toOriginal (D.residualVector c) ∈ ExtendedTube d n :=
+  D.toOriginal_residualVector_mem_ET
+
+/-- Field accessor for the original-coordinate image-surjectivity part of a
+corrected residual polydisc. -/
+theorem sourceOriented_residualPolydisc_imageSurj
+    {d n : ℕ}
+    {z0 : Fin n → Fin (d + 1) → ℂ}
+    (N : SourceOrientedRankDeficientNormalFormData d n z0)
+    (D : SourceOrientedResidualPolydiscData d n N) :
+    ∃ Ω : Set (SourceOrientedGramData d n),
+      IsOpen Ω ∧
+        sourceOrientedMinkowskiInvariant d n z0 ∈ Ω ∧
+        (∀ c, c ∈ D.K →
+          sourceOrientedMinkowskiInvariant d n
+            (N.toOriginal (D.residualVector c)) ∈
+            Ω ∩ sourceOrientedGramVariety d n) ∧
+        Ω ∩ sourceOrientedGramVariety d n ⊆
+          (fun c =>
+            sourceOrientedMinkowskiInvariant d n
+              (N.toOriginal (D.residualVector c))) '' D.P :=
+  ⟨D.Ω, D.Ω_open, D.Ω_center, D.originalInvariant_mem, D.image_surj⟩
+
+/-- Field accessor for the original-coordinate max-rank-density part of a
+corrected residual polydisc. -/
+theorem sourceOriented_residualPolydisc_maxRankDense
+    {d n : ℕ}
+    {z0 : Fin n → Fin (d + 1) → ℂ}
+    (N : SourceOrientedRankDeficientNormalFormData d n z0)
+    (D : SourceOrientedResidualPolydiscData d n N) :
+    ∀ c, c ∈ D.P →
+      sourceOrientedMinkowskiInvariant d n
+          (N.toOriginal (D.residualVector c)) ∈
+        closure
+          ((fun c' =>
+            sourceOrientedMinkowskiInvariant d n
+              (N.toOriginal (D.residualVector c'))) ''
+            {c' | c' ∈ D.P ∧
+              SourceOrientedMaxRankAt d n
+                (sourceOrientedMinkowskiInvariant d n
+                  (N.toOriginal (D.residualVector c')))}) :=
+  D.maxRank_dense_original
 
 /-- The corrected hard producer target for the rank-deficient branch: for
 each rank-deficient extended-tube center, produce source-level normal-form

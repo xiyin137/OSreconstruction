@@ -9554,7 +9554,6 @@ Proof decomposition of this theorem, without hiding the analytic work:
         BHW.sourceGramMatrixRank m T.gram = min (d + 1 - r) m
 
       theorem BHW.sourceOrientedNormalParameterVector_maxRank_iff_tail
-          [NeZero d]
           (n r : Nat)
           (hrD : r < d + 1)
           (hrn : r <= n)
@@ -9569,6 +9568,10 @@ Proof decomposition of this theorem, without hiding the analytic work:
               (BHW.sourceShiftedTailOrientedInvariant d r hrD (n - r)
                 p.tail)
 
+      /- Remaining density support target.  This is a Lean-pseudocode theorem
+      surface for the residual-polydisc producer, not yet a checked declaration
+      as of this pass; it may be replaced by one checked all-arity density
+      theorem if that route is cleaner. -/
       theorem BHW.sourceShiftedTailOrientedMaxRank_dense_in_parameterOpen
           (d r m : Nat)
           (hrD : r < d + 1)
@@ -9641,83 +9644,110 @@ Proof decomposition of this theorem, without hiding the analytic work:
       theorem BHW.sourceOriented_rankDeficient_tubeResidualPolydisc
           [NeZero d]
           (hd : 2 <= d)
-          (n : Nat)
           {z0 : Fin n -> Fin (d + 1) -> ℂ}
           (N :
             BHW.SourceOrientedRankDeficientNormalFormData d n z0) :
-          ∃ (m : Nat)
-            (encode :
-              BHW.SourceOrientedRankDeficientNormalParameter
-                d n N.r N.hrD N.hrn ≃L[ℂ] (Fin m -> ℂ))
-            (K P : Set (Fin m -> ℂ))
-            (c0 : Fin m -> ℂ),
-            IsCompact K ∧ IsOpen P ∧ P ⊆ K ∧ c0 ∈ P ∧
-            encode
-              (BHW.sourceOrientedNormalCenterParameter
-                d n N.r N.hrD N.hrn) = c0 ∧
-            (∀ c ∈ K,
-              N.toOriginal
-                (BHW.sourceOrientedNormalParameterVector
-                  d n N.r N.hrD N.hrn (encode.symm c)) ∈
-                BHW.ExtendedTube d n) ∧
-            (∃ Ω : Set (BHW.SourceOrientedGramData d n),
-              IsOpen Ω ∧
-              BHW.sourceOrientedMinkowskiInvariant d n z0 ∈ Ω ∧
-              (∀ c ∈ K,
-                BHW.sourceOrientedMinkowskiInvariant d n
-                  (N.toOriginal
-                    (BHW.sourceOrientedNormalParameterVector
-                      d n N.r N.hrD N.hrn (encode.symm c))) ∈
-                    Ω ∩ BHW.sourceOrientedGramVariety d n) ∧
-              Ω ∩ BHW.sourceOrientedGramVariety d n ⊆
-                (fun c =>
-                  BHW.sourceOrientedMinkowskiInvariant d n
-                    (N.toOriginal
-                      (BHW.sourceOrientedNormalParameterVector
-                        d n N.r N.hrD N.hrn (encode.symm c)))) '' P ∧
-              (∀ c ∈ P,
-                BHW.sourceOrientedMinkowskiInvariant d n
-                    (N.toOriginal
-                      (BHW.sourceOrientedNormalParameterVector
-                        d n N.r N.hrD N.hrn (encode.symm c))) ∈
-                  closure
-                    ((fun c' =>
-                      BHW.sourceOrientedMinkowskiInvariant d n
-                        (N.toOriginal
-                          (BHW.sourceOrientedNormalParameterVector
-                            d n N.r N.hrD N.hrn (encode.symm c')))) ''
-                      {c' | c' ∈ P ∧
-                        BHW.SourceOrientedMaxRankAt d n
-                          (BHW.sourceOrientedMinkowskiInvariant d n
-                            (N.toOriginal
-                              (BHW.sourceOrientedNormalParameterVector
-                                d n N.r N.hrD N.hrn (encode.symm c')))))})))
+          BHW.SourceOrientedResidualPolydiscData d n N
       ```
 
-      Proof transcript.  Choose an extended-tube coordinate ball around
-      `N.adaptedBase`.  Choose the canonical continuous linear coordinate
-      equivalence `encode` from the finite product of head/mixed/tail
-      coordinates to `Fin m -> ℂ`.  Use
-      `N.normalTransport.perturb_back_small` to choose a normal-coordinate
-      radius so that every normal vector within that radius transports back
-      into this ball; define `K` as the closed sup-norm ball around the
-      encoded center and `P` as the corresponding open ball.  Shrink once
-      more so the selected head block remains invertible.  For image
-      surjectivity, take
-      `G ∈ Ω ∩ sourceOrientedGramVariety`, bundle the symmetric head block by
-      `sourceOrientedSchurHeadBlockSymm`, factor it with the local
-      signature-relative head gauge, prove
-      `sourceOrientedSchurResidualTailData_mem_variety`, form Schur residual
-      data by `sourceOriented_schurResidualData_of_tail_mem`, realize the
-      residual tail by `sourceShiftedTailSmallRealization`, encode the resulting
-      `(head,mixed,tail)` parameter, and finish with
-      `sourceOrientedNormalParameterVector_realizes_schur`.  For max-rank
-      density, perturb only the tail parameter inside the open ball using
-      `sourceShiftedTailOrientedMaxRank_dense_in_parameterOpen`; the head block
-      remains invertible by the prior shrink and the Schur rank-additivity
-      theorem
-      `sourceOrientedNormalParameterVector_maxRank_iff_tail` gives
-      `SourceOrientedMaxRankAt` for the reconstructed full invariant.
+      Production theorem packaging.  The branch-level producer remains
+      `BHW.SourceOrientedRankDeficientTubeResidualPolydiscProducer d n`:
+      from `hz0 : z0 ∈ ExtendedTube d n` and the rank-deficient hypothesis,
+      first call
+      `BHW.SourceOrientedRankDeficientNormalFormData.exists_ofExtendedTube`
+      to obtain `N`, then call the displayed theorem to obtain
+      `BHW.SourceOrientedResidualPolydiscData d n N`, and return the sigma
+      pair.
+
+      Proof transcript.  Let
+      `p0 := BHW.sourceOrientedNormalCenterParameter d n N.r N.hrD N.hrn`,
+      `normalVector p :=
+      BHW.sourceOrientedNormalParameterVector d n N.r N.hrD N.hrn p`, and
+      `normalImage p := BHW.sourceOrientedMinkowskiInvariant d n
+      (N.toOriginal (normalVector p))`.  The center equations are checked by
+      `BHW.sourceOrientedNormalParameterVector_center`,
+      `N.normalBase_eq`, `N.toOriginal_normalBase_eq_adaptedBase`, and
+      `N.toOriginal_normalBase_invariant`.
+
+      The extended-tube shrink is purely topological.  From
+      `BHW.isOpen_extendedTube`, `N.adaptedBase_mem`, and
+      `N.toOriginal_normalBase_eq_adaptedBase`, prove
+      ```
+      {p | N.toOriginal (normalVector p) ∈ BHW.ExtendedTube d n} ∈ 𝓝 p0
+      ```
+      using
+      ```
+      N.toOriginal_continuous.comp
+        (BHW.continuous_sourceOrientedNormalParameterVector
+          d n N.r N.hrD N.hrn)
+      ```
+      at `p0`.  Then apply
+      `BHW.exists_sourceOrientedNormalParameterBall_subset_of_mem_nhds_center`
+      to choose a positive normal-parameter ball whose whole closed shrink
+      still maps into `ExtendedTube`.  This replaces the invalid
+      `N.normalTransport.perturb_back_small` shortcut; no source-matrix
+      normal-form map is claimed to preserve the extended tube globally.
+
+      Use the checked finite-coordinate homeomorphism
+      `BHW.sourceOrientedNormalParameterFinCoordHomeomorph` from
+      `SourceOrientedNormalParameterFinCoord.lean`, which is
+      `BHW.sourceOrientedNormalParameterFiniteCoordHomeomorph` followed by
+      `Fintype.equivFin` of
+      `BHW.SourceOrientedNormalParameterFiniteCoordIndex d n N.r`.  Define
+      `P` as `BHW.sourceOrientedNormalParameterFinCoordOpenBall` around the
+      encoded center and `K` as
+      `BHW.sourceOrientedNormalParameterFinCoordClosedBall` in the same
+      coordinates, choosing radii so that `P ⊆ K` and `K` remains inside all
+      previously selected normal-parameter neighborhoods.  The required fields
+      are then:
+      `K_compact` from
+      `BHW.isCompact_sourceOrientedNormalParameterFinCoordClosedBall`;
+      `P_open` from
+      `BHW.isOpen_sourceOrientedNormalParameterFinCoordOpenBall`;
+      `residualVector c := normalVector (decode c)`; continuity from
+      `BHW.continuous_sourceOrientedNormalParameterVector`; and
+      `toOriginal_residualVector_mem_ET` from the extended-tube shrink.
+
+      For original-coordinate image surjectivity, build the algebraic normal
+      image associated to the same `N`:
+      ```
+      N.toAlgebraicNormalFormData :
+        BHW.SourceOrientedRankDeficientAlgebraicNormalFormData
+          d n (BHW.sourceOrientedMinkowskiInvariant d n z0)
+      ```
+      with the same `r`, `hrD`, `hrn`, and `varietyTransport`.  The bridge
+      lemma
+      ```
+      (N.toAlgebraicNormalFormData.originalNormalVarietyPoint p).1 =
+        normalImage p
+      ```
+      follows from `N.toOriginal_oriented` and
+      `BHW.sourceOrientedNormalParameterVarietyPoint`.  Feed this algebraic
+      packet to the checked sliced-head Schur local-image stack, shrink the
+      resulting parameter box by the same normal ball, extract the relatively
+      open transported image, and choose the ambient witness `Ω0` from
+      `IsRelOpenInSourceOrientedGramVariety` so that
+      `Ω0 ∩ sourceOrientedGramVariety d n` is exactly the transported image.
+      Set the residual-data field `Ω := Ω0`.  Then
+      `originalInvariant_mem` is pointwise membership of the parameter image,
+      and `image_surj` is the equality
+      `Ω ∩ sourceOrientedGramVariety = normalImage '' P`.
+
+      For `maxRank_dense_original`, in the hard full-frame range apply the
+      checked density theorem on the relatively open image,
+      `BHW.sourceOrientedMaxRank_dense_in_relOpen_inter`, then rewrite
+      `normalImage '' P ∩ {G | SourceOrientedMaxRankAt d n G}` as the image
+      of the parameter subset
+      `{c | c ∈ P ∧ SourceOrientedMaxRankAt d n (normalImage c)}`.  In the
+      normal-parameter coordinates, the rewrite to the shifted residual-tail
+      max-rank predicate is checked by
+      `BHW.SourceOrientedRankDeficientNormalFormData.toOriginal_normalParameterVector_maxRank_iff_tail`.
+      In the
+      small-arity branch, the remaining support theorem is the corresponding
+      max-rank chart-density theorem from the small-arity local chart, unless
+      the implementation instead proves one all-arity density theorem covering
+      both branches.  This density argument is original-image density; it does
+      not assume the source-matrix transport is an ambient homeomorphism.
 
       The determinant formula in
       `sourceSchurResidualDeterminants` is the cofactor/wedge formula for
@@ -10927,7 +10957,6 @@ Proof decomposition of this theorem, without hiding the analytic work:
             (LinearMap.range (BHW.sourceCoefficientEval d n z)) = r
 
       structure BHW.SourceOrientedRankDeficientNormalFormData
-          [NeZero d]
           (d n : Nat)
           (z0 : Fin n -> Fin (d + 1) -> ℂ) where
         r : Nat
@@ -10938,22 +10967,9 @@ Proof decomposition of this theorem, without hiding the analytic work:
         adaptedBase_same_oriented :
           BHW.sourceOrientedMinkowskiInvariant d n adaptedBase =
             BHW.sourceOrientedMinkowskiInvariant d n z0
-        adapted :
-          BHW.HWLemma3AdaptedNormalForm d n r adaptedBase
         normalBase : Fin n -> Fin (d + 1) -> ℂ
         normalBase_eq :
           normalBase = BHW.hwLemma3CanonicalSource d n r
-        head_unit :
-          IsUnit
-            (Matrix.det
-              (fun a b =>
-                BHW.sourceMinkowskiGram d n normalBase
-                  (BHW.finSourceHead hrn a)
-                  (BHW.finSourceHead hrn b)))
-        tail_zero :
-          BHW.sourceTailResidualCoordinates d n r hrD hrn normalBase = 0
-        normalTransport :
-          BHW.HWLemma3NormalFormTransport d n r adaptedBase
         varietyTransport :
           BHW.SourceOrientedVarietyTransportEquiv d n
         toOriginal :
@@ -11146,106 +11162,29 @@ Proof decomposition of this theorem, without hiding the analytic work:
           BHW.sourceOrientedVarietyPoint_of_normalFormTransport_symm
             (d := d) (n := n) r T z
 
-      theorem BHW.sourceOriented_rankDeficient_normalFormData
+      theorem
+          BHW.SourceOrientedRankDeficientNormalFormData.exists_ofExtendedTube
           [NeZero d]
           (hd : 2 <= d)
-          (n : Nat)
           {z0 : Fin n -> Fin (d + 1) -> ℂ}
           (hz0 : z0 ∈ BHW.ExtendedTube d n)
           (hlow :
             ¬ BHW.SourceOrientedMaxRankAt d n
               (BHW.sourceOrientedMinkowskiInvariant d n z0)) :
-          BHW.SourceOrientedRankDeficientNormalFormData d n z0 := by
-        classical
-        let G0 := BHW.sourceMinkowskiGram d n z0
-        have hrank_lt :
-            BHW.sourceGramMatrixRank n G0 < d + 1 :=
-          BHW.sourceOriented_notMaxRank_sourceGramMatrixRank_lt_fullFrame
-            d n z0 hlow
-        rcases
-          BHW.hwLemma3_extendedTube_adaptedRankRepresentative
-            (d := d) hd n hz0 with
-          ⟨base, hbase_ET, hbase_gram, hbase_span⟩
-        have hbase_rank_lt :
-            BHW.sourceGramMatrixRank n
-              (BHW.sourceMinkowskiGram d n base) < d + 1 := by
-          simpa [hbase_gram] using hrank_lt
-        have hbase_oriented :
-            BHW.sourceOrientedMinkowskiInvariant d n base =
-              BHW.sourceOrientedMinkowskiInvariant d n z0 :=
-          BHW.sourceOrientedMinkowskiInvariant_eq_of_sameGram_rank_lt
-            (d := d) n hbase_gram hbase_rank_lt
-        let r :=
-          BHW.sourceGramMatrixRank n
-            (BHW.sourceMinkowskiGram d n base)
-        have hrD : r < d + 1 := by
-          simpa [r, hbase_gram.symm, G0] using hrank_lt
-        have hrn : r <= n :=
-          BHW.sourceGramMatrixRank_le_arity
-            (n := n) (BHW.sourceMinkowskiGram d n base)
-        have hspan :
-            Module.finrank ℂ
-              (LinearMap.range (BHW.sourceCoefficientEval d n base)) = r := by
-          simpa [r, hbase_gram] using hbase_span
-        let adapted :
-            BHW.HWLemma3AdaptedNormalForm d n r base :=
-          { rank_eq := rfl
-            span_finrank_eq := hspan }
-        rcases
-          BHW.hwLemma3_normalFormTransportData
-            (d := d) hd n (z0 := base) r rfl hspan with
-          ⟨Tnormal, _⟩
-        let normalBase : Fin n -> Fin (d + 1) -> ℂ :=
-          BHW.hwLemma3CanonicalSource d n r
-        have hhead :
-            IsUnit
-              (Matrix.det
-                (fun a b =>
-                  BHW.sourceMinkowskiGram d n normalBase
-                    (BHW.finSourceHead hrn a)
-                    (BHW.finSourceHead hrn b))) :=
-          by
-            simpa [normalBase] using
-              BHW.hwLemma3CanonicalSource_head_unit
-                (d := d) hd n r hrD hrn
-        have htail :
-            BHW.sourceTailResidualCoordinates d n r hrD hrn normalBase = 0 :=
-          BHW.hwLemma3CanonicalSource_tail_zero
-            (d := d) hd n r hrD hrn
-        have htoOrig_base :
-            Tnormal.toNormalVec.symm normalBase = base := by
-          rw [normalBase, ← Tnormal.z0_to_canonical]
-          simp
-        let varietyTransport :=
-          BHW.SourceOrientedVarietyTransportEquiv.ofHWNormalFormTransport
-            (d := d) (n := n) r Tnormal
-        refine
-          { r := r
-            hrD := hrD
-            hrn := hrn
-            adaptedBase := base
-            adaptedBase_mem := hbase_ET
-            adaptedBase_same_oriented := hbase_oriented
-            adapted := adapted
-            normalBase := normalBase
-            normalBase_eq := rfl
-            head_unit := hhead
-            tail_zero := htail
-            normalTransport := Tnormal
-            varietyTransport := varietyTransport
-            toOriginal := Tnormal.toNormalVec.symm
-            toOriginal_continuous := Tnormal.toNormalVec.symm.continuous
-            toOriginal_normalBase_eq_adaptedBase := htoOrig_base
-            toOriginal_normalBase_invariant := by
-              simpa [htoOrig_base] using hbase_oriented
-            toOriginal_oriented := by
-              intro z
-              simpa [varietyTransport] using
-                BHW.sourceOrientedVarietyPoint_toOriginal_of_normalFormTransport
-                  (d := d) (n := n) r Tnormal z }
+          ∃ N : BHW.SourceOrientedRankDeficientNormalFormData d n z0,
+            N.adaptedBase ∈ BHW.ExtendedTube d n := by
+        -- Checked in `SourceOrientedRankDeficientTubeResidual.lean`.
+        -- The proof calls
+        -- `BHW.hwLemma3_extendedTube_adaptedRankRepresentative`, converts
+        -- same scalar Gram to same oriented invariant by
+        -- `BHW.sourceOrientedMinkowskiInvariant_eq_of_sameGram_rank_lt`,
+        -- then uses
+        -- `BHW.SourceOrientedRankDeficientNormalFormData.exists_ofAdaptedBase`.
+        exact
+          BHW.SourceOrientedRankDeficientNormalFormData.exists_ofExtendedTube
+            (d := d) hd hz0 hlow
 
       structure BHW.SourceOrientedResidualPolydiscData
-          [NeZero d]
           (d n : Nat)
           {z0 : Fin n -> Fin (d + 1) -> ℂ}
           (N :
@@ -11297,116 +11236,67 @@ Proof decomposition of this theorem, without hiding the analytic work:
       theorem BHW.sourceOriented_residualPolydiscData
           [NeZero d]
           (hd : 2 <= d)
-          (n : Nat)
           {z0 : Fin n -> Fin (d + 1) -> ℂ}
           (N :
             BHW.SourceOrientedRankDeficientNormalFormData d n z0) :
           BHW.SourceOrientedResidualPolydiscData d n N := by
-        classical
-        rcases
+        exact
           BHW.sourceOriented_rankDeficient_tubeResidualPolydisc
-            (d := d) hd n N with
-          ⟨m, encode, K, P, c0, hK_compact, hP_open, hP_subset_K,
-            hc0_mem, hcenter_encode, htube,
-            Ω, hΩ_open, hΩ_center, hΩ_image, hΩ_surj, hmax_dense⟩
-        refine
-          { m := m
-            c0 := c0
-            K := K
-            P := P
-            K_compact := hK_compact
-            P_open := hP_open
-            P_subset_K := hP_subset_K
-            c0_mem := hc0_mem
-            residualVector := fun c =>
-              BHW.sourceOrientedNormalParameterVector
-                d n N.r N.hrD N.hrn (encode.symm c)
-            residualVector_continuousOn := by
-              exact
-                (BHW.continuous_sourceOrientedNormalParameterVector
-                  (d := d) n N.r N.hrD N.hrn).comp_continuousOn
-                  encode.symm.continuous.continuousOn
-            residualVector_c0 := by
-              have hc0 :
-                  encode.symm c0 =
-                    BHW.sourceOrientedNormalCenterParameter
-                      d n N.r N.hrD N.hrn := by
-                apply encode.injective
-                simpa using hcenter_encode.symm
-              simpa [hc0] using
-                BHW.sourceOrientedNormalParameterVector_center
-                  (d := d) n N.r N.hrD N.hrn
-            toOriginal_residualVector_mem_ET := by
-              intro c hc
-              exact htube c hc
-            Ω := Ω
-            Ω_open := hΩ_open
-            Ω_center := hΩ_center
-            originalInvariant_mem := hΩ_image
-            image_surj := hΩ_surj
-            maxRank_dense_original := hmax_dense }
+            (d := d) hd N
 
       theorem BHW.sourceOriented_residualPolydisc_tubeStability
-          [NeZero d]
-          (hd : 2 <= d)
-          (n : Nat)
           {z0 : Fin n -> Fin (d + 1) -> ℂ}
           (N :
             BHW.SourceOrientedRankDeficientNormalFormData d n z0)
-          (P :
+          (D :
             BHW.SourceOrientedResidualPolydiscData d n N) :
-          ∀ c ∈ P.K,
-            N.toOriginal (P.residualVector c) ∈ BHW.ExtendedTube d n :=
-        P.toOriginal_residualVector_mem_ET
+          ∀ c, c ∈ D.K ->
+            N.toOriginal (D.residualVector c) ∈ BHW.ExtendedTube d n :=
+        D.toOriginal_residualVector_mem_ET
 
       theorem BHW.sourceOriented_residualPolydisc_imageSurj
-          [NeZero d]
-          (hd : 2 <= d)
-          (n : Nat)
           {z0 : Fin n -> Fin (d + 1) -> ℂ}
           (N :
             BHW.SourceOrientedRankDeficientNormalFormData d n z0)
-          (P :
+          (D :
             BHW.SourceOrientedResidualPolydiscData d n N) :
           ∃ Ω : Set (BHW.SourceOrientedGramData d n),
             IsOpen Ω ∧
             BHW.sourceOrientedMinkowskiInvariant d n z0 ∈ Ω ∧
-            (∀ c ∈ P.K,
+            (∀ c, c ∈ D.K ->
               BHW.sourceOrientedMinkowskiInvariant d n
-                (N.toOriginal (P.residualVector c)) ∈
+                (N.toOriginal (D.residualVector c)) ∈
                 Ω ∩ BHW.sourceOrientedGramVariety d n) ∧
             Ω ∩ BHW.sourceOrientedGramVariety d n ⊆
               (fun c =>
                 BHW.sourceOrientedMinkowskiInvariant d n
-                  (N.toOriginal (P.residualVector c))) '' P.P :=
-        ⟨P.Ω, P.Ω_open, P.Ω_center, P.originalInvariant_mem, P.image_surj⟩
+                  (N.toOriginal (D.residualVector c))) '' D.P :=
+        ⟨D.Ω, D.Ω_open, D.Ω_center, D.originalInvariant_mem, D.image_surj⟩
 
       theorem BHW.sourceOriented_residualPolydisc_maxRankDense
-          [NeZero d]
-          (hd : 2 <= d)
-          (n : Nat)
           {z0 : Fin n -> Fin (d + 1) -> ℂ}
           (N :
             BHW.SourceOrientedRankDeficientNormalFormData d n z0)
-          (P :
+          (D :
             BHW.SourceOrientedResidualPolydiscData d n N) :
-          ∀ c ∈ P.P,
+          ∀ c, c ∈ D.P ->
             BHW.sourceOrientedMinkowskiInvariant d n
-                (N.toOriginal (P.residualVector c)) ∈
+                (N.toOriginal (D.residualVector c)) ∈
               closure
                 ((fun c' =>
                   BHW.sourceOrientedMinkowskiInvariant d n
-                    (N.toOriginal (P.residualVector c'))) ''
-                  {c' | c' ∈ P.P ∧
+                    (N.toOriginal (D.residualVector c'))) ''
+                  {c' | c' ∈ D.P ∧
                     BHW.SourceOrientedMaxRankAt d n
                       (BHW.sourceOrientedMinkowskiInvariant d n
-                        (N.toOriginal (P.residualVector c')))}) :=
-        P.maxRank_dense_original
+                        (N.toOriginal (D.residualVector c')))}) :=
+        D.maxRank_dense_original
       ```
 
-      `sourceOriented_rankDeficient_normalFormData` consumes the ordinary
-      adapted Hall-Wightman Lemma-3 representative `adaptedBase` in the
-      extended tube, then records the canonical normal-form source
+      `SourceOrientedRankDeficientNormalFormData.exists_ofExtendedTube`
+      consumes the checked ordinary adapted Hall-Wightman Lemma-3
+      representative `adaptedBase` in the extended tube, then records the
+      canonical normal-form source
       `normalBase = hwLemma3CanonicalSource d n r` separately.  This
       separation is load-bearing.  The canonical normal source is the point at
       which the head block is the signature diagonal
@@ -11416,7 +11306,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
       coordinates.  The source normal-form transport may be used on actual
       source tuples, but the proof may not require it to be an ambient
       homeomorphism of all oriented Gram/determinant coordinates.
-      `sourceOriented_residualPolydiscData` then chooses the closed residual
+      `sourceOriented_rankDeficient_tubeResidualPolydisc` then chooses the closed residual
       polydisc `K` and open interior `P` in normal coordinates after all tube
       shrinkings.  Its field `toOriginal_residualVector_mem_ET`, not any
       global invariance of the normal-form transport, is the theorem that
@@ -11479,61 +11369,12 @@ Proof decomposition of this theorem, without hiding the analytic work:
       open set.
 
       ```lean
-      theorem BHW.sourceOriented_rankDeficient_residualChart
-          [NeZero d]
-          (hd : 2 <= d)
-          (n : Nat)
-          {z0 : Fin n -> Fin (d + 1) -> ℂ}
-          (hz0 : z0 ∈ BHW.ExtendedTube d n)
-          (hlow :
-            ¬ BHW.SourceOrientedMaxRankAt d n
-              (BHW.sourceOrientedMinkowskiInvariant d n z0)) :
-          BHW.SourceOrientedRankDeficientResidualChartData d n z0 := by
-        let N :=
-          BHW.sourceOriented_rankDeficient_normalFormData
-            (d := d) hd n hz0 hlow
-        let P :=
-          BHW.sourceOriented_residualPolydiscData
-            (d := d) hd n N
-        obtain ⟨Ω, hΩ_open, hΩ_center, hΩ_image_mem,
-          hΩ_surj⟩ :=
-          BHW.sourceOriented_residualPolydisc_imageSurj
-            (d := d) hd n N P
-        refine
-          { m := P.m
-            Ω := Ω
-            Ω_open := hΩ_open
-            center_mem_ET := hz0
-            K := P.K
-            K_compact := P.K_compact
-            P := P.P
-            P_open := P.P_open
-            P_subset_K := P.P_subset_K
-            c0 := P.c0
-            c0_mem := P.c0_mem
-            toVec := fun c => N.toOriginal (P.residualVector c)
-            toVec_continuousOn :=
-              N.toOriginal_continuous.comp_continuousOn
-                P.residualVector_continuousOn
-            toVec_mem := ?_
-            toVec_c0_invariant := ?_
-            toInv_eq := ?_
-            image_surj := ?_
-            maxRank_dense_parameters := ?_ }
-        · intro c hc
-          exact
-            BHW.sourceOriented_residualPolydisc_tubeStability
-              (d := d) hd n N P c hc
-        · simpa [P.residualVector_c0] using
-            N.toOriginal_normalBase_invariant
-        · intro c hc
-          exact hΩ_image_mem c hc
-        · intro G hG
-          exact hΩ_surj G hG
-        · intro c hcP
-          exact
-            BHW.sourceOriented_residualPolydisc_maxRankDense
-              (d := d) hd n N P c hcP
+      noncomputable def
+          BHW.sourceOrientedRankDeficientResidualChartProducer_of_tubeResidualPolydiscProducer
+          (H : BHW.SourceOrientedRankDeficientTubeResidualPolydiscProducer d n) :
+          BHW.SourceOrientedRankDeficientResidualChartProducer d n := by
+        intro z0 hz0 hlow
+        exact (H hz0 hlow).2.to_residualChart hz0
       ```
 
       The transport lemmas used in this script are finite linear algebra:

@@ -92,8 +92,17 @@ noncomputable def sourceOrientedNormalParameterSchurTail
     (hrD : r < d + 1)
     (hrn : r ≤ n)
     (p : SourceOrientedRankDeficientNormalParameter d n r hrD hrn) :
-    Matrix (Fin (n - r)) (Fin (n - r)) ℂ :=
+  Matrix (Fin (n - r)) (Fin (n - r)) ℂ :=
   sourceShiftedTailGram d r hrD (n - r) p.tail
+
+/-- Maximal rank for the shifted residual-tail oriented datum: the ordinary
+tail Gram has maximal possible rank in the residual spacetime dimension. -/
+def SourceShiftedTailOrientedMaxRankAt
+    (d r : ℕ)
+    (hrD : r < d + 1)
+    (m : ℕ)
+    (T : SourceShiftedTailOrientedData d r hrD m) : Prop :=
+  sourceGramMatrixRank m T.gram = min (d + 1 - r) m
 
 /-- Each coordinate of the padded tail embedding is continuous in the tail
 coordinate vector. -/
@@ -276,6 +285,57 @@ theorem sourceOrientedNormalParameterVarietyPoint_eq_sourcePrincipalSchurGraph
       sourceOrientedNormalParameterVarietyPoint_gram_sourcePrincipalSchurGraph
         d n r hrD hrn p hH
   · rfl
+
+/-- On the invertible-head normal-parameter locus, max-rank of the full
+normal image is exactly max-rank of the shifted residual tail. -/
+theorem sourceOrientedNormalParameterVector_maxRank_iff_tail
+    (d n r : ℕ)
+    (hrD : r < d + 1)
+    (hrn : r ≤ n)
+    (p : SourceOrientedRankDeficientNormalParameter d n r hrD hrn)
+    (hH : IsUnit p.head.det) :
+    SourceOrientedMaxRankAt d n
+        (sourceOrientedMinkowskiInvariant d n
+          (sourceOrientedNormalParameterVector d n r hrD hrn p)) ↔
+      SourceShiftedTailOrientedMaxRankAt d r hrD (n - r)
+        (sourceShiftedTailOrientedInvariant d r hrD (n - r) p.tail) := by
+  rw [show sourceOrientedMinkowskiInvariant d n
+          (sourceOrientedNormalParameterVector d n r hrD hrn p) =
+        (sourceOrientedNormalParameterVarietyPoint d n r hrD hrn p).1 by rfl]
+  rw [sourceOrientedNormalParameterVarietyPoint_eq_sourcePrincipalSchurGraph
+    d n r hrD hrn p hH]
+  have hA : IsUnit
+      (sourceOrientedNormalParameterSchurHead d n r hrD hrn p).det := by
+    change IsUnit (p.head * sourceHeadMetric d r hrD * p.headᵀ).det
+    have hη : IsUnit (sourceHeadMetric d r hrD).det :=
+      sourceHeadMetric_det_isUnit d r hrD
+    have hHt : IsUnit p.headᵀ.det := Matrix.isUnit_det_transpose p.head hH
+    rw [Matrix.det_mul, Matrix.det_mul]
+    exact (hH.mul hη).mul hHt
+  have hAsym :
+      (sourceOrientedNormalParameterSchurHead d n r hrD hrn p)ᵀ =
+        sourceOrientedNormalParameterSchurHead d n r hrD hrn p := by
+    exact sourceNormalHeadGram_transpose d n r hrD hrn p
+  have hSsym :
+      (sourceOrientedNormalParameterSchurTail d n r hrD hrn p)ᵀ =
+        sourceOrientedNormalParameterSchurTail d n r hrD hrn p := by
+    ext u v
+    simp [sourceOrientedNormalParameterSchurTail, sourceShiftedTailGram,
+      sourceVectorMinkowskiInner_comm]
+  have hrmin : Fintype.card (Fin r) ≤ min (d + 1) n := by
+    exact le_min (by simpa using Nat.le_of_lt hrD) (by simpa using hrn)
+  have hiff :=
+    sourcePrincipalSchurGraph_sourceGramMatrixRank_eq_iff_residual_rank
+      n (min (d + 1) n) (sourceHeadTailEquiv n r hrn)
+      (A := sourceOrientedNormalParameterSchurHead d n r hrD hrn p)
+      (B := sourceOrientedNormalParameterSchurMixed d n r hrD hrn p)
+      (S := sourceOrientedNormalParameterSchurTail d n r hrD hrn p)
+      hA hAsym hSsym hrmin
+  have hmin_sub : min (d + 1) n - r = min (d + 1 - r) (n - r) := by
+    rw [← Nat.sub_min_sub_right]
+  simpa [SourceOrientedMaxRankAt, SourceShiftedTailOrientedMaxRankAt,
+    SourceOrientedGramData.gram, sourceGramMatrixRank,
+    sourceOrientedNormalParameterSchurTail, hmin_sub] using hiff
 
 namespace SourceOrientedRankDeficientAlgebraicNormalFormData
 
