@@ -20,7 +20,7 @@ contains all the required data and properties.
 ## Main Definitions
 
 * `WightmanQFT` - The complete structure satisfying all Wightman axioms
-* `WightmanQFT.spectrumCondition` - Energy-momentum spectrum lies in forward light cone
+* `WightmanQFT.spectrum_condition` - exported quadratic-form spectral condition
 * `WightmanQFT.locality` - Spacelike-separated fields commute
 
 ## The Wightman Axioms
@@ -29,7 +29,8 @@ The Wightman axioms (W1-W4) as formalized here:
 
 **W1 (Covariance)**:
 - There is a continuous unitary representation U of the Poincaré group on H
-- The generators P_μ (energy-momentum) have spectrum in the forward light cone V₊
+- The exported spectral-condition field records strong continuity, nonnegative
+  energy, and the quadratic-form mass-shell inequality on the Stone-generator domains
 - There exists a unique vacuum vector Ω invariant under U(g)
 
 **W2 (Field Operators)**:
@@ -131,6 +132,47 @@ theorem MatrixElementSpectralCondition.continuousInDirection
     PoincareRepresentation.translationContinuousInDirection π μ :=
   MatrixElementSpectralCondition.strongly_continuous hπ μ
 
+/-- **Quadratic-form spectral condition surface** (Axiom II proxy).
+
+    This exported structure records the spectral-condition data currently used on
+    the Hilbert-space side: strong continuity of translations, nonnegative energy,
+    and the quadratic-form inequality `P₀² ≥ Σᵢ Pᵢ²` on the relevant Stone-generator
+    domains.
+
+    It should be viewed as a proved proxy for the full Streater-Wightman joint-spectrum
+    statement, not as the full support theorem itself. -/
+structure SpectralConditionQFT (d : ℕ) [NeZero d]
+    {H : Type*} [NormedAddCommGroup H] [InnerProductSpace ℂ H] [CompleteSpace H]
+    (π : PoincareRepresentation d H) : Prop where
+  strongly_continuous : PoincareRepresentation.translationStronglyContinuous π
+  energy_nonneg :
+    ∀ (ψ : H) (hψ : ψ ∈ (π.momentumOp 0 (strongly_continuous 0)).domain),
+    (⟪ψ, (π.momentumOp 0 (strongly_continuous 0)) ⟨ψ, hψ⟩⟫_ℂ).re ≥ 0
+  mass_shell :
+    ∀ (ψ : H)
+      (hψ₀ : ψ ∈ (π.momentumOp 0 (strongly_continuous 0)).domain)
+      (hP₀ψ : (π.momentumOp 0 (strongly_continuous 0)) ⟨ψ, hψ₀⟩ ∈
+        (π.momentumOp 0 (strongly_continuous 0)).domain)
+      (hψᵢ : ∀ i : Fin d, ψ ∈
+        (π.momentumOp (Fin.succ i) (strongly_continuous (Fin.succ i))).domain)
+      (hPᵢψ : ∀ i : Fin d,
+        (π.momentumOp (Fin.succ i) (strongly_continuous (Fin.succ i))) ⟨ψ, hψᵢ i⟩ ∈
+          (π.momentumOp (Fin.succ i) (strongly_continuous (Fin.succ i))).domain),
+    (⟪ψ, (π.momentumOp 0 (strongly_continuous 0))
+      ⟨(π.momentumOp 0 (strongly_continuous 0)) ⟨ψ, hψ₀⟩, hP₀ψ⟩⟫_ℂ).re ≥
+    ∑ i : Fin d,
+      (⟪ψ, (π.momentumOp (Fin.succ i) (strongly_continuous (Fin.succ i)))
+        ⟨(π.momentumOp (Fin.succ i) (strongly_continuous (Fin.succ i)))
+          ⟨ψ, hψᵢ i⟩, hPᵢψ i⟩⟫_ℂ).re
+
+/-- Extract strong continuity from the S-W spectral condition. -/
+theorem SpectralConditionQFT.continuousInDirection
+    {H : Type*} [NormedAddCommGroup H] [InnerProductSpace ℂ H] [CompleteSpace H]
+    {π : PoincareRepresentation d H}
+    (hπ : @SpectralConditionQFT d _ H _ _ _ π) (μ : Fin (d + 1)) :
+    PoincareRepresentation.translationContinuousInDirection π μ :=
+  hπ.strongly_continuous μ
+
 /-! ### Locality -/
 
 /-- Two Schwartz functions have spacelike-separated supports -/
@@ -188,12 +230,12 @@ structure WightmanQFT (d : ℕ) [NeZero d] where
   -- W1: Poincaré Covariance and Spectrum Condition
   /-- The unitary representation of the Poincaré group -/
   poincare_rep : @PoincareRepresentation d _ HilbertSpace instNormedAddCommGroup instInnerProductSpace instCompleteSpace
-  /-- Spectrum condition in matrix-element form: translation matrix coefficients
-      admit forward-tube holomorphic continuation with the correct boundary
-      values. This is the Stone-compatible surface intended to precede the full
-      joint-spectrum theorem for the unbounded generators. -/
+  /-- **Spectral-condition proxy field**: the current exported Hilbert-space
+      surface consisting of strong continuity, nonnegative energy, and the
+      quadratic-form mass-shell inequality. See `SpectralConditionQFT` for the
+      precise scope. -/
   spectrum_condition :
-    @MatrixElementSpectralCondition d _ HilbertSpace
+    @SpectralConditionQFT d _ HilbertSpace
       instNormedAddCommGroup instInnerProductSpace instCompleteSpace poincare_rep
   /-- The vacuum vector -/
   vacuum : HilbertSpace
