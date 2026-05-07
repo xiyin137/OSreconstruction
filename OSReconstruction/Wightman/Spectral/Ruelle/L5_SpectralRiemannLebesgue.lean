@@ -151,13 +151,29 @@ theorem spectral_riemann_lebesgue
         Complex.exp (Complex.I * (∑ i : Fin d, (a i : ℂ) * (q i : ℂ)))
     rw [Complex.real_smul]
   simp_rw [h_step2]
-  -- Step 3-5: Reduce to Mathlib's `tendsto_integral_exp_inner_smul_cocompact`.
-  -- Our integrand is `(ρ q : ℂ) * exp(i ⟨a, q⟩)` where `⟨a, q⟩ := ∑ a_i q_i`.
-  -- Mathlib's RL form (after substituting w = -a/(2π)) gives the same shape:
-  --   `∫ v, 𝐞(-⟨v, w⟩) • f v = ∫ v, exp(-2π i ⟨v, w⟩) f(v)`.
-  -- With f := (ρ : ℂ) and w := -a/(2π), Mathlib RL yields the goal.
-  -- Reconcile cocompact ↔ cobounded via `Metric.cobounded_eq_cocompact` on
-  -- the proper space `Fin d → ℝ`.
+  -- Steps 3–5 (deferred): Reduce to Mathlib's RL.
+  --
+  -- Sub-step 3a: integrability of `q ↦ (ρ q : ℂ)`. Holds because
+  --   `(spatialMarginal μ).rnDeriv volume` is in L¹(volume) when
+  --   `spatialMarginal μ` is finite.
+  -- Sub-step 3b: convert `Fin d → ℝ` to `EuclideanSpace ℝ (Fin d)` via
+  --   the canonical measurable equiv (measure-preserving by
+  --   `EuclideanSpace.volume_preserving_symm_measurableEquiv_toLp`).
+  -- Sub-step 3c: Mathlib's `tendsto_integral_exp_inner_smul_cocompact`
+  --   on `f := fun v => (ρ (eq.symm v) : ℂ)` gives
+  --   `Tendsto (fun w => ∫ v, 𝐞(-⟨v, w⟩) • f v) cocompact (𝓝 0)`.
+  --   Here `𝐞(-⟨v, w⟩) = exp(-2πi ⟨v, w⟩)` (Mathlib's `fourierChar`).
+  -- Sub-step 3d: substitute `w = -a/(2π)`. Then
+  --   `𝐞(-⟨v, -a/(2π)⟩) = exp(-2πi · (-1/(2π)) ⟨v, a⟩) = exp(i ⟨v, a⟩)
+  --                     = exp(i ∑ a_i v_i)`,
+  --   matching our integrand.
+  -- Sub-step 3e: `cocompact = cobounded` on `Fin d → ℝ` (proper space)
+  --   via `Metric.cobounded_eq_cocompact`.
+  --
+  -- Estimated remaining: ~1 day of careful Lean engineering. The proof
+  -- is a chain of `Tendsto.comp` with continuous bijections and
+  -- measure-preserving rewrites, but each step has subtle type-class
+  -- bookkeeping (Fin d → ℝ vs EuclideanSpace, sup-norm vs L²).
   sorry
 
 end Ruelle
