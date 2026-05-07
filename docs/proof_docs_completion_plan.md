@@ -4938,6 +4938,22 @@ implementation contract is:
    `standardSOAlgebraicRelationIdeal_eval_eq_zero` at every tuple and conclude
    the underlying image polynomial is zero by `MvPolynomial.funext`.  Thus the
    remaining SFT content is only the reverse kernel inclusion.
+   Transport the same easy containment to source coordinates before touching
+   the hard SFT theorem.  The theorem is
+   `sourceOrientedAlgebraicRelationIdeal_le_invariantCoordinateMap_ker`.
+   Lean proof transcript:
+   start with `p ∈ sourceOrientedAlgebraicRelationIdeal d n`, map it through
+   `sourceMinkowskiToDotInvariantCoordinateEquiv d n`, use
+   `sourceOrientedRelationIdeal_transport_dot d n` to identify the mapped
+   ideal with `standardSOAlgebraicRelationIdeal (d + 1) n`, apply
+   `standardSOAlgebraicRelationIdeal_le_invariantCoordinateMap_ker`, and then
+   pull the zero equation back through the injective restricted invariant
+   subalgebra equivalence.  The final equality is exactly the commuting square
+   `sourceMinkowskiToDotInvariantCoordinateMap_commutes d n p`.  This proves
+   only `sourceOrientedAlgebraicRelationIdeal d n ≤
+   RingHom.ker (sourceOrientedInvariantCoordinateMap d n)`; the reverse
+   source kernel inclusion remains transported from the genuine standard SFT
+   equality by `sourceOrientedInvariantRing_relations_kernel_of_standard`.
    The surjectivity output is no longer a named black box inside that package:
    the checked adapter
    `BHW.standardSOInvariantCoordinateMap_surjective_of_generator_eq` takes the
