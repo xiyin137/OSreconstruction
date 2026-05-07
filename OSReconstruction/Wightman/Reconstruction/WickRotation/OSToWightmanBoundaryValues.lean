@@ -726,7 +726,7 @@ theorem bvt_lorentz_covariant (OS : OsterwalderSchraderAxioms d)
 
 theorem bvt_locally_commutative (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) :
-    IsLocallyCommutativeWeak d (bvt_W OS lgc) := by
+    IsAdjacentLocallyCommutativeWeak d (bvt_W OS lgc) := by
   intro n i hi f g hsupp hswap
   exact bvt_W_swap_pairing_of_spacelike (d := d) OS lgc n i hi f g hsupp hswap
 
@@ -988,7 +988,7 @@ def constructWightmanFunctionsCore (OS : OsterwalderSchraderAxioms d)
 adjacent locality and cluster frontiers are supplied explicitly. -/
 def constructWightmanFunctions (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS)
-    (hlocal : IsLocallyCommutativeWeak d (bvt_W OS lgc))
+    (hlocal : IsAdjacentLocallyCommutativeWeak d (bvt_W OS lgc))
     (hcluster : ∀ (n m : ℕ) (f : SchwartzNPoint d n) (g : SchwartzNPoint d m),
       ∀ ε : ℝ, ε > 0 → ∃ R : ℝ, R > 0 ∧
         ∀ a : SpacetimeDim d, a 0 = 0 → (∑ i : Fin d, (a (Fin.succ i))^2) > R^2 →

@@ -32,9 +32,9 @@ their production docstrings.  They should not be treated as casual placeholders.
 
 They also should not be repurposed as the non-circular OS theorem-2 supplier.
 In particular, `blocker_iterated_eow_hExtPerm_d1_nontrivial` assumes
-`hF_local_dist : IsLocallyCommutativeWeak 1 W`; using it to prove
-`IsLocallyCommutativeWeak 1 (bvt_W OS lgc)` would be circular.  The OS §4.5
-route therefore needs a separate dimension-one real-open edge theorem or a
+`hF_local_dist : IsAdjacentLocallyCommutativeWeak 1 W`; using it to prove
+`IsAdjacentLocallyCommutativeWeak 1 (bvt_W OS lgc)` would be circular.  The OS
+§4.5 route therefore needs a separate dimension-one real-open edge theorem or a
 direct dimension-one complex-edge boundary/PET theorem, as documented in
 `docs/theorem2_locality_blueprint.md`.
 

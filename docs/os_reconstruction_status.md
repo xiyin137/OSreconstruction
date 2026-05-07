@@ -87,6 +87,11 @@ closed positivity/isometry package.
 coordinate swap, the reconstructed boundary-value functional satisfies
 `bvt_W OS lgc n f = bvt_W OS lgc n g`.
 
+API note: this is the standard OS/Wightman R3 surface used here.  It is not an
+arbitrary non-adjacent pair-swap theorem; moving a non-adjacent point past
+intervening fields would require the corresponding chain of adjacent spacelike
+crossing hypotheses.
+
 **Proof strategy (OS I §4.5):**
 1. The OS Euclidean covariance gives permutation symmetry of Schwinger functions.
 2. Analytic continuation preserves this symmetry on the extended tube.
