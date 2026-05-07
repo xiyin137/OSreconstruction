@@ -34,6 +34,63 @@ theorem sourceMinkowskiToDotInvDetScale_mul_detScale
   simp [sourceMinkowskiToDotInvDetScale, sourceMinkowskiToDotDetScale,
     ← Finset.prod_mul_distrib, complexMinkowskiDotInvScale_mul_scale]
 
+/-- The forward determinant scale times the inverse determinant scale is one. -/
+theorem sourceMinkowskiToDotDetScale_mul_invDetScale
+    (d : ℕ) :
+    sourceMinkowskiToDotDetScale d *
+      sourceMinkowskiToDotInvDetScale d = 1 := by
+  rw [mul_comm]
+  exact sourceMinkowskiToDotInvDetScale_mul_detScale d
+
+/-- The two Minkowski-signature conventions agree after coercion to `ℂ`. -/
+theorem metricSignature_eq_minkowskiSignature_complex
+    (d : ℕ) (μ : Fin (d + 1)) :
+    (MinkowskiSpace.metricSignature d μ : ℂ) =
+      (minkowskiSignature d μ : ℂ) := by
+  by_cases hμ : μ = 0 <;>
+    simp [MinkowskiSpace.metricSignature, minkowskiSignature, hμ]
+
+/-- The square of the forward determinant scale is the Minkowski metric
+determinant. -/
+theorem sourceMinkowskiToDotDetScale_mul_self
+    (d : ℕ) :
+    sourceMinkowskiToDotDetScale d *
+      sourceMinkowskiToDotDetScale d = minkowskiMetricDet d := by
+  simp [sourceMinkowskiToDotDetScale, minkowskiMetricDet,
+    ComplexLorentzGroup.ηℂ, Matrix.det_diagonal, ← Finset.prod_mul_distrib,
+    complexMinkowskiDotScale_sq, metricSignature_eq_minkowskiSignature_complex]
+
+/-- The square of the inverse determinant scale is also the Minkowski metric
+determinant. -/
+theorem sourceMinkowskiToDotInvDetScale_mul_self
+    (d : ℕ) :
+    sourceMinkowskiToDotInvDetScale d *
+      sourceMinkowskiToDotInvDetScale d = minkowskiMetricDet d := by
+  simp [sourceMinkowskiToDotInvDetScale, minkowskiMetricDet,
+    ComplexLorentzGroup.ηℂ, Matrix.det_diagonal, ← Finset.prod_mul_distrib]
+  apply Finset.prod_congr rfl
+  intro μ _hμ
+  by_cases hμ0 : μ = 0 <;>
+    simp [complexMinkowskiDotInvScale, minkowskiSignature, hμ0]
+
+/-- The source Cauchy-Binet metric factor cancels the two inverse determinant
+scales in the standard-dot coordinate direction. -/
+theorem minkowskiMetricDet_mul_invDetScale_mul_invDetScale
+    (d : ℕ) :
+    minkowskiMetricDet d * sourceMinkowskiToDotInvDetScale d *
+      sourceMinkowskiToDotInvDetScale d = 1 := by
+  calc
+    minkowskiMetricDet d * sourceMinkowskiToDotInvDetScale d *
+        sourceMinkowskiToDotInvDetScale d
+        =
+          minkowskiMetricDet d *
+            (sourceMinkowskiToDotInvDetScale d *
+              sourceMinkowskiToDotInvDetScale d) := by
+          ring
+    _ = minkowskiMetricDet d * minkowskiMetricDet d := by
+          rw [sourceMinkowskiToDotInvDetScale_mul_self]
+    _ = 1 := minkowskiMetricDet_mul_self d
+
 /-- The determinant scale of `complexMinkowskiToDotLinearEquiv d` is nonzero. -/
 theorem sourceMinkowskiToDotDetScale_ne_zero
     (d : ℕ) :

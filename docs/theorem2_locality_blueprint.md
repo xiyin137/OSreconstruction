@@ -13613,25 +13613,9 @@ Proof decomposition of this theorem, without hiding the analytic work:
             (BHW.specialComplexOrthogonalGroup_linearlyReductive D hD)
             (BHW.mvPolynomial_integrallyClosed ℂ (Fin n × Fin D))
 
-      def BHW.sourceMinkowskiToDotCoordinateRingEquiv
-          (d n : Nat)
-          [NeZero d] :
-          BHW.sourceTupleCoordinateRing d n ≃ₐ[ℂ]
-            BHW.standardTupleCoordinateRing (d + 1) n
-
-      def BHW.sourceMinkowskiToDotInvariantCoordinateEquiv
-          (d n : Nat)
-          [NeZero d] :
-          BHW.sourceOrientedInvariantCoordinateRing d n ≃ₐ[ℂ]
-            BHW.standardSOInvariantCoordinateRing (d + 1) n
-
-      theorem BHW.sourceMinkowskiToDotCoordinateRingEquiv_apply_sourceGram
-          (d n : Nat)
-          [NeZero d]
-          (ij : Fin n × Fin n) :
-          BHW.sourceMinkowskiToDotCoordinateRingEquiv d n
-              (BHW.sourceGramCoordinatePolynomial d n ij) =
-            BHW.standardPairingCoordinatePolynomial (d + 1) n ij
+      -- The concrete tuple and invariant coordinate equivalences are checked
+      -- below in `SourceOrientedInvariantCoordinateTransport.lean`.  They are
+      -- pure coordinate changes and carry no `[NeZero d]` hypothesis.
 
       def BHW.sourceMinkowskiToDotDetScale (d : Nat) : ℂ :=
         ∏ μ : Fin (d + 1), BHW.complexMinkowskiDotScale d μ
@@ -13681,18 +13665,77 @@ Proof decomposition of this theorem, without hiding the analytic work:
       -- transport with `sourceMinkowskiToDotInvDetScale d`, not the forward
       -- determinant scale.
 
+      def BHW.sourceMinkowskiToDotCoordinateRingHom
+          (d n : Nat) :
+          BHW.sourceTupleCoordinateRing d n →ₐ[ℂ]
+            BHW.standardTupleCoordinateRing (d + 1) n :=
+        MvPolynomial.aeval
+          (fun im =>
+            MvPolynomial.C
+                (BHW.complexMinkowskiDotInvScale d im.2) *
+              MvPolynomial.X im)
+
+      def BHW.sourceDotToMinkowskiCoordinateRingHom
+          (d n : Nat) :
+          BHW.standardTupleCoordinateRing (d + 1) n →ₐ[ℂ]
+            BHW.sourceTupleCoordinateRing d n :=
+        MvPolynomial.aeval
+          (fun im =>
+            MvPolynomial.C (BHW.complexMinkowskiDotScale d im.2) *
+              MvPolynomial.X im)
+
+      theorem BHW.sourceMinkowskiToDotCoordinateRingHom_apply_X
+          (d n : Nat) (im : Fin n × Fin (d + 1)) :
+          BHW.sourceMinkowskiToDotCoordinateRingHom d n
+              (MvPolynomial.X im) =
+            MvPolynomial.C
+                (BHW.complexMinkowskiDotInvScale d im.2) *
+              MvPolynomial.X im := by
+        simp [BHW.sourceMinkowskiToDotCoordinateRingHom]
+
+      theorem BHW.sourceDotToMinkowskiCoordinateRingHom_apply_X
+          (d n : Nat) (im : Fin n × Fin (d + 1)) :
+          BHW.sourceDotToMinkowskiCoordinateRingHom d n
+              (MvPolynomial.X im) =
+            MvPolynomial.C (BHW.complexMinkowskiDotScale d im.2) *
+              MvPolynomial.X im := by
+        simp [BHW.sourceDotToMinkowskiCoordinateRingHom]
+
+      theorem BHW.sourceDotToMinkowskiCoordinateRingHom_comp_sourceMinkowskiToDot
+          (d n : Nat) :
+          (BHW.sourceDotToMinkowskiCoordinateRingHom d n).comp
+              (BHW.sourceMinkowskiToDotCoordinateRingHom d n) =
+            AlgHom.id ℂ (BHW.sourceTupleCoordinateRing d n)
+
+      theorem BHW.sourceMinkowskiToDotCoordinateRingHom_comp_sourceDotToMinkowski
+          (d n : Nat) :
+          (BHW.sourceMinkowskiToDotCoordinateRingHom d n).comp
+              (BHW.sourceDotToMinkowskiCoordinateRingHom d n) =
+            AlgHom.id ℂ
+              (BHW.standardTupleCoordinateRing (d + 1) n)
+
+      def BHW.sourceMinkowskiToDotCoordinateRingEquiv
+          (d n : Nat) :
+          BHW.sourceTupleCoordinateRing d n ≃ₐ[ℂ]
+            BHW.standardTupleCoordinateRing (d + 1) n :=
+        AlgEquiv.ofAlgHom
+          (BHW.sourceMinkowskiToDotCoordinateRingHom d n)
+          (BHW.sourceDotToMinkowskiCoordinateRingHom d n)
+          (BHW.sourceMinkowskiToDotCoordinateRingHom_comp_sourceDotToMinkowski
+            d n)
+          (BHW.sourceDotToMinkowskiCoordinateRingHom_comp_sourceMinkowskiToDot
+            d n)
+
       theorem BHW.sourceMinkowskiToDotCoordinateRingEquiv_apply_sourceDet
           (d n : Nat)
-          [NeZero d]
           (ι : Fin (d + 1) ↪ Fin n) :
           BHW.sourceMinkowskiToDotCoordinateRingEquiv d n
               (BHW.sourceFullFrameDetPolynomial d n ι) =
-            BHW.sourceMinkowskiToDotInvDetScale d *
+            MvPolynomial.C (BHW.sourceMinkowskiToDotInvDetScale d) *
               BHW.standardVolumeCoordinatePolynomial (d + 1) n ι
 
       theorem BHW.sourceMinkowskiToDotCoordinateRingEquiv_adjoin_pairing_volume
-          (d n : Nat)
-          [NeZero d] :
+          (d n : Nat) :
           BHW.algEquivMapSubalgebra
               (BHW.sourceMinkowskiToDotCoordinateRingEquiv d n)
               (Algebra.adjoin ℂ
@@ -13701,6 +13744,37 @@ Proof decomposition of this theorem, without hiding the analytic work:
             Algebra.adjoin ℂ
               (Set.range (BHW.standardPairingCoordinatePolynomial (d + 1) n) ∪
                Set.range (BHW.standardVolumeCoordinatePolynomial (d + 1) n))
+
+      def BHW.sourceMinkowskiToDotInvariantCoordinateRingHom
+          (d n : Nat) :
+          BHW.sourceOrientedInvariantCoordinateRing d n →ₐ[ℂ]
+            BHW.standardSOInvariantCoordinateRing (d + 1) n :=
+        MvPolynomial.aeval
+          (fun x =>
+            match x with
+            | Sum.inl ij => MvPolynomial.X (Sum.inl ij)
+            | Sum.inr ι =>
+                MvPolynomial.C
+                    (BHW.sourceMinkowskiToDotInvDetScale d) *
+                  MvPolynomial.X (Sum.inr ι))
+
+      def BHW.sourceDotToMinkowskiInvariantCoordinateRingHom
+          (d n : Nat) :
+          BHW.standardSOInvariantCoordinateRing (d + 1) n →ₐ[ℂ]
+            BHW.sourceOrientedInvariantCoordinateRing d n :=
+        MvPolynomial.aeval
+          (fun x =>
+            match x with
+            | Sum.inl ij => MvPolynomial.X (Sum.inl ij)
+            | Sum.inr ι =>
+                MvPolynomial.C
+                    (BHW.sourceMinkowskiToDotDetScale d) *
+                  MvPolynomial.X (Sum.inr ι))
+
+      def BHW.sourceMinkowskiToDotInvariantCoordinateEquiv
+          (d n : Nat) :
+          BHW.sourceOrientedInvariantCoordinateRing d n ≃ₐ[ℂ]
+            BHW.standardSOInvariantCoordinateRing (d + 1) n
 
       theorem BHW.sourceMinkowskiToDotInvariantCoordinateEquiv_kernel
           (d n : Nat)

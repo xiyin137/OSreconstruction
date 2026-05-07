@@ -36,6 +36,28 @@ def standardVolumeCoordinatePolynomial
     standardTupleCoordinateRing D n :=
   Matrix.det (fun a μ : Fin D => MvPolynomial.X (ι a, μ))
 
+/-- Polynomial coordinate ring for `n` source vectors in complex Minkowski
+coordinates. -/
+abbrev sourceTupleCoordinateRing
+    (d n : ℕ) :=
+  MvPolynomial (Fin n × Fin (d + 1)) ℂ
+
+/-- Source Minkowski Gram coordinate polynomial. -/
+def sourceGramCoordinatePolynomial
+    (d n : ℕ)
+    (ij : Fin n × Fin n) :
+    sourceTupleCoordinateRing d n :=
+  ∑ μ : Fin (d + 1),
+    MvPolynomial.C (MinkowskiSpace.metricSignature d μ : ℂ) *
+      MvPolynomial.X (ij.1, μ) * MvPolynomial.X (ij.2, μ)
+
+/-- Selected source full-frame determinant coordinate polynomial. -/
+def sourceFullFrameDetPolynomial
+    (d n : ℕ)
+    (ι : Fin (d + 1) ↪ Fin n) :
+    sourceTupleCoordinateRing d n :=
+  Matrix.det (fun a μ : Fin (d + 1) => MvPolynomial.X (ι a, μ))
+
 /-- Polynomial coordinate ring whose variables represent standard pairings
 and ordered volumes. -/
 abbrev standardSOInvariantCoordinateRing

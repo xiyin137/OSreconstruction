@@ -4817,6 +4817,40 @@ implementation contract is:
    determinant scales proved nonzero.  This corrects the future coordinate
    transport contract: determinant variables are transported by the inverse
    scale in the coordinate-ring direction.
+   The next production slice is now Lean-mechanical: add the source tuple
+   polynomial ring
+   `sourceTupleCoordinateRing d n = MvPolynomial (Fin n × Fin (d + 1)) ℂ`,
+   the source Gram polynomial
+   `∑ μ, C (MinkowskiSpace.metricSignature d μ) * X (i, μ) * X (j, μ)`,
+   and the source selected determinant polynomial
+   `Matrix.det (fun a μ => X (ι a, μ))`.  The contravariant transport is the
+   algebra equivalence induced by the diagonal inverse Wick scale on variables:
+   source variables map to
+   `C (complexMinkowskiDotInvScale d μ) * X (i, μ)` and standard-dot
+   variables map back to `C (complexMinkowskiDotScale d μ) * X (i, μ)`.
+   Variable inverse proofs are `MvPolynomial.algHom_ext` plus the pointwise
+   scale identities
+   `complexMinkowskiDotInvScale_mul_scale` and
+   `complexMinkowskiDotScale_mul_invScale`.  The generator images are then:
+   Gram polynomials map exactly to `standardPairingCoordinatePolynomial`
+   because
+   `(MinkowskiSpace.metricSignature d μ : ℂ) *
+      complexMinkowskiDotInvScale d μ *
+      complexMinkowskiDotInvScale d μ = 1`;
+   determinant polynomials map to
+   `MvPolynomial.C (sourceMinkowskiToDotInvDetScale d) *
+      standardVolumeCoordinatePolynomial (d + 1) n ι`
+   by `AlgHom.map_det`, rewriting the matrix as multiplication by the
+   diagonal inverse-scale matrix, and `Matrix.det_mul`.  This coordinate
+   equivalence carries no dimension hypothesis; `[NeZero d]` and `hd : 2 <= d`
+   enter only later for reductivity/normality.  This is now checked in
+   `SourceOrientedInvariantCoordinateTransport.lean`, including
+   `sourceMinkowskiToDotCoordinateRingEquiv`,
+   `sourceMinkowskiToDotCoordinateRingEquiv_apply_sourceGram`,
+   `sourceMinkowskiToDotCoordinateRingEquiv_apply_sourceDet`, the
+   pairing/volume adjoin transport theorem, and the matching invariant
+   coordinate equivalence
+   `sourceMinkowskiToDotInvariantCoordinateEquiv`.
    The theorem-2 blueprint now tightens this into the single standard-dot
    support surface `BHW.standardSO_FFT_SFT_coordinatePresentation`, whose three
    outputs are: FFT generation by pairings and ordered volumes, SFT kernel
