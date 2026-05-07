@@ -179,6 +179,7 @@ direct `sorry` census.
 
 | Axiom | File | Role | Primary doc |
 |---|---|---|---|
+| `snag_theorem` | `GeneralResults/SNAGTheorem.lean` | SNAG spectral theorem package | `docs/development_plan_systematic.md` |
 | `schwartz_nuclear_extension` | `Wightman/WightmanAxioms.lean` | kernel theorem | `docs/nuclear_spaces_blueprint.md` |
 | `exists_continuousMultilinear_ofSeparatelyContinuous` | `Wightman/WightmanAxioms.lean` | separate-to-joint continuity | `docs/nuclear_spaces_blueprint.md` |
 | `schwartz_clm_fubini_exchange` | `GeneralResults/SchwartzFubini.lean` | CLM/Schwartz Fubini exchange | `docs/scv_infrastructure_blueprint.md` |
@@ -190,6 +191,7 @@ direct `sorry` census.
 | `tube_boundaryValue_of_vladimirov_growth` | `SCV/TubeBoundaryValueExistence.lean` | BV existence from Vladimirov growth | `docs/scv_infrastructure_blueprint.md` |
 | `tube_boundaryValue_realizes_dualCone_distribution` | `SCV/FourierSupportCone.lean` | BV realized by dual-cone distribution | `docs/scv_infrastructure_blueprint.md` |
 | `bochner_tube_extension` | `SCV/BochnerTubeTheorem.lean` | global Bochner tube extension | `docs/scv_infrastructure_blueprint.md` |
+| `standardSO_FFT_SFT_presentationData` | `ComplexLieGroups/Connectedness/BHWPermutation/SourceOrientedStandardSOPresentation.lean` | Weyl-Cartan SO FFT/SFT presentation with linear syzygies | `docs/theorem2_locality_blueprint.md` |
 
 `vladimirov_tillmann` is no longer listed here because it is now proved as a
 theorem from the SCV axiom inventory, not an explicit production axiom.

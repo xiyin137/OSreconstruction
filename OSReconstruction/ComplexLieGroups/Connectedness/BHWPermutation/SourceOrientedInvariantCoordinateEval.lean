@@ -126,10 +126,21 @@ theorem sourceOrientedCoordinateEval_cauchyBinetRelation
     simp [sourceOrientedCoordinateEval]
   rw [hmat]
   simp [sourceOrientedCoordinateEval]
-  have h := hG.2.2 p.1 p.2
+  have h := hG.2.2.1 p.1 p.2
   unfold sourceMatrixMinor at h
   rw [h]
   ring
+
+/-- Linear vector-bracket syzygy relation generators evaluate to zero at
+points satisfying the explicit source-oriented algebraic relations. -/
+theorem sourceOrientedCoordinateEval_linearSyzygyRelation
+    {G : SourceOrientedGramData d n}
+    (hG : sourceOrientedAlgebraicRelations d n G)
+    (p : Fin n × (Fin (d + 2) ↪ Fin n)) :
+    sourceOrientedCoordinateEval d n G
+      (sourceOrientedLinearSyzygyRelation d n p.1 p.2) = 0 := by
+  simpa [sourceOrientedCoordinateEval, sourceOrientedLinearSyzygyRelation] using
+    hG.2.2.2 p.1 p.2
 
 /-- Every explicit source-oriented relation generator evaluates to zero at a
 point satisfying `sourceOrientedAlgebraicRelations`. -/
@@ -143,14 +154,17 @@ theorem sourceOrientedAlgebraicRelationGenerators_eval_eq_zero_of_relations
   rcases hp with hp | hp
   · rcases hp with hp | hp
     · rcases hp with hp | hp
-      · rcases hp with ⟨ij, rfl⟩
-        exact sourceOrientedCoordinateEval_symmetryRelation hG ij
-      · rcases hp with ⟨ι, rfl⟩
-        exact sourceOrientedCoordinateEval_rankMinorRelation hG ι
+      · rcases hp with hp | hp
+        · rcases hp with ⟨ij, rfl⟩
+          exact sourceOrientedCoordinateEval_symmetryRelation hG ij
+        · rcases hp with ⟨ι, rfl⟩
+          exact sourceOrientedCoordinateEval_rankMinorRelation hG ι
+      · rcases hp with ⟨p, rfl⟩
+        exact sourceOrientedCoordinateEval_alternationRelation hG p
     · rcases hp with ⟨p, rfl⟩
-      exact sourceOrientedCoordinateEval_alternationRelation hG p
+      exact sourceOrientedCoordinateEval_cauchyBinetRelation hG p
   · rcases hp with ⟨p, rfl⟩
-    exact sourceOrientedCoordinateEval_cauchyBinetRelation hG p
+    exact sourceOrientedCoordinateEval_linearSyzygyRelation hG p
 
 /-- Every polynomial in the explicit source-oriented relation ideal evaluates
 to zero at a point satisfying `sourceOrientedAlgebraicRelations`. -/

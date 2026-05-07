@@ -5,9 +5,9 @@ import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SourceOrie
 
 This file proves the forward zero-locus direction for the standard-dot
 pairing/volume coordinate presentation.  Actual `n`-tuples in `ℂ^D` satisfy
-the explicit symmetry, rank-minor, alternation, and Cauchy-Binet generators,
-and hence every polynomial in the generated standard `SO` relation ideal
-evaluates to zero on such a tuple.
+the explicit symmetry, rank-minor, alternation, Cauchy-Binet, and linear
+vector-bracket syzygy generators, and hence every polynomial in the generated
+standard `SO` relation ideal evaluates to zero on such a tuple.
 
 This is not the `SO` second fundamental theorem: it proves only vanishing of
 the displayed relations on actual tuple invariants, not equality with the
@@ -140,6 +140,17 @@ theorem standardSOCoordinateEval_cauchyBinetRelation
   rw [h]
   ring
 
+/-- Linear vector-bracket syzygy generators evaluate to zero on actual
+standard-dot tuple invariants. -/
+theorem standardSOCoordinateEval_linearSyzygyRelation
+    (z : Fin n → Fin D → ℂ)
+    (p : Fin n × (Fin (D + 1) ↪ Fin n)) :
+    standardSOCoordinateEval D n z
+      (standardSOLinearSyzygyRelation D n p.1 p.2) = 0 := by
+  simpa [standardSOCoordinateEval, standardSOLinearSyzygyRelation,
+    sourceComplexDotGram] using
+    coordinateVolume_linearSyzygy D n z (fun μ : Fin D => z p.1 μ) p.2
+
 /-- Every explicit standard-dot relation generator evaluates to zero on actual
 standard-dot tuple invariants. -/
 theorem standardSOAlgebraicRelationGenerators_eval_eq_zero
@@ -151,14 +162,17 @@ theorem standardSOAlgebraicRelationGenerators_eval_eq_zero
   rcases hp with hp | hp
   · rcases hp with hp | hp
     · rcases hp with hp | hp
-      · rcases hp with ⟨ij, rfl⟩
-        exact standardSOCoordinateEval_symmetryRelation z ij
-      · rcases hp with ⟨ι, rfl⟩
-        exact standardSOCoordinateEval_rankMinorRelation z ι
+      · rcases hp with hp | hp
+        · rcases hp with ⟨ij, rfl⟩
+          exact standardSOCoordinateEval_symmetryRelation z ij
+        · rcases hp with ⟨ι, rfl⟩
+          exact standardSOCoordinateEval_rankMinorRelation z ι
+      · rcases hp with ⟨p, rfl⟩
+        exact standardSOCoordinateEval_alternationRelation z p
     · rcases hp with ⟨p, rfl⟩
-      exact standardSOCoordinateEval_alternationRelation z p
+      exact standardSOCoordinateEval_cauchyBinetRelation z p
   · rcases hp with ⟨p, rfl⟩
-    exact standardSOCoordinateEval_cauchyBinetRelation z p
+    exact standardSOCoordinateEval_linearSyzygyRelation z p
 
 /-- Every polynomial in the explicit standard-dot relation ideal evaluates to
 zero on actual standard-dot tuple invariants. -/

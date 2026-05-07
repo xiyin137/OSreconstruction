@@ -1,4 +1,4 @@
-import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SourceOrientedCauchyBinet
+import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SourceOrientedLinearSyzygy
 
 /-!
 # Algebraic relations for oriented source invariants
@@ -6,7 +6,8 @@ import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SourceOrie
 This file records the explicit closed algebraic relation set used by the
 oriented normality route.  It proves only the forward, actual-tuple direction:
 oriented source invariants satisfy the symmetric rank bound, ordered-frame
-alternation, and Cauchy-Binet determinant relations.  The converse/equality
+alternation, Cauchy-Binet determinant relations, and linear vector-bracket
+syzygies.  The converse/equality
 with the oriented source variety is the invariant-theory kernel theorem and is
 not asserted here.
 -/
@@ -34,15 +35,25 @@ def sourceOrientedCauchyBinetRelations
     sourceMatrixMinor n (d + 1) ι κ G.gram =
       minkowskiMetricDet d * G.det ι * G.det κ
 
+/-- Linear vector-bracket syzygies between source Gram and ordered
+full-frame determinant coordinates. -/
+def sourceOrientedLinearSyzygyRelations
+    (d n : ℕ) (G : SourceOrientedGramData d n) : Prop :=
+  ∀ (i : Fin n) (ι : Fin (d + 2) ↪ Fin n),
+    (∑ k : Fin (d + 2),
+      ((-1 : ℂ) ^ (k : ℕ)) *
+        G.gram i (ι k) * G.det (finDeleteEmbedding k ι)) = 0
+
 /-- The explicit algebraic relation predicate for oriented source coordinates:
 the ordinary Gram coordinates lie in the symmetric rank-`≤ d + 1` variety, the
 ordered determinant coordinates alternate, and the Cauchy-Binet determinant
-relations hold. -/
+relations and linear vector-bracket syzygies hold. -/
 def sourceOrientedAlgebraicRelations
     (d n : ℕ) (G : SourceOrientedGramData d n) : Prop :=
   G.gram ∈ sourceSymmetricRankLEVariety n (d + 1) ∧
     sourceOrientedDetAlternating d n G ∧
-      sourceOrientedCauchyBinetRelations d n G
+      sourceOrientedCauchyBinetRelations d n G ∧
+        sourceOrientedLinearSyzygyRelations d n G
 
 /-- The closed algebraic model cut out by the explicit oriented source
 relations. -/
@@ -57,7 +68,7 @@ theorem sourceOrientedMinkowskiInvariant_mem_algebraicRelations
     (d n : ℕ) (z : Fin n → Fin (d + 1) → ℂ) :
     sourceOrientedAlgebraicRelations d n
       (sourceOrientedMinkowskiInvariant d n z) := by
-  refine ⟨?_, ?_, ?_⟩
+  refine ⟨?_, ?_, ?_, ?_⟩
   · have hgram_var :
         (sourceOrientedMinkowskiInvariant d n z).gram ∈
           sourceComplexGramVariety d n := by
@@ -72,6 +83,8 @@ theorem sourceOrientedMinkowskiInvariant_mem_algebraicRelations
     exact sourceOrientedInvariant_det_reindex_selectedFrame d n ι ρ z
   · intro ι κ
     exact sourceMatrixMinor_sourceOrientedInvariant_fullFrame d n ι κ z
+  · intro i ι
+    exact sourceOrientedInvariant_linearSyzygy_fullFrame d n z i ι
 
 /-- The oriented source variety is contained in the explicit algebraic model.
 The reverse inclusion is the invariant-theory kernel theorem, not this
@@ -136,6 +149,43 @@ theorem isClosed_sourceOrientedCauchyBinetRelations
       ((continuous_apply ι).comp continuous_sourceOrientedGramData_det)).mul
         ((continuous_apply κ).comp continuous_sourceOrientedGramData_det))
 
+/-- The linear syzygy equations are a closed condition in oriented source
+coordinates. -/
+theorem isClosed_sourceOrientedLinearSyzygyRelations
+    (d n : ℕ) :
+    IsClosed
+      {G : SourceOrientedGramData d n |
+        sourceOrientedLinearSyzygyRelations d n G} := by
+  rw [show
+      {G : SourceOrientedGramData d n |
+        sourceOrientedLinearSyzygyRelations d n G} =
+        ⋂ i : Fin n,
+          ⋂ ι : Fin (d + 2) ↪ Fin n,
+            {G : SourceOrientedGramData d n |
+              (∑ k : Fin (d + 2),
+                ((-1 : ℂ) ^ (k : ℕ)) *
+                  G.gram i (ι k) *
+                    G.det (finDeleteEmbedding k ι)) = 0} by
+    ext G
+    simp [sourceOrientedLinearSyzygyRelations]]
+  apply isClosed_iInter
+  intro i
+  apply isClosed_iInter
+  intro ι
+  refine isClosed_eq ?_ continuous_const
+  exact continuous_finset_sum _ fun k _ => by
+    have hgram :
+        Continuous (fun G : SourceOrientedGramData d n =>
+          G.gram i (ι k)) :=
+      (continuous_apply (ι k)).comp
+        ((continuous_apply i).comp continuous_sourceOrientedGramData_gram)
+    have hdet :
+        Continuous (fun G : SourceOrientedGramData d n =>
+          G.det (finDeleteEmbedding k ι)) :=
+      (continuous_apply (finDeleteEmbedding k ι)).comp
+        continuous_sourceOrientedGramData_det
+    exact (continuous_const.mul hgram).mul hdet
+
 /-- The explicit oriented algebraic relation set is closed. -/
 theorem isClosed_sourceOrientedAlgebraicVariety
     (d n : ℕ) :
@@ -148,8 +198,9 @@ theorem isClosed_sourceOrientedAlgebraicVariety
       continuous_sourceOrientedGramData_gram
   have hAlt := isClosed_sourceOrientedDetAlternating d n
   have hCB := isClosed_sourceOrientedCauchyBinetRelations d n
+  have hLin := isClosed_sourceOrientedLinearSyzygyRelations d n
   simpa [sourceOrientedAlgebraicVariety,
     sourceOrientedAlgebraicRelations, Set.setOf_and] using
-    hRank.inter (hAlt.inter hCB)
+    hRank.inter (hAlt.inter (hCB.inter hLin))
 
 end BHW

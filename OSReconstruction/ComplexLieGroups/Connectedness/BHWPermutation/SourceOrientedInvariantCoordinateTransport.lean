@@ -636,6 +636,53 @@ theorem sourceMinkowskiToDotInvariantCoordinateEquiv_map_cauchyBinetRelation
           rw [hCprod]
           ring
 
+/-- Source linear syzygy generators map to the inverse determinant scale times
+the standard-dot linear syzygy generators. -/
+theorem sourceMinkowskiToDotInvariantCoordinateEquiv_map_linearSyzygyRelation
+    (d n : ℕ)
+    (p : Fin n × (Fin (d + 2) ↪ Fin n)) :
+    sourceMinkowskiToDotInvariantCoordinateEquiv d n
+      (sourceOrientedLinearSyzygyRelation d n p.1 p.2) =
+      MvPolynomial.C (sourceMinkowskiToDotInvDetScale d) *
+        standardSOLinearSyzygyRelation (d + 1) n p.1 p.2 := by
+  unfold sourceOrientedLinearSyzygyRelation standardSOLinearSyzygyRelation
+  rw [map_sum]
+  simp [sourceMinkowskiToDotInvariantCoordinateEquiv,
+    sourceMinkowskiToDotInvariantCoordinateRingHom]
+  rw [Finset.mul_sum]
+  apply Finset.sum_congr rfl
+  intro k _hk
+  ring
+
+/-- Multiplying the mapped source linear syzygy generator by the forward
+determinant scale recovers the standard-dot linear syzygy generator. -/
+theorem sourceMinkowskiToDotInvariantCoordinateEquiv_detScale_mul_linearSyzygyRelation
+    (d n : ℕ)
+    (p : Fin n × (Fin (d + 2) ↪ Fin n)) :
+    MvPolynomial.C (sourceMinkowskiToDotDetScale d) *
+      sourceMinkowskiToDotInvariantCoordinateEquiv d n
+        (sourceOrientedLinearSyzygyRelation d n p.1 p.2) =
+      standardSOLinearSyzygyRelation (d + 1) n p.1 p.2 := by
+  rw [sourceMinkowskiToDotInvariantCoordinateEquiv_map_linearSyzygyRelation]
+  have hCprod :
+      MvPolynomial.C (sourceMinkowskiToDotDetScale d) *
+          (MvPolynomial.C (sourceMinkowskiToDotInvDetScale d) :
+            standardSOInvariantCoordinateRing (d + 1) n) = 1 := by
+    rw [← map_mul, sourceMinkowskiToDotDetScale_mul_invDetScale]
+    simp
+  calc
+    MvPolynomial.C (sourceMinkowskiToDotDetScale d) *
+        (MvPolynomial.C (sourceMinkowskiToDotInvDetScale d) *
+          standardSOLinearSyzygyRelation (d + 1) n p.1 p.2)
+        =
+          (MvPolynomial.C (sourceMinkowskiToDotDetScale d) *
+            MvPolynomial.C (sourceMinkowskiToDotInvDetScale d)) *
+            standardSOLinearSyzygyRelation (d + 1) n p.1 p.2 := by
+          ring
+    _ = standardSOLinearSyzygyRelation (d + 1) n p.1 p.2 := by
+          rw [hCprod]
+          ring
+
 /-- The explicit source-oriented relation ideal transports to the explicit
 standard-dot `SO` relation ideal under the invariant-coordinate equivalence.
 This is only generator bookkeeping; it does not use the standard `SO` SFT
@@ -656,139 +703,186 @@ theorem sourceOrientedRelationIdeal_transport_dot
     rcases hx with hx | hx
     · rcases hx with hx | hx
       · rcases hx with hx | hx
-        · rcases hx with ⟨ij, rfl⟩
-          simpa
-            [sourceMinkowskiToDotInvariantCoordinateEquiv_map_symmetryRelation
-              d n ij] using
+        · rcases hx with hx | hx
+          · rcases hx with ⟨ij, rfl⟩
+            simpa
+              [sourceMinkowskiToDotInvariantCoordinateEquiv_map_symmetryRelation
+                d n ij] using
+              Ideal.subset_span (by
+                unfold standardSOAlgebraicRelationGenerators
+                exact Or.inl (Or.inl (Or.inl (Or.inl ⟨ij, rfl⟩))))
+          · rcases hx with ⟨ι, rfl⟩
+            simpa
+              [sourceMinkowskiToDotInvariantCoordinateEquiv_map_rankMinorRelation
+                d n ι] using
+              Ideal.subset_span (by
+                unfold standardSOAlgebraicRelationGenerators
+                exact Or.inl (Or.inl (Or.inl (Or.inr ⟨ι, rfl⟩))))
+        · rcases hx with ⟨p, rfl⟩
+          let sourceAlt : sourceOrientedInvariantCoordinateRing d n :=
+            MvPolynomial.X (Sum.inr (p.2.toEmbedding.trans p.1)) -
+              MvPolynomial.C (p.2.sign : ℂ) *
+                MvPolynomial.X (Sum.inr p.1)
+          let stdAlt : standardSOInvariantCoordinateRing (d + 1) n :=
+            MvPolynomial.X (Sum.inr (p.2.toEmbedding.trans p.1)) -
+              MvPolynomial.C (p.2.sign : ℂ) *
+                MvPolynomial.X (Sum.inr p.1)
+          change
+            sourceMinkowskiToDotInvariantCoordinateEquiv d n sourceAlt ∈
+              Ideal.span (standardSOAlgebraicRelationGenerators (d + 1) n)
+          have hstd :
+              stdAlt ∈
+                Ideal.span (standardSOAlgebraicRelationGenerators (d + 1) n) :=
             Ideal.subset_span (by
+              unfold stdAlt
               unfold standardSOAlgebraicRelationGenerators
-              exact Or.inl (Or.inl (Or.inl ⟨ij, rfl⟩)))
-        · rcases hx with ⟨ι, rfl⟩
-          simpa
-            [sourceMinkowskiToDotInvariantCoordinateEquiv_map_rankMinorRelation
-              d n ι] using
-            Ideal.subset_span (by
-              unfold standardSOAlgebraicRelationGenerators
-              exact Or.inl (Or.inl (Or.inr ⟨ι, rfl⟩)))
+              exact Or.inl (Or.inl (Or.inr ⟨p, rfl⟩)))
+          have hmul :
+              MvPolynomial.C (sourceMinkowskiToDotInvDetScale d) * stdAlt ∈
+                Ideal.span (standardSOAlgebraicRelationGenerators (d + 1) n) :=
+            Ideal.mul_mem_left
+              (Ideal.span (standardSOAlgebraicRelationGenerators (d + 1) n))
+              (MvPolynomial.C (sourceMinkowskiToDotInvDetScale d))
+              hstd
+          have hmap :
+              sourceMinkowskiToDotInvariantCoordinateEquiv d n sourceAlt =
+                MvPolynomial.C (sourceMinkowskiToDotInvDetScale d) * stdAlt := by
+            unfold sourceAlt stdAlt
+            exact
+              sourceMinkowskiToDotInvariantCoordinateEquiv_map_alternationRelation
+                d n p
+          simpa [hmap] using hmul
       · rcases hx with ⟨p, rfl⟩
-        let sourceAlt : sourceOrientedInvariantCoordinateRing d n :=
-          MvPolynomial.X (Sum.inr (p.2.toEmbedding.trans p.1)) -
-            MvPolynomial.C (p.2.sign : ℂ) *
-              MvPolynomial.X (Sum.inr p.1)
-        let stdAlt : standardSOInvariantCoordinateRing (d + 1) n :=
-          MvPolynomial.X (Sum.inr (p.2.toEmbedding.trans p.1)) -
-            MvPolynomial.C (p.2.sign : ℂ) *
-              MvPolynomial.X (Sum.inr p.1)
-        change
-          sourceMinkowskiToDotInvariantCoordinateEquiv d n sourceAlt ∈
-            Ideal.span (standardSOAlgebraicRelationGenerators (d + 1) n)
-        have hstd :
-            stdAlt ∈
-              Ideal.span (standardSOAlgebraicRelationGenerators (d + 1) n) :=
+        simpa
+          [sourceMinkowskiToDotInvariantCoordinateEquiv_map_cauchyBinetRelation
+            d n p] using
           Ideal.subset_span (by
-            unfold stdAlt
             unfold standardSOAlgebraicRelationGenerators
             exact Or.inl (Or.inr ⟨p, rfl⟩))
-        have hmul :
-            MvPolynomial.C (sourceMinkowskiToDotInvDetScale d) * stdAlt ∈
-              Ideal.span (standardSOAlgebraicRelationGenerators (d + 1) n) :=
-          Ideal.mul_mem_left
-            (Ideal.span (standardSOAlgebraicRelationGenerators (d + 1) n))
-            (MvPolynomial.C (sourceMinkowskiToDotInvDetScale d))
-            hstd
-        have hmap :
-            sourceMinkowskiToDotInvariantCoordinateEquiv d n sourceAlt =
-              MvPolynomial.C (sourceMinkowskiToDotInvDetScale d) * stdAlt := by
-          unfold sourceAlt stdAlt
-          exact
-            sourceMinkowskiToDotInvariantCoordinateEquiv_map_alternationRelation
-              d n p
-        simpa [hmap] using hmul
     · rcases hx with ⟨p, rfl⟩
-      simpa
-        [sourceMinkowskiToDotInvariantCoordinateEquiv_map_cauchyBinetRelation
-          d n p] using
+      have hstd :
+          standardSOLinearSyzygyRelation (d + 1) n p.1 p.2 ∈
+            Ideal.span (standardSOAlgebraicRelationGenerators (d + 1) n) :=
         Ideal.subset_span (by
           unfold standardSOAlgebraicRelationGenerators
           exact Or.inr ⟨p, rfl⟩)
+      have hmul :
+          MvPolynomial.C (sourceMinkowskiToDotInvDetScale d) *
+              standardSOLinearSyzygyRelation (d + 1) n p.1 p.2 ∈
+            Ideal.span (standardSOAlgebraicRelationGenerators (d + 1) n) :=
+        Ideal.mul_mem_left
+          (Ideal.span (standardSOAlgebraicRelationGenerators (d + 1) n))
+          (MvPolynomial.C (sourceMinkowskiToDotInvDetScale d))
+          hstd
+      simpa
+        [sourceMinkowskiToDotInvariantCoordinateEquiv_map_linearSyzygyRelation
+          d n p] using hmul
   · rw [Ideal.span_le]
     intro y hy
     unfold standardSOAlgebraicRelationGenerators at hy
     rcases hy with hy | hy
     · rcases hy with hy | hy
       · rcases hy with hy | hy
-        · rcases hy with ⟨ij, rfl⟩
-          refine Ideal.subset_span ?_
-          refine
-            ⟨MvPolynomial.X (Sum.inl ij) -
-              (MvPolynomial.X (Sum.inl (ij.2, ij.1)) :
-                sourceOrientedInvariantCoordinateRing d n), ?_, ?_⟩
-          · unfold sourceOrientedAlgebraicRelationGenerators
-            exact Or.inl (Or.inl (Or.inl ⟨ij, rfl⟩))
-          · exact
-              sourceMinkowskiToDotInvariantCoordinateEquiv_map_symmetryRelation
-                d n ij
-        · rcases hy with ⟨ι, rfl⟩
-          refine Ideal.subset_span ?_
-          refine
-            ⟨Matrix.det
-              (fun a b : Fin (d + 2) =>
-                (MvPolynomial.X (Sum.inl (ι a, ι b)) :
-                  sourceOrientedInvariantCoordinateRing d n)), ?_, ?_⟩
-          · unfold sourceOrientedAlgebraicRelationGenerators
-            exact Or.inl (Or.inl (Or.inr ⟨ι, rfl⟩))
-          · simpa using
-              sourceMinkowskiToDotInvariantCoordinateEquiv_map_rankMinorRelation
-                d n ι
+        · rcases hy with hy | hy
+          · rcases hy with ⟨ij, rfl⟩
+            refine Ideal.subset_span ?_
+            refine
+              ⟨MvPolynomial.X (Sum.inl ij) -
+                (MvPolynomial.X (Sum.inl (ij.2, ij.1)) :
+                  sourceOrientedInvariantCoordinateRing d n), ?_, ?_⟩
+            · unfold sourceOrientedAlgebraicRelationGenerators
+              exact Or.inl (Or.inl (Or.inl (Or.inl ⟨ij, rfl⟩)))
+            · exact
+                sourceMinkowskiToDotInvariantCoordinateEquiv_map_symmetryRelation
+                  d n ij
+          · rcases hy with ⟨ι, rfl⟩
+            refine Ideal.subset_span ?_
+            refine
+              ⟨Matrix.det
+                (fun a b : Fin (d + 2) =>
+                  (MvPolynomial.X (Sum.inl (ι a, ι b)) :
+                    sourceOrientedInvariantCoordinateRing d n)), ?_, ?_⟩
+            · unfold sourceOrientedAlgebraicRelationGenerators
+              exact Or.inl (Or.inl (Or.inl (Or.inr ⟨ι, rfl⟩)))
+            · simpa using
+                sourceMinkowskiToDotInvariantCoordinateEquiv_map_rankMinorRelation
+                  d n ι
+        · rcases hy with ⟨p, rfl⟩
+          let I : Ideal (standardSOInvariantCoordinateRing (d + 1) n) :=
+            Ideal.span
+              ((sourceMinkowskiToDotInvariantCoordinateEquiv d n).toRingHom ''
+                sourceOrientedAlgebraicRelationGenerators d n)
+          let sourceAlt : sourceOrientedInvariantCoordinateRing d n :=
+            MvPolynomial.X (Sum.inr (p.2.toEmbedding.trans p.1)) -
+              MvPolynomial.C (p.2.sign : ℂ) *
+                MvPolynomial.X (Sum.inr p.1)
+          have hsourceAlt :
+              sourceAlt ∈ sourceOrientedAlgebraicRelationGenerators d n := by
+            unfold sourceAlt sourceOrientedAlgebraicRelationGenerators
+            exact Or.inl (Or.inl (Or.inr ⟨p, rfl⟩))
+          have himage :
+              sourceMinkowskiToDotInvariantCoordinateEquiv d n sourceAlt ∈ I := by
+            exact Ideal.subset_span ⟨sourceAlt, hsourceAlt, rfl⟩
+          have hscaled :
+              MvPolynomial.C (sourceMinkowskiToDotDetScale d) *
+                  sourceMinkowskiToDotInvariantCoordinateEquiv d n sourceAlt ∈
+                I :=
+            Ideal.mul_mem_left I _ himage
+          have hEq :
+              MvPolynomial.C (sourceMinkowskiToDotDetScale d) *
+                  sourceMinkowskiToDotInvariantCoordinateEquiv d n sourceAlt =
+                (MvPolynomial.X (Sum.inr (p.2.toEmbedding.trans p.1)) -
+                  MvPolynomial.C (p.2.sign : ℂ) *
+                    (MvPolynomial.X (Sum.inr p.1) :
+                      standardSOInvariantCoordinateRing (d + 1) n)) := by
+            unfold sourceAlt
+            exact
+              sourceMinkowskiToDotInvariantCoordinateEquiv_detScale_mul_alternationRelation
+                d n p
+          simpa [I, hEq] using hscaled
       · rcases hy with ⟨p, rfl⟩
-        let I : Ideal (standardSOInvariantCoordinateRing (d + 1) n) :=
-          Ideal.span
-            ((sourceMinkowskiToDotInvariantCoordinateEquiv d n).toRingHom ''
-              sourceOrientedAlgebraicRelationGenerators d n)
-        let sourceAlt : sourceOrientedInvariantCoordinateRing d n :=
-          MvPolynomial.X (Sum.inr (p.2.toEmbedding.trans p.1)) -
-            MvPolynomial.C (p.2.sign : ℂ) *
-              MvPolynomial.X (Sum.inr p.1)
-        have hsourceAlt :
-            sourceAlt ∈ sourceOrientedAlgebraicRelationGenerators d n := by
-          unfold sourceAlt sourceOrientedAlgebraicRelationGenerators
+        refine Ideal.subset_span ?_
+        refine
+          ⟨Matrix.det
+              (fun a b : Fin (d + 1) =>
+                (MvPolynomial.X (Sum.inl (p.1 a, p.2 b)) :
+                  sourceOrientedInvariantCoordinateRing d n)) -
+            MvPolynomial.C (minkowskiMetricDet d) *
+              (MvPolynomial.X (Sum.inr p.1) :
+                sourceOrientedInvariantCoordinateRing d n) *
+              (MvPolynomial.X (Sum.inr p.2) :
+                sourceOrientedInvariantCoordinateRing d n), ?_, ?_⟩
+        · unfold sourceOrientedAlgebraicRelationGenerators
           exact Or.inl (Or.inr ⟨p, rfl⟩)
-        have himage :
-            sourceMinkowskiToDotInvariantCoordinateEquiv d n sourceAlt ∈ I := by
-          exact Ideal.subset_span ⟨sourceAlt, hsourceAlt, rfl⟩
-        have hscaled :
-            MvPolynomial.C (sourceMinkowskiToDotDetScale d) *
-                sourceMinkowskiToDotInvariantCoordinateEquiv d n sourceAlt ∈
-              I :=
-          Ideal.mul_mem_left I _ himage
-        have hEq :
-            MvPolynomial.C (sourceMinkowskiToDotDetScale d) *
-                sourceMinkowskiToDotInvariantCoordinateEquiv d n sourceAlt =
-              (MvPolynomial.X (Sum.inr (p.2.toEmbedding.trans p.1)) -
-                MvPolynomial.C (p.2.sign : ℂ) *
-                  (MvPolynomial.X (Sum.inr p.1) :
-                    standardSOInvariantCoordinateRing (d + 1) n)) := by
-          unfold sourceAlt
-          exact
-            sourceMinkowskiToDotInvariantCoordinateEquiv_detScale_mul_alternationRelation
+        · simpa using
+            sourceMinkowskiToDotInvariantCoordinateEquiv_map_cauchyBinetRelation
               d n p
-        simpa [I, hEq] using hscaled
     · rcases hy with ⟨p, rfl⟩
-      refine Ideal.subset_span ?_
-      refine
-        ⟨Matrix.det
-            (fun a b : Fin (d + 1) =>
-              (MvPolynomial.X (Sum.inl (p.1 a, p.2 b)) :
-                sourceOrientedInvariantCoordinateRing d n)) -
-          MvPolynomial.C (minkowskiMetricDet d) *
-            (MvPolynomial.X (Sum.inr p.1) :
-              sourceOrientedInvariantCoordinateRing d n) *
-            (MvPolynomial.X (Sum.inr p.2) :
-              sourceOrientedInvariantCoordinateRing d n), ?_, ?_⟩
-      · unfold sourceOrientedAlgebraicRelationGenerators
+      let I : Ideal (standardSOInvariantCoordinateRing (d + 1) n) :=
+        Ideal.span
+          ((sourceMinkowskiToDotInvariantCoordinateEquiv d n).toRingHom ''
+            sourceOrientedAlgebraicRelationGenerators d n)
+      let sourceLin : sourceOrientedInvariantCoordinateRing d n :=
+        sourceOrientedLinearSyzygyRelation d n p.1 p.2
+      have hsourceLin :
+          sourceLin ∈ sourceOrientedAlgebraicRelationGenerators d n := by
+        unfold sourceLin sourceOrientedAlgebraicRelationGenerators
         exact Or.inr ⟨p, rfl⟩
-      · simpa using
-          sourceMinkowskiToDotInvariantCoordinateEquiv_map_cauchyBinetRelation
+      have himage :
+          sourceMinkowskiToDotInvariantCoordinateEquiv d n sourceLin ∈ I := by
+        exact Ideal.subset_span ⟨sourceLin, hsourceLin, rfl⟩
+      have hscaled :
+          MvPolynomial.C (sourceMinkowskiToDotDetScale d) *
+              sourceMinkowskiToDotInvariantCoordinateEquiv d n sourceLin ∈ I :=
+        Ideal.mul_mem_left I _ himage
+      have hEq :
+          MvPolynomial.C (sourceMinkowskiToDotDetScale d) *
+              sourceMinkowskiToDotInvariantCoordinateEquiv d n sourceLin =
+            standardSOLinearSyzygyRelation (d + 1) n p.1 p.2 := by
+        unfold sourceLin
+        exact
+          sourceMinkowskiToDotInvariantCoordinateEquiv_detScale_mul_linearSyzygyRelation
             d n p
+      simpa [I, hEq] using hscaled
 
 end BHW

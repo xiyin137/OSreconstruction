@@ -2011,18 +2011,21 @@ normality chain
 `BHW.sourceOrientedAlgebraicCoordinateRing_iso_invariants`.  The only
 allowable external support boundary inside this chain is a standard
 finite-dimensional `SO` invariant-theory theorem with explicit
-pairing/volume generators and Cauchy-Binet kernel; it may not mention OS,
-Wightman functions, EOW, PET, locality, or theorem 2.  The public descent
+pairing/volume generators and the full symmetry/rank/alternation/Cauchy-Binet
+plus linear-vector-syzygy kernel; it may not mention OS, Wightman functions,
+EOW, PET, locality, or theorem 2.  The public descent
 surface remains downstream of these support statements and is not the first
 Lean target.
 
 Current invariant-theory readiness clarification, 2026-05-07: the
 rank-deficient local-realization/Hall-Wightman Lemma-3 blocker is closed, and
 the source/dot invariant-coordinate transport layer is checked down to the
-easy kernel-containment direction.  The next implementable local Lean target
-is therefore not another residual chart and not the theorem-2 wrapper.  It is
-only the conditional presentation boundary for the standard-dot invariant
-theory package:
+easy kernel-containment direction.  Gemini's audit caught that the original
+displayed standard `SO` relation ideal was missing the vector-bracket linear
+syzygies.  The Lean relation ideal has therefore been corrected to include
+those syzygies, with actual-tuple vanishing proved by determinant row
+dependence.  The only remaining non-formal standard invariant-theory boundary
+is the classical Weyl-Cartan FFT/SFT assertion packaged as:
 
 ```lean
 structure BHW.StandardSOCoordinatePresentationData
@@ -2072,18 +2075,23 @@ structure BHW.SourceOrientedCoordinatePresentationData
 theorem BHW.sourceOrientedCoordinatePresentationData_of_standard
     (H : BHW.StandardSOCoordinatePresentationData (d + 1) n) :
     BHW.SourceOrientedCoordinatePresentationData d n
+
+axiom BHW.standardSO_FFT_SFT_presentationData
+    (D n : Nat) (hD : 3 <= D) :
+    BHW.StandardSOCoordinatePresentationData D n
+
+theorem BHW.sourceOrientedCoordinatePresentationData
+    (d n : Nat) (hd : 2 <= d) :
+    BHW.SourceOrientedCoordinatePresentationData d n
 ```
 
-This data structure is not an axiom and not a disguised proof of FFT/SFT.  It
-is the exact shape that a future sorry-free proof or imported library theorem
-must supply.  The unconditional theorems
-`BHW.standardSOInvariantRing_generated_by_pairings_and_volume`,
-`BHW.standardSOInvariantRing_relations_kernel`, and
-`BHW.standardSO_FFT_SFT_coordinatePresentation` remain unimplemented until a
-real standard invariant-theory proof is available.  Downstream normality and
-Riemann-extension work may consume this conditional package only as an
-explicit hypothesis; it may not erase the standard `SO` boundary or pretend
-that theorem 2 is already closed.
+`BHW.standardSO_FFT_SFT_presentationData` is now the single explicit
+paper-classical axiom boundary for this invariant-theory theorem, authorized
+on 2026-05-07 after the linear-syzygy correction.  It is finite-dimensional
+classical invariant theory only; it does not mention OS, Wightman functions,
+EOW, PET, locality, or theorem 2.  Downstream normality and Riemann-extension
+work may consume the source presentation data produced from this axiom, but
+must keep this trust boundary visible in theorem dependency audits.
 
 Current oriented real-uniqueness readiness clarification, 2026-05-02: the
 real-patch uniqueness group
@@ -4991,7 +4999,8 @@ implementation contract is:
    The theorem-2 blueprint now tightens this into the single standard-dot
    support surface `BHW.standardSO_FFT_SFT_coordinatePresentation`, whose three
    outputs are: FFT generation by pairings and ordered volumes, SFT kernel
-   equality with the explicit symmetry/minor/alternation/Cauchy-Binet ideal,
+   equality with the explicit symmetry/minor/alternation/Cauchy-Binet plus
+   linear-vector-syzygy ideal,
    and surjectivity of `BHW.standardSOInvariantCoordinateMap`.  Lean may not
    cite a slogan-level "FFT/SFT for SO" theorem with incompatible coordinates,
    and may not proceed to the oriented normality theorem unless those three
