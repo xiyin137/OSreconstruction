@@ -4895,6 +4895,30 @@ implementation contract is:
    `sourceMinkowskiToDotCoordinateRingEquiv_apply_sourceDet`.  None of these
    declarations says that the generated subalgebra is the full invariant
    subalgebra; that equality remains the actual FFT input.
+   The actual standard-dot invariant subalgebra layer is the next checked
+   finite-dimensional support slice.  Use `SOComplex D` and define the
+   contravariant polynomial action
+   `standardSOCoordinateAction D n g` by
+   `X (i, μ) ↦ ∑ ν, C (g.val μ ν) * X (i, ν)`.  Pairing invariance is the
+   dot-product calculation
+   `(g *ᵥ Xi) ⬝ᵥ (g *ᵥ Xj) = Xi ⬝ᵥ Xj`, using
+   `Matrix.dotProduct_mulVec`, `Matrix.vecMul_mulVec`, and
+   `g.orthogonal : g.val.transpose * g.val = 1`, mapped into the polynomial
+   ring.  Volume invariance rewrites the transformed selected-frame matrix as
+   `M * (g.val.map C).transpose`, then uses `Matrix.det_mul`,
+   `Matrix.det_transpose`, and `g.proper : g.val.det = 1`.  Define
+   `standardSOInvariantSubalgebra D n` as the fixed subalgebra of this action,
+   prove both generator families lie in it, and obtain
+   `standardSOGeneratorSubalgebra_le_invariantSubalgebra` by
+   `Algebra.adjoin_le`.
+   The actual invariant-coordinate map is then the generated-coordinate map
+   followed by this inclusion.  Its surjectivity is not unconditional:
+   `standardSOInvariantCoordinateMap_surjective_of_generator_eq` takes exactly
+   the FFT equality
+   `standardSOInvariantSubalgebra D n = standardSOGeneratorSubalgebra D n` and
+   combines it with the already checked generated-coordinate map surjectivity.
+   Thus the production Lean boundary for the FFT is now reduced to the reverse
+   inclusion of the actual fixed subalgebra into the generated one.
    The theorem-2 blueprint now tightens this into the single standard-dot
    support surface `BHW.standardSO_FFT_SFT_coordinatePresentation`, whose three
    outputs are: FFT generation by pairings and ordered volumes, SFT kernel

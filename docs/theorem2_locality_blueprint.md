@@ -13612,9 +13612,93 @@ Proof decomposition of this theorem, without hiding the analytic work:
                   BHW.sourceMinkowskiToDotInvariantCoordinateEquiv_apply_det]
 
       -- The remaining content below is the genuine standard `SO`
-      -- invariant-theory theorem: the actual invariant subalgebra equals the
-      -- generator subalgebra, the displayed relations are exactly the kernel,
-      -- and therefore the actual invariant-coordinate map is surjective.
+      -- invariant-theory theorem.  Before stating it, define the true fixed
+      -- subalgebra and prove the displayed generators really are invariant.
+
+      def BHW.standardSOCoordinateAction
+          (D n : Nat)
+          (g : SOComplex D) :
+          BHW.standardTupleCoordinateRing D n →ₐ[ℂ]
+            BHW.standardTupleCoordinateRing D n :=
+        MvPolynomial.aeval
+          (fun im : Fin n × Fin D =>
+            ∑ ν : Fin D,
+              MvPolynomial.C (g.val im.2 ν) *
+                MvPolynomial.X (im.1, ν))
+
+      theorem BHW.standardSOCoordinateAction_pairing
+          (D n : Nat)
+          (g : SOComplex D)
+          (ij : Fin n × Fin n) :
+          BHW.standardSOCoordinateAction D n g
+              (BHW.standardPairingCoordinatePolynomial D n ij) =
+            BHW.standardPairingCoordinatePolynomial D n ij := by
+        -- Checked in `SourceOrientedStandardSOInvariantSubalgebra.lean`.
+        -- Let `Xi μ = X (ij.1, μ)` and `Xj μ = X (ij.2, μ)`.
+        -- The transformed pairing is
+        -- `(g.val.map C *ᵥ Xi) ⬝ᵥ (g.val.map C *ᵥ Xj)`.
+        -- `Matrix.dotProduct_mulVec` and `Matrix.vecMul_mulVec` reduce this
+        -- to `Xi ᵥ* ((g.val.map C).transpose * g.val.map C) ⬝ᵥ Xj`;
+        -- mapping `g.orthogonal : g.val.transpose * g.val = 1` into the
+        -- polynomial ring rewrites the middle matrix to `1`.
+
+      theorem BHW.standardSOCoordinateAction_volume
+          (D n : Nat)
+          (g : SOComplex D)
+          (ι : Fin D ↪ Fin n) :
+          BHW.standardSOCoordinateAction D n g
+              (BHW.standardVolumeCoordinatePolynomial D n ι) =
+            BHW.standardVolumeCoordinatePolynomial D n ι := by
+        -- Checked in `SourceOrientedStandardSOInvariantSubalgebra.lean`.
+        -- After `AlgHom.map_det`, rewrite the transformed selected-frame
+        -- matrix as `M * (g.val.map C).transpose`.  Then use
+        -- `Matrix.det_mul`, `Matrix.det_transpose`, `RingHom.map_det`, and
+        -- `g.proper : g.val.det = 1` mapped into the polynomial ring.
+
+      def BHW.standardSOInvariantSubalgebra
+          (D n : Nat) :
+          Subalgebra ℂ (BHW.standardTupleCoordinateRing D n) where
+        carrier :=
+          {p | ∀ g : SOComplex D,
+            BHW.standardSOCoordinateAction D n g p = p}
+        mul_mem' := by intro p q hp hq g; simp [hp g, hq g]
+        add_mem' := by intro p q hp hq g; simp [hp g, hq g]
+        algebraMap_mem' := by intro c g; simp [BHW.standardSOCoordinateAction]
+
+      theorem BHW.standardSOGeneratorSubalgebra_le_invariantSubalgebra
+          (D n : Nat) :
+          BHW.standardSOGeneratorSubalgebra D n ≤
+            BHW.standardSOInvariantSubalgebra D n := by
+        -- Checked in `SourceOrientedStandardSOInvariantSubalgebra.lean`.
+        -- `Algebra.adjoin_le`; the two range cases are exactly
+        -- `standardSOCoordinateAction_pairing` and
+        -- `standardSOCoordinateAction_volume`.
+
+      def BHW.standardSOInvariantCoordinateMap
+          (D n : Nat) :
+          BHW.standardSOInvariantCoordinateRing D n →ₐ[ℂ]
+            BHW.standardSOInvariantSubalgebra D n :=
+        (Subalgebra.inclusion
+          (BHW.standardSOGeneratorSubalgebra_le_invariantSubalgebra D n)).comp
+            (BHW.standardSOGeneratorCoordinateMap D n)
+
+      theorem BHW.standardSOInvariantCoordinateMap_surjective_of_generator_eq
+          (D n : Nat)
+          (hFFT :
+            BHW.standardSOInvariantSubalgebra D n =
+              BHW.standardSOGeneratorSubalgebra D n) :
+          Function.Surjective
+            (BHW.standardSOInvariantCoordinateMap D n) := by
+        -- Checked in `SourceOrientedStandardSOInvariantSubalgebra.lean`.
+        -- Convert an arbitrary actual invariant element to the generated
+        -- subalgebra using `hFFT`, lift it by
+        -- `standardSOGeneratorCoordinateMap_surjective`, then forget subtype
+        -- proofs through the inclusion.
+
+      -- Now the genuine standard `SO` invariant-theory theorem says: the
+      -- actual invariant subalgebra equals the generator subalgebra, the
+      -- displayed relations are exactly the kernel, and therefore the actual
+      -- invariant-coordinate map is surjective.
 
       theorem BHW.standardSOInvariantRing_generated_by_pairings_and_volume
           (D n : Nat)
