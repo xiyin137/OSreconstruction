@@ -1277,9 +1277,30 @@ For OPTR-supported `f, g`, the (n+m)-point Wick-rotated integral against
 `f ⊗ g_a` (with `g_a` the spatial translate of `g` by `a`) clusters to
 the product of single-block integrals as `‖a⃗‖ → ∞`.
 
-This is the OS reconstruction Schwinger cluster property (OS axiom E4),
-captured at the level of integrals over OPTR-supported `𝒮_<` test
-functions. -/
+This is the **analytic-cluster ingredient** for OS axiom E4 on the
+Wick-rotated boundary side: the (n+m)-integral form for `f ⊗ g_a` with
+both factors OPTR-supported.
+
+**Scope vs. the public E4 surface.** The full
+`OsterwalderSchraderAxioms.E4_cluster` field
+(`SchwingerOS.lean`) is stated for arbitrary
+`ZeroDiagonalSchwartz` tests and an explicit joint-test witness
+`fg_a : ZeroDiagonalSchwartz d (n+m)` satisfying
+`fg_a.1 x = f.1 (splitFirst x) * g_a.1 (splitLast x)`. Discharging that
+field from this theorem requires two additional bridges, both deferred
+to a follow-up:
+1. A reduction from arbitrary `ZeroDiagonalSchwartz` tests to the
+   OPTR-supported subset (e.g., density of the OPTR subspace, or a
+   cut-off argument exploiting that `S_n` is determined by its action
+   on OPTR via the OS Reeh-Schlieder reasoning).
+2. Replacement of `f.tensorProduct g_a` by the explicit `fg_a`
+   witness — straightforward since both define the same product
+   distribution on rectangles, but requires unfolding
+   `splitFirst` / `splitLast`.
+
+The current theorem is what naturally falls out of the Wick-rotated
+boundary integral; the bridges above belong to whichever follow-up wires
+the full R→E theorem to the `OsterwalderSchraderAxioms` package. -/
 theorem W_analytic_cluster_integral (Wfn : WightmanFunctions d) (n m : ℕ)
     (f : SchwartzNPoint d n) (g : SchwartzNPoint d m)
     (hsupp_f : tsupport ((f : SchwartzNPoint d n) : NPointDomain d n → ℂ) ⊆
@@ -1303,11 +1324,14 @@ theorem W_analytic_cluster_integral (Wfn : WightmanFunctions d) (n m : ℕ)
                 (fun k => wickRotatePoint (x k)) * g x)‖ < ε :=
   W_analytic_cluster_integral_via_ruelle Wfn n m f g hsupp_f hsupp_g ε hε
 
-/-- The Schwinger functions satisfy clustering (OS axiom E4) for OPTR-supported
-test functions.
+/-- Cluster of the Wick-rotated boundary pairing for OPTR-supported test
+functions (the `wickRotatedBoundaryPairing` form of
+`W_analytic_cluster_integral`).
 
-Wrapper around `W_analytic_cluster_integral` that exposes the
-`wickRotatedBoundaryPairing` form. -/
+Same scope caveat as `W_analytic_cluster_integral`: this is the
+analytic-cluster ingredient for E4, not the full
+`OsterwalderSchraderAxioms.E4_cluster` field — see that theorem's
+docstring for the bridging work needed. -/
 theorem wickRotatedBoundaryPairing_cluster (Wfn : WightmanFunctions d)
     (n m : ℕ) (f : SchwartzNPoint d n) (g : SchwartzNPoint d m)
     (hsupp_f : tsupport ((f : SchwartzNPoint d n) : NPointDomain d n → ℂ) ⊆
