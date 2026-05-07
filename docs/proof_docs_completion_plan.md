@@ -127,6 +127,8 @@ local Slot 1:
    `BHW.same_sourceOrientedInvariant_detOneOrbit_or_singularLimit`,
    `BHW.extendedTube_same_sourceOrientedInvariant_extendF_eq`,
    `BHW.sourceOrientedExtendedTubeDomain_relOpen_connected`,
+   whose topology split is now checked by
+   `BHW.sourceOrientedExtendedTubeDomain_relOpen_connected_of_localRealization`,
    `BHW.sourceOrientedVarietyGermHolomorphicOn_extendF_descent`,
    `BHW.sourceOrientedScalarRepresentativeData_of_branchLaw`, and
    `BHW.hallWightman_sourceOrientedScalarRepresentativeData`; and the
@@ -2363,6 +2365,20 @@ the determinant condition is `hM0.ne_zero`, and reconstruction belongs to
 is a mechanical Lean target and should be implemented as the model-domain
 constructor feeding `toFullFrameMaxRankChartData_of_modelOpen`, with no new
 axioms or sorrys.
+Lean implementation checkpoint, 2026-05-06: the model-domain constructor is
+now checked as `toFullFrameMaxRankChartData_of_modelChartDomain`, and the
+source-based constructor
+`sourceOrientedFullFrameMaxRankChartData_at_source` builds the full-frame chart
+from the actual realizing tuple `z0` instead of an arbitrary variety witness.
+Its checked center theorem
+`sourceOrientedFullFrameMaxRankChartData_at_source_reconstructVector_center`
+proves that the explicit reconstructed source tuple at
+`sourceOrientedMinkowskiInvariant d n z0` is exactly `z0`.  The remaining
+full-frame max-rank local-section work is therefore the open-neighborhood
+shrink: use continuity on the ambient chart/model-det-nonzero domain and
+`isOpen_extendedTube.mem_nhds hz0` to obtain an ambient open set on which
+`sourceFullFrameGauge_reconstructVector d n ι C.M0 C.slice (C.chart G)` stays
+inside `ExtendedTube d n`.
 
 Ambient-domain split refinement, 2026-05-02: the full-frame max-rank chart now
 stores both the relative variety chart domain `C.Ω` and an ambient open
@@ -3328,7 +3344,17 @@ implementation contract is:
    of `BHW.sourceOrientedExtendedTubeDomain_relOpen` and
    `BHW.sourceOrientedExtendedTubeDomain_connected`; the only real
    mathematical content in that theorem remains the local realization theorem
-   feeding the relative-open half.
+   feeding the relative-open half.  Lean has now checked this topology split in
+   `SourceOrientedLocalRealization.lean` as
+   `BHW.SourceOrientedExtendedTubeLocalRealizationData`,
+   `BHW.SourceOrientedExtendedTubeLocalRealizationProducer`,
+   `BHW.sourceOrientedExtendedTubeDomain_relOpen_of_localRealization`, and
+   `BHW.sourceOrientedExtendedTubeDomain_relOpen_connected_of_localRealization`.
+   The final no-parameter public theorem is therefore blocked only by the
+   actual producer
+   `SourceOrientedExtendedTubeLocalRealizationProducer d n`; no downstream
+   proof should re-prove the open-union argument or hide this datum behind a
+   scalar representative.
    The oriented branch-law surface has been tightened: it must return an
    actual `∃ Λ : ComplexLorentzGroup d, w = complexLorentzAction Λ z` orbit
    alternative or the singular contraction data.  Returning only

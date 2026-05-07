@@ -3829,6 +3829,93 @@ noncomputable def sourceOrientedFullFrameMaxRankChartData_of_selectedDetNonzero
     T.toFullFrameMaxRankChartData_of_modelChartDomain hG0' hM0_oriented
   simpa [hz] using C
 
+/-- Source-based version of the selected full-frame chart constructor.  Unlike
+`sourceOrientedFullFrameMaxRankChartData_of_selectedDetNonzero`, this keeps the
+actual realizing tuple `z0` as the base selected frame.  This is the constructor
+needed by the future extended-tube local section, where the ambient shrink must
+be centered at a known extended-tube source tuple. -/
+noncomputable def sourceOrientedFullFrameMaxRankChartData_at_source
+    {d n : ℕ}
+    (ι : Fin (d + 1) ↪ Fin n)
+    (z0 : Fin n → Fin (d + 1) → ℂ)
+    (hdet : sourceFullFrameDet d n ι z0 ≠ 0) :
+    SourceOrientedFullFrameMaxRankChartData d n ι
+      (sourceOrientedMinkowskiInvariant d n z0) := by
+  let M0 := sourceFullFrameMatrix d n ι z0
+  have hM0 : IsUnit M0.det := by
+    exact isUnit_iff_ne_zero.mpr
+      (by simpa [M0, sourceFullFrameDet] using hdet)
+  let S := sourceFullFrameGaugeSlice_exists d hM0
+  have hG0 :
+      sourceOrientedMinkowskiInvariant d n z0 ∈
+        sourceOrientedGramVariety d n :=
+    ⟨z0, rfl⟩
+  have hM0_oriented :
+      sourceFullFrameOrientedGramCoord d M0 =
+        sourceFullFrameOrientedCoordOfSource d n ι
+          (sourceOrientedMinkowskiInvariant d n z0) := by
+    simpa [M0] using
+      (sourceFullFrameOrientedCoordOfSource_sourceOrientedMinkowskiInvariant
+        d n ι z0).symm
+  let T :=
+    sourceFullFrameMaxRankChart_ambientShrink
+      d n ι hM0 S hG0 hM0_oriented
+  exact T.toFullFrameMaxRankChartData_of_modelChartDomain hG0 hM0_oriented
+
+/-- At the source-based full-frame chart center, the explicit reconstructed
+source tuple is the original tuple.  This is the center membership fact needed
+to shrink the future local section inside `ExtendedTube`. -/
+theorem sourceOrientedFullFrameMaxRankChartData_at_source_reconstructVector_center
+    {d n : ℕ}
+    (ι : Fin (d + 1) ↪ Fin n)
+    (z0 : Fin n → Fin (d + 1) → ℂ)
+    (hdet : sourceFullFrameDet d n ι z0 ≠ 0) :
+    let C := sourceOrientedFullFrameMaxRankChartData_at_source ι z0 hdet
+    sourceFullFrameGauge_reconstructVector d n ι C.M0 C.slice
+        (C.chart (sourceOrientedMinkowskiInvariant d n z0)) =
+      z0 := by
+  let M0 := sourceFullFrameMatrix d n ι z0
+  have hM0 : IsUnit M0.det := by
+    exact isUnit_iff_ne_zero.mpr
+      (by simpa [M0, sourceFullFrameDet] using hdet)
+  let S := sourceFullFrameGaugeSlice_exists d hM0
+  have hG0 :
+      sourceOrientedMinkowskiInvariant d n z0 ∈
+        sourceOrientedGramVariety d n :=
+    ⟨z0, rfl⟩
+  have hM0_oriented :
+      sourceFullFrameOrientedGramCoord d M0 =
+        sourceFullFrameOrientedCoordOfSource d n ι
+          (sourceOrientedMinkowskiInvariant d n z0) := by
+    simpa [M0] using
+      (sourceFullFrameOrientedCoordOfSource_sourceOrientedMinkowskiInvariant
+        d n ι z0).symm
+  have hframe :
+      sourceFullFrameGauge_reconstructFrame d n ι M0 S
+          (SourceFullFrameMaxRankChartAmbientShrink.chartCandidate
+            (d := d) (n := n) (ι := ι) hM0 S
+            (sourceOrientedMinkowskiInvariant d n z0)) =
+        sourceFullFrameMatrix d n ι z0 := by
+    simpa [M0] using
+      SourceFullFrameMaxRankChartAmbientShrink.chartCandidate_reconstructFrame_center_eq
+        (d := d) (n := n) (ι := ι) hM0 S hG0 hM0_oriented
+  have hdetG :
+      (sourceOrientedMinkowskiInvariant d n z0).det ι ≠ 0 := by
+    simpa [sourceOrientedMinkowskiInvariant, SourceOrientedGramData.det,
+      sourceFullFrameDet] using hdet
+  dsimp [sourceOrientedFullFrameMaxRankChartData_at_source,
+    SourceFullFrameMaxRankChartAmbientShrink.toFullFrameMaxRankChartData_of_modelChartDomain,
+    SourceFullFrameMaxRankChartAmbientShrink.toFullFrameMaxRankChartData_of_modelOpen,
+    SourceFullFrameMaxRankChartAmbientShrink.toFullFrameMaxRankChartData,
+    SourceFullFrameMaxRankChartAmbientShrink.chartCandidate]
+  exact
+    sourceFullFrameGauge_reconstructVector_eq_of_frame_eq_mixedRows_eq
+      d n ι M0 S
+      (SourceFullFrameMaxRankChartAmbientShrink.chartCandidate
+        (d := d) (n := n) (ι := ι) hM0 S
+        (sourceOrientedMinkowskiInvariant d n z0))
+      z0 hframe rfl hdetG
+
 /-- A selected determinant-nonzero source-variety point supplies a finite
 coordinate max-rank chart packet for the oriented source variety. -/
 noncomputable def sourceOrientedMaxRankChartData_of_selectedDetNonzero
