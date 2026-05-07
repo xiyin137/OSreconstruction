@@ -2399,8 +2399,11 @@ Its checked center theorem
 `sourceOrientedFullFrameMaxRankChartData_at_source_reconstructVector_center`
 proves that the explicit reconstructed source tuple at
 `sourceOrientedMinkowskiInvariant d n z0` is exactly `z0`.  The remaining
-full-frame max-rank local-section work is therefore the open-neighborhood
-shrink: use continuity on the ambient chart/model-det-nonzero domain and
+full-frame max-rank local-section work is therefore twofold: first prove the
+ambient differentiability theorem for the chart-candidate section, i.e. the
+implicit-kernel inverse regularity behind
+`SourceFullFrameMaxRankChartAmbientShrink.chartCandidate`; then use continuity
+on the ambient chart/model-det-nonzero domain and
 `isOpen_extendedTube.mem_nhds hz0` to obtain an ambient open set on which
 `sourceFullFrameGauge_reconstructVector d n ι C.M0 C.slice (C.chart G)` stays
 inside `ExtendedTube d n`.
@@ -2411,12 +2414,12 @@ neighborhood `C.Ωamb`, with
 `C.Ω = C.Ωamb ∩ sourceOrientedGramVariety d n`.  The tube-valued section uses
 `C.Ωamb`, not the relative domain, and the blueprint now names the continuity
 shrink packet
-`BHW.SourceOrientedFullFrameMaxRankChartData.tubeShrink`.  Its proof first
-identifies the reconstructed center as a proper complex Lorentz transform of
-the original extended-tube source tuple, then shrinks the ambient neighborhood
-inside the open extended tube.  This fixes an implementation-level topology
-gap in the previous transcript, while leaving the finite-dimensional
-local-image and determinant-recovery proofs as real blockers.
+`BHW.SourceFullFrameMaxRankChartAmbientShrink.tubeShrink_at_source`.  Its proof
+uses the source-based center theorem to identify the reconstructed center with
+the original extended-tube source tuple exactly, then shrinks the ambient
+neighborhood inside the open extended tube.  This fixes an implementation-level
+topology gap in the previous transcript, while leaving the implicit-inverse
+differentiability theorem as the real full-frame holomorphic-section blocker.
 
 Full-frame chart constructor refinement, 2026-05-02: the constructor
 `BHW.sourceOrientedFullFrameMaxRankChartData_at` is now expanded into an
@@ -4426,13 +4429,35 @@ implementation contract is:
    plus the regular/removable-singularity split: `sourceOrientedQuotientValue`
    is defined from `extendF F` on an oriented invariant fibre,
    `sourceOrientedQuotientValue_wellDefined` is proved by the oriented branch
-   law, max-rank holomorphy is obtained from
-   `sourceOrientedExtendedTube_holomorphicLocalSection`, and exceptional rank
-   is handled by `sourceOrientedVariety_normal_riemannExtension`.  A local
-   holomorphic section at every singular oriented quotient point is not a
-   valid theorem surface.  This prevents the Lean implementation from
-   inventing an unrelated ambient `Phi` and asserting branch equality only
-   afterward.
+   law, max-rank holomorphy is obtained from an actual ambient holomorphic
+   local section, and exceptional rank is handled by
+   `sourceOrientedVariety_normal_riemannExtension`.  A local holomorphic
+   section at every singular oriented quotient point is not a valid theorem
+   surface.  This prevents the Lean implementation from inventing an unrelated
+   ambient `Phi` and asserting branch equality only afterward.
+
+   Current max-rank section boundary, 2026-05-07: ordinary local realization
+   and full-frame chart continuity are not enough for the scalar descent
+   theorem.  The max-rank local representative must expose an ambient open
+   neighborhood `Ω`, an actual section `toVec : SourceOrientedGramData d n ->
+   Fin n -> Fin (d + 1) -> ℂ`, `toVec_mem : toVec G ∈ ExtendedTube d n`
+   on `Ω`, `toVec_right_inv` on `Ω ∩ sourceOrientedGramVariety d n`, and
+   `toVec_holomorphic : DifferentiableOn ℂ toVec Ω`.  The full-frame branch
+   must therefore prove differentiability of the explicit chart candidate
+   `G ↦ SourceFullFrameMaxRankChartAmbientShrink.chartCandidate hM0 S G`, or
+   equivalently of
+   `G ↦ sourceFullFrameGauge_reconstructVector d n ι M0 S
+     (SourceFullFrameMaxRankChartAmbientShrink.chartCandidate hM0 S G)`, on the
+   ambient shrink `T.Ωamb`.  This is the missing implicit-inverse regularity
+   theorem for
+   `sourceFullFrameGaugeSliceImplicitKernelOpenPartialHomeomorph.symm`
+   composed with the selected-kernel coordinate; it is distinct from the
+   already checked tube shrink and from
+   `continuousOn_sourceFullFrameGauge_reconstructVector_on_modelDetNonzero`.
+   The small-arity branch must similarly use an arbitrary-complex-base
+   selected zero-section for the ordinary source Gram map inside
+   `ExtendedTube`; the existing real-base zero-section support is not, by
+   itself, a section at an arbitrary extended-tube max-rank point.
    The oriented normal-variety support is now tied to explicit algebraic
    equations: symmetry/rank of the Gram field, determinant alternation under
    source-frame reindexing, and the Cauchy-Binet relation

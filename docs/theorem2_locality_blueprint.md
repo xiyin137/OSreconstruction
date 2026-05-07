@@ -4513,17 +4513,17 @@ Proof decomposition of this theorem, without hiding the analytic work:
         Ω : Set (BHW.SourceOrientedGramData d n)
         Ω_open : IsOpen Ω
         center_mem : G0 ∈ Ω
-        section :
+        toVec :
           BHW.SourceOrientedGramData d n ->
             Fin n -> Fin (d + 1) -> ℂ
-        section_mem :
+        toVec_mem :
           ∀ G ∈ Ω,
-            section G ∈ BHW.ExtendedTube d n
-        section_right_inv :
+            toVec G ∈ BHW.ExtendedTube d n
+        toVec_right_inv :
           ∀ G ∈ Ω ∩ BHW.sourceOrientedGramVariety d n,
-            BHW.sourceOrientedMinkowskiInvariant d n (section G) = G
-        section_holomorphic :
-          DifferentiableOn ℂ section Ω
+            BHW.sourceOrientedMinkowskiInvariant d n (toVec G) = G
+        toVec_holomorphic :
+          DifferentiableOn ℂ toVec Ω
 
       theorem BHW.sourceOrientedMaxRank_localSection_smallArity
           [NeZero d]
@@ -7495,74 +7495,77 @@ Proof decomposition of this theorem, without hiding the analytic work:
             (d := d) hd n hn hG0_var ι hι).to_maxRankChart
       ```
 
-      The max-rank extended-tube local section is the same chart with one more
-      shrink.  Starting from `z0 ∈ ExtendedTube d n`, choose `ι` with
-      `sourceFullFrameDet d n ι z0 ≠ 0`, construct the full-frame chart above
-      at `G0 := sourceOrientedMinkowskiInvariant d n z0`, and shrink `Ω` so
-      the reconstructed vector formula lies in the open set
-      `BHW.ExtendedTube d n`.  This produces the `vector_mem` field required
-      by `SourceOrientedLocalHolomorphicSectionData`; it is not part of the
-      arbitrary variety chart.
+      The max-rank extended-tube local section is the same full-frame source
+      chart with two additional ingredients: an ambient holomorphicity theorem
+      for the explicit section formula, and an open tube shrink.  Starting from
+      `z0 ∈ ExtendedTube d n`, choose `ι` with
+      `sourceFullFrameDet d n ι z0 ≠ 0` and construct the source-based chart
+      `sourceOrientedFullFrameMaxRankChartData_at_source ι z0 hι`.  This
+      source-based constructor is important: its checked center theorem says
+      the reconstructed vector at `G0 := sourceOrientedMinkowskiInvariant d n
+      z0` is exactly `z0`, so the tube shrink uses `hz0` directly and does not
+      need an arbitrary ambient source-matrix transport.
+
+      The remaining full-frame analytic theorem is not tube stability.  It is
+      differentiability of the implicit-kernel inverse after composing with the
+      ambient selected-kernel coordinate.  Production Lean already has the
+      strict derivative at the base and the local homeomorphism
+      `sourceFullFrameGaugeSliceImplicitKernelOpenPartialHomeomorph`; the
+      local-section proof still needs the open-neighborhood regularity theorem
+      below before the scalar descent can consume this chart.
 
       ```lean
-      theorem BHW.sourceFullFrameGauge_reconstructVector_differentiableOn_ambient
+      theorem BHW.SourceFullFrameMaxRankChartAmbientShrink.chartCandidate_differentiableOn_Ωamb
           (d n : Nat)
           {ι : Fin (d + 1) ↪ Fin n}
+          {M0 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ}
+          {hM0 : IsUnit M0.det}
+          {S : BHW.SourceFullFrameGaugeSliceData d M0}
           {G0 : BHW.SourceOrientedGramData d n}
-          (C : BHW.SourceOrientedFullFrameMaxRankChartData d n ι G0) :
+          (T :
+            BHW.SourceFullFrameMaxRankChartAmbientShrink d n ι hM0 S G0) :
+          DifferentiableOn ℂ
+            (BHW.SourceFullFrameMaxRankChartAmbientShrink.chartCandidate
+              (d := d) (n := n) (ι := ι) hM0 S)
+            T.Ωamb
+
+      theorem BHW.SourceFullFrameMaxRankChartAmbientShrink.reconstructVector_chartCandidate_differentiableOn_Ωamb
+          (d n : Nat)
+          {ι : Fin (d + 1) ↪ Fin n}
+          {M0 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ}
+          {hM0 : IsUnit M0.det}
+          {S : BHW.SourceFullFrameGaugeSliceData d M0}
+          {G0 : BHW.SourceOrientedGramData d n}
+          (T :
+            BHW.SourceFullFrameMaxRankChartAmbientShrink d n ι hM0 S G0) :
           DifferentiableOn ℂ
             (fun G =>
-              BHW.sourceFullFrameGauge_reconstructVector
-                d n ι C.M0 C.slice (C.chart G))
+              BHW.sourceFullFrameGauge_reconstructVector d n ι M0 S
+                (BHW.SourceFullFrameMaxRankChartAmbientShrink.chartCandidate
+                  (d := d) (n := n) (ι := ι) hM0 S G))
+            T.Ωamb
+
+      theorem BHW.sourceOrientedFullFrameMaxRankChartData_at_source_reconstructVector_differentiableOn_ambient
+          (d n : Nat)
+          {ι : Fin (d + 1) ↪ Fin n}
+          {z0 : Fin n -> Fin (d + 1) -> ℂ}
+          (hι : BHW.sourceFullFrameDet d n ι z0 ≠ 0) :
+          let C :=
+            BHW.sourceOrientedFullFrameMaxRankChartData_at_source ι z0 hι
+          DifferentiableOn ℂ
+            (fun G =>
+              BHW.sourceFullFrameGauge_reconstructVector d n ι C.M0 C.slice
+                (C.chart G))
             C.Ωamb
 
-      theorem BHW.sourceFullFrameGauge_reconstructVector_center_eq_lorentzAction
-          (hd : 2 <= d)
-          (n : Nat)
-          (hn : d + 1 <= n)
-          {z0 : Fin n -> Fin (d + 1) -> ℂ}
+      theorem BHW.SourceFullFrameMaxRankChartAmbientShrink.tubeShrink_at_source
+          (d n : Nat)
           {ι : Fin (d + 1) ↪ Fin n}
-          (C :
-            BHW.SourceOrientedFullFrameMaxRankChartData d n ι
-              (BHW.sourceOrientedMinkowskiInvariant d n z0)) :
-          ∃ Λ : ComplexLorentzGroup d,
-            BHW.sourceFullFrameGauge_reconstructVector
-                d n ι C.M0 C.slice
-                (C.chart (BHW.sourceOrientedMinkowskiInvariant d n z0)) =
-              BHW.complexLorentzAction Λ z0
-
-      theorem BHW.sourceFullFrameGauge_reconstructVector_center_mem_extendedTube
-          (hd : 2 <= d)
-          (n : Nat)
-          (hn : d + 1 <= n)
           {z0 : Fin n -> Fin (d + 1) -> ℂ}
           (hz0 : z0 ∈ BHW.ExtendedTube d n)
-          {ι : Fin (d + 1) ↪ Fin n}
-          (C :
-            BHW.SourceOrientedFullFrameMaxRankChartData d n ι
-              (BHW.sourceOrientedMinkowskiInvariant d n z0)) :
-          BHW.sourceFullFrameGauge_reconstructVector
-              d n ι C.M0 C.slice
-              (C.chart (BHW.sourceOrientedMinkowskiInvariant d n z0)) ∈
-            BHW.ExtendedTube d n := by
-        rcases
-          BHW.sourceFullFrameGauge_reconstructVector_center_eq_lorentzAction
-            (d := d) hd n hn C with
-          ⟨Λ, hΛ⟩
-        rw [hΛ]
-        exact BHW.complexLorentzAction_mem_extendedTube
-          (d := d) n Λ hz0
-
-      theorem BHW.SourceOrientedFullFrameMaxRankChartData.tubeShrink
-          (hd : 2 <= d)
-          (n : Nat)
-          (hn : d + 1 <= n)
-          {z0 : Fin n -> Fin (d + 1) -> ℂ}
-          (hz0 : z0 ∈ BHW.ExtendedTube d n)
-          {ι : Fin (d + 1) ↪ Fin n}
-          (C :
-            BHW.SourceOrientedFullFrameMaxRankChartData d n ι
-              (BHW.sourceOrientedMinkowskiInvariant d n z0)) :
+          (hι : BHW.sourceFullFrameDet d n ι z0 ≠ 0) :
+          let C :=
+            BHW.sourceOrientedFullFrameMaxRankChartData_at_source ι z0 hι
           ∃ Ωtube : Set (BHW.SourceOrientedGramData d n),
             IsOpen Ωtube ∧
             BHW.sourceOrientedMinkowskiInvariant d n z0 ∈ Ωtube ∧
@@ -7579,14 +7582,16 @@ Proof decomposition of this theorem, without hiding the analytic work:
           {z0 : Fin n -> Fin (d + 1) -> ℂ}
           (hz0 : z0 ∈ BHW.ExtendedTube d n)
           {ι : Fin (d + 1) ↪ Fin n}
-          (C :
-            BHW.SourceOrientedFullFrameMaxRankChartData d n ι
-              (BHW.sourceOrientedMinkowskiInvariant d n z0)) :
+          (hι : BHW.sourceFullFrameDet d n ι z0 ≠ 0) :
           BHW.SourceOrientedLocalHolomorphicSectionData d n
             (BHW.sourceOrientedMinkowskiInvariant d n z0) := by
-        rcases C.tubeShrink (d := d) hd n hn hz0 with
+        let C :=
+          BHW.sourceOrientedFullFrameMaxRankChartData_at_source ι z0 hι
+        rcases
+          BHW.SourceFullFrameMaxRankChartAmbientShrink.tubeShrink_at_source
+            (d := d) n hz0 hι with
           ⟨Ωtube, hΩtube_open, hcenter, hΩtube_sub, hsection_mem⟩
-        let section :
+        let toVec :
             BHW.SourceOrientedGramData d n ->
               Fin n -> Fin (d + 1) -> ℂ :=
           fun G =>
@@ -7596,11 +7601,11 @@ Proof decomposition of this theorem, without hiding the analytic work:
           { Ω := Ωtube
             Ω_open := hΩtube_open
             center_mem := hcenter
-            section := section
-            section_mem := by
+            toVec := toVec
+            toVec_mem := by
               intro G hG
               exact hsection_mem G hG
-            section_right_inv := by
+            toVec_right_inv := by
               intro G hG
               have hG_CΩ : G ∈ C.Ω := by
                 rw [C.Ω_eq_ambient]
@@ -7613,14 +7618,14 @@ Proof decomposition of this theorem, without hiding the analytic work:
                 BHW.sourceFullFrameMaxRankChart_localImage_kernel_mixed_eq
                   d n ι C G hG_CΩ with
                 ⟨hsel_source, hchart_source, hkernel, hmixed, hdet⟩
-              simpa [section] using
+              simpa [toVec] using
                 BHW.sourceFullFrameGauge_reconstructInvariant_eq_of_kernel_eq_mixedRows_eq
                   d n ι C.M0_det_unit C.slice hG_var hdet (C.chart G)
                   hsel_source hchart_source hkernel hmixed
-            section_holomorphic := by
+            toVec_holomorphic := by
               exact
-                (BHW.sourceFullFrameGauge_reconstructVector_differentiableOn_ambient
-                  d n C).mono hΩtube_sub }
+                (BHW.sourceOrientedFullFrameMaxRankChartData_at_source_reconstructVector_differentiableOn_ambient
+                  (d := d) n hι).mono hΩtube_sub }
 
       theorem BHW.sourceOrientedMaxRank_localSection_fullFrame
           [NeZero d]
@@ -7641,9 +7646,8 @@ Proof decomposition of this theorem, without hiding the analytic work:
         have hιG :
             (BHW.sourceOrientedMinkowskiInvariant d n z0).det ι ≠ 0 := hι
         exact
-            (BHW.sourceOrientedFullFrameMaxRankChartData_at
-              (d := d) hd n hn hG0_var ι hιG)
-            .shrink_to_extendedTube (d := d) hd n hn hz0
+          BHW.SourceOrientedFullFrameMaxRankChartData.shrink_to_extendedTube
+            (d := d) hd n hn hz0 hι
       ```
 
       The ambient-domain split in this transcript is mandatory.  `C.Ω` is a
@@ -7652,13 +7656,15 @@ Proof decomposition of this theorem, without hiding the analytic work:
       interior.  `C.Ωamb` is the ambient open neighborhood on which the
       coordinate formula and reconstructed vector are holomorphic, with
       `C.Ω = C.Ωamb ∩ sourceOrientedGramVariety d n`.  The theorem
-      `tubeShrink` is just continuity of the reconstructed vector on `C.Ωamb`
-      plus openness of `ExtendedTube`: first prove that the reconstructed center
-      is a proper complex Lorentz transform of the original `z0`, hence is in
-      `ExtendedTube`; then shrink the ambient neighborhood so every
-      reconstructed vector remains in `ExtendedTube`.  This avoids the invalid
-      shortcut "relative open chart domain is open" and keeps the identity
-      principle chart separate from the scalar-descent local section.
+      `tubeShrink_at_source` is just continuity of the reconstructed vector on
+      the source-based ambient chart plus openness of `ExtendedTube`: the
+      checked center theorem
+      `sourceOrientedFullFrameMaxRankChartData_at_source_reconstructVector_center`
+      rewrites the reconstructed center to the original `z0`, so `hz0` gives
+      center membership in the tube; then shrink the ambient neighborhood so
+      every reconstructed vector remains in `ExtendedTube`.  This avoids the
+      invalid shortcut "relative open chart domain is open" and keeps the
+      identity-principle chart separate from the scalar-descent local section.
 
       Current checked max-rank inverse boundary, 2026-05-04: the future local
       image theorem should be named and proved in the kernel/mixed-row form
@@ -12427,21 +12433,21 @@ Proof decomposition of this theorem, without hiding the analytic work:
           BHW.sourceOrientedExtendedTube_holomorphicLocalSection
             (d := d) hd n hG0 hReg
         refine ⟨S.Ω,
-          fun G => BHW.extendF F (S.section G),
+          fun G => BHW.extendF F (S.toVec G),
           S.Ω_open, S.center_mem, ?_, ?_, ?_⟩
         · exact
             (BHW.extendF_holomorphicOn
-              (d := d) hd n F hF_holo hF_cinv).comp
-              S.section_holomorphic S.section_mem
+              (d := d) n F hF_holo hF_cinv).comp
+              S.toVec_holomorphic S.toVec_mem
         · intro G hG
-          exact ⟨S.section G, S.section_mem G hG.1,
-            (S.section_right_inv G hG).symm⟩
+          exact ⟨S.toVec G, S.toVec_mem G hG.1,
+            S.toVec_right_inv G hG⟩
         · intro G hG
           exact
             BHW.sourceOrientedQuotientValue_wellDefined
               (d := d) F hBranch
-              (S.section_mem G hG.1)
-              (S.section_right_inv G hG)
+              (S.toVec_mem G hG.1)
+              (S.toVec_right_inv G hG)
 
       theorem SCV.continuousWithinAt_of_local_eqOn_relNeighborhood
           {E : Type*} [TopologicalSpace E]
@@ -14603,7 +14609,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
       component theorem.  The max-rank patch is a generic connected-ball
       restriction of an oriented local chart.  It uses exactly the
       full-frame/small-arity chart theorem already listed for the oriented
-      quotient proof, but with the `section_mem : section G ∈ ExtendedTube`
+      quotient proof, but with the `toVec_mem : toVec G ∈ ExtendedTube`
       field dropped.  The chart restriction may not assume that a relatively
       open chart domain is ambient-open; the ball is chosen in chart
       coordinates and pulled back by the local inverse.
