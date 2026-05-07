@@ -4928,20 +4928,16 @@ implementation contract is:
    and may not proceed to the oriented normality theorem unless those three
    outputs are available from the same sorry-free proof or source theorem.
    The surjectivity output is no longer a named black box inside that package:
-   the blueprint now splits it through the invariant subtype elements
-   `BHW.standardPairingInvariantElement` and
-   `BHW.standardVolumeInvariantElement`, the variable-image lemmas
-   `BHW.standardSOInvariantCoordinateMap_apply_pairing` and
-   `BHW.standardSOInvariantCoordinateMap_apply_volume`, the polynomial-range
-   lemma `BHW.algHom_range_le_adjoin_images_mvPolynomial_X`, the exact range
-   theorem
-   `BHW.standardSOInvariantCoordinateMap_range_eq_generator_adjoin`, and the
-   subtype-adjoin lift
-   `BHW.standardSOInvariantSubalgebra_mem_generator_adjoin_of_underlying`.
-   Then `BHW.standardSOInvariantCoordinateMap_surjective_of_generators` is
-   only `AlgHom.range_eq_top` after rewriting the FFT generator equality.
-   This prevents Lean from smuggling coordinate-ring surjectivity into the
-   SFT kernel theorem.
+   the checked adapter
+   `BHW.standardSOInvariantCoordinateMap_surjective_of_generator_eq` takes the
+   FFT equality
+   `standardSOInvariantSubalgebra D n = standardSOGeneratorSubalgebra D n`,
+   converts an arbitrary fixed-point element to the generated subalgebra,
+   lifts it by `standardSOGeneratorCoordinateMap_surjective`, and then forgets
+   through the generated-to-fixed inclusion.  This prevents Lean from
+   smuggling coordinate-ring surjectivity into the SFT kernel theorem; the
+   only unproved standard-side content is still the reverse FFT inclusion and
+   the SFT kernel equality.
    The source-side actual invariant subalgebra transport is also now pinned to
    a purely algebraic, dimension-free contract.  Define
    `sourceOrientedInvariantSubalgebra d n` as the `Subalgebra.comap` of

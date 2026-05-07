@@ -13725,11 +13725,11 @@ Proof decomposition of this theorem, without hiding the analytic work:
           Function.Surjective
             (BHW.standardSOInvariantCoordinateMap D n) := by
         classical
-        rw [← AlgHom.range_eq_top]
-        rw [BHW.standardSOInvariantCoordinateMap_range_eq_generator_adjoin]
         exact
-          (BHW.standardSOInvariantSubalgebra_top_eq_generator_adjoin
-            D n hFFT).symm
+          BHW.standardSOInvariantCoordinateMap_surjective_of_generator_eq
+            D n
+            (by
+              simpa [BHW.standardSOGeneratorSubalgebra] using hFFT)
 
       /-- Standard finite-dimensional invariant-theory support for the
       special orthogonal group.  This is the only non-Hall-Wightman algebraic
@@ -14338,7 +14338,10 @@ Proof decomposition of this theorem, without hiding the analytic work:
       The implementation-facing declarations for this assembly are the
       earlier displayed
       `BHW.sourceMinkowskiToDotInvariantSubalgebraEquiv`,
-      `BHW.sourceMinkowskiToDotInvariantCoordinateMap_commutes_on_generators`,
+      `BHW.sourceMinkowskiToDotInvariantCoordinateMap_commutes`,
+      `BHW.sourceOrientedInvariantRing_generated_by_gram_det_of_standard`,
+      `BHW.sourceOrientedInvariantRing_relations_kernel_of_standard`,
+      `BHW.sourceOrientedInvariantCoordinateMap_surjective_of_standard`,
       `BHW.sourceOrientedInvariantCoordinateMap_surjective`,
       `BHW.sourceOrientedCoordinateRing_quotient_relationIdeal`, and
       `BHW.sourceOrientedAlgebraicCoordinateRing_iso_invariants`; do not
@@ -14364,32 +14367,18 @@ Proof decomposition of this theorem, without hiding the analytic work:
         have hstd :=
           BHW.standardSOInvariantRing_generated_by_pairings_and_volume
             (D := d + 1) (n := n) hD
-        have htransport :=
-          BHW.sourceOrientedInvariantSubalgebra_transport_dot
-            (d := d) (n := n) hd
-        apply
-          BHW.algEquivMapSubalgebra_injective
-            (BHW.sourceMinkowskiToDotCoordinateRingEquiv d n)
-        rw [htransport, hstd]
-        exact
-          BHW.sourceMinkowskiToDotCoordinateRingEquiv_adjoin_pairing_volume
-            (d := d) (n := n)
+        simpa [BHW.sourceOrientedGeneratorSubalgebra] using
+          BHW.sourceOrientedInvariantRing_generated_by_gram_det_of_standard
+            (d := d) (n := n) hstd
 
       theorem BHW.sourceOrientedInvariantRing_relations_kernel ... := by
         have hD : 3 <= d + 1 := Nat.succ_le_succ hd
         have hstd :=
           BHW.standardSOInvariantRing_relations_kernel
             (D := d + 1) (n := n) hD
-        have htransport :=
-          BHW.sourceOrientedRelationIdeal_transport_dot
-            (d := d) (n := n) hd
-        apply
-          BHW.algEquivMapIdeal_injective
-            (BHW.sourceMinkowskiToDotInvariantCoordinateEquiv d n)
-        rw [htransport, hstd]
         exact
-          BHW.sourceMinkowskiToDotInvariantCoordinateEquiv_kernel
-            (d := d) (n := n)
+          BHW.sourceOrientedInvariantRing_relations_kernel_of_standard
+            (d := d) (n := n) hstd
       ```
 
       The standard-dot theorems are the only external algebraic invariant
