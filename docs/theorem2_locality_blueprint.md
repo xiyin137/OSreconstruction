@@ -7863,7 +7863,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
           BHW.sourceOrientedMinkowskiInvariant d n (toVec c0) =
             BHW.sourceOrientedMinkowskiInvariant d n z0
         toInv_eq :
-          ∀ c ∈ K,
+          ∀ c ∈ P,
             BHW.sourceOrientedMinkowskiInvariant d n (toVec c) ∈ Ω ∧
             BHW.sourceOrientedMinkowskiInvariant d n (toVec c) ∈
               BHW.sourceOrientedGramVariety d n
@@ -7883,12 +7883,17 @@ Proof decomposition of this theorem, without hiding the analytic work:
                         (toVec c'))})
       ```
 
-      `K` is a closed residual polydisc after all Hall-Wightman shrinkings;
-      `P` is its open interior on which the chart surjects onto the nearby
-      oriented variety.  The map `toVec` is the actual residual-frame vector
-      formula, not a choice from existence.  `image_surj` is the oriented
-      replacement for ordinary Lemma-3 relative openness: it says nearby
-      oriented invariant data are represented by this residual family.
+      `K` is a compact residual control polydisc after all Hall-Wightman
+      shrinkings; `P` is the open Schur parameter domain with `P ⊆ K` on
+      which the chart surjects onto the nearby oriented variety.  The
+      invariant membership field is intentionally only over `P`.  If it were
+      required over all of `K`, then `P ⊆ K`, `image_surj`, and continuity
+      would force `Ω ∩ sourceOrientedGramVariety d n` to be the image of a
+      compact set, making the intended nontrivial open Schur patch compact.
+      The map `toVec` is the actual residual-frame vector formula, not a
+      choice from existence.  `image_surj` is the oriented replacement for
+      ordinary Lemma-3 relative openness: it says nearby oriented invariant
+      data are represented by this residual family.
       `maxRank_dense_parameters` is needed later to identify the normal
       Riemann extension with the branch-defined value at exceptional points.
       The center condition is intentionally invariant-level:
@@ -7971,7 +7976,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
 
       The checked residual chart accessors are
       `SourceOrientedRankDeficientResidualChartData.center_mem`, derived from
-      `toInv_eq` at `c0`, and
+      `toInv_eq` at `c0 ∈ P`, and
       `SourceOrientedRankDeficientResidualChartData.toVec_c0_mem`, derived
       from `P_subset_K` and `toVec_mem`.
 
@@ -9902,14 +9907,50 @@ Proof decomposition of this theorem, without hiding the analytic work:
               (BHW.sourceOrientedSlicedNormalParameterFinCoordHomeomorph '' W)
       ```
 
-      Then the residual-polydisc chooses `K` and `P` from this sliced
-      finite-coordinate compact/open pair and sets
+      The finite-coordinate image of the final open sliced Schur window is
+      also checked:
+
+      ```lean
+      theorem BHW.isOpen_sourceOrientedSlicedNormalParameterFinCoord_image
+          {W : Set (BHW.SourceOrientedRankDeficientSlicedNormalParameter
+            d n r hrD hrn)}
+          (hW : IsOpen W) :
+          IsOpen
+            (BHW.sourceOrientedSlicedNormalParameterFinCoordHomeomorph '' W)
+
+      theorem BHW.sourceOrientedSlicedNormalParameterFinCenterCoord_mem_image
+          {W : Set (BHW.SourceOrientedRankDeficientSlicedNormalParameter
+            d n r hrD hrn)}
+          (hcenter :
+            BHW.sourceOrientedSlicedNormalCenterParameter d n r hrD hrn ∈ W) :
+          BHW.sourceOrientedSlicedNormalParameterFinCenterCoord d n r hrD hrn ∈
+            BHW.sourceOrientedSlicedNormalParameterFinCoordHomeomorph '' W
+
+      theorem BHW.sourceOrientedSlicedNormalParameterFinCoord_image_subset_closedBall
+          {W : Set (BHW.SourceOrientedRankDeficientSlicedNormalParameter
+            d n r hrD hrn)}
+          (hW :
+            W ⊆
+              (BHW.sourceOrientedSlicedNormalParameterFinCoordHomeomorph) ⁻¹'
+                BHW.sourceOrientedSlicedNormalParameterFinCoordClosedBall
+                  d n r hrD hrn ε) :
+          BHW.sourceOrientedSlicedNormalParameterFinCoordHomeomorph '' W ⊆
+            BHW.sourceOrientedSlicedNormalParameterFinCoordClosedBall
+              d n r hrD hrn ε
+      ```
+
+      Then the residual-polydisc chooses a compact finite-coordinate `K`
+      from the sliced extended-tube shrink, chooses an open sliced Schur
+      parameter image `P` with `P ⊆ K`, and sets
       `residualVector c := normalVector ((decode c).toNormalParameter)`.
       Continuity is the composition of the sliced finite-coordinate
       homeomorphism inverse, the checked continuous forgetful map
       `BHW.continuous_sourceOrientedSlicedNormalParameter_toNormalParameter`,
       and `BHW.continuous_sourceOrientedNormalParameterVector`.  The tube
-      field is exactly the sliced compact-shrink theorem above.
+      field is exactly the sliced compact-shrink theorem above.  The
+      original-invariant membership field is required only for `c ∈ P`;
+      compactness of `K` is used downstream for boundedness and cluster
+      arguments, not as the source of the open Schur image.
 
       For original-coordinate image surjectivity, build the algebraic normal
       image associated to the same `N`:
@@ -9928,9 +9969,9 @@ Proof decomposition of this theorem, without hiding the analytic work:
       `BHW.sourceOrientedNormalParameterVarietyPoint`.  Feed this algebraic
       packet to the checked sliced-head Schur local-image stack, but keep the
       returned sliced parameter set as the image-surjectivity parameter
-      window.  The final residual `P` is the decoded sliced finite-coordinate
-      open ball after shrinking it inside both the sliced Schur window and the
-      extended-tube preimage; it is not a full-normal-coordinate ball.  The
+      window.  The final residual `P` is the finite-coordinate image of the
+      sliced Schur window after shrinking that window into the compact
+      extended-tube control set; it is not a full-normal-coordinate ball.  The
       bridge lemma identifies the algebraic image with the actual
       original-coordinate invariant:
       ```
@@ -9944,12 +9985,224 @@ Proof decomposition of this theorem, without hiding the analytic work:
       witness `Ω0` from the relatively open transported image produced by
       the local-image packet.  Set the residual-data field `Ω := Ω0`.  Then
       `originalInvariant_mem` is pointwise membership of the decoded sliced
-      parameter image, and `image_surj` is the equality
+      parameter image for `c ∈ P`, and `image_surj` is the equality
       `Ω ∩ sourceOrientedGramVariety d n = normalImage '' P`, transported only
       through `SourceOrientedVarietyTransportEquiv`.  The finite-coordinate
       membership and surjectivity rewrites are now checked as
       `N.slicedFinCoord_originalImage_mem_varietyTransport` and
       `N.slicedFinCoord_originalImage_surj_varietyTransport`.
+
+      In the hard range `d + 1 <= n`, the remaining producer should now be
+      implemented through the following precise compact-control Schur window,
+      not by reusing the abstract
+      `SourceOrientedRankDeficientMaxRankLocalImageData` packet:
+
+      ```lean
+      theorem BHW.SourceOrientedRankDeficientNormalFormData.exists_slicedSchurWindow_finCoordControl
+          [NeZero d]
+          (hd : 2 <= d)
+          (hn : d + 1 <= n)
+          {z0 : Fin n -> Fin (d + 1) -> ℂ}
+          (N : BHW.SourceOrientedRankDeficientNormalFormData d n z0) :
+          ∃ (ε headRadius mixedRadius : ℝ)
+            (Tail :
+              BHW.SourceOrientedRankDeficientTailWindowChoice
+                d n N.r N.hrD N.hrn)
+            (Ωv : Set (BHW.SourceOrientedVariety d n)),
+            let W :=
+              BHW.sourceOrientedRankDeficientSlicedSchurParameterWindow
+                d n N.r N.hrD N.hrn headRadius mixedRadius Tail
+            let e :=
+              BHW.sourceOrientedSlicedNormalParameterFinCoordHomeomorph
+                (d := d) (n := n) (r := N.r)
+                (hrD := N.hrD) (hrn := N.hrn)
+            0 < ε ∧ 0 < headRadius ∧ 0 < mixedRadius ∧
+            IsCompact
+              (BHW.sourceOrientedSlicedNormalParameterFinCoordClosedBall
+                d n N.r N.hrD N.hrn ε) ∧
+            IsOpen W ∧
+            BHW.sourceOrientedSlicedNormalCenterParameter
+                d n N.r N.hrD N.hrn ∈ W ∧
+            e '' W ⊆
+              BHW.sourceOrientedSlicedNormalParameterFinCoordClosedBall
+                d n N.r N.hrD N.hrn ε ∧
+            (∀ c, c ∈
+              BHW.sourceOrientedSlicedNormalParameterFinCoordClosedBall
+                d n N.r N.hrD N.hrn ε ->
+              N.toOriginal
+                (BHW.sourceOrientedNormalParameterVector
+                  d n N.r N.hrD N.hrn ((e.symm c).toNormalParameter)) ∈
+                BHW.ExtendedTube d n) ∧
+            IsOpen Ωv ∧
+            Ωv ⊆
+              BHW.sourceOrientedSlicedNormalParameterVarietyPoint
+                d n N.r N.hrD N.hrn '' W ∧
+            (∀ p, p ∈ W ->
+              BHW.sourceOrientedSlicedNormalParameterVarietyPoint
+                d n N.r N.hrD N.hrn p ∈ Ωv) ∧
+            (∀ p, p ∈ W -> IsUnit p.toNormalParameter.head.det)
+      ```
+
+      Proof transcript for this control theorem.  First call
+      `N.exists_slicedFinCoordCompactOpen_toOriginal_mem_ET` and keep its
+      closed finite-coordinate ball as `K`.  Pull the open finite-coordinate
+      ball in that theorem back along the sliced finite-coordinate
+      homeomorphism; this is a neighborhood of the sliced center.  Strengthen
+      `exists_slicedSchurParameterWindow_image_subset_open_headDomain_tailRank_connected`
+      by intersecting its existing normal-ball shrink with this sliced
+      neighborhood, so the final sliced Schur window `W` satisfies
+      `e '' W ⊆ K`.  Then feed the same `headRadius`, `mixedRadius`, and
+      `Tail` to
+      `sourceOrientedHeadSliceGaugeSchurWindowCanonicalImage`, obtaining the
+      subtype-open `Ωv`, its forward membership on `W`, and its reverse
+      inclusion into `slicedPoint '' W`.  The head-unit field is the
+      `hhead` field of the sliced Schur-window shrink.
+
+      With that theorem available, the hard-range residual-polydisc body is
+      mechanical:
+
+      ```lean
+      theorem BHW.sourceOriented_rankDeficient_tubeResidualPolydisc_hardRange
+          [NeZero d]
+          (hd : 2 <= d)
+          (hn : d + 1 <= n)
+          {z0 : Fin n -> Fin (d + 1) -> ℂ}
+          (N : BHW.SourceOrientedRankDeficientNormalFormData d n z0) :
+          BHW.SourceOrientedResidualPolydiscData d n N := by
+        rcases
+          N.exists_slicedSchurWindow_finCoordControl
+            (d := d) (n := n) hd hn with
+          ⟨ε, headRadius, mixedRadius, Tail, Ωv, hcontrol⟩
+        let W := ...
+        let e := ...
+        let K := BHW.sourceOrientedSlicedNormalParameterFinCoordClosedBall
+          d n N.r N.hrD N.hrn ε
+        let P := e '' W
+        rcases
+          BHW.sourceOrientedVarietyTransport_invFun_image_underlying_relOpen
+            N.varietyTransport hΩv_open with
+          ⟨Ω, hΩ_open, hΩ_rel⟩
+        refine
+          { m := BHW.sourceOrientedSlicedNormalParameterFinCoordDim
+              d n N.r
+            c0 := BHW.sourceOrientedSlicedNormalParameterFinCenterCoord
+              d n N.r N.hrD N.hrn
+            K := K
+            P := P
+            K_compact := hK_compact
+            P_open := e.isOpenMap W hW_open
+            P_subset_K := hP_subset_K
+            c0_mem := ⟨center, hcenterW, rfl⟩
+            residualVector := fun c =>
+              BHW.sourceOrientedNormalParameterVector
+                d n N.r N.hrD N.hrn ((e.symm c).toNormalParameter)
+            residualVector_continuousOn :=
+              N.continuousOn_slicedFinCoord_normalParameterVector_closedBall ε
+            residualVector_c0 := by
+              -- use `e.symm_apply_apply` at the sliced center,
+              -- `sourceOrientedNormalParameterVector_center`, and
+              -- `N.normalBase_eq`
+            toOriginal_residualVector_mem_ET := hK_tube
+            Ω := Ω
+            Ω_open := hΩ_open
+            Ω_center := by
+              -- use `hΩ_rel`, center membership in `Ωv`,
+              -- `N.originalNormalVarietyPoint_eq_toOriginal`, and
+              -- `N.toOriginal_normalBase_invariant`
+            originalInvariant_mem := by
+              intro c hcP
+              -- apply
+              -- `N.slicedFinCoord_originalImage_mem_varietyTransport`
+              -- to `hΩv_mem`, then rewrite through `hΩ_rel`
+            image_surj := by
+              intro G hG
+              -- rewrite `hG` by `hΩ_rel`, then apply
+              -- `N.slicedFinCoord_originalImage_surj_varietyTransport`
+              -- to `hΩv_surj`
+            maxRank_dense_original := by
+              -- use the sliced Schur-window density theorem below
+          }
+      ```
+
+      The public all-arity theorem must split before this call:
+
+      ```lean
+      theorem BHW.sourceOriented_rankDeficient_tubeResidualPolydisc
+          [NeZero d]
+          (hd : 2 <= d)
+          {z0 : Fin n -> Fin (d + 1) -> ℂ}
+          (N : BHW.SourceOrientedRankDeficientNormalFormData d n z0) :
+          BHW.SourceOrientedResidualPolydiscData d n N := by
+        by_cases hn : d + 1 <= n
+        · exact
+            BHW.sourceOriented_rankDeficient_tubeResidualPolydisc_hardRange
+              (d := d) (n := n) hd hn N
+        · exact
+            BHW.sourceOriented_rankDeficient_tubeResidualPolydisc_smallArity
+              (d := d) (n := n) hd (Nat.lt_of_not_ge hn) N
+      ```
+
+      The small-arity target is a separate pure-Gram residual chart, not a use
+      of the full-frame determinant Schur reconstruction theorem:
+
+      ```lean
+      theorem BHW.sourceOriented_rankDeficient_tubeResidualPolydisc_smallArity
+          [NeZero d]
+          (hd : 2 <= d)
+          (hn : n < d + 1)
+          {z0 : Fin n -> Fin (d + 1) -> ℂ}
+          (N : BHW.SourceOrientedRankDeficientNormalFormData d n z0) :
+          BHW.SourceOrientedResidualPolydiscData d n N
+      ```
+
+      Its proof has no oriented determinant coordinates.  It uses the same
+      source-level normal-form `toOriginal`, the sliced finite-coordinate
+      extended-tube shrink, and the small-arity pure-Gram Schur residual
+      realization where the determinant families indexed by
+      `Fin (d + 1 - r) ↪ Fin (n - r)` are empty.  This theorem must be proved
+      directly; the hard-range theorem above may not be called with a fake
+      `d + 1 <= n` hypothesis.
+
+      The only non-mechanical field in this final constructor is the density
+      lift from the tail polynomial theorem to the finite Schur window:
+
+      ```lean
+      theorem BHW.SourceOrientedRankDeficientNormalFormData.slicedSchurWindow_originalMaxRank_dense
+          [NeZero d]
+          (hn : d + 1 <= n)
+          {z0 : Fin n -> Fin (d + 1) -> ℂ}
+          (N : BHW.SourceOrientedRankDeficientNormalFormData d n z0)
+          {headRadius mixedRadius : ℝ}
+          {Tail :
+            BHW.SourceOrientedRankDeficientTailWindowChoice
+              d n N.r N.hrD N.hrn}
+          (hhead :
+            ∀ p ∈ W, IsUnit p.toNormalParameter.head.det)
+          (hW_open : IsOpen W) :
+          ∀ c ∈ e '' W,
+            BHW.sourceOrientedMinkowskiInvariant d n
+                (N.toOriginal (normalVector ((e.symm c).toNormalParameter))) ∈
+              closure
+                ((fun c' =>
+                  BHW.sourceOrientedMinkowskiInvariant d n
+                    (N.toOriginal
+                      (normalVector ((e.symm c').toNormalParameter)))) ''
+                  {c' | c' ∈ e '' W ∧
+                    BHW.SourceOrientedMaxRankAt d n
+                      (BHW.sourceOrientedMinkowskiInvariant d n
+                        (N.toOriginal
+                          (normalVector ((e.symm c').toNormalParameter))))})
+      ```
+
+      Its proof uses the product-coordinate homeomorphism for sliced
+      parameters.  Head and mixed coordinates are held fixed, while the tail
+      coordinate is perturbed inside the open tail slice by
+      `BHW.sourceShiftedTailOrientedMaxRank_dense_in_parameterOpen`.  The
+      checked bridge
+      `N.toOriginal_slicedNormalParameterVector_maxRank_iff_tail` converts
+      shifted-tail max rank to original-coordinate max rank, and continuity
+      of the finite-coordinate normal image pushes parameter density forward
+      to the displayed closure statement.
 
       For `maxRank_dense_original`, in the hard full-frame range apply the
       checked density theorem on the relatively open image,
@@ -11429,7 +11682,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
         Ω_center :
           BHW.sourceOrientedMinkowskiInvariant d n z0 ∈ Ω
         originalInvariant_mem :
-          ∀ c ∈ K,
+          ∀ c ∈ P,
             BHW.sourceOrientedMinkowskiInvariant d n
               (N.toOriginal (residualVector c)) ∈
               Ω ∩ BHW.sourceOrientedGramVariety d n
@@ -11481,7 +11734,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
           ∃ Ω : Set (BHW.SourceOrientedGramData d n),
             IsOpen Ω ∧
             BHW.sourceOrientedMinkowskiInvariant d n z0 ∈ Ω ∧
-            (∀ c, c ∈ D.K ->
+            (∀ c, c ∈ D.P ->
               BHW.sourceOrientedMinkowskiInvariant d n
                 (N.toOriginal (D.residualVector c)) ∈
                 Ω ∩ BHW.sourceOrientedGramVariety d n) ∧
@@ -11524,14 +11777,16 @@ Proof decomposition of this theorem, without hiding the analytic work:
       coordinates.  The source normal-form transport may be used on actual
       source tuples, but the proof may not require it to be an ambient
       homeomorphism of all oriented Gram/determinant coordinates.
-      `sourceOriented_rankDeficient_tubeResidualPolydisc` then chooses the closed residual
-      polydisc `K` and open interior `P` in normal coordinates after all tube
-      shrinkings.  Its field `toOriginal_residualVector_mem_ET`, not any
-      global invariance of the normal-form transport, is the theorem that
-      every chosen residual tuple lands back in `ExtendedTube`.  Its fields
-      `Ω`, `originalInvariant_mem`, `image_surj`, and
+      `sourceOriented_rankDeficient_tubeResidualPolydisc` then chooses a
+      compact residual control polydisc `K` and an open Schur parameter set
+      `P ⊆ K` in normal coordinates after all tube shrinkings.  Its field
+      `toOriginal_residualVector_mem_ET`, not any global invariance of the
+      normal-form transport, is the theorem that every chosen residual tuple
+      in `K` lands back in `ExtendedTube`.  Its fields `Ω`,
+      `originalInvariant_mem`, `image_surj`, and
       `maxRank_dense_original` are already in the original oriented
-      coordinates.  In particular, `Ω_open` must be an ambient open set in
+      coordinates, with `originalInvariant_mem` asserted on `P`, the same
+      open set used by `image_surj`.  In particular, `Ω_open` must be an ambient open set in
       `SourceOrientedGramData`, chosen after the variety-relative normal-form
       image has been pulled back and represented by an ambient open
       neighborhood.  The residual-chart assembly must not manufacture this

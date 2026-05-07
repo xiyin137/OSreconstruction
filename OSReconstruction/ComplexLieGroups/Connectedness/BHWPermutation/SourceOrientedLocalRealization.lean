@@ -97,7 +97,7 @@ structure SourceOrientedRankDeficientResidualChartData
     sourceOrientedMinkowskiInvariant d n (toVec c0) =
       sourceOrientedMinkowskiInvariant d n z0
   toInv_eq :
-    ∀ c, c ∈ K →
+    ∀ c, c ∈ P →
       sourceOrientedMinkowskiInvariant d n (toVec c) ∈ Ω ∧
         sourceOrientedMinkowskiInvariant d n (toVec c) ∈
           sourceOrientedGramVariety d n
@@ -123,10 +123,9 @@ theorem center_mem
     {z0 : Fin n → Fin (d + 1) → ℂ}
     (C : SourceOrientedRankDeficientResidualChartData d n z0) :
     sourceOrientedMinkowskiInvariant d n z0 ∈ C.Ω := by
-  have hcK : C.c0 ∈ C.K := C.P_subset_K C.c0_mem
   have hcΩ :
       sourceOrientedMinkowskiInvariant d n (C.toVec C.c0) ∈ C.Ω :=
-    (C.toInv_eq C.c0 hcK).1
+    (C.toInv_eq C.c0 C.c0_mem).1
   simpa [C.toVec_c0_invariant] using hcΩ
 
 /-- The residual chart center vector itself is an extended-tube point. -/

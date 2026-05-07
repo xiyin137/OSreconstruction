@@ -3419,6 +3419,10 @@ implementation contract is:
    ∀ c ∈ K, toVec c ∈ ExtendedTube d n`, and `image_surj :
    Ω ∩ sourceOrientedGramVariety d n ⊆
      (fun c => sourceOrientedMinkowskiInvariant d n (toVec c)) '' P`.
+   The invariant-membership field is over the open Schur domain `P`, not the
+   compact control set `K`: requiring it on all of `K` together with
+   `P ⊆ K` and `image_surj` would force the intended local Schur patch to be
+   a compact image.
    A checked conversion
    `SourceOrientedRankDeficientResidualChartData.to_realizationData` then
    derives `SourceOrientedRankDeficientRealizationData`, and
@@ -4202,6 +4206,9 @@ implementation contract is:
    `BHW.SourceOrientedRankDeficientNormalFormData.exists_slicedFinCoordCompactOpen_toOriginal_mem_ET`,
    `BHW.SourceOrientedRankDeficientNormalFormData.continuousOn_slicedFinCoord_normalParameterVector_closedBall`,
    `BHW.SourceOrientedRankDeficientNormalFormData.toOriginal_slicedNormalParameterVector_maxRank_iff_tail`,
+   `BHW.isOpen_sourceOrientedSlicedNormalParameterFinCoord_image`,
+   `BHW.sourceOrientedSlicedNormalParameterFinCenterCoord_mem_image`,
+   `BHW.sourceOrientedSlicedNormalParameterFinCoord_image_subset_closedBall`,
    `BHW.SourceOrientedRankDeficientNormalFormData.slicedFinCoord_originalImage_mem_varietyTransport`,
    and
    `BHW.SourceOrientedRankDeficientNormalFormData.slicedFinCoord_originalImage_surj_varietyTransport`.
@@ -4212,12 +4219,17 @@ implementation contract is:
    checked variety-relative transport equality
    `N.originalNormalVarietyPoint_eq_toOriginal`.  The final residual-polydisc
    uses `residualVector c := normalVector ((decode c).toNormalParameter)`,
-   with `K`/`P` taken from a sliced compact/open pair after shrinking into
-   the sliced Schur image window.  The remaining precision gap is no longer
-   finite-coordinate transport; it is the compact/open Schur-window sandwich
-   itself: choose `K` compact and `P` open with `P ⊆ K`, prove `K` decodes
-   into the transported extracted image and the extended tube, and prove the
-   extracted image is already surjective from `P`.
+   with compact `K` supplied by the sliced extended-tube shrink and open `P`
+   supplied by the sliced Schur image window after shrinking that window into
+   `K`.  In the hard range `d + 1 ≤ n`, the remaining precision gap is no
+   longer finite-coordinate transport; it is the compact/open Schur-window
+   sandwich itself: choose `K` compact and `P` open with `P ⊆ K`, prove `K`
+   decodes into the extended tube, prove the transported extracted image is
+   represented from `P`, and prove original-coordinate image membership for
+   parameters in `P`.  The public all-arity residual-polydisc theorem must
+   split before this call.  The complementary `n < d + 1` branch is a
+   separate pure-Gram residual chart with empty oriented determinant families;
+   it must not fake a hard-range hypothesis.
    The all-arity rank bridge
    `BHW.sourceOrientedNormalParameterVector_maxRank_iff_tail` is also
    checked: on the invertible-head normal-parameter locus, max rank of the

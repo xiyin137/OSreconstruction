@@ -157,6 +157,58 @@ theorem sourceOrientedSlicedNormalParameterFinCenterCoord_mem_closedBall
         d n r hrD hrn ε := by
   simp [sourceOrientedSlicedNormalParameterFinCoordClosedBall, hε]
 
+/-- The finite-coordinate image of an open sliced-parameter set is open. -/
+theorem isOpen_sourceOrientedSlicedNormalParameterFinCoord_image
+    {d n r : ℕ}
+    {hrD : r < d + 1}
+    {hrn : r ≤ n}
+    {W : Set (SourceOrientedRankDeficientSlicedNormalParameter d n r hrD hrn)}
+    (hW : IsOpen W) :
+    IsOpen
+      (sourceOrientedSlicedNormalParameterFinCoordHomeomorph
+          (d := d) (n := n) (r := r) (hrD := hrD) (hrn := hrn) ''
+        W) := by
+  exact
+    (sourceOrientedSlicedNormalParameterFinCoordHomeomorph
+      (d := d) (n := n) (r := r) (hrD := hrD) (hrn := hrn)).isOpenMap W hW
+
+/-- If a sliced-parameter set contains the center, its finite-coordinate image
+contains the encoded center. -/
+theorem sourceOrientedSlicedNormalParameterFinCenterCoord_mem_image
+    {d n r : ℕ}
+    {hrD : r < d + 1}
+    {hrn : r ≤ n}
+    {W : Set (SourceOrientedRankDeficientSlicedNormalParameter d n r hrD hrn)}
+    (hcenter :
+      sourceOrientedSlicedNormalCenterParameter d n r hrD hrn ∈ W) :
+    sourceOrientedSlicedNormalParameterFinCenterCoord d n r hrD hrn ∈
+      sourceOrientedSlicedNormalParameterFinCoordHomeomorph
+          (d := d) (n := n) (r := r) (hrD := hrD) (hrn := hrn) ''
+        W :=
+  ⟨sourceOrientedSlicedNormalCenterParameter d n r hrD hrn, hcenter, rfl⟩
+
+/-- Transfer a sliced-parameter containment into a closed finite-coordinate
+ball to the corresponding image containment. -/
+theorem sourceOrientedSlicedNormalParameterFinCoord_image_subset_closedBall
+    {d n r : ℕ}
+    {hrD : r < d + 1}
+    {hrn : r ≤ n}
+    {ε : ℝ}
+    {W : Set (SourceOrientedRankDeficientSlicedNormalParameter d n r hrD hrn)}
+    (hW :
+      W ⊆
+        (sourceOrientedSlicedNormalParameterFinCoordHomeomorph
+          (d := d) (n := n) (r := r) (hrD := hrD) (hrn := hrn)) ⁻¹'
+          sourceOrientedSlicedNormalParameterFinCoordClosedBall
+            d n r hrD hrn ε) :
+    sourceOrientedSlicedNormalParameterFinCoordHomeomorph
+          (d := d) (n := n) (r := r) (hrD := hrD) (hrn := hrn) ''
+        W ⊆
+      sourceOrientedSlicedNormalParameterFinCoordClosedBall
+        d n r hrD hrn ε := by
+  rintro c ⟨p, hpW, rfl⟩
+  exact hW hpW
+
 /-- Every finite-coordinate neighborhood of the sliced center contains a
 positive-radius closed ball around the center. -/
 theorem exists_sourceOrientedSlicedNormalParameterFinCoordClosedBall_subset_of_mem_nhds_center

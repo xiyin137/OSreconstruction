@@ -571,9 +571,10 @@ image and density statements already returned in the original oriented
 invariant coordinates.
 
 The field `toOriginal_residualVector_mem_ET` is the analytic tube-stability
-input.  The fields `Ω`, `originalInvariant_mem`, `image_surj`, and
-`maxRank_dense_original` are deliberately original-coordinate statements, so
-the chart assembly below is purely mechanical. -/
+input on the compact control set.  The fields `Ω`, `originalInvariant_mem`,
+`image_surj`, and `maxRank_dense_original` are deliberately
+original-coordinate statements on the open Schur parameter set, so the chart
+assembly below is purely mechanical. -/
 structure SourceOrientedResidualPolydiscData
     (d n : ℕ)
     {z0 : Fin n → Fin (d + 1) → ℂ}
@@ -600,7 +601,7 @@ structure SourceOrientedResidualPolydiscData
   Ω_center :
     sourceOrientedMinkowskiInvariant d n z0 ∈ Ω
   originalInvariant_mem :
-    ∀ c, c ∈ K →
+    ∀ c, c ∈ P →
       sourceOrientedMinkowskiInvariant d n
         (N.toOriginal (residualVector c)) ∈
         Ω ∩ sourceOrientedGramVariety d n
@@ -685,7 +686,7 @@ theorem sourceOriented_residualPolydisc_imageSurj
     ∃ Ω : Set (SourceOrientedGramData d n),
       IsOpen Ω ∧
         sourceOrientedMinkowskiInvariant d n z0 ∈ Ω ∧
-        (∀ c, c ∈ D.K →
+        (∀ c, c ∈ D.P →
           sourceOrientedMinkowskiInvariant d n
             (N.toOriginal (D.residualVector c)) ∈
             Ω ∩ sourceOrientedGramVariety d n) ∧
