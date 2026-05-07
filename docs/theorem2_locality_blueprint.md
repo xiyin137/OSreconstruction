@@ -12878,9 +12878,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
                   I J G.gram = 0}
 
       theorem BHW.sourceOrientedExceptionalRank_isAnalyticSubvariety
-          [NeZero d]
-          (hd : 2 <= d)
-          (n : Nat) :
+          (d n : Nat) :
           BHW.IsAnalyticSubvarietyIn
             (BHW.sourceOrientedGramVariety d n)
             {G | BHW.SourceOrientedExceptionalRank d n G}
@@ -12892,13 +12890,10 @@ Proof decomposition of this theorem, without hiding the analytic work:
           BHW.NormalAnalyticSubvariety
             (BHW.sourceOrientedGramVariety d n)
 
-      theorem BHW.IsRelOpenInSourceOrientedGramVariety.to_analyticSpace
-          [NeZero d]
-          (hd : 2 <= d)
-          (n : Nat)
+      theorem BHW.IsRelOpenInSourceOrientedGramVariety.to_isRelOpenIn
           {U : Set (BHW.SourceOrientedGramData d n)}
           (hU : BHW.IsRelOpenInSourceOrientedGramVariety d n U) :
-          BHW.IsRelOpenInAnalyticSpace
+          BHW.IsRelOpenIn
             (BHW.sourceOrientedGramVariety d n) U
 
       theorem BHW.not_exceptional_rank_iff_maxRank
@@ -13942,7 +13937,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
               (BHW.sourceOrientedGramVariety d n)
               {G | BHW.SourceOrientedExceptionalRank d n G} :=
           BHW.sourceOrientedExceptionalRank_isAnalyticSubvariety
-            (d := d) hd n
+            d n
         have hDense :
             BHW.sourceOrientedExtendedTubeDomain d n ⊆
               closure
@@ -13976,9 +13971,18 @@ Proof decomposition of this theorem, without hiding the analytic work:
       oriented source invariant, so
       `sourceGramMatrixRank_le_spacetime_source_min` bounds its Gram rank by
       `min (d + 1) n`, and failure of max rank is exactly strict lower rank.
-      The proof of `sourceOrientedExceptionalRank_isAnalyticSubvariety` is the
-      remaining analytic-subvariety packaging.  The determinant-zero-locus
-      input is also checked as
+      The proof of `sourceOrientedExceptionalRank_isAnalyticSubvariety` is
+      checked in `SourceOrientedAnalyticSubvariety.lean` and has no `hd` or
+      `[NeZero d]` input: define the generic finite-equation predicate
+      `IsAnalyticSubvarietyIn`, use `U0 = univ`, enumerate the finite minor
+      index type
+      `(Fin (min (d + 1) n) -> Fin n) ×
+        (Fin (min (d + 1) n) -> Fin n)`
+      through `Fintype.equivFin`, and take the local equations to be
+      `G ↦ sourceMatrixMinor n (min (d + 1) n) I J G.gram`.  The equation
+      functions are differentiable because `Matrix.det` is polynomial and the
+      Gram projection is a product-coordinate projection.  The
+      determinant-zero-locus input is checked as
       `sourceOrientedExceptionalRank_eq_minorsVanishing` in
       `SourceOrientedExceptionalMinors.lean`: strict lower rank is equivalent
       to vanishing of all `min (d + 1) n` source-Gram minors, with the
@@ -13986,8 +13990,9 @@ Proof decomposition of this theorem, without hiding the analytic work:
       `0 x 0` minor.  The same file checks
       `isClosed_sourceOrientedMaximalMinorsVanishing` by continuity of
       `sourceMatrixMinor` composed with `SourceOrientedGramData.gram`; the
-      remaining analytic work is to upgrade this finite determinant zero
-      locus to `IsAnalyticSubvarietyIn`.  The determinant-coordinate
+      analytic-subvariety upgrade is therefore a finite-equation packaging
+      theorem, not rank algebra, topology of zero sets, or normality.  The
+      determinant-coordinate
       equations do not create an additional exceptional component; they only
       live in the ambient oriented variety.  The domain-density theorem is now
       checked in `SourceOrientedDomainDensity.lean` in the exact form needed
@@ -16796,9 +16801,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
 
       ```lean
       theorem BHW.sourceOrientedExceptionalRank_isAnalyticSubvariety
-          [NeZero d]
-          (hd : 2 <= d)
-          (n : Nat) :
+          (d n : Nat) :
           BHW.IsAnalyticSubvarietyIn
             (BHW.sourceOrientedGramVariety d n)
             {G | BHW.SourceOrientedExceptionalRank d n G}
@@ -16817,7 +16820,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
           {X U A : Set E}
           (hX_locPath :
             BHW.LocallyPathConnectedAnalyticSpace X)
-          (hU_relOpen : BHW.IsRelOpenInAnalyticSpace X U)
+          (hU_relOpen : BHW.IsRelOpenIn X U)
           (hU_conn : IsConnected U)
           (hA_an : BHW.IsAnalyticSubvarietyIn X A)
           (hA_codim : BHW.AnalyticCodimensionAtLeast X A 1) :
@@ -16856,11 +16859,10 @@ Proof decomposition of this theorem, without hiding the analytic work:
             (A := {G | BHW.SourceOrientedExceptionalRank d n G})
             (BHW.sourceOrientedGramVariety_locallyPathConnected
               (d := d) hd n)
-            (BHW.IsRelOpenInSourceOrientedGramVariety.to_analyticSpace
-              (d := d) hd n hU_rel)
+            (BHW.IsRelOpenInSourceOrientedGramVariety.to_isRelOpenIn hU_rel)
             hU_conn
             (BHW.sourceOrientedExceptionalRank_isAnalyticSubvariety
-              (d := d) hd n)
+              d n)
             (BHW.sourceOrientedExceptionalRank_complexCodim_ge_one
               (d := d) hd n)
         have h_eq :

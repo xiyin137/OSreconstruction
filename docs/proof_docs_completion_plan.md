@@ -4810,10 +4810,18 @@ implementation contract is:
    zero locus is checked as
    `isClosed_sourceOrientedMaximalMinorsVanishing`, using
    `continuous_sourceMatrixMinor` and `continuous_sourceOrientedGramData_gram`.
-   The remaining
-   `sourceOrientedExceptionalRank_isAnalyticSubvariety` work is therefore the
-   analytic-subvariety upgrade for this checked finite determinant locus, not
-   rank algebra or topology of closed zero sets.  The domain-density proof is now
+   The analytic-subvariety upgrade
+   `sourceOrientedExceptionalRank_isAnalyticSubvariety` is checked in
+   `SourceOrientedAnalyticSubvariety.lean`: it introduces the generic
+   finite-equation predicate `IsAnalyticSubvarietyIn`, uses `U0 = univ`,
+   enumerates the finite index type of maximal minor pairs by
+   `Fintype.equivFin`, sets each equation to
+   `G ↦ sourceMatrixMinor n (min (d + 1) n) I J G.gram`, discharges
+   differentiability by the polynomial differentiability of `Matrix.det` and
+   the product-coordinate Gram projection, and closes the set equality with
+   `sourceOrientedExceptionalRank_eq_minorsVanishing`.  This is finite
+   analytic-subvariety packaging for a checked determinant locus, not rank
+   algebra, topology of zero sets, or normality.  The domain-density proof is now
    checked in `SourceOrientedDomainDensity.lean` in two layers.  First
    `sourceOrientedMaxRank_dense_in_domain_inter_maxRank` proves closure of the
    explicit max-rank locus: max-rank centers are immediate by
@@ -6480,7 +6488,7 @@ implementation contract is:
    | Product target and auxiliary independence | Product-slice transcript pinned; production Lean not started. | Restrict the IFT target to `Set.prod Us Ua`, require connected nonempty `Ua`, prove zero auxiliary derivative, and apply `IsOpen.is_const_of_fderiv_eq_zero` only on the auxiliary slice. |
    | Selected-coordinate reinflation | Lean-shaped transcript pinned; depends on coordinate split implementation. | Define the exact open `C.U0 ∩ {Z | C.scalarCoord Z ∈ Us}`, prove differentiability of `Ψs ∘ C.scalarCoord`, and keep source-variety domain control. |
    | Max-rank scalar chart assembly | Assembly transcript pinned; not a first Lean target. | Combine the product chart with Lemma 3's adapted local realization and the branch-law transport helper only after the coordinate/PDE rows are implemented. |
-   | Exceptional analytic locus and dense complement | Determinantal transcript pinned; production Lean not started. | The blueprint identifies the exceptional rank locus as the analytic determinantal subset cut out by maximal scalar minors and proves density of the max-rank complement in relatively open source-variety domains by the Schur-product perturbation argument. |
+   | Exceptional analytic locus and dense complement | Checked for the oriented route. | `SourceOrientedAnalyticSubvariety.lean` proves the finite-equation `IsAnalyticSubvarietyIn` theorem from checked maximal-minor equations; density of the non-exceptional domain complement is already checked by the residual-chart Schur-product perturbation argument. |
    | Normal analytic-space removability | SCV support transcript pinned; production Lean not started. | Normality is reduced to the symmetric determinantal variety, Schur local product model, singular-locus codimension, the reduced Cohen-Macaulay/Jozefiak-Pragacz coordinate-ring theorem, Serre assembly, and the normal analytic-space Riemann extension with continuity/local boundedness hypotheses. |
    | `sourceVarietyGermHolomorphicOn_extendF_descent` | Mechanical only after all rows above. | Construct `SourceVarietyGermHolomorphicOn` for the same branch-defined `Phi`; do not glue in a second scalar value function. |
 
