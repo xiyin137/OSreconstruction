@@ -7,6 +7,8 @@ import Mathlib.Analysis.Fourier.RiemannLebesgueLemma
 import Mathlib.MeasureTheory.Measure.Decomposition.RadonNikodym
 import Mathlib.MeasureTheory.Measure.MutuallySingular
 import Mathlib.Analysis.SpecialFunctions.Complex.Analytic
+import Mathlib.MeasureTheory.Measure.Haar.InnerProductSpace
+import Mathlib.MeasureTheory.Measure.Decomposition.IntegralRNDeriv
 
 /-!
 # L5: Spectral Riemann-Lebesgue lemma for tempered measures with AC spatial marginal
@@ -151,7 +153,19 @@ theorem spectral_riemann_lebesgue
         Complex.exp (Complex.I * (∑ i : Fin d, (a i : ℂ) * (q i : ℂ)))
     rw [Complex.real_smul]
   simp_rw [h_step2]
-  -- Steps 3–5 (deferred): Reduce to Mathlib's RL.
+  -- Step 3a: integrability of `ρ`. The RN derivative `(spatialMarginal μ).rnDeriv volume`
+  -- is in L¹(volume) because `spatialMarginal μ` is finite.
+  have h_ρ_integrable : MeasureTheory.Integrable ρ MeasureTheory.volume := by
+    show MeasureTheory.Integrable
+      (fun q => ((spatialMarginal μ).rnDeriv MeasureTheory.volume q).toReal)
+      MeasureTheory.volume
+    exact MeasureTheory.Measure.integrable_toReal_rnDeriv (μ := spatialMarginal μ)
+      (ν := MeasureTheory.volume)
+  -- The complex-valued density `ρℂ : Fin d → ℝ → ℂ` is also integrable.
+  have h_ρℂ_integrable : MeasureTheory.Integrable
+      (fun q : Fin d → ℝ => (ρ q : ℂ)) MeasureTheory.volume := by
+    exact h_ρ_integrable.ofReal
+  -- Steps 3b-5 (deferred): Reduce to Mathlib's RL.
   --
   -- Sub-step 3a: integrability of `q ↦ (ρ q : ℂ)`. Holds because
   --   `(spatialMarginal μ).rnDeriv volume` is in L¹(volume) when
