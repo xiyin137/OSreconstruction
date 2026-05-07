@@ -11425,6 +11425,11 @@ Proof decomposition of this theorem, without hiding the analytic work:
       compatibility, `BHW.SourceOrientedResidualPolydiscData` records the
       compact residual family with original-coordinate `Ω`,
       `originalInvariant_mem`, `image_surj`, and `maxRank_dense_original`, and
+      `BHW.SourceOrientedRankDeficientNormalFormData.ofSourceMatrixLorentz`
+      checks the concrete return-map construction from an invertible source
+      matrix and Lorentz normalizing equation:
+      `toOriginal z = sourceTupleLinearChange d n M⁻¹
+      (complexLorentzAction Λ⁻¹ z)`,
       `BHW.sourceOrientedRankDeficientResidualChartProducer_of_tubeResidualPolydiscProducer`
       mechanically converts such a producer into the already checked
       `BHW.SourceOrientedRankDeficientResidualChartProducer`.  This is only

@@ -4143,6 +4143,15 @@ implementation contract is:
    original-coordinate `Ω`, membership, surjectivity, and max-rank-density
    fields, and the mechanical reducer
    `BHW.sourceOrientedRankDeficientResidualChartProducer_of_tubeResidualPolydiscProducer`.
+   The same file also checks
+   `BHW.SourceOrientedRankDeficientNormalFormData.ofSourceMatrixLorentz`:
+   given an adapted extended-tube base, an invertible source matrix `M`, and a
+   complex Lorentz transform `Λ` with
+   `complexLorentzAction Λ (sourceTupleLinearChange d n M adaptedBase) =
+   hwLemma3CanonicalSource d n r`, the actual return map is
+   `sourceTupleLinearChange d n M⁻¹ ∘ complexLorentzAction Λ⁻¹`, and its
+   source-variety compatibility is proved through the checked
+   `SourceOrientedVarietyTransportEquiv` for `M`.
    The remaining hard theorem is the producer of this data; the checked
    reducer only proves that no ambient source-matrix invariant transport is
    needed after those fields are available.

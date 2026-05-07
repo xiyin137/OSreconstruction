@@ -22,6 +22,20 @@ open Complex Topology Matrix LorentzLieGroup Classical Filter NormedSpace
 
 namespace BHW
 
+/-- Source-label linear changes are continuous in the source tuple. -/
+theorem continuous_sourceTupleLinearChange
+    (d n : ℕ)
+    (M : Matrix (Fin n) (Fin n) ℂ) :
+    Continuous (sourceTupleLinearChange d n M) := by
+  apply continuous_pi
+  intro i
+  apply continuous_pi
+  intro μ
+  refine continuous_finset_sum _ ?_
+  intro a _ha
+  exact continuous_const.mul
+    ((continuous_apply μ).comp (continuous_apply a))
+
 /-- Source-level normal-form data for the rank-deficient extended-tube
 residual chart.
 
@@ -57,6 +71,75 @@ structure SourceOrientedRankDeficientNormalFormData
     ∀ z,
       sourceTupleOrientedVarietyPoint d n (toOriginal z) =
         varietyTransport.invFun (sourceTupleOrientedVarietyPoint d n z)
+
+namespace SourceOrientedRankDeficientNormalFormData
+
+/-- Build source-level normal-form data from an explicit invertible source
+matrix and Lorentz transformation that send the adapted base tuple to the
+canonical Lemma-3 source.
+
+The inverse return map is the actual source-tuple map
+`M⁻¹` after `Λ⁻¹`; the associated invariant transport is only the checked
+variety-relative source-matrix transport. -/
+noncomputable def ofSourceMatrixLorentz
+    {d n : ℕ}
+    {z0 : Fin n → Fin (d + 1) → ℂ}
+    (r : ℕ)
+    (hrD : r < d + 1)
+    (hrn : r ≤ n)
+    {adaptedBase : Fin n → Fin (d + 1) → ℂ}
+    (hadaptedBase_mem : adaptedBase ∈ ExtendedTube d n)
+    (hadaptedBase_same_oriented :
+      sourceOrientedMinkowskiInvariant d n adaptedBase =
+        sourceOrientedMinkowskiInvariant d n z0)
+    {M : Matrix (Fin n) (Fin n) ℂ}
+    (hM : IsUnit M.det)
+    (Λ : ComplexLorentzGroup d)
+    (hcanonical :
+      complexLorentzAction Λ (sourceTupleLinearChange d n M adaptedBase) =
+        hwLemma3CanonicalSource d n r) :
+    SourceOrientedRankDeficientNormalFormData d n z0 where
+  r := r
+  hrD := hrD
+  hrn := hrn
+  adaptedBase := adaptedBase
+  adaptedBase_mem := hadaptedBase_mem
+  adaptedBase_same_oriented := hadaptedBase_same_oriented
+  normalBase := hwLemma3CanonicalSource d n r
+  normalBase_eq := rfl
+  varietyTransport :=
+    sourceOrientedVarietySourceMatrixTransportEquivOfMatrix d n M hM
+  toOriginal := fun z =>
+    sourceTupleLinearChange d n M⁻¹ (complexLorentzAction Λ⁻¹ z)
+  toOriginal_continuous :=
+    (continuous_sourceTupleLinearChange d n M⁻¹).comp
+      (continuous_complexLorentzAction_snd (d := d) (n := n) Λ⁻¹)
+  toOriginal_normalBase_eq_adaptedBase := by
+    rw [← hcanonical]
+    rw [complexLorentzAction_inv]
+    rw [← sourceTupleLinearChange_mul]
+    rw [Matrix.nonsing_inv_mul (A := M) hM]
+    exact sourceTupleLinearChange_one d n adaptedBase
+  toOriginal_normalBase_invariant := by
+    rw [← hcanonical]
+    rw [complexLorentzAction_inv]
+    rw [← sourceTupleLinearChange_mul]
+    rw [Matrix.nonsing_inv_mul (A := M) hM]
+    rw [sourceTupleLinearChange_one]
+    exact hadaptedBase_same_oriented
+  toOriginal_oriented := by
+    intro z
+    apply Subtype.ext
+    dsimp [sourceTupleOrientedVarietyPoint,
+      SourceOrientedVarietyTransportEquiv.invFun,
+      sourceOrientedVarietySourceMatrixTransportEquivOfMatrix,
+      sourceOrientedGramVarietySourceMatrixHomeomorphOfMatrix,
+      sourceOrientedGramVarietySourceMatrixEquivOfMatrix,
+      sourceOrientedGramVarietySourceMatrixMap]
+    rw [sourceOrientedMinkowskiInvariant_sourceTupleLinearChange]
+    rw [sourceOrientedMinkowskiInvariant_complexLorentzAction]
+
+end SourceOrientedRankDeficientNormalFormData
 
 /-- Compact residual-polydisc data in normal source coordinates, with all
 image and density statements already returned in the original oriented
