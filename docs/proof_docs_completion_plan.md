@@ -4190,7 +4190,27 @@ implementation contract is:
    now produce the actual closed compact ball `K`, open ball `P`, center
    membership, `P ⊆ K`, and pointwise
    `N.toOriginal (normalVector (decode c)) ∈ ExtendedTube d n` field used by
-   `SourceOrientedResidualPolydiscData`.
+   the full normal-coordinate compact-shrink bridge.  This is not yet the
+   final residual-polydisc parameter chart, because the checked Schur
+   local-image producer is sliced.  The corresponding sliced finite-coordinate
+   model is now checked in
+   `SourceOrientedSlicedNormalParameterFinCoord.lean`:
+   `BHW.sourceOrientedSlicedNormalParameterFinCoordHomeomorph`,
+   `BHW.sourceOrientedSlicedNormalParameterFinCoordOpenBall`,
+   `BHW.sourceOrientedSlicedNormalParameterFinCoordClosedBall`,
+   `BHW.exists_sourceOrientedSlicedNormalParameterFinCoordClosedBall_subset_of_mem_nhds_center`,
+   `BHW.SourceOrientedRankDeficientNormalFormData.exists_slicedFinCoordCompactOpen_toOriginal_mem_ET`,
+   `BHW.SourceOrientedRankDeficientNormalFormData.continuousOn_slicedFinCoord_normalParameterVector_closedBall`,
+   and
+   `BHW.SourceOrientedRankDeficientNormalFormData.toOriginal_slicedNormalParameterVector_maxRank_iff_tail`.
+   The proof is formal from the checked head-slice symmetric-coordinate
+   homeomorphism, finite-dimensional `ContinuousLinearEquiv.ofFinrankEq`,
+   the existing sliced-to-normal forgetful continuity theorem, and
+   `N.toOriginal_normalParameterVector_mem_ET_mem_nhds_center`.  The final
+   residual-polydisc uses
+   `residualVector c := normalVector ((decode c).toNormalParameter)`, with
+   `K`/`P` taken from the sliced compact/open pair after shrinking into the
+   sliced Schur image window.
    The all-arity rank bridge
    `BHW.sourceOrientedNormalParameterVector_maxRank_iff_tail` is also
    checked: on the invertible-head normal-parameter locus, max rank of the
