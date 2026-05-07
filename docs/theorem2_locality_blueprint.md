@@ -13970,25 +13970,40 @@ Proof decomposition of this theorem, without hiding the analytic work:
           BHW.sourceOrientedInvariantCoordinateRing d n ≃ₐ[ℂ]
             BHW.standardSOInvariantCoordinateRing (d + 1) n
 
-      theorem BHW.sourceMinkowskiToDotInvariantCoordinateEquiv_kernel
-          (d n : Nat)
-          [NeZero d] :
-          BHW.algEquivMapIdeal
-              (BHW.sourceMinkowskiToDotInvariantCoordinateEquiv d n)
-              (RingHom.ker
-                (BHW.sourceOrientedInvariantCoordinateMap d n)) =
-            RingHom.ker
-              (BHW.standardSOInvariantCoordinateMap (d + 1) n)
+      theorem BHW.algEquivMapIdeal_ker_of_commutes
+          {A B C D : Type*}
+          [CommSemiring A] [CommSemiring B]
+          [CommSemiring C] [CommSemiring D]
+          [Algebra ℂ A] [Algebra ℂ B]
+          [Algebra ℂ C] [Algebra ℂ D]
+          (eDomain : A ≃ₐ[ℂ] B)
+          (eCodomain : C ≃ₐ[ℂ] D)
+          (f : A →ₐ[ℂ] C)
+          (g : B →ₐ[ℂ] D)
+          (hmap : ∀ x, eCodomain (f x) = g (eDomain x)) :
+          BHW.algEquivMapIdeal eDomain (RingHom.ker f) =
+            RingHom.ker g := by
+        -- `y` in the mapped source kernel has the form `eDomain x` with
+        -- `f x = 0`; apply `hmap`.  Conversely, for `y ∈ ker g`, take
+        -- `x = eDomain.symm y`, use `hmap x`, and injectivity of
+        -- `eCodomain`.
 
-      theorem BHW.sourceOrientedInvariantSubalgebra_transport_dot
-          (d n : Nat)
-          [NeZero d]
-          (hd : 2 <= d)
-          :
+      def BHW.sourceOrientedInvariantSubalgebra
+          (d n : Nat) :
+          Subalgebra ℂ (BHW.sourceTupleCoordinateRing d n) :=
+        Subalgebra.comap
+          (BHW.sourceMinkowskiToDotCoordinateRingEquiv d n).toAlgHom
+          (BHW.standardSOInvariantSubalgebra (d + 1) n)
+
+      theorem BHW.sourceMinkowskiToDotCoordinateRingEquiv_map_sourceInvariantSubalgebra
+          (d n : Nat) :
           BHW.algEquivMapSubalgebra
               (BHW.sourceMinkowskiToDotCoordinateRingEquiv d n)
               (BHW.sourceOrientedInvariantSubalgebra d n) =
-            BHW.standardSOInvariantSubalgebra (d + 1) n
+            BHW.standardSOInvariantSubalgebra (d + 1) n := by
+        -- Extensional membership proof.  Forward: unpack `Subalgebra.mem_map`.
+        -- Reverse: represent a target invariant `y` by
+        -- `(sourceMinkowskiToDotCoordinateRingEquiv d n).symm y`.
 
       theorem BHW.sourceOrientedRelationIdeal_transport_dot
           (d n : Nat)
@@ -14019,63 +14034,117 @@ Proof decomposition of this theorem, without hiding the analytic work:
       --    `MvPolynomial.C (sourceMinkowskiToDotDetScale d)`, using
       --    `sourceMinkowskiToDotDetScale_mul_invDetScale`.
       -- 4. No `[NeZero d]`, `hd`, or standard `SO` SFT input is used in this
-      --    transport theorem; those hypotheses begin only at the invariant
-      --    theorem/reductivity layer.
+      --    transport theorem; those hypotheses begin only when the standard
+      --    FFT/SFT/reductivity package is invoked.
 
       def BHW.sourceMinkowskiToDotInvariantSubalgebraEquiv
-          (d n : Nat)
-          [NeZero d]
-          (hd : 2 <= d) :
+          (d n : Nat) :
           BHW.sourceOrientedInvariantSubalgebra d n ≃ₐ[ℂ]
             BHW.standardSOInvariantSubalgebra (d + 1) n :=
         BHW.algEquivOfMappedSubalgebraEq
           (BHW.sourceMinkowskiToDotCoordinateRingEquiv d n)
           (BHW.sourceOrientedInvariantSubalgebra d n)
           (BHW.standardSOInvariantSubalgebra (d + 1) n)
-          (BHW.sourceOrientedInvariantSubalgebra_transport_dot
-            (d := d) (n := n) hd)
+          (BHW.sourceMinkowskiToDotCoordinateRingEquiv_map_sourceInvariantSubalgebra
+            (d := d) (n := n))
 
-      theorem BHW.sourceMinkowskiToDotInvariantCoordinateMap_commutes_on_generators
+      theorem BHW.sourceOrientedGeneratorSubalgebra_le_invariantSubalgebra
+          (d n : Nat) :
+          BHW.sourceOrientedGeneratorSubalgebra d n ≤
+            BHW.sourceOrientedInvariantSubalgebra d n := by
+        -- Map source generated elements to dot coordinates.  The checked
+        -- generator transport identifies the image with
+        -- `standardSOGeneratorSubalgebra (d + 1) n`, and the checked standard
+        -- fixed-subalgebra inclusion then lands in
+        -- `standardSOInvariantSubalgebra (d + 1) n`.
+
+      def BHW.sourceOrientedInvariantCoordinateMap
+          (d n : Nat) :
+          BHW.sourceOrientedInvariantCoordinateRing d n →ₐ[ℂ]
+            BHW.sourceOrientedInvariantSubalgebra d n :=
+        (Subalgebra.inclusion
+          (BHW.sourceOrientedGeneratorSubalgebra_le_invariantSubalgebra d n)).comp
+            (BHW.sourceOrientedGeneratorCoordinateMap d n)
+
+      theorem BHW.sourceOrientedInvariantCoordinateMap_apply_gram
           (d n : Nat)
-          [NeZero d]
-          (hd : 2 <= d)
-          (p : BHW.sourceOrientedInvariantCoordinateRing d n) :
-          BHW.sourceMinkowskiToDotInvariantSubalgebraEquiv d n hd
-              (BHW.sourceOrientedInvariantCoordinateMap d n p) =
-            BHW.standardSOInvariantCoordinateMap (d + 1) n
-              (BHW.sourceMinkowskiToDotInvariantCoordinateEquiv d n p) := by
-        -- Polynomial induction on `p`.  On `Sum.inl ij` this is exactly
-        -- `sourceMinkowskiToDotCoordinateRingEquiv_apply_sourceGram`; on
-        -- `Sum.inr ι` it is
-        -- `sourceMinkowskiToDotCoordinateRingEquiv_apply_sourceDet`, with the
-        -- fixed nonzero inverse determinant scale of the Minkowski-to-dot
-        -- linear equivalence absorbed by the volume-coordinate generator.
-        -- Constants and
-        -- addition/multiplication are functoriality of the two algebra maps.
-        induction p using MvPolynomial.induction_on with
-        | C a => simp
-        | add p q hp hq => simp [hp, hq]
-        | mul_X p a hp =>
-            cases a with
-            | inl ij =>
-                simp [hp,
-                  BHW.sourceMinkowskiToDotCoordinateRingEquiv_apply_sourceGram]
-            | inr ι =>
-                simp [hp,
-                  BHW.sourceMinkowskiToDotCoordinateRingEquiv_apply_sourceDet]
+          (ij : Fin n × Fin n) :
+          BHW.sourceOrientedInvariantCoordinateMap d n
+              (MvPolynomial.X (Sum.inl ij)) =
+            ⟨BHW.sourceGramCoordinatePolynomial d n ij,
+              BHW.sourceOrientedGeneratorSubalgebra_le_invariantSubalgebra
+                d n
+                (BHW.sourceGramCoordinatePolynomial_mem_generatorSubalgebra
+                  d n ij)⟩
+
+      theorem BHW.sourceOrientedInvariantCoordinateMap_apply_det
+          (d n : Nat)
+          (ι : Fin (d + 1) ↪ Fin n) :
+          BHW.sourceOrientedInvariantCoordinateMap d n
+              (MvPolynomial.X (Sum.inr ι)) =
+            ⟨BHW.sourceFullFrameDetPolynomial d n ι,
+              BHW.sourceOrientedGeneratorSubalgebra_le_invariantSubalgebra
+                d n
+                (BHW.sourceFullFrameDetPolynomial_mem_generatorSubalgebra
+                  d n ι)⟩
 
       theorem BHW.sourceMinkowskiToDotInvariantCoordinateMap_commutes
           (d n : Nat)
-          [NeZero d]
-          (hd : 2 <= d)
           (p : BHW.sourceOrientedInvariantCoordinateRing d n) :
-          BHW.sourceMinkowskiToDotInvariantSubalgebraEquiv d n hd
+          BHW.sourceMinkowskiToDotInvariantSubalgebraEquiv d n
               (BHW.sourceOrientedInvariantCoordinateMap d n p) =
             BHW.standardSOInvariantCoordinateMap (d + 1) n
               (BHW.sourceMinkowskiToDotInvariantCoordinateEquiv d n p) := by
+        -- Extensional proof after unfolding both inclusions.  It reduces to
+        -- the already checked generated-coordinate square
+        -- `sourceMinkowskiToDotGeneratorCoordinateMap_commutes`.
+
+      theorem BHW.sourceOrientedInvariantCoordinateMap_surjective_of_standard
+          (d n : Nat)
+          (hstd :
+            Function.Surjective
+              (BHW.standardSOInvariantCoordinateMap (d + 1) n)) :
+          Function.Surjective
+            (BHW.sourceOrientedInvariantCoordinateMap d n) := by
         exact
-          BHW.sourceMinkowskiToDotInvariantCoordinateMap_commutes_on_generators
-            (d := d) (n := n) hd p
+          BHW.surjective_of_algEquiv_transport
+            (eDomain :=
+              BHW.sourceMinkowskiToDotInvariantCoordinateEquiv d n)
+            (eCodomain :=
+              BHW.sourceMinkowskiToDotInvariantSubalgebraEquiv d n)
+            (f := BHW.sourceOrientedInvariantCoordinateMap d n)
+            (g := BHW.standardSOInvariantCoordinateMap (d + 1) n)
+            (hmap :=
+              BHW.sourceMinkowskiToDotInvariantCoordinateMap_commutes
+                (d := d) (n := n))
+            hstd
+
+      theorem BHW.sourceOrientedInvariantRing_generated_by_gram_det_of_standard
+          (d n : Nat)
+          (hFFT :
+            BHW.standardSOInvariantSubalgebra (d + 1) n =
+              BHW.standardSOGeneratorSubalgebra (d + 1) n) :
+          BHW.sourceOrientedInvariantSubalgebra d n =
+            BHW.sourceOrientedGeneratorSubalgebra d n := by
+        -- Apply injectivity of `algEquivMapSubalgebra` to the
+        -- source-to-dot tuple-coordinate equivalence, then use the actual
+        -- invariant-subalgebra transport, the checked generated-subalgebra
+        -- transport, and `hFFT`.
+
+      theorem BHW.sourceOrientedInvariantRing_relations_kernel_of_standard
+          (d n : Nat)
+          (hSFT :
+            RingHom.ker
+                (BHW.standardSOInvariantCoordinateMap (d + 1) n) =
+              BHW.standardSOAlgebraicRelationIdeal (d + 1) n) :
+          RingHom.ker
+              (BHW.sourceOrientedInvariantCoordinateMap d n) =
+            BHW.sourceOrientedAlgebraicRelationIdeal d n := by
+        -- Apply injectivity of `algEquivMapIdeal` to the
+        -- invariant-coordinate equivalence.  The image of the source kernel
+        -- is the standard kernel by `algEquivMapIdeal_ker_of_commutes`; the
+        -- image of the source relation ideal is the checked
+        -- `sourceOrientedRelationIdeal_transport_dot`.
 
       theorem BHW.sourceOrientedInvariantRing_generated_by_gram_det
           (d n : Nat)
@@ -14103,22 +14172,11 @@ Proof decomposition of this theorem, without hiding the analytic work:
           Function.Surjective
             (BHW.sourceOrientedInvariantCoordinateMap d n) := by
         have hD : 3 <= d + 1 := Nat.succ_le_succ hd
-        have hstd :
-            Function.Surjective
-              (BHW.standardSOInvariantCoordinateMap (d + 1) n) :=
-          BHW.standardSOInvariantCoordinateMap_surjective (d + 1) n hD
         exact
-          BHW.surjective_of_algEquiv_transport
-            (eDomain :=
-              BHW.sourceMinkowskiToDotInvariantCoordinateEquiv d n)
-            (eCodomain :=
-              BHW.sourceMinkowskiToDotInvariantSubalgebraEquiv d n hd)
-            (f := BHW.sourceOrientedInvariantCoordinateMap d n)
-            (g := BHW.standardSOInvariantCoordinateMap (d + 1) n)
-            (hmap :=
-              BHW.sourceMinkowskiToDotInvariantCoordinateMap_commutes
-                (d := d) (n := n) hd)
-            hstd
+          BHW.sourceOrientedInvariantCoordinateMap_surjective_of_standard
+            (d := d) (n := n)
+            (BHW.standardSOInvariantCoordinateMap_surjective
+              (d + 1) n hD)
 
       theorem BHW.sourceOrientedInvariantRing_integrallyClosed
           (d n : Nat)

@@ -143,6 +143,41 @@ theorem algEquivMapIdeal_injective
   rw [hcomp] at hmap
   simpa using hmap
 
+/-- The kernel of a commuting algebra-map square transports across algebra
+equivalences. -/
+theorem algEquivMapIdeal_ker_of_commutes
+    {A B C D : Type*}
+    [CommSemiring A] [CommSemiring B]
+    [CommSemiring C] [CommSemiring D]
+    [Algebra ℂ A] [Algebra ℂ B]
+    [Algebra ℂ C] [Algebra ℂ D]
+    (eDomain : A ≃ₐ[ℂ] B)
+    (eCodomain : C ≃ₐ[ℂ] D)
+    (f : A →ₐ[ℂ] C)
+    (g : B →ₐ[ℂ] D)
+    (hmap : ∀ x, eCodomain (f x) = g (eDomain x)) :
+    algEquivMapIdeal eDomain (RingHom.ker f) = RingHom.ker g := by
+  ext y
+  constructor
+  · intro hy
+    unfold algEquivMapIdeal at hy
+    rw [Ideal.mem_map_iff_of_surjective] at hy
+    · rcases hy with ⟨x, hx, rfl⟩
+      change g (eDomain x) = 0
+      rw [← hmap x]
+      rw [show f x = 0 from hx]
+      simp
+    · exact eDomain.toRingEquiv.surjective
+  · intro hy
+    unfold algEquivMapIdeal
+    rw [Ideal.mem_map_iff_of_surjective]
+    · refine ⟨eDomain.symm y, ?_, by simp⟩
+      change f (eDomain.symm y) = 0
+      apply eCodomain.injective
+      rw [hmap]
+      simpa using hy
+    · exact eDomain.toRingEquiv.surjective
+
 /-- Transport surjectivity through algebra equivalences on source and target. -/
 theorem surjective_of_algEquiv_transport
     {A B C D : Type*}

@@ -4942,15 +4942,44 @@ implementation contract is:
    only `AlgHom.range_eq_top` after rewriting the FFT generator equality.
    This prevents Lean from smuggling coordinate-ring surjectivity into the
    SFT kernel theorem.
+   The source-side actual invariant subalgebra transport is also now pinned to
+   a purely algebraic, dimension-free contract.  Define
+   `sourceOrientedInvariantSubalgebra d n` as the `Subalgebra.comap` of
+   `standardSOInvariantSubalgebra (d + 1) n` along
+   `sourceMinkowskiToDotCoordinateRingEquiv d n`.  Then prove
+   `sourceMinkowskiToDotCoordinateRingEquiv_map_sourceInvariantSubalgebra` by
+   membership extensionality, restrict the tuple-coordinate equivalence to
+   `sourceMinkowskiToDotInvariantSubalgebraEquiv`, and define
+   `sourceOrientedInvariantCoordinateMap` by composing the already checked
+   source generated-coordinate map with the inclusion
+   `sourceOrientedGeneratorSubalgebra_le_invariantSubalgebra`.  The commuting
+   square with `standardSOInvariantCoordinateMap` is an extensional reduction
+   to the checked generated-coordinate square
+   `sourceMinkowskiToDotGeneratorCoordinateMap_commutes`.
+   From there, source surjectivity is exactly
+   `surjective_of_algEquiv_transport` applied to the standard surjectivity
+   theorem.  The source SFT kernel theorem is exactly injectivity of
+   `algEquivMapIdeal`, the generic kernel-transport lemma
+   `algEquivMapIdeal_ker_of_commutes`, the standard SFT kernel equality, and
+   the already checked relation-ideal transport
+   `sourceOrientedRelationIdeal_transport_dot`.  Thus no source-side
+   invariant theorem may introduce a second algebraic axiom: all remaining
+   content is the single standard-dot FFT/SFT package plus ordinary
+   reductivity/normality.
    The generic algebra plumbing for this split is now checked in
    `SourceOrientedInvariantAlgebraSupport.lean`:
    `algHom_range_le_adjoin_images_mvPolynomial_X`,
    `algEquivMapSubalgebra`, `algEquivMapIdeal`,
    `algEquivOfMappedSubalgebraEq`, `algEquivMapSubalgebra_injective`,
-   `algEquivMapIdeal_injective`, and `surjective_of_algEquiv_transport`.
+   `algEquivMapIdeal_injective`, `algEquivMapIdeal_ker_of_commutes`, and
+   `surjective_of_algEquiv_transport`.  The actual source fixed-subalgebra
+   transport is checked in `SourceOrientedInvariantSubalgebraTransport.lean`:
+   it proves the source invariant-subalgebra transport, the source generator
+   inclusion, the source invariant-coordinate map, the source/dot commuting
+   square, and the conditional source FFT/SFT/surjectivity transport theorems.
    The remaining unchecked part is therefore the actual standard `SO`
-   generator/kernel theorem and its concrete source/dot coordinate transport,
-   not the formal range/surjectivity/equivalence bookkeeping.
+   generator/kernel theorem, not the formal
+   range/surjectivity/equivalence/source-transport bookkeeping.
    The downstream coordinate-ring isomorphism is also now explicit:
    `BHW.sourceOrientedInvariantCoordinateMap_surjective` is transported from
    the standard-dot map through
