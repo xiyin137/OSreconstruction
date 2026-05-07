@@ -4464,6 +4464,116 @@ implementation contract is:
    `OpenPartialHomeomorph.contDiffAt_symm` proof pattern needed once the
    full-frame and small-arity producers provide pointwise invertible
    derivatives and smoothness of their forward chart maps.
+
+   Lean-ready max-rank holomorphic-section producer contract, 2026-05-07:
+   the proof is now split into four explicit targets, and implementation must
+   follow this order.  First, prove the mechanical coordinate facts
+   `sourceFullFrameSelectedKernelCoordAmbient_eq_kernelProjection`,
+   `differentiable_sourceFullFrameSelectedKernelCoordAmbient`, and
+   `differentiable_sourceSelectedMixedRows`.  The first fact rewrites the
+   selected kernel coordinate as
+   `sourceFullFrameSymmetricEquationKernelProjection d M0
+     (sourceFullFrameSelectedSymmetricCoordAmbient d n ι G -
+       sourceFullFrameSymmetricBase d M0)`, so this coordinate is a fixed
+   linear projection of ambient source-oriented coordinates; it does not use
+   differentiability of the symmetric implicit chart.  Second, prove the
+   corresponding forward gauge-slice regularity facts
+   `sourceFullFrameGaugeSliceImplicitKernelMap_eq_projection` and
+   `contDiff_sourceFullFrameGaugeSliceImplicitKernelMap`, again by rewriting
+   through `sourceFullFrameSymmetricEquation_implicitChart_snd` and the
+   checked polynomial `contDiff_sourceFullFrameGaugeSliceMap`.  Third, produce
+   the actual inverse-regular target shrink:
+
+   ```lean
+   structure BHW.SourceFullFrameImplicitKernelTargetRegularityData
+       (d : Nat)
+       {M0 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ}
+       (hM0 : IsUnit M0.det)
+       (S : BHW.SourceFullFrameGaugeSliceData d M0) where
+     D : Set ((BHW.sourceFullFrameSymmetricEquationDerivCLM d
+          (BHW.sourceFullFrameOrientedGramCoord d M0)).ker)
+     D_open : IsOpen D
+     zero_mem : 0 ∈ D
+     D_subset_target :
+       D ⊆
+         (BHW.sourceFullFrameGaugeSliceImplicitKernelOpenPartialHomeomorph
+           d hM0 S).target
+     has_deriv_equiv :
+       ∀ K ∈ D,
+         ∃ e' : S.slice ≃L[ℂ]
+             (BHW.sourceFullFrameSymmetricEquationDerivCLM d
+               (BHW.sourceFullFrameOrientedGramCoord d M0)).ker,
+           HasFDerivAt
+             (BHW.sourceFullFrameGaugeSliceImplicitKernelOpenPartialHomeomorph
+               d hM0 S)
+             (e' : S.slice →L[ℂ]
+               (BHW.sourceFullFrameSymmetricEquationDerivCLM d
+                 (BHW.sourceFullFrameOrientedGramCoord d M0)).ker)
+             ((BHW.sourceFullFrameGaugeSliceImplicitKernelOpenPartialHomeomorph
+               d hM0 S).symm K)
+     forward_smooth :
+       ∀ K ∈ D,
+         ContDiffAt ℂ ⊤
+           (BHW.sourceFullFrameGaugeSliceImplicitKernelOpenPartialHomeomorph
+             d hM0 S)
+           ((BHW.sourceFullFrameGaugeSliceImplicitKernelOpenPartialHomeomorph
+             d hM0 S).symm K)
+     symm_differentiableOn :
+       DifferentiableOn ℂ
+         (BHW.sourceFullFrameGaugeSliceImplicitKernelOpenPartialHomeomorph
+           d hM0 S).symm D
+   ```
+
+   This data is not an axiom surface: `D` is the intersection of the existing
+   local-homeomorphism target with the image of the source-side neighborhood
+   where the Frechet derivative of
+   `sourceFullFrameGaugeSliceImplicitKernelMap d hM0 S` remains an invertible
+   continuous-linear equivalence.  The proof uses continuity of the derivative
+   from the polynomial/`ContDiff` formula and openness of the unit group in
+   finite-dimensional continuous-linear maps, then invokes the checked helper
+   `SCV.openPartialHomeomorph_symm_differentiableOn_of_hasFDerivAt`.
+   Fourth, shrink `SourceFullFrameMaxRankChartAmbientShrink.Ωamb` by the
+   preimage condition
+   `sourceFullFrameSelectedKernelCoordAmbient d n ι hM0 G ∈ D`; on this
+   smaller open neighborhood prove
+   `SourceFullFrameMaxRankChartAmbientShrink.chartCandidate_differentiableOn`
+   by product composition, then prove
+   `reconstructVector_chartCandidate_differentiableOn` from the checked
+   `differentiableOn_sourceFullFrameGauge_reconstructVector_on_modelDetNonzero`.
+   The full-frame local section is then exactly
+   `toVec G := sourceFullFrameGauge_reconstructVector d n ι M0 S
+     (chartCandidate hM0 S G)`, with `toVec_mem` from the existing
+   extended-tube shrink and `toVec_right_inv` from
+   `reconstructInvariant_chartCandidate_eq_of_mem_relDomain`.
+
+   The small-arity branch has an analogous but simpler target.  It must use
+   `sourceSelectedComplexGramMap_implicit_chart_of_complex_nonzero_minor` at
+   the actual complex extended-tube witness `z0`, not the real-base
+   zero-section.  The required producer exposes an ambient open set of
+   ordinary Gram coordinates, a zero-kernel section
+   `q ↦ e.symm (q, 0)`, differentiability of that section from the same
+   `OpenPartialHomeomorph.contDiffAt_symm` pattern, an extended-tube shrink
+   around `z0`, and the right-inverse equality for the ordinary Gram map.  In
+   the oriented small-arity wrapper the determinant-coordinate family is empty,
+   so `SourceOrientedGramData.ext` reduces the right-inverse statement to the
+   ordinary Gram equality.
+
+   First full-frame holomorphic-section support checked, 2026-05-07:
+   `SourceOrientedFullFrameHolomorphicSection.lean` now proves
+   `sourceFullFrameSymmetrizeCoordCLM`,
+   `differentiable_sourceFullFrameSymmetrizeCoord`,
+   `differentiable_sourceFullFrameOrientedCoordOfSource`,
+   `differentiable_sourceFullFrameSelectedSymmetricCoordAmbient`,
+   `sourceFullFrameSelectedKernelCoordAmbient_eq_kernelProjection`,
+   `sourceFullFrameGaugeSliceImplicitKernelMap_eq_kernelProjection`,
+   `differentiable_sourceFullFrameSelectedKernelCoordAmbient`,
+   `differentiable_sourceSelectedMixedRows`, and the conditional consumer
+   `SourceFullFrameMaxRankChartAmbientShrink.chartCandidate_differentiableOn_Ωamb_of_kernelSymmOn`.
+   Thus the first, second-projection-rewrite, and chart-candidate composition
+   parts of the full-frame plan are checked.  The remaining honest full-frame
+   blocker is exactly `SourceFullFrameImplicitKernelTargetRegularityData`: an
+   open target set `D` around `0` on which the inverse kernel chart is
+   differentiable, obtained from a derivative-invertibility source shrink.
    The oriented normal-variety support is now tied to explicit algebraic
    equations: symmetry/rank of the Gram field, determinant alternation under
    source-frame reindexing, and the Cauchy-Binet relation

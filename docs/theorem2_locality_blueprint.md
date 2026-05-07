@@ -4571,6 +4571,145 @@ Proof decomposition of this theorem, without hiding the analytic work:
               (d := d) hd n hn_le hz0 ι hι
       ```
 
+      Max-rank holomorphic-section producer boundary, 2026-05-07.  The
+      checked local-realization charts are not by themselves enough for the
+      scalar quotient descent: the section theorem must return an ambient
+      holomorphic `toVec`, not only a continuous realizing vector on the
+      source variety.  The full-frame producer is therefore a direct
+      differentiability upgrade of the existing full-frame chart candidate.
+      Its Lean implementation order is:
+
+      ```lean
+      theorem BHW.sourceFullFrameSelectedKernelCoordAmbient_eq_kernelProjection
+          (d n : Nat)
+          (ι : Fin (d + 1) ↪ Fin n)
+          {M0 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ}
+          (hM0 : IsUnit M0.det)
+          (G : BHW.SourceOrientedGramData d n) :
+          BHW.sourceFullFrameSelectedKernelCoordAmbient d n ι hM0 G =
+            BHW.sourceFullFrameSymmetricEquationKernelProjection d M0
+              (BHW.sourceFullFrameSelectedSymmetricCoordAmbient d n ι G -
+                BHW.sourceFullFrameSymmetricBase d M0)
+
+      theorem BHW.differentiable_sourceFullFrameSelectedKernelCoordAmbient
+          (d n : Nat)
+          (ι : Fin (d + 1) ↪ Fin n)
+          {M0 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ}
+          (hM0 : IsUnit M0.det) :
+          Differentiable ℂ
+            (BHW.sourceFullFrameSelectedKernelCoordAmbient d n ι hM0)
+
+      theorem BHW.sourceFullFrameGaugeSliceImplicitKernelMap_eq_projection
+          (d : Nat)
+          {M0 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ}
+          (hM0 : IsUnit M0.det)
+          (S : BHW.SourceFullFrameGaugeSliceData d M0)
+          (X : S.slice) :
+          BHW.sourceFullFrameGaugeSliceImplicitKernelMap d hM0 S X =
+            BHW.sourceFullFrameSymmetricEquationKernelProjection d M0
+              (BHW.sourceFullFrameGaugeSliceMapSymmetric d M0 S X -
+                BHW.sourceFullFrameSymmetricBase d M0)
+
+      theorem BHW.contDiff_sourceFullFrameGaugeSliceImplicitKernelMap
+          (d : Nat)
+          {M0 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ}
+          (hM0 : IsUnit M0.det)
+          (S : BHW.SourceFullFrameGaugeSliceData d M0) :
+          ContDiff ℂ ⊤
+            (BHW.sourceFullFrameGaugeSliceImplicitKernelMap d hM0 S)
+
+      structure BHW.SourceFullFrameImplicitKernelTargetRegularityData
+          (d : Nat)
+          {M0 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ}
+          (hM0 : IsUnit M0.det)
+          (S : BHW.SourceFullFrameGaugeSliceData d M0) where
+        D : Set ((BHW.sourceFullFrameSymmetricEquationDerivCLM d
+              (BHW.sourceFullFrameOrientedGramCoord d M0)).ker)
+        D_open : IsOpen D
+        zero_mem : 0 ∈ D
+        D_subset_target :
+          D ⊆
+            (BHW.sourceFullFrameGaugeSliceImplicitKernelOpenPartialHomeomorph
+              d hM0 S).target
+        has_deriv_equiv :
+          ∀ K ∈ D,
+            ∃ e' : S.slice ≃L[ℂ]
+                (BHW.sourceFullFrameSymmetricEquationDerivCLM d
+                  (BHW.sourceFullFrameOrientedGramCoord d M0)).ker,
+              HasFDerivAt
+                (BHW.sourceFullFrameGaugeSliceImplicitKernelOpenPartialHomeomorph
+                  d hM0 S)
+                (e' : S.slice →L[ℂ]
+                  (BHW.sourceFullFrameSymmetricEquationDerivCLM d
+                    (BHW.sourceFullFrameOrientedGramCoord d M0)).ker)
+                ((BHW.sourceFullFrameGaugeSliceImplicitKernelOpenPartialHomeomorph
+                  d hM0 S).symm K)
+        forward_smooth :
+          ∀ K ∈ D,
+            ContDiffAt ℂ ⊤
+              (BHW.sourceFullFrameGaugeSliceImplicitKernelOpenPartialHomeomorph
+                d hM0 S)
+              ((BHW.sourceFullFrameGaugeSliceImplicitKernelOpenPartialHomeomorph
+                d hM0 S).symm K)
+        symm_differentiableOn :
+          DifferentiableOn ℂ
+            (BHW.sourceFullFrameGaugeSliceImplicitKernelOpenPartialHomeomorph
+              d hM0 S).symm D
+
+      theorem BHW.SourceFullFrameMaxRankChartAmbientShrink
+          .chartCandidate_differentiableOn
+          (T : BHW.SourceFullFrameMaxRankChartAmbientShrink d n ι hM0 S G0)
+          (R : BHW.SourceFullFrameImplicitKernelTargetRegularityData d hM0 S)
+          (hΩD :
+            ∀ G ∈ T.Ωamb,
+              BHW.sourceFullFrameSelectedKernelCoordAmbient d n ι hM0 G ∈ R.D) :
+          DifferentiableOn ℂ
+            (BHW.SourceFullFrameMaxRankChartAmbientShrink.chartCandidate
+              (d := d) (n := n) (ι := ι) hM0 S)
+            T.Ωamb
+      ```
+
+      The `SourceFullFrameImplicitKernelTargetRegularityData` proof is the
+      only non-mechanical full-frame regularity step.  It shrinks the target
+      of the checked kernel open partial homeomorphism to the image of a
+      source neighborhood on which the derivative of
+      `sourceFullFrameGaugeSliceImplicitKernelMap d hM0 S` remains invertible;
+      the derivative-invertibility neighborhood follows from the checked
+      polynomial/`ContDiff` formula and openness of continuous-linear
+      equivalences.  The inverse differentiability field is then exactly the
+      already checked helper
+      `SCV.openPartialHomeomorph_symm_differentiableOn_of_hasFDerivAt`.
+      After `chartCandidate_differentiableOn`, the section's holomorphy is the
+      composition of this chart candidate with
+      `differentiableOn_sourceFullFrameGauge_reconstructVector_on_modelDetNonzero`.
+      The full-frame section uses the existing extended-tube shrink for
+      `toVec_mem` and
+      `SourceFullFrameMaxRankChartAmbientShrink.reconstructInvariant_chartCandidate_eq_of_mem_relDomain`
+      for `toVec_right_inv`; it must not appeal to an ambient source-matrix
+      transport preserving the tube.
+
+      The small-arity producer has a separate ordinary-Gram zero-section
+      contract.  It must call
+      `sourceSelectedComplexGramMap_implicit_chart_of_complex_nonzero_minor`
+      at the actual complex extended-tube witness `z0`, prove differentiability
+      of `q ↦ e.symm (q, 0)` on a target shrink by the same inverse-chart
+      pattern, shrink the ambient Gram neighborhood inside `ExtendedTube`, and
+      then lift to `SourceOrientedLocalHolomorphicSectionData` by the
+      determinant-field emptiness when `n < d + 1`.  The older real-base
+      zero-section packet is useful evidence but is not a substitute for this
+      arbitrary-complex-base theorem.
+
+      Checked start of this producer, 2026-05-07:
+      `SourceOrientedFullFrameHolomorphicSection.lean` proves the full-frame
+      symmetrization CLM, differentiability of selected full-frame oriented
+      coordinates, differentiability of selected symmetric/kernel/mixed-row
+      ambient coordinates, the selected/gauge kernel projection rewrites, and
+      the conditional chart-candidate differentiability theorem
+      `SourceFullFrameMaxRankChartAmbientShrink.chartCandidate_differentiableOn_Ωamb_of_kernelSymmOn`.
+      Consequently, once the inverse-regular kernel target set `D` is
+      constructed, chart-candidate holomorphy is mechanical; that target-set
+      construction is now the sole full-frame analytic-regularity blocker.
+
       Production order correction for the local-realization producer.
       The public local-realization producer is assembled only after the
       rank-deficient residual chart packet is available.  Both max-rank
