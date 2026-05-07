@@ -4802,7 +4802,14 @@ implementation contract is:
    bridge: an oriented-variety point is an actual oriented source invariant,
    so `sourceGramMatrixRank_le_spacetime_source_min` bounds its Gram rank by
    `min (d + 1) n`, and failure of the defining max-rank equality is exactly
-   the strict lower-rank inequality.  The domain-density proof is now
+   the strict lower-rank inequality.  The determinant-zero-locus bridge
+   `sourceOrientedExceptionalRank_eq_minorsVanishing` is also checked: strict
+   lower rank is equivalent to vanishing of all maximal source-Gram minors,
+   with the `min (d + 1) n = 0` edge case handled by
+   `sourceMatrixMinor_zero_ne_zero`.  The remaining
+   `sourceOrientedExceptionalRank_isAnalyticSubvariety` work is therefore the
+   analytic-subvariety packaging of this checked finite determinant locus, not
+   rank algebra.  The domain-density proof is now
    checked in `SourceOrientedDomainDensity.lean` in two layers.  First
    `sourceOrientedMaxRank_dense_in_domain_inter_maxRank` proves closure of the
    explicit max-rank locus: max-rank centers are immediate by
