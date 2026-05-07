@@ -4783,6 +4783,18 @@ implementation contract is:
    `sourceOrientedAlgebraicRelationIdeal`.  Scalar coefficients in polynomial
    relations are explicit constants via `MvPolynomial.C`; this file is only
    coordinate bookkeeping and does not assert the `SO` FFT/SFT theorem.
+   `SourceOrientedInvariantCoordinateEval.lean` now checks the one-way
+   zero-locus bridge needed by the relation-ideal side of the transcript:
+   `sourceOrientedCoordinateEval` evaluates source-oriented invariant
+   coordinate polynomials at a `SourceOrientedGramData` point, and
+   `sourceOrientedAlgebraicRelationGenerators_eval_eq_zero_of_relations` plus
+   `sourceOrientedAlgebraicRelationIdeal_eval_eq_zero_of_relations` prove
+   that every explicit generator, and hence every polynomial in the generated
+   ideal, vanishes at any point satisfying
+   `sourceOrientedAlgebraicRelations`.  This remains only the forward
+   pointwise relation check.  It does not prove the SFT kernel theorem, the
+   radical vanishing-ideal theorem, or the reverse statement
+   `sourceOrientedGramVariety_eq_algebraic`.
    The theorem-2 blueprint now tightens this into the single standard-dot
    support surface `BHW.standardSO_FFT_SFT_coordinatePresentation`, whose three
    outputs are: FFT generation by pairings and ordered volumes, SFT kernel
