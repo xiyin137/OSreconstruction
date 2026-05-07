@@ -7274,12 +7274,19 @@ common-boundary envelope, or any theorem that already assumes locality.
 
    `BHW.isOpen_os45SourcePatchBHWJostAmbient` is proved by
    `BHW.isOpen_extendedTube`, continuity of `BHW.permAct`, and `IsOpen.union`.
+   The checked noncomputable constructor
    `BHW.os45_sourcePatch_bhwJostHullData_on_figure24SourcePatch` sets `U` to
-   the displayed path component based at the canonical source-patch seed.
+   the displayed path component based at a selected source-patch Wick seed.
    `U_open` is now the checked theorem
    `BHW.os45SourcePatchBHWJostHull_open`, whose local topological input is
    `BHW.isOpen_pathComponentIn_of_isOpen_normed`; `U_connected` is
-   path-connectedness of the component.  `wick_id_ET` comes from the ordered
+   path-connectedness of the component.  The two `U` membership fields are no
+   longer separate Figure-2-4 path/lift obligations: after the selected seed
+   gives `z0 ∈ BHW.ExtendedTube d n`, the checked
+   `BHW.mem_os45SourcePatchBHWJostHull_of_extendedTube` puts every ordinary
+   extended-tube point into the selected hull.  Thus `wick_id_mem` follows from
+   `wick_id_ET`, and `real_id_mem` follows from `real_id_ET`.
+   `wick_id_ET` comes from the ordered
    sector on the exact source patch and the checked
    `BHW.os45Figure24SourcePatch_wick_mem_extendedTube`.  There is
    deliberately no direct `wick_tau_ET` field: the checked swapped ordered
@@ -7291,15 +7298,11 @@ common-boundary envelope, or any theorem that already assumes locality.
    `real_id_ET` is the checked ordinary real source-patch extended-tube
    field, and `real_tau_ET` rewrites by the checked
    `BHW.permAct_realEmbed` before using the swapped real source-patch
-   extended-tube field.  The membership fields are obtained by
-   joining `z0` to each Wick and real point inside the displayed ambient: for
-   Wick points use the path-connectedness of the ordinary and adjacent tube
-   sectors; for real points use the checked Figure-2-4 path/lift fields from
-   the canonical packet and concatenate by `JoinedIn.trans`.  The exact
-   topology API to pin in Lean is `JoinedIn.refl`, `JoinedIn.trans`,
+   extended-tube field.  The exact topology API to pin in Lean is
    `JoinedIn.mono`, `BHW.isOpen_pathComponentIn_of_isOpen_normed`,
    `BHW.os45SourcePatchBHWJostHull_open`,
-   `IsOpen.isConnected_iff_isPathConnected`, and `Path.trans`.  No source
+   `BHW.mem_os45SourcePatchBHWJostHull_of_extendedTube`,
+   and `IsOpen.isConnected_iff_isPathConnected`.  No source
    scalar representative, EOW envelope, PET independence, or final locality is
    allowed in this hull theorem.
 

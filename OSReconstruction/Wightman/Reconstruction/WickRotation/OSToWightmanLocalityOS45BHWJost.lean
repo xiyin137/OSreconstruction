@@ -1,5 +1,6 @@
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanLocalityOS45Compact
 import OSReconstruction.SCV.EuclideanWeylOpen
+import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SourceOrientedContinuation
 
 /-!
 # OS45 BHW/Jost source-patch carriers
@@ -379,6 +380,110 @@ theorem os45_wickBranchDifference_zero_on_figure24SourcePatch
           BHW.integrable_wickEdge_bvt_F_mul_schwartz_on_figure24SourcePatch
             (d := d) hd OS lgc n i hi
             (1 : Equiv.Perm (Fin n)) ψ hψ_comp hψ_supp)
+
+/-- Source-patch BHW/Jost hull geometry on one OS45 Figure-2-4 patch.
+
+This is the geometric carrier used before the analytic continuation theorem
+supplies the ordinary and adjacent branches on `U`. -/
+structure OS45SourcePatchBHWJostHullData
+    (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (n : ℕ) (i : Fin n) (hi : i.val + 1 < n)
+    (V : Set (NPointDomain d n)) where
+  τ : Equiv.Perm (Fin n)
+  τ_eq : τ = Equiv.swap i ⟨i.val + 1, hi⟩
+  x0 : NPointDomain d n
+  x0_mem : x0 ∈ V
+  z0 : Fin n → Fin (d + 1) → ℂ
+  z0_eq : z0 = fun k => wickRotatePoint (x0 k)
+  U : Set (Fin n → Fin (d + 1) → ℂ)
+  U_eq : U = BHW.os45SourcePatchBHWJostHull d n τ z0
+  V_open : IsOpen V
+  V_nonempty : V.Nonempty
+  U_open : IsOpen U
+  U_connected : IsConnected U
+  wick_id_mem :
+    ∀ x, x ∈ V → (fun k => wickRotatePoint (x k)) ∈ U
+  real_id_mem :
+    ∀ x, x ∈ V → BHW.realEmbed x ∈ U
+  wick_id_ET :
+    ∀ x, x ∈ V →
+      (fun k => wickRotatePoint (x k)) ∈ BHW.ExtendedTube d n
+  real_id_ET :
+    ∀ x, x ∈ V → BHW.realEmbed x ∈ BHW.ExtendedTube d n
+  real_tau_ET :
+    ∀ x, x ∈ V →
+      BHW.permAct (d := d) τ (BHW.realEmbed x) ∈ BHW.ExtendedTube d n
+
+/-- The canonical Figure-2-4 source patch has the exact source-patch
+BHW/Jost hull geometry required by the later branch-continuation theorem. -/
+def os45_sourcePatch_bhwJostHullData_on_figure24SourcePatch
+    (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (n : ℕ) (i : Fin n) (hi : i.val + 1 < n) :
+    BHW.OS45SourcePatchBHWJostHullData
+      (d := d) hd OS lgc n i hi
+      (BHW.os45Figure24SourcePatch (d := d) (n := n) i hi) := by
+  classical
+  let τ : Equiv.Perm (Fin n) := Equiv.swap i ⟨i.val + 1, hi⟩
+  let V : Set (NPointDomain d n) :=
+    BHW.os45Figure24SourcePatch (d := d) (n := n) i hi
+  let hVne : V.Nonempty :=
+    BHW.nonempty_os45Figure24SourcePatch (d := d) hd n i hi
+  let x0 : NPointDomain d n := Classical.choose hVne
+  have hx0 : x0 ∈ V := Classical.choose_spec hVne
+  let z0 : Fin n → Fin (d + 1) → ℂ :=
+    fun k => wickRotatePoint (x0 k)
+  have hz0_ET : z0 ∈ BHW.ExtendedTube d n := by
+    exact
+      BHW.os45Figure24SourcePatch_wick_mem_extendedTube
+        (d := d) hd n i hi x0 hx0
+  have hz0_ambient : z0 ∈ BHW.os45SourcePatchBHWJostAmbient d n τ :=
+    Or.inl hz0_ET
+  refine
+    { τ := τ
+      τ_eq := rfl
+      x0 := x0
+      x0_mem := hx0
+      z0 := z0
+      z0_eq := rfl
+      U := BHW.os45SourcePatchBHWJostHull d n τ z0
+      U_eq := rfl
+      V_open := BHW.isOpen_os45Figure24SourcePatch (d := d) n i hi
+      V_nonempty := hVne
+      U_open :=
+        BHW.os45SourcePatchBHWJostHull_open
+          (d := d) (n := n) τ z0 hz0_ambient
+      U_connected :=
+        BHW.os45SourcePatchBHWJostHull_connected
+          (d := d) (n := n) τ z0 hz0_ambient
+      wick_id_mem := ?_
+      real_id_mem := ?_
+      wick_id_ET := ?_
+      real_id_ET := ?_
+      real_tau_ET := ?_ }
+  · intro x hx
+    exact
+      BHW.mem_os45SourcePatchBHWJostHull_of_extendedTube
+        (d := d) (n := n) τ hz0_ET
+        (BHW.os45Figure24SourcePatch_wick_mem_extendedTube
+          (d := d) hd n i hi x hx)
+  · intro x hx
+    exact
+      BHW.mem_os45SourcePatchBHWJostHull_of_extendedTube
+        (d := d) (n := n) τ hz0_ET
+        (BHW.os45Figure24SourcePatch_realEmbed_mem_extendedTube
+          (d := d) hd n i hi x hx)
+  · exact BHW.os45Figure24SourcePatch_wick_mem_extendedTube
+      (d := d) hd n i hi
+  · exact BHW.os45Figure24SourcePatch_realEmbed_mem_extendedTube
+      (d := d) hd n i hi
+  · intro x hx
+    simpa [τ] using
+      BHW.os45Figure24SourcePatch_permAct_realEmbed_mem_extendedTube
+        (d := d) hd n i hi x hx
 
 /-- Pair of ordinary/adjacent BHW-Jost branches on one selected OS45 source
 patch hull.

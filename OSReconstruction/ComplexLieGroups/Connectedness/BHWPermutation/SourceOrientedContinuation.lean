@@ -162,6 +162,24 @@ theorem os45SourcePatchBHWJostHull_preconnected
     IsPreconnected (os45SourcePatchBHWJostHull d n τ z0) :=
   (os45SourcePatchBHWJostHull_isPathConnected (d := d) (n := n) τ z0 hz0).isConnected.2
 
+/-- Any point of the ordinary extended tube belongs to the source-patch
+BHW/Jost hull based at any ordinary extended-tube point. -/
+theorem mem_os45SourcePatchBHWJostHull_of_extendedTube
+    (τ : Equiv.Perm (Fin n))
+    {z0 z : Fin n → Fin (d + 1) → ℂ}
+    (hz0 : z0 ∈ BHW.ExtendedTube d n)
+    (hz : z ∈ BHW.ExtendedTube d n) :
+    z ∈ os45SourcePatchBHWJostHull d n τ z0 := by
+  have hpath : IsPathConnected (BHW.ExtendedTube d n) :=
+    (IsOpen.isConnected_iff_isPathConnected
+      (U := BHW.ExtendedTube d n) BHW.isOpen_extendedTube).mp
+      (BHW.isConnected_extendedTube (d := d) (n := n))
+  have hjoined_ET : JoinedIn (BHW.ExtendedTube d n) z0 z :=
+    hpath.joinedIn z0 hz0 z hz
+  exact hjoined_ET.mono (by
+    intro w hw
+    exact Or.inl hw)
+
 /-- A finite ordered subdivision of the unit interval subordinate to an open
 cover. -/
 structure UnitIntervalOrderedSubdivision
