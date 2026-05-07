@@ -23,6 +23,27 @@ The tracked production tree currently contains **11 explicit axioms**:
 **Reconstruction bridge (1):**
 - `reduced_bargmann_hall_wightman_of_input` in `Wightman/Reconstruction/WickRotation/BHWReducedExtension.lean`
 
+### Conditional theorems and inventoried frontier lemmas
+
+The R→E cluster route (`W_analytic_cluster_integral`,
+`wickRotatedBoundaryPairing_cluster`, `schwinger_E4_cluster_OPTR_case`
+in `Wightman/Reconstruction/WickRotation/RuelleClusterBound.lean`)
+is a **conditional theorem**: it takes an explicit
+`RuelleAnalyticClusterHypotheses Wfn n m` parameter packaging the two
+textbook Ruelle 1962 / Araki-Hepp-Ruelle 1962 inputs (uniform polynomial
+bound + pointwise factorization on PET). No new production axioms; the
+trust boundary is visible at every call site.
+
+One inventoried **frontier lemma** with a tracked production sorry:
+- `OSReconstruction/Wightman/Spectral/Ruelle/L5_SpectralRiemannLebesgue.lean`
+  — pure measure-theoretic Riemann-Lebesgue for finite measures with
+  AC spatial marginal. Steps 1, 2, 3a proved; steps 3b–e remain
+  (Mathlib RL bridging via `EuclideanSpace ℝ (Fin d)` + sign/2π
+  reconciliation).
+
+The Path A blueprint and L2 (no zero-momentum atom) reductions are
+parked in `Proofideas/` as architectural reference, not in production.
+
 The former `vladimirov_tillmann` axiom has been **proved as a theorem** from 3 of the SCV axioms above plus ~10K lines of Paley-Wiener-Schwartz proofs. See `docs/vladimirov_tillmann_summary.md` for details.
 
 Two former axioms — `semigroupGroup_bochner` and `laplaceFourier_measure_unique`
@@ -120,8 +141,8 @@ This fetches Mathlib and dependencies automatically on first build.
 ## Project Status
 
 The tracked production tree currently includes **11 explicit `axiom`
-declarations** (2 FA + 8 SCV + 1 reconstruction bridge). See the axiom
-inventory at the top of this file for the complete list. Remaining work
+declarations** (2 FA + 8 SCV + 1 reconstruction bridge).
+See the axiom inventory at the top of this file for the complete list. Remaining work
 outside these deferred surfaces is represented by explicit theorem-level
 `sorry` placeholders.
 The snapshot below counts only tracked production files; local scratch under
