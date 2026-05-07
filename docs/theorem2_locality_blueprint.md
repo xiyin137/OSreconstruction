@@ -7817,8 +7817,6 @@ Proof decomposition of this theorem, without hiding the analytic work:
         m : Nat
         Ω : Set (BHW.SourceOrientedGramData d n)
         Ω_open : IsOpen Ω
-        center_mem :
-          BHW.sourceOrientedMinkowskiInvariant d n z0 ∈ Ω
         center_mem_ET : z0 ∈ BHW.ExtendedTube d n
         K : Set (Fin m -> ℂ)
         K_compact : IsCompact K
@@ -7871,6 +7869,72 @@ Proof decomposition of this theorem, without hiding the analytic work:
       `sourceOrientedMinkowskiInvariant d n (toVec c0) =
        sourceOrientedMinkowskiInvariant d n z0`, together with
       `center_mem_ET : z0 ∈ ExtendedTube d n`.
+
+      Lean implementation checkpoint.  The sliced Schur local-image packet
+      `SourceOrientedRankDeficientMaxRankLocalImageData` is not, by itself, a
+      tube-realization theorem.  Its image is transported back from canonical
+      normal form through a `SourceOrientedVarietyTransportEquiv`, and the
+      concrete transport currently comes from an invertible source-label
+      matrix.  Such source-label linear changes preserve the oriented source
+      variety, but they do not preserve `ExtendedTube d n`.  Therefore no
+      production proof may derive
+      `SourceOrientedExtendedTubeLocalRealizationData` from the rank-deficient
+      local-image packet alone.
+
+      The precise checked conversion surface is instead:
+
+      ```lean
+      theorem BHW.SourceOrientedRankDeficientResidualChartData.to_realizationData
+          [NeZero d]
+          {z0 : Fin n -> Fin (d + 1) -> ℂ}
+          (C : BHW.SourceOrientedRankDeficientResidualChartData d n z0) :
+          BHW.SourceOrientedRankDeficientRealizationData d n z0 := by
+        refine
+          { Ω := C.Ω
+            Ω_open := C.Ω_open
+            center_mem := ?_
+            realize := ?_ }
+        · have hcΩ := (C.toInv_eq C.c0 (C.P_subset_K C.c0_mem)).1
+          simpa [C.toVec_c0_invariant] using hcΩ
+        · intro G hG
+          let c : Fin C.m -> ℂ := Classical.choose (C.image_surj hG)
+          have hc_spec :
+              c ∈ C.P ∧
+                BHW.sourceOrientedMinkowskiInvariant d n (C.toVec c) = G :=
+            Classical.choose_spec (C.image_surj hG)
+          refine ⟨C.toVec c, ?_⟩
+          exact ⟨C.toVec_mem c (C.P_subset_K hc_spec.1), hc_spec.2⟩
+
+      theorem BHW.SourceOrientedRankDeficientResidualChartData.to_localRealization
+          [NeZero d]
+          {z0 : Fin n -> Fin (d + 1) -> ℂ}
+          (C : BHW.SourceOrientedRankDeficientResidualChartData d n z0) :
+          BHW.SourceOrientedExtendedTubeLocalRealizationData d n z0 :=
+        C.to_realizationData.to_localRealization
+      ```
+
+      The remaining hard producer is consequently not a topology wrapper; it
+      is the theorem constructing this residual chart:
+
+      ```lean
+      theorem BHW.sourceOriented_rankDeficient_residualChart
+          [NeZero d]
+          (hd : 2 <= d)
+          (n : Nat)
+          {z0 : Fin n -> Fin (d + 1) -> ℂ}
+          (hz0 : z0 ∈ BHW.ExtendedTube d n)
+          (hlow :
+            ¬ BHW.SourceOrientedMaxRankAt d n
+              (BHW.sourceOrientedMinkowskiInvariant d n z0)) :
+          BHW.SourceOrientedRankDeficientResidualChartData d n z0
+      ```
+
+      Its proof must provide the actual `toVec` formula after all
+      Hall-Wightman residual-frame shrinkings, prove `toVec_mem` directly in
+      `ExtendedTube`, and prove `image_surj` for `Ω ∩ sourceOrientedGramVariety`.
+      The already checked Schur local-image stack can supply the algebraic
+      image and max-rank-density bookkeeping, but only after it is paired with
+      this extended-tube-valued vector family.
 
       The construction of this chart is not a new black box.  It must pass
       through a Schur-complement residual oriented realization theorem.  In
@@ -11379,7 +11443,6 @@ Proof decomposition of this theorem, without hiding the analytic work:
             Ω := Ω0
             Ω_open :=
               N.orientedTransport.isOpen_invFun_image hΩ_open
-            center_mem := ?_
             center_mem_ET := hz0
             K := P.K
             K_compact := P.K_compact
@@ -11397,22 +11460,6 @@ Proof decomposition of this theorem, without hiding the analytic work:
             toInv_eq := ?_
             image_surj := ?_
             maxRank_dense_parameters := ?_ }
-        · have hcenter_eq :
-              N.orientedTransport.invFun
-                  (BHW.sourceOrientedMinkowskiInvariant d n N.normalBase) =
-                BHW.sourceOrientedMinkowskiInvariant d n z0 := by
-            calc
-              N.orientedTransport.invFun
-                  (BHW.sourceOrientedMinkowskiInvariant d n N.normalBase)
-                  =
-                BHW.sourceOrientedMinkowskiInvariant d n
-                  (N.toOriginal N.normalBase) := by
-                    simpa using
-                      (N.toOriginal_oriented N.normalBase).symm
-              _ = BHW.sourceOrientedMinkowskiInvariant d n z0 :=
-                    N.toOriginal_normalBase_invariant
-          exact hcenter_eq ▸
-            (Set.mem_image_of_mem N.orientedTransport.invFun hΩ_center_nf)
         · intro c hc
           exact
             BHW.sourceOriented_residualPolydisc_tubeStability

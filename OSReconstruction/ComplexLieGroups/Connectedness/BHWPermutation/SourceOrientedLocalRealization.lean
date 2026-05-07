@@ -36,6 +36,124 @@ def SourceOrientedExtendedTubeLocalRealizationProducer
     z0 ∈ ExtendedTube d n →
       SourceOrientedExtendedTubeLocalRealizationData d n z0
 
+/-- Rank-deficient local realization data.  This is the non-holomorphic
+exceptional-rank analogue of the max-rank local section: nearby
+oriented-variety points are realized by actual source tuples in the extended
+tube. -/
+structure SourceOrientedRankDeficientRealizationData
+    (d n : ℕ)
+    (z0 : Fin n → Fin (d + 1) → ℂ) where
+  Ω : Set (SourceOrientedGramData d n)
+  Ω_open : IsOpen Ω
+  center_mem : sourceOrientedMinkowskiInvariant d n z0 ∈ Ω
+  realize :
+    ∀ G, G ∈ Ω ∩ sourceOrientedGramVariety d n →
+      {z : Fin n → Fin (d + 1) → ℂ //
+        z ∈ ExtendedTube d n ∧
+          sourceOrientedMinkowskiInvariant d n z = G}
+
+namespace SourceOrientedRankDeficientRealizationData
+
+/-- Forget the rank-deficient packaging and expose the common local
+realization interface used by relative openness of the oriented extended-tube
+image. -/
+noncomputable def to_localRealization
+    {d n : ℕ}
+    {z0 : Fin n → Fin (d + 1) → ℂ}
+    (R : SourceOrientedRankDeficientRealizationData d n z0) :
+    SourceOrientedExtendedTubeLocalRealizationData d n z0 where
+  Ω := R.Ω
+  Ω_open := R.Ω_open
+  center_mem := R.center_mem
+  realizes := by
+    intro G hG
+    rcases R.realize G hG with ⟨z, hzET, hzG⟩
+    exact ⟨z, hzET, hzG⟩
+
+end SourceOrientedRankDeficientRealizationData
+
+/-- Residual-coordinate chart data for the rank-deficient Hall-Wightman
+Lemma-3 branch.  The crucial field is `toVec_mem`: unlike a pure variety
+local-image packet, this chart carries actual extended-tube-valued source
+tuples. -/
+structure SourceOrientedRankDeficientResidualChartData
+    (d n : ℕ)
+    (z0 : Fin n → Fin (d + 1) → ℂ) where
+  m : ℕ
+  Ω : Set (SourceOrientedGramData d n)
+  Ω_open : IsOpen Ω
+  center_mem_ET : z0 ∈ ExtendedTube d n
+  K : Set (Fin m → ℂ)
+  K_compact : IsCompact K
+  P : Set (Fin m → ℂ)
+  P_open : IsOpen P
+  P_subset_K : P ⊆ K
+  c0 : Fin m → ℂ
+  c0_mem : c0 ∈ P
+  toVec : (Fin m → ℂ) → Fin n → Fin (d + 1) → ℂ
+  toVec_continuousOn : ContinuousOn toVec K
+  toVec_mem : ∀ c, c ∈ K → toVec c ∈ ExtendedTube d n
+  toVec_c0_invariant :
+    sourceOrientedMinkowskiInvariant d n (toVec c0) =
+      sourceOrientedMinkowskiInvariant d n z0
+  toInv_eq :
+    ∀ c, c ∈ K →
+      sourceOrientedMinkowskiInvariant d n (toVec c) ∈ Ω ∧
+        sourceOrientedMinkowskiInvariant d n (toVec c) ∈
+          sourceOrientedGramVariety d n
+  image_surj :
+    Ω ∩ sourceOrientedGramVariety d n ⊆
+      (fun c =>
+        sourceOrientedMinkowskiInvariant d n (toVec c)) '' P
+  maxRank_dense_parameters :
+    ∀ c, c ∈ P →
+      sourceOrientedMinkowskiInvariant d n (toVec c) ∈
+        closure
+          ((fun c' =>
+            sourceOrientedMinkowskiInvariant d n (toVec c')) ''
+            {c' | c' ∈ P ∧
+              SourceOrientedMaxRankAt d n
+                (sourceOrientedMinkowskiInvariant d n (toVec c'))})
+
+namespace SourceOrientedRankDeficientResidualChartData
+
+/-- A residual chart gives rank-deficient realization data by using the
+surjective parameter image and the stored extended-tube membership of the
+actual vector formula. -/
+noncomputable def to_realizationData
+    {d n : ℕ}
+    {z0 : Fin n → Fin (d + 1) → ℂ}
+    (C : SourceOrientedRankDeficientResidualChartData d n z0) :
+    SourceOrientedRankDeficientRealizationData d n z0 := by
+  refine
+    { Ω := C.Ω
+      Ω_open := C.Ω_open
+      center_mem := ?_
+      realize := ?_ }
+  · have hcK : C.c0 ∈ C.K := C.P_subset_K C.c0_mem
+    have hcΩ :
+        sourceOrientedMinkowskiInvariant d n (C.toVec C.c0) ∈ C.Ω :=
+      (C.toInv_eq C.c0 hcK).1
+    simpa [C.toVec_c0_invariant] using hcΩ
+  · intro G hG
+    let c : Fin C.m → ℂ := Classical.choose (C.image_surj hG)
+    have hc_spec :
+        c ∈ C.P ∧
+          sourceOrientedMinkowskiInvariant d n (C.toVec c) = G :=
+      Classical.choose_spec (C.image_surj hG)
+    refine ⟨C.toVec c, ?_⟩
+    exact ⟨C.toVec_mem c (C.P_subset_K hc_spec.1), hc_spec.2⟩
+
+/-- A residual chart directly supplies the common local-realization interface. -/
+noncomputable def to_localRealization
+    {d n : ℕ}
+    {z0 : Fin n → Fin (d + 1) → ℂ}
+    (C : SourceOrientedRankDeficientResidualChartData d n z0) :
+    SourceOrientedExtendedTubeLocalRealizationData d n z0 :=
+  C.to_realizationData.to_localRealization
+
+end SourceOrientedRankDeficientResidualChartData
+
 /-- The explicit reconstructed vector map is continuous on the model
 determinant-nonzero locus. -/
 theorem continuousOn_sourceFullFrameGauge_reconstructVector_on_modelDetNonzero
@@ -363,6 +481,24 @@ noncomputable def sourceOrientedExtendedTubeLocalRealizationData_of_maxRank
       sourceOrientedExtendedTubeLocalRealizationData_of_fullFrameMaxRank
         (Nat.le_of_not_lt hn) hz0 hmax
 
+/-- Once the hard rank-deficient residual chart producer is available, the
+global local-realization producer is a pure max-rank/rank-deficient dispatch. -/
+noncomputable def sourceOrientedExtendedTubeLocalRealizationProducer_of_rankDeficientResidualChartProducer
+    {d n : ℕ}
+    (rankDeficient :
+      ∀ {z0 : Fin n → Fin (d + 1) → ℂ},
+        z0 ∈ ExtendedTube d n →
+          ¬ SourceOrientedMaxRankAt d n
+              (sourceOrientedMinkowskiInvariant d n z0) →
+            SourceOrientedRankDeficientResidualChartData d n z0) :
+    SourceOrientedExtendedTubeLocalRealizationProducer d n := by
+  intro z0 hz0
+  by_cases hmax :
+    SourceOrientedMaxRankAt d n
+      (sourceOrientedMinkowskiInvariant d n z0)
+  · exact sourceOrientedExtendedTubeLocalRealizationData_of_maxRank hz0 hmax
+  · exact (rankDeficient hz0 hmax).to_localRealization
+
 /-- Relative openness of the oriented extended-tube image, once local
 realization is supplied at every extended-tube source tuple. -/
 theorem sourceOrientedExtendedTubeDomain_relOpen_of_localRealization
@@ -400,5 +536,23 @@ theorem sourceOrientedExtendedTubeDomain_relOpen_connected_of_localRealization
     ⟨sourceOrientedExtendedTubeDomain_relOpen_of_localRealization
         (d := d) (n := n) localRealization,
       sourceOrientedExtendedTubeDomain_connected d n⟩
+
+/-- Relative openness and connectedness of the oriented extended-tube image
+after the single remaining rank-deficient residual chart producer is supplied. -/
+theorem sourceOrientedExtendedTubeDomain_relOpen_connected_of_rankDeficientResidualChartProducer
+    {d n : ℕ}
+    (rankDeficient :
+      ∀ {z0 : Fin n → Fin (d + 1) → ℂ},
+        z0 ∈ ExtendedTube d n →
+          ¬ SourceOrientedMaxRankAt d n
+              (sourceOrientedMinkowskiInvariant d n z0) →
+            SourceOrientedRankDeficientResidualChartData d n z0) :
+    IsRelOpenInSourceOrientedGramVariety d n
+        (sourceOrientedExtendedTubeDomain d n) ∧
+      IsConnected (sourceOrientedExtendedTubeDomain d n) :=
+  sourceOrientedExtendedTubeDomain_relOpen_connected_of_localRealization
+    (d := d) (n := n)
+    (sourceOrientedExtendedTubeLocalRealizationProducer_of_rankDeficientResidualChartProducer
+      rankDeficient)
 
 end BHW

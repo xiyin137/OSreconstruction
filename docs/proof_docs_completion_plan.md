@@ -3384,6 +3384,22 @@ implementation contract is:
    theorem must construct actual nearby extended-tube vectors realizing the
    full oriented invariant, using selected full-frame charts in full rank and
    Hall-Wightman adapted residual-frame charts in rank-deficient cases.
+   The rank-deficient local-image packet checked by the sliced Schur stack is
+   not sufficient for this purpose by itself: its inverse normal-form transport
+   is a `SourceOrientedVarietyTransportEquiv` induced by an invertible
+   source-label matrix, and arbitrary source-label linear changes do not
+   preserve `ExtendedTube`.  The production target is therefore the stronger
+   `SourceOrientedRankDeficientResidualChartData`, carrying an explicit
+   residual-parameter vector map `toVec`, proofs `toVec_mem :
+   ∀ c ∈ K, toVec c ∈ ExtendedTube d n`, and `image_surj :
+   Ω ∩ sourceOrientedGramVariety d n ⊆
+     (fun c => sourceOrientedMinkowskiInvariant d n (toVec c)) '' P`.
+   A checked conversion
+   `SourceOrientedRankDeficientResidualChartData.to_realizationData` then
+   derives `SourceOrientedRankDeficientRealizationData`, and
+   `.to_localRealization` derives
+   `SourceOrientedExtendedTubeLocalRealizationData`.  No proof step may
+   replace this ET-valued residual family by an arbitrary variety lift.
    The max-rank section theorem is now split by arity: when `n < d + 1`, the
    oriented chart reduces to the ordinary Gram max-rank chart because there
    are no full-frame determinant coordinates; when `d + 1 <= n`, the checked
