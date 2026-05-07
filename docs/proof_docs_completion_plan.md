@@ -4558,7 +4558,7 @@ implementation contract is:
    so `SourceOrientedGramData.ext` reduces the right-inverse statement to the
    ordinary Gram equality.
 
-   First full-frame holomorphic-section support checked, 2026-05-07:
+   Full-frame holomorphic-section regularity support checked, 2026-05-07:
    `SourceOrientedFullFrameHolomorphicSection.lean` now proves
    `sourceFullFrameSymmetrizeCoordCLM`,
    `differentiable_sourceFullFrameSymmetrizeCoord`,
@@ -4566,14 +4566,32 @@ implementation contract is:
    `differentiable_sourceFullFrameSelectedSymmetricCoordAmbient`,
    `sourceFullFrameSelectedKernelCoordAmbient_eq_kernelProjection`,
    `sourceFullFrameGaugeSliceImplicitKernelMap_eq_kernelProjection`,
+   `sourceFullFrameGaugeSliceMapSymmetric_eq_symmetrize`,
+   `contDiff_sourceFullFrameGaugeSliceMapSymmetric`,
+   `contDiff_sourceFullFrameGaugeSliceImplicitKernelMap`,
+   `sourceFullFrameGaugeSliceImplicitKernelMap_base_fderiv_isInvertible`,
+   `sourceFullFrameGaugeSliceImplicitKernelMap_local_invertible_nhds`,
+   `SourceFullFrameImplicitKernelTargetRegularityData`,
+   `sourceFullFrameImplicitKernelTargetRegularityData`,
    `differentiable_sourceFullFrameSelectedKernelCoordAmbient`,
-   `differentiable_sourceSelectedMixedRows`, and the conditional consumer
-   `SourceFullFrameMaxRankChartAmbientShrink.chartCandidate_differentiableOn_Ωamb_of_kernelSymmOn`.
-   Thus the first, second-projection-rewrite, and chart-candidate composition
-   parts of the full-frame plan are checked.  The remaining honest full-frame
-   blocker is exactly `SourceFullFrameImplicitKernelTargetRegularityData`: an
-   open target set `D` around `0` on which the inverse kernel chart is
-   differentiable, obtained from a derivative-invertibility source shrink.
+   `differentiable_sourceSelectedMixedRows`,
+   `SourceFullFrameMaxRankChartAmbientShrink.chartCandidate_differentiableOn_Ωamb_of_kernelSymmOn`,
+   `SourceFullFrameMaxRankChartAmbientShrink.chartCandidate_differentiableOn_Ωamb`,
+   `SourceFullFrameMaxRankChartAmbientShrink.restrict_kernelRegularity`,
+   `SourceFullFrameMaxRankChartAmbientShrink.chartCandidate_differentiableOn_restrict_kernelRegularity`,
+   and `sourceOrientedMaxRank_localSection_fullFrame`.
+   Thus the inverse-regular target set `D` is no longer a blocker: it is the
+   checked target `e.target ∩ e.symm ⁻¹' U`, where `U` is the source-side open
+   set on which the Frechet derivative of
+   `sourceFullFrameGaugeSliceImplicitKernelMap d hM0 S` remains a
+   continuous-linear equivalence.  The full-frame
+   `SourceOrientedLocalHolomorphicSectionData` assembly is now also checked:
+   it applies the regularity-restricted chart candidate, composes with the
+   existing
+   `differentiableOn_sourceFullFrameGauge_reconstructVector_on_modelDetNonzero`,
+   and reuses the checked tube shrink/right-inverse fields.  The remaining
+   max-rank local-section implementation task is the small-arity
+   arbitrary-complex-base zero-section branch.
    The oriented normal-variety support is now tied to explicit algebraic
    equations: symmetry/rank of the Gram field, determinant alternation under
    source-frame reindexing, and the Cauchy-Binet relation

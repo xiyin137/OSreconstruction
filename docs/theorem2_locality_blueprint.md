@@ -4699,16 +4699,24 @@ Proof decomposition of this theorem, without hiding the analytic work:
       zero-section packet is useful evidence but is not a substitute for this
       arbitrary-complex-base theorem.
 
-      Checked start of this producer, 2026-05-07:
+      Checked full-frame inverse-regularity support for this producer,
+      2026-05-07:
       `SourceOrientedFullFrameHolomorphicSection.lean` proves the full-frame
       symmetrization CLM, differentiability of selected full-frame oriented
       coordinates, differentiability of selected symmetric/kernel/mixed-row
-      ambient coordinates, the selected/gauge kernel projection rewrites, and
-      the conditional chart-candidate differentiability theorem
-      `SourceFullFrameMaxRankChartAmbientShrink.chartCandidate_differentiableOn_Ωamb_of_kernelSymmOn`.
-      Consequently, once the inverse-regular kernel target set `D` is
-      constructed, chart-candidate holomorphy is mechanical; that target-set
-      construction is now the sole full-frame analytic-regularity blocker.
+      ambient coordinates, the selected/gauge kernel projection rewrites,
+      smoothness of `sourceFullFrameGaugeSliceImplicitKernelMap`, base
+      derivative invertibility, the source-side derivative-invertible shrink,
+      and the target regularity packet
+      `SourceFullFrameImplicitKernelTargetRegularityData`.  It also checks
+      `SourceFullFrameMaxRankChartAmbientShrink.restrict_kernelRegularity` and
+      `SourceFullFrameMaxRankChartAmbientShrink.chartCandidate_differentiableOn_restrict_kernelRegularity`,
+      then packages the completed full-frame local holomorphic section as
+      `sourceOrientedMaxRank_localSection_fullFrame`.
+      Consequently, the inverse-regular kernel target set `D` is no longer the
+      full-frame blocker, and the full-frame max-rank local-section branch is
+      production-checked.  The remaining max-rank local-section branch is the
+      small-arity arbitrary-complex-base selected zero-section.
 
       Production order correction for the local-realization producer.
       The public local-realization producer is assembled only after the
