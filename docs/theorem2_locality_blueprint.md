@@ -13,6 +13,36 @@ There is no alternate active route. The only exception that could justify a
 route change would be an explicit OS-paper error documented locally first; no
 such exception is in scope here.
 
+Locality API decision, 2026-05-07.  The theorem-2 target remains the OS
+R3 adjacent-transposition statement, not an arbitrary non-adjacent pair swap.
+OS I states local commutativity by exchanging neighboring arguments
+`(..., f_j, f_{j+1}, ...)` when those two supports are spacelike separated;
+OS II IV.2 sends the E→R locality transfer back to that OS I §4.5 argument.
+Accordingly, the checked frontier
+`bvt_W_swap_pairing_of_spacelike` has the right shape:
+
+```lean
+∀ (n : ℕ) (i : Fin n) (hi : i.val + 1 < n)
+  (f g : SchwartzNPoint d n),
+  (∀ x, f.toFun x ≠ 0 →
+    MinkowskiSpace.AreSpacelikeSeparated d (x i) (x ⟨i.val + 1, hi⟩)) →
+  (∀ x,
+    g.toFun x =
+      f.toFun (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k))) →
+  bvt_W OS lgc n f = bvt_W OS lgc n g
+```
+
+The proof docs therefore authorize only an API clarification around this
+surface: introduce an explicit adjacent predicate name such as
+`IsAdjacentLocallyCommutativeWeak` for the current standard R3 predicate, and
+retarget theorem-2/BHW adjacency consumers to that name.  They do **not**
+authorize restoring the old arbitrary-pair predicate as the public
+`WightmanFunctions` locality field.  Such a pair-swap predicate may be
+introduced later only as a separately named stronger property, e.g.
+`IsPairSwapLocallyCommutativeWeak`, with only the easy implication
+pair-swap → adjacent proved.  There must be no production axiom or sorry
+claiming adjacent → arbitrary pair-swap locality.
+
 Checkpoint status, 2026-05-02 after the scalar-source orientation audit: the
 local Figure-2-4 support and source-patch selector are checked, and the
 source-germ API is present in Lean, but the scalar-source producer layer is
@@ -492,8 +522,8 @@ private theorem bvt_W_swap_pairing_of_spacelike
       bvt_W OS lgc n f = bvt_W OS lgc n g
 ```
 
-This matches the corrected core locality surface
-`IsLocallyCommutativeWeak` in
+This matches the corrected adjacent core locality surface
+`IsAdjacentLocallyCommutativeWeak` in
 `Wightman/Reconstruction/Core.lean`.
 
 ## 2. Paper route
@@ -65364,7 +65394,9 @@ Forbidden support in `SourceExtension.lean`:
 
 1. `BHW.bargmann_hall_wightman_theorem` and any theorem named
    `bargmann_hall_wightman` in `PermutationFlow.lean`, because the current
-   statement takes `hF_local_dist : IsLocallyCommutativeWeak d W`;
+   statement takes the already-proved locality predicate as an input
+   (`hF_local_dist : IsAdjacentLocallyCommutativeWeak d W` after the API
+   clarification);
 2. private helpers in `PermutationFlow.lean` whose hypotheses include
    `W`, `hF_bv_dist`, or `hF_local_dist`, including
    `fullExtendF_well_defined`, `F_permutation_invariance`,
@@ -65418,12 +65450,11 @@ Source-audit anchors:
 Non-circularity requirements:
 
 1. this theorem must not call any existing theorem whose hypotheses include
-   `IsLocallyCommutativeWeak d (bvt_W OS lgc)`;
+   `IsAdjacentLocallyCommutativeWeak d (bvt_W OS lgc)`;
 2. in particular, the current generic theorem surfaces named
    `bargmann_hall_wightman` and `BHW.bargmann_hall_wightman_theorem` are not
    acceptable as Slot-6 inputs in their current form: the repo statements take
-   `hF_local_dist : IsLocallyCommutativeWeak d W`, which is circular for
-   theorem 2;
+   the locality predicate as an input, which is circular for theorem 2;
 3. Streater-Wightman Theorem 3-6 is forbidden here for the same reason;
 4. the allowed source input is Hall-Wightman/BHW single-valued continuation,
    with the OS-II-corrected `bvt_F` construction providing the analytic datum.
@@ -66929,7 +66960,7 @@ theorem bvt_F_extendF_petBranchIndependence_of_selectedAdjacentEdgeData
 ```
 
 This theorem uses `BHW.extendF_pet_branch_independence_of_adjacent_of_orbitChamberConnected`
-directly.  It does not consume `IsLocallyCommutativeWeak`; the old circular
+directly.  It does not consume `IsAdjacentLocallyCommutativeWeak`; the old circular
 locality hypothesis is replaced by the OS-II adjacent/Jost input
 `SelectedAdjacentPermutationEdgeData` plus the explicit PET orbit-connectivity
 obligation `hOrbit`.
@@ -67447,7 +67478,7 @@ Proof route:
 private theorem bvt_locally_commutative_boundary_route_of_one
     (OS : OsterwalderSchraderAxioms 1)
     (lgc : OSLinearGrowthCondition 1 OS) :
-    IsLocallyCommutativeWeak 1 (bvt_W OS lgc)
+    IsAdjacentLocallyCommutativeWeak 1 (bvt_W OS lgc)
 ```
 
 Proof pseudocode:
@@ -67512,7 +67543,7 @@ Exact scope:
    `hallWightman_source_permutedBranch_compatibility_of_distributionalAnchor`.
 4. The OS-specific consumer is
    `bvt_F_bhwSingleValuedOn_permutedExtendedTube_of_two_le`, with no
-   `IsLocallyCommutativeWeak` hypothesis.  It consumes the
+   `IsAdjacentLocallyCommutativeWeak` hypothesis.  It consumes the
    `BHW.SourceDistributionalAdjacentTubeAnchor` supplied from OS-II selected
    adjacent distributional Jost data.
 5. `PETOrbitChamberChain.lean` is archived common-slice infrastructure.

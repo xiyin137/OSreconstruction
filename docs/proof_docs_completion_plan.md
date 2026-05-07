@@ -36,6 +36,31 @@ confirmed this theorem-shape correction: `hOrbit` should be documented as an
 extra custom geometric theorem if pursued, while the faithful OS I §4.5 route
 targets direct source-backed BHW single-valuedness on `S''_n`.
 
+Locality API correction gate, 2026-05-07: before any Lean refactor responding
+to GitHub issue #83, the proof-doc decision is fixed as follows.  The OS I/OS
+II R3 surface used by theorem 2 is adjacent local commutativity: swap
+neighboring arguments `i` and `i+1` under the adjacent spacelike-support
+hypothesis.  This is the statement already carried by
+`bvt_W_swap_pairing_of_spacelike`, and it is the only locality theorem that the
+current E→R route is proving.  The implementation may rename the current
+predicate surface to `IsAdjacentLocallyCommutativeWeak` and update consumers so
+the API no longer suggests an arbitrary-pair theorem.  It may also keep a
+documented compatibility alias for the standard adjacent predicate if a
+transition step needs it.
+
+The implementation must **not**:
+
+- restore the old arbitrary-pair predicate as the public `WightmanFunctions`
+  locality field;
+- introduce an adjacent→arbitrary locality theorem as an axiom, sorry, or
+  hidden assumption;
+- use any QFT-specific locality upgrade as an axiom-gate workaround.
+
+If an arbitrary pair-swap property is useful later, it must be separately named
+as a stronger non-frontier predicate and related to the adjacent predicate only
+by the safe direction pair-swap → adjacent.  No theorem-2 Lean work may depend
+on the stronger property.
+
 Current theorem-2 implementation ledger: the downstream Hall-Wightman/Jost
 source package remains the route after the local OS45 envelope has been
 constructed, but it is not the immediate Lean gate.  The immediate gate is
@@ -11777,7 +11802,9 @@ if its conclusion has the right shape.
 Current examples:
 
 1. `blocker_iterated_eow_hExtPerm_d1_nontrivial` is not a theorem-2 input in
-   dimension one because it assumes `IsLocallyCommutativeWeak 1 W`.
+   dimension one because it assumes the already-proved adjacent locality
+   predicate (`IsAdjacentLocallyCommutativeWeak 1 W` after the API
+   clarification).
 2. Streater-Wightman Theorem 3-6 is not a theorem-2 input because its proof
    uses local commutativity.
 3. Streater-Wightman Figure 2-4 remains allowed only as adjacent geometric
@@ -11805,8 +11832,8 @@ Current examples:
    overlap and cover-reaching proof in
    `BHWPermutation/SourceExtension.lean`;
    `BHWPermutation/PermutationFlow.lean` is still forbidden as a theorem-2
-   source theorem because its current top-level BHW theorem depends on
-   `IsLocallyCommutativeWeak`.
+   source theorem because its current top-level BHW theorem depends on the
+   adjacent locality predicate.
    A checked false shortcut has been ruled out: pointwise permutation symmetry
    of the raw base function does not by itself compare arbitrary PET sector
    branches, because the complex-Lorentz representative needed for the

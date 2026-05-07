@@ -698,7 +698,7 @@ theorem bargmann_hall_wightman (n : ℕ)
           F (fun k μ => (x k μ : ℂ) + ε * (η k μ : ℂ) * Complex.I) * f x)
         (nhdsWithin 0 (Set.Ioi 0))
         (nhds (W n f)))
-    (hF_local_dist : IsLocallyCommutativeWeak d W) :
+    (hF_local_dist : IsAdjacentLocallyCommutativeWeak d W) :
     ∃ (F_ext : (Fin n → Fin (d + 1) → ℂ) → ℂ),
       DifferentiableOn ℂ F_ext (PermutedExtendedTube d n) ∧
       (∀ z ∈ ForwardTube d n, F_ext z = F z) ∧
