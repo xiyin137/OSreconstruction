@@ -13420,7 +13420,17 @@ Proof decomposition of this theorem, without hiding the analytic work:
         rcases hg (eCodomain y) with ⟨x, hx⟩
         refine ⟨eDomain.symm x, ?_⟩
         apply eCodomain.injective
-        simpa [hmap] using hx.symm
+        simpa [hmap] using hx
+
+      -- Checked in `SourceOrientedInvariantAlgebraSupport.lean`:
+      -- `algHom_range_le_adjoin_images_mvPolynomial_X`,
+      -- `algEquivMapSubalgebra`, `algEquivMapIdeal`,
+      -- `algEquivOfMappedSubalgebraEq`,
+      -- `algEquivMapSubalgebra_injective`,
+      -- `algEquivMapIdeal_injective`, and
+      -- `surjective_of_algEquiv_transport`.
+      -- The remaining content below is the genuine standard `SO`
+      -- invariant-theory theorem, not formal algebra transport.
 
       theorem BHW.standardSOInvariantRing_generated_by_pairings_and_volume
           (D n : Nat)

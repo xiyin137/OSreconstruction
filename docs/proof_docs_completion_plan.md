@@ -4795,6 +4795,15 @@ implementation contract is:
    only `AlgHom.range_eq_top` after rewriting the FFT generator equality.
    This prevents Lean from smuggling coordinate-ring surjectivity into the
    SFT kernel theorem.
+   The generic algebra plumbing for this split is now checked in
+   `SourceOrientedInvariantAlgebraSupport.lean`:
+   `algHom_range_le_adjoin_images_mvPolynomial_X`,
+   `algEquivMapSubalgebra`, `algEquivMapIdeal`,
+   `algEquivOfMappedSubalgebraEq`, `algEquivMapSubalgebra_injective`,
+   `algEquivMapIdeal_injective`, and `surjective_of_algEquiv_transport`.
+   The remaining unchecked part is therefore the actual standard `SO`
+   generator/kernel theorem and its concrete source/dot coordinate transport,
+   not the formal range/surjectivity/equivalence bookkeeping.
    The downstream coordinate-ring isomorphism is also now explicit:
    `BHW.sourceOrientedInvariantCoordinateMap_surjective` is transported from
    the standard-dot map through
