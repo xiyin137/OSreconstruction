@@ -2,6 +2,13 @@
 Copyright (c) 2026 ModularPhysics Contributors. All rights reserved.
 Released under Apache 2.0 license.
 Authors: Michael Douglas, ModularPhysics Contributors
+
+PARKED 2026-05-07 (was `OSReconstruction/Wightman/Spectral/Ruelle/Blueprint.lean`).
+Per PR #82 review (xiyin137): the top-level `ruelleHypotheses_of_wightman`
+sorry stub at the bottom of this file would re-introduce the QFT Ruelle
+theorem in disguise as a production theorem-hole. Moved here to keep
+production clean while preserving the L1–L7 proof roadmap as
+architectural reference.
 -/
 import OSReconstruction.Wightman.Reconstruction.WickRotation.RuelleClusterBound
 

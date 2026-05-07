@@ -8,49 +8,71 @@ import OSReconstruction.Wightman.Reconstruction.WickRotation.SchwingerAxioms
 import OSReconstruction.Wightman.Reconstruction.SchwingerOS
 
 /-!
-# Ruelle's analytic cluster bound
+# Ruelle-conditional cluster bridge for the Wick-rotated boundary integral
 
-This file states the Ruelle 1962 analytic cluster theorem as a textbook
-axiom, and uses it together with dominated convergence to prove
-`W_analytic_cluster_integral` from R4.
+This file packages the Ruelle 1962 / Araki-Hepp-Ruelle 1962 analytic
+cluster content as a **conditional-hypothesis structure**
+(`RuelleAnalyticClusterHypotheses Wfn n m`) and proves the cluster
+theorem `W_analytic_cluster_integral` as a *conditional* result that
+threads `hRuelle` through the dominated-convergence assembly.
+
+**Trust boundary**: 0 new production axioms. The two textbook Ruelle
+inputs (uniform polynomial bound + pointwise factorization on PET)
+appear as named hypothesis fields of `RuelleAnalyticClusterHypotheses`,
+not as Lean `axiom` declarations. Downstream consumers must supply a
+value of this structure to invoke the cluster bridge — the trust
+boundary is therefore visible at every call site.
 
 ## The obstruction Ruelle resolves
 
 The standard `spectrum_condition`'s polynomial bound
 `‖W_analytic z‖ ≤ C(1 + ‖z‖)^N` on the forward tube has the constant
-`C` and exponent `N` independent of the position `z`. But for our
-cluster integral, after substituting `y = x_m - a`, we evaluate
+`C` and exponent `N` independent of the position `z`. For our cluster
+integral, after substituting `y = x_m - a`, we evaluate
 `W_analytic_BHW Wfn (n+m)` at `(wick x_n, wick(y + a))`. The naive
 polynomial bound gives `(1 + ‖x_n‖ + ‖y + a‖)^N`, which depends on
 `a` and grows as `|⃗a| → ∞`. This breaks dominated convergence: the
 dominator must be `a`-independent.
 
 Ruelle's theorem provides a **uniform-in-a polynomial bound** on the
-spatially-separated analytic continuation: for `|⃗a| > R`,
-`‖W_analytic_BHW Wfn (n+m) (wick(x_n, x_m + a))‖ ≤ C(1 + ‖x_n‖ + ‖x_m‖)^N`
-with `C, N` independent of `a`. This is the spectral-gap content of R4
-(distributional cluster) made explicit at the analytic level.
+spatially-separated analytic continuation, on configs in the joint
+analytic domain (PET): the constants are independent of `a`. This is
+the spectral-gap content of R4 (distributional cluster) made explicit
+at the analytic level, and we package it as a hypothesis structure
+rather than as production axioms because:
+
+* The statements are QFT-specific (mention `WightmanFunctions`,
+  `W_analytic_BHW`, PET).
+* The textbook proof reduces them to R4 + spectrum condition + a
+  spectral chain (see `Proofideas/ruelle_blueprint.lean` for the
+  L1–L7 proof roadmap).
+* Until that chain is formalized, the trust boundary should be
+  visible as named hypotheses, not folded into the production
+  axiom inventory.
 
 ## References
 
 * Ruelle, *On the asymptotic condition in quantum field theory*,
   Helvetica Physica Acta 35 (1962), pp. 147-163.
+* Araki-Hepp-Ruelle, *On the asymptotic behaviour of Wightman
+  functions in space-like directions*, Helv. Phys. Acta 35 (1962),
+  Theorem 2.
 * Jost, *The General Theory of Quantized Fields*, §VI.1.
 * Streater-Wightman, *PCT, Spin and Statistics, and All That*, §3.4.
 
-## Strategy and discharge
+## Public theorems
 
-1. `ruelle_analytic_cluster_bound` (axiom) — the uniform-in-a polynomial
-   bound on `W_analytic_BHW Wfn (n+m)` for spatially separated configs.
-2. `ruelle_analytic_cluster_pointwise` (axiom or derived) — pointwise
-   convergence of the joint analytic function to the product of factors.
-3. Build an `a`-independent integrable dominator on
-   `NPointDomain d n × NPointDomain d m` using Ruelle's bound and high-
-   order Schwartz seminorms.
-4. Apply `MeasureTheory.tendsto_integral_of_dominated_convergence` to
-   close `W_analytic_cluster_integral`.
+* `RuelleAnalyticClusterHypotheses` — the conditional-input structure.
+* `W_analytic_cluster_integral_via_ruelle` — the dominated-convergence
+  assembly given the hypotheses.
+* `W_analytic_cluster_integral` and `wickRotatedBoundaryPairing_cluster`
+  — wrappers in standard Wick-rotated-boundary form.
+* `schwinger_E4_cluster_OPTR_case` — the OPTR-restricted bridge to
+  `OsterwalderSchraderAxioms.E4_cluster` shape.
 
-See `docs/cluster_via_ruelle_plan.md` for the full plan.
+See `docs/cluster_via_ruelle_plan.md` and `Proofideas/ruelle_blueprint.lean`
+for the full plan; see `OSReconstruction/Wightman/Spectral/Ruelle/L5_SpectralRiemannLebesgue.lean`
+for an inventoried frontier lemma in the proof chain.
 -/
 
 open scoped Classical

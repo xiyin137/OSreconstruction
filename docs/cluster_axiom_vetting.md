@@ -3,19 +3,23 @@
 Vetting record for axioms considered while closing `W_analytic_cluster_integral`
 on the `r2e/kallen-lehmann-revival` branch.
 
-**Status (2026-05-06)**: the cluster theorem is closed via the **Ruelle 1962
-route** (see "Pivot" section below). The KL/spectral-route axioms recorded
-here were superseded; entries 4–7 below describe axioms now parked in
-`Proofideas/kallen_lehmann.lean`. They are no longer in the production
-trust surface. Entries 1–3 (`snag_theorem`, `spectral_riemann_lebesgue`,
-`continuous_translate_schwartz`) likewise: `snag_theorem` remains in
-production via `GeneralResults/SNAGTheorem.lean`; the other two have
-been parked in `Proofideas/spectral_analysis.lean`.
+**Status (2026-05-07)**: the cluster theorem is closed *conditionally* on
+the Ruelle 1962 textbook content, packaged as a `RuelleAnalyticClusterHypotheses`
+**hypothesis structure** rather than as production axioms. PR #82 adds
+**zero new production axioms**; the trust boundary is visible at every
+call site that supplies a hypothesis value.
 
-The two production-trust additions made by PR #82 are the **Ruelle**
-axioms documented in the Pivot section. Both have docstring-level
-verdicts of "Standard" with full citation; their formal entry in this
-log is the audit-table row in that section.
+The KL / spectral-route axioms recorded here as entries 4–7 are parked
+in `Proofideas/kallen_lehmann.lean`. Entries 2–3
+(`spectral_riemann_lebesgue`, `continuous_translate_schwartz`) are
+parked in `Proofideas/spectral_analysis.lean`. Entry 1 (`snag_theorem`)
+remains in production via `GeneralResults/SNAGTheorem.lean`.
+
+The "Pivot" section below describes the route to Ruelle and what the
+two textbook hypothesis fields encode. Their docstring-level vetting
+verdict is "Standard" (Araki-Hepp-Ruelle 1962 Theorem 2 plus the
+related uniform polynomial bound); they are *not* production axioms in
+the current shape.
 
 ---
 
@@ -32,7 +36,7 @@ fixed to use `MeasurableSet`-gated indexing.
 **Verdict (Gemini chat, 2026-05-04)**: **Likely correct** with cosmetic fix.
 Replaced ad-hoc null-set pull-back form with idiomatic
 `Measure.map (...) μ ≪ MeasureTheory.volume`.
-**Status**: in `GeneralResults/SpectralAnalysis.lean`.
+**Status**: parked in `Proofideas/spectral_analysis.lean` (per PR #82 review).
 
 ### 3. `continuous_translate_schwartz`
 **Verdict (Gemini chat, 2026-05-04)**: **Initially FALSE** — operator-norm
@@ -40,21 +44,21 @@ continuity was the form I'd used; Gemini correctly noted that translation is
 **not** continuous in operator norm even on `L²`/Schwartz (oscillatory test
 functions show this). Only **strong continuity** holds (`∀ f, Continuous (a ↦ T_a f)`).
 Fixed accordingly. Matches Hörmander I 7.1.18.
-**Status**: in `GeneralResults/SpectralAnalysis.lean`.
+**Status**: parked in `Proofideas/spectral_analysis.lean` (per PR #82 review).
 
 ### 4. `W2_spectral_support_in_forwardCone`
 **Verdict (Gemini chat, 2026-05-03)**: **Standard** — matches Streater-Wightman 3-2.
-**Status**: in `Spectral/KallenLehmann.lean`, on main.
+**Status**: parked in `Proofideas/kallen_lehmann.lean` (per PR #82 review).
 
 ### 5. `W2_spectral_atom_at_zero`
 **Verdict (Gemini chat, 2026-05-03)**: **Likely correct** — matches Streater-Wightman 3-3.
-**Status**: in `Spectral/KallenLehmann.lean`, on main.
+**Status**: parked in `Proofideas/kallen_lehmann.lean` (per PR #82 review).
 
 ### 6. `vacuum_spectral_measure_W2`
 **Verdict (Gemini chat, 2026-05-03)**: **Standard** — direct Bochner application
 to the continuous PD function `a ↦ ⟨ψ, U(a) ψ⟩`. Mathematical content is a
 corollary of the proved `bochner_theorem` (BochnerMinlos).
-**Status**: in `Spectral/KallenLehmann.lean`, on main.
+**Status**: parked in `Proofideas/kallen_lehmann.lean` (per PR #82 review).
 
 ### 7. `WightmanTruncated_decomposition_formula`
 **Verdict (Gemini chat, 2026-05-04)**: **Likely correct** with caveat.
@@ -64,8 +68,9 @@ corollary of the proved `bochner_theorem` (BochnerMinlos).
   `SchwartzNPoint`, and continuity of `W_n` and `W^T_k` extends the
   identity to general Schwartz tests automatically (no separate
   justification needed).
-**Status**: in `Spectral/ClusterFromKL.lean`, factorizable form needs to be
-written out explicitly.
+**Status**: parked in `Proofideas/cluster_from_kallen_lehmann.lean`
+(per PR #82 review). Factorizable form would be written out
+if/when the file is revived.
 
 ---
 
@@ -274,64 +279,75 @@ The Källén-Lehmann route encountered structural obstacles (Issues 1–4
 above) that were taking weeks to resolve. After consulting Gemini deep-think
 (`history/gemini_deep_think.md`) on the analytic cluster question,
 identified Araki-Hepp-Ruelle 1962 (Helv. Phys. Acta 35) as the canonical
-reference: their **Theorem 2** proves the pointwise analytic cluster
-*strictly* on the standard forward tube, exactly what we need.
+reference: their **Theorem 2** proves the pointwise analytic cluster.
 
-The route was approved (`docs/cluster_via_ruelle_plan.md`). It introduces
-two textbook axioms in place of the spectral / KL infrastructure:
+The route is approved (`docs/cluster_via_ruelle_plan.md`).
 
-### 8. `ruelle_analytic_cluster_bound`
-**File**: `Wightman/Reconstruction/WickRotation/RuelleClusterBound.lean`.
+### 2026-05-07 update: hypothesis-structure rather than production axioms
+
+Per PR #82 review (xiyin137), the Ruelle textbook content is **not**
+introduced as production `axiom` declarations. Instead, it is packaged
+as a **conditional-input structure**
+
+```lean
+structure RuelleAnalyticClusterHypotheses (Wfn : WightmanFunctions d) (n m : ℕ) : Prop where
+  bound : <uniform-in-a polynomial bound, joint-PET-conditioned>
+  pointwise : <pointwise factorization on PET, eventually-in-a>
+```
+
+with both fields hypothesizing **joint-PET membership** (the analytic
+domain of `W_analytic_BHW (n+m)` in the Lean repo) at every evaluation
+point, since the joint Wick-rotated config does not always lie in the
+standard forward tube `T(n+m)` (only in the permuted variant PET).
+
+### Hypothesis 1: `bound` field
+
 **Statement**: there exist constants `C, N, R > 0` such that for all
-forward-tube `z₁, z₂` and spatial `a` with `|⃗a| > R`:
+forward-tube `z₁, z₂`, spatial `a` with `|⃗a| > R`, and joint-PET
+membership of the appended config:
 ```
 ‖W_analytic_BHW(append z₁ (z₂ + (0, a)))‖ ≤ C · (1 + ‖z₁‖ + ‖z₂‖)^N.
 ```
 **Crucial property**: `C, N` are **independent of `a`** — the spectral-gap
 content of R4 (distributional cluster) lifted to the analytic level.
 
-**Verdict (Gemini deep-think, 2026-05-05)**: **Standard** — the route is
-correct as stated. The pointwise analytic cluster on the standard forward
-tube `T` is the canonical statement (Araki-Hepp-Ruelle 1962, Theorem 2);
-the uniform-in-a polynomial bound is the corresponding spectral consequence
-documented in Streater-Wightman §3.4 and Jost VI.1. The previous Route
-(i) attempt failed because we tried to use `spectrum_condition`'s a-dependent
-bound, which is too weak.
+**Verdict (Gemini deep-think, 2026-05-05)**: **Standard** — corresponds
+to the spectral consequence of Streater-Wightman §3.4 and Jost VI.1.
 
-**Sources**: `DT` (deep-think), `LP` (Araki-Hepp-Ruelle 1962 Theorem 2,
-Streater-Wightman §3.4, Jost VI.1).
+**Sources**: `DT` (deep-think), `LP` (Streater-Wightman §3.4, Jost VI.1).
 
-### 9. `ruelle_analytic_cluster_pointwise`
-**File**: `Wightman/Reconstruction/WickRotation/RuelleClusterBound.lean`.
-**Statement**: for all forward-tube `z₁, z₂`,
+### Hypothesis 2: `pointwise` field
+
+**Statement**: for all forward-tube `z₁, z₂` with eventual joint-PET
+membership of the appended config along the spatial-cobounded filter,
 ```
-W_analytic_BHW(append z₁ (z₂ + (0, a))) → W_analytic_BHW(z₁) · W_analytic_BHW(z₂)
+W_analytic_BHW(append z₁ (z₂ + (0, a))) → W_analytic_BHW(z₁) · W_analytic_BHW(z₂).
 ```
-along the spatial-cobounded filter on `a`.
 
-**Verdict (Gemini deep-think, 2026-05-05)**: **Standard** — this is exactly
-Theorem 2 of Araki-Hepp-Ruelle 1962. Gemini explicitly verified that this
-statement holds *strictly* on the standard forward tube `T` (not requiring
-extension to the extended tube `T'`, where the limit may not be defined).
-Our usage stays within `T`, so the statement is directly applicable.
+**Verdict (Gemini deep-think, 2026-05-05)**: **Standard** — corresponds
+to Theorem 2 of Araki-Hepp-Ruelle 1962, adapted from the standard forward
+tube to PET (where our Wick-rotated joint configurations naturally live).
 
 **Sources**: `DT` (deep-think), `LP` (Araki-Hepp-Ruelle 1962 Theorem 2 —
 "On the asymptotic behaviour of Wightman functions in space-like
 directions", Helv. Phys. Acta 35, 164).
 
-### Audit table
+### Status
 
-| Axiom | File:Line | Rating | Sources | Notes |
-|-------|-----------|--------|---------|-------|
-| `ruelle_analytic_cluster_bound` | RuelleClusterBound.lean:~88 | Standard | DT, LP | Streater-Wightman §3.4, Jost VI.1, Araki-Hepp-Ruelle 1962 |
-| `ruelle_analytic_cluster_pointwise` | RuelleClusterBound.lean:~149 | Standard | DT, LP | Araki-Hepp-Ruelle 1962 Theorem 2 |
-
-### Status of the two routes
-
-* **Källén-Lehmann route** (`Spectral/ClusterFromKL.lean`,
-  `Spectral/KallenLehmann.lean`): superseded. No longer imported. Open
-  Issues 1–4 above are deferred and not required for cluster closure.
-* **Ruelle route** (`RuelleClusterBound.lean`): closes
-  `W_analytic_cluster_integral` and `wickRotatedBoundaryPairing_cluster`
-  with **zero local sorrys** (modulo `bhw_euclidean_kernel_measurable`'s
-  pre-existing transitive sorry).
+* **Production trust delta**: 0 new axioms.
+* **Conditional cluster bridge** (`RuelleClusterBound.lean`): closes
+  `W_analytic_cluster_integral`, `wickRotatedBoundaryPairing_cluster`,
+  and `schwinger_E4_cluster_OPTR_case` as conditional theorems taking
+  `RuelleAnalyticClusterHypotheses` as a parameter.
+* **Källén-Lehmann route**: parked in
+  `Proofideas/cluster_from_kallen_lehmann.lean` and
+  `Proofideas/kallen_lehmann.lean`.
+* **L1–L7 proof roadmap** for discharging the hypotheses from R4 +
+  spectrum condition: parked in `Proofideas/ruelle_blueprint.lean`.
+* **L2 (no zero-momentum atom)**: target stated in
+  `Proofideas/ruelle_l2_no_zero_momentum_atom.lean`; needs precision
+  pass before promotion to production.
+* **L5 (spectral Riemann-Lebesgue, AC marginal version)**: in
+  production at `OSReconstruction/Wightman/Spectral/Ruelle/L5_SpectralRiemannLebesgue.lean`
+  as an inventoried frontier lemma (steps 1, 2, 3a proved; steps 3b–e
+  remain — pure measure-theoretic / Mathlib bridging).

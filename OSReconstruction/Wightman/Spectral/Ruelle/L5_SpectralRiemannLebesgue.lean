@@ -13,6 +13,19 @@ import Mathlib.MeasureTheory.Measure.Decomposition.IntegralRNDeriv
 /-!
 # L5: Spectral Riemann-Lebesgue lemma for tempered measures with AC spatial marginal
 
+**Status (2026-05-07): inventoried frontier lemma.** This is a pure
+measure-theoretic / Fourier-analytic statement (NOT QFT-specific):
+Riemann-Lebesgue for finite measures on `Fin (d+1) → ℝ` whose spatial
+marginal is absolutely continuous w.r.t. Lebesgue.
+
+Per PR #82 review (xiyin137): this file is acceptable as production
+proof debt because:
+* The statement is pure FA / measure theory, with no Wightman or BHW
+  dependence.
+* Substantial progress is already proved (steps 1, 2, 3a; see below).
+* The remaining sub-steps (3b–e) reduce to standard Mathlib bridging
+  via `EuclideanSpace ℝ (Fin d)` plus convention reconciliation.
+
 For a finite Borel measure `μ` on `(Fin (d+1) → ℝ)` whose **spatial marginal**
 (the pushforward under projection onto coordinates `i ≥ 1`) is absolutely
 continuous w.r.t. Lebesgue measure, the spatial Fourier transform tends to
@@ -21,8 +34,6 @@ continuous w.r.t. Lebesgue measure, the spatial Fourier transform tends to
 ```
 Tendsto (a ↦ ∫ exp(i a · p⃗) dμ(p)) (cobounded) (𝓝 0)
 ```
-
-This is L5 of the Ruelle proof chain (see `Blueprint.lean`).
 
 ## Discharge strategy
 
@@ -36,7 +47,14 @@ This is L5 of the Ruelle proof chain (see `Blueprint.lean`).
 5. Reconcile the inner-product / Fourier-character convention to match
    our `Complex.exp (Complex.I * ⟨a, q⟩)` form.
 
-This file lays out the structure; full proof to be filled in.
+## Status of steps
+
+* Step 1 (change of variables via spatial projection): **PROVED**.
+* Step 2 (Radon-Nikodym density reduction): **PROVED**.
+* Step 3a (integrability of the density): **PROVED**.
+* Steps 3b–e (Mathlib RL bridging on EuclideanSpace + convention
+  reconciliation + cocompact↔cobounded): single sorry with concrete
+  Mathlib targets. ~1 active day estimated remaining.
 -/
 
 set_option backward.isDefEq.respectTransparency false

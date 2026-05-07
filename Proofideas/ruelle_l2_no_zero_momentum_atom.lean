@@ -2,6 +2,19 @@
 Copyright (c) 2026 ModularPhysics Contributors. All rights reserved.
 Released under Apache 2.0 license.
 Authors: Michael Douglas, ModularPhysics Contributors
+
+PARKED 2026-05-07 (was `OSReconstruction/Wightman/Spectral/Ruelle/L2_NoZeroMomentumAtom.lean`).
+Per PR #82 review (xiyin137): the L2 target is QFT-specific and
+load-bearing (full spatial-cobounded decay of GNS matrix coefficients
+on the vacuum complement). Before this can be a production frontier
+lemma, the proof needs a precision pass: split into smaller named
+lemmas making explicit which step uses `gns_cluster_completion`
+(existing), which uses SNAG, which uses no-atom-at-zero, and where AC
+of the spatial marginal is assumed/proved/avoided.
+
+Moved here for the precision pass. The current file has the target
+statement and proof outline but is not yet ready as accepted
+proof debt.
 -/
 import OSReconstruction.Wightman.Reconstruction.GNSHilbertSpace
 import OSReconstruction.GeneralResults.SNAGTheorem

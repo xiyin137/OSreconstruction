@@ -4,7 +4,7 @@ A Lean 4 formalization of the **Osterwalder-Schrader reconstruction theorem** an
 
 ## Current Axiom Inventory
 
-The tracked production tree currently contains **13 explicit axioms**:
+The tracked production tree currently contains **11 explicit axioms**:
 
 **Functional analysis (2):**
 - `schwartz_nuclear_extension` in `Wightman/WightmanAxioms.lean` — **partially proved**: nuclearity of Schwartz space is now proved in the [`gaussian-field`](https://github.com/or-n/gaussian-field) library; the remaining gap is importing the instance and deriving the kernel theorem
@@ -23,11 +23,26 @@ The tracked production tree currently contains **13 explicit axioms**:
 **Reconstruction bridge (1):**
 - `reduced_bargmann_hall_wightman_of_input` in `Wightman/Reconstruction/WickRotation/BHWReducedExtension.lean`
 
-**Wightman cluster — Ruelle 1962 (2):**
-- `ruelle_analytic_cluster_bound` in `Wightman/Reconstruction/WickRotation/RuelleClusterBound.lean` — uniform-in-`a` polynomial bound on the analytic continuation of the (n+m)-point function for spatially separated arguments, on configs in the joint analytic domain (`PermutedExtendedTube d (n+m)`). Reference: Ruelle 1962 (Helv. Phys. Acta 35), Jost VI.1, Streater-Wightman §3.4.
-- `ruelle_analytic_cluster_pointwise` in `Wightman/Reconstruction/WickRotation/RuelleClusterBound.lean` — pointwise factorization of the analytic continuation as `|⃗a| → ∞` along spacelike directions, hypothesizing eventual joint-PET membership of the appended config. Reference: Araki-Hepp-Ruelle 1962 Theorem 2 (Helv. Phys. Acta 35, 164).
+### Conditional theorems and inventoried frontier lemmas
 
-These two axioms together discharge `W_analytic_cluster_integral` (the analytic-cluster ingredient of OS axiom E4 on the Wick-rotated Schwinger side, for OPTR-supported tests) via dominated convergence; they encode the spectral-gap content of R4 at the analytic level. The OPTR-restricted bridge to the public `OsterwalderSchraderAxioms.E4_cluster` surface is `schwinger_E4_cluster_OPTR_case` in the same file. The full lift from OPTR-supported to arbitrary `ZeroDiagonalSchwartz` tests is left for follow-up.
+The R→E cluster route (`W_analytic_cluster_integral`,
+`wickRotatedBoundaryPairing_cluster`, `schwinger_E4_cluster_OPTR_case`
+in `Wightman/Reconstruction/WickRotation/RuelleClusterBound.lean`)
+is a **conditional theorem**: it takes an explicit
+`RuelleAnalyticClusterHypotheses Wfn n m` parameter packaging the two
+textbook Ruelle 1962 / Araki-Hepp-Ruelle 1962 inputs (uniform polynomial
+bound + pointwise factorization on PET). No new production axioms; the
+trust boundary is visible at every call site.
+
+One inventoried **frontier lemma** with a tracked production sorry:
+- `OSReconstruction/Wightman/Spectral/Ruelle/L5_SpectralRiemannLebesgue.lean`
+  — pure measure-theoretic Riemann-Lebesgue for finite measures with
+  AC spatial marginal. Steps 1, 2, 3a proved; steps 3b–e remain
+  (Mathlib RL bridging via `EuclideanSpace ℝ (Fin d)` + sign/2π
+  reconciliation).
+
+The Path A blueprint and L2 (no zero-momentum atom) reductions are
+parked in `Proofideas/` as architectural reference, not in production.
 
 The former `vladimirov_tillmann` axiom has been **proved as a theorem** from 3 of the SCV axioms above plus ~10K lines of Paley-Wiener-Schwartz proofs. See `docs/vladimirov_tillmann_summary.md` for details.
 
@@ -125,8 +140,8 @@ This fetches Mathlib and dependencies automatically on first build.
 
 ## Project Status
 
-The tracked production tree currently includes **13 explicit `axiom`
-declarations** (2 FA + 8 SCV + 1 reconstruction bridge + 2 Ruelle cluster).
+The tracked production tree currently includes **11 explicit `axiom`
+declarations** (2 FA + 8 SCV + 1 reconstruction bridge).
 See the axiom inventory at the top of this file for the complete list. Remaining work
 outside these deferred surfaces is represented by explicit theorem-level
 `sorry` placeholders.
