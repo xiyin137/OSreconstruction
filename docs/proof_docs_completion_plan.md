@@ -4956,12 +4956,18 @@ implementation contract is:
    equality by `sourceOrientedInvariantRing_relations_kernel_of_standard`.
    The surjectivity output is no longer a named black box inside that package:
    the checked adapter
-   `BHW.standardSOInvariantCoordinateMap_surjective_of_generator_eq` takes the
-   FFT equality
-   `standardSOInvariantSubalgebra D n = standardSOGeneratorSubalgebra D n`,
-   converts an arbitrary fixed-point element to the generated subalgebra,
-   lifts it by `standardSOGeneratorCoordinateMap_surjective`, and then forgets
-   through the generated-to-fixed inclusion.  This prevents Lean from
+   `BHW.standardSOInvariantCoordinateMap_surjective_of_generators` takes the
+   FFT equality in the displayed pairing/volume adjoin form, rewrites it to
+   the generator-subalgebra equality consumed by
+   `BHW.standardSOInvariantCoordinateMap_surjective_of_generator_eq`, converts
+   an arbitrary fixed-point element to the generated subalgebra, lifts it by
+   `standardSOGeneratorCoordinateMap_surjective`, and then forgets through the
+   generated-to-fixed inclusion.  The source adapters
+   `BHW.sourceOrientedInvariantRing_generated_by_gram_det_of_standard_generators`
+   and
+   `BHW.sourceOrientedInvariantCoordinateMap_surjective_of_standard_generators`
+   perform the same displayed-generator transport through the checked
+   source/dot equivalences.  This prevents Lean from
    smuggling coordinate-ring surjectivity into the SFT kernel theorem; the
    only unproved standard-side content is still the reverse FFT inclusion and
    the SFT kernel equality.

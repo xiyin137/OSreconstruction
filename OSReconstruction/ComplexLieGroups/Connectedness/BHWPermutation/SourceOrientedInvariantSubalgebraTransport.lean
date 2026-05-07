@@ -175,6 +175,41 @@ theorem sourceOrientedInvariantRing_generated_by_gram_det_of_standard
     sourceMinkowskiToDotCoordinateRingEquiv_map_sourceGeneratorSubalgebra,
     hFFT]
 
+/-- Source FFT generation transported from the standard FFT in its displayed
+pairing/volume adjoin form. -/
+theorem sourceOrientedInvariantRing_generated_by_gram_det_of_standard_generators
+    (d n : ℕ)
+    (hFFT :
+      standardSOInvariantSubalgebra (d + 1) n =
+        Algebra.adjoin ℂ
+          (Set.range (standardPairingCoordinatePolynomial (d + 1) n) ∪
+            Set.range (standardVolumeCoordinatePolynomial (d + 1) n))) :
+    sourceOrientedInvariantSubalgebra d n =
+      Algebra.adjoin ℂ
+        (Set.range (sourceGramCoordinatePolynomial d n) ∪
+          Set.range (sourceFullFrameDetPolynomial d n)) := by
+  have hstd :
+      standardSOInvariantSubalgebra (d + 1) n =
+        standardSOGeneratorSubalgebra (d + 1) n := by
+    simpa [standardSOGeneratorSubalgebra] using hFFT
+  simpa [sourceOrientedGeneratorSubalgebra] using
+    sourceOrientedInvariantRing_generated_by_gram_det_of_standard
+      d n hstd
+
+/-- Source invariant-coordinate surjectivity transported from the standard
+FFT in its displayed pairing/volume adjoin form. -/
+theorem sourceOrientedInvariantCoordinateMap_surjective_of_standard_generators
+    (d n : ℕ)
+    (hFFT :
+      standardSOInvariantSubalgebra (d + 1) n =
+        Algebra.adjoin ℂ
+          (Set.range (standardPairingCoordinatePolynomial (d + 1) n) ∪
+            Set.range (standardVolumeCoordinatePolynomial (d + 1) n))) :
+    Function.Surjective (sourceOrientedInvariantCoordinateMap d n) :=
+  sourceOrientedInvariantCoordinateMap_surjective_of_standard d n
+    (standardSOInvariantCoordinateMap_surjective_of_generators
+      (d + 1) n hFFT)
+
 /-- Source SFT kernel transported from the standard SFT kernel equality. -/
 theorem sourceOrientedInvariantRing_relations_kernel_of_standard
     (d n : ℕ)

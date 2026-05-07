@@ -218,4 +218,19 @@ theorem standardSOInvariantCoordinateMap_surjective_of_generator_eq
   simpa [standardSOInvariantCoordinateMap, standardSOGeneratorToInvariantAlgHom,
     yg] using congrArg Subtype.val hp
 
+/-- Surjectivity of the actual invariant-coordinate map from the standard
+FFT in its displayed pairing/volume adjoin form. -/
+theorem standardSOInvariantCoordinateMap_surjective_of_generators
+    (D n : ℕ)
+    (hFFT :
+      standardSOInvariantSubalgebra D n =
+        Algebra.adjoin ℂ
+          (Set.range (standardPairingCoordinatePolynomial D n) ∪
+            Set.range (standardVolumeCoordinatePolynomial D n))) :
+    Function.Surjective (standardSOInvariantCoordinateMap D n) :=
+  standardSOInvariantCoordinateMap_surjective_of_generator_eq
+    D n
+    (by
+      simpa [standardSOGeneratorSubalgebra] using hFFT)
+
 end BHW
