@@ -12887,106 +12887,21 @@ Proof decomposition of this theorem, without hiding the analytic work:
           BHW.IsRelOpenInAnalyticSpace
             (BHW.sourceOrientedGramVariety d n) U
 
-      theorem BHW.sourceOrientedRelOpen_inter_maxRank_eq_diff_exceptional
+      theorem BHW.not_exceptional_rank_iff_maxRank
+          {d n : ℕ}
+          {G : BHW.SourceOrientedGramData d n}
+          (hG : G ∈ BHW.sourceOrientedExtendedTubeDomain d n) :
+          G ∉ {H | BHW.SourceOrientedExceptionalRank d n H} ↔
+            BHW.SourceOrientedMaxRankAt d n G
+
+      theorem BHW.sourceOrientedMaxRank_dense_in_domain_inter_maxRank
           [NeZero d]
           (hd : 2 <= d)
-          (n : Nat)
-          (hn : d + 1 <= n)
-          {U : Set (BHW.SourceOrientedGramData d n)}
-          (hU_rel :
-            BHW.IsRelOpenInSourceOrientedGramVariety d n U) :
-          U ∩ {G | BHW.SourceOrientedMaxRankAt d n G} =
-            U \ {G | BHW.SourceOrientedExceptionalRank d n G} := by
-        have hExc_eq :
-            {G | BHW.SourceOrientedExceptionalRank d n G} =
-              BHW.sourceOrientedGramVariety d n \
-                {G | BHW.SourceOrientedMaxRankAt d n G} :=
-          BHW.sourceOrientedExceptionalRank_eq_not_maxRank
-            (d := d) hd n hn
-        ext G
-        constructor
-        · rintro ⟨hGU, hGmax⟩
-          refine ⟨hGU, ?_⟩
-          intro hGexc
-          have hGnotMax :
-              G ∉ {G | BHW.SourceOrientedMaxRankAt d n G} := by
-            exact (by
-              have hmem :
-                  G ∈ BHW.sourceOrientedGramVariety d n \
-                    {G | BHW.SourceOrientedMaxRankAt d n G} := by
-                simpa [hExc_eq] using hGexc
-              exact hmem.2)
-          exact hGnotMax hGmax
-        · rintro ⟨hGU, hGnotExc⟩
-          refine ⟨hGU, ?_⟩
-          by_contra hGnotMax
-          apply hGnotExc
-          have hGvar :
-              G ∈ BHW.sourceOrientedGramVariety d n :=
-            BHW.IsRelOpenInSourceOrientedGramVariety.subset hU_rel hGU
-          have hmem :
-              G ∈ BHW.sourceOrientedGramVariety d n \
-                {G | BHW.SourceOrientedMaxRankAt d n G} :=
-            ⟨hGvar, hGnotMax⟩
-          simpa [hExc_eq] using hmem
-
-      theorem BHW.closure_relOpen_complement_of_analytic_codim_ge_one
-          {E : Type*} [TopologicalSpace E]
-          {X U A : Set E}
-          (hX_locPath :
-            BHW.LocallyPathConnectedAnalyticSpace X)
-          (hU_relOpen : BHW.IsRelOpenInAnalyticSpace X U)
-          (hA_an : BHW.IsAnalyticSubvarietyIn X A)
-          (hA_codim : BHW.AnalyticCodimensionAtLeast X A 1) :
-          U ⊆ closure (U \ A)
-
-      theorem BHW.sourceOrientedMaxRank_dense_in_relOpen
-          [NeZero d]
-          (hd : 2 <= d)
-          (n : Nat)
-          {U : Set (BHW.SourceOrientedGramData d n)}
-          (hU : BHW.IsRelOpenInSourceOrientedGramVariety d n U) :
-          U ⊆
+          (n : Nat) :
+          BHW.sourceOrientedExtendedTubeDomain d n ⊆
             closure
-              (U \
-                {G | BHW.SourceOrientedExceptionalRank d n G}) := by
-        exact
-          BHW.closure_relOpen_complement_of_analytic_codim_ge_one
-            (X := BHW.sourceOrientedGramVariety d n)
-            (U := U)
-            (A := {G | BHW.SourceOrientedExceptionalRank d n G})
-            (BHW.sourceOrientedGramVariety_locallyPathConnected
-              (d := d) hd n)
-            (BHW.IsRelOpenInSourceOrientedGramVariety.to_analyticSpace
-              (d := d) hd n hU)
-            (BHW.sourceOrientedExceptionalRank_isAnalyticSubvariety
-              (d := d) hd n)
-            (BHW.sourceOrientedExceptionalRank_complexCodim_ge_one
-              (d := d) hd n)
-
-      theorem BHW.sourceOrientedMaxRank_dense_in_relOpen_inter
-          [NeZero d]
-          (hd : 2 <= d)
-          (n : Nat)
-          (hn : d + 1 <= n)
-          {U : Set (BHW.SourceOrientedGramData d n)}
-          (hU : BHW.IsRelOpenInSourceOrientedGramVariety d n U) :
-          U ⊆
-            closure
-              (U ∩ {G | BHW.SourceOrientedMaxRankAt d n G}) := by
-        have hdense :
-            U ⊆
-              closure
-                (U \
-                  {G | BHW.SourceOrientedExceptionalRank d n G}) :=
-          BHW.sourceOrientedMaxRank_dense_in_relOpen
-            (d := d) hd n hU
-        have h_eq :
-            U ∩ {G | BHW.SourceOrientedMaxRankAt d n G} =
-              U \ {G | BHW.SourceOrientedExceptionalRank d n G} :=
-          BHW.sourceOrientedRelOpen_inter_maxRank_eq_diff_exceptional
-            (d := d) hd n hn hU
-        simpa [h_eq] using hdense
+              (BHW.sourceOrientedExtendedTubeDomain d n ∩
+                {G | BHW.SourceOrientedMaxRankAt d n G})
 
       theorem BHW.sourceOrientedMaxRank_dense_in_domain
           [NeZero d]
@@ -12995,12 +12910,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
           BHW.sourceOrientedExtendedTubeDomain d n ⊆
             closure
               (BHW.sourceOrientedExtendedTubeDomain d n \
-                {G | BHW.SourceOrientedExceptionalRank d n G}) := by
-        exact
-          BHW.sourceOrientedMaxRank_dense_in_relOpen
-            (d := d) hd n
-            (BHW.sourceOrientedExtendedTubeDomain_relOpen_connected
-              (d := d) hd n).1
+                {G | BHW.SourceOrientedExceptionalRank d n G})
 
       theorem BHW.sourceOrientedVariety_normal_riemannExtension
           [NeZero d]
@@ -14052,14 +13962,19 @@ Proof decomposition of this theorem, without hiding the analytic work:
       intersection of the oriented variety with the vanishing locus of all
       `min (d + 1) n` source-Gram minors.  The determinant-coordinate
       equations do not create an additional exceptional component; they only
-      live in the ambient oriented variety.  The density theorem is likewise
-      a local image theorem, not a formal topological corollary: in a Schur
-      chart at rank `r < min (d + 1) n`, perturb the residual Schur
-      complement by a small diagonal rank
-      `min (d + 1) n - r` block and choose determinant coordinates by the
-      oriented tail realization/full-rank gauge packet above.  This gives
-      nearby max-rank oriented points in every relatively open oriented
-      source-domain patch.
+      live in the ambient oriented variety.  The domain-density theorem is now
+      checked in `SourceOrientedDomainDensity.lean` in the exact form needed
+      by the normal Riemann call.  The first checked layer,
+      `sourceOrientedMaxRank_dense_in_domain_inter_maxRank`, proves closure of
+      the explicit max-rank locus: max-rank centers use `subset_closure`, and
+      rank-deficient centers use `sourceOriented_rankDeficient_residualChart`,
+      the center equation `toVec_c0_invariant`, and
+      `maxRank_dense_parameters`.  Its dense parameter image lands in
+      `sourceOrientedExtendedTubeDomain ∩ {G | SourceOrientedMaxRankAt d n G}`
+      by `P_subset_K` and `toVec_mem`.  The public
+      `sourceOrientedMaxRank_dense_in_domain` theorem then rewrites that dense
+      locus as the non-exceptional complement using the checked bridge
+      `not_exceptional_rank_iff_maxRank` on the oriented extended-tube image.
 
       ```lean
       theorem BHW.sourceOrientedVarietyGermHolomorphicOn_extendF_descent
@@ -14172,7 +14087,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
       | `BHW.same_sourceOrientedInvariant_detOneOrbit_or_singularLimit` | Componentwise proof transcript pinned; production Lean not started. | Split by `HWSourceGramOrbitRankAt`.  In the orbit-rank branch, extract Gram equality and determinant equality from `SourceOrientedGramData`, prove `HWSameSourceGramSOOrientationCompatible` via a nonzero full-frame determinant and the determinant-ratio formula for `HWFullRankSameGramFrameMapDet`, then call `hw_sameSourceGram_regular_orbit`.  In the low-rank branch, call the Hall-Wightman residual-frame contraction producer.  The lower support transcript expands coefficient kernels, restricted-rank nondegeneracy, determinant-repaired Witt extension, selected Schur residuals, common isotropic residual frames, dual frames, contraction curves, and the singular topology limit; the missing work is implementation, not a remaining theorem-shape gap in this row. |
       | `BHW.extendedTube_same_sourceOrientedInvariant_extendF_eq` | Assembly transcript pinned; not production-Lean-ready until the previous row's Hall-Wightman producers exist. | Apply the previous row's actual orbit alternative to determinant-`1` complex Lorentz invariance of `extendF` via `extendF_complexLorentzInvariant_of_cinv`; apply the singular alternative by the checked topology-limit transcript for `hw_sameSourceGram_singularLimit_extendF_eq`.  This theorem has no independent route choice and must not be implemented before `same_sourceOrientedInvariant_detOneOrbit_or_singularLimit`. |
       | `BHW.sourceOrientedExtendedTubeDomain_relOpen_connected` | Checked in `SourceOrientedRankDeficientTubeResidualPolydisc.lean`, by applying `BHW.sourceOrientedExtendedTubeDomain_relOpen_connected_of_rankDeficientResidualChartProducer` to the checked `BHW.sourceOriented_rankDeficient_residualChartProducer`; the same file also checks the pointwise fixed-center wrapper `BHW.sourceOriented_rankDeficient_residualChart`.  The connectedness half is `BHW.sourceOrientedExtendedTubeDomain_connected`; the open-union topology split for the relative-openness half is checked as `BHW.SourceOrientedExtendedTubeLocalRealizationData`, `BHW.SourceOrientedExtendedTubeLocalRealizationProducer`, `BHW.sourceOrientedExtendedTubeDomain_relOpen_of_localRealization`, and `BHW.sourceOrientedExtendedTubeDomain_relOpen_connected_of_localRealization` in `SourceOrientedLocalRealization.lean`.  The max-rank local-realization branch is also checked there as `BHW.sourceComplexGramRegularAt_of_HWSourceGramMaxRankAt_any`, `BHW.continuousOn_sourceFullFrameGauge_reconstructVector_on_modelDetNonzero`, `BHW.sourceOrientedExtendedTubeLocalRealizationData_of_smallArityMaxRank`, `BHW.sourceOrientedExtendedTubeLocalRealizationData_of_fullFrameDetNonzero`, `BHW.sourceOrientedExtendedTubeLocalRealizationData_of_fullFrameMaxRank`, and `BHW.sourceOrientedExtendedTubeLocalRealizationData_of_maxRank`.  The rank-deficient target interface and producer are checked as `BHW.SourceOrientedRankDeficientRealizationData`, `BHW.SourceOrientedRankDeficientRealizationData.to_localRealization`, `BHW.SourceOrientedRankDeficientResidualChartData`, `BHW.SourceOrientedRankDeficientResidualChartData.center_mem`, `BHW.SourceOrientedRankDeficientResidualChartData.toVec_c0_mem`, `BHW.SourceOrientedRankDeficientResidualChartData.to_realizationData`, `BHW.SourceOrientedRankDeficientResidualChartData.to_localRealization`, `BHW.SourceOrientedRankDeficientResidualChartProducer`, `BHW.sourceOriented_rankDeficient_tubeResidualPolydiscProducer`, `BHW.sourceOriented_rankDeficient_residualChartProducer`, `BHW.sourceOrientedExtendedTubeLocalRealizationProducer_of_rankDeficientResidualChartProducer`, and `BHW.sourceOrientedExtendedTubeDomain_relOpen_connected_of_rankDeficientResidualChartProducer`. | This local-realization input is no longer a blocker.  The full-frame max-rank case no longer has a tube-shrink gap: it uses `isOpen_extendedTube`, the explicit reconstructed-vector map, the model-domain shrinker, and the stored chart inverse to produce an actual `ExtendedTube` witness realizing each nearby oriented-variety point.  The small-arity max-rank case uses the ordinary source-Gram local image theorem inside `ExtendedTube` and emptiness of `Fin (d + 1) ↪ Fin n`.  Rank-deficient charts use the checked sliced-head Schur stack only for original-coordinate image bookkeeping; the explicit ET-valued residual family is produced through the checked tube residual-polydisc data, with `toVec c := N.toOriginal (P.residualVector c)`.  The next theorem-2 blocker after this row is the downstream source-oriented scalar representative/descent layer, not an unproved residual-chart wrapper. |
-      | `BHW.sourceOrientedVarietyGermHolomorphicOn_extendF_descent` | Componentwise regular/removable transcript pinned; production Lean not started for the final normal/Riemann extension.  The prerequisite quotient-value definition, well-definedness theorem, local-boundedness predicate, max-rank topological glue helpers, compact-parameter continuity helper, residual-chart compact/local-boundedness/continuity helpers, conditional global continuity/local-boundedness assembly `sourceOrientedQuotientValue_continuous_locallyBounded_of_maxRankLocal`, all-arity local holomorphic section producer `sourceOrientedExtendedTube_holomorphicLocalSection`, max-rank quotient holomorphy theorem `sourceOrientedQuotientValue_holomorphicOn_maxRank`, and global `sourceOrientedQuotientValue_continuous_locallyBounded` are checked. | Define `Phi` as the checked quotient value of `extendF F` on `sourceOrientedExtendedTubeDomain`, feed the checked continuity/local-boundedness theorem and max-rank holomorphy theorem into the normal analytic-space Riemann extension, and extend across `SourceOrientedExceptionalRank` using the algebraic SO-invariant model: `sourceOrientedInvariantRing_generated_by_gram_det`, `sourceOrientedInvariantRing_relations_kernel`, `sourceOrientedInvariantRing_integrallyClosed`, `sourceOrientedAlgebraicCoordinateRing_iso_invariants`, analytic exceptional-rank locus, density of the max-rank stratum, and the normal analytic-space Riemann theorem.  The only permitted standard algebraic-geometry import boundary here is `BHW.standardSO_FFT_SFT_coordinatePresentation`: it must provide the explicit `SO` pairing/volume generators, Cauchy-Binet kernel, and coordinate-map surjectivity in one sorry-free theorem, and it must remain independent of OS, Wightman functions, EOW, PET, and locality.  No all-rank local-section theorem and no arbitrary ambient extension of `Phi` is allowed. |
+      | `BHW.sourceOrientedVarietyGermHolomorphicOn_extendF_descent` | Componentwise regular/removable transcript pinned; production Lean not started for the final normal/Riemann extension.  The prerequisite quotient-value definition, well-definedness theorem, local-boundedness predicate, max-rank topological glue helpers, compact-parameter continuity helper, residual-chart compact/local-boundedness/continuity helpers, conditional global continuity/local-boundedness assembly `sourceOrientedQuotientValue_continuous_locallyBounded_of_maxRankLocal`, all-arity local holomorphic section producer `sourceOrientedExtendedTube_holomorphicLocalSection`, max-rank quotient holomorphy theorem `sourceOrientedQuotientValue_holomorphicOn_maxRank`, global `sourceOrientedQuotientValue_continuous_locallyBounded`, explicit max-rank density theorem `sourceOrientedMaxRank_dense_in_domain_inter_maxRank`, non-exceptional/max-rank bridge `not_exceptional_rank_iff_maxRank`, and non-exceptional domain-density theorem `sourceOrientedMaxRank_dense_in_domain` are checked. | Define `Phi` as the checked quotient value of `extendF F` on `sourceOrientedExtendedTubeDomain`, feed the checked continuity/local-boundedness theorem, max-rank holomorphy theorem, non-exceptional/max-rank bridge, and domain-density theorem into the normal analytic-space Riemann extension, and extend across `SourceOrientedExceptionalRank` using the algebraic SO-invariant model: `sourceOrientedInvariantRing_generated_by_gram_det`, `sourceOrientedInvariantRing_relations_kernel`, `sourceOrientedInvariantRing_integrallyClosed`, `sourceOrientedAlgebraicCoordinateRing_iso_invariants`, analytic exceptional-rank locus, and the normal analytic-space Riemann theorem.  The only permitted standard algebraic-geometry import boundary here is `BHW.standardSO_FFT_SFT_coordinatePresentation`: it must provide the explicit `SO` pairing/volume generators, Cauchy-Binet kernel, and coordinate-map surjectivity in one sorry-free theorem, and it must remain independent of OS, Wightman functions, EOW, PET, and locality.  No all-rank local-section theorem and no arbitrary ambient extension of `Phi` is allowed. |
       | `BHW.sourceOrientedScalarRepresentativeData_of_branchLaw`, `BHW.hallWightman_sourceOrientedScalarRepresentativeData`, `BHW.sourceOrientedScalarRepresentativeData_bvt_F` | The data structure and `sourceOrientedScalarRepresentativeData_of_branchLaw` are checked in `SourceOrientedScalarRepresentative.lean`; the Hall-Wightman and `bvt_F` specializations remain assembly after the branch law and descent rows. | Specialize to `bvt_F` using `bvt_F_holomorphic`, `bvt_F_complexLorentzInvariant_forwardTube`, and `BHW_forwardTube_eq`; no full-component/improper invariant is needed on this proper-complex route. |
 
       In particular, `BHW.sourceOrientedScalarRepresentativeData_bvt_F` is the

@@ -2002,7 +2002,7 @@ componentwise regular/removable transcript rather than a single amorphous
 `BHW.sourceOrientedQuotientValue_continuous_locallyBounded`,
 the residual-chart compact-parameter continuity and boundedness lemmas,
 `BHW.sourceOrientedExceptionalRank_isAnalyticSubvariety`,
-`BHW.sourceOrientedMaxRank_dense_in_relOpen`,
+`BHW.sourceOrientedMaxRank_dense_in_domain`,
 `BHW.sourceOrientedVariety_normal_riemannExtension`, and the invariant-ring
 normality chain
 `BHW.sourceOrientedInvariantRing_generated_by_gram_det`,
@@ -4797,7 +4797,20 @@ implementation contract is:
    The removable step now also has explicit oriented inputs:
    `sourceOrientedExceptionalRank_eq_lowerRank`,
    `sourceOrientedExceptionalRank_isAnalyticSubvariety`, and
-   `sourceOrientedMaxRank_dense_in_relOpen`.  The normal-space Riemann
+   `sourceOrientedMaxRank_dense_in_domain`.  The domain-density proof is now
+   checked in `SourceOrientedDomainDensity.lean` in two layers.  First
+   `sourceOrientedMaxRank_dense_in_domain_inter_maxRank` proves closure of the
+   explicit max-rank locus: max-rank centers are immediate by
+   `subset_closure`, while rank-deficient centers use
+   `sourceOriented_rankDeficient_residualChart`, the chart center equation
+   `toVec_c0_invariant`, and `maxRank_dense_parameters`; the dense parameter
+   image is pushed into
+   `sourceOrientedExtendedTubeDomain ∩ {G | SourceOrientedMaxRankAt d n G}` by
+   `P_subset_K` and the chart's `toVec_mem`.  Then
+   `sourceOrientedMaxRank_dense_in_domain` rewrites that checked dense locus as
+   the non-exceptional complement using `not_exceptional_rank_iff_maxRank` on
+   the oriented extended-tube image.
+   The normal-space Riemann
    theorem is the same finite-dimensional-polymorphic
    `normalAnalyticSubvariety_riemannExtension`/`weaklyHolomorphic` theorem
    used by the ordinary scalar route, not a scalar-coordinate-only theorem.
