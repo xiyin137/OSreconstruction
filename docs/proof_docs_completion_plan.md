@@ -152,7 +152,11 @@ local Slot 1:
    envelopes is checked as
    `BHW.bvt_F_selectedAdjacentDistributionalJostAnchorData_of_os45Envelopes`,
    reducing that route to the actual single-chart common-boundary/envelope
-   supplier;
+   supplier; the common-chart variant
+   `BHW.bvt_F_selectedAdjacentDistributionalJostAnchorData_of_commonChartEnvelopes`
+   is also checked, so the supplier may return the common chart `Uc`, function
+   `Hc`, and Wick/real trace identities directly and let the checked pullback
+   construct the direct `AdjacentOSEOWDifferenceEnvelope`;
    the oriented adjacent real-seed/anchor layer remains a downstream
    determinant-regular shrinking step;
    it must not use `BHW.os45_adjacent_commonBoundaryEnvelope`, the oriented

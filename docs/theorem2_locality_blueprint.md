@@ -58923,6 +58923,14 @@ structure, not a proposition, while the supplier hypothesis should remain a
 proof-level existence field.  The only unimplemented OS-side input for this
 constructor is therefore the single-chart common-boundary/envelope supplier
 itself.
+The common-chart handoff is checked too:
+`BHW.bvt_F_selectedAdjacentDistributionalJostAnchorData_of_commonChartEnvelopes`
+takes `V`, `ρ`, `Uc`, `Hc`, the Wick/real membership fields, and the two trace
+identities, applies
+`BHW.adjacentOSEOWDifferenceEnvelope_of_commonChartEnvelope`, and then uses the
+selected-data constructor.  Thus the next hard theorem may target the
+common-chart output exactly; no theorem after it needs to unpack or reprove
+the direct envelope pullback.
 
 ```lean
 noncomputable def bvt_F_selectedAdjacentDistributionalJostAnchorData_of_OSII

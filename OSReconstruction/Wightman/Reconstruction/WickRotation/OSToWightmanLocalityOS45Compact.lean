@@ -357,6 +357,69 @@ noncomputable def bvt_F_selectedAdjacentDistributionalJostAnchorData_of_os45Enve
         φ hφ_comp hφ_supp
     exact hswap_first.symm
 
+/-- Conditional selected Jost data constructor from common-chart OS45
+envelopes.
+
+This is one step upstream of
+`bvt_F_selectedAdjacentDistributionalJostAnchorData_of_os45Envelopes`: it
+performs the checked pullback from a common-chart holomorphic envelope to the
+direct-coordinate `AdjacentOSEOWDifferenceEnvelope`, then reuses the selected
+Jost-data constructor above. -/
+noncomputable def bvt_F_selectedAdjacentDistributionalJostAnchorData_of_commonChartEnvelopes
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (n : ℕ)
+    (hOS45 :
+      ∀ (i : Fin n) (hi : i.val + 1 < n),
+        ∃ (V : Set (NPointDomain d n)) (ρ : Equiv.Perm (Fin n))
+          (Uc : Set (Fin n → Fin (d + 1) → ℂ))
+          (Hc : (Fin n → Fin (d + 1) → ℂ) → ℂ),
+          IsOpen V ∧ IsConnected V ∧ V.Nonempty ∧
+          (∀ x, x ∈ V → x ∈ BHW.JostSet d n) ∧
+          (∀ x, x ∈ V → BHW.realEmbed x ∈ BHW.ExtendedTube d n) ∧
+          (∀ x, x ∈ V →
+            BHW.realEmbed
+              (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+              BHW.ExtendedTube d n) ∧
+          IsOpen Uc ∧ IsConnected Uc ∧
+          DifferentiableOn ℂ Hc Uc ∧
+          (∀ x, x ∈ V →
+            BHW.os45CommonChartCLE (d := d) (n := n) ρ
+              (fun k => wickRotatePoint (x k)) ∈ Uc) ∧
+          (∀ x, x ∈ V →
+            BHW.os45CommonChartCLE (d := d) (n := n) ρ
+              (BHW.realEmbed x) ∈ Uc) ∧
+          (∀ x, x ∈ V →
+            Hc (BHW.os45CommonChartCLE (d := d) (n := n) ρ
+                (fun k => wickRotatePoint (x k))) =
+              bvt_F OS lgc n
+                (fun k => wickRotatePoint
+                  (x (Equiv.swap i ⟨i.val + 1, hi⟩ k))) -
+              bvt_F OS lgc n (fun k => wickRotatePoint (x k))) ∧
+          (∀ x, x ∈ V →
+            Hc (BHW.os45CommonChartCLE (d := d) (n := n) ρ
+                (BHW.realEmbed x)) =
+              BHW.extendF (bvt_F OS lgc n)
+                (BHW.realEmbed
+                  (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k))) -
+              BHW.extendF (bvt_F OS lgc n) (BHW.realEmbed x))) :
+    SelectedAdjacentDistributionalJostAnchorData OS lgc n :=
+  BHW.bvt_F_selectedAdjacentDistributionalJostAnchorData_of_os45Envelopes
+    (d := d) OS lgc n
+    (by
+      intro i hi
+      rcases hOS45 i hi with
+        ⟨V, ρ, Uc, Hc, hV_open, hV_conn, hV_ne, hV_jost,
+          hV_ET, hV_swapET, hUc_open, hUc_conn, hHc_holo,
+          hwick_mem, hreal_mem, hwick_trace, hreal_trace⟩
+      refine
+        ⟨V, hV_open, hV_conn, hV_ne, hV_jost, hV_ET, hV_swapET, ?_⟩
+      exact ⟨
+        BHW.adjacentOSEOWDifferenceEnvelope_of_commonChartEnvelope
+          (d := d) OS lgc n i hi V ρ Uc Hc
+          hUc_open hUc_conn hHc_holo
+          hwick_mem hreal_mem hwick_trace hreal_trace⟩)
+
 /-- The compact Figure-2-4 Wick-pairing family supplies the source
 distributional adjacent-tube anchor consumed by the source-side BHW theorem,
 under the OS-selected-witness naming convention. -/
