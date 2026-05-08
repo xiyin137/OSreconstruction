@@ -457,6 +457,94 @@ noncomputable def pairDataOfOrientedContinuationInputs
 
 end OS45SourcePatchBHWJostHullData
 
+/-- Canonical Figure-2-4 BHW/Jost pair carrier from strict
+oriented-continuation inputs on one exact source patch. -/
+noncomputable def sourcePatchBHWJostPairData_of_orientedContinuationInputs_on_figure24SourcePatch
+    (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (n : ℕ) (i : Fin n) (hi : i.val + 1 < n)
+    (Iord :
+      let H :=
+        BHW.os45_sourcePatch_bhwJostHullData_on_figure24SourcePatch
+          (d := d) hd OS lgc n i hi
+      BHW.OS45SourcePatchBHWJostOrientedContinuationInputs
+        (d := d) hd n H.τ (BHW.ExtendedTube d n) H.U
+        (BHW.extendF (bvt_F OS lgc n)))
+    (Iadj :
+      let H :=
+        BHW.os45_sourcePatch_bhwJostHullData_on_figure24SourcePatch
+          (d := d) hd OS lgc n i hi
+      BHW.OS45SourcePatchBHWJostOrientedContinuationInputs
+        (d := d) hd n H.τ
+        {z | BHW.permAct (d := d) H.τ z ∈ BHW.ExtendedTube d n}
+        H.U
+        (fun z =>
+          BHW.extendF (bvt_F OS lgc n)
+            (BHW.permAct (d := d) H.τ z)))
+    (adjacent_wick_trace :
+      let H :=
+        BHW.os45_sourcePatch_bhwJostHullData_on_figure24SourcePatch
+          (d := d) hd OS lgc n i hi
+      ∀ x, x ∈ BHW.os45Figure24SourcePatch (d := d) (n := n) i hi →
+        H.adjacentBranchOfOrientedContinuationInputs Iadj
+          (fun k => wickRotatePoint (x k)) =
+          bvt_F OS lgc n (fun k => wickRotatePoint (x (H.τ k)))) :
+    BHW.OS45SourcePatchBHWJostPairData
+      (d := d) hd OS lgc n i hi
+      (BHW.os45Figure24SourcePatch (d := d) (n := n) i hi) :=
+  let H :=
+    BHW.os45_sourcePatch_bhwJostHullData_on_figure24SourcePatch
+      (d := d) hd OS lgc n i hi
+  H.pairDataOfOrientedContinuationInputs
+    (BHW.os45Figure24SourcePatch_ordered (d := d) hd n i hi)
+    Iord Iadj adjacent_wick_trace
+
+/-- Full adjacent-family version of
+`sourcePatchBHWJostPairData_of_orientedContinuationInputs_on_figure24SourcePatch`. -/
+noncomputable def sourcePatchBHWJostPairData_family_of_orientedContinuationInputs_on_figure24SourcePatch
+    (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (n : ℕ)
+    (Iord :
+      ∀ (i : Fin n) (hi : i.val + 1 < n),
+        let H :=
+          BHW.os45_sourcePatch_bhwJostHullData_on_figure24SourcePatch
+            (d := d) hd OS lgc n i hi
+        BHW.OS45SourcePatchBHWJostOrientedContinuationInputs
+          (d := d) hd n H.τ (BHW.ExtendedTube d n) H.U
+          (BHW.extendF (bvt_F OS lgc n)))
+    (Iadj :
+      ∀ (i : Fin n) (hi : i.val + 1 < n),
+        let H :=
+          BHW.os45_sourcePatch_bhwJostHullData_on_figure24SourcePatch
+            (d := d) hd OS lgc n i hi
+        BHW.OS45SourcePatchBHWJostOrientedContinuationInputs
+          (d := d) hd n H.τ
+          {z | BHW.permAct (d := d) H.τ z ∈ BHW.ExtendedTube d n}
+          H.U
+          (fun z =>
+            BHW.extendF (bvt_F OS lgc n)
+              (BHW.permAct (d := d) H.τ z)))
+    (adjacent_wick_trace :
+      ∀ (i : Fin n) (hi : i.val + 1 < n),
+        let H :=
+          BHW.os45_sourcePatch_bhwJostHullData_on_figure24SourcePatch
+            (d := d) hd OS lgc n i hi
+        ∀ x, x ∈ BHW.os45Figure24SourcePatch (d := d) (n := n) i hi →
+          H.adjacentBranchOfOrientedContinuationInputs (Iadj i hi)
+            (fun k => wickRotatePoint (x k)) =
+            bvt_F OS lgc n (fun k => wickRotatePoint (x (H.τ k)))) :
+    ∀ (i : Fin n) (hi : i.val + 1 < n),
+      BHW.OS45SourcePatchBHWJostPairData
+        (d := d) hd OS lgc n i hi
+        (BHW.os45Figure24SourcePatch (d := d) (n := n) i hi) :=
+  fun i hi =>
+    BHW.sourcePatchBHWJostPairData_of_orientedContinuationInputs_on_figure24SourcePatch
+      (d := d) hd OS lgc n i hi (Iord i hi) (Iadj i hi)
+      (adjacent_wick_trace i hi)
+
 /-- A full adjacent family of strict oriented-continuation input packets
 supplies the direct source distributional adjacent-tube anchor, once the
 remaining adjacent Wick-trace datum has been supplied on each selected source
@@ -610,19 +698,10 @@ noncomputable def sourceDistributionalAdjacentTubeAnchor_of_orientedContinuation
             bvt_F OS lgc n (fun k => wickRotatePoint (x (H.τ k)))) :
     BHW.SourceDistributionalAdjacentTubeAnchor
       (d := d) n (bvt_F OS lgc n) :=
-  BHW.sourceDistributionalAdjacentTubeAnchor_of_orientedContinuationInputs
+  BHW.sourceDistributionalAdjacentTubeAnchor_of_pairData_on_figure24SourcePatch
     (d := d) hd OS lgc n
-    (fun i hi => BHW.os45Figure24SourcePatch (d := d) (n := n) i hi)
-    (fun i hi =>
-      BHW.os45_sourcePatch_bhwJostHullData_on_figure24SourcePatch
-        (d := d) hd OS lgc n i hi)
-    (by
-      intro i hi x hx
-      exact hx)
-    (by
-      intro i hi x hx
-      exact BHW.os45Figure24SourcePatch_ordered (d := d) hd n i hi x hx)
-    Iord Iadj adjacent_wick_trace
+    (BHW.sourcePatchBHWJostPairData_family_of_orientedContinuationInputs_on_figure24SourcePatch
+      (d := d) hd OS lgc n Iord Iadj adjacent_wick_trace)
 
 /-- Canonical Figure-2-4 selected-Jost packet from strict
 oriented-continuation inputs on the exact source patches. -/
@@ -661,18 +740,9 @@ noncomputable def selectedAdjacentDistributionalJostAnchorData_of_orientedContin
             (fun k => wickRotatePoint (x k)) =
             bvt_F OS lgc n (fun k => wickRotatePoint (x (H.τ k)))) :
     SelectedAdjacentDistributionalJostAnchorData OS lgc n :=
-  BHW.selectedAdjacentDistributionalJostAnchorData_of_orientedContinuationInputs
+  BHW.bvt_F_selectedAdjacentDistributionalJostAnchorData_of_pairData_on_figure24SourcePatch
     (d := d) hd OS lgc n
-    (fun i hi => BHW.os45Figure24SourcePatch (d := d) (n := n) i hi)
-    (fun i hi =>
-      BHW.os45_sourcePatch_bhwJostHullData_on_figure24SourcePatch
-        (d := d) hd OS lgc n i hi)
-    (by
-      intro i hi x hx
-      exact hx)
-    (by
-      intro i hi x hx
-      exact BHW.os45Figure24SourcePatch_ordered (d := d) hd n i hi x hx)
-    Iord Iadj adjacent_wick_trace
+    (BHW.sourcePatchBHWJostPairData_family_of_orientedContinuationInputs_on_figure24SourcePatch
+      (d := d) hd OS lgc n Iord Iadj adjacent_wick_trace)
 
 end BHW

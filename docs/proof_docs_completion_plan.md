@@ -141,7 +141,9 @@ local Slot 1:
    `BHW.bvt_F_distributionalJostAnchor_of_pairData_on_figure24SourcePatch`
    reduce the remaining canonical route input to a full adjacent family of
    pair carriers built directly on `BHW.os45Figure24SourcePatch`; the oriented
-   continuation consumer is now also checked through
+   continuation pair-carrier and consumer layer is now also checked through
+   `BHW.sourcePatchBHWJostPairData_of_orientedContinuationInputs_on_figure24SourcePatch`,
+   `BHW.sourcePatchBHWJostPairData_family_of_orientedContinuationInputs_on_figure24SourcePatch`,
    `BHW.sourceDistributionalAdjacentTubeAnchor_of_orientedContinuationInputs`
    and its exact-source-patch specialization
    `BHW.sourceDistributionalAdjacentTubeAnchor_of_orientedContinuationInputs_on_figure24SourcePatch`,
