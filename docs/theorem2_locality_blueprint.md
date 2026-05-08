@@ -25416,20 +25416,19 @@ Proof decomposition of this theorem, without hiding the analytic work:
             BHW.sourceComplexMinkowskiInner d
               (rightResidual i) (rightResidual j) = 0
 
-      theorem BHW.hw_lowRank_selectedSpanAlignment_of_selectedSpanFrame
-          [NeZero d]
-          (hd : 2 <= d)
+      noncomputable def BHW.hw_lowRank_selectedSpanAlignment_of_selectedSpanFrame
+          (d n r : Nat)
           {z w : Fin n -> Fin (d + 1) -> ℂ}
           {I : Fin r -> Fin n}
-          (S : BHW.HWLowRankSelectedSpanFrame d n r z w I) :
-          Nonempty
-            (BHW.HWLowRankSelectedSpanAlignment d n r z w I S)
+          (S : BHW.HWLowRankSelectedSpanFrame d n r z w I)
+          (hproper : r < d + 1) :
+          BHW.HWLowRankSelectedSpanAlignment d n r z w I S
 
       /-- Once the selected spans are aligned, the projected residual vectors
       on both sides lie in the orthogonal complement of the common selected
       span and span totally isotropic subspaces. -/
       theorem BHW.hw_lowRank_residualSubspaces_after_selectedAlignment
-          [NeZero d]
+          {d n r : Nat}
           {z w : Fin n -> Fin (d + 1) -> ℂ}
           {I : Fin r -> Fin n}
           {S : BHW.HWLowRankSelectedSpanFrame d n r z w I}
@@ -31673,7 +31672,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
       alignment statement, not a notation choice, and it has two separate
       stages.
 
-      First prove
+      This is now checked as
       `BHW.hw_lowRank_selectedSpanAlignment_of_selectedSpanFrame`.  Let
       `Mz := Submodule.span ℂ (Set.range fun a : Fin r => z (I a))` and
       `Mw := Submodule.span ℂ (Set.range fun a : Fin r => w (I a))`.  The
@@ -31681,9 +31680,9 @@ Proof decomposition of this theorem, without hiding the analytic work:
       vectors on both sides and nondegeneracy of the restricted form on both
       selected spans.  The field `S.selected_gram_eq` defines the linear
       isometry `Tsel : Mz ≃ₗ[ℂ] Mw` by
-      `Tsel ⟨z (I a), _⟩ = ⟨w (I a), _⟩`; well-definedness and preservation of
-      the form are proved by expanding in the selected basis and rewriting by
-      `S.selected_gram_eq`.  Witt extension gives
+      `Tsel ⟨z (I a), _⟩ = ⟨w (I a), _⟩`; in production this is routed through
+      the checked selected-tuple rank theorem and high-rank span-isometry
+      packet.  The determinant-one selected-span orbit theorem gives
       `Λsel : ComplexLorentzGroup d` with
       `Λsel • z (I a) = w (I a)`.  Now set
       `M := Mw`,
@@ -31701,10 +31700,10 @@ Proof decomposition of this theorem, without hiding the analytic work:
       Lean-shaped selected-alignment skeleton:
 
       ```lean
-      rcases BHW.hw_lowRank_selectedSpanAlignment_of_selectedSpanFrame
-          (d := d) hd (n := n) (r := r) (z := z) (w := w)
-          (I := I) S with
-        ⟨A⟩
+      let A :=
+        BHW.hw_lowRank_selectedSpanAlignment_of_selectedSpanFrame
+          (d := d) (n := n) (r := r) (z := z) (w := w)
+          (I := I) S hproper
       have hleft_residual_mem :
           ∀ i,
             A.leftResidual i ∈
@@ -32190,7 +32189,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
       | Principal minor extraction for low-rank selected block | Principal-minor extraction checked locally; selected-frame construction checked in `BHWPermutation/SourceHWLowRankAlignment.lean`. | `BHW.exists_sourcePrincipalMinor_ne_zero_of_sourceSymmetricRank` is checked in `BHWPermutation/SourceComplexSchurPatch.lean`; `BHW.hw_lowRank_selectedSpanFrame_of_sameSourceGram` uses the inverse principal Gram block coefficient formula and the Schur-complement exact-rank theorem displayed above. |
       | Low-rank selected-span frame and residual Schur-zero theorem | Implemented and exact-file checked in `BHWPermutation/SourceHWLowRankAlignment.lean` as `BHW.HWLowRankSelectedSpanFrameData` and `BHW.hw_lowRank_selectedSpanFrame_of_sameSourceGram`. | The checked producer chooses the scalar rank and an injective principal index set by `Classical.choose`, proves selected-residual head orthogonality at both endpoints by rewriting the same coefficient formula through `hgram`, and obtains residual-pairing equality from the exact-rank Schur-zero theorem on both endpoints.  Thus the selected-frame step now contains no block-matrix prose and no analytic input. |
       | Selected-span alignment and common residual subspaces | Proof transcript pinned; production Lean not started. | First align the selected `z` and `w` spans by determinant-repaired Witt extension; only then put the two residual families in the common orthogonal complement.  Reversing this order is false.  The residual subspaces and their isotropy/orthogonality fields are extracted from the aligned decomposition. |
-      | Low-rank selected-span alignment and residual subspaces | Selected-frame producer, alignment data carrier, and residual-subspace extraction checked in `SourceHWLowRankAlignment.lean`; alignment producer not started. | `HWLowRankSelectedSpanFrameData` and `hw_lowRank_selectedSpanFrame_of_sameSourceGram` build the selected block, shared coefficients, and residual pairings from same source Gram data.  `HWLowRankSelectedSpanAlignment` records the selected-span Lorentz alignment and the two residual families in the common orthogonal complement.  `hw_lowRank_residualSubspaces_after_selectedAlignment` turns those fields into totally isotropic residual subspaces orthogonal to the common selected span. |
+      | Low-rank selected-span alignment and residual subspaces | Selected-frame producer, determinant-one selected-span orbit, alignment producer, and residual-subspace extraction checked in `SourceHWLowRankAlignment.lean`. | `HWLowRankSelectedSpanFrameData` and `hw_lowRank_selectedSpanFrame_of_sameSourceGram` build the selected block, shared coefficients, and residual pairings from same source Gram data.  `sourceCoefficientEval_range_eq_span`, `sourceGramMatrixRank_selectedTuple_eq_of_principal_minor_ne`, and `hw_lowRank_selectedSpanFrame_detOneOrbit` feed the selected tuple into the checked high-rank/Witt determinant-one theorem.  `hw_lowRank_selectedSpanAlignment_of_selectedSpanFrame` records the selected-span Lorentz alignment, common nondegenerate selected span, and two residual families in the common orthogonal complement.  `hw_lowRank_residualSubspaces_after_selectedAlignment` turns those fields into totally isotropic residual subspaces orthogonal to the common selected span. |
       | Common isotropic residual frame plus dual frame | Proof transcript pinned; production Lean not started. | Build a maximal isotropic frame in the common orthogonal complement, inject the left residual span into it by the Witt-index/dimension theorem, extract coefficient functions with `exists_coefficients_of_mem_span_finite_frame`, then construct the dual frame recursively inside the nondegenerate complement and store `qDual_pair_zero`, `q_dual`, `qDual_orth`. |
       | Isotropic contraction family | Proof transcript pinned; production Lean not started. | Define the partial isometry on `span ξ ⊔ span q ⊔ span qDual` fixing `ξ`, scaling `q` by `exp(-t)`, and scaling `qDual` by `exp(t)`; prove form preservation from `q_pair_zero`, `qDual_pair_zero`, `q_dual`, and orthogonality to `ξ`; extend by `complexMinkowski_wittExtension_subspaceIsometry`. |
       | Extended-tube stability for all residual coefficients | Checked in `SourceHWTubeCoefficient.lean`; corrected target for arbitrary endpoints is `ExtendedTube`, not `ForwardTube`. | Hall-Wightman's second remark gives `hw_secondRemark_forwardTube_singleNullResidual_normalForm`; the third remark is the checked determinant-one complex Lorentz two-plane rotation fixing the orthogonal complement and scaling `u + i v` by `exp t`; transport gives `hw_singleIsotropicResidual_allCoefficients_mem_extendedTube`; finite induction and the empty-source wrapper give the public `hw_isotropicFrame_allCoefficients_mem_extendedTube`.  The dual frame is used only for the null-boost contraction and the two-curve value equality/limit, not for coefficient-freedom membership. |

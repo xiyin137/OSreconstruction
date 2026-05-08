@@ -1,4 +1,5 @@
 import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SourceHWSelectedProjection
+import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SourceHWTubeCoefficient
 import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SourceHWSingularLimit
 
 /-!
@@ -16,6 +17,54 @@ open Complex Topology Matrix LorentzLieGroup Classical Filter NormedSpace
 open scoped Matrix.Norms.Operator
 
 namespace BHW
+
+/-- The range of the source coefficient-evaluation map is exactly the span of
+the source tuple. -/
+theorem sourceCoefficientEval_range_eq_span
+    (d n : ℕ)
+    (z : Fin n → Fin (d + 1) → ℂ) :
+    LinearMap.range (sourceCoefficientEval d n z) =
+      Submodule.span ℂ (Set.range z) := by
+  apply le_antisymm
+  · rintro v ⟨a, rfl⟩
+    simp only [sourceCoefficientEval, LinearMap.coe_mk, AddHom.coe_mk]
+    exact Submodule.sum_mem _ fun i _ =>
+      Submodule.smul_mem _ (a i) (Submodule.subset_span ⟨i, rfl⟩)
+  · apply Submodule.span_le.mpr
+    rintro v ⟨i, rfl⟩
+    exact ⟨Pi.single i 1, sourceCoefficientEval_single d n z i⟩
+
+/-- A nonzero selected principal Gram minor says that the selected tuple has
+full scalar Gram rank equal to the number of selected vectors. -/
+theorem sourceGramMatrixRank_selectedTuple_eq_of_principal_minor_ne
+    (d n r : ℕ)
+    {z : Fin n → Fin (d + 1) → ℂ}
+    {I : Fin r → Fin n}
+    (hminor :
+      sourceMatrixMinor n r I I (sourceMinkowskiGram d n z) ≠ 0) :
+    sourceGramMatrixRank r
+      (sourceMinkowskiGram d r fun a : Fin r => z (I a)) = r := by
+  let A : Matrix (Fin r) (Fin r) ℂ :=
+    fun a b => sourceMinkowskiGram d n z (I a) (I b)
+  have hdetA : A.det ≠ 0 := by
+    simpa [A, sourceMatrixMinor] using hminor
+  have hli : LinearIndependent ℂ fun a : Fin r => A.row a :=
+    Matrix.linearIndependent_rows_of_det_ne_zero hdetA
+  have hspan :
+      Module.finrank ℂ (Submodule.span ℂ (Set.range fun a : Fin r => A.row a)) =
+        r := by
+    simpa using finrank_span_eq_card (R := ℂ)
+      (b := fun a : Fin r => A.row a) hli
+  have hrank_rows :
+      A.rank =
+        Module.finrank ℂ
+          (Submodule.span ℂ (Set.range fun a : Fin r => A.row a)) := by
+    rw [Matrix.rank_eq_finrank_span_row]
+  calc
+    sourceGramMatrixRank r
+        (sourceMinkowskiGram d r fun a : Fin r => z (I a)) = A.rank := by
+          rfl
+    _ = r := hrank_rows.trans hspan
 
 /-- Linear algebra inside the low-rank branch: after choosing a nonzero
 principal scalar block, the equal Gram data determine the same selected
@@ -199,6 +248,226 @@ def hw_lowRank_selectedSpanFrame_of_sameSourceGram
             exact (hleft_pair_zero i j).trans (hright_pair_zero i j).symm
           left_residual_pair_zero := hleft_pair_zero
           right_residual_pair_zero := hright_pair_zero } }
+
+/-- The selected nondegenerate spans in a proper low-rank branch can be aligned
+by a determinant-one complex Lorentz transformation. -/
+theorem hw_lowRank_selectedSpanFrame_detOneOrbit
+    (d n r : ℕ)
+    {z w : Fin n → Fin (d + 1) → ℂ}
+    {I : Fin r → Fin n}
+    (S : HWLowRankSelectedSpanFrame d n r z w I)
+    (hproper : r < d + 1) :
+    ∃ Λ : ComplexLorentzGroup d,
+      ∀ a : Fin r, complexLorentzVectorAction Λ (z (I a)) = w (I a) := by
+  let zI : Fin r → Fin (d + 1) → ℂ := fun a => z (I a)
+  let wI : Fin r → Fin (d + 1) → ℂ := fun a => w (I a)
+  have hgramI : sourceMinkowskiGram d r zI = sourceMinkowskiGram d r wI := by
+    ext a b
+    exact S.selected_gram_eq a b
+  have hrankI :
+      sourceGramMatrixRank r (sourceMinkowskiGram d r zI) = r := by
+    simpa [zI] using
+      sourceGramMatrixRank_selectedTuple_eq_of_principal_minor_ne
+        d n r (z := z) (I := I) S.principal_minor_ne
+  have hzOrbit : HWSourceGramOrbitRankAt d r zI := by
+    simp [HWSourceGramOrbitRankAt, HWSourceGramOrbitRank, hrankI]
+  let H : HWHighRankSpanIsometryData d r zI wI :=
+    hw_highRank_spanIsometryData_of_sameSourceGram d r hzOrbit hgramI
+  have hSO : HWSameSourceGramSOOrientationCompatible d r zI wI := by
+    left
+    simpa [HWSameSourceGramSOOrientationCompatible, hrankI] using hproper
+  rcases complexMinkowski_wittExtension_detOne_of_sourceSpan d r H hSO with
+  ⟨Λ, hΛ⟩
+  exact ⟨Λ, hΛ⟩
+
+/-- Align the selected nondegenerate spans and place both residual families in
+the orthogonal complement of the common selected span. -/
+noncomputable def hw_lowRank_selectedSpanAlignment_of_selectedSpanFrame
+    (d n r : ℕ)
+    {z w : Fin n → Fin (d + 1) → ℂ}
+    {I : Fin r → Fin n}
+    (S : HWLowRankSelectedSpanFrame d n r z w I)
+    (hproper : r < d + 1) :
+    HWLowRankSelectedSpanAlignment d n r z w I S := by
+  classical
+  let zI : Fin r → Fin (d + 1) → ℂ := fun a => z (I a)
+  let wI : Fin r → Fin (d + 1) → ℂ := fun a => w (I a)
+  let orbit := hw_lowRank_selectedSpanFrame_detOneOrbit d n r S hproper
+  let Λ : ComplexLorentzGroup d := Classical.choose orbit
+  have hΛ :
+      ∀ a : Fin r, complexLorentzVectorAction Λ (z (I a)) = w (I a) :=
+    Classical.choose_spec orbit
+  let M : Submodule ℂ (Fin (d + 1) → ℂ) :=
+    Submodule.span ℂ (Set.range wI)
+  let ξ : Fin n → Fin (d + 1) → ℂ :=
+    fun i => ∑ b : Fin r, S.coeff i b • w (I b)
+  let leftResidual : Fin n → Fin (d + 1) → ℂ :=
+    fun i => complexLorentzVectorAction Λ (z i) - ξ i
+  let rightResidual : Fin n → Fin (d + 1) → ℂ :=
+    fun i => w i - ξ i
+  have hgramI : sourceMinkowskiGram d r zI = sourceMinkowskiGram d r wI := by
+    ext a b
+    exact S.selected_gram_eq a b
+  have hrankI :
+      sourceGramMatrixRank r (sourceMinkowskiGram d r zI) = r := by
+    simpa [zI] using
+      sourceGramMatrixRank_selectedTuple_eq_of_principal_minor_ne
+        d n r (z := z) (I := I) S.principal_minor_ne
+  have hwOrbit : HWSourceGramOrbitRankAt d r wI := by
+    have hzOrbit : HWSourceGramOrbitRankAt d r zI := by
+      simp [HWSourceGramOrbitRankAt, HWSourceGramOrbitRank, hrankI]
+    simpa [HWSourceGramOrbitRankAt, HWSourceGramOrbitRank, hgramI] using
+      (hwSourceGramOrbitRankAt_of_sourceGram_eq
+        (d := d) (n := r) (z := zI) (w := wI) hgramI).1 hzOrbit
+  have hM_nondeg : ComplexMinkowskiNondegenerateSubspace d M := by
+    have hRange :
+        LinearMap.range (sourceCoefficientEval d r wI) =
+          Submodule.span ℂ (Set.range wI) :=
+      sourceCoefficientEval_range_eq_span d r wI
+    simpa [M, hRange] using
+      hw_highRank_eval_range_nondegenerate (d := d) (n := r)
+        (z := wI) hwOrbit
+  have hleft_action_residual :
+      ∀ i,
+        leftResidual i =
+          complexLorentzVectorAction Λ
+            (z i - ∑ b : Fin r, S.coeff i b • z (I b)) := by
+    intro i
+    have hsub :
+        complexLorentzVectorAction Λ
+            (z i - ∑ b : Fin r, S.coeff i b • z (I b)) =
+          complexLorentzVectorAction Λ (z i) -
+            complexLorentzVectorAction Λ
+              (∑ b : Fin r, S.coeff i b • z (I b)) := by
+      ext μ
+      simp [complexLorentzVectorAction, mul_sub, Finset.sum_sub_distrib]
+    have hsum :
+        complexLorentzVectorAction Λ
+            (∑ b : Fin r, S.coeff i b • z (I b)) =
+          ∑ b : Fin r, S.coeff i b • w (I b) := by
+      calc
+        complexLorentzVectorAction Λ
+            (∑ b : Fin r, S.coeff i b • z (I b)) =
+            ∑ b : Fin r,
+              complexLorentzVectorAction Λ (S.coeff i b • z (I b)) := by
+              rw [show
+                (∑ b : Fin r,
+                  complexLorentzVectorAction Λ (S.coeff i b • z (I b))) =
+                    (fun μ => ∑ b : Fin r,
+                      complexLorentzVectorAction Λ
+                        (S.coeff i b • z (I b)) μ) by
+                  exact Finset.sum_fn Finset.univ
+                    (fun b : Fin r =>
+                      complexLorentzVectorAction Λ (S.coeff i b • z (I b)))]
+              rw [Finset.sum_fn]
+              exact complexLorentzVectorAction_sum Λ
+                (fun b : Fin r => S.coeff i b • z (I b))
+        _ = ∑ b : Fin r,
+              S.coeff i b • complexLorentzVectorAction Λ (z (I b)) := by
+              apply Finset.sum_congr rfl
+              intro b _
+              simpa [Pi.smul_apply] using
+                complexLorentzVectorAction_smul Λ (S.coeff i b) (z (I b))
+        _ = ∑ b : Fin r, S.coeff i b • w (I b) := by
+              apply Finset.sum_congr rfl
+              intro b _
+              rw [hΛ b]
+    rw [hsub, hsum]
+  have hleft_gen :
+      ∀ i a,
+        sourceComplexMinkowskiInner d (leftResidual i) (w (I a)) = 0 := by
+    intro i a
+    calc
+      sourceComplexMinkowskiInner d (leftResidual i) (w (I a)) =
+          sourceComplexMinkowskiInner d
+            (complexLorentzVectorAction Λ
+              (z i - ∑ b : Fin r, S.coeff i b • z (I b)))
+            (complexLorentzVectorAction Λ (z (I a))) := by
+              rw [hleft_action_residual i, hΛ a]
+      _ =
+          sourceComplexMinkowskiInner d
+            (z i - ∑ b : Fin r, S.coeff i b • z (I b))
+            (z (I a)) :=
+              sourceComplexMinkowskiInner_complexLorentzVectorAction Λ
+                (z i - ∑ b : Fin r, S.coeff i b • z (I b)) (z (I a))
+      _ = 0 := S.left_residual_orth i a
+  have hright_gen :
+      ∀ i a,
+        sourceComplexMinkowskiInner d (rightResidual i) (w (I a)) = 0 := by
+    intro i a
+    simpa [rightResidual, ξ] using S.right_residual_orth i a
+  have hleft_pair :
+      ∀ i j,
+        sourceComplexMinkowskiInner d (leftResidual i) (leftResidual j) = 0 := by
+    intro i j
+    calc
+      sourceComplexMinkowskiInner d (leftResidual i) (leftResidual j) =
+          sourceComplexMinkowskiInner d
+            (complexLorentzVectorAction Λ
+              (z i - ∑ b : Fin r, S.coeff i b • z (I b)))
+            (complexLorentzVectorAction Λ
+              (z j - ∑ b : Fin r, S.coeff j b • z (I b))) := by
+              rw [hleft_action_residual i, hleft_action_residual j]
+      _ =
+          sourceComplexMinkowskiInner d
+            (z i - ∑ b : Fin r, S.coeff i b • z (I b))
+            (z j - ∑ b : Fin r, S.coeff j b • z (I b)) :=
+              sourceComplexMinkowskiInner_complexLorentzVectorAction Λ
+                (z i - ∑ b : Fin r, S.coeff i b • z (I b))
+                (z j - ∑ b : Fin r, S.coeff j b • z (I b))
+      _ = 0 := S.left_residual_pair_zero i j
+  have hright_pair :
+      ∀ i j,
+        sourceComplexMinkowskiInner d (rightResidual i) (rightResidual j) = 0 := by
+    intro i j
+    simpa [rightResidual, ξ] using S.right_residual_pair_zero i j
+  refine
+    { M := M
+      Λsel := Λ
+      ξ := ξ
+      leftResidual := leftResidual
+      rightResidual := rightResidual
+      M_eq := rfl
+      M_nondeg := hM_nondeg
+      selected_mem := ?_
+      Λsel_selected := hΛ
+      ξ_eq := by intro i; rfl
+      ξ_mem := ?_
+      leftResidual_eq := by intro i; rfl
+      rightResidual_eq := by intro i; rfl
+      left_decomp := ?_
+      right_decomp := ?_
+      left_residual_orth_M := ?_
+      right_residual_orth_M := ?_
+      left_residual_pair_zero := hleft_pair
+      right_residual_pair_zero := hright_pair }
+  · intro a
+    exact Submodule.subset_span ⟨a, rfl⟩
+  · intro i
+    exact Submodule.sum_mem _ fun b _ =>
+      Submodule.smul_mem _ (S.coeff i b) (Submodule.subset_span ⟨b, rfl⟩)
+  · intro i
+    simp [leftResidual]
+  · intro i
+    simp [rightResidual, ξ]
+  · intro i m
+    refine Submodule.span_induction ?leftBase ?leftZero ?leftAdd ?leftSmul m.2
+    · rintro x ⟨a, rfl⟩
+      exact hleft_gen i a
+    · simp [sourceComplexMinkowskiInner]
+    · intro x y _ _ hx hy
+      rw [sourceComplexMinkowskiInner_add_right, hx, hy, add_zero]
+    · intro c x _ hx
+      rw [sourceComplexMinkowskiInner_smul_right, hx, mul_zero]
+  · intro i m
+    refine Submodule.span_induction ?rightBase ?rightZero ?rightAdd ?rightSmul m.2
+    · rintro x ⟨a, rfl⟩
+      exact hright_gen i a
+    · simp [sourceComplexMinkowskiInner]
+    · intro x y _ _ hx hy
+      rw [sourceComplexMinkowskiInner_add_right, hx, hy, add_zero]
+    · intro c x _ hx
+      rw [sourceComplexMinkowskiInner_smul_right, hx, mul_zero]
 
 /-- Once the selected spans are aligned, the left and right residual families
 span totally isotropic subspaces in the orthogonal complement of the common
