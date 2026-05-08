@@ -579,6 +579,67 @@ theorem complexMinkowski_totallyIsotropic_embedding_into_frame
           (Submodule.subset_span ⟨ι i, rfl⟩)
     rw [hQiso ⟨E x, hEx_mem⟩ ⟨E y, hEy_mem⟩, hR_iso x y]
 
+/-- Given an independent totally isotropic frame orthogonal to `M`, a
+totally isotropic residual subspace of no larger finrank produces the
+injective residual embedding and the associated pairing-preserving direct-sum
+equivalence. -/
+theorem directSum_identity_sum_isotropicFrameEmbedding
+    {d s : ℕ}
+    {M R : Submodule ℂ (Fin (d + 1) → ℂ)}
+    {q : Fin s → Fin (d + 1) → ℂ}
+    (hM : ComplexMinkowskiNondegenerateSubspace d M)
+    (hR_orth :
+      ∀ x : R, ∀ m : M,
+        sourceComplexMinkowskiInner d
+          (x : Fin (d + 1) → ℂ)
+          (m : Fin (d + 1) → ℂ) = 0)
+    (hq_independent : LinearIndependent ℂ q)
+    (hq_pair_zero :
+      ∀ c c', sourceComplexMinkowskiInner d (q c) (q c') = 0)
+    (hq_orth_M :
+      ∀ c (m : M),
+        sourceComplexMinkowskiInner d (q c)
+          (m : Fin (d + 1) → ℂ) = 0)
+    (hR_iso : ComplexMinkowskiTotallyIsotropicSubspace d R)
+    (hdim : Module.finrank ℂ R ≤ s) :
+    ∃ (E : R →ₗ[ℂ] (Fin (d + 1) → ℂ))
+      (hE_inj : Function.Injective E)
+      (hE_orth :
+        ∀ x : R, ∀ m : M,
+          sourceComplexMinkowskiInner d (E x)
+            (m : Fin (d + 1) → ℂ) = 0),
+      (∀ x : R, E x ∈ Submodule.span ℂ (Set.range q)) ∧
+      (∀ x y : R,
+        sourceComplexMinkowskiInner d (E x) (E y) =
+          sourceComplexMinkowskiInner d
+            (x : Fin (d + 1) → ℂ)
+            (y : Fin (d + 1) → ℂ)) ∧
+      let T := directSum_identity_sum_isotropicEmbedding
+        (d := d) M R E hM hR_orth hE_inj hE_orth
+      ∀ x y : ↥(M ⊔ R),
+        sourceComplexMinkowskiInner d
+          ((T x : ↥(M ⊔ LinearMap.range E)) : Fin (d + 1) → ℂ)
+          ((T y : ↥(M ⊔ LinearMap.range E)) : Fin (d + 1) → ℂ) =
+        sourceComplexMinkowskiInner d
+          (x : Fin (d + 1) → ℂ)
+          (y : Fin (d + 1) → ℂ) := by
+  rcases complexMinkowski_totallyIsotropic_embedding_into_frame
+      (d := d) (s := s) (R := R) (q := q)
+      hq_independent hq_pair_zero hR_iso hdim with
+    ⟨E, hE_inj, hE_mem, hE_preserves⟩
+  have hE_orth :
+      ∀ x : R, ∀ m : M,
+        sourceComplexMinkowskiInner d (E x)
+          (m : Fin (d + 1) → ℂ) = 0 := by
+    intro x m
+    exact span_frame_orthogonal_to_subspace
+      (d := d) (s := s) (M := M) (q := q)
+      hq_orth_M (hE_mem x) m
+  refine ⟨E, hE_inj, hE_orth, hE_mem, hE_preserves, ?_⟩
+  exact directSum_identity_sum_isotropicEmbedding_preserves
+    (d := d) (M := M) (R := R) (E := E)
+    hM hR_orth hE_inj hE_orth hE_preserves
+
 /-- A finite family whose values lie in the span of a finite frame has
 coefficient functions on that frame. -/
 theorem coefficients_of_family_mem_span_finite_frame
