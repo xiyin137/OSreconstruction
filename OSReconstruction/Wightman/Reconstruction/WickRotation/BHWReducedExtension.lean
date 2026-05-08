@@ -471,7 +471,8 @@ noncomputable def descendAbsoluteForwardTubeInput
           calc
             (z₂ 0 μ).im
                 = ∑ ν, Λ.val μ ν * (safeSection d m η 0 ν).im := by
-                    simpa [z₂, complexLorentzAction] using
+                    simpa [z₂, Λc, complexLorentzAction, complexLorentzVectorAction,
+                      wightmanToLorentzGroup, lorentzGroupEquiv_symm_val] using
                       ofReal_im_action (wightmanToLorentzGroup Λ)
                         (fun ν => safeSection d m η 0 ν) μ
             _ = ∑ ν, Λ.val μ ν * safeBasepointVec d ν := by

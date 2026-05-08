@@ -87,7 +87,7 @@ theorem isOpen_euclideanOrderedPositiveTimeSector
     (isOpen_orderedPositiveTimeRegion (d := d) (n := n)).preimage
       (continuous_permNPoint (d := d) (n := n) τ)
 
-private def adjacentTimePerturb
+def adjacentTimePerturb
     (x : NPointDomain d n) (ε : ℝ) :
     NPointDomain d n :=
   fun k μ => if μ = 0 then x k 0 + ε * ((k : ℝ) + 1) else x k μ
@@ -171,6 +171,61 @@ theorem exists_ordered_small_time_perturb_in_adjacent_overlap
     dsimp [ε]
     linarith
   refine ⟨adjacentTimePerturb (d := d) (n := n) x ε, 1, hδ_sub hε_mem, ?_, ?_⟩
+  · exact adjacentTimePerturb_mem_identity_sector
+      (d := d) (n := n) x hx_time0 hε_pos
+  · simpa [EuclideanOrderedPositiveTimeSector, τ, Equiv.Perm.mul_apply] using
+      (adjacentTimePerturb_mem_identity_sector
+        (d := d) (n := n) x hx_time0 hε_pos)
+
+/-- Bounded version of `exists_ordered_small_time_perturb_in_adjacent_overlap`.
+The perturbation parameter can be chosen below any prescribed positive upper
+bound.  This is the identity-order seed used by the OS45 ordered-edge route. -/
+theorem exists_ordered_small_time_perturb_in_adjacent_overlap_of_lt
+    (_hd : 2 ≤ d)
+    (i : Fin n) (hi : i.val + 1 < n)
+    (U : Set (NPointDomain d n))
+    (hU_open : IsOpen U)
+    (x : NPointDomain d n)
+    (hxU : x ∈ U)
+    (hx_time0 : ∀ k : Fin n, x k 0 = 0)
+    {a : ℝ} (ha : 0 < a) :
+    ∃ ε : ℝ,
+      0 < ε ∧ ε < a ∧
+      adjacentTimePerturb (d := d) (n := n) x ε ∈ U ∧
+      adjacentTimePerturb (d := d) (n := n) x ε ∈
+        EuclideanOrderedPositiveTimeSector (d := d) (n := n)
+          (1 : Equiv.Perm (Fin n)) ∧
+      (fun k => adjacentTimePerturb (d := d) (n := n) x ε
+        (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+        EuclideanOrderedPositiveTimeSector (d := d) (n := n)
+          (Equiv.swap i ⟨i.val + 1, hi⟩) := by
+  let τ : Equiv.Perm (Fin n) := Equiv.swap i ⟨i.val + 1, hi⟩
+  have hxU0 : adjacentTimePerturb (d := d) (n := n) x 0 ∈ U := by
+    simpa using hxU
+  have hpre :
+      {ε : ℝ | adjacentTimePerturb (d := d) (n := n) x ε ∈ U} ∈ 𝓝 (0 : ℝ) := by
+    exact (continuous_adjacentTimePerturb (d := d) (n := n) x).continuousAt.preimage_mem_nhds
+      (hU_open.mem_nhds hxU0)
+  obtain ⟨δ, hδ_pos, hδ_sub⟩ := Metric.mem_nhds_iff.mp hpre
+  let ε : ℝ := min δ a / 2
+  have hmin_pos : 0 < min δ a := lt_min hδ_pos ha
+  have hε_pos : 0 < ε := by
+    dsimp [ε]
+    linarith
+  have hε_lt_delta : ε < δ := by
+    have hmin_le : min δ a ≤ δ := min_le_left δ a
+    dsimp [ε]
+    nlinarith
+  have hε_lt_a : ε < a := by
+    have hmin_le : min δ a ≤ a := min_le_right δ a
+    dsimp [ε]
+    nlinarith
+  have hε_mem : ε ∈ Metric.ball (0 : ℝ) δ := by
+    rw [Metric.mem_ball, Real.dist_eq]
+    have hε_nonneg : 0 ≤ ε := le_of_lt hε_pos
+    rw [show |ε - 0| = ε by simpa using abs_of_nonneg hε_nonneg]
+    exact hε_lt_delta
+  refine ⟨ε, hε_pos, hε_lt_a, hδ_sub hε_mem, ?_, ?_⟩
   · exact adjacentTimePerturb_mem_identity_sector
       (d := d) (n := n) x hx_time0 hε_pos
   · simpa [EuclideanOrderedPositiveTimeSector, τ, Equiv.Perm.mul_apply] using
@@ -266,6 +321,72 @@ theorem choose_os45_real_open_edge_for_adjacent_swap
     exact (hr_sub hy).2.1
   · intro y hy
     exact (hr_sub hy).2.2
+
+/-- Identity-order OS45 selector for the ordered-edge route.  Starting from
+the equal-time adjacent Jost witness, choose a small positive ordered
+perturbation and then a connected real-open ball contained in the raw adjacent
+overlap and in the two identity ordered sectors. -/
+theorem choose_os45_identity_real_open_edge_for_adjacent_swap
+    (hd : 2 ≤ d)
+    (i : Fin n) (hi : i.val + 1 < n) :
+    ∃ (V : Set (NPointDomain d n)) (xseed : NPointDomain d n),
+      IsOpen V ∧ IsConnected V ∧ V.Nonempty ∧ xseed ∈ V ∧
+      (∀ x ∈ V, x ∈ JostSet d n) ∧
+      (∀ x ∈ V, realEmbed x ∈ ExtendedTube d n) ∧
+      (∀ x ∈ V,
+        realEmbed (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+          ExtendedTube d n) ∧
+      (∀ x ∈ V,
+        x ∈ EuclideanOrderedPositiveTimeSector (d := d) (n := n)
+          (1 : Equiv.Perm (Fin n))) ∧
+      (∀ x ∈ V,
+        (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+          EuclideanOrderedPositiveTimeSector (d := d) (n := n)
+            (Equiv.swap i ⟨i.val + 1, hi⟩)) := by
+  let τ : Equiv.Perm (Fin n) := Equiv.swap i ⟨i.val + 1, hi⟩
+  rcases adjacent_overlap_real_jost_witness_exists (d := d) (n := n) hd i hi with
+    ⟨x, hxJ, _hsp, hx_time0, hxET, hxSwapET⟩
+  have hxRaw : x ∈ adjacentOS45RawOverlap d n i hi := by
+    exact ⟨hxJ, hxET, hxSwapET⟩
+  rcases exists_ordered_small_time_perturb_in_adjacent_overlap_of_lt
+      (d := d) (n := n) hd i hi
+      (adjacentOS45RawOverlap d n i hi)
+      (isOpen_adjacentOS45RawOverlap (d := d) (n := n) i hi)
+      x hxRaw hx_time0 (by norm_num : (0 : ℝ) < 1) with
+    ⟨ε, _hε_pos, _hε_lt, hεRaw, hεOrd, hεSwapOrd⟩
+  let xseed : NPointDomain d n := adjacentTimePerturb (d := d) (n := n) x ε
+  let S : Set (NPointDomain d n) :=
+    adjacentOS45RawOverlap d n i hi ∩
+      (EuclideanOrderedPositiveTimeSector (d := d) (n := n)
+          (1 : Equiv.Perm (Fin n)) ∩
+        {x : NPointDomain d n |
+          (fun k => x (τ k)) ∈
+            EuclideanOrderedPositiveTimeSector (d := d) (n := n) τ})
+  have hS_open : IsOpen S := by
+    dsimp [S]
+    exact (isOpen_adjacentOS45RawOverlap (d := d) (n := n) i hi).inter
+      ((isOpen_euclideanOrderedPositiveTimeSector (d := d) (n := n)
+          (1 : Equiv.Perm (Fin n))).inter
+        ((isOpen_euclideanOrderedPositiveTimeSector (d := d) (n := n) τ).preimage
+          (continuous_permNPoint (d := d) (n := n) τ)))
+  have hxseedS : xseed ∈ S := by
+    exact ⟨hεRaw, ⟨hεOrd, hεSwapOrd⟩⟩
+  obtain ⟨r, hr_pos, hr_sub⟩ := Metric.mem_nhds_iff.mp (hS_open.mem_nhds hxseedS)
+  refine ⟨Metric.ball xseed r, xseed, Metric.isOpen_ball, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  · refine ⟨⟨xseed, Metric.mem_ball_self hr_pos⟩, ?_⟩
+    exact (convex_ball xseed r).isPreconnected
+  · exact ⟨xseed, Metric.mem_ball_self hr_pos⟩
+  · exact Metric.mem_ball_self hr_pos
+  · intro y hy
+    exact (hr_sub hy).1.1
+  · intro y hy
+    exact (hr_sub hy).1.2.1
+  · intro y hy
+    exact (hr_sub hy).1.2.2
+  · intro y hy
+    exact (hr_sub hy).2.1
+  · intro y hy
+    simpa [τ] using (hr_sub hy).2.2
 
 /-- The ordered-Wick seed domain used by the OS45 locality route: the original
 ordered Wick seed lies in the `ρ` PET sector, and the adjacent-swapped Wick
@@ -787,6 +908,64 @@ theorem os45_adjacent_localEOWGeometry
     exact os45OppositeTubeBranchGeometry_of_ordered
       (d := d) (n := n) (τ.symm * ρ) (fun k => x (τ k))
       (hV_swap_ordered x hx)
+
+/-- Identity-order OS45 slot-1 geometry.  This is the ordered-edge selector
+used by the current one-chart route: the patch is chosen with `ρ = 1`, and the
+same patch carries the adjacent Wick/real domain facts and both opposite-tube
+geometry packets. -/
+theorem os45_adjacent_identity_localEOWGeometry
+    [NeZero d]
+    (hd : 2 ≤ d)
+    (i : Fin n) (hi : i.val + 1 < n) :
+    ∃ (V : Set (NPointDomain d n)) (xseed : NPointDomain d n),
+      IsOpen V ∧ IsConnected V ∧ V.Nonempty ∧ xseed ∈ V ∧
+      (∀ x ∈ V, x ∈ JostSet d n) ∧
+      (∀ x ∈ V, BHW.realEmbed x ∈ BHW.ExtendedTube d n) ∧
+      (∀ x ∈ V,
+        BHW.realEmbed (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+          BHW.ExtendedTube d n) ∧
+      (∀ x ∈ V,
+        x ∈ EuclideanOrderedPositiveTimeSector (d := d) (n := n)
+          (1 : Equiv.Perm (Fin n))) ∧
+      (∀ x ∈ V,
+        (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+          EuclideanOrderedPositiveTimeSector (d := d) (n := n)
+            (Equiv.swap i ⟨i.val + 1, hi⟩)) ∧
+      (∀ x ∈ V,
+        (fun k => wickRotatePoint (x k)) ∈
+          adjacentOS45WickSeedDomain (d := d) (n := n) i hi
+            (1 : Equiv.Perm (Fin n))) ∧
+      (∀ x ∈ V,
+        BHW.realEmbed x ∈
+          adjacentOS45RealEdgeDomain (d := d) (n := n) i hi) ∧
+      (∀ x ∈ V,
+        OS45OppositeTubeBranchGeometry (d := d) (n := n)
+          (1 : Equiv.Perm (Fin n)) x) ∧
+      (∀ x ∈ V,
+        OS45OppositeTubeBranchGeometry (d := d) (n := n)
+          (Equiv.swap i ⟨i.val + 1, hi⟩)
+          (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k))) := by
+  let τ : Equiv.Perm (Fin n) := Equiv.swap i ⟨i.val + 1, hi⟩
+  rcases choose_os45_identity_real_open_edge_for_adjacent_swap
+      (d := d) (n := n) hd i hi with
+    ⟨V, xseed, hV_open, hV_conn, hV_ne, hxseed, hV_jost, hV_ET, hV_swapET,
+      hV_ordered, hV_swap_ordered⟩
+  refine ⟨V, xseed, hV_open, hV_conn, hV_ne, hxseed, hV_jost, hV_ET,
+    hV_swapET, hV_ordered, hV_swap_ordered, ?_, ?_, ?_, ?_⟩
+  · intro x hx
+    exact wickRotate_mem_adjacentOS45WickSeedDomain_of_ordered
+      (d := d) (n := n) i hi x (1 : Equiv.Perm (Fin n))
+      (hV_ordered x hx) (by simpa [τ] using hV_swap_ordered x hx)
+  · intro x hx
+    exact realEmbed_mem_adjacentOS45RealEdgeDomain_of_ET
+      (d := d) (n := n) i hi x (hV_ET x hx) (hV_swapET x hx)
+  · intro x hx
+    exact os45OppositeTubeBranchGeometry_of_ordered
+      (d := d) (n := n) (1 : Equiv.Perm (Fin n)) x (hV_ordered x hx)
+  · intro x hx
+    exact os45OppositeTubeBranchGeometry_of_ordered
+      (d := d) (n := n) τ (fun k => x (τ k))
+      (by simpa [τ] using hV_swap_ordered x hx)
 
 /-- The real Jost set is disjoint from the Euclidean coincidence locus. -/
 theorem jostSet_disjoint_coincidenceLocus :

@@ -31,6 +31,14 @@ theorem permAct_mul
   ext k μ
   simp [permAct]
 
+@[simp] theorem permAct_realEmbed
+    (σ : Equiv.Perm (Fin n))
+    (x : NPointDomain d n) :
+    permAct (d := d) σ (realEmbed x) =
+      realEmbed (fun k => x (σ k)) := by
+  ext k μ
+  simp [permAct, realEmbed]
+
 end BHW
 
 variable {d n : ℕ} [NeZero d]

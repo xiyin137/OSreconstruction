@@ -778,6 +778,263 @@ theorem sourcePrincipalSchurGraph_rankExact_image_eq_openCoordinatePatch
   rw [hleft_eq]
   simpa [Aexact] using hcoord
 
+/-- Connectedness of the rank-`≤` Schur-graph parameter image.  The
+rank-bound is imposed on the Schur-complement coordinate and transported to
+the source rank-bounded variety by the Schur rank formula. -/
+theorem isConnected_sourcePrincipalSchurGraph_rankLE_image
+    (n D : ℕ) {r q : Type*} [Fintype r] [Fintype q]
+    [DecidableEq r] [DecidableEq q]
+    (e : Fin n ≃ r ⊕ q)
+    {Aset : Set (Matrix r r ℂ)}
+    {Bset : Set (Matrix r q ℂ)}
+    {Sset : Set (Matrix q q ℂ)}
+    (hA_conn : IsConnected Aset)
+    (hB_conn : IsConnected Bset)
+    (hS_conn :
+      IsConnected
+        (Sset ∩ {S : Matrix q q ℂ |
+          Sᵀ = S ∧ S.rank ≤ D - Fintype.card r}))
+    (hA_unit : ∀ A ∈ Aset, IsUnit A.det) :
+    IsConnected
+      ((fun p : Matrix r r ℂ × Matrix r q ℂ × Matrix q q ℂ =>
+          sourcePrincipalSchurGraph n e p.1 p.2.1 p.2.2) ''
+        {p | p.1 ∈ Aset ∧ p.2.1 ∈ Bset ∧
+          p.2.2 ∈ Sset ∩ {S : Matrix q q ℂ |
+            Sᵀ = S ∧ S.rank ≤ D - Fintype.card r}}) := by
+  have hparam : IsConnected
+      {p : Matrix r r ℂ × Matrix r q ℂ × Matrix q q ℂ |
+        p.1 ∈ Aset ∧ p.2.1 ∈ Bset ∧
+          p.2.2 ∈ Sset ∩ {S : Matrix q q ℂ |
+            Sᵀ = S ∧ S.rank ≤ D - Fintype.card r}} := by
+    have hprod : IsConnected
+        (Aset ×ˢ (Bset ×ˢ
+          (Sset ∩ {S : Matrix q q ℂ |
+            Sᵀ = S ∧ S.rank ≤ D - Fintype.card r}))) :=
+      hA_conn.prod (hB_conn.prod hS_conn)
+    simpa [Set.prod] using hprod
+  exact hparam.image _
+    ((continuousOn_sourcePrincipalSchurGraph n e).mono (by
+      intro p hp
+      exact hA_unit p.1 hp.1))
+
+/-- The rank-`≤` Schur-graph parameter image is contained in the source
+rank-bounded symmetric variety. -/
+theorem sourcePrincipalSchurGraph_rankLE_image_subset
+    (n D : ℕ) {r q : Type*} [Fintype r] [Fintype q]
+    [DecidableEq r] [DecidableEq q]
+    (e : Fin n ≃ r ⊕ q)
+    {Aset : Set (Matrix r r ℂ)}
+    {Bset : Set (Matrix r q ℂ)}
+    {Sset : Set (Matrix q q ℂ)}
+    (hA_unit : ∀ A ∈ Aset, IsUnit A.det)
+    (hA_sym : ∀ A ∈ Aset, Aᵀ = A)
+    (hrD : Fintype.card r ≤ D) :
+    ((fun p : Matrix r r ℂ × Matrix r q ℂ × Matrix q q ℂ =>
+        sourcePrincipalSchurGraph n e p.1 p.2.1 p.2.2) ''
+      {p | p.1 ∈ Aset ∧ p.2.1 ∈ Bset ∧
+        p.2.2 ∈ Sset ∩ {S : Matrix q q ℂ |
+          Sᵀ = S ∧ S.rank ≤ D - Fintype.card r}}) ⊆
+      sourceSymmetricRankLEVariety n D := by
+  rintro G ⟨p, hp, rfl⟩
+  have hAunit : IsUnit p.1.det := hA_unit p.1 hp.1
+  have hAsym : p.1ᵀ = p.1 := hA_sym p.1 hp.1
+  have hSsym : p.2.2ᵀ = p.2.2 := hp.2.2.2.1
+  have hSrank : p.2.2.rank ≤ D - Fintype.card r := hp.2.2.2.2
+  exact
+    (sourcePrincipalSchurGraph_mem_rankLE_iff
+      n D e hAunit hAsym hSsym hrD).mpr hSrank
+
+/-- On a Schur coordinate patch whose graph is contained in an ambient
+neighborhood `N0`, the rank-`≤` part of the patch is exactly the graph image
+of the rank-bounded Schur-complement parameter set. -/
+theorem sourcePrincipalSchurGraph_rankLE_image_eq_coordinatePatch
+    (n D : ℕ) {r q : Type*} [Fintype r] [Fintype q]
+    [DecidableEq r] [DecidableEq q]
+    (e : Fin n ≃ r ⊕ q)
+    {N0 : Set (Fin n → Fin n → ℂ)}
+    {Aset : Set (Matrix r r ℂ)}
+    {Bset : Set (Matrix r q ℂ)}
+    {Sset : Set (Matrix q q ℂ)}
+    (hA_unit : ∀ A ∈ Aset, IsUnit A.det)
+    (hA_sym : ∀ A ∈ Aset, Aᵀ = A)
+    (hrD : Fintype.card r ≤ D)
+    (hgraph_N0 :
+      ((fun p : Matrix r r ℂ × Matrix r q ℂ × Matrix q q ℂ =>
+          sourcePrincipalSchurGraph n e p.1 p.2.1 p.2.2) ''
+        {p | p.1 ∈ Aset ∧ p.2.1 ∈ Bset ∧
+          p.2.2 ∈ Sset ∩ {S : Matrix q q ℂ |
+            Sᵀ = S ∧ S.rank ≤ D - Fintype.card r}}) ⊆ N0) :
+    ({Z : Fin n → Fin n → ℂ |
+        Z ∈ N0 ∧
+        IsUnit
+          ((((Matrix.of fun i j : Fin n => Z i j).reindex e e).toBlocks₁₁).det) ∧
+        (((Matrix.of fun i j : Fin n => Z i j).reindex e e).toBlocks₁₁) ∈
+          Aset ∧
+        (((Matrix.of fun i j : Fin n => Z i j).reindex e e).toBlocks₁₂) ∈
+          Bset ∧
+        reindexedRectSchurComplement (Matrix.of fun i j : Fin n => Z i j) e e ∈
+          Sset} ∩ sourceSymmetricRankLEVariety n D) =
+      ((fun p : Matrix r r ℂ × Matrix r q ℂ × Matrix q q ℂ =>
+          sourcePrincipalSchurGraph n e p.1 p.2.1 p.2.2) ''
+        {p | p.1 ∈ Aset ∧ p.2.1 ∈ Bset ∧
+          p.2.2 ∈ Sset ∩ {S : Matrix q q ℂ |
+            Sᵀ = S ∧ S.rank ≤ D - Fintype.card r}}) := by
+  ext Z
+  constructor
+  · intro hZ
+    rcases hZ with ⟨hpatch, hZrank⟩
+    rcases hpatch with ⟨_hZN0, hUnit, hA, hB, hS⟩
+    let M : Matrix (Fin n) (Fin n) ℂ := Matrix.of fun i j => Z i j
+    have hZrank' := hZrank
+    rw [sourceSymmetricRankLEVariety_eq_rank_le] at hZrank'
+    have hM_sym : Mᵀ = M := by
+      ext i j
+      simpa [M, Matrix.transpose] using hZrank'.1 j i
+    have hSsym :
+        (reindexedRectSchurComplement M e e)ᵀ =
+          reindexedRectSchurComplement M e e :=
+      reindexedRectSchurComplement_transpose_eq_of_symmetric n e hM_sym
+    have hSrank :
+        (reindexedRectSchurComplement M e e).rank ≤
+          D - Fintype.card r := by
+      have h :=
+        (sourceSymmetricRankLEVariety_iff_principal_schur_rank_le
+          n D e hUnit hrD).mp hZrank
+      simpa [M] using h.2
+    refine ⟨(((M.reindex e e).toBlocks₁₁),
+        ((M.reindex e e).toBlocks₁₂),
+        reindexedRectSchurComplement M e e), ?_, ?_⟩
+    · exact ⟨by simpa [M] using hA, by simpa [M] using hB,
+        ⟨by simpa [M] using hS, hSsym, hSrank⟩⟩
+    · funext i j
+      have hcoord :=
+        congr_fun
+          (congr_fun
+            (sourcePrincipalSchurGraph_coordinates_eq_of_symmetric
+              n e hM_sym) i) j
+      simpa [M] using hcoord
+  · intro hZ
+    rcases hZ with ⟨p, hp, rfl⟩
+    constructor
+    · refine ⟨hgraph_N0 ⟨p, hp, rfl⟩, ?_, ?_, ?_, ?_⟩
+      · rw [sourcePrincipalSchurGraph_toBlocks₁₁ n e p.1 p.2.1 p.2.2]
+        exact hA_unit p.1 hp.1
+      · rw [sourcePrincipalSchurGraph_toBlocks₁₁ n e p.1 p.2.1 p.2.2]
+        exact hp.1
+      · rw [sourcePrincipalSchurGraph_toBlocks₁₂ n e p.1 p.2.1 p.2.2]
+        exact hp.2.1
+      · change
+          ((Matrix.of fun i j : Fin n =>
+              sourcePrincipalSchurGraph n e p.1 p.2.1 p.2.2 i j).reindex e e).toBlocks₂₂ -
+            ((Matrix.of fun i j : Fin n =>
+              sourcePrincipalSchurGraph n e p.1 p.2.1 p.2.2 i j).reindex e e).toBlocks₂₁ *
+              ((Matrix.of fun i j : Fin n =>
+                sourcePrincipalSchurGraph n e p.1 p.2.1 p.2.2 i j).reindex e e).toBlocks₁₁⁻¹ *
+              ((Matrix.of fun i j : Fin n =>
+                sourcePrincipalSchurGraph n e p.1 p.2.1 p.2.2 i j).reindex e e).toBlocks₁₂ ∈
+            Sset
+        rw [sourcePrincipalSchurGraph_schurComplement n e p.1 p.2.1 p.2.2]
+        exact hp.2.2.1
+    · exact
+        (sourcePrincipalSchurGraph_mem_rankLE_iff
+          n D e (hA_unit p.1 hp.1) (hA_sym p.1 hp.1)
+          hp.2.2.2.1 hrD).mpr hp.2.2.2.2
+
+/-- Variant of the Schur coordinate-patch equality with an open `A` coordinate
+set on the left and the corresponding symmetric `A` factor on the graph
+parameters.  This is the rank-bounded analogue of
+`sourcePrincipalSchurGraph_rankExact_image_eq_openCoordinatePatch`. -/
+theorem sourcePrincipalSchurGraph_rankLE_image_eq_openCoordinatePatch
+    (n D : ℕ) {r q : Type*} [Fintype r] [Fintype q]
+    [DecidableEq r] [DecidableEq q]
+    (e : Fin n ≃ r ⊕ q)
+    {N0 : Set (Fin n → Fin n → ℂ)}
+    {Aset : Set (Matrix r r ℂ)}
+    {Bset : Set (Matrix r q ℂ)}
+    {Sset : Set (Matrix q q ℂ)}
+    (hA_unit : ∀ A ∈ Aset, IsUnit A.det)
+    (hrD : Fintype.card r ≤ D)
+    (hgraph_N0 :
+      ((fun p : Matrix r r ℂ × Matrix r q ℂ × Matrix q q ℂ =>
+          sourcePrincipalSchurGraph n e p.1 p.2.1 p.2.2) ''
+        {p | p.1 ∈ Aset ∩ {A : Matrix r r ℂ | Aᵀ = A} ∧
+          p.2.1 ∈ Bset ∧
+          p.2.2 ∈ Sset ∩ {S : Matrix q q ℂ |
+            Sᵀ = S ∧ S.rank ≤ D - Fintype.card r}}) ⊆ N0) :
+    ({Z : Fin n → Fin n → ℂ |
+        Z ∈ N0 ∧
+        IsUnit
+          ((((Matrix.of fun i j : Fin n => Z i j).reindex e e).toBlocks₁₁).det) ∧
+        (((Matrix.of fun i j : Fin n => Z i j).reindex e e).toBlocks₁₁) ∈
+          Aset ∧
+        (((Matrix.of fun i j : Fin n => Z i j).reindex e e).toBlocks₁₂) ∈
+          Bset ∧
+        reindexedRectSchurComplement (Matrix.of fun i j : Fin n => Z i j) e e ∈
+          Sset} ∩ sourceSymmetricRankLEVariety n D) =
+      ((fun p : Matrix r r ℂ × Matrix r q ℂ × Matrix q q ℂ =>
+          sourcePrincipalSchurGraph n e p.1 p.2.1 p.2.2) ''
+        {p | p.1 ∈ Aset ∩ {A : Matrix r r ℂ | Aᵀ = A} ∧
+          p.2.1 ∈ Bset ∧
+          p.2.2 ∈ Sset ∩ {S : Matrix q q ℂ |
+            Sᵀ = S ∧ S.rank ≤ D - Fintype.card r}}) := by
+  let Ale : Set (Matrix r r ℂ) :=
+    Aset ∩ {A : Matrix r r ℂ | Aᵀ = A}
+  have hleft_eq :
+      ({Z : Fin n → Fin n → ℂ |
+          Z ∈ N0 ∧
+          IsUnit
+            ((((Matrix.of fun i j : Fin n => Z i j).reindex e e).toBlocks₁₁).det) ∧
+          (((Matrix.of fun i j : Fin n => Z i j).reindex e e).toBlocks₁₁) ∈
+            Aset ∧
+          (((Matrix.of fun i j : Fin n => Z i j).reindex e e).toBlocks₁₂) ∈
+            Bset ∧
+          reindexedRectSchurComplement (Matrix.of fun i j : Fin n => Z i j) e e ∈
+            Sset} ∩ sourceSymmetricRankLEVariety n D) =
+        ({Z : Fin n → Fin n → ℂ |
+          Z ∈ N0 ∧
+          IsUnit
+            ((((Matrix.of fun i j : Fin n => Z i j).reindex e e).toBlocks₁₁).det) ∧
+          (((Matrix.of fun i j : Fin n => Z i j).reindex e e).toBlocks₁₁) ∈
+            Ale ∧
+          (((Matrix.of fun i j : Fin n => Z i j).reindex e e).toBlocks₁₂) ∈
+            Bset ∧
+          reindexedRectSchurComplement (Matrix.of fun i j : Fin n => Z i j) e e ∈
+            Sset} ∩ sourceSymmetricRankLEVariety n D) := by
+    ext Z
+    constructor
+    · rintro ⟨hpatch, hZrank⟩
+      rcases hpatch with ⟨hZN0, hUnit, hA, hB, hS⟩
+      let M : Matrix (Fin n) (Fin n) ℂ := Matrix.of fun i j => Z i j
+      have hZrank' := hZrank
+      rw [sourceSymmetricRankLEVariety_eq_rank_le] at hZrank'
+      have hM_sym : Mᵀ = M := by
+        ext i j
+        simpa [M, Matrix.transpose] using hZrank'.1 j i
+      have hA_sym :
+          ((M.reindex e e).toBlocks₁₁)ᵀ =
+            (M.reindex e e).toBlocks₁₁ :=
+        principalBlock_transpose_eq_of_symmetric n e hM_sym
+      exact
+        ⟨⟨hZN0, hUnit, ⟨by simpa [M] using hA, hA_sym⟩,
+          hB, hS⟩, hZrank⟩
+    · rintro ⟨hpatch, hZrank⟩
+      rcases hpatch with ⟨hZN0, hUnit, hA, hB, hS⟩
+      exact ⟨⟨hZN0, hUnit, hA.1, hB, hS⟩, hZrank⟩
+  have hcoord :=
+    sourcePrincipalSchurGraph_rankLE_image_eq_coordinatePatch
+      (n := n) (D := D) (e := e) (N0 := N0)
+      (Aset := Ale) (Bset := Bset) (Sset := Sset)
+      (by
+        intro A hA
+        exact hA_unit A hA.1)
+      (by
+        intro A hA
+        exact hA.2)
+      hrD
+      (by simpa [Ale] using hgraph_N0)
+  rw [hleft_eq]
+  simpa [Ale] using hcoord
+
 /-- The determinant-unit locus for finite complex matrices is open. -/
 theorem isOpen_matrix_det_isUnit
     {r : Type*} [Fintype r] [DecidableEq r] :
@@ -1299,6 +1556,198 @@ theorem sourceComplexGramVariety_local_rankExact_connected_basis_singular
       rw [hpatch_eq_D]
       exact hgraph_rank_conn)
   exact ⟨V, hZ0V, hV_rel, hV_sub, hV_rank_conn⟩
+
+/-- Singular lower-rank points of the source complex Gram variety have
+relatively open connected neighborhoods inside any prescribed ambient
+neighborhood.  This is the rank-bounded Schur-product branch: the Schur
+complement coordinate uses a connected rank-`≤` cone, not the rank-exact
+stratum cone. -/
+theorem sourceComplexGramVariety_local_connectedRelOpen_basis_singular
+    (d n : ℕ)
+    (hD : d + 1 < n)
+    {Z0 : Fin n → Fin n → ℂ}
+    (hZ0 : Z0 ∈ sourceComplexGramVariety d n)
+    (hZ0_sing :
+      (Matrix.of fun i j : Fin n => Z0 i j).rank < d + 1)
+    {N0 : Set (Fin n → Fin n → ℂ)}
+    (hN0_open : IsOpen N0)
+    (hZ0N0 : Z0 ∈ N0) :
+    ∃ V : Set (Fin n → Fin n → ℂ),
+      Z0 ∈ V ∧
+      IsRelOpenInSourceComplexGramVariety d n V ∧
+      IsConnected V ∧
+      V ⊆ N0 ∩ sourceComplexGramVariety d n := by
+  let D : ℕ := d + 1
+  let M0 : Matrix (Fin n) (Fin n) ℂ := Matrix.of fun i j => Z0 i j
+  let k : ℕ := M0.rank
+  have _hDlt : D < n := by
+    simpa [D] using hD
+  have hksing : k < D := by
+    simpa [D, k, M0] using hZ0_sing
+  have hZ0_rank_le : Z0 ∈ sourceSymmetricMatrixSpace n ∧
+      M0.rank ≤ d + 1 := by
+    have h := hZ0
+    rw [sourceComplexGramVariety_eq_rank_le] at h
+    simpa [M0] using h
+  have hZ0sym : Z0 ∈ sourceSymmetricMatrixSpace n := hZ0_rank_le.1
+  have hkD : k ≤ D := by
+    exact le_of_lt hksing
+  rcases exists_sourcePrincipalMinor_ne_zero_of_sourceSymmetricRank
+      (n := n) (r := k) (Z := Z0) hZ0sym (by simp [k, M0]) with
+    ⟨I, hI, hminor⟩
+  let q := selectedIndexComplement I
+  let e : Fin n ≃ Fin k ⊕ q := selectedIndexSumEquiv I hI
+  let A0 : Matrix (Fin k) (Fin k) ℂ := (M0.reindex e e).toBlocks₁₁
+  let B0 : Matrix (Fin k) q ℂ := (M0.reindex e e).toBlocks₁₂
+  let S0 : Matrix q q ℂ := reindexedRectSchurComplement M0 e e
+  have hA0_unit : IsUnit A0.det := by
+    simpa [A0, M0, e] using
+      isUnit_selectedIndexSumEquiv_toBlocks₁₁_det
+        (I := I) (J := I) hI hI hminor
+  have hM0sym : M0ᵀ = M0 := by
+    ext i j
+    simpa [M0, Matrix.transpose] using hZ0sym j i
+  have hA0_sym : A0ᵀ = A0 := by
+    simpa [A0] using principalBlock_transpose_eq_of_symmetric n e hM0sym
+  have hS0_rank_zero : S0.rank = 0 := by
+    have hsplit :=
+      rank_reindexed_principal_eq_card_add_rank_schur
+        (Z := M0) (e := e) hA0_unit
+    have hsplit' : k = k + S0.rank := by
+      simpa [k, S0, A0] using hsplit
+    omega
+  have hS0_zero : S0 = 0 :=
+    matrix_eq_zero_of_rank_eq_zero S0 hS0_rank_zero
+  have hZ0_graph :
+      sourcePrincipalSchurGraph n e A0 B0 0 = Z0 := by
+    have hcoord :=
+      sourcePrincipalSchurGraph_coordinates_eq_of_symmetric n e hM0sym
+    funext i j
+    have hij := congr_fun (congr_fun hcoord i) j
+    simpa [M0, A0, B0, S0, hS0_zero] using hij
+  rcases exists_sourcePrincipalSchurGraph_product_subset_open
+      (n := n) (e := e) (A0 := A0) (B0 := B0) (S0 := 0)
+      hA0_unit hN0_open (by simpa [hZ0_graph] using hZ0N0) with
+    ⟨UA, UB, US, hUA_open, hA0_UA, hUB_open, hB0_UB, hUS_open, h0_US,
+      hUA_unit, hgraph_U⟩
+  rcases Metric.mem_nhds_iff.mp (hUA_open.mem_nhds hA0_UA) with
+    ⟨εA, hεA, hAball_sub_UA⟩
+  rcases Metric.mem_nhds_iff.mp (hUB_open.mem_nhds hB0_UB) with
+    ⟨εB, hεB, hBball_sub_UB⟩
+  rcases matrixSymmetricRankLECone_small_connected
+      (q := q) (r := D - k) hUS_open h0_US with
+    ⟨C, h0C, hC_open, hC_sub_US, hC_rank_conn⟩
+  let Aball : Set (Matrix (Fin k) (Fin k) ℂ) := Metric.ball A0 εA
+  let Bball : Set (Matrix (Fin k) q ℂ) := Metric.ball B0 εB
+  let Aexact : Set (Matrix (Fin k) (Fin k) ℂ) :=
+    Aball ∩ {A | Aᵀ = A}
+  have hAexact_conn : IsConnected Aexact := by
+    simpa [Aexact, Aball] using
+      isConnected_symmetric_matrix_ball hA0_sym hεA
+  have hBball_conn : IsConnected Bball := by
+    simpa [Bball] using isConnected_matrix_ball B0 hεB
+  have hC_rank_conn' :
+      IsConnected (C ∩ {S : Matrix q q ℂ |
+        Sᵀ = S ∧ S.rank ≤ D - Fintype.card (Fin k)}) := by
+    simpa using hC_rank_conn
+  have hgraph_rank_conn :
+      IsConnected
+        ((fun p : Matrix (Fin k) (Fin k) ℂ × Matrix (Fin k) q ℂ ×
+            Matrix q q ℂ =>
+            sourcePrincipalSchurGraph n e p.1 p.2.1 p.2.2) ''
+          {p | p.1 ∈ Aexact ∧ p.2.1 ∈ Bball ∧
+            p.2.2 ∈ C ∩ {S : Matrix q q ℂ |
+              Sᵀ = S ∧ S.rank ≤ D - k}}) := by
+    simpa using
+      isConnected_sourcePrincipalSchurGraph_rankLE_image
+        n D e hAexact_conn hBball_conn hC_rank_conn'
+        (by
+          intro A hA
+          exact hUA_unit A (hAball_sub_UA hA.1))
+  let V0 : Set (Fin n → Fin n → ℂ) :=
+    {Z |
+      Z ∈ N0 ∧
+      IsUnit
+        ((((Matrix.of fun i j : Fin n => Z i j).reindex e e).toBlocks₁₁).det) ∧
+      (((Matrix.of fun i j : Fin n => Z i j).reindex e e).toBlocks₁₁) ∈
+        Aball ∧
+      (((Matrix.of fun i j : Fin n => Z i j).reindex e e).toBlocks₁₂) ∈
+        Bball ∧
+      reindexedRectSchurComplement
+        (Matrix.of fun i j : Fin n => Z i j) e e ∈ C}
+  let V : Set (Fin n → Fin n → ℂ) :=
+    V0 ∩ sourceComplexGramVariety d n
+  have hV0_open : IsOpen V0 := by
+    simpa [V0, Aball, Bball] using
+      isOpen_sourcePrincipalSchurCoordinatePatch
+        (n := n) (e := e) (N0 := N0)
+        hN0_open Metric.isOpen_ball Metric.isOpen_ball hC_open
+  have hV_rel : IsRelOpenInSourceComplexGramVariety d n V := by
+    exact ⟨V0, hV0_open, rfl⟩
+  have hZ0V : Z0 ∈ V := by
+    refine ⟨?_, hZ0⟩
+    refine ⟨hZ0N0, ?_, ?_, ?_, ?_⟩
+    · simpa [M0, A0] using hA0_unit
+    · simpa [M0, A0, Aball] using
+        (Metric.mem_ball_self (x := A0) hεA)
+    · simpa [M0, B0, Bball] using
+        (Metric.mem_ball_self (x := B0) hεB)
+    · have hS0C : S0 ∈ C := by
+        simpa [hS0_zero] using h0C
+      simpa [M0, S0] using hS0C
+  have hV_sub : V ⊆ N0 ∩ sourceComplexGramVariety d n := by
+    intro Z hZ
+    exact ⟨hZ.1.1, hZ.2⟩
+  have hgraph_N0 :
+      ((fun p : Matrix (Fin k) (Fin k) ℂ × Matrix (Fin k) q ℂ ×
+          Matrix q q ℂ =>
+          sourcePrincipalSchurGraph n e p.1 p.2.1 p.2.2) ''
+        {p | p.1 ∈ Aball ∩ {A : Matrix (Fin k) (Fin k) ℂ | Aᵀ = A} ∧
+          p.2.1 ∈ Bball ∧
+          p.2.2 ∈ C ∩ {S : Matrix q q ℂ |
+            Sᵀ = S ∧ S.rank ≤ D - Fintype.card (Fin k)}}) ⊆ N0 := by
+    rintro G ⟨p, hp, rfl⟩
+    apply hgraph_U
+    refine ⟨p, ?_, rfl⟩
+    exact
+      ⟨hAball_sub_UA hp.1.1,
+        hBball_sub_UB hp.2.1,
+        hC_sub_US hp.2.2.1⟩
+  have hpatch_eq_D :
+      V =
+        ((fun p : Matrix (Fin k) (Fin k) ℂ × Matrix (Fin k) q ℂ ×
+            Matrix q q ℂ =>
+            sourcePrincipalSchurGraph n e p.1 p.2.1 p.2.2) ''
+          {p | p.1 ∈ Aexact ∧ p.2.1 ∈ Bball ∧
+            p.2.2 ∈ C ∩ {S : Matrix q q ℂ |
+              Sᵀ = S ∧ S.rank ≤ D - k}}) := by
+    have hV_inter :
+        V = V0 ∩ sourceSymmetricRankLEVariety n D := by
+      ext Z
+      constructor
+      · intro hZ
+        refine ⟨hZ.1, ?_⟩
+        rw [← sourceComplexGramVariety_eq_sourceSymmetricRankLEVariety]
+        simpa [D] using hZ.2
+      · intro hZ
+        refine ⟨hZ.1, ?_⟩
+        rw [sourceComplexGramVariety_eq_sourceSymmetricRankLEVariety]
+        simpa [D] using hZ.2
+    have hcoord :=
+      sourcePrincipalSchurGraph_rankLE_image_eq_openCoordinatePatch
+        (n := n) (D := D) (e := e) (N0 := N0)
+        (Aset := Aball) (Bset := Bball) (Sset := C)
+        (by
+          intro A hA
+          exact hUA_unit A (hAball_sub_UA hA))
+        (by simpa [D] using hkD)
+        (by simpa [Aexact] using hgraph_N0)
+    rw [hV_inter]
+    simpa [V0, Aball, Bball, Aexact] using hcoord
+  have hV_conn : IsConnected V := by
+    rw [hpatch_eq_D]
+    exact hgraph_rank_conn
+  exact ⟨V, hZ0V, hV_rel, hV_conn, hV_sub⟩
 
 end FrobeniusLocalBasis
 

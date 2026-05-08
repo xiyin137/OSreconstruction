@@ -381,7 +381,7 @@ Given the analytic continuation to the forward tube, extract the 7 Wightman axio
 | #12 | `translation_invariant` | E1 | Euclidean translation → Minkowski translation |
 | #13 | `lorentz_covariant` | E1 + BHW | SO(d+1) covariance → Lorentz covariance via BHW |
 | #14 | `spectrum_condition` | E0' | Laplace transform → support in forward cone |
-| #15 | `locally_commutative` | E3 + EOW | Permutation symmetry + edge-of-wedge → locality |
+| #15 | `locally_commutative` | E3 + EOW | Adjacent local commutativity; not arbitrary pair-swap locality |
 | #16 | `positive_definite` | E2 | Reflection positivity → Wightman positivity |
 | #17 | `hermitian` | Reality | Real Schwinger functions → Hermiticity |
 

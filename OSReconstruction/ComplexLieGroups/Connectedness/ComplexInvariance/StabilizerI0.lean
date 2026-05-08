@@ -39,7 +39,7 @@ theorem complexLorentzAction_wScalarE0
       (fun _ μ => c * Λ.val μ 0) := by
   ext k μ
   fin_cases k
-  simp [wScalarE0, complexLorentzAction, mul_comm]
+  simp [wScalarE0, complexLorentzAction, complexLorentzVectorAction, mul_comm]
 
 /-- Orbit-set membership for `wScalarE0 c` is a first-column forward-cone condition. -/
 theorem mem_orbitSet_wScalarE0_iff
@@ -54,12 +54,15 @@ theorem mem_orbitSet_wScalarE0_iff
     have hcone :=
       (forwardTube_one_iff_inOpenForwardCone (m := m)
         (complexLorentzAction (d := m + 1) (n := 1) Λ (wScalarE0 (m := m) c))).1 hFT
-    simpa [complexLorentzAction_wScalarE0 (m := m) Λ c] using hcone
+    rw [complexLorentzAction_wScalarE0 (m := m) Λ c] at hcone
+    simpa using hcone
   · intro hcone
     exact
       (forwardTube_one_iff_inOpenForwardCone (m := m)
         (complexLorentzAction (d := m + 1) (n := 1) Λ (wScalarE0 (m := m) c))).2
-        (by simpa [complexLorentzAction_wScalarE0 (m := m) Λ c] using hcone)
+        (by
+          rw [complexLorentzAction_wScalarE0 (m := m) Λ c]
+          simpa using hcone)
 
 /-- First-column map on `SO⁺(1,m+1;ℂ)`. -/
 def firstColCLG : ComplexLorentzGroup (m + 1) → (Fin (m + 2) → ℂ) :=
@@ -204,7 +207,7 @@ theorem exists_action_wScalarE0_of_forwardTube_one
     w 0 μ = c * v μ := hcw.symm
     _ = c * Γ.val μ 0 := by simp [hΓcol μ]
     _ = (complexLorentzAction (d := m + 1) (n := 1) Γ (wScalarE0 (m := m) c)) 0 μ := by
-          simp [hact]
+          simpa using (congr_fun (congr_fun hact 0) μ).symm
 
 /-- Stabilizer of `wI0` under the one-point complex Lorentz action. -/
 def stabilizerI0 : Set (ComplexLorentzGroup (m + 1)) :=
@@ -223,12 +226,13 @@ theorem mem_stabilizerI0_iff_firstColEqE0 (Λ : ComplexLorentzGroup (m + 1)) :
       simpa [stabilizerI0] using hΛ
     refine Fin.cases ?_ ?_ k
     · have hk0 : Λ.val 0 0 * Complex.I = Complex.I := by
-        simpa [wI0, complexLorentzAction] using congr_fun (congr_fun hEq 0) 0
+        simpa [wI0, complexLorentzAction, complexLorentzVectorAction] using
+          congr_fun (congr_fun hEq 0) 0
       have hmul := congrArg (fun z : ℂ => z * (-Complex.I)) hk0
       simpa [mul_assoc] using hmul
     · intro i
       have hmul : Λ.val i.succ 0 * Complex.I = 0 := by
-        simpa [wI0, complexLorentzAction, Fin.succ_ne_zero] using
+        simpa [wI0, complexLorentzAction, complexLorentzVectorAction, Fin.succ_ne_zero] using
           congr_fun (congr_fun hEq 0) i.succ
       have hzero : Λ.val i.succ 0 = 0 :=
         (mul_eq_zero.mp hmul).resolve_right Complex.I_ne_zero
@@ -237,11 +241,12 @@ theorem mem_stabilizerI0_iff_firstColEqE0 (Λ : ComplexLorentzGroup (m + 1)) :
     refine Set.mem_setOf.mpr ?_
     ext _ μ
     refine Fin.cases ?_ ?_ μ
-    · simpa [wI0, complexLorentzAction] using hcol 0
+    · simpa [wI0, complexLorentzAction, complexLorentzVectorAction] using hcol 0
     · intro i
       have hzero : Λ.val i.succ 0 = 0 := by
         simpa [Fin.succ_ne_zero] using hcol i.succ
-      simp [wI0, complexLorentzAction, Fin.succ_ne_zero, hzero]
+      simp [wI0, complexLorentzAction, complexLorentzVectorAction,
+        Fin.succ_ne_zero, hzero]
 
 theorem mem_stabilizer_wScalarE0_iff_firstColEqE0
     (c : ℂ) (hc : c ≠ 0) (Λ : ComplexLorentzGroup (m + 1)) :
@@ -255,13 +260,15 @@ theorem mem_stabilizer_wScalarE0_iff_firstColEqE0
       simpa [stabilizer] using hΛ
     refine Fin.cases ?_ ?_ k
     · have hk0 : Λ.val 0 0 * c = c := by
-        simpa [wScalarE0, complexLorentzAction] using congr_fun (congr_fun hEq 0) 0
+        simpa [wScalarE0, complexLorentzAction, complexLorentzVectorAction] using
+          congr_fun (congr_fun hEq 0) 0
       have hmul := congrArg (fun z : ℂ => z * c⁻¹) hk0
       have hc' : c * c⁻¹ = (1 : ℂ) := by exact mul_inv_cancel₀ hc
       simpa [mul_assoc, hc'] using hmul
     · intro i
       have hmul : Λ.val i.succ 0 * c = 0 := by
-        simpa [wScalarE0, complexLorentzAction, Fin.succ_ne_zero] using
+        simpa [wScalarE0, complexLorentzAction, complexLorentzVectorAction,
+          Fin.succ_ne_zero] using
           congr_fun (congr_fun hEq 0) i.succ
       have hzero : Λ.val i.succ 0 = 0 :=
         (mul_eq_zero.mp hmul).resolve_right hc
@@ -270,11 +277,12 @@ theorem mem_stabilizer_wScalarE0_iff_firstColEqE0
     refine Set.mem_setOf.mpr ?_
     ext _ μ
     refine Fin.cases ?_ ?_ μ
-    · simp [wScalarE0, complexLorentzAction, hcol 0]
+    · simp [wScalarE0, complexLorentzAction, complexLorentzVectorAction, hcol 0]
     · intro i
       have hzero : Λ.val i.succ 0 = 0 := by
         simpa [Fin.succ_ne_zero] using hcol i.succ
-      simp [wScalarE0, complexLorentzAction, Fin.succ_ne_zero, hzero]
+      simp [wScalarE0, complexLorentzAction, complexLorentzVectorAction,
+        Fin.succ_ne_zero, hzero]
 
 theorem stabilizerI0_eq_fromSO_image_firstCol :
     stabilizerI0 (m := m) =

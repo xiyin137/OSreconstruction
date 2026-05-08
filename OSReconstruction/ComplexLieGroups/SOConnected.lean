@@ -940,6 +940,29 @@ theorem exists_so_with_firstCol {m : ℕ}
     (R⁻¹).val k 0 = ((R⁻¹).val *ᵥ e0) k := hcol.symm
     _ = v k := hv_eq_k.symm
 
+/-- Signed first-column constructor: if `v` has square norm `σ^2`, then an
+element of `SO(m+2;ℂ)` has first column `v / σ`. -/
+theorem exists_so_with_firstCol_of_sq {m : ℕ}
+    (σ : ℂ)
+    (hσ : σ ≠ 0)
+    (v : Fin (m + 2) → ℂ)
+    (hv : ∑ k : Fin (m + 2), v k ^ 2 = σ ^ 2) :
+    ∃ A : SOComplex (m + 2),
+      ∀ k : Fin (m + 2), σ * A.val k 0 = v k := by
+  let u : Fin (m + 2) → ℂ := fun k => v k / σ
+  have hu : ∑ k : Fin (m + 2), u k ^ 2 = 1 := by
+    dsimp [u]
+    simp_rw [div_pow]
+    rw [← Finset.sum_div]
+    rw [hv]
+    field_simp [hσ]
+  obtain ⟨A, hA⟩ := exists_so_with_firstCol u hu
+  refine ⟨A, ?_⟩
+  intro k
+  rw [hA k]
+  dsimp [u]
+  field_simp [hσ]
+
 /-- The first column of A ∈ SO(n+1;ℂ) satisfies ∑ᵢ (A i 0)² = 1. -/
 theorem first_col_sq_sum (A : SOComplex (n + 1)) :
     ∑ k : Fin (n + 1), A.val k 0 ^ 2 = 1 := by
@@ -1057,6 +1080,44 @@ def embed {m : ℕ} (B : SOComplex m) : SOComplex (m + 1) where
   val := embedVal B.val
   orthogonal := embedVal_orthogonal B.val B.orthogonal
   proper := embedVal_det B.val B.proper
+
+@[simp]
+theorem embed_val_zero_zero {m : ℕ} (B : SOComplex m) :
+    (embed B).val 0 0 = 1 := by
+  rfl
+
+@[simp]
+theorem embed_val_zero_succ {m : ℕ} (B : SOComplex m) (j : Fin m) :
+    (embed B).val 0 j.succ = 0 := by
+  rfl
+
+@[simp]
+theorem embed_val_succ_zero {m : ℕ} (B : SOComplex m) (i : Fin m) :
+    (embed B).val i.succ 0 = 0 := by
+  rfl
+
+@[simp]
+theorem embed_val_succ_succ {m : ℕ} (B : SOComplex m) (i j : Fin m) :
+    (embed B).val i.succ j.succ = B.val i j := by
+  rfl
+
+@[simp]
+theorem embed_mulVec_zero {m : ℕ}
+    (B : SOComplex m) (v : Fin (m + 1) → ℂ) :
+    ((embed B).val *ᵥ v) 0 = v 0 := by
+  change (∑ j : Fin (m + 1), (embed B).val 0 j * v j) = v 0
+  rw [Fin.sum_univ_succ]
+  simp
+
+@[simp]
+theorem embed_mulVec_succ {m : ℕ}
+    (B : SOComplex m) (v : Fin (m + 1) → ℂ) (i : Fin m) :
+    ((embed B).val *ᵥ v) i.succ =
+      (B.val *ᵥ (fun j : Fin m => v j.succ)) i := by
+  change (∑ j : Fin (m + 1), (embed B).val i.succ j * v j) =
+    ∑ j : Fin m, B.val i j * v j.succ
+  rw [Fin.sum_univ_succ]
+  simp
 
 /-- The embedding is continuous. -/
 theorem embed_continuous {m : ℕ} : Continuous (embed : SOComplex m → SOComplex (m + 1)) := by
@@ -1265,7 +1326,7 @@ private theorem column_reduce {m : ℕ} (A : SOComplex (m + 2)) :
         exact ⟨k₁, k₂, hk₂_ne_k₁.symm, hk₂0, hvk₂, hk₁k₂, Or.inr hvk₁⟩
 
 /-- If A ∈ SO(m+2;ℂ) has first column e₀, then A = embed(B) for some B ∈ SO(m+1;ℂ). -/
-private theorem of_first_col_e0 {m : ℕ} (A : SOComplex (m + 2))
+theorem of_first_col_e0 {m : ℕ} (A : SOComplex (m + 2))
     (h : ∀ k : Fin (m + 2), A.val k 0 = if k = 0 then 1 else 0) :
     ∃ B : SOComplex (m + 1), A = embed B := by
   -- First row is also e₀ (from A^T A = 1)

@@ -1213,6 +1213,142 @@ theorem SourceVarietyHolomorphicOn.precomp_sourcePermuteComplexGram
     exact hU0_sub ⟨hW.1,
       (sourcePermuteComplexGram_mem_sourceComplexGramVariety_iff d n σ W).2 hW.2⟩
 
+/-- Germ-style holomorphicity on the source Gram variety.  The local
+representative may differ from the global scalar function away from the source
+Gram variety; equality is required only on the analytic variety slice. -/
+def SourceVarietyGermHolomorphicOn
+    (d n : ℕ)
+    (Φ : (Fin n → Fin n → ℂ) → ℂ)
+    (U : Set (Fin n → Fin n → ℂ)) : Prop :=
+  ∀ Z ∈ U, ∃ U0 Ψ,
+    IsOpen U0 ∧ Z ∈ U0 ∧ DifferentiableOn ℂ Ψ U0 ∧
+      Set.EqOn Φ Ψ (U0 ∩ sourceComplexGramVariety d n) ∧
+      U0 ∩ sourceComplexGramVariety d n ⊆ U
+
+/-- Relatively open source-variety domains are subsets of the source Gram
+variety. -/
+theorem IsRelOpenInSourceComplexGramVariety.subset
+    {d n : ℕ}
+    {U : Set (Fin n → Fin n → ℂ)}
+    (hU : IsRelOpenInSourceComplexGramVariety d n U) :
+    U ⊆ sourceComplexGramVariety d n := by
+  rcases hU with ⟨U0, _hU0_open, hU_eq⟩
+  intro Z hZU
+  rw [hU_eq] at hZU
+  exact hZU.2
+
+/-- A strong ambient representative is a germ representative, by taking the
+local representative to be the function itself. -/
+theorem SourceVarietyHolomorphicOn.to_germ
+    (d n : ℕ)
+    {U : Set (Fin n → Fin n → ℂ)}
+    {Φ : (Fin n → Fin n → ℂ) → ℂ}
+    (hΦ : SourceVarietyHolomorphicOn d n Φ U) :
+    SourceVarietyGermHolomorphicOn d n Φ U := by
+  intro Z hZU
+  rcases hΦ Z hZU with ⟨U0, hU0_open, hZU0, hDiffU0, hU0_sub⟩
+  exact ⟨U0, Φ, hU0_open, hZU0, hDiffU0, (by intro W _; rfl), hU0_sub⟩
+
+/-- Germ-holomorphic scalar representatives are continuous on relatively open
+source-variety domains. -/
+theorem SourceVarietyGermHolomorphicOn.continuousOn
+    (d n : ℕ)
+    {U : Set (Fin n → Fin n → ℂ)}
+    {Φ : (Fin n → Fin n → ℂ) → ℂ}
+    (hΦ : SourceVarietyGermHolomorphicOn d n Φ U)
+    (hU_sub : U ⊆ sourceComplexGramVariety d n) :
+    ContinuousOn Φ U := by
+  rw [continuousOn_iff]
+  intro Z hZU T hT_open hΦZT
+  rcases hΦ Z hZU with
+    ⟨U0, Ψ, hU0_open, hZU0, hDiffU0, hEq, _hU0_sub⟩
+  have hΨZT : Ψ Z ∈ T := by
+    have hEqZ : Φ Z = Ψ Z := hEq ⟨hZU0, hU_sub hZU⟩
+    simpa [hEqZ] using hΦZT
+  have hContU0 : ContinuousOn Ψ U0 := hDiffU0.continuousOn
+  rcases (continuousOn_iff.mp hContU0) Z hZU0 T hT_open hΨZT with
+    ⟨V, hV_open, hZV, hV_sub⟩
+  refine ⟨V ∩ U0, hV_open.inter hU0_open, ⟨hZV, hZU0⟩, ?_⟩
+  intro W hW
+  have hΨWT : Ψ W ∈ T := hV_sub ⟨hW.1.1, hW.1.2⟩
+  have hEqW : Φ W = Ψ W := hEq ⟨hW.1.2, hU_sub hW.2⟩
+  simpa [hEqW] using hΨWT
+
+/-- Restrict germ holomorphicity from a source-variety domain to a relatively
+open subdomain. -/
+theorem SourceVarietyGermHolomorphicOn.of_subset_relOpen
+    (d n : ℕ)
+    {Φ : (Fin n → Fin n → ℂ) → ℂ}
+    {U V : Set (Fin n → Fin n → ℂ)}
+    (hΦ : SourceVarietyGermHolomorphicOn d n Φ U)
+    (hV_rel : IsRelOpenInSourceComplexGramVariety d n V)
+    (hVU : V ⊆ U) :
+    SourceVarietyGermHolomorphicOn d n Φ V := by
+  intro Z hZV
+  rcases hΦ Z (hVU hZV) with
+    ⟨U0, Ψ, hU0_open, hZU0, hDiffU0, hEq, _hU0_sub⟩
+  rcases hV_rel with ⟨V0, hV0_open, hV0_eq⟩
+  refine ⟨U0 ∩ V0, Ψ, hU0_open.inter hV0_open, ⟨hZU0, ?_⟩, ?_, ?_, ?_⟩
+  · rw [hV0_eq] at hZV
+    exact hZV.1
+  · exact hDiffU0.mono (by intro W hW; exact hW.1)
+  · intro W hW
+    exact hEq ⟨hW.1.1, hW.2⟩
+  · intro W hW
+    rw [hV0_eq]
+    exact ⟨hW.1.2, hW.2⟩
+
+/-- Germ holomorphicity is stable under subtraction. -/
+theorem SourceVarietyGermHolomorphicOn.sub
+    (d n : ℕ)
+    {U : Set (Fin n → Fin n → ℂ)}
+    {Φ Ψ : (Fin n → Fin n → ℂ) → ℂ}
+    (hΦ : SourceVarietyGermHolomorphicOn d n Φ U)
+    (hΨ : SourceVarietyGermHolomorphicOn d n Ψ U) :
+    SourceVarietyGermHolomorphicOn d n (fun Z => Φ Z - Ψ Z) U := by
+  intro Z hZU
+  rcases hΦ Z hZU with
+    ⟨UΦ, Φ0, hUΦ_open, hZUΦ, hDiffΦ, hEqΦ, hUΦ_sub⟩
+  rcases hΨ Z hZU with
+    ⟨UΨ, Ψ0, hUΨ_open, hZUΨ, hDiffΨ, hEqΨ, _hUΨ_sub⟩
+  refine ⟨UΦ ∩ UΨ, (fun W => Φ0 W - Ψ0 W),
+    hUΦ_open.inter hUΨ_open, ⟨hZUΦ, hZUΨ⟩, ?_, ?_, ?_⟩
+  · exact (hDiffΦ.mono (by intro W hW; exact hW.1)).sub
+      (hDiffΨ.mono (by intro W hW; exact hW.2))
+  · intro W hW
+    have hΦW : Φ W = Φ0 W := hEqΦ ⟨hW.1.1, hW.2⟩
+    have hΨW : Ψ W = Ψ0 W := hEqΨ ⟨hW.1.2, hW.2⟩
+    simp [hΦW, hΨW]
+  · intro W hW
+    exact hUΦ_sub ⟨hW.1.1, hW.2⟩
+
+/-- Germ holomorphicity is stable under a source Gram coordinate
+permutation. -/
+theorem SourceVarietyGermHolomorphicOn.precomp_sourcePermuteComplexGram
+    (d n : ℕ)
+    {Φ : (Fin n → Fin n → ℂ) → ℂ}
+    {U : Set (Fin n → Fin n → ℂ)}
+    (hΦ : SourceVarietyGermHolomorphicOn d n Φ U)
+    (σ : Equiv.Perm (Fin n)) :
+    SourceVarietyGermHolomorphicOn d n
+      (fun Z => Φ (sourcePermuteComplexGram n σ Z))
+      {Z | sourcePermuteComplexGram n σ Z ∈ U} := by
+  intro Z hZ
+  rcases hΦ (sourcePermuteComplexGram n σ Z) hZ with
+    ⟨U0, Ψ, hU0_open, hZU0, hDiffU0, hEq, hU0_sub⟩
+  refine ⟨{W | sourcePermuteComplexGram n σ W ∈ U0},
+    (fun W => Ψ (sourcePermuteComplexGram n σ W)),
+    hU0_open.preimage (continuous_sourcePermuteComplexGram n σ), hZU0, ?_, ?_, ?_⟩
+  · exact hDiffU0.fun_comp
+      (differentiable_sourcePermuteComplexGram n σ).differentiableOn
+      (by intro W hW; exact hW)
+  · intro W hW
+    exact hEq ⟨hW.1,
+      (sourcePermuteComplexGram_mem_sourceComplexGramVariety_iff d n σ W).2 hW.2⟩
+  · intro W hW
+    exact hU0_sub ⟨hW.1,
+      (sourcePermuteComplexGram_mem_sourceComplexGramVariety_iff d n σ W).2 hW.2⟩
+
 /-- A Hall-Wightman real Gram environment which is a uniqueness set for
 variety-holomorphic scalar-product representatives.
 
@@ -1228,8 +1364,8 @@ def sourceDistributionalUniquenessSetOnVariety
       IsRelOpenInSourceComplexGramVariety d n U →
       IsConnected U →
       (∀ G ∈ E, sourceRealGramComplexify n G ∈ U) →
-      SourceVarietyHolomorphicOn d n Φ U →
-      SourceVarietyHolomorphicOn d n Ψ U →
+      SourceVarietyGermHolomorphicOn d n Φ U →
+      SourceVarietyGermHolomorphicOn d n Ψ U →
       (∀ G ∈ E, Φ (sourceRealGramComplexify n G) =
         Ψ (sourceRealGramComplexify n G)) →
       Set.EqOn Φ Ψ U
@@ -1421,7 +1557,7 @@ structure SourceScalarRepresentativeData
   U_relOpen : IsRelOpenInSourceComplexGramVariety d n U
   U_connected : IsConnected U
   Phi : (Fin n → Fin n → ℂ) → ℂ
-  Phi_holomorphic : SourceVarietyHolomorphicOn d n Phi U
+  Phi_holomorphic : SourceVarietyGermHolomorphicOn d n Phi U
   branch_eq :
     ∀ w : Fin n → Fin (d + 1) → ℂ,
       w ∈ ExtendedTube d n →
@@ -1670,17 +1806,17 @@ theorem sourceScalarRepresentative_adjacent_eq_on_overlap_of_realEnvironment
     have hdouble : Z ∈ sourceDoublePermutationGramDomain d n τ :=
       (data.overlap_subset hZ).1
     simpa [hRep.U_eq, τ] using hdouble.2
-  have hΦ : SourceVarietyHolomorphicOn d n hRep.Phi data.overlap :=
-    SourceVarietyHolomorphicOn.of_subset_relOpen
+  have hΦ : SourceVarietyGermHolomorphicOn d n hRep.Phi data.overlap :=
+    SourceVarietyGermHolomorphicOn.of_subset_relOpen
       (d := d) (n := n) hRep.Phi_holomorphic
       data.overlap_relOpen hOverlap_subset_repU
-  have hΨ : SourceVarietyHolomorphicOn d n Ψ data.overlap := by
-    have hpre : SourceVarietyHolomorphicOn d n Ψ
+  have hΨ : SourceVarietyGermHolomorphicOn d n Ψ data.overlap := by
+    have hpre : SourceVarietyGermHolomorphicOn d n Ψ
         {Z | sourcePermuteComplexGram n τ Z ∈ hRep.U} := by
       simpa [Ψ] using
-        SourceVarietyHolomorphicOn.precomp_sourcePermuteComplexGram
+        SourceVarietyGermHolomorphicOn.precomp_sourcePermuteComplexGram
           (d := d) (n := n) hRep.Phi_holomorphic τ
-    exact SourceVarietyHolomorphicOn.of_subset_relOpen
+    exact SourceVarietyGermHolomorphicOn.of_subset_relOpen
       (d := d) (n := n) hpre data.overlap_relOpen
       hPerm_overlap_subset_repU
   have hreal :
@@ -1986,15 +2122,17 @@ private theorem source_permutedExtendedTubeSector_complexLorentzAction_iff
                 simp [source_lorentz_perm_commute]
         _ = fun k => z (π k) := by
                 rw [complexLorentzAction_inv]
-    simpa [permutedExtendedTubeSector, hrewrite] using h'
+    rw [hrewrite] at h'
+    simpa [permutedExtendedTubeSector] using h'
   · intro h
     have h' : complexLorentzAction Λ (fun k => z (π k)) ∈ ExtendedTube d n :=
       source_complexLorentzAction_mem_extendedTube n Λ h
     have hrewrite :
         (fun k => (complexLorentzAction Λ z) (π k)) =
-          complexLorentzAction Λ (fun k => z (π k)) := by
+      complexLorentzAction Λ (fun k => z (π k)) := by
       simp [source_lorentz_perm_commute]
-    simpa [permutedExtendedTubeSector, hrewrite] using h'
+    rw [← hrewrite] at h'
+    simpa [permutedExtendedTubeSector] using h'
 
 /-- The raw permuted forward-tube branch is holomorphic on its permuted
 forward-tube sector.  This packages the `S'_n` datum before BHW enlargement. -/

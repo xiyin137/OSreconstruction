@@ -39,11 +39,12 @@ lemma complexLorentzAction_real_linear
     complexLorentzAction Λ (a • z₁ + b • z₂) =
     a • complexLorentzAction Λ z₁ + b • complexLorentzAction Λ z₂ := by
   ext k μ
-  simp only [complexLorentzAction, Pi.add_apply, Pi.smul_apply, Complex.real_smul]
+  simp only [complexLorentzAction, complexLorentzVectorAction, Pi.add_apply,
+    Pi.smul_apply, Complex.real_smul]
   trans (↑a * ∑ ν, Λ.val μ ν * z₁ k ν + ↑b * ∑ ν, Λ.val μ ν * z₂ k ν)
   · rw [Finset.mul_sum, Finset.mul_sum, ← Finset.sum_add_distrib]
-    congr 1
-    ext ν
+    apply Finset.sum_congr rfl
+    intro ν _
     ring
   · rfl
 
@@ -108,13 +109,13 @@ private lemma diffVec_action (Λ : ComplexLorentzGroup d)
     diffVec (complexLorentzAction Λ z) k =
     fun μ => ∑ ν, Λ.val μ ν * diffVec z k ν := by
   ext μ
-  simp only [diffVec, complexLorentzAction]
+  simp only [diffVec, complexLorentzAction, complexLorentzVectorAction]
   by_cases hk : k.val = 0
   · simp [hk, sub_zero]
-  · simp only [hk, ↓reduceDIte, complexLorentzAction]
+  · simp only [hk, ↓reduceDIte, complexLorentzVectorAction]
     rw [← Finset.sum_sub_distrib]
-    congr 1
-    ext ν
+    apply Finset.sum_congr rfl
+    intro ν _
     ring
 
 /-- Real Lorentz transformations preserve the forward tube.

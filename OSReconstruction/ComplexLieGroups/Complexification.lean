@@ -775,6 +775,16 @@ def fromSOComplex (A : SOComplex (d + 1)) : ComplexLorentzGroup d where
     rw [Matrix.det_mul, Matrix.det_mul, A.proper, mul_one,
       ← Matrix.det_mul, W_mul_Winv, Matrix.det_one]
 
+/-- Component formula for the inverse Wick-rotation map `SO(d+1;ℂ) → SO(1,d;ℂ)`.
+It is the public downstream-facing form of the private diagonal conjugation
+`W A W⁻¹`. -/
+theorem fromSOComplex_val_apply (A : SOComplex (d + 1))
+    (μ ν : Fin (d + 1)) :
+    (fromSOComplex A).val μ ν =
+      (if μ = 0 then Complex.I else 1) * A.val μ ν *
+        (if ν = 0 then -Complex.I else 1) := by
+  simp [fromSOComplex, W, Winv, Matrix.mul_diagonal, Matrix.diagonal_mul]
+
 /-- `fromSOComplex` is a left inverse of `toSOComplex`. -/
 theorem fromSOComplex_toSOComplex (Λ : ComplexLorentzGroup d) :
     fromSOComplex (toSOComplex Λ) = Λ := by
