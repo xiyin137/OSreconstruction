@@ -25522,6 +25522,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
             (BHW.complexMinkowskiOrthogonalSubmodule d M)
 
       theorem BHW.subspace_le_complexMinkowskiOrthogonalSubmodule
+          {d : Nat}
           {M R : Submodule ℂ (Fin (d + 1) -> ℂ)}
           (hR_orth :
             ∀ x : R, ∀ m : M,
@@ -25587,9 +25588,8 @@ Proof decomposition of this theorem, without hiding the analytic work:
                 (y : Fin (d + 1) -> ℂ))
 
       theorem BHW.span_frame_orthogonal_to_subspace
-          [NeZero d]
+          (d s : Nat)
           {M : Submodule ℂ (Fin (d + 1) -> ℂ)}
-          {s : Nat}
           {q : Fin s -> Fin (d + 1) -> ℂ}
           (hq_orth :
             ∀ c (m : M),
@@ -25602,7 +25602,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
               v (m : Fin (d + 1) -> ℂ) = 0
 
       theorem BHW.complexMinkowski_disjoint_of_nondegenerate_orthogonal
-          [NeZero d]
+          {d : Nat}
           {M R : Submodule ℂ (Fin (d + 1) -> ℂ)}
           (hM : BHW.ComplexMinkowskiNondegenerateSubspace d M)
           (hR_orth :
@@ -25611,6 +25611,24 @@ Proof decomposition of this theorem, without hiding the analytic work:
                 (x : Fin (d + 1) -> ℂ)
                 (m : Fin (d + 1) -> ℂ) = 0) :
           Disjoint M R
+
+      theorem BHW.hw_lowRank_residualSubspaces_orthogonalComplement_after_selectedAlignment
+          {d n r : Nat}
+          {z w : Fin n -> Fin (d + 1) -> ℂ}
+          {I : Fin r -> Fin n}
+          {S : BHW.HWLowRankSelectedSpanFrame d n r z w I}
+          (A : BHW.HWLowRankSelectedSpanAlignment d n r z w I S) :
+          ∃ (Rleft Rright : Submodule ℂ (Fin (d + 1) -> ℂ)),
+            Rleft =
+              Submodule.span ℂ (Set.range A.leftResidual) ∧
+            Rright =
+              Submodule.span ℂ (Set.range A.rightResidual) ∧
+            Rleft ≤ BHW.complexMinkowskiOrthogonalSubmodule d A.M ∧
+            Rright ≤ BHW.complexMinkowskiOrthogonalSubmodule d A.M ∧
+            Disjoint A.M Rleft ∧
+            Disjoint A.M Rright ∧
+            BHW.ComplexMinkowskiTotallyIsotropicSubspace d Rleft ∧
+            BHW.ComplexMinkowskiTotallyIsotropicSubspace d Rright
 
       noncomputable def BHW.directSum_identity_sum_isotropicEmbedding
           [NeZero d]
@@ -31741,11 +31759,33 @@ Proof decomposition of this theorem, without hiding the analytic work:
       Lean-shaped residual-frame extraction:
 
       ```lean
-      rcases BHW.hw_lowRank_residualSubspaces_after_selectedAlignment
+      rcases
+        BHW.hw_lowRank_residualSubspaces_orthogonalComplement_after_selectedAlignment
           (d := d) (n := n) (r := r) (z := z) (w := w)
           (I := I) (S := S) A with
         ⟨Rleft, Rright, hRleft_eq, hRright_eq,
-          hRleft_orth, hRright_orth, hRleft_iso, hRright_iso⟩
+          hRleft_le_orth, hRright_le_orth, hM_disjoint_left,
+          hM_disjoint_right, hRleft_iso, hRright_iso⟩
+      have hRleft_orth :
+          ∀ x : Rleft, ∀ m : A.M,
+            BHW.sourceComplexMinkowskiInner d
+              (x : Fin (d + 1) -> ℂ)
+              (m : Fin (d + 1) -> ℂ) = 0 := by
+        intro x m
+        exact
+          (BHW.mem_complexMinkowskiOrthogonalSubmodule_iff
+            d A.M (x : Fin (d + 1) -> ℂ)).1
+            (hRleft_le_orth x.2) m
+      have hRright_orth :
+          ∀ x : Rright, ∀ m : A.M,
+            BHW.sourceComplexMinkowskiInner d
+              (x : Fin (d + 1) -> ℂ)
+              (m : Fin (d + 1) -> ℂ) = 0 := by
+        intro x m
+        exact
+          (BHW.mem_complexMinkowskiOrthogonalSubmodule_iff
+            d A.M (x : Fin (d + 1) -> ℂ)).1
+            (hRright_le_orth x.2) m
       rcases BHW.complexMinkowski_alignResidualSubspaces_to_commonIsotropicFrame
           (d := d) hd
           (M := A.M) (Rz := Rleft) (Rw := Rright)
@@ -31772,6 +31812,17 @@ Proof decomposition of this theorem, without hiding the analytic work:
               simpa [hRright_eq] using hright_residual_mem i⟩)
       let Λ0 : ComplexLorentzGroup d := Λfix * A.Λsel
       ```
+
+      In production Lean,
+      `hw_lowRank_residualSubspaces_orthogonalComplement_after_selectedAlignment`
+      is the preferred packet:
+      `hRleft_le_orth` and `hRright_le_orth` are the inputs for work inside
+      `complexMinkowskiOrthogonalSubmodule d A.M`; `hM_disjoint_left` and
+      `hM_disjoint_right` are the direct-sum witnesses used when defining the
+      partial identity-plus-residual isometry.  If a proof still needs the
+      pointwise orthogonality hypotheses, recover them by using
+      `mem_complexMinkowskiOrthogonalSubmodule_iff` on the inclusions, rather
+      than running a second extraction path.
 
       The equations
       `(BHW.complexLorentzAction Λ0 z) i =
@@ -32188,8 +32239,8 @@ Proof decomposition of this theorem, without hiding the analytic work:
 | High-rank determinant orientation and orbit theorem | Active oriented proper-orbit branch checked in `BHWPermutation/SourceFullComplexLorentzWitt.lean`; supporting full-complex group algebra and determinant packets checked in `SourceFullComplexLorentz.lean` and `SourceFullComplexLorentzFrame.lean`. | The checked theorem `complexMinkowski_wittExtension_full_of_sourceSpan` starts from `HWHighRankSpanIsometryData`, splits the ambient space through source span plus orthogonal complement, proves complement-isometry classification over `ℂ`, assembles the product map, and packages it as a full complex Lorentz transformation.  The checked theorem `complexMinkowski_wittExtension_detOne_of_sourceSpan` then performs determinant repair in the proper-span branch and uses the full-frame determinant ratio in the full-rank branch.  The checked consumers `hw_sameSourceGram_regular_orbit` and `hw_sameSourceOrientedInvariant_maxRank_properOrbit` provide the active determinant-`1` orbit needed by the oriented route.  The determinant-`-1` full-rank branch remains a conditional pure-Gram/improper-component fork and is not needed for the active oriented max-rank proper-orbit consumer. |
       | Principal minor extraction for low-rank selected block | Principal-minor extraction checked locally; selected-frame construction checked in `BHWPermutation/SourceHWLowRankAlignment.lean`. | `BHW.exists_sourcePrincipalMinor_ne_zero_of_sourceSymmetricRank` is checked in `BHWPermutation/SourceComplexSchurPatch.lean`; `BHW.hw_lowRank_selectedSpanFrame_of_sameSourceGram` uses the inverse principal Gram block coefficient formula and the Schur-complement exact-rank theorem displayed above. |
       | Low-rank selected-span frame and residual Schur-zero theorem | Implemented and exact-file checked in `BHWPermutation/SourceHWLowRankAlignment.lean` as `BHW.HWLowRankSelectedSpanFrameData` and `BHW.hw_lowRank_selectedSpanFrame_of_sameSourceGram`. | The checked producer chooses the scalar rank and an injective principal index set by `Classical.choose`, proves selected-residual head orthogonality at both endpoints by rewriting the same coefficient formula through `hgram`, and obtains residual-pairing equality from the exact-rank Schur-zero theorem on both endpoints.  Thus the selected-frame step now contains no block-matrix prose and no analytic input. |
-      | Selected-span alignment and common residual subspaces | Proof transcript pinned; production Lean not started. | First align the selected `z` and `w` spans by determinant-repaired Witt extension; only then put the two residual families in the common orthogonal complement.  Reversing this order is false.  The residual subspaces and their isotropy/orthogonality fields are extracted from the aligned decomposition. |
-      | Low-rank selected-span alignment and residual subspaces | Selected-frame producer, determinant-one selected-span orbit, alignment producer, and residual-subspace extraction checked in `SourceHWLowRankAlignment.lean`. | `HWLowRankSelectedSpanFrameData` and `hw_lowRank_selectedSpanFrame_of_sameSourceGram` build the selected block, shared coefficients, and residual pairings from same source Gram data.  `sourceCoefficientEval_range_eq_span`, `sourceGramMatrixRank_selectedTuple_eq_of_principal_minor_ne`, and `hw_lowRank_selectedSpanFrame_detOneOrbit` feed the selected tuple into the checked high-rank/Witt determinant-one theorem.  `hw_lowRank_selectedSpanAlignment_of_selectedSpanFrame` records the selected-span Lorentz alignment, common nondegenerate selected span, and two residual families in the common orthogonal complement.  `hw_lowRank_residualSubspaces_after_selectedAlignment` turns those fields into totally isotropic residual subspaces orthogonal to the common selected span. |
+      | Selected-span alignment and common residual subspaces | Superseded by the checked row immediately below. | The former proof-transcript row is retained only as route history: the selected `z` and `w` spans must be aligned before the residual families are placed in the common orthogonal complement. |
+      | Low-rank selected-span alignment and residual subspaces | Selected-frame producer, determinant-one selected-span orbit, alignment producer, residual-subspace extraction, and orthogonal-complement/disjointness packet checked in `SourceHWLowRankAlignment.lean` and `SourceHWCommonResidualFrame.lean`. | `HWLowRankSelectedSpanFrameData` and `hw_lowRank_selectedSpanFrame_of_sameSourceGram` build the selected block, shared coefficients, and residual pairings from same source Gram data.  `sourceCoefficientEval_range_eq_span`, `sourceGramMatrixRank_selectedTuple_eq_of_principal_minor_ne`, and `hw_lowRank_selectedSpanFrame_detOneOrbit` feed the selected tuple into the checked high-rank/Witt determinant-one theorem.  `hw_lowRank_selectedSpanAlignment_of_selectedSpanFrame` records the selected-span Lorentz alignment, common nondegenerate selected span, and two residual families in the common orthogonal complement.  `hw_lowRank_residualSubspaces_after_selectedAlignment` turns those fields into totally isotropic residual subspaces orthogonal to the common selected span, while `hw_lowRank_residualSubspaces_orthogonalComplement_after_selectedAlignment` adds inclusions in `complexMinkowskiOrthogonalSubmodule d A.M` and disjointness from `A.M`. |
       | Common isotropic residual frame plus dual frame | Proof transcript pinned; production Lean not started. | Build a maximal isotropic frame in the common orthogonal complement, inject the left residual span into it by the Witt-index/dimension theorem, extract coefficient functions with `exists_coefficients_of_mem_span_finite_frame`, then construct the dual frame recursively inside the nondegenerate complement and store `qDual_pair_zero`, `q_dual`, `qDual_orth`. |
       | Isotropic contraction family | Proof transcript pinned; production Lean not started. | Define the partial isometry on `span ξ ⊔ span q ⊔ span qDual` fixing `ξ`, scaling `q` by `exp(-t)`, and scaling `qDual` by `exp(t)`; prove form preservation from `q_pair_zero`, `qDual_pair_zero`, `q_dual`, and orthogonality to `ξ`; extend by `complexMinkowski_wittExtension_subspaceIsometry`. |
       | Extended-tube stability for all residual coefficients | Checked in `SourceHWTubeCoefficient.lean`; corrected target for arbitrary endpoints is `ExtendedTube`, not `ForwardTube`. | Hall-Wightman's second remark gives `hw_secondRemark_forwardTube_singleNullResidual_normalForm`; the third remark is the checked determinant-one complex Lorentz two-plane rotation fixing the orthogonal complement and scaling `u + i v` by `exp t`; transport gives `hw_singleIsotropicResidual_allCoefficients_mem_extendedTube`; finite induction and the empty-source wrapper give the public `hw_isotropicFrame_allCoefficients_mem_extendedTube`.  The dual frame is used only for the null-boost contraction and the two-curve value equality/limit, not for coefficient-freedom membership. |
