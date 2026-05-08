@@ -5558,16 +5558,28 @@ implementation contract is:
    `BHW.hw_highRank_eval_ker_eq_gramKernel`,
    `BHW.hw_highRank_sourceCoefficientEval_ker_eq_of_sameSourceGram`,
    `BHW.hwHighRankSpanIsometry_apply_eval`,
-   `BHW.HWHighRankSpanIsometryData`,
-   whose fields must include `M_eq_range`, `N_eq_range`,
-   `M_nondegenerate`, and `N_nondegenerate`,
-   `BHW.hw_highRank_spanIsometryData_of_sameSourceGram`,
-   `BHW.complexMinkowski_wittExtension_full_of_sourceSpan`,
-   `BHW.fullComplexLorentz_to_complexLorentzGroup_of_det_one`,
-   `BHW.fullComplexLorentz_det_neg_reflection_fixing_sourceSpan`,
-   `BHW.restrictedMinkowskiRank_eq_finrank_of_nondegenerate`,
-   `BHW.sourceSpan_orthogonalComplement_nontrivial_of_proper`,
-   `BHW.complexMinkowskiOrthogonalSubmodule_nondegenerate`,
+	   `BHW.HWHighRankSpanIsometryData`,
+	   whose fields must include `M_eq_range`, `N_eq_range`,
+	   `M_nondegenerate`, and `N_nondegenerate`,
+	   `BHW.hw_highRank_spanIsometryData_of_sameSourceGram`,
+	   `BHW.restrictedMinkowskiRadical_eq_bot_of_nondegenerate`,
+	   `BHW.restrictedMinkowskiRank_eq_finrank_of_nondegenerate`,
+	   `BHW.sourceGramMatrixRank_eq_finrank_range_sourceCoefficientEval_of_range_nondegenerate`,
+	   `BHW.sourceGramMatrixRank_eq_finrank_range_sourceCoefficientEval_of_orbitRank`,
+	   `BHW.sourceCoefficientEval_range_finrank_lt_spacetime_of_orbitRank_rank_lt_spacetime`,
+	   `BHW.sourceCoefficientEval_range_ne_top_of_orbitRank_rank_lt_spacetime`,
+	   `BHW.complexMinkowskiToSubmoduleDual`,
+	   `BHW.complexMinkowskiOrthogonalSubmodule`,
+	   `BHW.mem_complexMinkowskiOrthogonalSubmodule_iff`,
+	   `BHW.complexMinkowskiOrthogonalSubmodule_ne_bot_of_finrank_lt`,
+	   `BHW.sourceSpan_orthogonalComplement_nontrivial_of_orbitRank_rank_lt_spacetime`,
+	   `BHW.HWHighRankSpanIsometryData.M_finrank_eq_sourceGramRank`, and
+	   `BHW.HWHighRankSpanIsometryData.N_finrank_eq_sourceGramRank`,
+	   `BHW.complexMinkowski_wittExtension_full_of_sourceSpan`,
+	   `BHW.fullComplexLorentz_to_complexLorentzGroup_of_det_one`,
+	   `BHW.fullComplexLorentz_det_neg_reflection_fixing_sourceSpan`,
+	   `BHW.sourceSpan_orthogonalComplement_nontrivial_of_proper`,
+	   `BHW.complexMinkowskiOrthogonalSubmodule_nondegenerate`,
    `BHW.exists_nonisotropic_in_nondegenerate_subspace`,
    `BHW.det_eq_of_conj_by_linearEquiv`,
    `BHW.det_restrict_reflection_span`,
@@ -6980,9 +6992,9 @@ lemmas, `BHW.sourceCoefficientEval`,
 `BHW.hwHighRankSpanIsometry_apply_eval`,
 `BHW.HWHighRankSpanIsometryData`,
 `BHW.hw_highRank_spanIsometryData_of_sameSourceGram`, and
-`BHW.HWHighRankSpanIsometryData_sourceGram_eq`.  They do not currently contain
-production declarations named
-`BHW.HallWightmanFullComplexLorentzGroup`,
+	   `BHW.HWHighRankSpanIsometryData_sourceGram_eq`.  They do not currently contain
+	   production declarations named
+	   `BHW.HallWightmanFullComplexLorentzGroup`,
 `BHW.HallWightmanFullComplexLorentzInvariantOnForwardTube`,
 `BHW.realFullLorentzAction`,
 `BHW.fullOrthochronousRealLorentz_preserves_forwardTube`,
@@ -6998,14 +7010,39 @@ production declarations named
 `BHW.hallWightman_maxRank_powerSeriesChart_at`,
 `BHW.hallWightman_scalarGerm_continuous_locallyBounded`,
 `BHW.hwSourceGramExceptionalRank_isAnalyticSubvariety`,
-`BHW.sourceComplexGramVariety_normal`, or
-`BHW.sourceGramVariety_normal_riemannExtension`.  These are proof-doc theorem
-slots, not checked local inputs.
+	   `BHW.sourceComplexGramVariety_normal`, or
+	   `BHW.sourceGramVariety_normal_riemannExtension`.  These are proof-doc theorem
+	   slots, not checked local inputs.
 
-None of these theorem-slot surfaces is currently implemented in Lean; the
-current production file `BHWPermutation/SourceExtension.lean` intentionally
-keeps this Hall-Wightman/BHW branch-law theorem in proof docs until the proof
-or an approved source-import boundary is available.
+Current non-full orbit-rank Lean target, 2026-05-08: the next production
+step starts below the public orbit theorem, at the restricted-rank bookkeeping
+needed by the determinant-repaired Witt extension.  For a source span `M`,
+nondegeneracy gives
+`restrictedMinkowskiRadical d M = ⊥`, hence
+`restrictedMinkowskiRank d M = Module.finrank ℂ M`.  Combining this with the
+checked identity
+`sourceGramMatrixRank_eq_restrictedMinkowskiRank_range` gives
+`sourceGramMatrixRank n (sourceMinkowskiGram d n z) =
+Module.finrank ℂ (LinearMap.range (sourceCoefficientEval d n z))` in the
+orbit-rank branch, because `hw_highRank_eval_range_nondegenerate` supplies the
+nondegeneracy.  The `HWHighRankSpanIsometryData` packet should expose the same
+rank-to-finrank equations for its stored `M` and `N` via `M_eq_range`,
+`N_eq_range`, `M_nondegenerate`, and `N_nondegenerate`.  If this common scalar
+rank is `< d + 1`, rewriting the rank equation shows the stored source span has
+finrank `< d + 1` and hence is not `⊤`.  Define the ambient orthogonal
+complement as the kernel of the linear map sending `v` to the functional
+`x ↦ sourceComplexMinkowskiInner d v x` on the source span.  Rank-nullity,
+`Subspace.dual_finrank_eq`, and the strict finrank inequality give that this
+orthogonal complement is nontrivial.  This is not the Witt extension itself; it
+is the finite-dimensional rank gate that lets the next proof identify the
+non-full orbit-rank case as a proper nondegenerate source span with a nonzero
+orthogonal complement before constructing the determinant-correcting reflection.
+
+The remaining public theorem-slot surfaces in this scalar-source gate are not
+implemented in Lean.  The current production file
+`BHWPermutation/SourceExtension.lean` intentionally keeps the final
+Hall-Wightman/BHW branch-law theorem in proof docs until the proof or an
+approved source-import boundary is available.
 
 Current readiness verdict: production Lean must still stop before
 `BHW.sourceScalarRepresentativeData_bvt_F`.  The germ API and the downstream

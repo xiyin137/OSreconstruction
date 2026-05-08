@@ -139,6 +139,128 @@ def ComplexMinkowskiNondegenerateSubspace
         (y : Fin (d + 1) → ℂ) = 0) →
       x = 0
 
+/-- On a nondegenerate restricted source subspace, the restricted radical is
+trivial. -/
+theorem restrictedMinkowskiRadical_eq_bot_of_nondegenerate
+    (d : ℕ)
+    {M : Submodule ℂ (Fin (d + 1) → ℂ)}
+    (hndeg : ComplexMinkowskiNondegenerateSubspace d M) :
+    restrictedMinkowskiRadical d M = ⊥ := by
+  ext x
+  constructor
+  · intro hx
+    have hxmap : restrictedMinkowskiLeftMap d M x = 0 := by
+      simpa [restrictedMinkowskiRadical] using hx
+    have horth :
+        ∀ y : M,
+          sourceComplexMinkowskiInner d
+            (x : Fin (d + 1) → ℂ)
+            (y : Fin (d + 1) → ℂ) = 0 := by
+      intro y
+      have h :=
+        congrArg (fun L : M →ₗ[ℂ] ℂ => L y) hxmap
+      simpa [restrictedMinkowskiLeftMap] using h
+    have hx0 : x = 0 := hndeg x horth
+    simp [hx0]
+  · intro hx
+    rw [restrictedMinkowskiRadical, LinearMap.mem_ker]
+    ext y
+    have hx0 : x = 0 := by simpa using hx
+    subst x
+    simp [restrictedMinkowskiLeftMap, sourceComplexMinkowskiInner]
+
+/-- On a nondegenerate restricted source subspace, restricted rank is the
+dimension of the subspace. -/
+theorem restrictedMinkowskiRank_eq_finrank_of_nondegenerate
+    (d : ℕ)
+    {M : Submodule ℂ (Fin (d + 1) → ℂ)}
+    (hndeg : ComplexMinkowskiNondegenerateSubspace d M) :
+    restrictedMinkowskiRank d M = Module.finrank ℂ M := by
+  rw [restrictedMinkowskiRank,
+    restrictedMinkowskiRadical_eq_bot_of_nondegenerate d hndeg]
+  simp
+
+/-- The ambient vector-to-dual map induced by the complex Minkowski pairing on a
+source subspace.  Its kernel is the Minkowski orthogonal complement. -/
+def complexMinkowskiToSubmoduleDual
+    (d : ℕ)
+    (M : Submodule ℂ (Fin (d + 1) → ℂ)) :
+    (Fin (d + 1) → ℂ) →ₗ[ℂ] Module.Dual ℂ M where
+  toFun v :=
+    { toFun := fun x => sourceComplexMinkowskiInner d v (x : Fin (d + 1) → ℂ)
+      map_add' := by
+        intro x y
+        exact sourceComplexMinkowskiInner_add_right
+          d v (x : Fin (d + 1) → ℂ) (y : Fin (d + 1) → ℂ)
+      map_smul' := by
+        intro c x
+        exact sourceComplexMinkowskiInner_smul_right
+          d c v (x : Fin (d + 1) → ℂ) }
+  map_add' := by
+    intro u v
+    ext x
+    exact sourceComplexMinkowskiInner_add_left
+      d u v (x : Fin (d + 1) → ℂ)
+  map_smul' := by
+    intro c v
+    ext x
+    exact sourceComplexMinkowskiInner_smul_left
+      d c v (x : Fin (d + 1) → ℂ)
+
+/-- The complex Minkowski orthogonal complement of a source subspace. -/
+def complexMinkowskiOrthogonalSubmodule
+    (d : ℕ)
+    (M : Submodule ℂ (Fin (d + 1) → ℂ)) :
+    Submodule ℂ (Fin (d + 1) → ℂ) :=
+  LinearMap.ker (complexMinkowskiToSubmoduleDual d M)
+
+@[simp]
+theorem mem_complexMinkowskiOrthogonalSubmodule_iff
+    (d : ℕ)
+    (M : Submodule ℂ (Fin (d + 1) → ℂ))
+    (v : Fin (d + 1) → ℂ) :
+    v ∈ complexMinkowskiOrthogonalSubmodule d M ↔
+      ∀ x : M,
+        sourceComplexMinkowskiInner d v (x : Fin (d + 1) → ℂ) = 0 := by
+  rw [complexMinkowskiOrthogonalSubmodule, LinearMap.mem_ker]
+  constructor
+  · intro hv x
+    have h := congrArg (fun f : Module.Dual ℂ M => f x) hv
+    simpa [complexMinkowskiToSubmoduleDual] using h
+  · intro hv
+    ext x
+    simpa [complexMinkowskiToSubmoduleDual] using hv x
+
+/-- If a source subspace has dimension below the ambient spacetime dimension,
+then its complex Minkowski orthogonal complement is nontrivial. -/
+theorem complexMinkowskiOrthogonalSubmodule_ne_bot_of_finrank_lt
+    (d : ℕ)
+    {M : Submodule ℂ (Fin (d + 1) → ℂ)}
+    (hfin : Module.finrank ℂ M < d + 1) :
+    complexMinkowskiOrthogonalSubmodule d M ≠ ⊥ := by
+  let L := complexMinkowskiToSubmoduleDual d M
+  have hrange_le_dual :
+      Module.finrank ℂ (LinearMap.range L) ≤
+        Module.finrank ℂ (Module.Dual ℂ M) :=
+    Submodule.finrank_le (LinearMap.range L)
+  have hrange_le :
+      Module.finrank ℂ (LinearMap.range L) ≤ Module.finrank ℂ M := by
+    simpa [Subspace.dual_finrank_eq] using hrange_le_dual
+  have hrange_lt :
+      Module.finrank ℂ (LinearMap.range L) < d + 1 :=
+    lt_of_le_of_lt hrange_le hfin
+  have hsum :
+      Module.finrank ℂ (LinearMap.range L) +
+          Module.finrank ℂ (LinearMap.ker L) =
+        d + 1 := by
+    simpa [L, Module.finrank_fin_fun] using
+      LinearMap.finrank_range_add_finrank_ker L
+  have hker_pos : 0 < Module.finrank ℂ (LinearMap.ker L) := by
+    omega
+  have hker_ne : LinearMap.ker L ≠ ⊥ :=
+    (Submodule.one_le_finrank_iff).1 (Nat.succ_le_of_lt hker_pos)
+  simpa [complexMinkowskiOrthogonalSubmodule, L] using hker_ne
+
 /-- A coefficient-evaluated source vector lies in the restricted radical
 exactly when it pairs to zero with every coefficient-evaluated source vector. -/
 theorem sourceCoefficientEval_mem_restrictedMinkowskiRadical_iff
@@ -298,6 +420,19 @@ theorem sourceGramMatrixRank_eq_restrictedMinkowskiRank_range
   rw [sourceGramMatrixRank_eq_finrank_range_sourceCoefficientGramMap]
   exact finrank_range_sourceCoefficientGramMap_eq_restrictedRank d n z
 
+/-- If the restricted source span is nondegenerate, scalar Gram rank is the
+dimension of the coefficient span. -/
+theorem sourceGramMatrixRank_eq_finrank_range_sourceCoefficientEval_of_range_nondegenerate
+    (d n : ℕ)
+    {z : Fin n → Fin (d + 1) → ℂ}
+    (hndeg :
+      ComplexMinkowskiNondegenerateSubspace d
+        (LinearMap.range (sourceCoefficientEval d n z))) :
+    sourceGramMatrixRank n (sourceMinkowskiGram d n z) =
+      Module.finrank ℂ (LinearMap.range (sourceCoefficientEval d n z)) := by
+  rw [sourceGramMatrixRank_eq_restrictedMinkowskiRank_range]
+  exact restrictedMinkowskiRank_eq_finrank_of_nondegenerate d hndeg
+
 /-- Degeneracy of the restricted form is witnessed by a nonzero restricted
 radical. -/
 theorem restrictedMinkowskiRadical_nontrivial_of_degenerate
@@ -411,6 +546,66 @@ theorem hw_highRank_eval_range_nondegenerate
       min d n ≤ sourceGramMatrixRank n (sourceMinkowskiGram d n z) := by
     simpa [HWSourceGramOrbitRankAt, HWSourceGramOrbitRank] using hzRank
   exact (not_lt_of_ge hge) hlt
+
+/-- In Hall-Wightman's high-rank branch, scalar Gram rank is the dimension of
+the source coefficient span. -/
+theorem sourceGramMatrixRank_eq_finrank_range_sourceCoefficientEval_of_orbitRank
+    (d n : ℕ)
+    {z : Fin n → Fin (d + 1) → ℂ}
+    (hzRank : HWSourceGramOrbitRankAt d n z) :
+    sourceGramMatrixRank n (sourceMinkowskiGram d n z) =
+      Module.finrank ℂ (LinearMap.range (sourceCoefficientEval d n z)) :=
+  sourceGramMatrixRank_eq_finrank_range_sourceCoefficientEval_of_range_nondegenerate
+    d n (hw_highRank_eval_range_nondegenerate (d := d) (n := n) (z := z) hzRank)
+
+/-- In the high-rank branch, if the scalar Gram rank is still below ambient
+spacetime rank, then the source coefficient span is a proper-dimensional
+subspace. -/
+theorem sourceCoefficientEval_range_finrank_lt_spacetime_of_orbitRank_rank_lt_spacetime
+    (d n : ℕ)
+    {z : Fin n → Fin (d + 1) → ℂ}
+    (hzRank : HWSourceGramOrbitRankAt d n z)
+    (hlt :
+      sourceGramMatrixRank n (sourceMinkowskiGram d n z) < d + 1) :
+    Module.finrank ℂ (LinearMap.range (sourceCoefficientEval d n z)) < d + 1 := by
+  rw [sourceGramMatrixRank_eq_finrank_range_sourceCoefficientEval_of_orbitRank
+    d n hzRank] at hlt
+  exact hlt
+
+/-- In the high-rank but non-full-rank branch, the source coefficient span is a
+proper subspace of complex spacetime. -/
+theorem sourceCoefficientEval_range_ne_top_of_orbitRank_rank_lt_spacetime
+    (d n : ℕ)
+    {z : Fin n → Fin (d + 1) → ℂ}
+    (hzRank : HWSourceGramOrbitRankAt d n z)
+    (hlt :
+      sourceGramMatrixRank n (sourceMinkowskiGram d n z) < d + 1) :
+    LinearMap.range (sourceCoefficientEval d n z) ≠ ⊤ := by
+  intro htop
+  have hfin_lt :
+      Module.finrank ℂ (LinearMap.range (sourceCoefficientEval d n z)) < d + 1 :=
+    sourceCoefficientEval_range_finrank_lt_spacetime_of_orbitRank_rank_lt_spacetime
+      d n hzRank hlt
+  have hfin_top :
+      Module.finrank ℂ (LinearMap.range (sourceCoefficientEval d n z)) = d + 1 := by
+    rw [htop]
+    simp
+  rw [hfin_top] at hfin_lt
+  exact (Nat.lt_irrefl (d + 1)) hfin_lt
+
+/-- In the high-rank but non-full-rank branch, the Minkowski orthogonal
+complement of the source span is nontrivial. -/
+theorem sourceSpan_orthogonalComplement_nontrivial_of_orbitRank_rank_lt_spacetime
+    (d n : ℕ)
+    {z : Fin n → Fin (d + 1) → ℂ}
+    (hzRank : HWSourceGramOrbitRankAt d n z)
+    (hlt :
+      sourceGramMatrixRank n (sourceMinkowskiGram d n z) < d + 1) :
+    complexMinkowskiOrthogonalSubmodule d
+        (LinearMap.range (sourceCoefficientEval d n z)) ≠ ⊥ :=
+  complexMinkowskiOrthogonalSubmodule_ne_bot_of_finrank_lt d
+    (sourceCoefficientEval_range_finrank_lt_spacetime_of_orbitRank_rank_lt_spacetime
+      d n hzRank hlt)
 
 /-- In the high-rank branch, the coefficient-evaluation kernel is exactly the
 scalar Gram kernel. -/
@@ -639,6 +834,44 @@ theorem HWHighRankSpanIsometryData_sourceGram_eq
   rw [sourceMinkowskiGram_apply_eq_complexInner,
     sourceMinkowskiGram_apply_eq_complexInner]
   simpa [hTi, hTj] using hpres
+
+namespace HWHighRankSpanIsometryData
+
+/-- The stored source span `M` has dimension equal to the scalar Gram rank of
+the original configuration. -/
+theorem M_finrank_eq_sourceGramRank
+    (d n : ℕ)
+    {z w : Fin n → Fin (d + 1) → ℂ}
+    (S : HWHighRankSpanIsometryData d n z w) :
+    Module.finrank ℂ S.M =
+      sourceGramMatrixRank n (sourceMinkowskiGram d n z) := by
+  have hndeg :
+      ComplexMinkowskiNondegenerateSubspace d
+        (LinearMap.range (sourceCoefficientEval d n z)) := by
+    simpa [S.M_eq_range] using S.M_nondegenerate
+  rw [S.M_eq_range]
+  exact
+    (sourceGramMatrixRank_eq_finrank_range_sourceCoefficientEval_of_range_nondegenerate
+      d n (z := z) hndeg).symm
+
+/-- The stored target span `N` has dimension equal to the scalar Gram rank of the
+target configuration. -/
+theorem N_finrank_eq_sourceGramRank
+    (d n : ℕ)
+    {z w : Fin n → Fin (d + 1) → ℂ}
+    (S : HWHighRankSpanIsometryData d n z w) :
+    Module.finrank ℂ S.N =
+      sourceGramMatrixRank n (sourceMinkowskiGram d n w) := by
+  have hndeg :
+      ComplexMinkowskiNondegenerateSubspace d
+        (LinearMap.range (sourceCoefficientEval d n w)) := by
+    simpa [S.N_eq_range] using S.N_nondegenerate
+  rw [S.N_eq_range]
+  exact
+    (sourceGramMatrixRank_eq_finrank_range_sourceCoefficientEval_of_range_nondegenerate
+      d n (z := w) hndeg).symm
+
+end HWHighRankSpanIsometryData
 
 /-- The low-rank branch is exactly the complement of the orbit-rank branch. -/
 theorem hwSourceGram_lowRank_iff_not_orbitRank
