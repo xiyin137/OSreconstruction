@@ -5654,8 +5654,8 @@ implementation contract is:
    `BHW.HWSameSourceGramImproperOrbitData`, and
    `BHW.hw_sameSourceGram_regular_orbit_or_improper`, then
    the determinant-`1` branch uses
-   `BHW.extendF_complexLorentzInvariant_of_cinv` with both `hF_holo` and
-   `hF_cinv`, the determinant-`-1` full-rank branch uses
+   `BHW.extendF_complexLorentzInvariant_of_cinv` with the direct
+   `hF_cinv` hypothesis, the determinant-`-1` full-rank branch uses
    `BHW.hallWightmanFullComplexLorentzInvariantOnExtendedTube_eq`, and the
    singular
    two-curve limit theorem
@@ -5665,8 +5665,9 @@ implementation contract is:
    derived from extended-tube Lorentz invariance and continuity, not stored as
    an analytic field and not asserted as pairwise orbit equality of the two
    approximating curve values.
-   The final limit argument is now Lean-pinned in generic topology form:
-   from `hf : ContinuousOn f S`, `base ∈ S`, `∀ t, curve_left t ∈ S`,
+   The final limit argument is now checked in
+   `BHWPermutation/SourceHWSingularLimit.lean`: from
+   `hf : ContinuousOn f S`, `base ∈ S`, `∀ t, curve_left t ∈ S`,
    `∀ t, curve_right t ∈ S`, both curves tending to `base`, and identities
    `f (curve_left t) = f z`, `f (curve_right t) = f w`, first compose
    `(hf.continuousWithinAt hbase).tendsto` with
@@ -5674,7 +5675,8 @@ implementation contract is:
    Eventually.of_forall hcurve_mem⟩`; then use
    `Filter.Tendsto.congr'` to convert the two curve limits into constant
    limits and `tendsto_nhds_unique` to get
-   `f z = f base = f w`.  In the Hall-Wightman branch-law proof, `f` is
+   `f z = f base = f w`.  In the checked Hall-Wightman singular-limit
+   consumer, `f` is
    `BHW.extendF F`, `S` is `BHW.ExtendedTube d n`, continuity is
    `(BHW.extendF_holomorphicOn n F hF_holo hF_cinv).continuousOn`, and the
    two constant-value identities come from each curve's Lorentz-orbit field
@@ -6028,7 +6030,7 @@ implementation contract is:
    | Low-rank selected principal block and residual frame | Checked in `BHWPermutation/SourceHWSelectedProjection.lean`; principal-minor extraction checked locally. | The checked layer defines `sourcePrincipalGramMatrix`, `hw_selectedSpanCoeff`, `hwLemma3_selectedProjection`, and `hwLemma3_selectedResidual`; proves selected rows are fixed, `row_i * A⁻¹ * A = row_i`, selected/projection-residual orthogonality, the complementary residual-Schur entry theorem, rank-`r` residual-residual zero, original/residual orthogonality, projection Gram equality, projected-span finrank `r`, explicit finite-frame coordinates for span membership, and `hwLemma3_selectedResidual_isotropicFrameData`.  Remaining low-rank work starts at extended-tube coefficient freedom and the two-endpoint residual alignment theorem, not selected Schur algebra. |
    | Low-rank residual-frame alignment | Proof transcript pinned; production Lean not started. | Align selected spans first, extract the residual span, choose an independent common isotropic frame `q`, store explicit coefficient functions for both residual families, and prove pairwise isotropy plus orthogonality to the selected block from the zero Schur complement. |
    | Dual frame and contraction family | Proof transcript pinned; production Lean not started. | Store `qDual_pair_zero`, `q_dual`, `qDual_orth`, build the finite partial boost scaling `q`/`qDual`, and Witt-extend it; the dual frame is used only for null-boost contraction and the two-curve value equality/limit, not for the coefficient-freedom membership theorem. |
-   | Tube stability and singular limit | Checked in `BHWPermutation/SourceHWTubeCoefficient.lean`; corrected target for arbitrary endpoints is `ExtendedTube`, not `ForwardTube`. | The checked layer now runs through Hall-Wightman's second and third remarks, the explicit determinant-one complex Lorentz two-plane rotation, the arbitrary-endpoint one-null coefficient theorem, the finite-frame induction, the `n = 0` wrapper, and the public base/all-coefficients theorem `BHW.hw_isotropicFrame_allCoefficients_mem_extendedTube`.  It also records `complexLorentzAction_inv_left`, `complexLorentzVectorAction_inv_left`, and `sourceComplexMinkowskiInner_finset_sum_smul_right` as the Lean bridge lemmas needed by the transport and induction steps.  The dual frame remains only for the later null-boost contraction/value-limit packet, not for coefficient-freedom membership. |
+   | Tube stability and singular limit | Tube-stability support checked in `BHWPermutation/SourceHWTubeCoefficient.lean`; singular normal-form/data/analytic limit checked in `BHWPermutation/SourceHWSingularLimit.lean`; corrected target for arbitrary endpoints is `ExtendedTube`, not `ForwardTube`. | The checked tube layer now runs through Hall-Wightman's second and third remarks, the explicit determinant-one complex Lorentz two-plane rotation, the arbitrary-endpoint one-null coefficient theorem, the finite-frame induction, the `n = 0` wrapper, and the public base/all-coefficients theorem `BHW.hw_isotropicFrame_allCoefficients_mem_extendedTube`.  It also records `complexLorentzAction_inv_left`, `complexLorentzVectorAction_inv_left`, and `sourceComplexMinkowskiInner_finset_sum_smul_right` as the Lean bridge lemmas needed by the transport and induction steps.  The checked singular-limit layer defines `ComplexMinkowskiTotallyIsotropicSubspace`, proves finite-frame isotropic/orthogonal span lemmas, defines `HWSameSourceGramSingularContractionData` and `HWLowRankIsotropicNormalForm`, converts the normal form to contraction data, and proves `hw_sameSourceGram_singularLimit_extendF_eq`; the dual frame remains only for producing the null-boost contraction normal form, not for coefficient-freedom membership. |
    | `extendF_complexLorentzInvariant_of_cinv` | Implemented and exact-file checked in `ComplexInvariance/Extend.lean`. | Unfold `extendF`, choose forward-tube preimages, and use the new direct-preimage helper `BHW.extendF_preimage_eq_of_cinv`; no PET/EOW/locality and no scalar-representative content. |
 
    The oriented max-rank continuation layer consumes the following public
@@ -6964,8 +6966,8 @@ Source-to-Lean obligation matrix for the same scalar-source gate:
 | Source step | Required Lean surfaces | Current readiness |
 | --- | --- | --- |
 | Hall-Wightman Lemma 1 | `BHW.extendF_holomorphicOn`, `BHW.extendF_complex_lorentz_invariant`, `BHW.extendF_complexLorentzInvariant_of_cinv`, `BHW.HallWightmanFullComplexLorentzGroup`, `BHW.HallWightmanFullComplexLorentzInvariantOnForwardTube`, `BHW.fullOrthochronousRealLorentz_preserves_forwardTube`, `BHW.hallWightman_improperComponentInvariant_forwardTube`, and `BHW.hallWightmanFullComplexLorentzInvariantOnExtendedTube_eq` | Proper determinant-`1` `extendF` support now has a checked direct bridge in `ComplexInvariance/Extend.lean` via `BHW.extendF_preimage_eq_of_cinv`.  The conditional pure-Gram fork still needs the improper-component source input because proper invariance alone has a full-rank determinant obstruction; the active oriented fork avoids that input by carrying full-frame determinants. |
-| Lemma 2, high rank | Checked finite support: `BHW.HWHighRankSpanIsometryData`, `BHW.hw_highRank_spanIsometryData_of_sameSourceGram`; public orbit assembly transcript pinned. | Coefficient quotient, common Gram kernel, nondegenerate restricted span, and span-isometry data are implemented in `BHWPermutation/SourceRank.lean`.  The full-complex group algebra, full-frame determinant-ratio theorem, full-group determinant action, proper-span complement/nonisotropic theorem, Householder determinant subpacket, and proper-span determinant-`-1` reflection consumer are now implemented in `BHWPermutation/SourceFullComplexLorentz.lean`, `SourceFullComplexLorentzFrame.lean`, and `SourceRank.lean`.  The remaining Lean work in this row is the nondegenerate-complement Witt extension/classification packet and final vectorwise-to-configuration orbit conversion.  Production Lean must continue at those finite-dimensional support lemmas, not at the public orbit theorem. |
-| Lemma 2, low rank | `BHW.HWSameSourceGramSingularContractionData`, `BHW.hw_sameSourceGram_singular_contractionData`, `BHW.hw_sameSourceGram_singularLimit_extendF_eq` | Proof transcript pinned.  The residual isotropic-frame geometry, coefficient-freedom extended-tube theorem, null-boost contraction family, and two-curve continuity limit inside `ExtendedTube d n` are decomposed into named Lean surfaces. |
+| Lemma 2, high rank | Checked finite support and public active orbit consumer: `BHW.HWHighRankSpanIsometryData`, `BHW.hw_highRank_spanIsometryData_of_sameSourceGram`, `BHW.complexMinkowski_wittExtension_full_of_sourceSpan`, `BHW.complexMinkowski_wittExtension_detOne_of_sourceSpan`, `BHW.hw_sameSourceGram_regular_orbit`, and `BHW.hw_sameSourceOrientedInvariant_maxRank_properOrbit`. | Coefficient quotient, common Gram kernel, restricted-span nondegeneracy, span-isometry data, full-complex group algebra, full-frame determinant-ratio theorem, reflection determinant repair, nondegenerate-complement classification over `ℂ`, complement-Witt extension, determinant-`1` packaging, and final vectorwise-to-configuration orbit conversion are implemented across `BHWPermutation/SourceRank.lean`, `SourceFullComplexLorentz.lean`, `SourceFullComplexLorentzFrame.lean`, and `SourceFullComplexLorentzWitt.lean`.  No active oriented-route high-rank blocker remains; the determinant-`-1` pure-Gram fork is conditional side work, not needed by the oriented theorem-2 route. |
+| Lemma 2, low rank | Checked data/analytic support: `BHW.ComplexMinkowskiTotallyIsotropicSubspace`, `BHW.complexMinkowskiTotallyIsotropic_span_range`, `BHW.span_frame_orthogonal_to_subspace`, `BHW.HWSameSourceGramSingularContractionData`, `BHW.HWLowRankIsotropicNormalForm`, `BHW.hw_lowRank_isotropicNormalForm_to_contractionData`, and `BHW.hw_sameSourceGram_singularLimit_extendF_eq`; remaining geometric producer: `BHW.hw_lowRank_isotropicNormalForm_of_sameSourceGram`, hence `BHW.hw_sameSourceGram_singular_contractionData`. | The residual isotropic-frame geometry, coefficient-freedom extended-tube theorem, null-boost contraction family, and two-curve fields are decomposed into named Lean surfaces.  The low-rank finite-frame span induction, normal-form carrier, conversion to contraction data, and two-curve continuity limit inside `ExtendedTube d n` are production Lean in `BHWPermutation/SourceHWSingularLimit.lean`; the remaining work is the finite-dimensional construction of the normal form. |
 | Lemma 3 | `BHW.hwLemma3_extendedTube_adaptedRankRepresentative`, `BHW.hwLemma3_adapted_sourceGram_localVectorRealization`, `BHW.sourceExtendedTubeGramDomain_relOpen` | Proof transcript pinned.  Connectedness is mechanical; relative openness is reduced to adapted same-Gram realization, normal-form transport, Schur/Takagi residual realization, and the final extended-tube shrink. |
 | Lemma 4 | `BHW.ComplexMinkowskiSkewGenerator`, `BHW.lorentzInfinitesimalTangent`, `BHW.hallWightman_lorentzInfinitesimalEquations` | Proof transcript pinned; production must differentiate the complex Lorentz exponential curve and use extended-tube invariance of `extendF`. |
 | Lemmas 5--7 | `BHW.sourceGramDifferential_*`, `BHW.hallWightman_maxRank_scalarDifferentials_span_PDE`, `BHW.hallWightman_powerSeries_from_PDE_span`, `BHW.hallWightman_maxRank_powerSeriesChart_at` | Proof transcript pinned.  The finite-dimensional kernel/rank theorem, selected-row data, auxiliary-coordinate split, and power-series independence at rank `min (d + 1) n` are recorded; production Lean must implement those rows before max-rank scalar charts. |
@@ -7031,7 +7033,6 @@ lemmas, `BHW.sourceCoefficientEval`,
 `BHW.hallWightman_improperComponentInvariant_forwardTube`,
 `BHW.hallWightmanFullComplexLorentzInvariantOnExtendedTube_eq`,
 `BHW.bvt_F_realOrthoChronousInvariant`,
-`BHW.hw_sameSourceGram_singularLimit_extendF_eq`,
 `BHW.hwLemma3_extendedTube_adaptedRankRepresentative`,
 `BHW.hwLemma3_adapted_sourceGram_localVectorRealization`,
 `BHW.hallWightman_maxRank_powerSeriesChart_at`,
