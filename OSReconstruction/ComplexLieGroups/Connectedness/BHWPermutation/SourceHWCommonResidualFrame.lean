@@ -923,6 +923,69 @@ noncomputable def directSum_scale_sup_equiv
     ((scaleA.prodCongr scaleB).trans
       (Submodule.prodEquivOfIsCompl As Bs hcompl))
 
+/-- Determinant of two-summand scaling inside a direct supremum. -/
+theorem directSum_scale_sup_equiv_det
+    {d : ℕ}
+    {A B : Submodule ℂ (Fin (d + 1) → ℂ)}
+    (hdisj : Disjoint A B)
+    (α β : ℂ) (hα : α ≠ 0) (hβ : β ≠ 0) :
+    LinearMap.det (directSum_scale_sup_equiv (d := d) (A := A) (B := B)
+        hdisj α β hα hβ).toLinearMap =
+      α ^ Module.finrank ℂ A * β ^ Module.finrank ℂ B := by
+  let S : Submodule ℂ (Fin (d + 1) → ℂ) := A ⊔ B
+  let As : Submodule ℂ S := A.comap S.subtype
+  let Bs : Submodule ℂ S := B.comap S.subtype
+  letI : AddCommGroup As := inferInstance
+  letI : AddCommGroup Bs := inferInstance
+  letI : AddCommGroup (As × Bs) := inferInstance
+  letI : Module.Free ℂ As := Module.Free.of_divisionRing ℂ As
+  letI : Module.Free ℂ Bs := Module.Free.of_divisionRing ℂ Bs
+  letI : Module.Finite ℂ As := inferInstance
+  letI : Module.Finite ℂ Bs := inferInstance
+  have hcompl : IsCompl As Bs := by
+    simpa [S, As, Bs] using
+      isCompl_comap_sup_subtype_of_disjoint
+        (d := d) (M := A) (R := B) hdisj
+  let eA : As ≃ₗ[ℂ] A :=
+    Submodule.comapSubtypeEquivOfLe (show A ≤ S from le_sup_left)
+  let eB : Bs ≃ₗ[ℂ] B :=
+    Submodule.comapSubtypeEquivOfLe (show B ≤ S from le_sup_right)
+  let scaleA : As ≃ₗ[ℂ] As :=
+    eA.trans ((submoduleScaleLinearEquiv A α hα).trans eA.symm)
+  let scaleB : Bs ≃ₗ[ℂ] Bs :=
+    eB.trans ((submoduleScaleLinearEquiv B β hβ).trans eB.symm)
+  let E := Submodule.prodEquivOfIsCompl As Bs hcompl
+  let F := scaleA.prodCongr scaleB
+  have hT :
+      directSum_scale_sup_equiv (d := d) (A := A) (B := B)
+        hdisj α β hα hβ = (E.symm.trans F).trans E := by
+    rfl
+  rw [hT]
+  rw [← LinearEquiv.coe_det ((E.symm.trans F).trans E)]
+  rw [LinearEquiv.det_conj F E]
+  rw [LinearEquiv.coe_det]
+  rw [LinearEquiv.coe_prodCongr]
+  rw [LinearMap.det_prodMap]
+  have hscaleA :
+      LinearMap.det scaleA.toLinearMap = α ^ Module.finrank ℂ A := by
+    rw [← LinearEquiv.coe_det scaleA]
+    rw [show LinearEquiv.det scaleA =
+        LinearEquiv.det (submoduleScaleLinearEquiv A α hα) by
+      simpa [scaleA] using
+        LinearEquiv.det_conj (submoduleScaleLinearEquiv A α hα) eA.symm]
+    rw [LinearEquiv.coe_det]
+    exact submoduleScaleLinearEquiv_det A α hα
+  have hscaleB :
+      LinearMap.det scaleB.toLinearMap = β ^ Module.finrank ℂ B := by
+    rw [← LinearEquiv.coe_det scaleB]
+    rw [show LinearEquiv.det scaleB =
+        LinearEquiv.det (submoduleScaleLinearEquiv B β hβ) by
+      simpa [scaleB] using
+        LinearEquiv.det_conj (submoduleScaleLinearEquiv B β hβ) eB.symm]
+    rw [LinearEquiv.coe_det]
+    exact submoduleScaleLinearEquiv_det B β hβ
+  rw [hscaleA, hscaleB]
+
 /-- The two-summand scaling equivalence scales the left summand. -/
 theorem directSum_scale_sup_equiv_maps_left
     {d : ℕ}
@@ -1109,6 +1172,61 @@ noncomputable def directSum_congr_sup_equiv
   let EB' : Bs ≃ₗ[ℂ] Bs := eB.trans (EB.trans eB.symm)
   exact (Submodule.prodEquivOfIsCompl As Bs hcompl).symm.trans
     ((EA'.prodCongr EB').trans (Submodule.prodEquivOfIsCompl As Bs hcompl))
+
+/-- Determinant of independent linear equivalences on two direct summands. -/
+theorem directSum_congr_sup_equiv_det
+    {d : ℕ}
+    {A B : Submodule ℂ (Fin (d + 1) → ℂ)}
+    (hdisj : Disjoint A B)
+    (EA : A ≃ₗ[ℂ] A) (EB : B ≃ₗ[ℂ] B) :
+    LinearMap.det (directSum_congr_sup_equiv (d := d) (A := A) (B := B)
+        hdisj EA EB).toLinearMap =
+      LinearMap.det EA.toLinearMap * LinearMap.det EB.toLinearMap := by
+  let S : Submodule ℂ (Fin (d + 1) → ℂ) := A ⊔ B
+  let As : Submodule ℂ S := A.comap S.subtype
+  let Bs : Submodule ℂ S := B.comap S.subtype
+  letI : AddCommGroup As := inferInstance
+  letI : AddCommGroup Bs := inferInstance
+  letI : AddCommGroup (As × Bs) := inferInstance
+  letI : Module.Free ℂ As := Module.Free.of_divisionRing ℂ As
+  letI : Module.Free ℂ Bs := Module.Free.of_divisionRing ℂ Bs
+  letI : Module.Finite ℂ As := inferInstance
+  letI : Module.Finite ℂ Bs := inferInstance
+  have hcompl : IsCompl As Bs := by
+    simpa [S, As, Bs] using
+      isCompl_comap_sup_subtype_of_disjoint
+        (d := d) (M := A) (R := B) hdisj
+  let eA : As ≃ₗ[ℂ] A :=
+    Submodule.comapSubtypeEquivOfLe (show A ≤ S from le_sup_left)
+  let eB : Bs ≃ₗ[ℂ] B :=
+    Submodule.comapSubtypeEquivOfLe (show B ≤ S from le_sup_right)
+  let EA' : As ≃ₗ[ℂ] As := eA.trans (EA.trans eA.symm)
+  let EB' : Bs ≃ₗ[ℂ] Bs := eB.trans (EB.trans eB.symm)
+  let E := Submodule.prodEquivOfIsCompl As Bs hcompl
+  let F := EA'.prodCongr EB'
+  have hT :
+      directSum_congr_sup_equiv (d := d) (A := A) (B := B)
+        hdisj EA EB = (E.symm.trans F).trans E := by
+    rfl
+  rw [hT]
+  rw [← LinearEquiv.coe_det ((E.symm.trans F).trans E)]
+  rw [LinearEquiv.det_conj F E]
+  rw [LinearEquiv.coe_det]
+  rw [LinearEquiv.coe_prodCongr]
+  rw [LinearMap.det_prodMap]
+  have hEA' : LinearMap.det EA'.toLinearMap =
+      LinearMap.det EA.toLinearMap := by
+    rw [← LinearEquiv.coe_det EA']
+    rw [show LinearEquiv.det EA' = LinearEquiv.det EA by
+      simpa [EA'] using LinearEquiv.det_conj EA eA.symm]
+    rw [LinearEquiv.coe_det]
+  have hEB' : LinearMap.det EB'.toLinearMap =
+      LinearMap.det EB.toLinearMap := by
+    rw [← LinearEquiv.coe_det EB']
+    rw [show LinearEquiv.det EB' = LinearEquiv.det EB by
+      simpa [EB'] using LinearEquiv.det_conj EB eB.symm]
+    rw [LinearEquiv.coe_det]
+  rw [hEA', hEB']
 
 /-- If `x = a + b`, the direct-sum congruence sends `x` to
 `EA a + EB b`. -/
@@ -1450,6 +1568,54 @@ noncomputable def complexMinkowski_hyperbolicFrameSpanContraction
     hdisj ((Real.exp (-t) : ℝ) : ℂ) ((Real.exp t : ℝ) : ℂ)
     (complex_exp_neg_ne_zero t) (complex_exp_pos_ne_zero t)
 
+/-- The hyperbolic-block contraction has determinant one. -/
+theorem complexMinkowski_hyperbolicFrameSpanContraction_det
+    {d s : ℕ}
+    {q qDual : Fin s → Fin (d + 1) → ℂ}
+    (hqDual_pair_zero :
+      ∀ c c', sourceComplexMinkowskiInner d (qDual c) (qDual c') = 0)
+    (hdual :
+      ∀ c c', sourceComplexMinkowskiInner d (q c) (qDual c') =
+        if c = c' then (1 : ℂ) else 0)
+    (t : ℝ) :
+    LinearMap.det (complexMinkowski_hyperbolicFrameSpanContraction
+        (d := d) (s := s) (q := q) (qDual := qDual)
+        hqDual_pair_zero hdual t).toLinearMap = 1 := by
+  let Q : Submodule ℂ (Fin (d + 1) → ℂ) := Submodule.span ℂ (Set.range q)
+  let Qd : Submodule ℂ (Fin (d + 1) → ℂ) :=
+    Submodule.span ℂ (Set.range qDual)
+  let α : ℂ := ((Real.exp (-t) : ℝ) : ℂ)
+  let β : ℂ := ((Real.exp t : ℝ) : ℂ)
+  have hdisj : Disjoint Q Qd := by
+    simpa [Q, Qd] using
+      complexMinkowski_span_frame_disjoint_dualFrame
+        (d := d) (s := s) (q := q) (qDual := qDual)
+        hqDual_pair_zero hdual
+  have hQfin : Module.finrank ℂ Q = s := by
+    simpa [Q] using
+      finrank_span_eq_card (R := ℂ) (b := q)
+        (complexMinkowski_dualPair_linearIndependent_left
+          (d := d) (s := s) (q := q) (qDual := qDual) hdual)
+  have hQdfin : Module.finrank ℂ Qd = s := by
+    simpa [Qd] using
+      finrank_span_eq_card (R := ℂ) (b := qDual)
+        (complexMinkowski_dualPair_linearIndependent_right
+          (d := d) (s := s) (q := q) (qDual := qDual) hdual)
+  have hdet :=
+    directSum_scale_sup_equiv_det
+      (d := d) (A := Q) (B := Qd) hdisj α β
+      (complex_exp_neg_ne_zero t) (complex_exp_pos_ne_zero t)
+  calc
+    LinearMap.det (complexMinkowski_hyperbolicFrameSpanContraction
+        (d := d) (s := s) (q := q) (qDual := qDual)
+        hqDual_pair_zero hdual t).toLinearMap
+        = α ^ Module.finrank ℂ Q * β ^ Module.finrank ℂ Qd := by
+            simpa [complexMinkowski_hyperbolicFrameSpanContraction,
+              Q, Qd, α, β] using hdet
+    _ = α ^ s * β ^ s := by rw [hQfin, hQdfin]
+    _ = 1 := by
+            simpa [α, β] using complex_exp_neg_pow_mul_exp_pow t s
+
 /-- The hyperbolic-block contraction scales the residual frame by
 `exp (-t)`. -/
 theorem complexMinkowski_hyperbolicFrameSpanContraction_maps_q
@@ -1637,6 +1803,57 @@ noncomputable def complexMinkowski_selectedHyperbolicContraction
         hqDual_pair_zero hdual t
   exact directSum_congr_sup_equiv (d := d) (A := M) (B := H)
     hdisj (LinearEquiv.refl ℂ M) TH
+
+/-- The selected-plus-hyperbolic block contraction has determinant one. -/
+theorem complexMinkowski_selectedHyperbolicContraction_det
+    {d s : ℕ}
+    {M : Submodule ℂ (Fin (d + 1) → ℂ)}
+    {q qDual : Fin s → Fin (d + 1) → ℂ}
+    (hM : ComplexMinkowskiNondegenerateSubspace d M)
+    (hq_orth_M :
+      ∀ c (m : M), sourceComplexMinkowskiInner d (q c)
+        (m : Fin (d + 1) → ℂ) = 0)
+    (hqDual_orth_M :
+      ∀ c (m : M), sourceComplexMinkowskiInner d (qDual c)
+        (m : Fin (d + 1) → ℂ) = 0)
+    (hqDual_pair_zero :
+      ∀ c c', sourceComplexMinkowskiInner d (qDual c) (qDual c') = 0)
+    (hdual :
+      ∀ c c', sourceComplexMinkowskiInner d (q c) (qDual c') =
+        if c = c' then (1 : ℂ) else 0)
+    (t : ℝ) :
+    LinearMap.det (complexMinkowski_selectedHyperbolicContraction
+        (d := d) (s := s) (M := M) (q := q) (qDual := qDual)
+        hM hq_orth_M hqDual_orth_M hqDual_pair_zero hdual t).toLinearMap =
+      1 := by
+  let H : Submodule ℂ (Fin (d + 1) → ℂ) :=
+    Submodule.span ℂ (Set.range q) ⊔ Submodule.span ℂ (Set.range qDual)
+  have hdisj : Disjoint M H := by
+    simpa [H] using
+      complexMinkowski_selected_disjoint_hyperbolicFrameSpan
+        (d := d) (s := s) (M := M) (q := q) (qDual := qDual)
+        hM hq_orth_M hqDual_orth_M
+  let TH : H ≃ₗ[ℂ] H := by
+    simpa [H] using
+      complexMinkowski_hyperbolicFrameSpanContraction
+        (d := d) (s := s) (q := q) (qDual := qDual)
+        hqDual_pair_zero hdual t
+  have hTHdet : LinearMap.det TH.toLinearMap = 1 := by
+    simpa [TH, H] using
+      complexMinkowski_hyperbolicFrameSpanContraction_det
+        (d := d) (s := s) (q := q) (qDual := qDual)
+        hqDual_pair_zero hdual t
+  have hdet :=
+    directSum_congr_sup_equiv_det
+      (d := d) (A := M) (B := H) hdisj (LinearEquiv.refl ℂ M) TH
+  calc
+    LinearMap.det (complexMinkowski_selectedHyperbolicContraction
+        (d := d) (s := s) (M := M) (q := q) (qDual := qDual)
+        hM hq_orth_M hqDual_orth_M hqDual_pair_zero hdual t).toLinearMap
+        = LinearMap.det TH.toLinearMap := by
+            simpa [complexMinkowski_selectedHyperbolicContraction, H, TH]
+              using hdet
+    _ = 1 := hTHdet
 
 /-- The selected-plus-hyperbolic contraction fixes the selected block. -/
 theorem complexMinkowski_selectedHyperbolicContraction_maps_M
@@ -1919,6 +2136,662 @@ theorem complexMinkowski_selectedHyperbolicContraction_preserves
     mx, my, hxH, hyH,
     sourceComplexMinkowskiInner_comm d (mx : Fin (d + 1) → ℂ)
       ((TH hyH : H) : Fin (d + 1) → ℂ)]
+
+/-- Extend the selected-plus-hyperbolic contraction by the identity on the
+orthogonal complement of the nondegenerate block. -/
+noncomputable def complexMinkowski_selectedHyperbolicContraction_globalLinearEquiv
+    {d s : ℕ}
+    {M : Submodule ℂ (Fin (d + 1) → ℂ)}
+    {q qDual : Fin s → Fin (d + 1) → ℂ}
+    (hM : ComplexMinkowskiNondegenerateSubspace d M)
+    (hq_orth_M :
+      ∀ c (m : M), sourceComplexMinkowskiInner d (q c)
+        (m : Fin (d + 1) → ℂ) = 0)
+    (hqDual_orth_M :
+      ∀ c (m : M), sourceComplexMinkowskiInner d (qDual c)
+        (m : Fin (d + 1) → ℂ) = 0)
+    (hq_pair_zero :
+      ∀ c c', sourceComplexMinkowskiInner d (q c) (q c') = 0)
+    (hqDual_pair_zero :
+      ∀ c c', sourceComplexMinkowskiInner d (qDual c) (qDual c') = 0)
+    (hdual :
+      ∀ c c', sourceComplexMinkowskiInner d (q c) (qDual c') =
+        if c = c' then (1 : ℂ) else 0)
+    (t : ℝ) :
+    (Fin (d + 1) → ℂ) ≃ₗ[ℂ] (Fin (d + 1) → ℂ) := by
+  let H : Submodule ℂ (Fin (d + 1) → ℂ) :=
+    Submodule.span ℂ (Set.range q) ⊔ Submodule.span ℂ (Set.range qDual)
+  let K : Submodule ℂ (Fin (d + 1) → ℂ) := M ⊔ H
+  let T : K ≃ₗ[ℂ] K := by
+    simpa [K, H] using
+      complexMinkowski_selectedHyperbolicContraction
+        (d := d) (s := s) (M := M) (q := q) (qDual := qDual)
+        hM hq_orth_M hqDual_orth_M hqDual_pair_zero hdual t
+  have hK_nondeg : ComplexMinkowskiNondegenerateSubspace d K := by
+    simpa [K, H] using
+      complexMinkowski_selected_sup_hyperbolicFrameSpan_nondegenerate
+        (d := d) (s := s) (M := M) (q := q) (qDual := qDual)
+        hM hq_orth_M hqDual_orth_M hq_pair_zero hqDual_pair_zero hdual
+  let B := sourceComplexMinkowskiBilinForm d
+  have hK_rest : (B.restrict K).Nondegenerate :=
+    complexMinkowskiNondegenerateSubspace_to_restrict d K hK_nondeg
+  have hK_compl0 : IsCompl K (B.orthogonal K) :=
+    (LinearMap.BilinForm.restrict_nondegenerate_iff_isCompl_orthogonal
+      (B := B) (W := K)
+      (sourceComplexMinkowskiBilinForm_isRefl d)).mp hK_rest
+  have hK_compl :
+      IsCompl K (complexMinkowskiOrthogonalSubmodule d K) := by
+    simpa [B,
+      sourceComplexMinkowskiBilinForm_orthogonal_eq_complexMinkowskiOrthogonalSubmodule
+        d K] using hK_compl0
+  let OK := complexMinkowskiOrthogonalSubmodule d K
+  let eK : (K × OK) ≃ₗ[ℂ] (Fin (d + 1) → ℂ) :=
+    Submodule.prodEquivOfIsCompl K OK hK_compl
+  let P : (K × OK) ≃ₗ[ℂ] (K × OK) :=
+    T.prodCongr (LinearEquiv.refl ℂ OK)
+  exact (eK.symm.trans P).trans eK
+
+/-- On the nondegenerate selected-plus-hyperbolic block, the global extension
+acts as the block contraction. -/
+theorem complexMinkowski_selectedHyperbolicContraction_globalLinearEquiv_apply_block
+    {d s : ℕ}
+    {M : Submodule ℂ (Fin (d + 1) → ℂ)}
+    {q qDual : Fin s → Fin (d + 1) → ℂ}
+    (hM : ComplexMinkowskiNondegenerateSubspace d M)
+    (hq_orth_M :
+      ∀ c (m : M), sourceComplexMinkowskiInner d (q c)
+        (m : Fin (d + 1) → ℂ) = 0)
+    (hqDual_orth_M :
+      ∀ c (m : M), sourceComplexMinkowskiInner d (qDual c)
+        (m : Fin (d + 1) → ℂ) = 0)
+    (hq_pair_zero :
+      ∀ c c', sourceComplexMinkowskiInner d (q c) (q c') = 0)
+    (hqDual_pair_zero :
+      ∀ c c', sourceComplexMinkowskiInner d (qDual c) (qDual c') = 0)
+    (hdual :
+      ∀ c c', sourceComplexMinkowskiInner d (q c) (qDual c') =
+        if c = c' then (1 : ℂ) else 0)
+    (t : ℝ)
+    (k : ↥(M ⊔ (Submodule.span ℂ (Set.range q) ⊔
+      Submodule.span ℂ (Set.range qDual)))) :
+    complexMinkowski_selectedHyperbolicContraction_globalLinearEquiv
+        (d := d) (s := s) (M := M) (q := q) (qDual := qDual)
+        hM hq_orth_M hqDual_orth_M hq_pair_zero hqDual_pair_zero hdual t
+        (k : Fin (d + 1) → ℂ) =
+      (complexMinkowski_selectedHyperbolicContraction
+        (d := d) (s := s) (M := M) (q := q) (qDual := qDual)
+        hM hq_orth_M hqDual_orth_M hqDual_pair_zero hdual t
+        k : Fin (d + 1) → ℂ) := by
+  let H : Submodule ℂ (Fin (d + 1) → ℂ) :=
+    Submodule.span ℂ (Set.range q) ⊔ Submodule.span ℂ (Set.range qDual)
+  let K : Submodule ℂ (Fin (d + 1) → ℂ) := M ⊔ H
+  let T : K ≃ₗ[ℂ] K := by
+    simpa [K, H] using
+      complexMinkowski_selectedHyperbolicContraction
+        (d := d) (s := s) (M := M) (q := q) (qDual := qDual)
+        hM hq_orth_M hqDual_orth_M hqDual_pair_zero hdual t
+  have hK_nondeg : ComplexMinkowskiNondegenerateSubspace d K := by
+    simpa [K, H] using
+      complexMinkowski_selected_sup_hyperbolicFrameSpan_nondegenerate
+        (d := d) (s := s) (M := M) (q := q) (qDual := qDual)
+        hM hq_orth_M hqDual_orth_M hq_pair_zero hqDual_pair_zero hdual
+  let B := sourceComplexMinkowskiBilinForm d
+  have hK_rest : (B.restrict K).Nondegenerate :=
+    complexMinkowskiNondegenerateSubspace_to_restrict d K hK_nondeg
+  have hK_compl0 : IsCompl K (B.orthogonal K) :=
+    (LinearMap.BilinForm.restrict_nondegenerate_iff_isCompl_orthogonal
+      (B := B) (W := K)
+      (sourceComplexMinkowskiBilinForm_isRefl d)).mp hK_rest
+  have hK_compl :
+      IsCompl K (complexMinkowskiOrthogonalSubmodule d K) := by
+    simpa [B,
+      sourceComplexMinkowskiBilinForm_orthogonal_eq_complexMinkowskiOrthogonalSubmodule
+        d K] using hK_compl0
+  let OK := complexMinkowskiOrthogonalSubmodule d K
+  let eK : (K × OK) ≃ₗ[ℂ] (Fin (d + 1) → ℂ) :=
+    Submodule.prodEquivOfIsCompl K OK hK_compl
+  let P : (K × OK) ≃ₗ[ℂ] (K × OK) :=
+    T.prodCongr (LinearEquiv.refl ℂ OK)
+  let L : (Fin (d + 1) → ℂ) ≃ₗ[ℂ] (Fin (d + 1) → ℂ) :=
+    (eK.symm.trans P).trans eK
+  have hL :
+      complexMinkowski_selectedHyperbolicContraction_globalLinearEquiv
+        (d := d) (s := s) (M := M) (q := q) (qDual := qDual)
+        hM hq_orth_M hqDual_orth_M hq_pair_zero hqDual_pair_zero hdual t =
+        L := by
+    rfl
+  have hsymm :
+      eK.symm (k : Fin (d + 1) → ℂ) = ((k : K), (0 : OK)) := by
+    simp [eK]
+  rw [hL]
+  calc
+    L (k : Fin (d + 1) → ℂ) =
+        eK (P (eK.symm (k : Fin (d + 1) → ℂ))) := by
+          rfl
+    _ = eK (P ((k : K), (0 : OK))) := by rw [hsymm]
+    _ = eK (T (k : K), (0 : OK)) := by simp [P]
+    _ = (T (k : K) : Fin (d + 1) → ℂ) := by
+          simp [eK, Submodule.coe_prodEquivOfIsCompl']
+    _ =
+        (complexMinkowski_selectedHyperbolicContraction
+          (d := d) (s := s) (M := M) (q := q) (qDual := qDual)
+          hM hq_orth_M hqDual_orth_M hqDual_pair_zero hdual t
+          k : Fin (d + 1) → ℂ) := by
+          rfl
+
+/-- The global contraction fixes the selected block. -/
+theorem complexMinkowski_selectedHyperbolicContraction_globalLinearEquiv_maps_M
+    {d s : ℕ}
+    {M : Submodule ℂ (Fin (d + 1) → ℂ)}
+    {q qDual : Fin s → Fin (d + 1) → ℂ}
+    (hM : ComplexMinkowskiNondegenerateSubspace d M)
+    (hq_orth_M :
+      ∀ c (m : M), sourceComplexMinkowskiInner d (q c)
+        (m : Fin (d + 1) → ℂ) = 0)
+    (hqDual_orth_M :
+      ∀ c (m : M), sourceComplexMinkowskiInner d (qDual c)
+        (m : Fin (d + 1) → ℂ) = 0)
+    (hq_pair_zero :
+      ∀ c c', sourceComplexMinkowskiInner d (q c) (q c') = 0)
+    (hqDual_pair_zero :
+      ∀ c c', sourceComplexMinkowskiInner d (qDual c) (qDual c') = 0)
+    (hdual :
+      ∀ c c', sourceComplexMinkowskiInner d (q c) (qDual c') =
+        if c = c' then (1 : ℂ) else 0)
+    (t : ℝ) (m : M) :
+    complexMinkowski_selectedHyperbolicContraction_globalLinearEquiv
+        (d := d) (s := s) (M := M) (q := q) (qDual := qDual)
+        hM hq_orth_M hqDual_orth_M hq_pair_zero hqDual_pair_zero hdual t
+        (m : Fin (d + 1) → ℂ) =
+      (m : Fin (d + 1) → ℂ) := by
+  let k : ↥(M ⊔ (Submodule.span ℂ (Set.range q) ⊔
+      Submodule.span ℂ (Set.range qDual))) :=
+    ⟨(m : Fin (d + 1) → ℂ), Submodule.mem_sup_left m.2⟩
+  calc
+    complexMinkowski_selectedHyperbolicContraction_globalLinearEquiv
+        (d := d) (s := s) (M := M) (q := q) (qDual := qDual)
+        hM hq_orth_M hqDual_orth_M hq_pair_zero hqDual_pair_zero hdual t
+        (m : Fin (d + 1) → ℂ)
+        =
+      (complexMinkowski_selectedHyperbolicContraction
+        (d := d) (s := s) (M := M) (q := q) (qDual := qDual)
+        hM hq_orth_M hqDual_orth_M hqDual_pair_zero hdual t
+        k : Fin (d + 1) → ℂ) := by
+          simpa [k] using
+            complexMinkowski_selectedHyperbolicContraction_globalLinearEquiv_apply_block
+              (d := d) (s := s) (M := M) (q := q) (qDual := qDual)
+              hM hq_orth_M hqDual_orth_M hq_pair_zero hqDual_pair_zero
+              hdual t k
+    _ = (m : Fin (d + 1) → ℂ) := by
+          simpa [k] using
+            complexMinkowski_selectedHyperbolicContraction_maps_M
+              (d := d) (s := s) (M := M) (q := q) (qDual := qDual)
+              hM hq_orth_M hqDual_orth_M hqDual_pair_zero hdual t m
+
+/-- The global contraction scales the residual frame by `exp (-t)`. -/
+theorem complexMinkowski_selectedHyperbolicContraction_globalLinearEquiv_maps_q
+    {d s : ℕ}
+    {M : Submodule ℂ (Fin (d + 1) → ℂ)}
+    {q qDual : Fin s → Fin (d + 1) → ℂ}
+    (hM : ComplexMinkowskiNondegenerateSubspace d M)
+    (hq_orth_M :
+      ∀ c (m : M), sourceComplexMinkowskiInner d (q c)
+        (m : Fin (d + 1) → ℂ) = 0)
+    (hqDual_orth_M :
+      ∀ c (m : M), sourceComplexMinkowskiInner d (qDual c)
+        (m : Fin (d + 1) → ℂ) = 0)
+    (hq_pair_zero :
+      ∀ c c', sourceComplexMinkowskiInner d (q c) (q c') = 0)
+    (hqDual_pair_zero :
+      ∀ c c', sourceComplexMinkowskiInner d (qDual c) (qDual c') = 0)
+    (hdual :
+      ∀ c c', sourceComplexMinkowskiInner d (q c) (qDual c') =
+        if c = c' then (1 : ℂ) else 0)
+    (t : ℝ) (c : Fin s) :
+    complexMinkowski_selectedHyperbolicContraction_globalLinearEquiv
+        (d := d) (s := s) (M := M) (q := q) (qDual := qDual)
+        hM hq_orth_M hqDual_orth_M hq_pair_zero hqDual_pair_zero hdual t
+        (q c) =
+      ((Real.exp (-t) : ℝ) : ℂ) • q c := by
+  let hq_mem :
+      q c ∈ (Submodule.span ℂ (Set.range q) ⊔
+        Submodule.span ℂ (Set.range qDual)) :=
+    Submodule.mem_sup_left (Submodule.subset_span ⟨c, rfl⟩)
+  let k : ↥(M ⊔ (Submodule.span ℂ (Set.range q) ⊔
+      Submodule.span ℂ (Set.range qDual))) :=
+    ⟨q c, Submodule.mem_sup_right hq_mem⟩
+  calc
+    complexMinkowski_selectedHyperbolicContraction_globalLinearEquiv
+        (d := d) (s := s) (M := M) (q := q) (qDual := qDual)
+        hM hq_orth_M hqDual_orth_M hq_pair_zero hqDual_pair_zero hdual t
+        (q c)
+        =
+      (complexMinkowski_selectedHyperbolicContraction
+        (d := d) (s := s) (M := M) (q := q) (qDual := qDual)
+        hM hq_orth_M hqDual_orth_M hqDual_pair_zero hdual t
+        k : Fin (d + 1) → ℂ) := by
+          simpa [k] using
+            complexMinkowski_selectedHyperbolicContraction_globalLinearEquiv_apply_block
+              (d := d) (s := s) (M := M) (q := q) (qDual := qDual)
+              hM hq_orth_M hqDual_orth_M hq_pair_zero hqDual_pair_zero
+              hdual t k
+    _ = ((Real.exp (-t) : ℝ) : ℂ) • q c := by
+          simpa [k, hq_mem] using
+            complexMinkowski_selectedHyperbolicContraction_maps_q
+              (d := d) (s := s) (M := M) (q := q) (qDual := qDual)
+              hM hq_orth_M hqDual_orth_M hqDual_pair_zero hdual t c
+
+/-- The global contraction scales the dual residual frame by `exp t`. -/
+theorem complexMinkowski_selectedHyperbolicContraction_globalLinearEquiv_maps_qDual
+    {d s : ℕ}
+    {M : Submodule ℂ (Fin (d + 1) → ℂ)}
+    {q qDual : Fin s → Fin (d + 1) → ℂ}
+    (hM : ComplexMinkowskiNondegenerateSubspace d M)
+    (hq_orth_M :
+      ∀ c (m : M), sourceComplexMinkowskiInner d (q c)
+        (m : Fin (d + 1) → ℂ) = 0)
+    (hqDual_orth_M :
+      ∀ c (m : M), sourceComplexMinkowskiInner d (qDual c)
+        (m : Fin (d + 1) → ℂ) = 0)
+    (hq_pair_zero :
+      ∀ c c', sourceComplexMinkowskiInner d (q c) (q c') = 0)
+    (hqDual_pair_zero :
+      ∀ c c', sourceComplexMinkowskiInner d (qDual c) (qDual c') = 0)
+    (hdual :
+      ∀ c c', sourceComplexMinkowskiInner d (q c) (qDual c') =
+        if c = c' then (1 : ℂ) else 0)
+    (t : ℝ) (c : Fin s) :
+    complexMinkowski_selectedHyperbolicContraction_globalLinearEquiv
+        (d := d) (s := s) (M := M) (q := q) (qDual := qDual)
+        hM hq_orth_M hqDual_orth_M hq_pair_zero hqDual_pair_zero hdual t
+        (qDual c) =
+      ((Real.exp t : ℝ) : ℂ) • qDual c := by
+  let hqDual_mem :
+      qDual c ∈ (Submodule.span ℂ (Set.range q) ⊔
+        Submodule.span ℂ (Set.range qDual)) :=
+    Submodule.mem_sup_right (Submodule.subset_span ⟨c, rfl⟩)
+  let k : ↥(M ⊔ (Submodule.span ℂ (Set.range q) ⊔
+      Submodule.span ℂ (Set.range qDual))) :=
+    ⟨qDual c, Submodule.mem_sup_right hqDual_mem⟩
+  calc
+    complexMinkowski_selectedHyperbolicContraction_globalLinearEquiv
+        (d := d) (s := s) (M := M) (q := q) (qDual := qDual)
+        hM hq_orth_M hqDual_orth_M hq_pair_zero hqDual_pair_zero hdual t
+        (qDual c)
+        =
+      (complexMinkowski_selectedHyperbolicContraction
+        (d := d) (s := s) (M := M) (q := q) (qDual := qDual)
+        hM hq_orth_M hqDual_orth_M hqDual_pair_zero hdual t
+        k : Fin (d + 1) → ℂ) := by
+          simpa [k] using
+            complexMinkowski_selectedHyperbolicContraction_globalLinearEquiv_apply_block
+              (d := d) (s := s) (M := M) (q := q) (qDual := qDual)
+              hM hq_orth_M hqDual_orth_M hq_pair_zero hqDual_pair_zero
+              hdual t k
+    _ = ((Real.exp t : ℝ) : ℂ) • qDual c := by
+          simpa [k, hqDual_mem] using
+            complexMinkowski_selectedHyperbolicContraction_maps_qDual
+              (d := d) (s := s) (M := M) (q := q) (qDual := qDual)
+              hM hq_orth_M hqDual_orth_M hqDual_pair_zero hdual t c
+
+/-- The global contraction preserves the complex Minkowski pairing. -/
+theorem complexMinkowski_selectedHyperbolicContraction_globalLinearEquiv_preserves
+    {d s : ℕ}
+    {M : Submodule ℂ (Fin (d + 1) → ℂ)}
+    {q qDual : Fin s → Fin (d + 1) → ℂ}
+    (hM : ComplexMinkowskiNondegenerateSubspace d M)
+    (hq_orth_M :
+      ∀ c (m : M), sourceComplexMinkowskiInner d (q c)
+        (m : Fin (d + 1) → ℂ) = 0)
+    (hqDual_orth_M :
+      ∀ c (m : M), sourceComplexMinkowskiInner d (qDual c)
+        (m : Fin (d + 1) → ℂ) = 0)
+    (hq_pair_zero :
+      ∀ c c', sourceComplexMinkowskiInner d (q c) (q c') = 0)
+    (hqDual_pair_zero :
+      ∀ c c', sourceComplexMinkowskiInner d (qDual c) (qDual c') = 0)
+    (hdual :
+      ∀ c c', sourceComplexMinkowskiInner d (q c) (qDual c') =
+        if c = c' then (1 : ℂ) else 0)
+    (t : ℝ) :
+    let L := complexMinkowski_selectedHyperbolicContraction_globalLinearEquiv
+      (d := d) (s := s) (M := M) (q := q) (qDual := qDual)
+      hM hq_orth_M hqDual_orth_M hq_pair_zero hqDual_pair_zero hdual t
+    ∀ x y,
+      sourceComplexMinkowskiInner d (L x) (L y) =
+        sourceComplexMinkowskiInner d x y := by
+  intro L x y
+  let H : Submodule ℂ (Fin (d + 1) → ℂ) :=
+    Submodule.span ℂ (Set.range q) ⊔ Submodule.span ℂ (Set.range qDual)
+  let K : Submodule ℂ (Fin (d + 1) → ℂ) := M ⊔ H
+  let T : K ≃ₗ[ℂ] K := by
+    simpa [K, H] using
+      complexMinkowski_selectedHyperbolicContraction
+        (d := d) (s := s) (M := M) (q := q) (qDual := qDual)
+        hM hq_orth_M hqDual_orth_M hqDual_pair_zero hdual t
+  have hT_pres :
+      ∀ u v : K,
+        sourceComplexMinkowskiInner d (T u : Fin (d + 1) → ℂ)
+          (T v : Fin (d + 1) → ℂ) =
+        sourceComplexMinkowskiInner d (u : Fin (d + 1) → ℂ)
+          (v : Fin (d + 1) → ℂ) := by
+    simpa [T, K, H] using
+      complexMinkowski_selectedHyperbolicContraction_preserves
+        (d := d) (s := s) (M := M) (q := q) (qDual := qDual)
+        hM hq_orth_M hqDual_orth_M hq_pair_zero hqDual_pair_zero hdual t
+  have hK_nondeg : ComplexMinkowskiNondegenerateSubspace d K := by
+    simpa [K, H] using
+      complexMinkowski_selected_sup_hyperbolicFrameSpan_nondegenerate
+        (d := d) (s := s) (M := M) (q := q) (qDual := qDual)
+        hM hq_orth_M hqDual_orth_M hq_pair_zero hqDual_pair_zero hdual
+  let B := sourceComplexMinkowskiBilinForm d
+  have hK_rest : (B.restrict K).Nondegenerate :=
+    complexMinkowskiNondegenerateSubspace_to_restrict d K hK_nondeg
+  have hK_compl0 : IsCompl K (B.orthogonal K) :=
+    (LinearMap.BilinForm.restrict_nondegenerate_iff_isCompl_orthogonal
+      (B := B) (W := K)
+      (sourceComplexMinkowskiBilinForm_isRefl d)).mp hK_rest
+  have hK_compl :
+      IsCompl K (complexMinkowskiOrthogonalSubmodule d K) := by
+    simpa [B,
+      sourceComplexMinkowskiBilinForm_orthogonal_eq_complexMinkowskiOrthogonalSubmodule
+        d K] using hK_compl0
+  let OK := complexMinkowskiOrthogonalSubmodule d K
+  let eK : (K × OK) ≃ₗ[ℂ] (Fin (d + 1) → ℂ) :=
+    Submodule.prodEquivOfIsCompl K OK hK_compl
+  let P : (K × OK) ≃ₗ[ℂ] (K × OK) :=
+    T.prodCongr (LinearEquiv.refl ℂ OK)
+  let xu : K × OK := eK.symm x
+  let yv : K × OK := eK.symm y
+  calc
+    sourceComplexMinkowskiInner d (L x) (L y) =
+        sourceComplexMinkowskiInner d (eK (P xu)) (eK (P yv)) := by
+          simp [L, complexMinkowski_selectedHyperbolicContraction_globalLinearEquiv,
+            K, H, T, OK, eK, P, xu, yv]
+    _ =
+        sourceComplexMinkowskiInner d
+          ((P xu).1 : Fin (d + 1) → ℂ)
+          ((P yv).1 : Fin (d + 1) → ℂ) +
+        sourceComplexMinkowskiInner d
+          ((P xu).2 : Fin (d + 1) → ℂ)
+          ((P yv).2 : Fin (d + 1) → ℂ) := by
+          exact sourceInner_prodEquivOfIsCompl K hK_compl (P xu) (P yv)
+    _ =
+        sourceComplexMinkowskiInner d
+          (xu.1 : Fin (d + 1) → ℂ)
+          (yv.1 : Fin (d + 1) → ℂ) +
+        sourceComplexMinkowskiInner d
+          (xu.2 : Fin (d + 1) → ℂ)
+          (yv.2 : Fin (d + 1) → ℂ) := by
+          simp [P, hT_pres]
+    _ = sourceComplexMinkowskiInner d (eK xu) (eK yv) := by
+          rw [sourceInner_prodEquivOfIsCompl K hK_compl xu yv]
+    _ = sourceComplexMinkowskiInner d x y := by
+          simp [xu, yv]
+
+/-- The global contraction has determinant one. -/
+theorem complexMinkowski_selectedHyperbolicContraction_globalLinearEquiv_det
+    {d s : ℕ}
+    {M : Submodule ℂ (Fin (d + 1) → ℂ)}
+    {q qDual : Fin s → Fin (d + 1) → ℂ}
+    (hM : ComplexMinkowskiNondegenerateSubspace d M)
+    (hq_orth_M :
+      ∀ c (m : M), sourceComplexMinkowskiInner d (q c)
+        (m : Fin (d + 1) → ℂ) = 0)
+    (hqDual_orth_M :
+      ∀ c (m : M), sourceComplexMinkowskiInner d (qDual c)
+        (m : Fin (d + 1) → ℂ) = 0)
+    (hq_pair_zero :
+      ∀ c c', sourceComplexMinkowskiInner d (q c) (q c') = 0)
+    (hqDual_pair_zero :
+      ∀ c c', sourceComplexMinkowskiInner d (qDual c) (qDual c') = 0)
+    (hdual :
+      ∀ c c', sourceComplexMinkowskiInner d (q c) (qDual c') =
+        if c = c' then (1 : ℂ) else 0)
+    (t : ℝ) :
+    LinearMap.det (complexMinkowski_selectedHyperbolicContraction_globalLinearEquiv
+        (d := d) (s := s) (M := M) (q := q) (qDual := qDual)
+        hM hq_orth_M hqDual_orth_M hq_pair_zero hqDual_pair_zero hdual t).toLinearMap =
+      1 := by
+  let H : Submodule ℂ (Fin (d + 1) → ℂ) :=
+    Submodule.span ℂ (Set.range q) ⊔ Submodule.span ℂ (Set.range qDual)
+  let K : Submodule ℂ (Fin (d + 1) → ℂ) := M ⊔ H
+  let T : K ≃ₗ[ℂ] K := by
+    simpa [K, H] using
+      complexMinkowski_selectedHyperbolicContraction
+        (d := d) (s := s) (M := M) (q := q) (qDual := qDual)
+        hM hq_orth_M hqDual_orth_M hqDual_pair_zero hdual t
+  have hT_det : LinearMap.det T.toLinearMap = 1 := by
+    simpa [T, K, H] using
+      complexMinkowski_selectedHyperbolicContraction_det
+        (d := d) (s := s) (M := M) (q := q) (qDual := qDual)
+        hM hq_orth_M hqDual_orth_M hqDual_pair_zero hdual t
+  have hK_nondeg : ComplexMinkowskiNondegenerateSubspace d K := by
+    simpa [K, H] using
+      complexMinkowski_selected_sup_hyperbolicFrameSpan_nondegenerate
+        (d := d) (s := s) (M := M) (q := q) (qDual := qDual)
+        hM hq_orth_M hqDual_orth_M hq_pair_zero hqDual_pair_zero hdual
+  let B := sourceComplexMinkowskiBilinForm d
+  have hK_rest : (B.restrict K).Nondegenerate :=
+    complexMinkowskiNondegenerateSubspace_to_restrict d K hK_nondeg
+  have hK_compl0 : IsCompl K (B.orthogonal K) :=
+    (LinearMap.BilinForm.restrict_nondegenerate_iff_isCompl_orthogonal
+      (B := B) (W := K)
+      (sourceComplexMinkowskiBilinForm_isRefl d)).mp hK_rest
+  have hK_compl :
+      IsCompl K (complexMinkowskiOrthogonalSubmodule d K) := by
+    simpa [B,
+      sourceComplexMinkowskiBilinForm_orthogonal_eq_complexMinkowskiOrthogonalSubmodule
+        d K] using hK_compl0
+  let OK := complexMinkowskiOrthogonalSubmodule d K
+  letI : AddCommGroup K := inferInstance
+  letI : AddCommGroup OK := inferInstance
+  letI : AddCommGroup (K × OK) := inferInstance
+  letI : Module.Free ℂ K := Module.Free.of_divisionRing ℂ K
+  letI : Module.Free ℂ OK := Module.Free.of_divisionRing ℂ OK
+  letI : Module.Finite ℂ K := inferInstance
+  letI : Module.Finite ℂ OK := inferInstance
+  let eK : (K × OK) ≃ₗ[ℂ] (Fin (d + 1) → ℂ) :=
+    Submodule.prodEquivOfIsCompl K OK hK_compl
+  let P : (K × OK) ≃ₗ[ℂ] (K × OK) :=
+    T.prodCongr (LinearEquiv.refl ℂ OK)
+  let L : (Fin (d + 1) → ℂ) ≃ₗ[ℂ] (Fin (d + 1) → ℂ) :=
+    (eK.symm.trans P).trans eK
+  have hL :
+      complexMinkowski_selectedHyperbolicContraction_globalLinearEquiv
+        (d := d) (s := s) (M := M) (q := q) (qDual := qDual)
+        hM hq_orth_M hqDual_orth_M hq_pair_zero hqDual_pair_zero hdual t =
+        L := by
+    rfl
+  rw [hL]
+  rw [← LinearEquiv.coe_det L]
+  have hPdet : LinearMap.det P.toLinearMap = 1 := by
+    rw [← LinearEquiv.coe_det P]
+    rw [LinearEquiv.coe_det]
+    rw [LinearEquiv.coe_prodCongr]
+    rw [LinearMap.det_prodMap]
+    simp [hT_det]
+  have hdetP : LinearEquiv.det P = 1 := by
+    rw [← Units.val_inj]
+    simpa [LinearEquiv.coe_det] using hPdet
+  rw [show LinearEquiv.det L = LinearEquiv.det P by
+    simp [L]]
+  simp [hdetP]
+
+/-- The selected-plus-hyperbolic contraction as a proper complex Lorentz
+family. -/
+noncomputable def complexMinkowski_selectedHyperbolicContractionFamily
+    {d s : ℕ}
+    {M : Submodule ℂ (Fin (d + 1) → ℂ)}
+    {q qDual : Fin s → Fin (d + 1) → ℂ}
+    (hM : ComplexMinkowskiNondegenerateSubspace d M)
+    (hq_orth_M :
+      ∀ c (m : M), sourceComplexMinkowskiInner d (q c)
+        (m : Fin (d + 1) → ℂ) = 0)
+    (hqDual_orth_M :
+      ∀ c (m : M), sourceComplexMinkowskiInner d (qDual c)
+        (m : Fin (d + 1) → ℂ) = 0)
+    (hq_pair_zero :
+      ∀ c c', sourceComplexMinkowskiInner d (q c) (q c') = 0)
+    (hqDual_pair_zero :
+      ∀ c c', sourceComplexMinkowskiInner d (qDual c) (qDual c') = 0)
+    (hdual :
+      ∀ c c', sourceComplexMinkowskiInner d (q c) (qDual c') =
+        if c = c' then (1 : ℂ) else 0)
+    (t : ℝ) :
+    ComplexLorentzGroup d :=
+  let L :=
+    complexMinkowski_selectedHyperbolicContraction_globalLinearEquiv
+      (d := d) (s := s) (M := M) (q := q) (qDual := qDual)
+      hM hq_orth_M hqDual_orth_M hq_pair_zero hqDual_pair_zero hdual t
+  complexLorentzGroupOfLinearEquivPreservesInner d L
+    (complexMinkowski_selectedHyperbolicContraction_globalLinearEquiv_preserves
+      (d := d) (s := s) (M := M) (q := q) (qDual := qDual)
+      hM hq_orth_M hqDual_orth_M hq_pair_zero hqDual_pair_zero hdual t)
+    (complexMinkowski_selectedHyperbolicContraction_globalLinearEquiv_det
+      (d := d) (s := s) (M := M) (q := q) (qDual := qDual)
+      hM hq_orth_M hqDual_orth_M hq_pair_zero hqDual_pair_zero hdual t)
+
+/-- The packaged Lorentz family acts by the global linear equivalence. -/
+theorem complexMinkowski_selectedHyperbolicContractionFamily_vectorAction
+    {d s : ℕ}
+    {M : Submodule ℂ (Fin (d + 1) → ℂ)}
+    {q qDual : Fin s → Fin (d + 1) → ℂ}
+    (hM : ComplexMinkowskiNondegenerateSubspace d M)
+    (hq_orth_M :
+      ∀ c (m : M), sourceComplexMinkowskiInner d (q c)
+        (m : Fin (d + 1) → ℂ) = 0)
+    (hqDual_orth_M :
+      ∀ c (m : M), sourceComplexMinkowskiInner d (qDual c)
+        (m : Fin (d + 1) → ℂ) = 0)
+    (hq_pair_zero :
+      ∀ c c', sourceComplexMinkowskiInner d (q c) (q c') = 0)
+    (hqDual_pair_zero :
+      ∀ c c', sourceComplexMinkowskiInner d (qDual c) (qDual c') = 0)
+    (hdual :
+      ∀ c c', sourceComplexMinkowskiInner d (q c) (qDual c') =
+        if c = c' then (1 : ℂ) else 0)
+    (t : ℝ) (v : Fin (d + 1) → ℂ) :
+    complexLorentzVectorAction
+        (complexMinkowski_selectedHyperbolicContractionFamily
+          (d := d) (s := s) (M := M) (q := q) (qDual := qDual)
+          hM hq_orth_M hqDual_orth_M hq_pair_zero hqDual_pair_zero
+          hdual t) v =
+      complexMinkowski_selectedHyperbolicContraction_globalLinearEquiv
+        (d := d) (s := s) (M := M) (q := q) (qDual := qDual)
+        hM hq_orth_M hqDual_orth_M hq_pair_zero hqDual_pair_zero hdual t
+        v := by
+  exact
+    complexLorentzVectorAction_ofLinearEquivPreservesInner d
+      (complexMinkowski_selectedHyperbolicContraction_globalLinearEquiv
+        (d := d) (s := s) (M := M) (q := q) (qDual := qDual)
+        hM hq_orth_M hqDual_orth_M hq_pair_zero hqDual_pair_zero hdual t)
+      (complexMinkowski_selectedHyperbolicContraction_globalLinearEquiv_preserves
+        (d := d) (s := s) (M := M) (q := q) (qDual := qDual)
+        hM hq_orth_M hqDual_orth_M hq_pair_zero hqDual_pair_zero hdual t)
+      (complexMinkowski_selectedHyperbolicContraction_globalLinearEquiv_det
+        (d := d) (s := s) (M := M) (q := q) (qDual := qDual)
+        hM hq_orth_M hqDual_orth_M hq_pair_zero hqDual_pair_zero hdual t)
+      v
+
+/-- The packaged Lorentz family fixes the selected block. -/
+theorem complexMinkowski_selectedHyperbolicContractionFamily_maps_M
+    {d s : ℕ}
+    {M : Submodule ℂ (Fin (d + 1) → ℂ)}
+    {q qDual : Fin s → Fin (d + 1) → ℂ}
+    (hM : ComplexMinkowskiNondegenerateSubspace d M)
+    (hq_orth_M :
+      ∀ c (m : M), sourceComplexMinkowskiInner d (q c)
+        (m : Fin (d + 1) → ℂ) = 0)
+    (hqDual_orth_M :
+      ∀ c (m : M), sourceComplexMinkowskiInner d (qDual c)
+        (m : Fin (d + 1) → ℂ) = 0)
+    (hq_pair_zero :
+      ∀ c c', sourceComplexMinkowskiInner d (q c) (q c') = 0)
+    (hqDual_pair_zero :
+      ∀ c c', sourceComplexMinkowskiInner d (qDual c) (qDual c') = 0)
+    (hdual :
+      ∀ c c', sourceComplexMinkowskiInner d (q c) (qDual c') =
+        if c = c' then (1 : ℂ) else 0)
+    (t : ℝ) (m : M) :
+    complexLorentzVectorAction
+        (complexMinkowski_selectedHyperbolicContractionFamily
+          (d := d) (s := s) (M := M) (q := q) (qDual := qDual)
+          hM hq_orth_M hqDual_orth_M hq_pair_zero hqDual_pair_zero
+          hdual t)
+        (m : Fin (d + 1) → ℂ) =
+      (m : Fin (d + 1) → ℂ) := by
+  rw [complexMinkowski_selectedHyperbolicContractionFamily_vectorAction]
+  exact
+    complexMinkowski_selectedHyperbolicContraction_globalLinearEquiv_maps_M
+      (d := d) (s := s) (M := M) (q := q) (qDual := qDual)
+      hM hq_orth_M hqDual_orth_M hq_pair_zero hqDual_pair_zero hdual t m
+
+/-- The packaged Lorentz family scales the residual frame by `exp (-t)`. -/
+theorem complexMinkowski_selectedHyperbolicContractionFamily_maps_q
+    {d s : ℕ}
+    {M : Submodule ℂ (Fin (d + 1) → ℂ)}
+    {q qDual : Fin s → Fin (d + 1) → ℂ}
+    (hM : ComplexMinkowskiNondegenerateSubspace d M)
+    (hq_orth_M :
+      ∀ c (m : M), sourceComplexMinkowskiInner d (q c)
+        (m : Fin (d + 1) → ℂ) = 0)
+    (hqDual_orth_M :
+      ∀ c (m : M), sourceComplexMinkowskiInner d (qDual c)
+        (m : Fin (d + 1) → ℂ) = 0)
+    (hq_pair_zero :
+      ∀ c c', sourceComplexMinkowskiInner d (q c) (q c') = 0)
+    (hqDual_pair_zero :
+      ∀ c c', sourceComplexMinkowskiInner d (qDual c) (qDual c') = 0)
+    (hdual :
+      ∀ c c', sourceComplexMinkowskiInner d (q c) (qDual c') =
+        if c = c' then (1 : ℂ) else 0)
+    (t : ℝ) (c : Fin s) :
+    complexLorentzVectorAction
+        (complexMinkowski_selectedHyperbolicContractionFamily
+          (d := d) (s := s) (M := M) (q := q) (qDual := qDual)
+          hM hq_orth_M hqDual_orth_M hq_pair_zero hqDual_pair_zero
+          hdual t)
+        (q c) =
+      ((Real.exp (-t) : ℝ) : ℂ) • q c := by
+  rw [complexMinkowski_selectedHyperbolicContractionFamily_vectorAction]
+  exact
+    complexMinkowski_selectedHyperbolicContraction_globalLinearEquiv_maps_q
+      (d := d) (s := s) (M := M) (q := q) (qDual := qDual)
+      hM hq_orth_M hqDual_orth_M hq_pair_zero hqDual_pair_zero hdual t c
+
+/-- The packaged Lorentz family scales the dual residual frame by `exp t`. -/
+theorem complexMinkowski_selectedHyperbolicContractionFamily_maps_qDual
+    {d s : ℕ}
+    {M : Submodule ℂ (Fin (d + 1) → ℂ)}
+    {q qDual : Fin s → Fin (d + 1) → ℂ}
+    (hM : ComplexMinkowskiNondegenerateSubspace d M)
+    (hq_orth_M :
+      ∀ c (m : M), sourceComplexMinkowskiInner d (q c)
+        (m : Fin (d + 1) → ℂ) = 0)
+    (hqDual_orth_M :
+      ∀ c (m : M), sourceComplexMinkowskiInner d (qDual c)
+        (m : Fin (d + 1) → ℂ) = 0)
+    (hq_pair_zero :
+      ∀ c c', sourceComplexMinkowskiInner d (q c) (q c') = 0)
+    (hqDual_pair_zero :
+      ∀ c c', sourceComplexMinkowskiInner d (qDual c) (qDual c') = 0)
+    (hdual :
+      ∀ c c', sourceComplexMinkowskiInner d (q c) (qDual c') =
+        if c = c' then (1 : ℂ) else 0)
+    (t : ℝ) (c : Fin s) :
+    complexLorentzVectorAction
+        (complexMinkowski_selectedHyperbolicContractionFamily
+          (d := d) (s := s) (M := M) (q := q) (qDual := qDual)
+          hM hq_orth_M hqDual_orth_M hq_pair_zero hqDual_pair_zero
+          hdual t)
+        (qDual c) =
+      ((Real.exp t : ℝ) : ℂ) • qDual c := by
+  rw [complexMinkowski_selectedHyperbolicContractionFamily_vectorAction]
+  exact
+    complexMinkowski_selectedHyperbolicContraction_globalLinearEquiv_maps_qDual
+      (d := d) (s := s) (M := M) (q := q) (qDual := qDual)
+      hM hq_orth_M hqDual_orth_M hq_pair_zero hqDual_pair_zero hdual t c
 
 /-- A raw frame dual to a totally isotropic frame can be corrected, inside the
 same subspace, to an isotropic dual frame.  The correction is the standard
