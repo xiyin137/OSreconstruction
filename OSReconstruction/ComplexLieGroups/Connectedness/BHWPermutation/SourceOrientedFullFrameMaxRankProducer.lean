@@ -162,6 +162,43 @@ theorem sourceFullFrameDet_ne_zero_of_sameGram_fullFrame
   exact (mul_ne_zero (minkowskiMetricDet_ne_zero d)
     (pow_ne_zero 2 hzdet)) (hdet_eq'.trans hright)
 
+/-- The selected full-frame map carrying the chosen full frame of `z` to the
+corresponding full frame of `w`. -/
+noncomputable def sourceFullFrameMap
+    (d n : ℕ)
+    {z w : Fin n → Fin (d + 1) → ℂ}
+    (hgram : sourceMinkowskiGram d n z = sourceMinkowskiGram d n w)
+    (ι : Fin (d + 1) ↪ Fin n)
+    (hι : sourceFullFrameDet d n ι z ≠ 0) :
+    (Fin (d + 1) → ℂ) ≃ₗ[ℂ] (Fin (d + 1) → ℂ) :=
+  let hιw := sourceFullFrameDet_ne_zero_of_sameGram_fullFrame
+    d n hgram ι hι
+  (sourceFullFrameBasis d n ι z hι).equiv
+    (sourceFullFrameBasis d n ι w hιw)
+    (Equiv.refl (Fin (d + 1)))
+
+/-- The selected full-frame map sends selected source vectors of `z` to the
+corresponding selected source vectors of `w`. -/
+theorem sourceFullFrameMap_apply_selected
+    (d n : ℕ)
+    {z w : Fin n → Fin (d + 1) → ℂ}
+    (hgram : sourceMinkowskiGram d n z = sourceMinkowskiGram d n w)
+    (ι : Fin (d + 1) ↪ Fin n)
+    (hι : sourceFullFrameDet d n ι z ≠ 0)
+    (a : Fin (d + 1)) :
+    sourceFullFrameMap d n hgram ι hι (z (ι a)) = w (ι a) := by
+  let hιw := sourceFullFrameDet_ne_zero_of_sameGram_fullFrame
+    d n hgram ι hι
+  calc
+    sourceFullFrameMap d n hgram ι hι (z (ι a)) =
+        sourceFullFrameMap d n hgram ι hι
+          ((sourceFullFrameBasis d n ι z hι) a) := by
+          rw [sourceFullFrameBasis_apply]
+    _ = (sourceFullFrameBasis d n ι w hιw) a := by
+          rw [sourceFullFrameMap]
+          simp
+    _ = w (ι a) := sourceFullFrameBasis_apply d n ι w hιw a
+
 /-- Full scalar Gram rank supplies a nonzero ordered full-frame determinant. -/
 theorem exists_sourceFullFrameDet_ne_zero_of_sourceGramRank_eq_spacetime
     (d n : ℕ)

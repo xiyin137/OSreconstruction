@@ -188,6 +188,8 @@ local Slot 1:
    `BHW.sourceFullFrameBasis` and `BHW.sourceFullFrameBasis_apply`,
    the checked same-Gram nonvanishing bridge
    `BHW.sourceFullFrameDet_ne_zero_of_sameGram_fullFrame`,
+   the checked selected-frame map helpers
+   `BHW.sourceFullFrameMap` and `BHW.sourceFullFrameMap_apply_selected`,
    the checked nonzero-frame bridge
    `BHW.exists_sourceFullFrameDet_ne_zero_of_sourceGramRank_eq_spacetime`,
    the checked oriented-coordinate projections
