@@ -228,6 +228,62 @@ theorem sourceComplexMinkowskiBilinForm_apply
       sourceComplexMinkowskiInner d u v :=
   rfl
 
+/-- The complex Minkowski bilinear form is symmetric. -/
+theorem sourceComplexMinkowskiBilinForm_isSymm
+    (d : ℕ) :
+    (sourceComplexMinkowskiBilinForm d).IsSymm := by
+  constructor
+  intro u v
+  simpa using sourceComplexMinkowskiInner_comm d u v
+
+/-- Package a determinant-one linear equivalence preserving the complex
+Minkowski pairing as a proper complex Lorentz transformation. -/
+noncomputable def complexLorentzGroupOfLinearEquivPreservesInner
+    (d : ℕ)
+    (E : (Fin (d + 1) → ℂ) ≃ₗ[ℂ] (Fin (d + 1) → ℂ))
+    (hpres :
+      ∀ x y,
+        sourceComplexMinkowskiInner d (E x) (E y) =
+          sourceComplexMinkowskiInner d x y)
+    (hdet : LinearMap.det E.toLinearMap = 1) :
+    ComplexLorentzGroup d where
+  val := LinearMap.toMatrix' E.toLinearMap
+  metric_preserving := by
+    intro μ ν
+    have h := hpres (Pi.single μ (1 : ℂ)) (Pi.single ν (1 : ℂ))
+    by_cases hμν : μ = ν
+    · subst ν
+      simpa [sourceComplexMinkowskiInner, LinearMap.toMatrix'_apply,
+        Pi.single_apply, MinkowskiSpace.metricSignature, minkowskiSignature,
+        mul_comm, mul_left_comm, mul_assoc] using h
+    · have hνμ : ν ≠ μ := fun h => hμν h.symm
+      simpa [sourceComplexMinkowskiInner, LinearMap.toMatrix'_apply,
+        Pi.single_apply, MinkowskiSpace.metricSignature, minkowskiSignature,
+        hμν, hνμ, mul_comm, mul_left_comm, mul_assoc] using h
+  proper := by
+    rw [LinearMap.det_toMatrix']
+    exact hdet
+
+/-- The packaged Lorentz transformation acts by the original linear
+equivalence. -/
+theorem complexLorentzVectorAction_ofLinearEquivPreservesInner
+    (d : ℕ)
+    (E : (Fin (d + 1) → ℂ) ≃ₗ[ℂ] (Fin (d + 1) → ℂ))
+    (hpres :
+      ∀ x y,
+        sourceComplexMinkowskiInner d (E x) (E y) =
+          sourceComplexMinkowskiInner d x y)
+    (hdet : LinearMap.det E.toLinearMap = 1)
+    (v : Fin (d + 1) → ℂ) :
+    complexLorentzVectorAction
+        (complexLorentzGroupOfLinearEquivPreservesInner d E hpres hdet) v =
+      E v := by
+  ext μ
+  have h := congrFun (LinearMap.toMatrix'_mulVec E.toLinearMap v) μ
+  simpa [complexLorentzVectorAction,
+    complexLorentzGroupOfLinearEquivPreservesInner, Matrix.mulVec, dotProduct,
+    mul_comm, mul_left_comm, mul_assoc] using h
+
 /-- A bilinear form is determined by its values on a basis, after transporting
 the basis through a linear equivalence. -/
 theorem bilinForm_eq_of_basis_values
@@ -560,6 +616,73 @@ theorem sourceOriented_soCompatible_of_sameInvariant
             rw [← same_sourceOrientedInvariant_fullFrameDet
               (d := d) (n := n) horiented ι]
       _ = 1 := div_self hι
+
+/-- If the selected same-Gram full-frame map has determinant one, it is
+realized by a proper complex Lorentz transformation on all source vectors. -/
+theorem sourceFullFrameMap_complexLorentzVectorAction_of_det_one
+    (d n : ℕ)
+    {z w : Fin n → Fin (d + 1) → ℂ}
+    (hgram : sourceMinkowskiGram d n z = sourceMinkowskiGram d n w)
+    (ι : Fin (d + 1) ↪ Fin n)
+    (hι : sourceFullFrameDet d n ι z ≠ 0)
+    (hdet : LinearMap.det (sourceFullFrameMap d n hgram ι hι).toLinearMap = 1) :
+    ∃ Λ : ComplexLorentzGroup d,
+      ∀ i, complexLorentzVectorAction Λ (z i) = w i := by
+  let E := sourceFullFrameMap d n hgram ι hι
+  have hpres : ∀ x y,
+      sourceComplexMinkowskiInner d (E x) (E y) =
+        sourceComplexMinkowskiInner d x y :=
+    sourceFullFrameMap_preserves_inner d n hgram ι hι
+  let Λ := complexLorentzGroupOfLinearEquivPreservesInner d E hpres hdet
+  refine ⟨Λ, ?_⟩
+  intro i
+  calc
+    complexLorentzVectorAction Λ (z i) = E (z i) := by
+      exact complexLorentzVectorAction_ofLinearEquivPreservesInner
+        d E hpres hdet (z i)
+    _ = w i := sourceFullFrameMap_apply_all d n hgram ι hι i
+
+/-- Tuple-level version of
+`sourceFullFrameMap_complexLorentzVectorAction_of_det_one`. -/
+theorem sourceFullFrameMap_complexLorentzOrbit_of_det_one
+    (d n : ℕ)
+    {z w : Fin n → Fin (d + 1) → ℂ}
+    (hgram : sourceMinkowskiGram d n z = sourceMinkowskiGram d n w)
+    (ι : Fin (d + 1) ↪ Fin n)
+    (hι : sourceFullFrameDet d n ι z ≠ 0)
+    (hdet : LinearMap.det (sourceFullFrameMap d n hgram ι hι).toLinearMap = 1) :
+    ∃ Λ : ComplexLorentzGroup d, w = complexLorentzAction Λ z := by
+  rcases sourceFullFrameMap_complexLorentzVectorAction_of_det_one
+      d n hgram ι hι hdet with
+    ⟨Λ, hΛ⟩
+  refine ⟨Λ, ?_⟩
+  funext i
+  exact (hΛ i).symm
+
+/-- Full ambient-rank oriented same-invariant configurations lie in the same
+proper complex Lorentz orbit. -/
+theorem sourceOriented_fullRank_detOneOrbit_of_sameInvariant
+    (d n : ℕ)
+    {z w : Fin n → Fin (d + 1) → ℂ}
+    (hfull :
+      sourceGramMatrixRank n (sourceMinkowskiGram d n z) = d + 1)
+    (hgram : sourceMinkowskiGram d n z = sourceMinkowskiGram d n w)
+    (horiented :
+      sourceOrientedMinkowskiInvariant d n z =
+        sourceOrientedMinkowskiInvariant d n w) :
+    ∃ Λ : ComplexLorentzGroup d, w = complexLorentzAction Λ z := by
+  rcases exists_sourceFullFrameDet_ne_zero_of_sourceGramRank_eq_spacetime
+      d n z hfull with
+    ⟨ι, hι⟩
+  have hratio :
+      sourceFullFrameDet d n ι w / sourceFullFrameDet d n ι z = 1 := by
+    rw [← same_sourceOrientedInvariant_fullFrameDet
+      (d := d) (n := n) horiented ι]
+    exact div_self hι
+  have hdet :
+      LinearMap.det (sourceFullFrameMap d n hgram ι hι).toLinearMap = 1 := by
+    rw [det_sourceFullFrameMap_eq_ratio d n hgram ι hι, hratio]
+  exact sourceFullFrameMap_complexLorentzOrbit_of_det_one d n hgram ι hι hdet
 
 /-- In the hard range, every oriented max-rank source-variety point lies on
 some selected full-frame determinant-nonzero sheet. -/
