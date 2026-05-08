@@ -3135,7 +3135,9 @@ implementation contract is:
    multiplication proof, `fullComplexLorentz_mul_det`,
    `fullComplexLorentz_mul_vectorAction`,
    `fullComplexLorentz_mul_configAction`, and
-   `fullComplexLorentz_to_complexLorentzGroup_of_det_one`.  Second keep the
+   `fullComplexLorentz_to_complexLorentzGroup_of_det_one`.  This first
+   full-group algebra slice is now checked in
+   `SourceFullComplexLorentz.lean`.  Second keep the
    source orthogonal complement as the checked kernel of
    `complexMinkowskiToSubmoduleDual`; the complement nondegeneracy proof is
    direct finite linear algebra.  Nondegeneracy of `M` makes
@@ -3155,7 +3157,10 @@ implementation contract is:
    the polarization theorem gives
    `exists_nonisotropic_mem_sourceSpan_orthogonalComplement_of_proper`, whose
    witness is an element of `complexMinkowskiOrthogonalSubmodule d S.M` with
-   nonzero self-pairing.  The polarization theorem
+   nonzero self-pairing.  The Householder reflection linear map, pairing
+   preservation theorem, full-complex Lorentz packaging, determinant theorem,
+   and fixed-source-span theorem are now checked in
+   `SourceFullComplexLorentz.lean`.  The polarization theorem
    `exists_nonisotropic_in_nondegenerate_subspace` is scratch-checked:
    if `B(x,x)` vanished identically, then applying it to `x+y` gives
    `(2 : ℂ) * B(x,y)=0`, hence `B(x,y)=0`, contradicting nondegeneracy.  The
@@ -5598,6 +5603,10 @@ implementation contract is:
    `BHW.det_quotient_reflection_span`,
    `BHW.det_moduleReflection_of_nonzero`,
    `BHW.fullComplexLorentzReflection`,
+   `BHW.fullComplexLorentzReflectionLinear`,
+   `BHW.fullComplexLorentzReflectionLinear_apply`,
+   `BHW.fullComplexLorentzReflectionLinear_preserves_inner`,
+   `BHW.fullComplexLorentzReflectionLinear_fix_subspace`,
    `BHW.fullComplexLorentzReflection_det`,
    `BHW.fullComplexLorentzReflection_fix_subspace`,
    `BHW.sourceFullFrameDet_fullComplexLorentzAction`,
@@ -6949,7 +6958,7 @@ Source-to-Lean obligation matrix for the same scalar-source gate:
 | Source step | Required Lean surfaces | Current readiness |
 | --- | --- | --- |
 | Hall-Wightman Lemma 1 | `BHW.extendF_holomorphicOn`, `BHW.extendF_complex_lorentz_invariant`, `BHW.extendF_complexLorentzInvariant_of_cinv`, `BHW.HallWightmanFullComplexLorentzGroup`, `BHW.HallWightmanFullComplexLorentzInvariantOnForwardTube`, `BHW.fullOrthochronousRealLorentz_preserves_forwardTube`, `BHW.hallWightman_improperComponentInvariant_forwardTube`, and `BHW.hallWightmanFullComplexLorentzInvariantOnExtendedTube_eq` | Proper determinant-`1` `extendF` support now has a checked direct bridge in `ComplexInvariance/Extend.lean` via `BHW.extendF_preimage_eq_of_cinv`.  The conditional pure-Gram fork still needs the improper-component source input because proper invariance alone has a full-rank determinant obstruction; the active oriented fork avoids that input by carrying full-frame determinants. |
-| Lemma 2, high rank | Checked finite support: `BHW.HWHighRankSpanIsometryData`, `BHW.hw_highRank_spanIsometryData_of_sameSourceGram`; public orbit assembly transcript pinned. | Coefficient quotient, common Gram kernel, nondegenerate restricted span, and span-isometry data are implemented in `BHWPermutation/SourceRank.lean`.  The full-complex group algebra, nondegenerate-complement Witt extension transcript, complex symmetric-form classification helper, full-frame determinant-ratio theorem, proper-span complement/nonisotropic theorem, Householder determinant subpacket, and final vectorwise-to-configuration orbit conversion now have Lean-shaped pseudo-code, with several lower pieces scratch-checked.  Production Lean must start at those finite-dimensional support lemmas, not at the public orbit theorem. |
+| Lemma 2, high rank | Checked finite support: `BHW.HWHighRankSpanIsometryData`, `BHW.hw_highRank_spanIsometryData_of_sameSourceGram`; public orbit assembly transcript pinned. | Coefficient quotient, common Gram kernel, nondegenerate restricted span, and span-isometry data are implemented in `BHWPermutation/SourceRank.lean`.  The full-complex group algebra, full-frame determinant-ratio theorem, proper-span complement/nonisotropic theorem, Householder determinant subpacket, and proper-span determinant-`-1` reflection consumer are now implemented in `BHWPermutation/SourceFullComplexLorentz.lean`/`SourceRank.lean`.  The remaining Lean work in this row is the nondegenerate-complement Witt extension/classification packet and final vectorwise-to-configuration orbit conversion.  Production Lean must continue at those finite-dimensional support lemmas, not at the public orbit theorem. |
 | Lemma 2, low rank | `BHW.HWSameSourceGramSingularContractionData`, `BHW.hw_sameSourceGram_singular_contractionData`, `BHW.hw_sameSourceGram_singularLimit_extendF_eq` | Proof transcript pinned.  The residual isotropic-frame geometry, coefficient-freedom extended-tube theorem, null-boost contraction family, and two-curve continuity limit inside `ExtendedTube d n` are decomposed into named Lean surfaces. |
 | Lemma 3 | `BHW.hwLemma3_extendedTube_adaptedRankRepresentative`, `BHW.hwLemma3_adapted_sourceGram_localVectorRealization`, `BHW.sourceExtendedTubeGramDomain_relOpen` | Proof transcript pinned.  Connectedness is mechanical; relative openness is reduced to adapted same-Gram realization, normal-form transport, Schur/Takagi residual realization, and the final extended-tube shrink. |
 | Lemma 4 | `BHW.ComplexMinkowskiSkewGenerator`, `BHW.lorentzInfinitesimalTangent`, `BHW.hallWightman_lorentzInfinitesimalEquations` | Proof transcript pinned; production must differentiate the complex Lorentz exponential curve and use extended-tube invariance of `extendF`. |

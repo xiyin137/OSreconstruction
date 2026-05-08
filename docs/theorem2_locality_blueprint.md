@@ -29934,8 +29934,9 @@ Proof decomposition of this theorem, without hiding the analytic work:
 
       Implementation-level full-complex Lorentz ledger.  The determinant
       repair theorem may not start by adding an opaque "full Lorentz" object.
-      The first Lean slice in this row is the following purely finite
-      matrix/submodule support, in this order:
+      The first Lean slice in this row is now checked in
+      `SourceFullComplexLorentz.lean` and consists of the following purely
+      finite matrix support:
 
       ```lean
       /-- Full complex Lorentz group `O(1,d;ℂ)`: preserve the same complex
@@ -30113,8 +30114,9 @@ Proof decomposition of this theorem, without hiding the analytic work:
       from the diagonal `±1` entries of `ComplexLorentzGroup.ηℂ`, and cancel
       `det η`.
 
-      The matrix equation, determinant square, multiplication, and vector
-      action lemmas above were scratch-checked against the local Lean APIs.
+      The matrix equation, determinant square, multiplication, vector action,
+      tuple action, determinant-one conversion, `ofLinearMap` constructor, and
+      `ofLinearMap_vectorAction` lemmas above are checked in production Lean.
       They are the only full-group algebra allowed before the Witt theorem.
       They do not mention `extendF`, scalar representatives, theorem-2
       locality, PET, EOW, or OS fields.
@@ -30664,6 +30666,17 @@ Proof decomposition of this theorem, without hiding the analytic work:
       bilinearity gives `B(x,y)+B(y,x)=0`; symmetry turns this into
       `(2 : ℂ) * B(x,y)=0`, and `two_ne_zero` gives `B(x,y)=0`, contradicting
       nondegeneracy on any chosen nonzero `x`.
+
+      `fullComplexLorentzReflectionLinear`,
+      `fullComplexLorentzReflectionLinear_apply`,
+      `fullComplexLorentzReflectionLinear_preserves_inner`,
+      `fullComplexLorentzReflectionLinear_fix_subspace`,
+      `fullComplexLorentzReflection`, `fullComplexLorentzReflection_det`,
+      and `fullComplexLorentzReflection_fix_subspace` are now checked in
+      `SourceFullComplexLorentz.lean`.  The proper-span consumer
+      `fullComplexLorentz_det_neg_reflection_fixing_sourceSpan` is also
+      checked there: it only combines the checked nonisotropic complement
+      vector with this reflection packet.
 
       For `fullComplexLorentzReflectionLinear_preserves_inner`, expand
       `R v = v - (2 * B v u / B u u) • u` and
@@ -32202,7 +32215,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
       | Restricted-rank bridge: `sourceCoefficientGramMap_eq_toLin_transpose`, `sourceGramMatrixRank_eq_finrank_range_sourceCoefficientGramMap`, `sourceCoefficientEval_mem_restrictedMinkowskiRadical_iff`, `sourceCoefficientGramKernel_eq_eval_preimage_radical`, `finrank_range_sourceCoefficientGramMap_eq_restrictedRank`, and `sourceGramMatrixRank_eq_restrictedMinkowskiRank_range` | Implemented and exact-file checked in `BHWPermutation/SourceRank.lean`. | The checked proof quotients coefficient space by `ker sourceCoefficientEval` with `Submodule.liftQ`, uses `Submodule.range_liftQ`, identifies the lifted kernel with the restricted radical through `sourceCoefficientEval.quotKerEquivRange`, applies `LinearMap.finrank_range_add_finrank_ker`, and rewrites the scalar matrix rank through the transposed coefficient Gram map. |
       | High-rank nondegeneracy and kernel transport | Implemented and exact-file checked in `BHWPermutation/SourceRank.lean`. | Degenerate restricted span forces scalar rank `< min d n` using `Submodule.one_le_finrank_iff`, `Submodule.finrank_lt`, and `sourceComplexMinkowskiInner_left_nonDegenerate`; then `ker evalZ = gramKernel = ker evalW` under same Gram.  This is the checked step that prevents using `z i ↦ w i` before well-definedness is proved. |
       | High-rank span isometry data | Implemented and exact-file checked in `BHWPermutation/SourceRank.lean`. | Builds `HWHighRankSpanIsometryData` from the common coefficient quotient using `hwHighRankSpanIsometryOfKernelEq`, `hwHighRankSpanIsometry_apply_eval`, and `sourceCoefficientEval_pair_eq_sum_gram`; the producer is a `noncomputable def` because it returns data, while `HWHighRankSpanIsometryData_sourceGram_eq` is a proposition-valued theorem. |
-      | High-rank determinant orientation and orbit theorem | Complement vector packet now checked; full-complex extension and Householder determinant still not implemented. | Start with the full-complex extension from `HWHighRankSpanIsometryData`, now decomposed through source span plus orthogonal complement, complement-isometry classification over `ℂ`, product assembly, and matrix conversion.  The classification helper is pinned by orthogonal bases, complex square-root normalization, and the coordinate-sum identity.  In the proper-span case, the checked `sourceSpan_orthogonalComplement_nontrivial_of_proper`, `complexMinkowskiOrthogonalSubmodule_nondegenerate`, and `exists_nonisotropic_mem_sourceSpan_orthogonalComplement_of_proper` supply the nonisotropic complement vector; the remaining Householder module-reflection determinant computes the determinant flip without a sign-choice black box.  In the full-ambient-rank case, the full-frame determinant-ratio equality is pinned by the unique selected-frame isometry and determinant action on frames.  The public high-rank orbit and orbit-or-improper theorems then only assemble `HWHighRankSpanIsometryData`, consume the determinant-sensitive Witt producer, and rewrite vectorwise action equality to configuration equality.  The determinant-`-1` full-rank branch is exposed as `HWSameSourceGramImproperOrbitData` and may be consumed only by the conditional full-component Hall-Wightman fork; the active oriented fork proves the determinant ratio is `1` before calling the proper orbit theorem. |
+| High-rank determinant orientation and orbit theorem | Full-complex group algebra, complement vector packet, Householder determinant packet, and proper-span determinant-repair consumer now checked; determinant-sensitive full-complex Witt extension still not implemented. | Start with the full-complex extension from `HWHighRankSpanIsometryData`, now decomposed through source span plus orthogonal complement, complement-isometry classification over `ℂ`, product assembly, and matrix conversion.  The classification helper is pinned by orthogonal bases, complex square-root normalization, and the coordinate-sum identity.  In the proper-span case, the checked `sourceSpan_orthogonalComplement_nontrivial_of_proper`, `complexMinkowskiOrthogonalSubmodule_nondegenerate`, `exists_nonisotropic_mem_sourceSpan_orthogonalComplement_of_proper`, `fullComplexLorentzReflection_det`, `fullComplexLorentzReflection_fix_subspace`, and `fullComplexLorentz_det_neg_reflection_fixing_sourceSpan` supply the determinant flip without a sign-choice black box.  In the full-ambient-rank case, the full-frame determinant-ratio equality is pinned by the unique selected-frame isometry and determinant action on frames.  The public high-rank orbit and orbit-or-improper theorems then only assemble `HWHighRankSpanIsometryData`, consume the determinant-sensitive Witt producer, and rewrite vectorwise action equality to configuration equality.  The determinant-`-1` full-rank branch is exposed as `HWSameSourceGramImproperOrbitData` and may be consumed only by the conditional full-component Hall-Wightman fork; the active oriented fork proves the determinant ratio is `1` before calling the proper orbit theorem. |
       | Principal minor extraction for low-rank selected block | Principal-minor extraction checked locally; selected-frame construction transcript pinned. | `BHW.exists_sourcePrincipalMinor_ne_zero_of_sourceSymmetricRank` is checked in `BHWPermutation/SourceComplexSchurPatch.lean`; the selected-span frame uses the inverse principal Gram block coefficient formula and the Schur-complement exact-rank theorem displayed above. |
       | Low-rank selected-span frame and residual Schur-zero theorem | Proof transcript pinned; production Lean not started. | Inverse principal Gram block coefficients, residual orthogonality, residual-pairing equality from `hgram`, and residual-residual zero from the indexed Schur-complement theorem at exact rank.  The proof uses `selectedIndexSumEquiv` and case-splits on selected versus complementary indices; no block-matrix prose is left as a mathematical step. |
       | Selected-span alignment and common residual subspaces | Proof transcript pinned; production Lean not started. | First align the selected `z` and `w` spans by determinant-repaired Witt extension; only then put the two residual families in the common orthogonal complement.  Reversing this order is false.  The residual subspaces and their isotropy/orthogonality fields are extracted from the aligned decomposition. |
