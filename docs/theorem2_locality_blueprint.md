@@ -4014,7 +4014,6 @@ Proof decomposition of this theorem, without hiding the analytic work:
 
       theorem BHW.sourceFullFrameDet_ratio_eq_of_sameSourceGram_fullRank
           (d n : Nat)
-          [NeZero d]
           {z w : Fin n -> Fin (d + 1) -> ℂ}
           (hfull :
             BHW.sourceGramMatrixRank n
@@ -4042,9 +4041,9 @@ Proof decomposition of this theorem, without hiding the analytic work:
             BHW.sourceFullFrameDet d n κ w =
               BHW.sourceFullFrameDet d n κ z *
                 LinearMap.det E.toLinearMap := by
-          have hall : (fun i => E (z i)) = w := by
-            ext i
-            exact BHW.sourceFullFrameMap_apply_all d n hgram ι hι i
+	          have hall : (fun i => E (z i)) = w := by
+	            funext i
+	            exact BHW.sourceFullFrameMap_apply_all d n hgram ι hι i
           rw [← hall]
           exact BHW.sourceFullFrameDet_linearEquivAction d n E κ z
         calc
@@ -4059,7 +4058,6 @@ Proof decomposition of this theorem, without hiding the analytic work:
 
       theorem BHW.hwFullRankSameGramFrameMapDet_eq_det_ratio_of_fullFrame
           (d n : Nat)
-          [NeZero d]
           {z w : Fin n -> Fin (d + 1) -> ℂ}
           (hfull :
             BHW.sourceGramMatrixRank n
@@ -14760,7 +14758,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
       | `BHW.sourceOriented_reconstruct_from_schurResidual`, `BHW.exists_sourceOriented_reconstruct_from_schurResidual` | Checked in `OSReconstruction/ComplexLieGroups/Connectedness/BHWPermutation/SourceOrientedSchurReconstruct.lean`. | Endpoint reconstruction from already-produced Schur residual data and a realizing shifted-tail tuple.  The theorem is the exact normal-parameter specialization of `sourceOrientedNormalParameterVector_realizes_schur` in the hard range `d + 1 <= n`; it introduces no new mathematical assumption.  The producer obligation at `sourceOrientedSchurResidualTailData_mem_variety` is now discharged by the checked head-gauge normal-form route whenever the selected head block lies in the local gauge neighborhood. |
       | `BHW.sourceHeadRows_linearIndependent_of_schurHeadBlock_isUnit`, `BHW.exists_headTail_fullFrameDet_ne_zero_of_headRows_linearIndependent_span_top`, `BHW.sourceOrientedGramVariety_notMaxRank_of_headTailDet_eq_zero`, `BHW.sourceOrientedGramVariety_det_eq_zero_of_not_maxRank`, `BHW.sourceOrientedGramVariety_det_eq_of_gram_eq_of_not_maxRank`, `BHW.sourceOrientedGramVariety_det_eq_of_gram_eq_headTailDet_eq_of_exists_nonzero`, `BHW.sourceOrientedGramVariety_det_eq_of_gram_eq_headTailDet_eq_of_allZero_notMaxRank`, `BHW.sourceOrientedGramVariety_det_eq_of_gram_eq_headTailDet_eq`, `BHW.sourceOrientedSchur_fullFrameDet_reconstruct`, `BHW.sourceOrientedNormalParameterVector_realizes_schur_det`, `BHW.sourceOrientedNormalParameterVector_realizes_schur` | Checked in `OSReconstruction/ComplexLieGroups/Connectedness/BHWPermutation/SourceOrientedSchurPropagation.lean`. | Hard-range determinant propagation and Schur reconstruction closure.  The nonzero selected-head-tail branch uses the full-frame chart identity.  The all-zero branch proves non-max-rank by contrapositive: invertible head Gram block gives head-row linear independence; max-rank gives a spanning full frame; quotienting by the head span lets tail quotient images extend the head rows to a full frame, contradicting selected head-tail determinant vanishing.  Therefore same Gram plus selected head-tail determinant agreement implies all determinant coordinates agree, and the residual Schur consumer now yields hard-range full-frame determinant reconstruction and normal-parameter oriented-data realization.  The next producer target is constructing `SourceOrientedSchurResidualData`; this row no longer has a Plucker/Cauchy-Binet propagation gap. |
       | `BHW.sourceOrientedMaxRankChartData_of_maxRankAt_fullFrame`, `BHW.sourceOrientedGramVariety_local_connectedRelOpen_basis_of_fullFrameMaxRank_and_localImage`, `BHW.sourceOrientedGramVariety_connectedRelOpenTube_around_compactPath_of_fullFrameMaxRank_and_localImage`, `BHW.sourceOrientedRelOpen_inter_maxRank_relOpen`, `BHW.sourceOrientedMaxRank_dense_in_relOpen_inter`, `BHW.sourceOrientedRelOpen_inter_maxRank_nonempty`, `BHW.sourceOrientedGramVariety_maxRank_identity_principle_of_connected`, `BHW.sourceOrientedGramVariety_maxRank_identity_principle_of_connected_fullFrame`, `BHW.sourceOrientedGramVariety_maxRank_eqOn_of_connected_fullFrame`, `BHW.sourceOrientedGramVariety_relOpen_eqOn_zero_of_eqOn_maxRank`, `BHW.sourceOrientedGramVariety_identity_principle_of_connected_maxRank_fullFrame`, `BHW.sourceOrientedGramVariety_eqOn_of_connected_maxRank_fullFrame`, `BHW.bhw_jost_closedChain_orientedMaxRankMonodromy_of_seed`, `BHW.bhw_jost_closedChain_sourceMonodromy_on_maxRankClosingPatch_of_seed`, `BHW.bhw_jost_closedChain_orientedMonodromy_of_seed`, `BHW.bhw_jost_closedChain_sourceMonodromy_of_seed` | Checked in `OSReconstruction/ComplexLieGroups/Connectedness/BHWPermutation/SourceOrientedFullFrameMaxRankProducer.lean` and `OSReconstruction/ComplexLieGroups/Connectedness/BHWPermutation/SourceOrientedMaxRankIdentity.lean`. | The hard-range full-frame producer now removes the abstract max-rank chart hypothesis: oriented max rank of a source-variety point gives a nonzero selected full-frame determinant, hence a finite-coordinate max-rank chart.  The max-rank locus is relatively open inside the oriented source variety by the determinant-nonzero union characterization, and it is dense in every relatively open oriented patch by pulling back to source tuples and using `dense_sourceComplexGramRegularAt`.  The max-rank identity theorem is the checked clopen propagation on the connected max-rank subtype; density and continuity extend it to all ranks once the max-rank part of the domain is connected.  The closed-loop seed consumers turn a stored `BHWJostOrientedMaxRankClosedLoopSeed` into terminal-initial oriented germ equality and source-branch equality first on max-rank closing points and then on the whole closing patch.  This does not prove the Hall-Wightman closed-loop seed itself and it still takes connectedness of the closing max-rank part as an explicit geometric input. |
-      | `BHW.same_sourceOrientedInvariant_detOneOrbit_or_singularLimit` | Componentwise proof transcript pinned; production Lean not started.  The first two projection helpers, `BHW.same_sourceOrientedInvariant_sourceGram` and `BHW.same_sourceOrientedInvariant_fullFrameDet`, are checked in `SourceOriented.lean`; `BHW.sourceFullFrameBasis`, `BHW.sourceFullFrameBasis_apply`, `BHW.sourceFullFrameDet_ne_zero_of_sameGram_fullFrame`, `BHW.sourceFullFrameMap`, `BHW.sourceFullFrameMap_apply_selected`, and `BHW.exists_sourceFullFrameDet_ne_zero_of_sourceGramRank_eq_spacetime` are checked in `SourceOrientedFullFrameMaxRankProducer.lean`. | Split by `HWSourceGramOrbitRankAt`.  In the orbit-rank branch, extract Gram equality and determinant equality from `SourceOrientedGramData`, prove `HWSameSourceGramSOOrientationCompatible` via a nonzero full-frame determinant and the determinant-ratio formula for `HWFullRankSameGramFrameMapDet`, then call `hw_sameSourceGram_regular_orbit`.  In the low-rank branch, call the Hall-Wightman residual-frame contraction producer.  The lower support transcript expands coefficient kernels, restricted-rank nondegeneracy, determinant-repaired Witt extension, selected Schur residuals, common isotropic residual frames, dual frames, contraction curves, and the singular topology limit; the missing work is implementation, not a remaining theorem-shape gap in this row. |
+      | `BHW.same_sourceOrientedInvariant_detOneOrbit_or_singularLimit` | Componentwise proof transcript pinned; production Lean in progress.  The first two projection helpers, `BHW.same_sourceOrientedInvariant_sourceGram` and `BHW.same_sourceOrientedInvariant_fullFrameDet`, are checked in `SourceOriented.lean`; `BHW.sourceFullFrameBasis`, `BHW.sourceFullFrameBasis_apply`, `BHW.sourceFullFrameDet_ne_zero_of_sameGram_fullFrame`, `BHW.sourceFullFrameMap`, `BHW.sourceFullFrameMap_apply_selected`, `BHW.sourceComplexMinkowskiBilinForm`, `BHW.bilinForm_eq_of_basis_values`, `BHW.basis_pairing_zero_ext`, `BHW.sourceFullFrameMap_preserves_inner`, `BHW.sourceFullFrameMap_apply_all`, `BHW.sourceFullFrameMatrix_linearEquivAction`, `BHW.sourceFullFrameDet_linearEquivAction`, `BHW.det_sourceFullFrameMap_eq_ratio`, `BHW.sourceFullFrameMap_toLinearMap_eq_of_sameGram_fullFrame`, `BHW.sourceFullFrameDet_ratio_eq_of_sameSourceGram_fullRank`, `BHW.HWFullRankSameGramFrameMapDet`, `BHW.hwFullRankSameGramFrameMapDet_eq_det_ratio_of_fullFrame`, `BHW.HWSameSourceGramSOOrientationCompatible`, and `BHW.exists_sourceFullFrameDet_ne_zero_of_sourceGramRank_eq_spacetime` are checked in `SourceOrientedFullFrameMaxRankProducer.lean`. | Split by `HWSourceGramOrbitRankAt`.  In the orbit-rank branch, extract Gram equality and determinant equality from `SourceOrientedGramData`, prove `HWSameSourceGramSOOrientationCompatible` via a nonzero full-frame determinant and the determinant-ratio formula for `HWFullRankSameGramFrameMapDet`, then call `hw_sameSourceGram_regular_orbit`.  In the low-rank branch, call the Hall-Wightman residual-frame contraction producer.  The lower support transcript expands coefficient kernels, restricted-rank nondegeneracy, determinant-repaired Witt extension, selected Schur residuals, common isotropic residual frames, dual frames, contraction curves, and the singular topology limit; the missing work is the Hall-Wightman orbit/improper/singular implementation, not the selected full-frame determinant bookkeeping. |
       | `BHW.extendedTube_same_sourceOrientedInvariant_extendF_eq` | Assembly transcript pinned; not production-Lean-ready until the previous row's Hall-Wightman producers exist. | Apply the previous row's actual orbit alternative to determinant-`1` complex Lorentz invariance of `extendF` via `extendF_complexLorentzInvariant_of_cinv`; apply the singular alternative by the checked topology-limit transcript for `hw_sameSourceGram_singularLimit_extendF_eq`.  This theorem has no independent route choice and must not be implemented before `same_sourceOrientedInvariant_detOneOrbit_or_singularLimit`. |
       | `BHW.sourceOrientedExtendedTubeDomain_relOpen_connected` | Checked in `SourceOrientedRankDeficientTubeResidualPolydisc.lean`, by applying `BHW.sourceOrientedExtendedTubeDomain_relOpen_connected_of_rankDeficientResidualChartProducer` to the checked `BHW.sourceOriented_rankDeficient_residualChartProducer`; the same file also checks the pointwise fixed-center wrapper `BHW.sourceOriented_rankDeficient_residualChart`.  The connectedness half is `BHW.sourceOrientedExtendedTubeDomain_connected`; the open-union topology split for the relative-openness half is checked as `BHW.SourceOrientedExtendedTubeLocalRealizationData`, `BHW.SourceOrientedExtendedTubeLocalRealizationProducer`, `BHW.sourceOrientedExtendedTubeDomain_relOpen_of_localRealization`, and `BHW.sourceOrientedExtendedTubeDomain_relOpen_connected_of_localRealization` in `SourceOrientedLocalRealization.lean`.  The max-rank local-realization branch is also checked there as `BHW.sourceComplexGramRegularAt_of_HWSourceGramMaxRankAt_any`, `BHW.continuousOn_sourceFullFrameGauge_reconstructVector_on_modelDetNonzero`, `BHW.sourceOrientedExtendedTubeLocalRealizationData_of_smallArityMaxRank`, `BHW.sourceOrientedExtendedTubeLocalRealizationData_of_fullFrameDetNonzero`, `BHW.sourceOrientedExtendedTubeLocalRealizationData_of_fullFrameMaxRank`, and `BHW.sourceOrientedExtendedTubeLocalRealizationData_of_maxRank`.  The rank-deficient target interface and producer are checked as `BHW.SourceOrientedRankDeficientRealizationData`, `BHW.SourceOrientedRankDeficientRealizationData.to_localRealization`, `BHW.SourceOrientedRankDeficientResidualChartData`, `BHW.SourceOrientedRankDeficientResidualChartData.center_mem`, `BHW.SourceOrientedRankDeficientResidualChartData.toVec_c0_mem`, `BHW.SourceOrientedRankDeficientResidualChartData.to_realizationData`, `BHW.SourceOrientedRankDeficientResidualChartData.to_localRealization`, `BHW.SourceOrientedRankDeficientResidualChartProducer`, `BHW.sourceOriented_rankDeficient_tubeResidualPolydiscProducer`, `BHW.sourceOriented_rankDeficient_residualChartProducer`, `BHW.sourceOrientedExtendedTubeLocalRealizationProducer_of_rankDeficientResidualChartProducer`, and `BHW.sourceOrientedExtendedTubeDomain_relOpen_connected_of_rankDeficientResidualChartProducer`. | This local-realization input is no longer a blocker.  The full-frame max-rank case no longer has a tube-shrink gap: it uses `isOpen_extendedTube`, the explicit reconstructed-vector map, the model-domain shrinker, and the stored chart inverse to produce an actual `ExtendedTube` witness realizing each nearby oriented-variety point.  The small-arity max-rank case uses the ordinary source-Gram local image theorem inside `ExtendedTube` and emptiness of `Fin (d + 1) ↪ Fin n`.  Rank-deficient charts use the checked sliced-head Schur stack only for original-coordinate image bookkeeping; the explicit ET-valued residual family is produced through the checked tube residual-polydisc data, with `toVec c := N.toOriginal (P.residualVector c)`.  The next theorem-2 blocker after this row is the downstream source-oriented scalar representative/descent layer, not an unproved residual-chart wrapper. |
       | `BHW.sourceOrientedVarietyGermHolomorphicOn_extendF_descent` | Componentwise regular/removable transcript pinned; production Lean not started for the final normal/Riemann extension.  The prerequisite quotient-value definition, well-definedness theorem, local-boundedness predicate, max-rank topological glue helpers, compact-parameter continuity helper, residual-chart compact/local-boundedness/continuity helpers, conditional global continuity/local-boundedness assembly `sourceOrientedQuotientValue_continuous_locallyBounded_of_maxRankLocal`, all-arity local holomorphic section producer `sourceOrientedExtendedTube_holomorphicLocalSection`, max-rank quotient holomorphy theorem `sourceOrientedQuotientValue_holomorphicOn_maxRank`, global `sourceOrientedQuotientValue_continuous_locallyBounded`, exceptional-rank lower-rank identification `sourceOrientedExceptionalRank_eq_lowerRank`, determinant-zero-locus identification `sourceOrientedExceptionalRank_eq_minorsVanishing`, closedness of the determinant-zero locus `isClosed_sourceOrientedMaximalMinorsVanishing`, analytic exceptional-locus theorem `sourceOrientedExceptionalRank_isAnalyticSubvariety`, explicit max-rank density theorem `sourceOrientedMaxRank_dense_in_domain_inter_maxRank`, non-exceptional/max-rank bridge `not_exceptional_rank_iff_maxRank`, non-exceptional domain-density theorem `sourceOrientedMaxRank_dense_in_domain`, coordinate-ring relation definitions `sourceOrientedAlgebraicRelationGenerators`/`sourceOrientedAlgebraicRelationIdeal`, source forward ideal-vanishing bridge `sourceOrientedAlgebraicRelationIdeal_eval_eq_zero_of_relations`, standard-dot Cauchy-Binet support `sourceMatrixMinor_sourceComplexDotGram_standardFullFrame`, standard forward ideal-vanishing bridge `standardSOAlgebraicRelationIdeal_eval_eq_zero`, standard easy kernel containment `standardSOAlgebraicRelationIdeal_le_invariantCoordinateMap_ker`, and its source transport `sourceOrientedAlgebraicRelationIdeal_le_invariantCoordinateMap_ker` are checked. | Define `Phi` as the checked quotient value of `extendF F` on `sourceOrientedExtendedTubeDomain`, feed the checked continuity/local-boundedness theorem, max-rank holomorphy theorem, non-exceptional/max-rank bridge, and domain-density theorem into the normal analytic-space Riemann extension, and extend across `SourceOrientedExceptionalRank` using the algebraic SO-invariant model: `sourceOrientedInvariantRing_generated_by_gram_det`, `sourceOrientedInvariantRing_relations_kernel`, `sourceOrientedInvariantRing_integrallyClosed`, `sourceOrientedAlgebraicCoordinateRing_iso_invariants`, and the normal analytic-space Riemann theorem.  The checked forward Cauchy-Binet and linear-syzygy support supplies the actual-tuple direction of the oriented determinant relations; the checked source coordinate-evaluation bridge and standard-dot bridge now also give only the easy containment direction, namely that displayed relations map to zero under the invariant-coordinate maps.  They do not prove the reverse SFT kernel inclusion.  The permitted standard algebraic-geometry import boundary here is the audited axiom-backed `BHW.standardSO_FFT_SFT_coordinatePresentation`: it must provide the explicit `SO` pairing/volume generators, symmetry/rank/alternation/Cauchy-Binet plus linear-syzygy kernel, and coordinate-map surjectivity, and it must remain independent of OS, Wightman functions, EOW, PET, and locality.  No all-rank local-section theorem and no arbitrary ambient extension of `Phi` is allowed. |
@@ -28759,7 +28757,6 @@ Proof decomposition of this theorem, without hiding the analytic work:
         simpa [f] using congrFun (congrArg DFunLike.coe hf) v
 
       theorem BHW.sourceFullFrameMap_preserves_inner
-          [NeZero d]
           (d n : Nat)
           {z w : Fin n -> Fin (d + 1) -> ℂ}
           (hgram :
@@ -28774,21 +28771,26 @@ Proof decomposition of this theorem, without hiding the analytic work:
             BHW.sourceComplexMinkowskiInner d x y := by
         let bZ := BHW.sourceFullFrameBasis d n ι z hι
         let E := BHW.sourceFullFrameMap d n hgram ι hι
-        have hbasis :
-            ∀ a b,
-              BHW.sourceComplexMinkowskiInner d
-                (E (bZ a)) (E (bZ b)) =
-              BHW.sourceComplexMinkowskiInner d (bZ a) (bZ b) := by
-          intro a b
-          simp [E, bZ, BHW.sourceFullFrameMap_apply_selected,
-            BHW.sourceFullFrameBasis_apply,
-            BHW.sourceMinkowskiGram, hgram]
+	        have hbasis :
+	            ∀ a b,
+	              BHW.sourceComplexMinkowskiBilinForm d
+	                (E (bZ a)) (E (bZ b)) =
+	              BHW.sourceComplexMinkowskiBilinForm d (bZ a) (bZ b) := by
+	          intro a b
+	          have hpair :
+	              BHW.sourceComplexMinkowskiInner d
+	                  (w (ι a)) (w (ι b)) =
+	                BHW.sourceComplexMinkowskiInner d
+	                  (z (ι a)) (z (ι b)) := by
+	            simpa [BHW.sourceMinkowskiGram_apply_eq_complexInner] using
+	              (congrFun (congrFun hgram (ι a)) (ι b)).symm
+	          simpa [E, bZ, BHW.sourceFullFrameMap_apply_selected,
+	            BHW.sourceFullFrameBasis_apply] using hpair
         exact
           BHW.bilinForm_eq_of_basis_values
             (BHW.sourceComplexMinkowskiBilinForm d) bZ hbasis
 
       theorem BHW.sourceFullFrameMap_apply_all
-          [NeZero d]
           (d n : Nat)
           {z w : Fin n -> Fin (d + 1) -> ℂ}
           (hgram :
@@ -28796,48 +28798,57 @@ Proof decomposition of this theorem, without hiding the analytic work:
               BHW.sourceMinkowskiGram d n w)
           (ι : Fin (d + 1) ↪ Fin n)
           (hι : BHW.sourceFullFrameDet d n ι z ≠ 0)
-          (i : Fin n) :
-          BHW.sourceFullFrameMap d n hgram ι hι (z i) = w i := by
-        let E := BHW.sourceFullFrameMap d n hgram ι hι
-        have hpres :=
-          BHW.sourceFullFrameMap_preserves_inner
-            (d := d) d n hgram ι hι
-        let hιw :=
-          BHW.sourceFullFrameDet_ne_zero_of_sameGram_fullFrame
-            (d := d) d n hgram ι hι
-        let bW := BHW.sourceFullFrameBasis d n ι w hιw
-        apply BHW.sourceComplexMinkowskiInner_left_nonDegenerate d
-        intro v
-        -- Reduce `v` to the basis `bW`.  On a basis vector `w (ι a)`,
-        -- subtract the two pairings and use `hpres` plus `hgram`.
-        have hz :
-            BHW.sourceComplexMinkowskiInner d
-              v (E (z i) - w i) = 0 :=
-          BHW.basis_pairing_zero_ext
-            (BHW.sourceComplexMinkowskiBilinForm d) bW (fun a => by
-            calc
-              BHW.sourceComplexMinkowskiInner d
-                  (bW a) (E (z i) - w i)
-                  =
-                BHW.sourceComplexMinkowskiInner d
-                  (E (z (ι a))) (E (z i)) -
-                BHW.sourceComplexMinkowskiInner d
-                  (w (ι a)) (w i) := by
-                    simp [bW, BHW.sourceFullFrameBasis_apply,
-                      BHW.sourceComplexMinkowskiInner_sub_right,
-                      BHW.sourceFullFrameMap_apply_selected]
-              _ =
-                BHW.sourceComplexMinkowskiInner d
-                  (z (ι a)) (z i) -
-                BHW.sourceComplexMinkowskiInner d
-                  (w (ι a)) (w i) := by
-                    rw [hpres]
-              _ = 0 := by
-                    simpa [BHW.sourceMinkowskiGram]
-                      using congrFun (congrFun hgram (ι a)) i) v
-        rw [BHW.sourceComplexMinkowskiInner_comm d
-          (E (z i) - w i) v]
-        exact hz
+	          (i : Fin n) :
+	          BHW.sourceFullFrameMap d n hgram ι hι (z i) = w i := by
+	        let E := BHW.sourceFullFrameMap d n hgram ι hι
+	        have hpres :=
+	          BHW.sourceFullFrameMap_preserves_inner d n hgram ι hι
+	        let hιw :=
+	          BHW.sourceFullFrameDet_ne_zero_of_sameGram_fullFrame
+	            d n hgram ι hι
+	        let bW := BHW.sourceFullFrameBasis d n ι w hιw
+	        have hdiff_zero : E (z i) - w i = 0 := by
+	          apply BHW.sourceComplexMinkowskiInner_left_nonDegenerate d
+	          intro v
+	          let L : (Fin (d + 1) -> ℂ) ->ₗ[ℂ] ℂ :=
+	            { toFun := fun u =>
+	                BHW.sourceComplexMinkowskiInner d (E (z i) - w i) u
+	              map_add' := by
+	                intro u v
+	                exact BHW.sourceComplexMinkowskiInner_add_right
+	                  d (E (z i) - w i) u v
+	              map_smul' := by
+	                intro c u
+	                exact BHW.sourceComplexMinkowskiInner_smul_right
+	                  d c (E (z i) - w i) u }
+	          change L v = 0
+	          have hL : L = 0 := by
+	            apply bW.ext
+	            intro a
+	            have hpair :
+	                BHW.sourceComplexMinkowskiInner d (E (z i)) (w (ι a)) =
+	                  BHW.sourceComplexMinkowskiInner d (w i) (w (ι a)) := by
+	              calc
+	                BHW.sourceComplexMinkowskiInner d (E (z i)) (w (ι a)) =
+	                    BHW.sourceComplexMinkowskiInner d
+	                      (E (z i)) (E (z (ι a))) := by
+	                      rw [BHW.sourceFullFrameMap_apply_selected
+	                        d n hgram ι hι a]
+	                _ = BHW.sourceComplexMinkowskiInner d
+	                      (z i) (z (ι a)) := hpres (z i) (z (ι a))
+	                _ = BHW.sourceComplexMinkowskiInner d
+	                      (w i) (w (ι a)) := by
+	                      simpa [BHW.sourceMinkowskiGram_apply_eq_complexInner]
+	                        using congrFun (congrFun hgram i) (ι a)
+	            change
+	              BHW.sourceComplexMinkowskiInner d
+	                (E (z i) - w i) (bW a) = 0
+	            rw [BHW.sourceFullFrameBasis_apply]
+	            rw [BHW.sourceComplexMinkowskiInner_sub_left]
+	            exact sub_eq_zero.mpr hpair
+	          rw [hL]
+	          rfl
+	        exact sub_eq_zero.mp hdiff_zero
 
       theorem BHW.sourceFullFrameMatrix_linearEquivAction
           (d n : Nat)
@@ -28867,7 +28878,6 @@ Proof decomposition of this theorem, without hiding the analytic work:
           LinearMap.det_toMatrix]
 
       theorem BHW.det_sourceFullFrameMap_eq_ratio
-          [NeZero d]
           (d n : Nat)
           {z w : Fin n -> Fin (d + 1) -> ℂ}
           (hgram :
@@ -28882,11 +28892,15 @@ Proof decomposition of this theorem, without hiding the analytic work:
         let E := BHW.sourceFullFrameMap d n hgram ι hι
         have hact :=
           BHW.sourceFullFrameDet_linearEquivAction d n E ι z
-        have hall : (fun i => E (z i)) = w := by
-          ext i
-          exact BHW.sourceFullFrameMap_apply_all d n hgram ι hι i
-        rw [hall] at hact
-        exact (eq_div_iff hι).mpr hact.symm
+	        have hall : (fun i => E (z i)) = w := by
+	          funext i
+	          exact BHW.sourceFullFrameMap_apply_all d n hgram ι hι i
+	        rw [hall] at hact
+	        change LinearMap.det E.toLinearMap =
+	          BHW.sourceFullFrameDet d n ι w /
+	            BHW.sourceFullFrameDet d n ι z
+	        rw [hact]
+	        field_simp [hι]
 
       ```
 
@@ -28897,7 +28911,6 @@ Proof decomposition of this theorem, without hiding the analytic work:
       determinant form of the unique full-ambient same-Gram frame map. -/
       theorem BHW.sourceFullFrameDet_ratio_eq_of_sameSourceGram_fullRank
           (d n : Nat)
-          [NeZero d]
           {z w : Fin n -> Fin (d + 1) -> ℂ}
           (hfull :
             BHW.sourceGramMatrixRank n
@@ -28934,7 +28947,6 @@ Proof decomposition of this theorem, without hiding the analytic work:
 
       theorem BHW.hwFullRankSameGramFrameMapDet_eq_det_ratio_of_fullFrame
           (d n : Nat)
-          [NeZero d]
           {z w : Fin n -> Fin (d + 1) -> ℂ}
           (hfull :
             BHW.sourceGramMatrixRank n

@@ -188,10 +188,16 @@ local Slot 1:
    `BHW.sourceFullFrameBasis` and `BHW.sourceFullFrameBasis_apply`,
    the checked same-Gram nonvanishing bridge
    `BHW.sourceFullFrameDet_ne_zero_of_sameGram_fullFrame`,
-   the checked selected-frame map helpers
-   `BHW.sourceFullFrameMap` and `BHW.sourceFullFrameMap_apply_selected`,
-   the checked nonzero-frame bridge
-   `BHW.exists_sourceFullFrameDet_ne_zero_of_sourceGramRank_eq_spacetime`,
+	   the checked selected-frame map helpers
+	   `BHW.sourceFullFrameMap` and `BHW.sourceFullFrameMap_apply_selected`,
+	   the checked same-Gram full-frame map transport helpers
+	   `BHW.sourceFullFrameMap_preserves_inner`,
+	   `BHW.sourceFullFrameMap_apply_all`,
+	   `BHW.det_sourceFullFrameMap_eq_ratio`,
+	   `BHW.sourceFullFrameDet_ratio_eq_of_sameSourceGram_fullRank`,
+	   and `BHW.hwFullRankSameGramFrameMapDet_eq_det_ratio_of_fullFrame`,
+	   the checked nonzero-frame bridge
+	   `BHW.exists_sourceFullFrameDet_ne_zero_of_sourceGramRank_eq_spacetime`,
    the checked oriented-coordinate projections
    `BHW.same_sourceOrientedInvariant_sourceGram` and
    `BHW.same_sourceOrientedInvariant_fullFrameDet`,
@@ -5574,17 +5580,20 @@ implementation contract is:
    `BHW.fullComplexLorentz_det_eq_frameMapDet_of_fullRank`,
    `BHW.sourceFullFrameBasis`,
    `BHW.sourceFullFrameBasis_apply`,
-   `BHW.sourceFullFrameDet_ne_zero_of_sameGram_fullFrame`,
-   `BHW.sourceFullFrameMap`,
-   `BHW.sourceFullFrameMap_apply_selected`,
-   `BHW.bilinForm_eq_of_basis_values`,
-   `BHW.basis_pairing_zero_ext`,
-   `BHW.sourceFullFrameMap_preserves_inner`,
-   `BHW.sourceFullFrameMap_apply_all`,
-   `BHW.sourceFullFrameMatrix_linearEquivAction`,
-   `BHW.sourceFullFrameDet_linearEquivAction`,
-   `BHW.det_sourceFullFrameMap_eq_ratio`,
-   `BHW.sourceFullFrameDet_ratio_eq_of_sameSourceGram_fullRank`,
+	   `BHW.sourceFullFrameDet_ne_zero_of_sameGram_fullFrame`,
+	   `BHW.sourceFullFrameMap`,
+	   `BHW.sourceFullFrameMap_apply_selected`,
+	   `BHW.sourceComplexMinkowskiBilinForm`,
+	   `BHW.sourceComplexMinkowskiBilinForm_apply`,
+	   `BHW.bilinForm_eq_of_basis_values`,
+	   `BHW.basis_pairing_zero_ext`,
+	   `BHW.sourceFullFrameMap_preserves_inner`,
+	   `BHW.sourceFullFrameMap_apply_all`,
+	   `BHW.sourceFullFrameMatrix_linearEquivAction`,
+	   `BHW.sourceFullFrameDet_linearEquivAction`,
+	   `BHW.det_sourceFullFrameMap_eq_ratio`,
+	   `BHW.sourceFullFrameMap_toLinearMap_eq_of_sameGram_fullFrame`,
+	   `BHW.sourceFullFrameDet_ratio_eq_of_sameSourceGram_fullRank`,
    `BHW.HWFullRankSameGramFrameMapDet`,
    `BHW.hwFullRankSameGramFrameMapDet_eq_det_ratio_of_fullFrame`,
    `BHW.HWSameSourceGramSOOrientationCompatible`,

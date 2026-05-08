@@ -199,6 +199,311 @@ theorem sourceFullFrameMap_apply_selected
           simp
     _ = w (ι a) := sourceFullFrameBasis_apply d n ι w hιw a
 
+/-- The complex Minkowski pairing as a bilinear form. -/
+def sourceComplexMinkowskiBilinForm
+    (d : ℕ) : LinearMap.BilinForm ℂ (Fin (d + 1) → ℂ) where
+  toFun u :=
+    { toFun := fun v => sourceComplexMinkowskiInner d u v
+      map_add' := by
+        intro v w
+        exact sourceComplexMinkowskiInner_add_right d u v w
+      map_smul' := by
+        intro c v
+        exact sourceComplexMinkowskiInner_smul_right d c u v }
+  map_add' := by
+    intro u v
+    apply LinearMap.ext
+    intro w
+    exact sourceComplexMinkowskiInner_add_left d u v w
+  map_smul' := by
+    intro c u
+    apply LinearMap.ext
+    intro v
+    exact sourceComplexMinkowskiInner_smul_left d c u v
+
+@[simp]
+theorem sourceComplexMinkowskiBilinForm_apply
+    (d : ℕ) (u v : Fin (d + 1) → ℂ) :
+    sourceComplexMinkowskiBilinForm d u v =
+      sourceComplexMinkowskiInner d u v :=
+  rfl
+
+/-- A bilinear form is determined by its values on a basis, after transporting
+the basis through a linear equivalence. -/
+theorem bilinForm_eq_of_basis_values
+    {ι U : Type*}
+    [Fintype ι] [DecidableEq ι]
+    [AddCommGroup U] [Module ℂ U]
+    (B : LinearMap.BilinForm ℂ U)
+    (b : Module.Basis ι ℂ U)
+    {L : U ≃ₗ[ℂ] U}
+    (hbasis : ∀ a b', B (L (b a)) (L (b b')) = B (b a) (b b')) :
+    ∀ x y, B (L x) (L y) = B x y := by
+  intro x y
+  calc
+    B (L x) (L y) =
+        ((b.map L).repr (L x)).sum fun i xi =>
+          ((b.map L).repr (L y)).sum fun j yj =>
+            xi • yj • B ((b.map L) i) ((b.map L) j) := by
+          exact (LinearMap.sum_repr_mul_repr_mul
+            (b.map L) (b.map L) (B := B) (L x) (L y)).symm
+    _ = (b.repr x).sum fun i xi =>
+          (b.repr y).sum fun j yj =>
+            xi • yj • B (b i) (b j) := by
+          simp [hbasis]
+    _ = B x y :=
+          LinearMap.sum_repr_mul_repr_mul b b (B := B) x y
+
+/-- A bilinear pairing against a fixed vector vanishes everywhere if it
+vanishes on a basis. -/
+theorem basis_pairing_zero_ext
+    {ι U : Type*}
+    [AddCommGroup U] [Module ℂ U]
+    (B : LinearMap.BilinForm ℂ U)
+    (b : Module.Basis ι ℂ U)
+    {u : U}
+    (h : ∀ a, B (b a) u = 0) :
+    ∀ v, B v u = 0 := by
+  let f : U →ₗ[ℂ] ℂ :=
+    { toFun := fun v => B v u
+      map_add' := by
+        intro x y
+        simp
+      map_smul' := by
+        intro c x
+        simp }
+  have hf : f = 0 := by
+    apply b.ext
+    intro i
+    simp [f, h i]
+  intro v
+  simpa [f] using congrFun (congrArg DFunLike.coe hf) v
+
+/-- The selected full-frame map preserves the complex Minkowski pairing. -/
+theorem sourceFullFrameMap_preserves_inner
+    (d n : ℕ)
+    {z w : Fin n → Fin (d + 1) → ℂ}
+    (hgram : sourceMinkowskiGram d n z = sourceMinkowskiGram d n w)
+    (ι : Fin (d + 1) ↪ Fin n)
+    (hι : sourceFullFrameDet d n ι z ≠ 0) :
+    ∀ x y,
+      sourceComplexMinkowskiInner d
+        (sourceFullFrameMap d n hgram ι hι x)
+        (sourceFullFrameMap d n hgram ι hι y) =
+      sourceComplexMinkowskiInner d x y := by
+  let bZ := sourceFullFrameBasis d n ι z hι
+  let E := sourceFullFrameMap d n hgram ι hι
+  have hbasis :
+      ∀ a b,
+        sourceComplexMinkowskiBilinForm d (E (bZ a)) (E (bZ b)) =
+          sourceComplexMinkowskiBilinForm d (bZ a) (bZ b) := by
+    intro a b
+    have hpair :
+        sourceComplexMinkowskiInner d (w (ι a)) (w (ι b)) =
+          sourceComplexMinkowskiInner d (z (ι a)) (z (ι b)) := by
+      simpa [sourceMinkowskiGram_apply_eq_complexInner] using
+        (congrFun (congrFun hgram (ι a)) (ι b)).symm
+    simpa [E, bZ, sourceFullFrameMap_apply_selected,
+      sourceFullFrameBasis_apply] using hpair
+  exact bilinForm_eq_of_basis_values
+    (sourceComplexMinkowskiBilinForm d) bZ hbasis
+
+/-- The selected full-frame map carries every source vector with the same Gram
+matrix to the corresponding source vector. -/
+theorem sourceFullFrameMap_apply_all
+    (d n : ℕ)
+    {z w : Fin n → Fin (d + 1) → ℂ}
+    (hgram : sourceMinkowskiGram d n z = sourceMinkowskiGram d n w)
+    (ι : Fin (d + 1) ↪ Fin n)
+    (hι : sourceFullFrameDet d n ι z ≠ 0)
+    (i : Fin n) :
+    sourceFullFrameMap d n hgram ι hι (z i) = w i := by
+  let E := sourceFullFrameMap d n hgram ι hι
+  have hpres := sourceFullFrameMap_preserves_inner d n hgram ι hι
+  let hιw := sourceFullFrameDet_ne_zero_of_sameGram_fullFrame
+    d n hgram ι hι
+  let bW := sourceFullFrameBasis d n ι w hιw
+  have hdiff_zero : E (z i) - w i = 0 := by
+    apply sourceComplexMinkowskiInner_left_nonDegenerate d
+    intro v
+    let L : (Fin (d + 1) → ℂ) →ₗ[ℂ] ℂ :=
+      { toFun := fun u => sourceComplexMinkowskiInner d (E (z i) - w i) u
+        map_add' := by
+          intro u v
+          exact sourceComplexMinkowskiInner_add_right d (E (z i) - w i) u v
+        map_smul' := by
+          intro c u
+          exact sourceComplexMinkowskiInner_smul_right d c (E (z i) - w i) u }
+    change L v = 0
+    have hL : L = 0 := by
+      apply bW.ext
+      intro a
+      have hpair :
+          sourceComplexMinkowskiInner d (E (z i)) (w (ι a)) =
+            sourceComplexMinkowskiInner d (w i) (w (ι a)) := by
+        calc
+          sourceComplexMinkowskiInner d (E (z i)) (w (ι a)) =
+              sourceComplexMinkowskiInner d (E (z i)) (E (z (ι a))) := by
+                rw [sourceFullFrameMap_apply_selected d n hgram ι hι a]
+          _ = sourceComplexMinkowskiInner d (z i) (z (ι a)) :=
+                hpres (z i) (z (ι a))
+          _ = sourceComplexMinkowskiInner d (w i) (w (ι a)) := by
+                simpa [sourceMinkowskiGram_apply_eq_complexInner] using
+                  congrFun (congrFun hgram i) (ι a)
+      change sourceComplexMinkowskiInner d (E (z i) - w i) (bW a) = 0
+      rw [sourceFullFrameBasis_apply]
+      rw [sourceComplexMinkowskiInner_sub_left]
+      exact sub_eq_zero.mpr hpair
+    rw [hL]
+    rfl
+  exact sub_eq_zero.mp hdiff_zero
+
+/-- Applying a linear equivalence to every source vector multiplies a selected
+full-frame matrix on the right by the transpose of its coordinate matrix. -/
+theorem sourceFullFrameMatrix_linearEquivAction
+    (d n : ℕ)
+    (L : (Fin (d + 1) → ℂ) ≃ₗ[ℂ] (Fin (d + 1) → ℂ))
+    (ι : Fin (d + 1) ↪ Fin n)
+    (z : Fin n → Fin (d + 1) → ℂ) :
+    sourceFullFrameMatrix d n ι (fun i => L (z i)) =
+      sourceFullFrameMatrix d n ι z *
+        (LinearMap.toMatrix
+          (Pi.basisFun ℂ (Fin (d + 1)))
+          (Pi.basisFun ℂ (Fin (d + 1))) L.toLinearMap).transpose := by
+  ext a μ
+  have h :=
+    congrFun (LinearMap.toMatrix'_mulVec L.toLinearMap (z (ι a))) μ
+  simpa [sourceFullFrameMatrix, LinearMap.toMatrix_eq_toMatrix',
+    Matrix.mul_apply, Matrix.mulVec, dotProduct, Matrix.transpose_apply,
+    mul_comm, mul_left_comm, mul_assoc] using h.symm
+
+/-- Applying a linear equivalence to every source vector scales a selected
+full-frame determinant by the determinant of the linear equivalence. -/
+theorem sourceFullFrameDet_linearEquivAction
+    (d n : ℕ)
+    (L : (Fin (d + 1) → ℂ) ≃ₗ[ℂ] (Fin (d + 1) → ℂ))
+    (ι : Fin (d + 1) ↪ Fin n)
+    (z : Fin n → Fin (d + 1) → ℂ) :
+    sourceFullFrameDet d n ι (fun i => L (z i)) =
+      sourceFullFrameDet d n ι z * LinearMap.det L.toLinearMap := by
+  rw [sourceFullFrameDet, sourceFullFrameMatrix_linearEquivAction,
+    sourceFullFrameDet, Matrix.det_mul, Matrix.det_transpose,
+    LinearMap.det_toMatrix]
+
+/-- The determinant of the selected same-Gram full-frame map is the quotient of
+the corresponding selected full-frame determinants. -/
+theorem det_sourceFullFrameMap_eq_ratio
+    (d n : ℕ)
+    {z w : Fin n → Fin (d + 1) → ℂ}
+    (hgram : sourceMinkowskiGram d n z = sourceMinkowskiGram d n w)
+    (ι : Fin (d + 1) ↪ Fin n)
+    (hι : sourceFullFrameDet d n ι z ≠ 0) :
+    LinearMap.det (sourceFullFrameMap d n hgram ι hι).toLinearMap =
+      sourceFullFrameDet d n ι w / sourceFullFrameDet d n ι z := by
+  let E := sourceFullFrameMap d n hgram ι hι
+  have hact := sourceFullFrameDet_linearEquivAction d n E ι z
+  have hall : (fun i => E (z i)) = w := by
+    funext i
+    exact sourceFullFrameMap_apply_all d n hgram ι hι i
+  rw [hall] at hact
+  change LinearMap.det E.toLinearMap =
+    sourceFullFrameDet d n ι w / sourceFullFrameDet d n ι z
+  rw [hact]
+  field_simp [hι]
+
+/-- The same-Gram full-frame map is independent of the selected nonzero full
+frame, as a linear map. -/
+theorem sourceFullFrameMap_toLinearMap_eq_of_sameGram_fullFrame
+    (d n : ℕ)
+    {z w : Fin n → Fin (d + 1) → ℂ}
+    (hgram : sourceMinkowskiGram d n z = sourceMinkowskiGram d n w)
+    (ι κ : Fin (d + 1) ↪ Fin n)
+    (hι : sourceFullFrameDet d n ι z ≠ 0)
+    (hκ : sourceFullFrameDet d n κ z ≠ 0) :
+    (sourceFullFrameMap d n hgram ι hι).toLinearMap =
+      (sourceFullFrameMap d n hgram κ hκ).toLinearMap := by
+  let Eι := sourceFullFrameMap d n hgram ι hι
+  let Eκ := sourceFullFrameMap d n hgram κ hκ
+  let bι := sourceFullFrameBasis d n ι z hι
+  apply bι.ext
+  intro a
+  change Eι (bι a) = Eκ (bι a)
+  calc
+    Eι (bι a) = Eι (z (ι a)) := by rw [sourceFullFrameBasis_apply]
+    _ = w (ι a) := sourceFullFrameMap_apply_all d n hgram ι hι (ι a)
+    _ = Eκ (z (ι a)) := (sourceFullFrameMap_apply_all d n hgram κ hκ (ι a)).symm
+    _ = Eκ (bι a) := by rw [sourceFullFrameBasis_apply]
+
+/-- Independence of the full-frame determinant ratio in the full scalar-rank
+case. -/
+theorem sourceFullFrameDet_ratio_eq_of_sameSourceGram_fullRank
+    (d n : ℕ)
+    {z w : Fin n → Fin (d + 1) → ℂ}
+    (_hfull :
+      sourceGramMatrixRank n (sourceMinkowskiGram d n z) = d + 1)
+    (hgram : sourceMinkowskiGram d n z = sourceMinkowskiGram d n w)
+    (ι κ : Fin (d + 1) ↪ Fin n)
+    (hι : sourceFullFrameDet d n ι z ≠ 0)
+    (hκ : sourceFullFrameDet d n κ z ≠ 0) :
+    sourceFullFrameDet d n ι w / sourceFullFrameDet d n ι z =
+      sourceFullFrameDet d n κ w / sourceFullFrameDet d n κ z := by
+  have hdetι := det_sourceFullFrameMap_eq_ratio d n hgram ι hι
+  have hdetκ := det_sourceFullFrameMap_eq_ratio d n hgram κ hκ
+  have hmaps :=
+    sourceFullFrameMap_toLinearMap_eq_of_sameGram_fullFrame
+      d n hgram ι κ hι hκ
+  have hdet_eq :
+      LinearMap.det (sourceFullFrameMap d n hgram ι hι).toLinearMap =
+        LinearMap.det (sourceFullFrameMap d n hgram κ hκ).toLinearMap := by
+    rw [hmaps]
+  exact hdetι.symm.trans (hdet_eq.trans hdetκ)
+
+/-- Determinant of the unique ambient same-Gram frame map in the full scalar
+rank case.  Outside the full-rank/nonzero-frame case the value is a harmless
+default; downstream orientation predicates use it only after a nonzero full
+frame is available. -/
+noncomputable def HWFullRankSameGramFrameMapDet
+    (d n : ℕ)
+    (z w : Fin n → Fin (d + 1) → ℂ) : ℂ :=
+  if h : ∃ ι : Fin (d + 1) ↪ Fin n, sourceFullFrameDet d n ι z ≠ 0 then
+    let ι := Classical.choose h
+    sourceFullFrameDet d n ι w / sourceFullFrameDet d n ι z
+  else
+    1
+
+/-- The chosen determinant in `HWFullRankSameGramFrameMapDet` agrees with any
+nonzero selected full-frame determinant ratio under the full-rank same-Gram
+hypotheses. -/
+theorem hwFullRankSameGramFrameMapDet_eq_det_ratio_of_fullFrame
+    (d n : ℕ)
+    {z w : Fin n → Fin (d + 1) → ℂ}
+    (hfull :
+      sourceGramMatrixRank n (sourceMinkowskiGram d n z) = d + 1)
+    (hgram : sourceMinkowskiGram d n z = sourceMinkowskiGram d n w)
+    (ι : Fin (d + 1) ↪ Fin n)
+    (hι : sourceFullFrameDet d n ι z ≠ 0) :
+    HWFullRankSameGramFrameMapDet d n z w =
+      sourceFullFrameDet d n ι w / sourceFullFrameDet d n ι z := by
+  unfold HWFullRankSameGramFrameMapDet
+  have hnonempty :
+      ∃ κ : Fin (d + 1) ↪ Fin n, sourceFullFrameDet d n κ z ≠ 0 :=
+    ⟨ι, hι⟩
+  rw [dif_pos hnonempty]
+  let κ := Classical.choose hnonempty
+  have hκ : sourceFullFrameDet d n κ z ≠ 0 :=
+    Classical.choose_spec hnonempty
+  exact sourceFullFrameDet_ratio_eq_of_sameSourceGram_fullRank
+    d n hfull hgram κ ι hκ hι
+
+/-- Orientation compatibility for determinant-`1` same-Gram extension: below
+full ambient rank a complementary determinant correction is available; in full
+ambient rank the unique full-frame same-Gram determinant must be `1`. -/
+def HWSameSourceGramSOOrientationCompatible
+    (d n : ℕ)
+    (z w : Fin n → Fin (d + 1) → ℂ) : Prop :=
+  sourceGramMatrixRank n (sourceMinkowskiGram d n z) < d + 1 ∨
+    HWFullRankSameGramFrameMapDet d n z w = 1
+
 /-- Full scalar Gram rank supplies a nonzero ordered full-frame determinant. -/
 theorem exists_sourceFullFrameDet_ne_zero_of_sourceGramRank_eq_spacetime
     (d n : ℕ)
