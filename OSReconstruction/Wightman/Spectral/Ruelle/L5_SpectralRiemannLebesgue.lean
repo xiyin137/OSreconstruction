@@ -183,38 +183,60 @@ theorem spectral_riemann_lebesgue
   have h_ρℂ_integrable : MeasureTheory.Integrable
       (fun q : Fin d → ℝ => (ρ q : ℂ)) MeasureTheory.volume := by
     exact h_ρ_integrable.ofReal
-  -- Steps 3b-5 (deferred):
+  -- Step 3b: convert integral on `Fin d → ℝ` to integral on `EuclideanSpace ℝ (Fin d)`.
+  -- Use `PiLp.volume_preserving_toLp.integral_comp_emb` (for the measurable embedding).
+  -- The integrand pulled back through `WithLp.ofLp` yields an integrand on V.
+  have h_step3b : ∀ a : Fin d → ℝ,
+      (∫ q : Fin d → ℝ, (ρ q : ℂ) *
+          Complex.exp (Complex.I *
+            (∑ i : Fin d, (a i : ℂ) * (q i : ℂ)))) =
+      (∫ v : EuclideanSpace ℝ (Fin d),
+          (ρ (WithLp.ofLp v) : ℂ) *
+          Complex.exp (Complex.I *
+            (∑ i : Fin d, (a i : ℂ) * ((WithLp.ofLp v) i : ℂ)))) := by
+    intro a
+    -- `PiLp.volume_preserving_toLp` gives MeasurePreserving (toLp 2) volume volume
+    -- for ι = Fin d (Fintype). Use `integral_comp_emb` via the measurable equiv.
+    have hMP : MeasureTheory.MeasurePreserving
+        (WithLp.toLp 2 : (Fin d → ℝ) → EuclideanSpace ℝ (Fin d))
+        MeasureTheory.volume MeasureTheory.volume :=
+      PiLp.volume_preserving_toLp (Fin d)
+    -- Apply integral_comp via the MeasurableEquiv.
+    have hME : MeasureTheory.MeasurePreserving
+        (MeasurableEquiv.toLp 2 (Fin d → ℝ)) MeasureTheory.volume MeasureTheory.volume := hMP
+    rw [← hME.integral_comp' (g := fun v : EuclideanSpace ℝ (Fin d) =>
+        (ρ (WithLp.ofLp v) : ℂ) *
+        Complex.exp (Complex.I *
+          (∑ i : Fin d, (a i : ℂ) * ((WithLp.ofLp v) i : ℂ))))]
+    rfl
+  simp_rw [h_step3b]
+  -- Step 3c: apply Mathlib's `tendsto_integral_exp_inner_smul_cocompact` to
+  -- the function `f : EuclideanSpace ℝ (Fin d) → ℂ`,
+  --   `f v := (ρ (WithLp.ofLp v) : ℂ)`.
+  -- This gives `Tendsto (fun w => ∫ v, 𝐞(-⟪v, w⟫) • f v) cocompact (𝓝 0)`.
+  set f_E : EuclideanSpace ℝ (Fin d) → ℂ :=
+    fun v => (ρ (WithLp.ofLp v) : ℂ) with hf_E_def
+  have h_RL : Filter.Tendsto
+      (fun w : EuclideanSpace ℝ (Fin d) =>
+        ∫ v : EuclideanSpace ℝ (Fin d),
+          Real.fourierChar (Multiplicative.ofAdd (-(@inner ℝ _ _ v w))) • f_E v)
+      (Filter.cocompact (EuclideanSpace ℝ (Fin d)))
+      (nhds 0) :=
+    tendsto_integral_exp_inner_smul_cocompact f_E
+  -- Step 3d: substitute `w = -(2π)⁻¹ • toLp a : EuclideanSpace ℝ (Fin d)`
+  -- and identify the integrand with `(ρ (ofLp v) : ℂ) * exp(i ⟨a, ofLp v⟩)`.
+  -- After substitution, `𝐞(-⟪v, w⟫) = exp(i ⟪v, toLp a⟫_E) = exp(i ∑ a_i v_i)`.
+  -- Step 3e: `cocompact (EuclideanSpace ℝ (Fin d)) = cobounded` (proper space).
+  -- Compose `h_RL` with the continuous bijection
+  --   `affine : (Fin d → ℝ) → EuclideanSpace ℝ (Fin d)`,
+  --   `affine a := -((2 * π)⁻¹ : ℝ) • (WithLp.toLp 2 a)`.
+  -- The composition gives `Tendsto (fun a => our_integral_E a) cobounded (𝓝 0)`,
+  -- where `our_integral_E a` matches the goal after pointwise rewriting.
   --
-  -- Key Mathlib pieces:
-  -- * `MeasurableEquiv.toLp 2 (Fin d → ℝ) : (Fin d → ℝ) ≃ᵐ EuclideanSpace ℝ (Fin d)`
-  -- * `PiLp.volume_preserving_toLp : MeasurePreserving (toLp 2 (Fin d → ℝ))`
-  -- * `tendsto_integral_exp_inner_smul_cocompact f`
-  --   (`f : EuclideanSpace ℝ (Fin d) → ℂ`, gives Tendsto along cocompact)
-  -- * `Metric.cobounded_eq_cocompact` on the proper space `EuclideanSpace ℝ (Fin d)`
-  --
-  -- The plan, written out as a chain:
-  --
-  --   our_integral(a) = ∫ q, (ρ q : ℂ) * exp(i ⟨a, q⟩) ∂volume_(Fin d → ℝ)
-  --                  = ∫ v, (ρ (ofLp v) : ℂ) * exp(i ⟨a, ofLp v⟩) ∂volume_E
-  --   [via PiLp.volume_preserving_toLp + integral_map]
-  --                  = ∫ v, (ρ (ofLp v) : ℂ) * exp(i ⟨toLp a, v⟩_E) ∂volume_E
-  --   [Pi pairing matches Euclidean inner product on values]
-  --                  = ∫ v, 𝐞(-⟨v, w(a)⟩_E) • (ρ (ofLp v) : ℂ) ∂volume_E
-  --   [where w(a) := -(2π)⁻¹ • toLp a, so 𝐞(-⟨v,w⟩) = exp(i⟨toLp a, v⟩)]
-  --
-  -- Mathlib RL: Tendsto (w ↦ ∫ v, 𝐞(-⟨v,w⟩) • f v) cocompact_E (𝓝 0).
-  -- The map `a ↦ w(a) = -(2π)⁻¹ • toLp a` is a continuous bijection
-  --   `(Fin d → ℝ) → EuclideanSpace ℝ (Fin d)`, taking cobounded → cocompact.
-  -- Compose via `Tendsto.comp` to land at `Tendsto (a ↦ our_integral a) cobounded (𝓝 0)`.
-  --
-  -- The sub-step that's most fiddly: showing the integrand identity at v under
-  -- the toLp/ofLp coercion, since `WithLp.ofLp v = v` definitionally as functions
-  -- but Lean's elaborator distinguishes them via the WithLp wrapper.
-  --
-  -- Estimated remaining: ~1 day of careful Lean engineering. The proof
-  -- is a chain of `Tendsto.comp` with continuous bijections and
-  -- measure-preserving rewrites, but each step has subtle type-class
-  -- bookkeeping (Fin d → ℝ vs EuclideanSpace, sup-norm vs L²).
+  -- Concretely: we need a Tendsto.comp argument with the affine map
+  -- `(Fin d → ℝ) → EuclideanSpace ℝ (Fin d)` and an integrand-identity
+  -- rewriting (`𝐞(-⟪v, w(a)⟫) • f_E v = (ρ (ofLp v) : ℂ) * exp(i ⟨a, ofLp v⟩)`).
+  -- Estimated remaining: a chain of pointwise rewrites + `Tendsto.comp`. ~half day.
   sorry
 
 end Ruelle
