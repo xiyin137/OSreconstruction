@@ -579,4 +579,17 @@ theorem complexMinkowski_totallyIsotropic_embedding_into_frame
           (Submodule.subset_span ⟨ι i, rfl⟩)
     rw [hQiso ⟨E x, hEx_mem⟩ ⟨E y, hEy_mem⟩, hR_iso x y]
 
+/-- A finite family whose values lie in the span of a finite frame has
+coefficient functions on that frame. -/
+theorem coefficients_of_family_mem_span_finite_frame
+    {d n s : ℕ}
+    {q : Fin s → Fin (d + 1) → ℂ}
+    {v : Fin n → Fin (d + 1) → ℂ}
+    (hv : ∀ i, v i ∈ Submodule.span ℂ (Set.range q)) :
+    ∃ a : Fin n → Fin s → ℂ,
+      ∀ i, v i = ∑ c : Fin s, a i c • q c := by
+  choose a ha using fun i =>
+    exists_coefficients_of_mem_span_finite_frame (hv i)
+  exact ⟨a, ha⟩
+
 end BHW

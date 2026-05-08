@@ -25780,6 +25780,20 @@ Proof decomposition of this theorem, without hiding the analytic work:
                   (y : Fin (d + 1) -> ℂ)
       ```
 
+      The coefficient extraction for the eventual normal-form fields is also
+      checked:
+
+      ```lean
+      theorem BHW.coefficients_of_family_mem_span_finite_frame
+          {d n s : Nat}
+          {q : Fin s -> Fin (d + 1) -> ℂ}
+          {v : Fin n -> Fin (d + 1) -> ℂ}
+          (hv : ∀ i,
+            v i ∈ Submodule.span ℂ (Set.range q)) :
+          ∃ a : Fin n -> Fin s -> ℂ,
+            ∀ i, v i = ∑ c : Fin s, a i c • q c
+      ```
+
       Lean-shaped proof of the residual alignment theorem after the support
       packet exists:
 
