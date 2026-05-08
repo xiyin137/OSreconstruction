@@ -1,3 +1,4 @@
+import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SourceHWSelectedProjection
 import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SourceHWSingularLimit
 
 /-!
@@ -60,6 +61,16 @@ structure HWLowRankSelectedSpanFrame
         (w i - ∑ b : Fin r, coeff i b • w (I b))
         (w j - ∑ b : Fin r, coeff j b • w (I b)) = 0
 
+/-- A selected-span frame together with the rank and selected principal
+indices used to build it. -/
+structure HWLowRankSelectedSpanFrameData
+    (d n : ℕ)
+    (z w : Fin n → Fin (d + 1) → ℂ) where
+  r : ℕ
+  I : Fin r → Fin n
+  rank_eq : r = sourceGramMatrixRank n (sourceMinkowskiGram d n z)
+  frame : HWLowRankSelectedSpanFrame d n r z w I
+
 /-- Data obtained after the selected nondegenerate spans have been matched by
 a determinant-one complex Lorentz transformation.  The common selected span is
 the target span; only after applying `Λsel` to the left endpoint do the two
@@ -101,6 +112,93 @@ structure HWLowRankSelectedSpanAlignment
   right_residual_pair_zero :
     ∀ i j,
       sourceComplexMinkowskiInner d (rightResidual i) (rightResidual j) = 0
+
+/-- Same source Gram data produce the selected-span frame packet at the
+scalar Gram rank.  The residual-pairing equality is obtained after both
+residual pairings are proved to vanish by the selected Schur-complement zero
+theorem. -/
+def hw_lowRank_selectedSpanFrame_of_sameSourceGram
+    (d n : ℕ)
+    {z w : Fin n → Fin (d + 1) → ℂ}
+    (hgram : sourceMinkowskiGram d n z = sourceMinkowskiGram d n w) :
+    HWLowRankSelectedSpanFrameData d n z w := by
+  classical
+  let G : Fin n → Fin n → ℂ := sourceMinkowskiGram d n z
+  let r : ℕ := sourceGramMatrixRank n G
+  have hGsym : G ∈ sourceSymmetricMatrixSpace n := by
+    intro i j
+    exact sourceMinkowskiGram_symm d n z i j
+  have hrank : (Matrix.of fun i j : Fin n => G i j).rank = r := by
+    have hM : (Matrix.of fun i j : Fin n => G i j) = G := by
+      ext i j
+      rfl
+    rw [hM]
+    simp [sourceGramMatrixRank, r]
+  let hExists :=
+    exists_sourcePrincipalMinor_ne_zero_of_sourceSymmetricRank hGsym hrank
+  let I : Fin r → Fin n := Classical.choose hExists
+  have hI : Function.Injective I := (Classical.choose_spec hExists).1
+  have hminor : sourceMatrixMinor n r I I G ≠ 0 :=
+    (Classical.choose_spec hExists).2
+  let coeff : Fin n → Fin r → ℂ :=
+    hw_selectedSpanCoeff n r I G
+  have hminorW :
+      sourceMatrixMinor n r I I (sourceMinkowskiGram d n w) ≠ 0 := by
+    simpa [G, hgram] using hminor
+  have hrankZ :
+      sourceGramMatrixRank n (sourceMinkowskiGram d n z) = r := by
+    rfl
+  have hrankW :
+      sourceGramMatrixRank n (sourceMinkowskiGram d n w) = r := by
+    simpa [G, r] using congrArg (sourceGramMatrixRank n) hgram.symm
+  have hleft_pair_zero :
+      ∀ i j,
+        sourceComplexMinkowskiInner d
+          (z i - ∑ b : Fin r, coeff i b • z (I b))
+          (z j - ∑ b : Fin r, coeff j b • z (I b)) = 0 := by
+    intro i j
+    simpa [coeff, G, hwLemma3_selectedResidual, hwLemma3_selectedProjection]
+      using
+        hwLemma3_selectedResidual_inner_residual_eq_zero
+          d n r I z hrankZ hminor i j
+  have hright_pair_zero :
+      ∀ i j,
+        sourceComplexMinkowskiInner d
+          (w i - ∑ b : Fin r, coeff i b • w (I b))
+          (w j - ∑ b : Fin r, coeff j b • w (I b)) = 0 := by
+    intro i j
+    simpa [coeff, G, hgram, hwLemma3_selectedResidual,
+      hwLemma3_selectedProjection]
+      using
+        hwLemma3_selectedResidual_inner_residual_eq_zero
+          d n r I w hrankW hminorW i j
+  exact
+    { r := r
+      I := I
+      rank_eq := rfl
+      frame :=
+        { I_injective := hI
+          principal_minor_ne := by
+            simpa [G] using hminor
+          selected_gram_eq := by
+            intro a b
+            exact congrFun (congrFun hgram (I a)) (I b)
+          coeff := coeff
+          left_residual_orth := by
+            intro i a
+            simpa [coeff, G, hwLemma3_selectedResidual,
+              hwLemma3_selectedProjection]
+              using hwLemma3_selectedResidual_inner_head d n r I z hminor i a
+          right_residual_orth := by
+            intro i a
+            simpa [coeff, G, hgram, hwLemma3_selectedResidual,
+              hwLemma3_selectedProjection]
+              using hwLemma3_selectedResidual_inner_head d n r I w hminorW i a
+          residual_pairing_eq := by
+            intro i j
+            exact (hleft_pair_zero i j).trans (hright_pair_zero i j).symm
+          left_residual_pair_zero := hleft_pair_zero
+          right_residual_pair_zero := hright_pair_zero } }
 
 /-- Once the selected spans are aligned, the left and right residual families
 span totally isotropic subspaces in the orthogonal complement of the common

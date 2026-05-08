@@ -25328,37 +25328,6 @@ Proof decomposition of this theorem, without hiding the analytic work:
           BHW.reindexedRectSchurComplement
             (Matrix.of fun i j : Fin n => G i j) e e u v
 
-      theorem BHW.hw_lowRank_residual_pairing_eq_of_sameSourceGram
-          [NeZero d]
-          {z w : Fin n -> Fin (d + 1) -> ℂ}
-          {I : Fin r -> Fin n}
-          (hunit :
-            IsUnit
-              (BHW.sourcePrincipalGramMatrix n r I
-                (BHW.sourceMinkowskiGram d n z)).det)
-          (hgram :
-            BHW.sourceMinkowskiGram d n z =
-              BHW.sourceMinkowskiGram d n w) :
-          ∀ i j,
-            BHW.sourceComplexMinkowskiInner d
-              (z i -
-                ∑ b : Fin r,
-                  BHW.hw_selectedSpanCoeff n r I
-                    (BHW.sourceMinkowskiGram d n z) i b • z (I b))
-              (z j -
-                ∑ b : Fin r,
-                  BHW.hw_selectedSpanCoeff n r I
-                    (BHW.sourceMinkowskiGram d n z) j b • z (I b)) =
-            BHW.sourceComplexMinkowskiInner d
-              (w i -
-                ∑ b : Fin r,
-                  BHW.hw_selectedSpanCoeff n r I
-                    (BHW.sourceMinkowskiGram d n z) i b • w (I b))
-              (w j -
-                ∑ b : Fin r,
-                  BHW.hw_selectedSpanCoeff n r I
-                    (BHW.sourceMinkowskiGram d n z) j b • w (I b))
-
       theorem BHW.hwLemma3_selectedResidual_inner_residual_eq_zero
           (d n r : Nat)
           (I : Fin r -> Fin n)
@@ -25376,20 +25345,13 @@ Proof decomposition of this theorem, without hiding the analytic work:
               (BHW.hwLemma3_selectedResidual d n r I
                 (BHW.sourceMinkowskiGram d n z) z j) = 0
 
-      theorem BHW.hw_lowRank_selectedSpanFrame_of_sameSourceGram
-          [NeZero d]
-          (hd : 2 <= d)
+      def BHW.hw_lowRank_selectedSpanFrame_of_sameSourceGram
+          (d n : Nat)
           {z w : Fin n -> Fin (d + 1) -> ℂ}
-          (hz : z ∈ BHW.ExtendedTube d n)
-          (hw : w ∈ BHW.ExtendedTube d n)
-          (hzLow : BHW.HWSourceGramLowRankAt d n z)
           (hgram :
             BHW.sourceMinkowskiGram d n z =
               BHW.sourceMinkowskiGram d n w) :
-          ∃ r : Nat, ∃ I : Fin r -> Fin n,
-            r = BHW.sourceGramMatrixRank n
-              (BHW.sourceMinkowskiGram d n z) ∧
-            BHW.HWLowRankSelectedSpanFrame d n r z w I
+          BHW.HWLowRankSelectedSpanFrameData d n z w
 
       def BHW.ComplexMinkowskiTotallyIsotropicSubspace
           (d : Nat)
@@ -31518,24 +31480,41 @@ Proof decomposition of this theorem, without hiding the analytic work:
       Lean-shaped selected-span coefficient construction:
 
       ```lean
-      theorem BHW.hw_lowRank_selectedSpanFrame_of_sameSourceGram ... := by
-        let G := BHW.sourceMinkowskiGram d n z
-        let r := BHW.sourceGramMatrixRank n G
+      def BHW.hw_lowRank_selectedSpanFrame_of_sameSourceGram ... := by
+        classical
+        let G : Fin n -> Fin n -> ℂ := BHW.sourceMinkowskiGram d n z
+        let r : ℕ := BHW.sourceGramMatrixRank n G
         have hGsym : G ∈ BHW.sourceSymmetricMatrixSpace n := by
           intro i j
           exact BHW.sourceMinkowskiGram_symm d n z i j
         have hrank :
             (Matrix.of fun i j : Fin n => G i j).rank = r := by
-          rfl
-        rcases BHW.exists_sourcePrincipalMinor_ne_zero_of_sourceSymmetricRank
-            hGsym hrank with
-          ⟨I, hI_inj, hminor⟩
-        let A := BHW.sourcePrincipalGramMatrix n r I G
-        have hunit : IsUnit A.det := by
-          simpa [A, BHW.sourcePrincipalGramMatrix, BHW.sourceMatrixMinor]
-            using hminor
+          have hM : (Matrix.of fun i j : Fin n => G i j) = G := by
+            ext i j
+            rfl
+          rw [hM]
+          simp [BHW.sourceGramMatrixRank, r]
+        let hExists :=
+          BHW.exists_sourcePrincipalMinor_ne_zero_of_sourceSymmetricRank
+            hGsym hrank
+        let I : Fin r -> Fin n := Classical.choose hExists
+        have hI_inj : Function.Injective I :=
+          (Classical.choose_spec hExists).1
+        have hminor : BHW.sourceMatrixMinor n r I I G ≠ 0 :=
+          (Classical.choose_spec hExists).2
         let coeff : Fin n -> Fin r -> ℂ :=
-          fun i => BHW.hw_selectedSpanCoeff n r I G i
+          BHW.hw_selectedSpanCoeff n r I G
+        have hminorW :
+            BHW.sourceMatrixMinor n r I I
+              (BHW.sourceMinkowskiGram d n w) ≠ 0 := by
+          simpa [G, hgram] using hminor
+        have hrankZ :
+            BHW.sourceGramMatrixRank n (BHW.sourceMinkowskiGram d n z) = r := by
+          rfl
+        have hrankW :
+            BHW.sourceGramMatrixRank n (BHW.sourceMinkowskiGram d n w) = r := by
+          simpa [G, r] using
+            congrArg (BHW.sourceGramMatrixRank n) hgram.symm
         have hsel :
             ∀ a b,
               BHW.sourceMinkowskiGram d n z (I a) (I b) =
@@ -31550,35 +31529,16 @@ Proof decomposition of this theorem, without hiding the analytic work:
           simpa [coeff, G] using
             BHW.hwLemma3_selectedResidual_inner_head
               (d := d) (n := n) (r := r) (z := z) (I := I)
-              hunit
+              hminor
         have hright_orth :
             ∀ i a,
               BHW.sourceComplexMinkowskiInner d
                 (w i - ∑ b : Fin r, coeff i b • w (I b))
                 (w (I a)) = 0 := by
-          -- Same coefficient formula, with the principal matrix rewritten by
-          -- `hgram`.
-          have hunitW :
-              IsUnit
-                (BHW.sourcePrincipalGramMatrix n r I
-                  (BHW.sourceMinkowskiGram d n w)).det := by
-            simpa [G, hgram] using hunit
           simpa [coeff, G, hgram] using
             BHW.hwLemma3_selectedResidual_inner_head
               (d := d) (n := n) (r := r) (z := w) (I := I)
-              hunitW
-        have hres_pair :
-            ∀ i j,
-              BHW.sourceComplexMinkowskiInner d
-                (z i - ∑ b : Fin r, coeff i b • z (I b))
-                (z j - ∑ b : Fin r, coeff j b • z (I b)) =
-              BHW.sourceComplexMinkowskiInner d
-                (w i - ∑ b : Fin r, coeff i b • w (I b))
-                (w j - ∑ b : Fin r, coeff j b • w (I b)) := by
-          simpa [coeff, G] using
-            BHW.hw_lowRank_residual_pairing_eq_of_sameSourceGram
-              (d := d) (n := n) (r := r) (z := z) (w := w)
-              (I := I) hunit hgram
+              hminorW
         have hleft_pair_zero :
             ∀ i j,
               BHW.sourceComplexMinkowskiInner d
@@ -31587,24 +31547,34 @@ Proof decomposition of this theorem, without hiding the analytic work:
           simpa [coeff, G] using
             BHW.hwLemma3_selectedResidual_inner_residual_eq_zero
               (d := d) (n := n) (r := r) (z := z) (I := I)
-              (by rfl) hminor
+              hrankZ hminor
         have hright_pair_zero :
             ∀ i j,
               BHW.sourceComplexMinkowskiInner d
                 (w i - ∑ b : Fin r, coeff i b • w (I b))
                 (w j - ∑ b : Fin r, coeff j b • w (I b)) = 0 := by
           intro i j
-          exact (hres_pair i j).symm.trans (hleft_pair_zero i j)
-        exact ⟨r, I, rfl,
-          { I_injective := hI_inj
-            principal_minor_ne := by simpa [G] using hminor
-            selected_gram_eq := hsel
-            coeff := coeff
-            left_residual_orth := hleft_orth
-            right_residual_orth := hright_orth
-            residual_pairing_eq := hres_pair
-            left_residual_pair_zero := hleft_pair_zero
-            right_residual_pair_zero := hright_pair_zero }⟩
+          simpa [coeff, G, hgram] using
+            BHW.hwLemma3_selectedResidual_inner_residual_eq_zero
+              (d := d) (n := n) (r := r) (z := w) (I := I)
+              hrankW hminorW i j
+        exact
+          { r := r
+            I := I
+            rank_eq := rfl
+            frame :=
+              { I_injective := hI_inj
+                principal_minor_ne := by simpa [G] using hminor
+                selected_gram_eq := hsel
+                coeff := coeff
+                left_residual_orth := hleft_orth
+                right_residual_orth := hright_orth
+                residual_pairing_eq := by
+                  intro i j
+                  exact (hleft_pair_zero i j).trans
+                    (hright_pair_zero i j).symm
+                left_residual_pair_zero := hleft_pair_zero
+                right_residual_pair_zero := hright_pair_zero } }
       ```
 
       The support theorem
@@ -32217,10 +32187,10 @@ Proof decomposition of this theorem, without hiding the analytic work:
       | High-rank nondegeneracy and kernel transport | Implemented and exact-file checked in `BHWPermutation/SourceRank.lean`. | Degenerate restricted span forces scalar rank `< min d n` using `Submodule.one_le_finrank_iff`, `Submodule.finrank_lt`, and `sourceComplexMinkowskiInner_left_nonDegenerate`; then `ker evalZ = gramKernel = ker evalW` under same Gram.  This is the checked step that prevents using `z i ↦ w i` before well-definedness is proved. |
       | High-rank span isometry data | Implemented and exact-file checked in `BHWPermutation/SourceRank.lean`. | Builds `HWHighRankSpanIsometryData` from the common coefficient quotient using `hwHighRankSpanIsometryOfKernelEq`, `hwHighRankSpanIsometry_apply_eval`, and `sourceCoefficientEval_pair_eq_sum_gram`; the producer is a `noncomputable def` because it returns data, while `HWHighRankSpanIsometryData_sourceGram_eq` is a proposition-valued theorem. |
 | High-rank determinant orientation and orbit theorem | Active oriented proper-orbit branch checked in `BHWPermutation/SourceFullComplexLorentzWitt.lean`; supporting full-complex group algebra and determinant packets checked in `SourceFullComplexLorentz.lean` and `SourceFullComplexLorentzFrame.lean`. | The checked theorem `complexMinkowski_wittExtension_full_of_sourceSpan` starts from `HWHighRankSpanIsometryData`, splits the ambient space through source span plus orthogonal complement, proves complement-isometry classification over `ℂ`, assembles the product map, and packages it as a full complex Lorentz transformation.  The checked theorem `complexMinkowski_wittExtension_detOne_of_sourceSpan` then performs determinant repair in the proper-span branch and uses the full-frame determinant ratio in the full-rank branch.  The checked consumers `hw_sameSourceGram_regular_orbit` and `hw_sameSourceOrientedInvariant_maxRank_properOrbit` provide the active determinant-`1` orbit needed by the oriented route.  The determinant-`-1` full-rank branch remains a conditional pure-Gram/improper-component fork and is not needed for the active oriented max-rank proper-orbit consumer. |
-      | Principal minor extraction for low-rank selected block | Principal-minor extraction checked locally; selected-frame construction transcript pinned. | `BHW.exists_sourcePrincipalMinor_ne_zero_of_sourceSymmetricRank` is checked in `BHWPermutation/SourceComplexSchurPatch.lean`; the selected-span frame uses the inverse principal Gram block coefficient formula and the Schur-complement exact-rank theorem displayed above. |
-      | Low-rank selected-span frame and residual Schur-zero theorem | Proof transcript pinned; production Lean not started. | Inverse principal Gram block coefficients, residual orthogonality, residual-pairing equality from `hgram`, and residual-residual zero from the indexed Schur-complement theorem at exact rank.  The proof uses `selectedIndexSumEquiv` and case-splits on selected versus complementary indices; no block-matrix prose is left as a mathematical step. |
+      | Principal minor extraction for low-rank selected block | Principal-minor extraction checked locally; selected-frame construction checked in `BHWPermutation/SourceHWLowRankAlignment.lean`. | `BHW.exists_sourcePrincipalMinor_ne_zero_of_sourceSymmetricRank` is checked in `BHWPermutation/SourceComplexSchurPatch.lean`; `BHW.hw_lowRank_selectedSpanFrame_of_sameSourceGram` uses the inverse principal Gram block coefficient formula and the Schur-complement exact-rank theorem displayed above. |
+      | Low-rank selected-span frame and residual Schur-zero theorem | Implemented and exact-file checked in `BHWPermutation/SourceHWLowRankAlignment.lean` as `BHW.HWLowRankSelectedSpanFrameData` and `BHW.hw_lowRank_selectedSpanFrame_of_sameSourceGram`. | The checked producer chooses the scalar rank and an injective principal index set by `Classical.choose`, proves selected-residual head orthogonality at both endpoints by rewriting the same coefficient formula through `hgram`, and obtains residual-pairing equality from the exact-rank Schur-zero theorem on both endpoints.  Thus the selected-frame step now contains no block-matrix prose and no analytic input. |
       | Selected-span alignment and common residual subspaces | Proof transcript pinned; production Lean not started. | First align the selected `z` and `w` spans by determinant-repaired Witt extension; only then put the two residual families in the common orthogonal complement.  Reversing this order is false.  The residual subspaces and their isotropy/orthogonality fields are extracted from the aligned decomposition. |
-      | Low-rank selected-span alignment and residual subspaces | Alignment data carriers and residual-subspace extraction checked in `SourceHWLowRankAlignment.lean`; producer proof not started. | `HWLowRankSelectedSpanFrame` records the selected block, shared coefficients, and residual pairings.  `HWLowRankSelectedSpanAlignment` records the selected-span Lorentz alignment and the two residual families in the common orthogonal complement.  `hw_lowRank_residualSubspaces_after_selectedAlignment` turns those fields into totally isotropic residual subspaces orthogonal to the common selected span. |
+      | Low-rank selected-span alignment and residual subspaces | Selected-frame producer, alignment data carrier, and residual-subspace extraction checked in `SourceHWLowRankAlignment.lean`; alignment producer not started. | `HWLowRankSelectedSpanFrameData` and `hw_lowRank_selectedSpanFrame_of_sameSourceGram` build the selected block, shared coefficients, and residual pairings from same source Gram data.  `HWLowRankSelectedSpanAlignment` records the selected-span Lorentz alignment and the two residual families in the common orthogonal complement.  `hw_lowRank_residualSubspaces_after_selectedAlignment` turns those fields into totally isotropic residual subspaces orthogonal to the common selected span. |
       | Common isotropic residual frame plus dual frame | Proof transcript pinned; production Lean not started. | Build a maximal isotropic frame in the common orthogonal complement, inject the left residual span into it by the Witt-index/dimension theorem, extract coefficient functions with `exists_coefficients_of_mem_span_finite_frame`, then construct the dual frame recursively inside the nondegenerate complement and store `qDual_pair_zero`, `q_dual`, `qDual_orth`. |
       | Isotropic contraction family | Proof transcript pinned; production Lean not started. | Define the partial isometry on `span ξ ⊔ span q ⊔ span qDual` fixing `ξ`, scaling `q` by `exp(-t)`, and scaling `qDual` by `exp(t)`; prove form preservation from `q_pair_zero`, `qDual_pair_zero`, `q_dual`, and orthogonality to `ξ`; extend by `complexMinkowski_wittExtension_subspaceIsometry`. |
       | Extended-tube stability for all residual coefficients | Checked in `SourceHWTubeCoefficient.lean`; corrected target for arbitrary endpoints is `ExtendedTube`, not `ForwardTube`. | Hall-Wightman's second remark gives `hw_secondRemark_forwardTube_singleNullResidual_normalForm`; the third remark is the checked determinant-one complex Lorentz two-plane rotation fixing the orthogonal complement and scaling `u + i v` by `exp t`; transport gives `hw_singleIsotropicResidual_allCoefficients_mem_extendedTube`; finite induction and the empty-source wrapper give the public `hw_isotropicFrame_allCoefficients_mem_extendedTube`.  The dual frame is used only for the null-boost contraction and the two-curve value equality/limit, not for coefficient-freedom membership. |
