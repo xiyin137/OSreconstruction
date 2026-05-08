@@ -58912,6 +58912,16 @@ mathematical step: it chooses one OS45 patch per adjacent transposition,
 proves the Hall-Wightman real-environment property for the Gram image of that
 same patch, and obtains compact-test equality from the OS45 EOW envelope.
 The strict oriented-continuation route now also has the checked canonical
+input bundle
+`BHW.OS45Figure24OrientedContinuationPairInputs`, whose fields are precisely:
+ordinary strict-oriented continuation data, adjacent strict-oriented
+continuation data, and the adjacent Wick trace on the exact source patch.
+`BHW.OS45Figure24OrientedContinuationPairInputs.toPairData`,
+`BHW.sourceDistributionalAdjacentTubeAnchor_of_orientedContinuationInputData_on_figure24SourcePatch`,
+and
+`BHW.selectedAdjacentDistributionalJostAnchorData_of_orientedContinuationInputData_on_figure24SourcePatch`
+consume this bundle mechanically.
+The route also has the checked canonical
 pair-data handoff
 `BHW.sourcePatchBHWJostPairData_of_orientedContinuationInputs_on_figure24SourcePatch`
 and its full adjacent-family version
