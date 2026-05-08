@@ -148,6 +148,11 @@ local Slot 1:
    so the remaining input can be stated directly as ordinary/adjacent strict
    oriented-continuation packets on the canonical Figure-2-4 source patches
    plus the adjacent Wick trace there;
+   the selected OS-side Jost data constructor from already-produced OS45
+   envelopes is checked as
+   `BHW.bvt_F_selectedAdjacentDistributionalJostAnchorData_of_os45Envelopes`,
+   reducing that route to the actual single-chart common-boundary/envelope
+   supplier;
    the oriented adjacent real-seed/anchor layer remains a downstream
    determinant-regular shrinking step;
    it must not use `BHW.os45_adjacent_commonBoundaryEnvelope`, the oriented

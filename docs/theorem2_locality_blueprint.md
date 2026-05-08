@@ -58914,6 +58914,15 @@ on each canonical `BHW.os45Figure24SourcePatch`, and the adjacent Wick trace is
 proved there, the direct source distributional adjacent-tube anchor is
 constructed mechanically.  This theorem is only a consumer bridge; it does not
 prove the OS I §4.5 branch theorem.
+The selected-data half of the same reduction is now checked as
+`BHW.bvt_F_selectedAdjacentDistributionalJostAnchorData_of_os45Envelopes`.
+It implements the constructor below from a family of real-open Jost patches
+with left/right ET membership and a `Nonempty AdjacentOSEOWDifferenceEnvelope`
+on each patch.  The use of `Nonempty` is intentional: the envelope is a data
+structure, not a proposition, while the supplier hypothesis should remain a
+proof-level existence field.  The only unimplemented OS-side input for this
+constructor is therefore the single-chart common-boundary/envelope supplier
+itself.
 
 ```lean
 noncomputable def bvt_F_selectedAdjacentDistributionalJostAnchorData_of_OSII

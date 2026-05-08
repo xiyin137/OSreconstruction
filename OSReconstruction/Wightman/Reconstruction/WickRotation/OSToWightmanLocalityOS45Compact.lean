@@ -275,6 +275,88 @@ def bvt_F_selectedAdjacentDistributionalJostAnchorData_of_compactWickPairingEq
     simpa [BHW.realEmbed, Equiv.Perm.mul_apply] using
       (hCompact i hi).compact_branch_eq 1 φ hφ_comp hφ_supp
 
+/-- Conditional OS45 envelope constructor for the selected adjacent Jost data.
+
+This is the mechanical part of the OS-II supplier: once each adjacent
+transposition has a real-open Jost patch with left/right extended-tube
+membership and a direct `AdjacentOSEOWDifferenceEnvelope`, the selected
+distributional Jost anchor data follows by the checked Hall-Wightman
+Gram-environment supplier and the checked real-edge compact-equality
+consumer. -/
+noncomputable def bvt_F_selectedAdjacentDistributionalJostAnchorData_of_os45Envelopes
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (n : ℕ)
+    (hOS45 :
+      ∀ (i : Fin n) (hi : i.val + 1 < n),
+        ∃ V : Set (NPointDomain d n),
+          IsOpen V ∧ IsConnected V ∧ V.Nonempty ∧
+          (∀ x, x ∈ V → x ∈ BHW.JostSet d n) ∧
+          (∀ x, x ∈ V → BHW.realEmbed x ∈ BHW.ExtendedTube d n) ∧
+          (∀ x, x ∈ V →
+            BHW.realEmbed
+              (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+              BHW.ExtendedTube d n) ∧
+          Nonempty
+            (BHW.AdjacentOSEOWDifferenceEnvelope (d := d) OS lgc n
+              (Equiv.swap i ⟨i.val + 1, hi⟩) V)) :
+    SelectedAdjacentDistributionalJostAnchorData OS lgc n := by
+  classical
+  choose V hV using hOS45
+  have hGram :
+      ∀ (i : Fin n) (hi : i.val + 1 < n),
+        ∃ E : Set (Fin n → Fin n → ℝ),
+          BHW.sourceDistributionalUniquenessSetOnVariety d n E ∧
+          (∀ x, x ∈ V i hi →
+            BHW.sourceRealMinkowskiGram d n x ∈ E) ∧
+          (∀ G, G ∈ E → ∃ x ∈ V i hi,
+            BHW.sourceRealMinkowskiGram d n x = G) := by
+    intro i hi
+    exact
+      BHW.exists_sourceDistributionalUniquenessEnvironment_of_open_jost_patch
+        (d := d) n
+        (hV i hi).1
+        (hV i hi).2.2.1
+        (hV i hi).2.2.2.1
+  choose E hE using hGram
+  refine
+    { basePatch := V
+      basePatch_open := ?basePatch_open
+      basePatch_nonempty := ?basePatch_nonempty
+      basePatch_jost := ?basePatch_jost
+      basePatch_left_ET := ?basePatch_left_ET
+      basePatch_right_ET := ?basePatch_right_ET
+      baseGramEnvironment := E
+      baseGramEnvironment_unique := ?baseGramEnvironment_unique
+      baseGram_left_mem := ?baseGram_left_mem
+      baseGram_realized := ?baseGram_realized
+      baseCompactEq := ?baseCompactEq }
+  · intro i hi
+    exact (hV i hi).1
+  · intro i hi
+    exact (hV i hi).2.2.1
+  · intro i hi x hx
+    exact (hV i hi).2.2.2.1 x hx
+  · intro i hi x hx
+    exact (hV i hi).2.2.2.2.1 x hx
+  · intro i hi x hx
+    exact (hV i hi).2.2.2.2.2.1 x hx
+  · intro i hi
+    exact (hE i hi).1
+  · intro i hi x hx
+    exact (hE i hi).2.1 x hx
+  · intro i hi G hG
+    exact (hE i hi).2.2 G hG
+  · intro i hi φ hφ_comp hφ_supp
+    have hswap_first :=
+      BHW.bvt_F_adjacent_extendF_edgeDistribution_eq_of_osEOWDifferenceEnvelope
+        (d := d) OS lgc n i hi (V i hi)
+        (hV i hi).1
+        (hV i hi).2.2.1
+        (Classical.choice (hV i hi).2.2.2.2.2.2)
+        φ hφ_comp hφ_supp
+    exact hswap_first.symm
+
 /-- The compact Figure-2-4 Wick-pairing family supplies the source
 distributional adjacent-tube anchor consumed by the source-side BHW theorem,
 under the OS-selected-witness naming convention. -/
