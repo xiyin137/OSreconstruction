@@ -223,21 +223,131 @@ theorem spectral_riemann_lebesgue
       (Filter.cocompact (EuclideanSpace ℝ (Fin d)))
       (nhds 0) :=
     tendsto_integral_exp_inner_smul_cocompact f_E
-  -- Step 3d: substitute `w = -(2π)⁻¹ • toLp a : EuclideanSpace ℝ (Fin d)`
-  -- and identify the integrand with `(ρ (ofLp v) : ℂ) * exp(i ⟨a, ofLp v⟩)`.
-  -- After substitution, `𝐞(-⟪v, w⟫) = exp(i ⟪v, toLp a⟫_E) = exp(i ∑ a_i v_i)`.
-  -- Step 3e: `cocompact (EuclideanSpace ℝ (Fin d)) = cobounded` (proper space).
-  -- Compose `h_RL` with the continuous bijection
-  --   `affine : (Fin d → ℝ) → EuclideanSpace ℝ (Fin d)`,
-  --   `affine a := -((2 * π)⁻¹ : ℝ) • (WithLp.toLp 2 a)`.
-  -- The composition gives `Tendsto (fun a => our_integral_E a) cobounded (𝓝 0)`,
-  -- where `our_integral_E a` matches the goal after pointwise rewriting.
+  -- Step 3d-e: the affine map a ↦ -(2π)⁻¹ • toLp a, integrand identity, and
+  -- Tendsto.comp.
   --
-  -- Concretely: we need a Tendsto.comp argument with the affine map
-  -- `(Fin d → ℝ) → EuclideanSpace ℝ (Fin d)` and an integrand-identity
-  -- rewriting (`𝐞(-⟪v, w(a)⟫) • f_E v = (ρ (ofLp v) : ℂ) * exp(i ⟨a, ofLp v⟩)`).
-  -- Estimated remaining: a chain of pointwise rewrites + `Tendsto.comp`. ~half day.
-  sorry
+  -- Define the affine map.
+  set aff_map : (Fin d → ℝ) → EuclideanSpace ℝ (Fin d) :=
+    fun a => -((2 * Real.pi)⁻¹ : ℝ) • (WithLp.toLp 2 a) with haff_map_def
+  -- aff_map is continuous (smul-by-const ∘ toLp, both continuous).
+  have h_aff_cont : Continuous aff_map := by
+    refine Continuous.const_smul ?_ _
+    exact PiLp.continuous_toLp 2 (β := fun _ : Fin d => ℝ)
+  -- aff_map maps cobounded → cobounded (it's a continuous bijection on
+  -- finite-dim normed spaces; the inverse is a continuous bijection too).
+  -- Therefore cobounded(Fin d → ℝ) → cobounded(EuclideanSpace) → cocompact.
+  have h_aff_cobounded :
+      Filter.Tendsto aff_map
+        (Bornology.cobounded (Fin d → ℝ))
+        (Filter.cocompact (EuclideanSpace ℝ (Fin d))) := by
+    -- Strategy: aff_map is a linear bijection (smul by nonzero ∘ toLp 2).
+    -- In finite dim, any linear equivalence becomes a homeomorphism via
+    -- `LinearEquiv.toContinuousLinearEquiv`. A homeomorphism takes
+    -- cocompact to cocompact, and on `Fin d → ℝ` cobounded = cocompact
+    -- (proper space).
+    have hpi_ne : -((2 * Real.pi)⁻¹ : ℝ) ≠ 0 := by
+      apply neg_ne_zero.mpr
+      exact inv_ne_zero (by positivity)
+    -- Build the linear equivalence (toLp first, then smul = aff_map).
+    let aff_lin : (Fin d → ℝ) ≃ₗ[ℝ] EuclideanSpace ℝ (Fin d) :=
+      (WithLp.linearEquiv 2 ℝ (Fin d → ℝ)).symm.trans
+        (LinearEquiv.smulOfUnit
+          (Units.mk0 (-((2 * Real.pi)⁻¹ : ℝ)) hpi_ne))
+    -- The continuous linear equivalence (finite-dim).
+    let aff_cle : (Fin d → ℝ) ≃L[ℝ] EuclideanSpace ℝ (Fin d) :=
+      aff_lin.toContinuousLinearEquiv
+    -- aff_cle is a homeomorphism.
+    have h_aff_eq : ∀ a : Fin d → ℝ, aff_cle a = aff_map a := by
+      intro a
+      show (Units.mk0 (-((2 * Real.pi)⁻¹ : ℝ)) hpi_ne) • (WithLp.toLp 2 a) = aff_map a
+      rfl
+    -- Tendsto via Homeomorph.
+    rw [show aff_map = aff_cle.toHomeomorph from
+      funext (fun a => (h_aff_eq a).symm)]
+    -- cocompact → cocompact via homeomorphism.
+    have h_homeo_tendsto :
+        Filter.Tendsto aff_cle.toHomeomorph
+          (Filter.cocompact (Fin d → ℝ))
+          (Filter.cocompact (EuclideanSpace ℝ (Fin d))) :=
+      aff_cle.toHomeomorph.toCocompactMap.cocompact_tendsto'
+    -- cobounded = cocompact on (Fin d → ℝ) (proper space).
+    have h_cob_eq : Bornology.cobounded (Fin d → ℝ) =
+        Filter.cocompact (Fin d → ℝ) :=
+      Metric.cobounded_eq_cocompact
+    rw [h_cob_eq]
+    exact h_homeo_tendsto
+  -- Apply Tendsto.comp.
+  have h_comp := h_RL.comp h_aff_cobounded
+  -- The composition has integrand `𝐞(-⟪v, aff_map a⟫_E) • f_E v`.
+  -- Show this equals our integrand pointwise.
+  refine h_comp.congr (fun a => ?_)
+  -- Goal: integrand identity at `a`.
+  -- LHS (from h_comp): ∫ v, 𝐞(-⟪v, aff_map a⟫) • f_E v ∂volume_E
+  -- RHS (our goal at a): ∫ v, (ρ (ofLp v) : ℂ) * exp(I * ∑ a_i (ofLp v) i)
+  --                       ∂volume_E
+  refine MeasureTheory.integral_congr_ae ?_
+  refine Filter.Eventually.of_forall (fun v => ?_)
+  -- Pointwise: 𝐞(-⟪v, aff_map a⟫) • f_E v = (ρ (ofLp v) : ℂ) * exp(I * ∑ a_i v_i)
+  show Real.fourierChar (Multiplicative.ofAdd (-(@inner ℝ _ _ v (aff_map a)))) • f_E v =
+    (ρ (WithLp.ofLp v) : ℂ) *
+      Complex.exp (Complex.I *
+        (∑ i : Fin d, (a i : ℂ) * ((WithLp.ofLp v) i : ℂ)))
+  -- Compute ⟪v, aff_map a⟫_E = -(2π)⁻¹ * ∑ i, v i * a i.
+  have h_inner :
+      (@inner ℝ _ _ v (aff_map a) : ℝ) =
+        -((2 * Real.pi)⁻¹) * ∑ i : Fin d, v i * a i := by
+    show (@inner ℝ _ _ v (-((2 * Real.pi)⁻¹ : ℝ) • (WithLp.toLp 2 a))) = _
+    rw [inner_smul_right]
+    show -((2 * Real.pi)⁻¹) * (@inner ℝ _ _ v (WithLp.toLp 2 a)) = _
+    congr 1
+    -- Inner product in EuclideanSpace = sum of products.
+    show (@inner ℝ _ _ (v : EuclideanSpace ℝ (Fin d))
+        (WithLp.toLp 2 a : EuclideanSpace ℝ (Fin d)) : ℝ) =
+      ∑ i : Fin d, v i * a i
+    rw [PiLp.inner_apply]
+    refine Finset.sum_congr rfl (fun i _ => ?_)
+    show (@inner ℝ ℝ _ (v i) ((WithLp.toLp 2 a) i)) = v i * a i
+    -- For real inner product on ℝ: ⟨x, y⟩ = (conj y) * x = y * x = x * y.
+    exact (RCLike.inner_apply (v i) ((WithLp.toLp 2 a) i)).trans (by simp [mul_comm])
+  -- 𝐞(-⟪v, aff_map a⟫) = exp(I * ∑ a_i v_i).
+  have h_circle :
+      ((Real.fourierChar (Multiplicative.ofAdd (-(@inner ℝ _ _ v (aff_map a)))) :
+          Circle) : ℂ) =
+      Complex.exp (Complex.I * (∑ i : Fin d, (a i : ℂ) * (v i : ℂ))) := by
+    rw [Real.fourierChar_apply]
+    -- Multiplicative.ofAdd is just a type wrapper; the underlying ℝ value is the same.
+    have hofadd : (Multiplicative.ofAdd (-(@inner ℝ _ _ v (aff_map a))) : ℝ) =
+        -(@inner ℝ _ _ v (aff_map a) : ℝ) := rfl
+    rw [show ((Multiplicative.ofAdd (-(@inner ℝ _ _ v (aff_map a)))) : ℝ) =
+          (((2 * Real.pi)⁻¹) * ∑ i : Fin d, v i * a i : ℝ) from by rw [hofadd, h_inner]; ring]
+    -- Now the goal has exp(↑(2 * π * (((2 * π)⁻¹) * ∑ v_i a_i)) * I)
+    push_cast
+    have hpi : (2 * Real.pi : ℝ) ≠ 0 := by positivity
+    have hpiC : (2 * (Real.pi : ℂ)) ≠ 0 := by exact_mod_cast hpi
+    rw [show (2 * (Real.pi : ℂ)) * ((2 * (Real.pi : ℂ))⁻¹ *
+          ∑ i : Fin d, ((v i : ℝ) : ℂ) * ((a i : ℝ) : ℂ)) =
+        ∑ i : Fin d, ((v i : ℝ) : ℂ) * ((a i : ℝ) : ℂ) from by
+      field_simp]
+    congr 1
+    rw [show ((∑ i : Fin d, ((v i : ℝ) : ℂ) * ((a i : ℝ) : ℂ)) : ℂ) * Complex.I =
+        Complex.I * (∑ i : Fin d, (a i : ℂ) * (v i : ℂ)) from by
+      simp only [Finset.mul_sum, Finset.sum_mul]
+      refine Finset.sum_congr rfl (fun i _ => ?_)
+      ring]
+  -- Combine: smul = mul, then use h_circle.
+  rw [Circle.smul_def, smul_eq_mul, h_circle]
+  -- Goal: exp(I * ∑ a_i v_i) * f_E v = (ρ (ofLp v) : ℂ) * exp(I * ∑ a_i (ofLp v) i)
+  -- f_E v = (ρ (ofLp v) : ℂ); (ofLp v) i = v i; final identity is mul_comm.
+  show Complex.exp (Complex.I * ∑ i : Fin d, (a i : ℂ) * (v i : ℂ)) * f_E v =
+    (ρ (WithLp.ofLp v) : ℂ) *
+      Complex.exp (Complex.I *
+        ∑ i : Fin d, (a i : ℂ) * ((WithLp.ofLp v) i : ℂ))
+  show Complex.exp (Complex.I * ∑ i : Fin d, (a i : ℂ) * (v i : ℂ)) *
+      (ρ (WithLp.ofLp v) : ℂ) =
+    (ρ (WithLp.ofLp v) : ℂ) *
+      Complex.exp (Complex.I *
+        ∑ i : Fin d, (a i : ℂ) * ((WithLp.ofLp v) i : ℂ))
+  ring
 
 end Ruelle
 end OSReconstruction
