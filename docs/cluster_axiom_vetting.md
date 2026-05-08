@@ -344,10 +344,60 @@ directions", Helv. Phys. Acta 35, 164).
   `Proofideas/kallen_lehmann.lean`.
 * **L1–L7 proof roadmap** for discharging the hypotheses from R4 +
   spectrum condition: parked in `Proofideas/ruelle_blueprint.lean`.
-* **L2 (no zero-momentum atom)**: target stated in
-  `Proofideas/ruelle_l2_no_zero_momentum_atom.lean`; needs precision
-  pass before promotion to production.
-* **L5 (spectral Riemann-Lebesgue, AC marginal version)**: in
-  production at `OSReconstruction/Wightman/Spectral/Ruelle/L5_SpectralRiemannLebesgue.lean`
-  as an inventoried frontier lemma (steps 1, 2, 3a proved; steps 3b–e
-  remain — pure measure-theoretic / Mathlib bridging).
+* **L2 (no zero-momentum atom)**: in production at
+  `OSReconstruction/Wightman/Spectral/Ruelle/L2_NoZeroMomentumAtom.lean`.
+  Conditional reduction `gns_orthogonal_spatial_cobounded_decay_of`
+  is fully proved from L5 + a `L2SpectralData` hypothesis. The
+  unconditional `gns_orthogonal_spatial_cobounded_decay` discharges
+  via the new axiom `gns_l2_spectral_data_axiom` (see entry 10 below).
+* **L5 (spectral Riemann-Lebesgue)**: in production at
+  `OSReconstruction/Wightman/Spectral/Ruelle/L5_SpectralRiemannLebesgue.lean`.
+  Fully PROVED (no sorrys, no project axioms beyond Mathlib).
+
+---
+
+## Production-axiom additions (Option B for L2)
+
+### 10. `gns_l2_spectral_data_axiom`
+**File**: `Wightman/Spectral/Ruelle/L2_NoZeroMomentumAtom.lean`.
+
+**Statement**: for a `WightmanFunctions d` family `Wfn` and a pair of
+states `Φ, ψ` in `GNSHilbertSpace Wfn` with both states orthogonal to
+the GNS vacuum, there exists a finite Borel measure `μ` on the
+spacetime momentum space `Fin (d+1) → ℝ` such that:
+1. `μ` has AC spatial marginal w.r.t. Lebesgue.
+2. The matrix element `⟨Φ, U(a) ψ⟩` for spatial `a` (with `a 0 = 0`)
+   equals the spatial Fourier transform of `μ`.
+
+This is the GNS-spectral-side packaging of:
+* SNAG application (existing `snag_theorem` axiom, vetted Standard).
+* Polarization for off-diagonal pairs.
+* Spectrum support on V̄+ \ {0} for Ω⊥ (R4 cluster + vacuum uniqueness).
+* AC spatial marginal via mass-hyperboloid foliation (the deep textbook
+  input).
+
+**References**:
+* Glimm-Jaffe, *Quantum Physics: A Functional Integral Point of View*,
+  §6.2 — spectral support of vacuum expectation values; mass
+  hyperboloid analysis.
+* Reed-Simon, *Methods of Modern Mathematical Physics II*, §IX.8 —
+  SNAG / Stone's theorem and absolutely continuous spectral measures.
+* Streater-Wightman, *PCT, Spin and Statistics, and All That*, §3.5 —
+  cluster decomposition and vacuum uniqueness.
+
+**Status**: pending vetting (DT). The textbook content is standard for
+physical Wightman QFTs satisfying R0–R4. The AC marginal claim is the
+load-bearing input; in the absence of a mass gap (lowest mass `m > 0`),
+AC follows from R4-cluster + spectrum support analysis on the
+truncated states; with mass gap, it follows directly from the
+mass-hyperboloid foliation `dp⁰ / 2E_p`.
+
+**Discharge plan** (future work): formalize the mass-hyperboloid
+spectral analysis on Ω⊥. Probably 1–3 weeks of focused QFT-spectral
+formalization.
+
+### Audit table
+
+| Axiom | File:Line | Rating | Sources | Notes |
+|-------|-----------|--------|---------|-------|
+| `gns_l2_spectral_data_axiom` | L2_NoZeroMomentumAtom.lean | Pending DT | LP (Glimm-Jaffe §6.2, Reed-Simon II §IX.8, Streater-Wightman §3.5) | Single explicit axiom for the GNS-spectral L2 chain; consumed only by `gns_orthogonal_spatial_cobounded_decay`. Pending vetting via Gemini deep-think. |

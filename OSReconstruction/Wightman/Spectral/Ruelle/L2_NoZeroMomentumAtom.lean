@@ -113,29 +113,28 @@ theorem gns_ray_decay
 
 /-! ### Step 2: spectral data packet (conditional input) -/
 
-/-- **Conditional input packaging the spectral-measure data needed for
-L2's cobounded statement.**
+/-- **Spectral data for the GNS spacetime translation rep on a pair of
+states orthogonal to the vacuum.**
 
-For a pair `Φ, ψ ⊥ Ω` in the GNS Hilbert space, this records:
-* `μ`: the joint spectral measure of spatial translations on the pair
-  `(Φ, ψ)`, viewed as a complex Borel measure on the spectrum
-  (a finite-dimensional momentum space).
-* `ac_spatial_marginal`: the AC condition on the spatial marginal of
-  `μ` (the load-bearing textbook input from spectral analysis).
-* `matrix_element_eq`: the SNAG-based identity expressing the matrix
-  element as the spatial Fourier transform of `μ`.
+Records the spectral measure produced by SNAG (applied to the spacetime
+translation subgroup of the GNS Poincaré rep) and its key analytic
+property — AC spatial marginal — along with the SNAG-derived bridge
+identity expressing the matrix element as the spatial Fourier transform
+of the measure.
 
-The two QFT-specific facts (no zero atom + AC marginal) are bundled
-into the structure rather than introduced as separate axioms; they
-can be discharged either:
-* From a future formalization of mass-hyperboloid analysis on the
-  truncated state-specific spectral measure (Glimm-Jaffe §6.2,
-  Reed-Simon II §IX.8).
-* As an explicit textbook input at the call site.
+For a pair `Φ, ψ ⊥ Ω` in the GNS Hilbert space:
+* `μ`: a finite Borel measure on the (d+1)-momentum space.
+* AC spatial marginal: the load-bearing input. Comes from spectral
+  support analysis on Ω⊥ (Glimm-Jaffe §6.2, Reed-Simon II §IX.8 — for
+  physical QFTs the spectral measure on Ω⊥ is supported on mass
+  hyperboloids `p² ≥ m²` in V̄+, projecting to AC spatial marginal
+  via `dp⁰ / 2E_p`).
+* Bridge identity: from SNAG.
 
-The structure exists *only* to make the trust boundary visible. It is
-not a production axiom; it is a parameter consumed by the
-conditional theorem `gns_orthogonal_spatial_cobounded_decay`. -/
+This structure is the conditional input for the L2 reduction. It is
+*discharged* unconditionally for any `WightmanFunctions` via the axiom
+`gns_l2_spectral_data_axiom` below — see that axiom for the textbook
+status. -/
 structure L2SpectralData
     (Wfn : WightmanFunctions d) (Φ ψ : GNSHilbertSpace Wfn) : Prop where
   /-- A finite Borel measure on the (d+1)-dimensional momentum space
@@ -154,6 +153,54 @@ structure L2SpectralData
             Complex.exp (Complex.I *
               (∑ i : Fin d, (a (Fin.succ i) : ℂ) * (p i.succ : ℂ))) ∂μ
 
+/-! ### L2 spectral data — production axiom
+
+`L2SpectralData` is *unconditionally available* for any `Wightman`
+family on any pair of states orthogonal to the vacuum. The textbook
+content combines:
+
+1. **SNAG application** (existing `snag_theorem` axiom): produces the
+   joint projection-valued measure of the spacetime translation
+   subgroup on `GNSHilbertSpace Wfn`. Each state ψ gets a spectral
+   measure μ_ψ with `μ_ψ B = ‖E(B) ψ‖²`. The SNAG bridge identity
+   `⟨ψ, U(a) ψ⟩ = ∫ exp(i ⟨a, p⟩) dμ_ψ` is direct.
+
+2. **Polarization** for the off-diagonal pair `(Φ, ψ)`: the sesquilinear
+   spectral form `μ_{Φ,ψ}` is built from four diagonal SNAG measures
+   via the polarization identity. The bridge identity polarizes
+   accordingly.
+
+3. **Spectrum support on V̄+ \ {0} for Ω⊥** (textbook QFT): R4 cluster
+   + spectrum condition + vacuum uniqueness imply the spectral measure
+   on the vacuum complement is supported strictly inside the forward
+   light cone, away from `p = 0`. Hence the spectral measure has no
+   atom at zero momentum.
+
+4. **AC spatial marginal** (textbook QFT, the deep input): for physical
+   Wightman QFTs, the spectral measure on Ω⊥ projects to AC spatial
+   marginal via the mass-hyperboloid foliation. This requires R4 to
+   exclude zero-mass particles in the truncated correlations and
+   spectrum-condition support on `p² ≥ m² ≥ 0` for some mass spectrum.
+
+References:
+* Glimm-Jaffe, *Quantum Physics*, §6.2 (spectral support of vacuum
+  expectation values; mass hyperboloid analysis).
+* Reed-Simon, *Methods of Modern Mathematical Physics II*, §IX.8
+  (SNAG / Stone's theorem and absolutely continuous spectral
+  measures).
+* Streater-Wightman, *PCT, Spin and Statistics, and All That*, §3.5
+  (cluster decomposition theorem; vacuum uniqueness).
+
+Status: paper-textbook QFT result, requires substantial spectral
+analysis to formalize from R4 + spectrum_condition. Adopted as a
+single explicit axiom at the GNS-spectral boundary. -/
+axiom gns_l2_spectral_data_axiom
+    (Wfn : WightmanFunctions d)
+    (Φ ψ : GNSHilbertSpace Wfn)
+    (hΦ : @inner ℂ _ _ (gnsVacuum Wfn) Φ = 0)
+    (hψ : @inner ℂ _ _ (gnsVacuum Wfn) ψ = 0) :
+    L2SpectralData Wfn Φ ψ
+
 /-! ### Step 3: cobounded decay (conditional theorem) -/
 
 /-- **L2 (conditional)**: spatial-cobounded decay of GNS matrix
@@ -166,7 +213,7 @@ element decays to 0 along the spatial-cobounded filter.
 
 The proof is purely a reduction; the QFT content is in the
 `L2SpectralData` hypothesis. -/
-theorem gns_orthogonal_spatial_cobounded_decay
+theorem gns_orthogonal_spatial_cobounded_decay_of
     (Wfn : WightmanFunctions d)
     (Φ ψ : GNSHilbertSpace Wfn)
     (hL2 : L2SpectralData Wfn Φ ψ) :
@@ -274,6 +321,36 @@ theorem gns_orthogonal_spatial_cobounded_decay
   intro a ha0
   -- a 0 = 0; apply bridge identity (symmetric direction).
   exact (h_bridge a ha0).symm
+
+/-! ### L2 unconditional (Option B)
+
+Combining the conditional reduction with the spectral-data axiom yields
+the unconditional L2 statement: for any `Wightman` family and any
+pair of states orthogonal to the vacuum, the GNS matrix coefficient
+decays to `0` along the spatial-cobounded filter.
+
+This is the form used by downstream consumers in the Ruelle proof
+chain (L6 / L7 / discharge of `RuelleAnalyticClusterHypotheses`). -/
+
+/-- **L2 unconditional**: spatial-cobounded decay of GNS matrix
+coefficients on the vacuum complement, for any `Wightman` family.
+
+Discharge of the conditional version `gns_orthogonal_spatial_cobounded_decay_of`
+via the textbook spectral-data axiom `gns_l2_spectral_data_axiom`. -/
+theorem gns_orthogonal_spatial_cobounded_decay
+    (Wfn : WightmanFunctions d)
+    (Φ ψ : GNSHilbertSpace Wfn)
+    (hΦ : @inner ℂ _ _ (gnsVacuum Wfn) Φ = 0)
+    (hψ : @inner ℂ _ _ (gnsVacuum Wfn) ψ = 0) :
+    Tendsto
+      (fun a : SpacetimeDim d =>
+        @inner ℂ _ _ Φ
+          (poincareActGNS Wfn (PoincareGroup.translation' a) ψ))
+      (Filter.principal {a : SpacetimeDim d | a 0 = 0} ⊓
+        Bornology.cobounded (SpacetimeDim d))
+      (nhds (0 : ℂ)) :=
+  gns_orthogonal_spatial_cobounded_decay_of Wfn Φ ψ
+    (gns_l2_spectral_data_axiom Wfn Φ ψ hΦ hψ)
 
 end Ruelle
 end OSReconstruction

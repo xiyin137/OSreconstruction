@@ -4,7 +4,7 @@ A Lean 4 formalization of the **Osterwalder-Schrader reconstruction theorem** an
 
 ## Current Axiom Inventory
 
-The tracked production tree currently contains **11 explicit axioms**:
+The tracked production tree currently contains **12 explicit axioms**:
 
 **Functional analysis (2):**
 - `schwartz_nuclear_extension` in `Wightman/WightmanAxioms.lean` — **partially proved**: nuclearity of Schwartz space is now proved in the [`gaussian-field`](https://github.com/or-n/gaussian-field) library; the remaining gap is importing the instance and deriving the kernel theorem
@@ -22,6 +22,9 @@ The tracked production tree currently contains **11 explicit axioms**:
 
 **Reconstruction bridge (1):**
 - `reduced_bargmann_hall_wightman_of_input` in `Wightman/Reconstruction/WickRotation/BHWReducedExtension.lean`
+
+**Wightman GNS spectral (1):**
+- `gns_l2_spectral_data_axiom` in `Wightman/Spectral/Ruelle/L2_NoZeroMomentumAtom.lean` — for any pair of states orthogonal to the vacuum in the GNS Hilbert space, the spacetime translation rep has a finite Borel spectral measure with AC spatial marginal and SNAG-derived Fourier-bridge identity. References: Glimm-Jaffe §6.2 (mass-hyperboloid spectral analysis), Reed-Simon II §IX.8 (SNAG / AC spectral measures), Streater-Wightman §3.5. Adopted as a single axiom at the GNS-spectral boundary; vetting status: see `docs/cluster_axiom_vetting.md`.
 
 ### Conditional theorems and inventoried frontier lemmas
 
@@ -140,8 +143,8 @@ This fetches Mathlib and dependencies automatically on first build.
 
 ## Project Status
 
-The tracked production tree currently includes **11 explicit `axiom`
-declarations** (2 FA + 8 SCV + 1 reconstruction bridge).
+The tracked production tree currently includes **12 explicit `axiom`
+declarations** (2 FA + 8 SCV + 1 reconstruction bridge + 1 GNS spectral).
 See the axiom inventory at the top of this file for the complete list. Remaining work
 outside these deferred surfaces is represented by explicit theorem-level
 `sorry` placeholders.
@@ -236,7 +239,7 @@ Snapshot (2026-04-20, tracked live production tree):
 | `vNA/` | 36 |
 | **Total** | **55** |
 
-Tracked production tree also contains `11` explicit axioms; see the current
+Tracked production tree also contains `12` explicit axioms; see the current
 inventory at the top of this file.
 
 Raw grep on `^[[:space:]]*sorry([[:space:]]|$)` still returns `56` because one
