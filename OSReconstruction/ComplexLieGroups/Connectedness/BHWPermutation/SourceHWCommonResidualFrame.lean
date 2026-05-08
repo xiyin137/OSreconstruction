@@ -175,4 +175,100 @@ noncomputable def directSum_identity_sum_isotropicEmbedding
     ((eM.prodCongr eR).trans
       (Submodule.prodEquivOfIsCompl Mcod Rcod hcod))
 
+/-- The direct-sum equivalence sends a vector in the residual summand to its
+chosen embedded residual vector. -/
+theorem directSum_identity_sum_isotropicEmbedding_maps_right
+    {d : ℕ}
+    {M R : Submodule ℂ (Fin (d + 1) → ℂ)}
+    {E : R →ₗ[ℂ] (Fin (d + 1) → ℂ)}
+    (hM : ComplexMinkowskiNondegenerateSubspace d M)
+    (hR_orth :
+      ∀ x : R, ∀ m : M,
+        sourceComplexMinkowskiInner d
+          (x : Fin (d + 1) → ℂ)
+          (m : Fin (d + 1) → ℂ) = 0)
+    (hE_inj : Function.Injective E)
+    (hE_orth :
+      ∀ x : R, ∀ m : M,
+        sourceComplexMinkowskiInner d
+          (E x)
+          (m : Fin (d + 1) → ℂ) = 0)
+    (x : R) :
+    ((directSum_identity_sum_isotropicEmbedding
+        (d := d) M R E hM hR_orth hE_inj hE_orth)
+      ⟨(x : Fin (d + 1) → ℂ), Submodule.mem_sup_right x.2⟩ :
+        Fin (d + 1) → ℂ) = E x := by
+  let Sdom : Submodule ℂ (Fin (d + 1) → ℂ) := M ⊔ R
+  let Scod : Submodule ℂ (Fin (d + 1) → ℂ) :=
+    M ⊔ (LinearMap.range E)
+  let Mdom : Submodule ℂ Sdom := M.comap Sdom.subtype
+  let Rdom : Submodule ℂ Sdom := R.comap Sdom.subtype
+  let Mcod : Submodule ℂ Scod := M.comap Scod.subtype
+  let Rcod : Submodule ℂ Scod := (LinearMap.range E).comap Scod.subtype
+  have hdom : IsCompl Mdom Rdom := by
+    simpa [Sdom, Mdom, Rdom] using
+      isCompl_comap_sup_subtype_of_disjoint
+        (d := d) (M := M) (R := R)
+        (complexMinkowski_disjoint_of_nondegenerate_orthogonal hM hR_orth)
+  have hRange_orth :
+      ∀ x : LinearMap.range E, ∀ m : M,
+        sourceComplexMinkowskiInner d
+          (x : Fin (d + 1) → ℂ)
+          (m : Fin (d + 1) → ℂ) = 0 := by
+    intro x m
+    rcases x.2 with ⟨r, hr⟩
+    rw [← hr]
+    exact hE_orth r m
+  have hcod : IsCompl Mcod Rcod := by
+    simpa [Scod, Mcod, Rcod] using
+      isCompl_comap_sup_subtype_of_disjoint
+        (d := d) (M := M) (R := LinearMap.range E)
+        (complexMinkowski_disjoint_of_nondegenerate_orthogonal hM hRange_orth)
+  let eMdom : Mdom ≃ₗ[ℂ] M :=
+    Submodule.comapSubtypeEquivOfLe (show M ≤ Sdom from le_sup_left)
+  let eMcod : Mcod ≃ₗ[ℂ] M :=
+    Submodule.comapSubtypeEquivOfLe (show M ≤ Scod from le_sup_left)
+  let eRdom : Rdom ≃ₗ[ℂ] R :=
+    Submodule.comapSubtypeEquivOfLe (show R ≤ Sdom from le_sup_right)
+  let eRcod : Rcod ≃ₗ[ℂ] LinearMap.range E :=
+    Submodule.comapSubtypeEquivOfLe
+      (show LinearMap.range E ≤ Scod from le_sup_right)
+  let eRange : R ≃ₗ[ℂ] LinearMap.range E :=
+    LinearEquiv.ofInjective E hE_inj
+  let eM : Mdom ≃ₗ[ℂ] Mcod := eMdom.trans eMcod.symm
+  let eR : Rdom ≃ₗ[ℂ] Rcod := eRdom.trans (eRange.trans eRcod.symm)
+  let T : Sdom ≃ₗ[ℂ] Scod :=
+    (Submodule.prodEquivOfIsCompl Mdom Rdom hdom).symm.trans
+      ((eM.prodCongr eR).trans
+        (Submodule.prodEquivOfIsCompl Mcod Rcod hcod))
+  have hTdef :
+      directSum_identity_sum_isotropicEmbedding
+        (d := d) M R E hM hR_orth hE_inj hE_orth = T := by
+    rfl
+  rw [hTdef]
+  let y : Sdom :=
+    ⟨(x : Fin (d + 1) → ℂ), Submodule.mem_sup_right x.2⟩
+  let xr : Rdom := ⟨y, x.2⟩
+  have hsymm :
+      (Submodule.prodEquivOfIsCompl Mdom Rdom hdom).symm y =
+        (0, xr) := by
+    simpa [y, xr] using
+      Submodule.prodEquivOfIsCompl_symm_apply_right Mdom Rdom hdom xr
+  have heR_val : ((eR xr : Rcod) : Fin (d + 1) → ℂ) = E x := by
+    rfl
+  have heM_zero : ((eM (0 : Mdom) : Mcod) : Fin (d + 1) → ℂ) = 0 := by
+    rfl
+  calc
+    ((T y : Scod) : Fin (d + 1) → ℂ)
+        = (((Submodule.prodEquivOfIsCompl Mcod Rcod hcod)
+            ((eM.prodCongr eR) (0, xr)) : Scod) :
+              Fin (d + 1) → ℂ) := by
+            dsimp [T]
+            rw [hsymm]
+    _ = ((eM (0 : Mdom) : Mcod) : Fin (d + 1) → ℂ) +
+          ((eR xr : Rcod) : Fin (d + 1) → ℂ) := by
+            rfl
+    _ = E x := by
+            rw [heM_zero, heR_val, zero_add]
+
 end BHW
