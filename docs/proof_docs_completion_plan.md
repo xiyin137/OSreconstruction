@@ -67,6 +67,13 @@ ready only with the following ordered Lean closure chain, and production Lean
 must not introduce a new theorem surface outside this chain without first
 updating this ledger and the theorem-2 blueprint.
 
+Post-audit readiness verdict (2026-05-09): the active theorem-2 proof docs are
+now considered implementation-ready exactly for the ordered Stage A--F route
+below.  Historical sections that mention older scalar-source gates,
+source-import audits, or local-EOW checkpoints are subordinate support/audit
+material.  They do not authorize an alternate first Lean target and they do
+not authorize any new `axiom`, `sorry`, `admit`, or QFT-specific source import.
+
 Stage A, current gate: build the direct OS I sec. 4.5 local-hull adaptive
 continuation atlas on the canonical Figure-2-4 source patch.  The analytic
 surfaces are exactly
@@ -134,19 +141,24 @@ locked route above:
    and `BHW.os45_adjacent_identity_horizontalEdge_sourcePatch` now choose the
    ordered seed inside `Ufig ∩ Upath`, shrink with compact closure, and export
    the closure-level Figure-2-4 path field;
-3. current strict-route frontier: finish the upstream direct OS-I compact
-   branch-difference producer.  The first branch-local Lean pass has begun
-   only on the checked OS45 geometry/hull support; the actual local
-   OS-I/BHW branch-continuation producer is still the open gate:
-   `BHW.os45Figure24_sourcePatch_pairing_eq_swappedSourcePatch_of_OSI45`
-   must be proved as a direct OS I §4.5 / BHW-Jost compact theorem, feeding
-   `BHW.OS45CompactFigure24WickPairingEq` and
-   the checked ordinary source anchors
-   `BHW.sourceDistributionalAdjacentTubeAnchor_of_compactWickPairingEq`
-   and
-   `BHW.bvt_F_distributionalJostAnchor_of_compactWickPairingEq`;
-   the active strict-route carrier/algebra layer for the direct BHW/Jost proof
-   is now the local proper-complex hull in
+3. Stage-A strict-route frontier: finish the OS45 local-hull adaptive
+   continuation atlas first, then use its pair-data output in the Stage-B
+   compact source-patch theorem.  The Stage-A analytic producers are
+   `BHW.os45_BHWJost_initialLocalChart_ordinary_of_OSI45`,
+   `BHW.os45_BHWJost_initialLocalChart_adjacent_of_OSI45`,
+   `BHW.os45_BHWJost_oneStepTransition_of_OSI45`,
+   `BHW.os45_BHWJost_chainAt_ordinary_of_OSI45`,
+   `BHW.os45_BHWJost_chainAt_adjacent_of_OSI45`,
+   `BHW.os45_BHWJost_sameEndpointComparison_ordinary_of_OSI45`,
+   `BHW.os45_BHWJost_sameEndpointComparison_adjacent_of_OSI45`, and
+   `BHW.os45_BHWJost_adjacentAtlas_ordinaryWickTrace_of_OSI45`.  Only after
+   these assemble
+   `BHW.OS45BHWJostHullData.toPairDataOfContinuationAtlases` may Stage B prove
+   `BHW.os45Figure24_sourcePatch_pairing_eq_swappedSourcePatch_of_OSI45` as a
+   direct OS I §4.5 / BHW-Jost compact theorem feeding
+   `BHW.OS45CompactFigure24WickPairingEq` and the checked source anchors.
+   The active strict-route carrier/algebra layer for Stages A and B is the
+   local proper-complex hull in
    `OSToWightmanLocalityOS45BHWJostLocal.lean`: `BHW.os45BHWJostAmbient`,
    `BHW.os45BHWJostHull`, `BHW.OS45BHWJostHullData`,
    `BHW.os45_BHWJostHullData_of_figure24`,
@@ -362,11 +374,12 @@ real-seed/source-germ layer in the strict DAG; it must not be used to
 manufacture the pair carriers, the source anchor, the local source-germ, or
 its own EOW inputs.
 
-Readiness status for the active scalar-source route (2026-05-02):
-**proof-doc route pinned; public wrapper Lean not ready**.  The proof
-documents now expose the correct proper-complex/oriented theorem surfaces, and
-the pure-Gram orientation/improper-component gate is explicit.  The active
-lower producer groups have implementation-level transcripts, so a future Lean
+Historical scalar-source support status (2026-05-02, superseded as current
+theorem-2 gate by the Stage-A OS45 atlas ledger above):
+**support route pinned; public wrapper Lean not an active target**.  The proof
+documents expose the correct proper-complex/oriented theorem surfaces, and the
+pure-Gram orientation/improper-component gate is explicit.  The lower producer
+groups have implementation-level transcripts, so a future non-current support
 pass has legitimate first targets inside the named finite-dimensional, SCV, or
 OS-I support lemmas.  This does **not** make the public constructors
 `BHW.sourceOrientedScalarRepresentativeData_bvt_F`, the oriented adjacent
@@ -377,7 +390,8 @@ support theorems with the same mathematical content.  The paper-source audit
 separates Hall-Wightman's scalar-product theorem from OS I Section 4.5's
 proper-complex `L_+(C)` continuation formulation; theorem 2 now follows the
 latter, so `BHW.sourceScalarRepresentativeData_bvt_F` is not an active Lean
-target unless a separate full-component source-import decision is made.
+target unless a separate full-component theorem is proved in Lean and adopted
+as a new active route.
 
 Latest readiness refinement, 2026-05-02: the oriented identity-principle
 subroute has an implementation-level transcript, including the max-rank
@@ -4181,8 +4195,9 @@ implementation contract is:
    extended/permuted domain.  The active theorem-2 source layer is therefore
    the proper/oriented invariant API; the pure-Gram
    `SourceScalarRepresentativeData` surface may not be reused on this route.
-   If the oriented package cannot be proved or source-imported, the proof docs
-   remain blocked rather than falling back to the pure-Gram theorem surface.
+   If the oriented package cannot be proved from the named support surfaces,
+   the proof docs remain blocked rather than falling back to the pure-Gram
+   theorem surface.
    Current branch status: no local production theorem supplies
    `BHW.bvt_F_realOrthoChronousInvariant`, and the OS axiom surface does not
    contain full Euclidean `O(d+1)` invariance.  Hence
@@ -8807,8 +8822,9 @@ Source-to-Lean obligation matrix for the same scalar-source gate:
 | Continuity/local boundedness | `BHW.hallWightman_scalarGerm_continuous_locallyBounded` | Proof transcript pinned.  It uses Lemma 3 directly to transfer neighborhood control from `extendF`, avoids circular dependence on exceptional local charts, and supplies the weakly holomorphic input for removability. |
 | Removability on the scalar variety | `BHW.hwSourceGramExceptionalRank_isAnalyticSubvariety`, `BHW.sourceComplexGramVariety_normal`, `BHW.sourceComplexGramVariety_relOpen_subset_closure_inter_maxRank`, `BHW.sourceGramVariety_normal_riemannExtension`, `BHW.hallWightman_exceptionalRank_localScalarChart_at` | Proof transcript pinned with a standard SCV/algebraic support boundary.  The Lean port must prove or sorry-free import symmetric determinantal normality and the normal analytic-space Riemann theorem; it may not hide this behind theorem-2 wrapper surfaces. |
 
-Therefore the first Lean implementation target after the proof-doc gate must
-be one of these mathematical source rows, not
+Therefore, if this archived scalar-source support gate is reopened outside the
+current Stage-A theorem-2 pass, its first Lean implementation target must be
+one of these mathematical source rows, not
 `BHW.sourceScalarRepresentativeData_bvt_F` or any downstream adjacent
 `S'_n` wrapper.
 
@@ -8919,19 +8935,20 @@ vector before constructing the determinant-correcting reflection.
 The remaining public theorem-slot surfaces in this scalar-source gate are not
 implemented in Lean.  The current production file
 `BHWPermutation/SourceExtension.lean` intentionally keeps the final
-Hall-Wightman/BHW branch-law theorem in proof docs until the proof or an
-approved source-import boundary is available.
+Hall-Wightman/BHW branch-law theorem in proof docs until a proof or an already
+implemented sorry-free support theorem with exactly the same mathematical
+content is available.
 
-Current readiness verdict: production Lean must still stop before
+Archived scalar-source readiness verdict: production Lean must still stop before
 `BHW.sourceScalarRepresentativeData_bvt_F`.  The germ API and the downstream
 source-variety consumers are checked production infrastructure, and the
 adjacent path API has now been verified locally, but the upstream
-Hall-Wightman scalar representative theorem still depends on either
-implementation of the named Lemma-2, Lemma-3, Lemma-5--7, and normal
-analytic-space removable packets, or an explicit user-approved source-import
-boundary with exactly those theorem statements and no theorem-2/locality
-content.  Adding the scalar-source theorem names to production without those
-proofs would be wrapper churn, not mathematical progress.
+Hall-Wightman scalar representative theorem still depends on implementation of
+the named Lemma-2, Lemma-3, Lemma-5--7, and normal analytic-space removable
+packets, or on already implemented sorry-free support theorems with exactly
+those theorem statements and no theorem-2/locality content.  Adding the
+scalar-source theorem names to production without those proofs would be wrapper
+churn, not mathematical progress.
 
 Germ-API migration transcript before any Hall-Wightman production theorem:
 
@@ -14838,8 +14855,9 @@ those are named as the specific sublemmas above, including the power-series
 and removable-singularity packet; the
 remaining review question before Lean on the scalar-representative theorem is
 whether each named Hall-Wightman
-sublemma has a fully audited source proof or approved source-import boundary,
-not whether theorem-2 may bypass them.  The
+sublemma has a fully audited source proof or an already implemented sorry-free
+support theorem with exactly the same content, not whether theorem-2 may
+bypass them.  The
 adjacent `S'_n` package is not implementation-ready unless the proof keeps the
 oriented source-chart provenance needed by the path theorem: the connected
 oriented corridor `Wscal`, the real-patch seed neighborhood `Wseed`, the
@@ -15534,7 +15552,7 @@ Current examples:
    The approved Deep Research check rejected the hF_perm-only source boundary
    and routed growth/temperedness to the upstream OS-II boundary-value
    construction.  The remaining implementation step is now specified down to
-   Lean pseudocode: prove or source-import
+   Lean pseudocode: prove
    `hallWightman_source_permutedBranch_compatibility_of_distributionalAnchor`
    from Hall-Wightman's scalar-product theorem plus distributional EOW on the
    distributionally anchored symmetric permuted-tube datum `S'_n`, using

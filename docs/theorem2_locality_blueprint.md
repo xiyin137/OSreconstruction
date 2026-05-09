@@ -184,10 +184,11 @@ may remain in the repository as checked or conditional side infrastructure, but
 they are not to be extended, wrapped into theorem-2 names, or used as a
 replacement for the literal OS-II proof unless an actual error in OS-II/OS-I is
 identified and documented.  The only active theorem-2 frontier is the literal
-OS-II / OS I §4.5 branch-comparison route, beginning with the compact
-Figure-2-4 branch-difference theorem
-`BHW.os45Figure24_sourcePatch_pairing_eq_swappedSourcePatch_of_OSI45` and its
-direct consumers.
+OS-II / OS I §4.5 branch-comparison route, beginning with the local-hull
+adaptive continuation atlas on the canonical Figure-2-4 source patch.  That
+atlas feeds the compact Figure-2-4 branch-difference theorem
+`BHW.os45Figure24_sourcePatch_pairing_eq_swappedSourcePatch_of_OSI45`; the
+compact theorem is Stage B, not the first Lean gate.
 
 Current BHW interface correction: the **common fixed-`w`
 permuted-forward-tube gallery** is rejected, and the reachable-label `hOrbit`
@@ -202,59 +203,51 @@ correction is recorded from the local theorem-shape audit and Gemini Deep
 Research interaction
 `v1_ChZjT1h1YWRpZUU1LThfdU1QMi1LRGVBEhZjT1h1YWRpZUU1LThfdU1QMi1LRGVB`.
 
-Current critical-path ledger for the `2 <= d` implementation:
+Current critical-path ledger for the `2 <= d` implementation, matching the
+global closure ledger in Section 8:
 
-1. prove the direct OS I §4.5/BHW-Jost compact source-patch equality
-   `BHW.os45Figure24_sourcePatch_pairing_eq_swappedSourcePatch_of_OSI45`,
-   using the checked carrier/algebra layer
-   `BHW.OS45SourcePatchBHWJostPairData` and
+1. **Stage A, current Lean gate.**  Prove the local-hull adaptive
+   continuation atlas on the canonical Figure-2-4 source patch:
+   `BHW.os45_BHWJost_initialLocalChart_ordinary_of_OSI45`,
+   `BHW.os45_BHWJost_initialLocalChart_adjacent_of_OSI45`,
+   `BHW.os45_BHWJost_oneStepTransition_of_OSI45`,
+   `BHW.os45_BHWJost_chainAt_ordinary_of_OSI45`,
+   `BHW.os45_BHWJost_chainAt_adjacent_of_OSI45`,
+   `BHW.os45_BHWJost_sameEndpointComparison_ordinary_of_OSI45`,
+   `BHW.os45_BHWJost_sameEndpointComparison_adjacent_of_OSI45`, and
+   `BHW.os45_BHWJost_adjacentAtlas_ordinaryWickTrace_of_OSI45`, then assemble
+   the checked atlas consumers
+   `BHW.os45_BHWJostContinuationAtlases_onLocalHull_of_OSI45` and
+   `BHW.OS45BHWJostHullData.toPairDataOfContinuationAtlases`.
+2. **Stage B.**  From that pair data, prove the direct OS I §4.5/BHW-Jost
+   compact source-patch equality
+   `BHW.os45Figure24_sourcePatch_pairing_eq_swappedSourcePatch_of_OSI45`.
+   Use the checked carrier/algebra layer
+   `BHW.OS45SourcePatchBHWJostPairData`,
+   `BHW.OS45SourcePatchBHWJostPairData.difference`, and
    `BHW.integral_realSourceBranchDifference_eq_zero_to_pairing_eq`, plus the
-   checked source-patch/compact bridge
-   `BHW.os45CompactFigure24WickPairingEq_of_realSourceBranchDifference_zero`
-   and the checked carrier consumer
-   `BHW.os45CompactFigure24WickPairingEq_of_pairData_difference_zero`, with
-   canonical-integrability variant
-   `BHW.os45CompactFigure24WickPairingEq_of_pairData_difference_zero_canonical`;
-   the exact-source-patch variant
+   exact-source-patch compact consumer
    `BHW.os45CompactFigure24WickPairingEq_of_pairData_on_figure24SourcePatch`
-   removes even the canonical containment argument when the OS-I/BHW-Jost
-   producer returns carriers directly on `BHW.os45Figure24SourcePatch`;
-   a full adjacent family of those carriers now feeds the checked direct
-   source anchor through
-   `BHW.bvt_F_distributionalJostAnchor_of_pairData_difference_zero` and
-   `BHW.bvt_F_distributionalJostAnchor_of_pairData_difference_zero_canonical`,
-   and through the exact-source-patch consumer
-   `BHW.bvt_F_distributionalJostAnchor_of_pairData_on_figure24SourcePatch`;
-   package
-   the resulting compact equality as a full adjacent family of
-   `BHW.OS45CompactFigure24WickPairingEq`, and then use the checked compact
-   bridges in `OSToWightmanLocalityOS45Compact.lean`, which now produce both
-   the older
-   `SelectedAdjacentDistributionalJostAnchorData OS lgc n` surface and the
-   direct source anchor;
-2. project selected data, when the older selected-witness API is needed, to
-   `BHW.SourceDistributionalAdjacentTubeAnchor (d := d) n (bvt_F OS lgc n)`
-   by the checked bridge
-   `bvt_F_distributionalJostAnchor_of_selectedJostData`, or bypass that
-   surface by using the checked
-   `BHW.bvt_F_distributionalJostAnchor_of_compactWickPairingEq`;
-3. use `BHWPermutation/SourceExtension.lean` only for checked local source
-   support.  The real-environment uniqueness step
-   `sourceScalarRepresentative_adjacent_eq_on_overlap_of_realEnvironment` is now
-   checked in production Lean.  The former generic witness/cover theorem
-   `exists_sourceAdjacentOverlapWitness_of_mem_doubleDomain` has been retired
-   from production because it is source-equivalent, not a consequence of the
-   local anchor fields alone;
-4. prove or explicitly source-import the source-backed Hall-Wightman
-   compatibility theorem
-   `hallWightman_source_permutedBranch_compatibility_of_distributionalAnchor`,
-   then use the already documented PET-algebra assembly
-   `BHW.permutedExtendedTube_extension_of_forwardTube_symmetry` and sector
-   equality
-   `BHW.permutedExtendedTube_singleValued_of_forwardTube_symmetry`;
-5. specialize to `bvt_F OS lgc n` as
-   `bvt_F_bhwSingleValuedOn_permutedExtendedTube_of_two_le`, then do the final
-   Jost-boundary transfer to locality.
+   and anchor consumer
+   `BHW.bvt_F_distributionalJostAnchor_of_pairData_on_figure24SourcePatch`.
+   The broader canonical consumers remain available only if the producer
+   returns a larger carrier together with canonical Figure-2-4 source-patch
+   containment.
+3. **Stage C.**  Use the Stage-B source/Jost anchor to prove the source-backed
+   Hall-Wightman compatibility theorem
+   `BHW.hallWightman_source_permutedBranch_compatibility_of_distributionalAnchor`,
+   then apply the PET assembly/equality corollaries
+   `BHW.permutedExtendedTube_extension_of_forwardTube_symmetry` and
+   `BHW.permutedExtendedTube_singleValued_of_forwardTube_symmetry`.
+4. **Stage D.**  Specialize to `bvt_F OS lgc n` as
+   `bvt_F_bhwSingleValuedOn_permutedExtendedTube_of_two_le`, then prove the
+   Jost-boundary/canonical-shell pair
+   `bvt_F_jostBoundary_pairing_of_spacelike_of_two_le` and
+   `bvt_F_swapCanonical_pairing_of_spacelike_of_two_le`.
+5. **Stage E.**  Finish through the checked boundary-transfer theorem
+   `bv_local_commutativity_transfer_of_swap_pairing`, yielding
+   `bvt_locally_commutative`.
+6. **Stage F.**  Keep the `d = 1` branch separate on Slots D1-1 through D1-4.
 
 Dependency guard for step 1: the OS45 local common-chart/EOW packet is an
 input to the later source theorem, not a consequence of it.  Its branchwise
@@ -277,11 +270,13 @@ It must not use `hallWightman_source_permutedBranch_compatibility_of_distributio
 equivalent to global permuted-extended-tube branch independence.  Those theorems
 consume the local compact-test anchor produced by Slot 1.
 
-Current local frontier checkpoint, after the checked one-chart SCV pass:
+Historical local-EOW checkpoint, no longer the current Lean gate after the
+Stage-A atlas reset:
 
 * `SCV.chartDistributionalEOW_local_envelope` is checked in
   `OSReconstruction/SCV/LocalEOWDistributionalEnvelope.lean`.  It is now the
-  authoritative local distributional EOW input for theorem 2.  It consumes
+  checked local distributional EOW input for the archived single-chart support
+  lane.  It consumes
   local wedge geometry, a fixed cone basis, and compact-direction uniform
   distributional boundary values, then returns one coordinate ball with strict
   positive/negative side agreements.
@@ -290,12 +285,12 @@ Current local frontier checkpoint, after the checked one-chart SCV pass:
   `SCV.chartDistributionalEOW_transport_originalCoords`, and
   `SCV.localDistributionalEOW_patch_extensions` are still documentation
   targets, not checked Lean declarations.  They must not be used as inputs for
-  Slot 1.  The theorem-2 path is the smaller single-chart OS45 instantiation
-  below.
-* The next proof-doc and Lean frontier is therefore not another SCV recovery
-  theorem.  The identity-order OS45 seed selector is now checked, but the
-  common-boundary part of the local seed still needs the corrected
-  branch-compatibility theorem surface:
+  the active Stage-A atlas.  The theorem-2 path now starts with the adaptive
+  OS45 BHW/Jost atlas in Section 8.1; the single-chart OS45 instantiation
+  below is retained only as historical support/audit material.
+* Under the retired local-EOW lane, the identity-order OS45 seed selector was
+  checked, but the common-boundary part of the local seed still needed the
+  corrected branch-compatibility theorem surface:
   1. expose the bounded ordered perturbation with output order `ρ = 1`, and
      choose the final real-open patch as a connected ball inside the raw
      adjacent overlap and the two ordered sectors; this is checked as
@@ -738,16 +733,17 @@ These files are checked algebra and conditional infrastructure.  They are
 ## 4. Archived/conditional theorem slots for `2 <= d`
 
 This historical slot list is no longer the first active theorem-2 gate.  The
-current active gate is the direct OS I §4.5/BHW-Jost compact source-patch
-producer
+current active gate is the Stage-A OS45 local-hull adaptive continuation atlas
+recorded in Section 8.1.  Its output feeds the Stage-B direct OS I
+§4.5/BHW-Jost compact source-patch producer
 `BHW.os45Figure24_sourcePatch_pairing_eq_swappedSourcePatch_of_OSI45`,
-preferably returning `BHW.OS45SourcePatchBHWJostPairData` directly on
-`BHW.os45Figure24SourcePatch` and then using the checked exact-source-patch
-consumers.  The selected-adjacent monodromy and common-boundary slots retained
-in this section are conditional checked infrastructure: they are useful
-consumers or archival route material, but they are not the OS-paper theorem-2
-gate unless their extra geometric hypotheses are proved separately and
-explicitly accepted as a faithful decomposition of Hall-Wightman.
+preferably through `BHW.OS45SourcePatchBHWJostPairData` directly on
+`BHW.os45Figure24SourcePatch` and the checked exact-source-patch consumers.
+The selected-adjacent monodromy and common-boundary slots retained in this
+section are conditional checked infrastructure: they are useful consumers or
+archival route material, but they are not the OS-paper theorem-2 gate unless
+their extra geometric hypotheses are proved separately and explicitly accepted
+as a faithful decomposition of Hall-Wightman.
 
 ### Archived Slot 1. `os45_adjacent_singleChart_commonBoundaryValue`
 
@@ -3536,13 +3532,13 @@ Proof decomposition of this theorem, without hiding the analytic work:
       proper-complex `L_+(C)` continuation on the extended/permuted domain.
       Therefore the active theorem-2 source layer is the corrected
       proper/oriented invariant API below.  The pure-Gram row above is
-      archived as a conditional side route only if a later source-import
-      decision deliberately formalizes Hall-Wightman's scalar-product theorem
-      and resolves the full-component/improper input for `bvt_F`.  The
+      archived as a conditional side route only if a later proved theorem
+      deliberately formalizes Hall-Wightman's scalar-product theorem and
+      resolves the full-component/improper input for `bvt_F`.  The
       oriented source layer is not permission to substitute a different
       analytic theorem: it is the Lean-facing invariant package for the
       proper-complex OS §4.5 BHW step.  If this proper/oriented package cannot
-      be completed or explicitly source-imported, the correct status is
+      be completed from proved support surfaces, the correct status is
       "proof docs blocked", not "start Lean" and not "fall back to
       `SourceScalarRepresentativeData`".
 
@@ -25051,8 +25047,8 @@ Proof decomposition of this theorem, without hiding the analytic work:
       Hall-Wightman scalar branch law, the `S'_n` relative-open/connected
       theorem, the variety-germ chart/gluing theorem, and the downstream
       `SourceScalarRepresentativeData` consumers have been migrated to the
-      germ predicate below, all with checked proof transcripts or an
-      explicitly approved source-import boundary with these exact theorem
+      germ predicate below, all with checked proof transcripts or already
+      implemented sorry-free support theorems with these exact theorem
       statements.  The older domain-of-holomorphy/Siu/Cartan bridge below is
       archived only as an optional strong-API theorem if somebody later proves
       the extra SCV hypotheses independently; it is not a Hall-Wightman input
@@ -60830,7 +60826,7 @@ Reason for rejection:
 
 Correct active replacement:
 
-Slot 6 proves or explicitly source-imports
+Slot 6 proves
 `hallWightman_source_permutedBranch_compatibility_of_distributionalAnchor` from
 the Hall-Wightman scalar-product geometry and the OS-II selected
 distributional/Jost anchor.  The following reachable-label `hOrbit` theorem may
@@ -61889,12 +61885,13 @@ datum that Hall-Wightman consumes.
    real-environment uniqueness, scalar-variety adjacent continuation, and
    adjacent-transposition word propagation, it must remain a proof-doc
    obligation until those internal steps have Lean-ready transcripts or are
-   replaced by one explicitly approved source-import theorem.
+   replaced by already implemented sorry-free support theorems with the same
+   content.
 
    To count as implementation-ready, this compressed theorem must be treated as
    a package of three source-level sub-obligations.  The production theorem
    should not return until each of the following has its own Lean transcript or
-   until a checked source import replaces the whole package.
+   until an already checked sorry-free theorem replaces the whole package.
 
    **(A) Real-environment uniqueness for one adjacent swap.**
 
@@ -73754,6 +73751,29 @@ Use existing files only:
 
 There is no file named `OSToWightmanLocality.lean`; it must not appear in
 verification checklists.
+
+### 8.7. Readiness audit for theorem-2 Lean closure
+
+This is the binding proof-doc readiness verdict after the 2026-05-09 global
+audit.  Older "not ready", "source import", or "current gate" language in
+archived sections is subordinate to this table.  It may explain historical
+support routes, but it does not define the active theorem-2 implementation
+gate.
+
+| Stage | Lean-readiness status | Transcript source |
+| --- | --- | --- |
+| Stage A: OS45 local-hull adaptive atlas | Ready to implement first.  The theorem surfaces and field-by-field construction order are fixed. | Section 5, the field transcripts for the initial charts, one-step transition, chains, same-endpoint comparisons, and adjacent ordinary-Wick trace. |
+| Stage B: exact source-patch compact Wick pairing and Jost anchor | Ready after Stage A returns `BHW.OS45BHWJostHullData.toPairDataOfContinuationAtlases`.  The exact-source-patch consumers are checked; the only analytic producer is the OS I sec. 4.5/BHW-Jost compact theorem. | Sections 4-5 and the compact-source-patch ledger naming `BHW.os45CompactFigure24WickPairingEq_of_pairData_on_figure24SourcePatch` and `BHW.bvt_F_distributionalJostAnchor_of_pairData_on_figure24SourcePatch`. |
+| Stage C: Hall-Wightman source/PET single-valuedness | Ready after Stage B supplies the source/Jost anchor.  The active route proves the source-backed theorem in Lean; no source import, QFT axiom, or hF-perm-only shortcut is active. | Slot-6 source/PET transcript for `BHW.hallWightman_source_permutedBranch_compatibility_of_distributionalAnchor` and the PET assembly/equality corollaries. |
+| Stage D: Jost boundary and canonical shell | Ready after Stage C.  The only theorem-level analytic frontier is the OS I sec. 4.5/Jost boundary theorem with the displayed canonical pairing conclusion. | Slot 10 transcript for `bvt_F_jostBoundary_pairing_of_spacelike_of_two_le` and `bvt_F_swapCanonical_pairing_of_spacelike_of_two_le`. |
+| Stage E: boundary-value transfer to adjacent locality | Ready after Stage D.  This is a checked consumer step, not a new analytic theorem. | Slot 11 and `bv_local_commutativity_transfer_of_swap_pairing`. |
+| Stage F: `d = 1` branch | Ready as a separate branch.  It must not use the `2 <= d` OS45 local-hull atlas. | Section 6, Slots D1-1 through D1-4. |
+
+No unresolved route decision remains in the proof docs.  Production Lean must
+now follow Stage A through Stage F in this order.  It must not introduce a new
+axiom, `sorry`, `admit`, QFT-specific source import, source-variety/descent
+wrapper, ambient source-label transport shortcut, or theorem-2 wrapper
+conditional on an unproved producer.
 
 If later work needs a theorem not named in this Section 8 or in the detailed
 transcripts of Sections 4-6, the route has drifted and this blueprint must be
