@@ -103,6 +103,30 @@ equalities of `os45_BHWJost_initialLocalChart_*_of_OSI45` and package it with
 source-oriented scalar representative constructors and must not create a
 conditional theorem-2 wrapper.
 
+Post-bridge readiness correction (2026-05-09): after those helpers are
+checked, the next Lean target is still not the theorem-2 wrapper and not an
+atlas consumer.  It is the local OS I sec. 4.5 initial-sector quotient-germ
+packet documented in the theorem-2 blueprint:
+`BHW.osi45_initialSector_sourceOrientedQuotientGerm_ordinary` and
+`BHW.osi45_initialSector_sourceOrientedQuotientGerm_adjacent`.  The ordinary
+proof must define `Phi := BHW.sourceOrientedQuotientValue (d := d) n
+(bvt_F OS lgc n)`, use
+`BHW.extendedTube_same_sourceOrientedInvariant_extendF_eq` for
+well-definedness, use the checked max-rank local-section theorem on the
+max-rank locus, and prove
+`BHW.sourceOrientedQuotientValue_rankDeficient_germHolomorphic_of_OSI45`.
+The residual chart supplies continuity, compact bounds, cluster values,
+surjectivity, and max-rank density; it does not supply a holomorphic parameter
+map, so this rank-deficient theorem still needs the local finite-dimensional
+normal/removable analytic step.  It must not import
+`BHW.SourceOrientedNormalRiemannExtensionInput` as a hypothesis and must not
+call `BHW.hallWightman_sourceOrientedScalarRepresentativeData_of_normalRiemann`.
+The adjacent packet is the source-permutation precomposition of the ordinary
+one via `sourcePermuteOrientedGram` and
+`sourceOrientedMinkowskiInvariant_permAct`.  Only after these two support
+theorems are proved should Lean implement the two
+`os45_BHWJost_initialLocalChart_*_of_OSI45` producers field by field.
+
 Stage B: turn the atlas into the exact-source-patch compact Wick pairing and
 the selected source/Jost anchor.  The boundary theorem is
 `BHW.os45Figure24_sourcePatch_pairing_eq_swappedSourcePatch_of_OSI45`.  It is

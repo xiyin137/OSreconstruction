@@ -49752,6 +49752,197 @@ Proof decomposition of this theorem, without hiding the analytic work:
             the local chart.  The hard proof remains exactly the two
             `initialLocalChart_*` theorems above.
 
+            Initial-sector quotient-germ transcript, 2026-05-09: the two
+            `initialLocalChart_*` theorems are implementation-ready only after
+            the following local OS I sec. 4.5 support theorem is proved, not
+            assumed as a global source-variety/descent input.  Its ordinary
+            form is:
+
+            ```lean
+            theorem BHW.osi45_initialSector_sourceOrientedQuotientGerm_ordinary
+                [NeZero d] (hd : 2 <= d)
+                (OS : OsterwalderSchraderAxioms d)
+                (lgc : OSLinearGrowthCondition d OS)
+                (n : Nat) :
+                ∃ Psi : BHW.SourceOrientedGramData d n -> ℂ,
+                  BHW.SourceOrientedVarietyGermHolomorphicOn d n Psi
+                    (BHW.sourceOrientedExtendedTubeDomain d n) ∧
+                  ∀ z, z ∈ BHW.ExtendedTube d n ->
+                    Psi (BHW.sourceOrientedMinkowskiInvariant d n z) =
+                      BHW.extendF (bvt_F OS lgc n) z
+            ```
+
+            Its adjacent form is the exact source-permutation precomposition
+            of the ordinary one:
+
+            ```lean
+            theorem BHW.osi45_initialSector_sourceOrientedQuotientGerm_adjacent
+                [NeZero d] (hd : 2 <= d)
+                (OS : OsterwalderSchraderAxioms d)
+                (lgc : OSLinearGrowthCondition d OS)
+                (n : Nat) (τ : Equiv.Perm (Fin n)) :
+                ∃ Psi : BHW.SourceOrientedGramData d n -> ℂ,
+                  BHW.SourceOrientedVarietyGermHolomorphicOn d n Psi
+                    {G | BHW.sourcePermuteOrientedGram d n τ G ∈
+                      BHW.sourceOrientedExtendedTubeDomain d n} ∧
+                  ∀ z,
+                    z ∈ BHW.permutedExtendedTubeSector d n τ ->
+                    Psi (BHW.sourceOrientedMinkowskiInvariant d n z) =
+                      BHW.extendF (bvt_F OS lgc n)
+                        (BHW.permAct (d := d) τ z)
+            ```
+
+            Proof of the ordinary support theorem: set
+            `F := bvt_F OS lgc n` and
+            `Phi := BHW.sourceOrientedQuotientValue (d := d) n F`.
+            The branch-law input is the checked theorem
+            `BHW.extendedTube_same_sourceOrientedInvariant_extendF_eq`,
+            specialized with `bvt_F_holomorphic` and
+            `bvt_F_complexLorentzInvariant_forwardTube`.  For every
+            `z ∈ ExtendedTube`, the equality
+            `Phi (sourceOrientedMinkowskiInvariant d n z) =
+            extendF F z` is exactly
+            `BHW.sourceOrientedQuotientValue_wellDefined`.
+
+            The `SourceOrientedVarietyGermHolomorphicOn` proof is local at a
+            point `G0 ∈ sourceOrientedExtendedTubeDomain d n`.  Choose
+            `z0 ∈ ExtendedTube d n` with
+            `sourceOrientedMinkowskiInvariant d n z0 = G0`.  If `G0` is
+            max-rank, use the already checked
+            `BHW.sourceOrientedQuotientValue_holomorphicOn_maxRank`, whose
+            local section is supplied by
+            `BHW.sourceOrientedExtendedTube_holomorphicLocalSection`; the
+            returned ambient open set `Ω`, representative `Ψ`, differentiability
+            proof, subset proof, and `EqOn` proof are exactly the witnesses
+            required by `SourceOrientedVarietyGermHolomorphicOn`.
+
+            If `G0` is rank-deficient, do not insert
+            `BHW.SourceOrientedNormalRiemannExtensionInput` as a hypothesis and
+            do not call
+            `BHW.hallWightman_sourceOrientedScalarRepresentativeData_of_normalRiemann`.
+            Prove the same local witnesses by a local removable-singularity
+            theorem, with the rank-deficient residual-polydisc producer used
+            only for the hypotheses it actually provides.  Instantiate
+            `BHW.sourceOriented_rankDeficient_residualChart hd n hz0 hlow`.
+            Its fields give an open invariant-coordinate window `R.Ω`, compact
+            parameter set `R.K`, source vectors `R.toVec c ∈ ExtendedTube d n`,
+            surjectivity over `R.Ω ∩ sourceOrientedGramVariety d n`, max-rank
+            parameter density, compact bounds, and cluster values.  This chart
+            is not itself a holomorphic parameterization: its stored `toVec`
+            field is continuous on `R.K`, so the proof must not claim
+            `fun c => BHW.extendF F (R.toVec c)` is the missing holomorphic
+            representative.
+
+            The exact rank-deficient support theorem to prove locally is:
+
+            ```lean
+            theorem BHW.sourceOrientedQuotientValue_rankDeficient_germHolomorphic_of_OSI45
+                [NeZero d] (hd : 2 <= d)
+                (n : Nat)
+                (F : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+                (hF_holo : DifferentiableOn ℂ F (BHW.ForwardTube d n))
+                (hF_cinv :
+                  ∀ Λ z, z ∈ BHW.ForwardTube d n ->
+                    BHW.complexLorentzAction Λ z ∈ BHW.ForwardTube d n ->
+                    F (BHW.complexLorentzAction Λ z) = F z)
+                (hBranch :
+                  ∀ {z w}, z ∈ BHW.ExtendedTube d n ->
+                    w ∈ BHW.ExtendedTube d n ->
+                    BHW.sourceOrientedMinkowskiInvariant d n z =
+                      BHW.sourceOrientedMinkowskiInvariant d n w ->
+                    BHW.extendF F z = BHW.extendF F w)
+                {G0 : BHW.SourceOrientedGramData d n}
+                (hG0 : G0 ∈ BHW.sourceOrientedExtendedTubeDomain d n)
+                (hlow : ¬ BHW.SourceOrientedMaxRankAt d n G0) :
+                ∃ Ω Ψ,
+                  IsOpen Ω ∧ G0 ∈ Ω ∧
+                  DifferentiableOn ℂ Ψ Ω ∧
+                  Ω ∩ BHW.sourceOrientedGramVariety d n ⊆
+                    BHW.sourceOrientedExtendedTubeDomain d n ∧
+                  Set.EqOn
+                    (BHW.sourceOrientedQuotientValue (d := d) n F)
+                    Ψ
+                    (Ω ∩ BHW.sourceOrientedGramVariety d n)
+            ```
+
+            Its proof is the local OS I sec. 4.5 Riemann-removable theorem in
+            the source-oriented invariant chart.  The checked inputs are:
+            max-rank local holomorphic representatives from
+            `BHW.sourceOrientedQuotientValue_holomorphicOn_maxRank`,
+            continuity and local boundedness from
+            `BHW.sourceOrientedQuotientValue_continuous_locallyBounded`,
+            density from `BHW.sourceOrientedMaxRank_dense_in_domain`, and the
+            finite-equation analytic exceptional locus from
+            `BHW.sourceOrientedExceptionalRank_isAnalyticSubvariety`.  The
+            still-to-prove analytic step is the finite-dimensional
+            normal/removable theorem converting those four inputs into a
+            local ambient holomorphic representative at `G0`.  It must be
+            proved as a theorem, not passed as
+            `BHW.SourceOrientedNormalRiemannExtensionInput`, and it must not
+            be encoded as an axiom.
+
+            Proof of the adjacent support theorem: choose `Psi0` from the
+            ordinary support theorem and set
+            `Psi G := Psi0 (BHW.sourcePermuteOrientedGram d n τ G)`.  Its
+            germ-holomorphic field is
+            `Psi0_holo.precomp_sourcePermuteOrientedGram`.  For
+            `z ∈ BHW.permutedExtendedTubeSector d n τ`, unfold the sector to
+            get `BHW.permAct (d := d) τ z ∈ BHW.ExtendedTube d n`; rewrite
+            `BHW.sourceOrientedMinkowskiInvariant_permAct` to convert
+            `Psi (sourceOrientedMinkowskiInvariant d n z)` to the ordinary
+            quotient equality at `BHW.permAct (d := d) τ z`.
+
+            Field-by-field construction of
+            `os45_BHWJost_initialLocalChart_ordinary_of_OSI45`: choose
+            `Psi` from
+            `osi45_initialSector_sourceOrientedQuotientGerm_ordinary`.
+            Define the chart with `carrier := BHW.ExtendedTube d n`,
+            `orientedDomain := BHW.sourceOrientedExtendedTubeDomain d n`,
+            `branch := BHW.extendF (bvt_F OS lgc n)`, and the chosen `Psi`.
+            The carrier fields are `BHW.isOpen_extendedTube`,
+            `(BHW.isConnected_extendedTube (d := d) (n := n)).2`,
+            `H.extendedTube_subset_ΩJ`, and the identity Lorentz-step
+            witness.  The oriented fields are
+            `BHW.sourceOrientedExtendedTubeDomain_relOpen_connected`,
+            `BHW.sourceOrientedExtendedTubeDomain_subset_variety`,
+            `⟨z, hz, rfl⟩` for `oriented_mem`, and elimination of that
+            existential for `oriented_realizes`.  `Psi_holo` and
+            `branch_eq_orientedPullback` are the two fields of the support
+            theorem.  `branch_holo` is
+            `BHW.differentiableOn_extendF_bvt_F_extendedTube`.
+            `branch_same_sourceOrientedInvariant` rewrites both source points
+            through `branch_eq_orientedPullback`, and
+            `branch_complexLorentzInvariant` rewrites through
+            `BHW.sourceOrientedMinkowskiInvariant_complexLorentzAction`.
+
+            Field-by-field construction of
+            `os45_BHWJost_initialLocalChart_adjacent_of_OSI45`: choose `Psi`
+            from `osi45_initialSector_sourceOrientedQuotientGerm_adjacent`.
+            Define the chart with
+            `carrier := BHW.permutedExtendedTubeSector d n P.τ`,
+            `orientedDomain := {G | BHW.sourcePermuteOrientedGram d n P.τ G ∈
+            BHW.sourceOrientedExtendedTubeDomain d n}`, and
+            `branch := fun z => BHW.extendF (bvt_F OS lgc n)
+            (BHW.permAct (d := d) P.τ z)`.  The carrier topology fields are
+            `BHW.isOpen_permutedExtendedTubeSector` and
+            `BHW.permutedExtendedTubeSector_isPreconnected`; the subset field
+            is `H.permutedExtendedTubeSector_subset_ΩJ`.  The Lorentz-step
+            witness again uses identity action on the adjacent initial sector.
+            The oriented rel-open and preconnected fields are the ordinary
+            domain fields transported by
+            `sourcePermuteOrientedGram`; the subset field uses
+            `BHW.sourcePermuteOrientedGram_mem_variety_iff`.  `oriented_mem`
+            and `oriented_realizes` are the same existential arguments as in
+            `SourceOrientedScalarRepresentativeData.toPermutedExtendedTubeInitialChart`,
+            using `BHW.sourceOrientedMinkowskiInvariant_permAct` and
+            `BHW.permAct` inverse cancellation.  `branch_holo` is
+            `BHW.differentiableOn_extendF_bvt_F_permAct_preimageExtendedTube`
+            restricted/reinterpreted by the definition of
+            `BHW.permutedExtendedTubeSector`.  The same-invariant and
+            complex-Lorentz fields rewrite through the chosen adjacent
+            `branch_eq_orientedPullback`; the complex-Lorentz case also uses
+            `BHW.sourceOrientedMinkowskiInvariant_complexLorentzAction`.
+
             Once either local-chart theorem is available, the
             `BHWJostInitialChartData` wrapper is already mechanical via the
             checked generic constructor
@@ -73657,6 +73848,10 @@ source-variety/descent substitute.
 
 The analytic surfaces to prove first are exactly:
 
+0. `BHW.osi45_initialSector_sourceOrientedQuotientGerm_ordinary` and
+   `BHW.osi45_initialSector_sourceOrientedQuotientGerm_adjacent`, the local
+   OS I sec. 4.5 support packet that supplies `Psi_holo` and the oriented
+   pullback law for the initial ordinary and adjacent sectors;
 1. `BHW.os45_BHWJost_initialLocalChart_ordinary_of_OSI45`;
 2. `BHW.os45_BHWJost_initialLocalChart_adjacent_of_OSI45`;
 3. `BHW.os45_BHWJost_oneStepTransition_of_OSI45`;
@@ -73776,7 +73971,7 @@ gate.
 
 | Stage | Lean-readiness status | Transcript source |
 | --- | --- | --- |
-| Stage A: OS45 local-hull adaptive atlas | Ready to implement first.  The theorem surfaces and field-by-field construction order are fixed. | Section 5, the field transcripts for the initial charts, one-step transition, chains, same-endpoint comparisons, and adjacent ordinary-Wick trace. |
+| Stage A: OS45 local-hull adaptive atlas | Ready to implement first, beginning with the local initial-sector quotient-germ packet.  The initial-chart consumers are checked; the next production theorem is not an atlas wrapper but the ordinary/adjacent quotient-germ support theorem named in Section 8.1 and expanded in Section 5. | Section 5, the field transcripts for the quotient germs, initial charts, one-step transition, chains, same-endpoint comparisons, and adjacent ordinary-Wick trace. |
 | Stage B: exact source-patch compact Wick pairing and Jost anchor | Ready after Stage A returns `BHW.OS45BHWJostHullData.toPairDataOfContinuationAtlases`.  The exact-source-patch consumers are checked; the only analytic producer is the OS I sec. 4.5/BHW-Jost compact theorem. | Sections 4-5 and the compact-source-patch ledger naming `BHW.os45CompactFigure24WickPairingEq_of_pairData_on_figure24SourcePatch` and `BHW.bvt_F_distributionalJostAnchor_of_pairData_on_figure24SourcePatch`. |
 | Stage C: Hall-Wightman source/PET single-valuedness | Ready after Stage B supplies the source/Jost anchor.  The active route proves the source-backed theorem in Lean; no source import, QFT axiom, or hF-perm-only shortcut is active. | Slot-6 source/PET transcript for `BHW.hallWightman_source_permutedBranch_compatibility_of_distributionalAnchor` and the PET assembly/equality corollaries. |
 | Stage D: Jost boundary and canonical shell | Ready after Stage C.  The only theorem-level analytic frontier is the OS I sec. 4.5/Jost boundary theorem with the displayed canonical pairing conclusion. | Slot 10 transcript for `bvt_F_jostBoundary_pairing_of_spacelike_of_two_le` and `bvt_F_swapCanonical_pairing_of_spacelike_of_two_le`. |
