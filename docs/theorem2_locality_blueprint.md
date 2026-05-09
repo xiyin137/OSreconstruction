@@ -49866,20 +49866,117 @@ Proof decomposition of this theorem, without hiding the analytic work:
             ```
 
             Its proof is the local OS I sec. 4.5 Riemann-removable theorem in
-            the source-oriented invariant chart.  The checked inputs are:
-            max-rank local holomorphic representatives from
-            `BHW.sourceOrientedQuotientValue_holomorphicOn_maxRank`,
-            continuity and local boundedness from
-            `BHW.sourceOrientedQuotientValue_continuous_locallyBounded`,
-            density from `BHW.sourceOrientedMaxRank_dense_in_domain`, and the
-            finite-equation analytic exceptional locus from
-            `BHW.sourceOrientedExceptionalRank_isAnalyticSubvariety`.  The
-            still-to-prove analytic step is the finite-dimensional
-            normal/removable theorem converting those four inputs into a
-            local ambient holomorphic representative at `G0`.  It must be
-            proved as a theorem, not passed as
-            `BHW.SourceOrientedNormalRiemannExtensionInput`, and it must not
-            be encoded as an axiom.
+            the source-oriented invariant chart.  The generic
+            normal/removable theorem to implement is exactly
+            `BHW.sourceOrientedVariety_normal_riemannExtension`, whose
+            transcript is recorded earlier in this section: convert the
+            relative-open extended-tube image to the generic analytic-variety
+            API, use `BHW.sourceOrientedGramVariety_normal`, use the
+            finite-equation exceptional locus
+            `BHW.sourceOrientedExceptionalRank_isAnalyticSubvariety`, use
+            density `BHW.sourceOrientedMaxRank_dense_in_domain`, and call
+            `BHW.normalAnalyticSubvariety_riemannExtension`.  That theorem is
+            not a theorem-2 wrapper and not the quarantined
+            `BHW.SourceOrientedNormalRiemannExtensionInput` hypothesis; it is
+            the finite-dimensional SCV/algebraic-geometry theorem that the
+            proof docs already decomposed into normality, analytic
+            subvariety, density, continuity, local boundedness, and max-rank
+            holomorphic representatives.
+
+            The implementation bridge from that normal/removable theorem to
+            the OS45 quotient germ is no longer an open design choice.  First
+            prove the global quotient-germ statement:
+
+            ```lean
+            theorem BHW.sourceOrientedQuotientValue_germHolomorphic_of_OSI45
+                [NeZero d] (hd : 2 <= d)
+                (n : Nat)
+                (F : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+                (hF_holo : DifferentiableOn ℂ F (BHW.ForwardTube d n))
+                (hF_cinv :
+                  ∀ Λ z, z ∈ BHW.ForwardTube d n ->
+                    BHW.complexLorentzAction Λ z ∈ BHW.ForwardTube d n ->
+                    F (BHW.complexLorentzAction Λ z) = F z)
+                (hBranch :
+                  ∀ {z w}, z ∈ BHW.ExtendedTube d n ->
+                    w ∈ BHW.ExtendedTube d n ->
+                    BHW.sourceOrientedMinkowskiInvariant d n z =
+                      BHW.sourceOrientedMinkowskiInvariant d n w ->
+                    BHW.extendF F z = BHW.extendF F w) :
+                BHW.SourceOrientedVarietyGermHolomorphicOn d n
+                  (BHW.sourceOrientedQuotientValue (d := d) n F)
+                  (BHW.sourceOrientedExtendedTubeDomain d n) := by
+              have hcb :
+                  ContinuousOn (BHW.sourceOrientedQuotientValue (d := d) n F)
+                      (BHW.sourceOrientedExtendedTubeDomain d n) ∧
+                    BHW.LocallyBoundedOn
+                      (BHW.sourceOrientedQuotientValue (d := d) n F)
+                      (BHW.sourceOrientedExtendedTubeDomain d n) :=
+                BHW.sourceOrientedQuotientValue_continuous_locallyBounded
+                  (d := d) hd n F hF_holo hF_cinv hBranch
+              exact
+                BHW.sourceOrientedVariety_normal_riemannExtension
+                  (d := d) hd n hcb.1 hcb.2
+                  (by
+                    intro G hG
+                    have hReg : BHW.SourceOrientedMaxRankAt d n G :=
+                      (BHW.not_exceptional_rank_iff_maxRank
+                        (d := d) (n := n) hG.1).1 hG.2
+                    exact
+                      BHW.sourceOrientedQuotientValue_holomorphicOn_maxRank
+                        (d := d) hd n F hF_holo hF_cinv hBranch
+                        hG.1 hReg)
+            ```
+
+            Then the displayed rank-deficient theorem is only local witness
+            extraction from this global germ-holomorphicity statement:
+
+            ```lean
+            theorem BHW.sourceOrientedQuotientValue_rankDeficient_germHolomorphic_of_OSI45
+                [NeZero d] (hd : 2 <= d)
+                (n : Nat)
+                (F : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+                (hF_holo : DifferentiableOn ℂ F (BHW.ForwardTube d n))
+                (hF_cinv :
+                  ∀ Λ z, z ∈ BHW.ForwardTube d n ->
+                    BHW.complexLorentzAction Λ z ∈ BHW.ForwardTube d n ->
+                    F (BHW.complexLorentzAction Λ z) = F z)
+                (hBranch :
+                  ∀ {z w}, z ∈ BHW.ExtendedTube d n ->
+                    w ∈ BHW.ExtendedTube d n ->
+                    BHW.sourceOrientedMinkowskiInvariant d n z =
+                      BHW.sourceOrientedMinkowskiInvariant d n w ->
+                    BHW.extendF F z = BHW.extendF F w)
+                {G0 : BHW.SourceOrientedGramData d n}
+                (hG0 : G0 ∈ BHW.sourceOrientedExtendedTubeDomain d n)
+                (_hlow : ¬ BHW.SourceOrientedMaxRankAt d n G0) :
+                ∃ Ω Ψ,
+                  IsOpen Ω ∧ G0 ∈ Ω ∧
+                  DifferentiableOn ℂ Ψ Ω ∧
+                  Ω ∩ BHW.sourceOrientedGramVariety d n ⊆
+                    BHW.sourceOrientedExtendedTubeDomain d n ∧
+                  Set.EqOn
+                    (BHW.sourceOrientedQuotientValue (d := d) n F)
+                    Ψ
+                    (Ω ∩ BHW.sourceOrientedGramVariety d n) := by
+              have hPhi :=
+                BHW.sourceOrientedQuotientValue_germHolomorphic_of_OSI45
+                  (d := d) hd n F hF_holo hF_cinv hBranch
+              rcases hPhi G0 hG0 with
+                ⟨Ω, Ψ, hΩ_open, hG0Ω, hΨ_holo, hEq, hΩ_sub⟩
+              exact ⟨Ω, Ψ, hΩ_open, hG0Ω, hΨ_holo, hΩ_sub, hEq⟩
+            ```
+
+            The `_hlow` argument is deliberately unused in the extraction
+            proof: it selects the rank-deficient branch in the initial-sector
+            chart construction, while the normal/Riemann theorem itself
+            returns local representatives at every point of the oriented
+            extended-tube image.  The residual chart enters through the
+            checked continuity/local-boundedness and density theorems
+            consumed above; it is not itself a holomorphic parameterization,
+            and the proof must not claim that
+            `fun c => BHW.extendF F (R.toVec c)` supplies the ambient
+            holomorphic representative.
 
             Proof of the adjacent support theorem: choose `Psi0` from the
             ordinary support theorem and set
@@ -73846,7 +73943,23 @@ continuation atlas on the canonical Figure-2-4 source patch.  It is not the
 later Slot-6/Slot-7 Hall-Wightman/PET source theorem, and it is not a
 source-variety/descent substitute.
 
-The analytic surfaces to prove first are exactly:
+Before the atlas surfaces themselves, the initial-sector quotient-germ packet
+has two source-oriented SCV support surfaces that must be proved in this order:
+
+0a. `BHW.sourceOrientedVariety_normal_riemannExtension`, the
+    finite-dimensional normal analytic-space Riemann theorem specialized to
+    the oriented source-invariant variety;
+0b. `BHW.sourceOrientedQuotientValue_germHolomorphic_of_OSI45`, the direct
+    bridge from `sourceOrientedQuotientValue_continuous_locallyBounded`,
+    max-rank local holomorphic representatives, and
+    `sourceOrientedVariety_normal_riemannExtension` to a
+    `SourceOrientedVarietyGermHolomorphicOn` proof on the whole oriented
+    extended-tube image;
+0c. `BHW.sourceOrientedQuotientValue_rankDeficient_germHolomorphic_of_OSI45`,
+    the local witness-extraction theorem used by the rank-deficient branch of
+    the initial-sector chart construction.
+
+The OS45 analytic surfaces to prove after those support surfaces are exactly:
 
 0. `BHW.osi45_initialSector_sourceOrientedQuotientGerm_ordinary` and
    `BHW.osi45_initialSector_sourceOrientedQuotientGerm_adjacent`, the local
@@ -73971,7 +74084,7 @@ gate.
 
 | Stage | Lean-readiness status | Transcript source |
 | --- | --- | --- |
-| Stage A: OS45 local-hull adaptive atlas | Ready to implement first, beginning with the local initial-sector quotient-germ packet.  The initial-chart consumers are checked; the next production theorem is not an atlas wrapper but the ordinary/adjacent quotient-germ support theorem named in Section 8.1 and expanded in Section 5. | Section 5, the field transcripts for the quotient germs, initial charts, one-step transition, chains, same-endpoint comparisons, and adjacent ordinary-Wick trace. |
+| Stage A: OS45 local-hull adaptive atlas | Ready to implement first at the support-theorem level: prove `BHW.sourceOrientedVariety_normal_riemannExtension`, then `BHW.sourceOrientedQuotientValue_germHolomorphic_of_OSI45`, then the ordinary/adjacent initial-sector quotient-germ packet.  The initial-chart consumers are checked; the next production theorem is not an atlas wrapper. | Section 5, the normal/Riemann transcript, the quotient-germ bridge, and the field transcripts for the quotient germs, initial charts, one-step transition, chains, same-endpoint comparisons, and adjacent ordinary-Wick trace. |
 | Stage B: exact source-patch compact Wick pairing and Jost anchor | Ready after Stage A returns `BHW.OS45BHWJostHullData.toPairDataOfContinuationAtlases`.  The exact-source-patch consumers are checked; the only analytic producer is the OS I sec. 4.5/BHW-Jost compact theorem. | Sections 4-5 and the compact-source-patch ledger naming `BHW.os45CompactFigure24WickPairingEq_of_pairData_on_figure24SourcePatch` and `BHW.bvt_F_distributionalJostAnchor_of_pairData_on_figure24SourcePatch`. |
 | Stage C: Hall-Wightman source/PET single-valuedness | Ready after Stage B supplies the source/Jost anchor.  The active route proves the source-backed theorem in Lean; no source import, QFT axiom, or hF-perm-only shortcut is active. | Slot-6 source/PET transcript for `BHW.hallWightman_source_permutedBranch_compatibility_of_distributionalAnchor` and the PET assembly/equality corollaries. |
 | Stage D: Jost boundary and canonical shell | Ready after Stage C.  The only theorem-level analytic frontier is the OS I sec. 4.5/Jost boundary theorem with the displayed canonical pairing conclusion. | Slot 10 transcript for `bvt_F_jostBoundary_pairing_of_spacelike_of_two_le` and `bvt_F_swapCanonical_pairing_of_spacelike_of_two_le`. |

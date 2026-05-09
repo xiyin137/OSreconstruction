@@ -75,8 +75,12 @@ material.  They do not authorize an alternate first Lean target and they do
 not authorize any new `axiom`, `sorry`, `admit`, or QFT-specific source import.
 
 Stage A, current gate: build the direct OS I sec. 4.5 local-hull adaptive
-continuation atlas on the canonical Figure-2-4 source patch.  The analytic
-surfaces are exactly
+continuation atlas on the canonical Figure-2-4 source patch.  The first Lean
+support surfaces are
+`BHW.sourceOrientedVariety_normal_riemannExtension`,
+`BHW.sourceOrientedQuotientValue_germHolomorphic_of_OSI45`, and
+`BHW.sourceOrientedQuotientValue_rankDeficient_germHolomorphic_of_OSI45`.
+Only after those are checked do the OS45 analytic surfaces begin:
 `BHW.os45_BHWJost_initialLocalChart_ordinary_of_OSI45`,
 `BHW.os45_BHWJost_initialLocalChart_adjacent_of_OSI45`,
 `BHW.os45_BHWJost_oneStepTransition_of_OSI45`,
@@ -117,10 +121,19 @@ max-rank locus, and prove
 `BHW.sourceOrientedQuotientValue_rankDeficient_germHolomorphic_of_OSI45`.
 The residual chart supplies continuity, compact bounds, cluster values,
 surjectivity, and max-rank density; it does not supply a holomorphic parameter
-map, so this rank-deficient theorem still needs the local finite-dimensional
-normal/removable analytic step.  It must not import
-`BHW.SourceOrientedNormalRiemannExtensionInput` as a hypothesis and must not
-call `BHW.hallWightman_sourceOrientedScalarRepresentativeData_of_normalRiemann`.
+map.  The missing bridge is now pinned in the blueprint: first prove
+`BHW.sourceOrientedVariety_normal_riemannExtension` from the recorded
+normality/analytic-subvariety/density/removability transcript, then prove
+`BHW.sourceOrientedQuotientValue_germHolomorphic_of_OSI45` by applying that
+theorem to `sourceOrientedQuotientValue_continuous_locallyBounded` and the
+max-rank local representatives.  The rank-deficient theorem is then exactly
+one local witness extraction from the resulting
+`SourceOrientedVarietyGermHolomorphicOn`, with the field order swapped from
+`EqOn`-then-subset to subset-then-`EqOn`.  This must not import
+`BHW.SourceOrientedNormalRiemannExtensionInput` as a hypothesis, must not call
+`BHW.hallWightman_sourceOrientedScalarRepresentativeData_of_normalRiemann`,
+and must not encode the finite-dimensional normal/removable theorem as an
+axiom.
 The adjacent packet is the source-permutation precomposition of the ordinary
 one via `sourcePermuteOrientedGram` and
 `sourceOrientedMinkowskiInvariant_permAct`.  Only after these two support
