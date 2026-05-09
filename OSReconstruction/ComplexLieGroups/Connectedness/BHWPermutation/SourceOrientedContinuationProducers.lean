@@ -368,6 +368,51 @@ structure BHWJostInitialChartData
   initial_chart_mem : ∀ z, z ∈ Ω0 ∩ U → z ∈ C0.carrier
   initial_branch_agree : ∀ z, z ∈ Ω0 ∩ U → C0.branch z = B0 z
 
+namespace BHWJostInitialChartData
+
+variable [NeZero d] {hd : 2 ≤ d} {τ : Equiv.Perm (Fin n)}
+variable {Ω0 U : Set (Fin n → Fin (d + 1) → ℂ)}
+variable {B0 : (Fin n → Fin (d + 1) → ℂ) → ℂ}
+variable {p0 : Fin n → Fin (d + 1) → ℂ}
+
+/-- Package a full-initial-sector local chart as the normalized initial chart
+data consumed by the certified transfer-cover atlas reducer.  The analytic
+content is exactly the supplied local chart; this constructor only fills the
+start-patch and `Ω0 ∩ U` normalization fields. -/
+noncomputable def ofFullCarrier
+    (C0 : BHWJostLocalOrientedContinuationChart hd n τ U)
+    (hcarrier : C0.carrier = Ω0)
+    (hbranch : ∀ z, z ∈ Ω0 → C0.branch z = B0 z)
+    (hp0 : p0 ∈ Ω0)
+    (hΩ0_open : IsOpen Ω0)
+    (hΩ0_preconnected : IsPreconnected Ω0) :
+    BHWJostInitialChartData hd n τ Ω0 U B0 p0 where
+  C0 := C0
+  hp0C := by
+    rw [hcarrier]
+    exact hp0
+  start_patch := Ω0
+  hstart_open := hΩ0_open
+  hstart_preconnected := hΩ0_preconnected
+  hstart_nonempty := ⟨p0, hp0⟩
+  hstart_mem := hp0
+  hstart_sub := by
+    intro y hy
+    rw [hcarrier]
+    exact ⟨hy, hy⟩
+  hstart_agree := by
+    intro y hy
+    exact hbranch y hy
+  initial_chart_mem := by
+    intro z hz
+    rw [hcarrier]
+    exact hz.1
+  initial_branch_agree := by
+    intro z hz
+    exact hbranch z hz.1
+
+end BHWJostInitialChartData
+
 /-- Trace-level data sufficient to assemble a source-patch continuation
 atlas.  Unlike an arbitrary chain-atlas producer, this records the actual
 branch-free transfer trace selected for each terminal point and asks for the

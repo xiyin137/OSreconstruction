@@ -10584,6 +10584,66 @@ common-boundary envelope, or any theorem that already assumes locality.
    `initial_branch_agree`.  The ordinary and adjacent `initialChart_*`
    theorem surfaces below therefore return this carrier, not an ad hoc tuple.
 
+   Strict-route gate for the initial chart: do not implement these producers
+   from `SourceOrientedScalarRepresentativeData.toExtendedTubeInitialChart`,
+   `SourceOrientedScalarRepresentativeData.toPermutedExtendedTubeInitialChart`,
+   or the normal/Riemann source-oriented descent theorem.  On the active OS II
+   / OS I §4.5 route the hard analytic input is the local initial-sector
+   BHW/Jost oriented germ:
+
+   ```lean
+   theorem BHW.os45_BHWJost_initialLocalChart_ordinary_of_OSI45
+       [NeZero d] (hd : 2 <= d)
+       (OS : OsterwalderSchraderAxioms d)
+       (lgc : OSLinearGrowthCondition d OS)
+       {i : Fin n} {hi : i.val + 1 < n}
+       {P : BHW.OS45Figure24CanonicalSourcePatchData
+         (d := d) hd n i hi}
+       (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P) :
+       ∃ C0 : BHW.BHWJostLocalOrientedContinuationChart hd n P.τ H.ΩJ,
+         C0.carrier = BHW.ExtendedTube d n ∧
+         C0.branch = BHW.extendF (bvt_F OS lgc n)
+
+   theorem BHW.os45_BHWJost_initialLocalChart_adjacent_of_OSI45
+       [NeZero d] (hd : 2 <= d)
+       (OS : OsterwalderSchraderAxioms d)
+       (lgc : OSLinearGrowthCondition d OS)
+       {i : Fin n} {hi : i.val + 1 < n}
+       {P : BHW.OS45Figure24CanonicalSourcePatchData
+         (d := d) hd n i hi}
+       (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P) :
+       ∃ C0 : BHW.BHWJostLocalOrientedContinuationChart hd n P.τ H.ΩJ,
+         C0.carrier = BHW.permutedExtendedTubeSector d n P.τ ∧
+         C0.branch =
+           (fun z =>
+             BHW.extendF (bvt_F OS lgc n)
+               (BHW.permAct (d := d) P.τ z))
+   ```
+
+   In the ordinary theorem, `carrier_open` is
+   `BHW.isOpen_extendedTube`, `carrier_preconnected` is
+   `(BHW.isConnected_extendedTube (d := d) (n := n)).2`, and
+   `carrier_sub_U` is `H.extendedTube_subset_ΩJ`.  In the adjacent theorem,
+   `carrier_open` is `BHW.isOpen_permutedExtendedTubeSector`,
+   `carrier_preconnected` is
+   `BHW.permutedExtendedTubeSector_isPreconnected`, and `carrier_sub_U` is
+   `H.permutedExtendedTubeSector_subset_ΩJ`.  The `carrier_is_lorentz_step`
+   fields use identity Lorentz action on the displayed initial sector.  The
+   non-mechanical fields are exactly the local oriented germ data:
+   `orientedDomain`, `Psi`, `Psi_holo`, `branch_eq_orientedPullback`,
+   `branch_same_sourceOrientedInvariant`, and
+   `branch_complexLorentzInvariant`, supplied by the local Hall-Wightman/Jost
+   initial-branch theorem on the sector.
+
+   Once either local-chart theorem is available, the initial-chart data record
+   is mechanical via the checked generic constructor
+   `BHW.BHWJostInitialChartData.ofFullCarrier`.  It takes `C0`, the carrier
+   equality, the branch equality on `Ω0`, base membership in `Ω0`, and the
+   open/preconnected facts for `Ω0`; then it chooses `start_patch := Ω0` and
+   fills `hp0C`, `hstart_sub`, `hstart_agree`, `initial_chart_mem`, and
+   `initial_branch_agree` by rewriting the carrier and projecting
+   `z ∈ Ω0 ∩ H.ΩJ`.
+
    The two concrete atlas constructors are therefore implemented by the
    following Lean skeletons once the analytic inputs are proved.  For the
    ordinary side:

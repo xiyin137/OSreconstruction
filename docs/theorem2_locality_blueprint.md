@@ -49674,6 +49674,81 @@ Proof decomposition of this theorem, without hiding the analytic work:
             `hstart_sub`, `hstart_agree`, `initial_chart_mem`, and
             `initial_branch_agree`.
 
+            Strict-route initial-chart gate: the two
+            `os45_BHWJost_initialChart_*_of_OSI45` producers must not be
+            implemented by calling the archived
+            `SourceOrientedScalarRepresentativeData.toExtendedTubeInitialChart`,
+            `SourceOrientedScalarRepresentativeData.toPermutedExtendedTubeInitialChart`,
+            or the normal/Riemann source-oriented descent theorem.  Those
+            objects are side infrastructure.  On the active OS II / OS I §4.5
+            route, the hard analytic input is a local initial-sector
+            BHW/Jost oriented germ whose carrier is exactly the displayed
+            initial sector and whose branch is exactly the displayed initial
+            branch:
+
+            ```lean
+            theorem BHW.os45_BHWJost_initialLocalChart_ordinary_of_OSI45
+                [NeZero d] (hd : 2 <= d)
+                (OS : OsterwalderSchraderAxioms d)
+                (lgc : OSLinearGrowthCondition d OS)
+                {i : Fin n} {hi : i.val + 1 < n}
+                {P : BHW.OS45Figure24CanonicalSourcePatchData
+                  (d := d) hd n i hi}
+                (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P) :
+                ∃ C0 : BHW.BHWJostLocalOrientedContinuationChart
+                    hd n P.τ H.ΩJ,
+                  C0.carrier = BHW.ExtendedTube d n ∧
+                  C0.branch = BHW.extendF (bvt_F OS lgc n)
+
+            theorem BHW.os45_BHWJost_initialLocalChart_adjacent_of_OSI45
+                [NeZero d] (hd : 2 <= d)
+                (OS : OsterwalderSchraderAxioms d)
+                (lgc : OSLinearGrowthCondition d OS)
+                {i : Fin n} {hi : i.val + 1 < n}
+                {P : BHW.OS45Figure24CanonicalSourcePatchData
+                  (d := d) hd n i hi}
+                (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P) :
+                ∃ C0 : BHW.BHWJostLocalOrientedContinuationChart
+                    hd n P.τ H.ΩJ,
+                  C0.carrier =
+                    BHW.permutedExtendedTubeSector d n P.τ ∧
+                  C0.branch =
+                    (fun z =>
+                      BHW.extendF (bvt_F OS lgc n)
+                        (BHW.permAct (d := d) P.τ z))
+            ```
+
+            These theorems are the only remaining initial-chart analytic
+            obligations.  Their carrier fields are fixed: ordinary
+            `carrier_open`/`carrier_preconnected` are
+            `BHW.isOpen_extendedTube` and
+            `(BHW.isConnected_extendedTube (d := d) (n := n)).2`;
+            adjacent fields are `BHW.isOpen_permutedExtendedTubeSector` and
+            `BHW.permutedExtendedTubeSector_isPreconnected`.  Their
+            `carrier_sub_U` fields are exactly `H.extendedTube_subset_ΩJ` and
+            `H.permutedExtendedTubeSector_subset_ΩJ`.  Their
+            `carrier_is_lorentz_step` fields use identity Lorentz action on
+            the corresponding initial sector.  The non-mechanical fields are
+            precisely `orientedDomain`, `Psi`, `Psi_holo`,
+            `branch_eq_orientedPullback`,
+            `branch_same_sourceOrientedInvariant`, and
+            `branch_complexLorentzInvariant`, supplied by the local
+            Hall-Wightman/Jost initial-branch theorem on that sector, not by a
+            global source-variety descent theorem.
+
+            Once either local-chart theorem is available, the
+            `BHWJostInitialChartData` wrapper is already mechanical via the
+            checked generic constructor
+            `BHW.BHWJostInitialChartData.ofFullCarrier`: pass the chart `C0`,
+            its carrier equality, the branch equality restricted to `Ω0`, the
+            base membership (`H.ordinaryBase_mem_extendedTube` or
+            `H.adjacentBase_mem_permutedExtendedTubeSector`), and the
+            corresponding open/preconnected facts.  The constructor chooses
+            `start_patch := Ω0`, proves `hp0C` by rewriting the carrier, proves
+            `hstart_sub` as `Ω0 ⊆ Ω0 ∩ C0.carrier` after the same rewrite, and
+            proves `initial_chart_mem` and `initial_branch_agree` by projecting
+            `z ∈ Ω0 ∩ H.ΩJ`.
+
             Thus the ordinary atlas constructor is a direct reducer call with
             `Ω0 := BHW.ExtendedTube d n`,
             `B0 := BHW.extendF (bvt_F OS lgc n)`,
