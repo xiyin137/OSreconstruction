@@ -295,6 +295,46 @@ theorem os45Figure24_joined_adjLift0_to_realPatch
     exact BHW.os45BHWJostAmbient_mem_identity
       (d := d) (n := n) P.τ hw)
 
+/-- The inverse Figure-2-4 Lorentz rotation sends the checked lift at `0` to
+the selected adjacent Wick edge. -/
+theorem os45Figure24_exists_lorentz_adjLift0_to_adjacentWick
+    [NeZero d]
+    (hd : 2 ≤ d) {i : Fin n} {hi : i.val + 1 < n}
+    (P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi)
+    (x : NPointDomain d n) :
+    ∃ Λ : ComplexLorentzGroup d,
+      BHW.complexLorentzAction Λ
+          (BHW.os45Figure24AdjacentLift
+            (d := d) (n := n) hd P.τ x (0 : unitInterval)) =
+        fun k => wickRotatePoint (x (P.τ k)) := by
+  let zlift : Fin n → Fin (d + 1) → ℂ :=
+    BHW.os45Figure24AdjacentLift
+      (d := d) (n := n) hd P.τ x (0 : unitInterval)
+  let zadj : Fin n → Fin (d + 1) → ℂ :=
+    fun k => wickRotatePoint (x (P.τ k))
+  rcases BHW.figure24RotateAdjacentConfig_lorentz_inverse
+      (d := d) (n := n) hd with
+    ⟨Λinv, hΛinv⟩
+  refine ⟨Λinv, ?_⟩
+  let Γ : Fin n → Fin (d + 1) → ℂ :=
+    BHW.os45Figure24IdentityPath (d := d) (n := n) x (0 : unitInterval)
+  have hraw :
+      BHW.complexLorentzAction Λinv zlift =
+        BHW.permAct (d := d) P.τ Γ := by
+    simpa [zlift, BHW.os45Figure24AdjacentLift, Γ] using
+      hΛinv (BHW.permAct (d := d) P.τ Γ)
+  calc
+    BHW.complexLorentzAction Λinv
+        (BHW.os45Figure24AdjacentLift
+          (d := d) (n := n) hd P.τ x (0 : unitInterval))
+        = BHW.complexLorentzAction Λinv zlift := by rfl
+    _ = BHW.permAct (d := d) P.τ Γ := hraw
+    _ = zadj := by
+      ext k μ
+      simp [zadj, Γ, BHW.os45Figure24IdentityPath_zero, BHW.permAct]
+    _ = (fun k => wickRotatePoint (x (P.τ k))) := by rfl
+
 /-- The selected adjacent Wick edge is joined to the real source patch inside
 the local BHW/Jost ambient. -/
 theorem os45Figure24_joined_adjacentWick_to_realPatch
@@ -477,5 +517,56 @@ def os45_BHWJostHullData_of_figure24
     simpa [zbase] using
       BHW.mem_os45BHWJostHull_adjLift0_of_figure24
         (d := d) (n := n) hd P P.xseed_mem hx
+
+/-- Lorentz transport from the checked Figure-2-4 lift at `0` back to the
+selected adjacent Wick edge, for any branch invariant on the checked local
+hull. -/
+theorem os45_BHWJostLiftTransport_onPatch
+    [NeZero d]
+    (hd : 2 ≤ d) {i : Fin n} {hi : i.val + 1 < n}
+    (P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi)
+    (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P)
+    {WJ branchτ : (Fin n → Fin (d + 1) → ℂ) → ℂ}
+    (hW_inv :
+      ∀ Λ z, z ∈ H.ΩJ →
+        BHW.complexLorentzAction Λ z ∈ H.ΩJ →
+          WJ (BHW.complexLorentzAction Λ z) = WJ z)
+    (hW_adjacent :
+      ∀ x, x ∈ P.V →
+        WJ (fun k => wickRotatePoint (x (P.τ k))) =
+          branchτ (fun k => wickRotatePoint (x (P.τ k)))) :
+    ∀ x, x ∈ P.V →
+      WJ
+          (BHW.os45Figure24AdjacentLift
+            (d := d) (n := n) hd P.τ x (0 : unitInterval)) =
+        branchτ (fun k => wickRotatePoint (x (P.τ k))) := by
+  intro x hx
+  let zlift : Fin n → Fin (d + 1) → ℂ :=
+    BHW.os45Figure24AdjacentLift
+      (d := d) (n := n) hd P.τ x (0 : unitInterval)
+  let zadj : Fin n → Fin (d + 1) → ℂ :=
+    fun k => wickRotatePoint (x (P.τ k))
+  rcases BHW.os45Figure24_exists_lorentz_adjLift0_to_adjacentWick
+      (d := d) (n := n) hd P x with
+    ⟨Λinv, hΛinv⟩
+  have hzlift : zlift ∈ H.ΩJ := by
+    simpa [zlift] using H.adjLift0_mem x hx
+  have hΛ_mem : BHW.complexLorentzAction Λinv zlift ∈ H.ΩJ := by
+    rw [show BHW.complexLorentzAction Λinv zlift = zadj by
+      simpa [zlift, zadj] using hΛinv]
+    exact H.adjacentWick_mem x hx
+  calc
+    WJ
+        (BHW.os45Figure24AdjacentLift
+          (d := d) (n := n) hd P.τ x (0 : unitInterval))
+        = WJ zlift := by rfl
+    _ = WJ (BHW.complexLorentzAction Λinv zlift) := by
+          exact (hW_inv Λinv zlift hzlift hΛ_mem).symm
+    _ = WJ zadj := by
+          rw [show BHW.complexLorentzAction Λinv zlift = zadj by
+            simpa [zlift, zadj] using hΛinv]
+    _ = branchτ zadj := hW_adjacent x hx
+    _ = branchτ (fun k => wickRotatePoint (x (P.τ k))) := by rfl
 
 end BHW

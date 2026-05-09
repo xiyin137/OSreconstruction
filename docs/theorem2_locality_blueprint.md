@@ -48337,6 +48337,31 @@ Proof decomposition of this theorem, without hiding the analytic work:
                    (fun k => wickRotatePoint (x (Dinit.τ k)))
          ```
 
+         Lean-ready local version after the checked carrier correction:
+
+         ```lean
+         theorem BHW.os45_BHWJostLiftTransport_onPatch
+             [NeZero d]
+             (hd : 2 <= d) {i : Fin n} {hi : i.val + 1 < n}
+             (P : BHW.OS45Figure24CanonicalSourcePatchData
+               (d := d) hd n i hi)
+             (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P)
+             {WJ branchτ : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ}
+             (hW_inv :
+               ∀ Λ z, z ∈ H.ΩJ ->
+                 BHW.complexLorentzAction Λ z ∈ H.ΩJ ->
+                   WJ (BHW.complexLorentzAction Λ z) = WJ z)
+             (hW_adjacent :
+               ∀ x, x ∈ P.V ->
+                 WJ (fun k => wickRotatePoint (x (P.τ k))) =
+                   branchτ (fun k => wickRotatePoint (x (P.τ k)))) :
+             ∀ x, x ∈ P.V ->
+               WJ
+                 (BHW.os45Figure24AdjacentLift
+                   (d := d) (n := n) hd P.τ x (0 : unitInterval)) =
+                 branchτ (fun k => wickRotatePoint (x (P.τ k)))
+         ```
+
          This theorem is where the selected Figure-2-4 lift at `0` is related
          to the adjacent Wick edge.  Since the checked Figure-2-4 lift is the
          rotated two-plane realization
@@ -48352,14 +48377,13 @@ Proof decomposition of this theorem, without hiding the analytic work:
              fun k => wickRotatePoint (x (Dinit.τ k))
          ```
 
-         using `hChart.adjLift_def`,
-         `BHW.os45Figure24AdjacentLift`, `BHW.permAct`, and
-         `BHW.os45Figure24IdentityPath_zero`; then apply
-         `hW_inv` with `hlift x hx` and
-         `hΩτ (Dinit.wick_adjacent_mem x (hφ_supp hx))`, and finally rewrite
-         the adjacent Wick value by `hW_Ωτ`.  This Lorentz transport theorem
-         must be exported as its own proof step; it must not be hidden inside
-         the integral proof.  Once `hLift_transport` is available,
+         using `BHW.os45Figure24AdjacentLift`, `BHW.permAct`, and
+         `BHW.os45Figure24IdentityPath_zero`; then apply `hW_inv` with the
+         checked hull memberships `H.adjLift0_mem x hx` and
+         `H.adjacentWick_mem x hx`, and finally rewrite the adjacent Wick
+         value by `hW_adjacent`.  This Lorentz transport theorem must be
+         exported as its own proof step; it must not be hidden inside the
+         integral proof.  Once `hLift_transport` is available,
          `os45_BHWJostLiftPairing_of_OSI45` is only `integral_congr` plus
          `Dinit.branchτ_boundary_pairing`, with the standard support split:
          on `tsupport φ` use `hLift_transport`, and off `tsupport φ` the test

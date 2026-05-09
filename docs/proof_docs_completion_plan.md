@@ -9913,11 +9913,19 @@ assembled may the downstream full continuation package add
 
 The later transport theorem is not a bare endpoint identity: the checked lift
 is the rotated two-plane realization.  It must use
-`BHW.figure24RotateAdjacentConfig_lorentz_inverse`, `hChart.adjLift_def`,
+`BHW.figure24RotateAdjacentConfig_lorentz_inverse`,
+`BHW.os45Figure24AdjacentLift`, `BHW.permAct`,
 `BHW.os45Figure24IdentityPath_zero`, `WJ`'s Lorentz invariance on `ΩJ`, and
-`WJ = Dinit.branchτ` on `Dinit.Ωτ` to identify the lift value with the
-adjacent Wick edge on `tsupport φ`.  Hiding this Lorentz-transport equality
-inside an integral rewrite would leave the proof docs incomplete.
+the checked hull memberships.  The Lean-ready local surface is
+`BHW.os45_BHWJostLiftTransport_onPatch`: given
+`H : BHW.OS45BHWJostHullData hd n i hi P`, Lorentz invariance of `WJ` on
+`H.ΩJ`, and agreement of `WJ` with the adjacent branch on the adjacent Wick
+edge for all `x ∈ P.V`, it proves
+`WJ (os45Figure24AdjacentLift hd P.τ x 0) =
+ branchτ (fun k => wickRotatePoint (x (P.τ k)))`.
+This is a mechanical transport theorem after the checked hull carrier; it is
+not the analytic branch-continuation producer and must not be hidden inside an
+integral rewrite.
 
 The local BHW branch theorem used in this carrier is now pinned to the
 Hall-Wightman Lemma-1 proof shape: prove local constancy of
