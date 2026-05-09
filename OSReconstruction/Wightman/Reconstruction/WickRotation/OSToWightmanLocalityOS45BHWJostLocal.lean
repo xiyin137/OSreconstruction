@@ -595,6 +595,40 @@ theorem OS45BHWJostHullData.ordinaryWick_mem
     BHW.mem_os45BHWJostHull_ordinaryWick_of_figure24
       (d := d) (n := n) hd P P.xseed_mem hx
 
+/-- The stored base point belongs to the stored local BHW/Jost hull. -/
+theorem OS45BHWJostHullData.zbase_mem_ΩJ
+    [NeZero d]
+    {hd : 2 ≤ d} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P) :
+    H.zbase ∈ H.ΩJ := by
+  simpa [H.ΩJ_eq] using
+    BHW.mem_os45BHWJostHull_self
+      (d := d) (n := n) P.τ H.zbase H.zbase_mem_ambient
+
+/-- The stored local BHW/Jost hull is nonempty. -/
+theorem OS45BHWJostHullData.ΩJ_nonempty
+    [NeZero d]
+    {hd : 2 ≤ d} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P) :
+    H.ΩJ.Nonempty :=
+  ⟨H.zbase, H.zbase_mem_ΩJ⟩
+
+/-- The stored local BHW/Jost hull is path-connected. -/
+theorem OS45BHWJostHullData.ΩJ_isPathConnected
+    [NeZero d]
+    {hd : 2 ≤ d} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P) :
+    IsPathConnected H.ΩJ := by
+  simpa [H.ΩJ_eq] using
+    BHW.os45BHWJostHull_isPathConnected
+      (d := d) (n := n) P.τ H.zbase H.zbase_mem_ambient
+
 /-- The stored local hull is contained in the concrete local BHW/Jost
 ambient. -/
 theorem OS45BHWJostHullData.ΩJ_subset_ambient

@@ -88,7 +88,10 @@ local Slot 1:
    `OSToWightmanLocalityOS45BHWJostLocal.lean`: `BHW.os45BHWJostAmbient`,
    `BHW.os45BHWJostHull`, `BHW.OS45BHWJostHullData`,
    `BHW.os45_BHWJostHullData_of_figure24`,
-   `BHW.OS45BHWJostHullData.ordinaryWick_mem`, and
+   `BHW.OS45BHWJostHullData.ordinaryWick_mem`,
+   `BHW.OS45BHWJostHullData.zbase_mem_ΩJ`,
+   `BHW.OS45BHWJostHullData.ΩJ_nonempty`,
+   `BHW.OS45BHWJostHullData.ΩJ_isPathConnected`, and
    `BHW.OS45BHWJostHullData.ΩJ_subset_ambient`,
    `BHW.OS45BHWJostHullData.extendedTube_subset_ambient`,
    `BHW.OS45BHWJostHullData.permutedExtendedTubeSector_subset_ambient`,
@@ -10459,6 +10462,58 @@ common-boundary envelope, or any theorem that already assumes locality.
    `BHW.permAct_realEmbed`, and copies the supplied adjacent boundary trace.
    The hard producer still has to construct the two atlases and prove
    `Btau_wick_trace` by OS I §4.5.
+
+   Strict implementation transcript for that hard producer: do not implement
+   the archived generic source-oriented hull theorem below as the active
+   theorem-2 step.  First prove the two concrete OS45 atlas constructors
+   directly on the checked local hull:
+
+   ```lean
+   theorem BHW.os45_BHWJostContinuationAtlas_ordinary_onLocalHull_of_OSI45
+       [NeZero d] (hd : 2 <= d)
+       (OS : OsterwalderSchraderAxioms d)
+       (lgc : OSLinearGrowthCondition d OS)
+       {i : Fin n} {hi : i.val + 1 < n}
+       {P : BHW.OS45Figure24CanonicalSourcePatchData
+         (d := d) hd n i hi}
+       (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P) :
+       BHW.BHWSourcePatchContinuationAtlas hd n P.τ
+         (BHW.ExtendedTube d n) H.ΩJ
+         (BHW.extendF (bvt_F OS lgc n))
+
+   theorem BHW.os45_BHWJostContinuationAtlas_adjacent_onLocalHull_of_OSI45
+       [NeZero d] (hd : 2 <= d)
+       (OS : OsterwalderSchraderAxioms d)
+       (lgc : OSLinearGrowthCondition d OS)
+       {i : Fin n} {hi : i.val + 1 < n}
+       {P : BHW.OS45Figure24CanonicalSourcePatchData
+         (d := d) hd n i hi}
+       (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P) :
+       BHW.BHWSourcePatchContinuationAtlas hd n P.τ
+         (BHW.permutedExtendedTubeSector d n P.τ) H.ΩJ
+         (fun z =>
+           BHW.extendF (bvt_F OS lgc n)
+             (BHW.permAct (d := d) P.τ z))
+   ```
+
+   For each constructor, choose the initial base point from
+   `H.extendedTube_meets_ΩJ` or `H.permutedExtendedTubeSector_meets_ΩJ`.
+   Use `H.ΩJ_isPathConnected` to connect that base to an arbitrary target
+   point of `H.ΩJ`; pull the local OS I §4.5 BHW/Jost transfer-neighborhood
+   cover back along the path; take the checked finite ordered subdivision of
+   `[0,1]`; and fold the one-step transfers into a continuation chain.  The
+   initial chart is the concrete initial branch restricted to a preconnected
+   neighborhood inside `Ω0 ∩ H.ΩJ`, with holomorphy from
+   `BHW.differentiableOn_extendF_bvt_F_extendedTube` on the ordinary side and
+   `BHW.differentiableOn_extendF_bvt_F_permAct_preimageExtendedTube` on the
+   adjacent side.  Terminal overlap equality comes from the OS I §4.5
+   closed-path monodromy theorem for the two selected finite chains through a
+   common point.  This closed-path monodromy is the remaining genuine analytic
+   content; it must not be replaced by global source-variety descent, PET
+   independence, or final locality.  Once the two constructors exist,
+   `BHW.os45_BHWJostContinuationAtlases_onLocalHull_of_OSI45` is just their
+   product plus the separate adjacent ordinary-Wick boundary theorem
+   `BHW.os45_BHWJost_adjacentBranch_ordinaryWickTrace_of_OSI45`.
 
    Archived side note: the older `OS45SourcePatchBHWJostHullData` and
    `OS45SourcePatchBHWJostOrientedContinuationInputs` APIs remain in production

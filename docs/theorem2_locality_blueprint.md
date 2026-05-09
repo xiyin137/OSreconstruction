@@ -48185,6 +48185,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
          `BHW.os45BHWJostAmbient_mem_identity`,
          `BHW.os45BHWJostAmbient_mem_adjacent`,
          `BHW.os45BHWJostAmbient_open`, the hull open/connected/nonempty
+         accessors, the `OS45BHWJostHullData` base-point/path-connectedness
          accessors, and same-sector hull membership for both the ordinary
          extended tube and the selected adjacent permuted sector.  The checked
          `os45BHWJostAmbient_open` is slightly stronger than the pseudocode:
@@ -49562,6 +49563,68 @@ Proof decomposition of this theorem, without hiding the analytic work:
             `H.toPairDataOfBranches`.  The atlas carrier is generic
             branch/gluing data; this reducer does not consume the older
             source-oriented continuation input packets or any descent theorem.
+
+            Strict implementation transcript for the remaining hard producer:
+            the active Lean target is not the generic archived
+            `bhw_sourcePatchHull_has_continuationAtlas` below.  It is the
+            exact OS45 local-hull theorem above, split internally into the two
+            concrete atlas constructors
+
+            ```lean
+            theorem BHW.os45_BHWJostContinuationAtlas_ordinary_onLocalHull_of_OSI45
+                [NeZero d] (hd : 2 <= d)
+                (OS : OsterwalderSchraderAxioms d)
+                (lgc : OSLinearGrowthCondition d OS)
+                {i : Fin n} {hi : i.val + 1 < n}
+                {P : BHW.OS45Figure24CanonicalSourcePatchData
+                  (d := d) hd n i hi}
+                (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P) :
+                BHW.BHWSourcePatchContinuationAtlas hd n P.τ
+                  (BHW.ExtendedTube d n) H.ΩJ
+                  (BHW.extendF (bvt_F OS lgc n))
+
+            theorem BHW.os45_BHWJostContinuationAtlas_adjacent_onLocalHull_of_OSI45
+                [NeZero d] (hd : 2 <= d)
+                (OS : OsterwalderSchraderAxioms d)
+                (lgc : OSLinearGrowthCondition d OS)
+                {i : Fin n} {hi : i.val + 1 < n}
+                {P : BHW.OS45Figure24CanonicalSourcePatchData
+                  (d := d) hd n i hi}
+                (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P) :
+                BHW.BHWSourcePatchContinuationAtlas hd n P.τ
+                  (BHW.permutedExtendedTubeSector d n P.τ) H.ΩJ
+                  (fun z =>
+                    BHW.extendF (bvt_F OS lgc n)
+                      (BHW.permAct (d := d) P.τ z))
+            ```
+
+            For each side, set `Ω0` to the displayed initial sector, choose
+            the base point from `H.extendedTube_meets_ΩJ` or
+            `H.permutedExtendedTubeSector_meets_ΩJ`, and use the checked
+            `H.ΩJ_isPathConnected` to obtain a path from that base point to
+            any target point of `H.ΩJ`.  Pull back the local OS I §4.5
+            BHW/Jost transfer-neighborhood cover along that path, choose the
+            finite ordered subdivision of `[0,1]`, and fold the one-step
+            transfers into a finite continuation chain.  The initial chart is
+            the restriction of the concrete initial branch to a preconnected
+            neighborhood inside `Ω0 ∩ H.ΩJ`, using
+            `BHW.differentiableOn_extendF_bvt_F_extendedTube` on the ordinary
+            side and
+            `BHW.differentiableOn_extendF_bvt_F_permAct_preimageExtendedTube`
+            on the adjacent side.  Terminal overlap equality is proved by the
+            OS I §4.5 closed-path monodromy theorem applied to the two selected
+            finite chains through the same point; this is the non-mechanical
+            BHW/Jost content and cannot be replaced by a source-oriented
+            descent or PET-independence statement.  Once the two atlas
+            constructors exist, `os45_BHWJostContinuationAtlases_onLocalHull_of_OSI45`
+            is only the product of them plus the separate adjacent ordinary
+            Wick boundary theorem
+            `BHW.os45_BHWJost_adjacentBranch_ordinaryWickTrace_of_OSI45`.
+            The current checked support accessors needed by this transcript
+            are `H.zbase_mem_ΩJ`, `H.ΩJ_nonempty`,
+            `H.ΩJ_isPathConnected`, `H.ΩJ_subset_ambient`, the two initial
+            sector subset lemmas, the two initial-sector intersection witnesses,
+            and the four source-patch pointwise membership lemmas.
 
             The archived lower surfaces begin here:
 
