@@ -105,11 +105,13 @@ local Slot 1:
    `BHW.OS45BHWJostHullData.ordinaryBase_mem_extendedTube`,
    `BHW.OS45BHWJostHullData.ordinaryBase_mem_ΩJ`,
    `BHW.OS45BHWJostHullData.ordinaryBase_mem_initial`,
+   `BHW.OS45BHWJostHullData.extendedTube_subset_ΩJ`,
    `BHW.OS45BHWJostHullData.ordinaryBase_joinedIn`,
    `BHW.OS45BHWJostHullData.adjacentBase`,
    `BHW.OS45BHWJostHullData.adjacentBase_mem_permutedExtendedTubeSector`,
    `BHW.OS45BHWJostHullData.adjacentBase_mem_ΩJ`,
    `BHW.OS45BHWJostHullData.adjacentBase_mem_initial`,
+   `BHW.OS45BHWJostHullData.permutedExtendedTubeSector_subset_ΩJ`,
    `BHW.OS45BHWJostHullData.adjacentBase_joinedIn`, and
    `BHW.OS45BHWJostHullData.toPairDataOfBranches`,
    `BHW.OS45BHWJostHullData.toPairDataOfContinuationAtlases`, together with the
@@ -10305,9 +10307,13 @@ common-boundary envelope, or any theorem that already assumes locality.
       `BHW.differentiableOn_extendF_bvt_F_permAct_preimageExtendedTube`
       restricted to `Ωadj`.  The two starting domains lie in the local ambient
       by the checked accessors `H.extendedTube_subset_ambient` and
-      `H.permutedExtendedTubeSector_subset_ambient`; the hull itself lies in
-      the ambient by `H.ΩJ_subset_ambient`.  The two initial domains meet
-      `H.ΩJ` at the checked Figure-2-4 seed by
+      `H.permutedExtendedTubeSector_subset_ambient`; the stronger checked
+      path-component inclusions `H.extendedTube_subset_ΩJ` and
+      `H.permutedExtendedTubeSector_subset_ΩJ` put the full ordinary and
+      adjacent initial sectors inside the selected hull component.  Thus
+      `Ω0 ∩ H.ΩJ = Ω0` for both initial-chart calls by subset extensionality,
+      while `H.ΩJ` itself remains controlled by `H.ΩJ_subset_ambient`.  The two
+      initial domains meet `H.ΩJ` at the checked Figure-2-4 seed by
       `H.extendedTube_meets_ΩJ` and `H.permutedExtendedTubeSector_meets_ΩJ`.
 
    2. Apply the strict local BHW/Jost continuation theorem twice.  The theorem
@@ -10519,9 +10525,14 @@ common-boundary envelope, or any theorem that already assumes locality.
    to an arbitrary target point of `H.ΩJ`; pull the local OS I §4.5 BHW/Jost
    transfer-neighborhood cover back along that path, take the checked finite
    ordered subdivision of `[0,1]`, and fold the one-step transfers into a
-   continuation chain.  The
-   initial chart is the concrete initial branch restricted to a preconnected
-   neighborhood inside `Ω0 ∩ H.ΩJ`, with holomorphy from
+   continuation chain.  Because the checked sector-in-hull lemmas give
+   `Ω0 ⊆ H.ΩJ`, the initial chart carrier is the full initial sector `Ω0`,
+   not a smaller neighborhood.  Its `carrier_sub_U` field is exactly
+   `H.extendedTube_subset_ΩJ` on the ordinary side and
+   `H.permutedExtendedTubeSector_subset_ΩJ` on the adjacent side; its
+   `initial_chart_mem` field is the same subset proof after unpacking
+   `z ∈ Ω0 ∩ H.ΩJ`; and `initial_branch_agree` is reflexive because the
+   branch stored in the initial chart is `B0`.  Holomorphy is supplied by
    `BHW.differentiableOn_extendF_bvt_F_extendedTube` on the ordinary side and
    `BHW.differentiableOn_extendF_bvt_F_permAct_preimageExtendedTube` on the
    adjacent side.  Terminal overlap equality comes from the OS I §4.5

@@ -811,6 +811,40 @@ theorem OS45BHWJostHullData.ordinaryBase_mem_initial
     H.ordinaryBase ∈ BHW.ExtendedTube d n ∩ H.ΩJ :=
   ⟨H.ordinaryBase_mem_extendedTube, H.ordinaryBase_mem_ΩJ⟩
 
+/-- The ordinary extended-tube sector lies in the OS I §4.5 Jost hull component
+once the ordinary base point has been checked to lie in that component. -/
+theorem OS45BHWJostHullData.extendedTube_subset_ΩJ
+    [NeZero d]
+    {hd : 2 ≤ d} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P) :
+    BHW.ExtendedTube d n ⊆ H.ΩJ := by
+  classical
+  letI : LocallyConvexSpace ℝ ℂ := NormedSpace.toLocallyConvexSpace
+  letI : LocallyConvexSpace ℝ (Fin (d + 1) → ℂ) := Pi.locallyConvexSpace
+  letI : LocallyConvexSpace ℝ (Fin n → Fin (d + 1) → ℂ) :=
+    Pi.locallyConvexSpace
+  intro z hz
+  have hOrd_mem : H.ordinaryBase ∈ H.ΩJ := H.ordinaryBase_mem_ΩJ
+  have hOrd_base :
+      JoinedIn (BHW.os45BHWJostAmbient d n P.τ) H.zbase H.ordinaryBase := by
+    simpa [H.ΩJ_eq, BHW.os45BHWJostHull] using hOrd_mem
+  have hExt_path : IsPathConnected (BHW.ExtendedTube d n) :=
+    (IsOpen.isConnected_iff_isPathConnected
+      (U := BHW.ExtendedTube d n) BHW.isOpen_extendedTube).mp
+      (BHW.isConnected_extendedTube (d := d) (n := n))
+  have hOrd_to_z_ext :
+      JoinedIn (BHW.ExtendedTube d n) H.ordinaryBase z :=
+    hExt_path.joinedIn H.ordinaryBase H.ordinaryBase_mem_extendedTube z hz
+  have hOrd_to_z :
+      JoinedIn (BHW.os45BHWJostAmbient d n P.τ) H.ordinaryBase z :=
+    hOrd_to_z_ext.mono H.extendedTube_subset_ambient
+  have hJoined :
+      JoinedIn (BHW.os45BHWJostAmbient d n P.τ) H.zbase z :=
+    hOrd_base.trans hOrd_to_z
+  simpa [H.ΩJ_eq, BHW.os45BHWJostHull] using hJoined
+
 /-- The ordinary chosen base is joined inside the stored hull to any target
 point of that hull. -/
 theorem OS45BHWJostHullData.ordinaryBase_joinedIn
@@ -866,6 +900,45 @@ theorem OS45BHWJostHullData.adjacentBase_mem_initial
     (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P) :
     H.adjacentBase ∈ BHW.permutedExtendedTubeSector d n P.τ ∩ H.ΩJ :=
   ⟨H.adjacentBase_mem_permutedExtendedTubeSector, H.adjacentBase_mem_ΩJ⟩
+
+/-- The adjacent permuted extended-tube sector lies in the OS I §4.5 Jost hull
+component once the adjacent base point has been checked to lie there. -/
+theorem OS45BHWJostHullData.permutedExtendedTubeSector_subset_ΩJ
+    [NeZero d]
+    {hd : 2 ≤ d} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P) :
+    BHW.permutedExtendedTubeSector d n P.τ ⊆ H.ΩJ := by
+  classical
+  letI : LocallyConvexSpace ℝ ℂ := NormedSpace.toLocallyConvexSpace
+  letI : LocallyConvexSpace ℝ (Fin (d + 1) → ℂ) := Pi.locallyConvexSpace
+  letI : LocallyConvexSpace ℝ (Fin n → Fin (d + 1) → ℂ) :=
+    Pi.locallyConvexSpace
+  intro z hz
+  have hAdj_mem : H.adjacentBase ∈ H.ΩJ := H.adjacentBase_mem_ΩJ
+  have hAdj_base :
+      JoinedIn (BHW.os45BHWJostAmbient d n P.τ) H.zbase H.adjacentBase := by
+    simpa [H.ΩJ_eq, BHW.os45BHWJostHull] using hAdj_mem
+  have hAdj_conn : IsConnected (BHW.permutedExtendedTubeSector d n P.τ) := by
+    exact ⟨⟨H.adjacentBase, H.adjacentBase_mem_permutedExtendedTubeSector⟩,
+      BHW.permutedExtendedTubeSector_isPreconnected (d := d) (n := n) P.τ⟩
+  have hAdj_path :
+      IsPathConnected (BHW.permutedExtendedTubeSector d n P.τ) :=
+    (IsOpen.isConnected_iff_isPathConnected
+      (U := BHW.permutedExtendedTubeSector d n P.τ)
+      (BHW.isOpen_permutedExtendedTubeSector (d := d) (n := n) P.τ)).mp
+      hAdj_conn
+  have hAdj_to_z_sector :
+      JoinedIn (BHW.permutedExtendedTubeSector d n P.τ) H.adjacentBase z :=
+    hAdj_path.joinedIn H.adjacentBase H.adjacentBase_mem_permutedExtendedTubeSector z hz
+  have hAdj_to_z :
+      JoinedIn (BHW.os45BHWJostAmbient d n P.τ) H.adjacentBase z :=
+    hAdj_to_z_sector.mono H.permutedExtendedTubeSector_subset_ambient
+  have hJoined :
+      JoinedIn (BHW.os45BHWJostAmbient d n P.τ) H.zbase z :=
+    hAdj_base.trans hAdj_to_z
+  simpa [H.ΩJ_eq, BHW.os45BHWJostHull] using hJoined
 
 /-- The adjacent chosen base is joined inside the stored hull to any target
 point of that hull. -/

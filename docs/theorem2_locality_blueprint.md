@@ -49478,9 +49478,14 @@ Proof decomposition of this theorem, without hiding the analytic work:
             `BHW.differentiableOn_extendF_bvt_F_permAct_preimageExtendedTube`.
             The starting domains are subsets of the local ambient by the
             checked accessors `H.extendedTube_subset_ambient` and
-            `H.permutedExtendedTubeSector_subset_ambient`; `H.ΩJ` itself is
-            controlled by `H.ΩJ_subset_ambient`.  The two initial domains meet
-            `H.ΩJ` through `H.extendedTube_meets_ΩJ` and
+            `H.permutedExtendedTubeSector_subset_ambient`; the stronger checked
+            path-component accessors `H.extendedTube_subset_ΩJ` and
+            `H.permutedExtendedTubeSector_subset_ΩJ` put the full ordinary and
+            selected adjacent sectors inside the chosen hull component.  Hence
+            `Ω0 ∩ H.ΩJ = Ω0` for each initial-chart call by set extensionality,
+            while `H.ΩJ` itself is controlled by `H.ΩJ_subset_ambient`.  The
+            two initial domains meet `H.ΩJ` through
+            `H.extendedTube_meets_ΩJ` and
             `H.permutedExtendedTubeSector_meets_ΩJ`.  Pointwise source-patch
             membership is exposed by `H.ordinaryWick_mem_extendedTube`,
             `H.adjacentWick_mem_permutedExtendedTubeSector`,
@@ -49613,9 +49618,14 @@ Proof decomposition of this theorem, without hiding the analytic work:
             to any target point of `H.ΩJ`.  Pull back the local OS I §4.5
             BHW/Jost transfer-neighborhood cover along the chosen path, choose
             the finite ordered subdivision of `[0,1]`, and fold the one-step
-            transfers into a finite continuation chain.  The initial chart is
-            the restriction of the concrete initial branch to a preconnected
-            neighborhood inside `Ω0 ∩ H.ΩJ`, using
+            transfers into a finite continuation chain.  The initial chart
+            uses the full initial sector `Ω0` as its carrier, not a smaller
+            neighborhood: `carrier_sub_U` is discharged by
+            `H.extendedTube_subset_ΩJ` on the ordinary side and by
+            `H.permutedExtendedTubeSector_subset_ΩJ` on the adjacent side;
+            `initial_chart_mem` is the same subset proof after unpacking
+            `z ∈ Ω0 ∩ H.ΩJ`; and `initial_branch_agree` is reflexive because
+            the stored initial-chart branch is exactly `B0`.  Holomorphy uses
             `BHW.differentiableOn_extendF_bvt_F_extendedTube` on the ordinary
             side and
             `BHW.differentiableOn_extendF_bvt_F_permAct_preimageExtendedTube`
@@ -49630,10 +49640,11 @@ Proof decomposition of this theorem, without hiding the analytic work:
             `BHW.os45_BHWJost_adjacentBranch_ordinaryWickTrace_of_OSI45`.
             The current checked support accessors needed by this transcript
             are `H.zbase_mem_ΩJ`, `H.ΩJ_nonempty`,
-            `H.ΩJ_isPathConnected`, `H.ΩJ_subset_ambient`, the two initial
-            sector subset lemmas, the two named initial bases with their
-            paired membership and path facts, the two initial-sector intersection
-            witnesses, and the four source-patch pointwise membership lemmas.
+            `H.ΩJ_isPathConnected`, `H.ΩJ_subset_ambient`, the two ambient
+            initial-sector subset lemmas, the two hull initial-sector subset
+            lemmas, the two named initial bases with their paired membership
+            and path facts, the two initial-sector intersection witnesses, and
+            the four source-patch pointwise membership lemmas.
 
             The finite-chain/atlas assembly step is Lean-ready as a generic
             reducer.  The OS I §4.5 analytic proof for each side must provide
