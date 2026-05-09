@@ -10561,6 +10561,13 @@ common-boundary envelope, or any theorem that already assumes locality.
    for the ordinary and adjacent starting branches; those are exactly the
    local BHW/Jost analytic obligations.
 
+   The initial chart producer returns the checked generic carrier
+   `BHW.BHWJostInitialChartData hd n P.τ Ω0 H.ΩJ B0 p0`; its fields are
+   exactly `C0`, `hp0C`, `start_patch`, the `hstart_*` proofs,
+   `hstart_sub`, `hstart_agree`, `initial_chart_mem`, and
+   `initial_branch_agree`.  The ordinary and adjacent `initialChart_*`
+   theorem surfaces below therefore return this carrier, not an ad hoc tuple.
+
    The two concrete atlas constructors are therefore implemented by the
    following Lean skeletons once the analytic inputs are proved.  For the
    ordinary side:

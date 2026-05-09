@@ -49652,6 +49652,12 @@ Proof decomposition of this theorem, without hiding the analytic work:
             This reducer performs only compact path subdivision, trace folding,
             certified terminal overlap, and atlas field assembly; it does not
             prove the local BHW/Jost transfer cover or monodromy theorem.
+            The normalized initial chart is not an ad hoc tuple: the checked
+            generic carrier is
+            `BHW.BHWJostInitialChartData hd n P.τ Ω0 H.ΩJ B0 p0`, with fields
+            `C0`, `hp0C`, `start_patch`, the `hstart_*` proofs,
+            `hstart_sub`, `hstart_agree`, `initial_chart_mem`, and
+            `initial_branch_agree`.
 
             Thus the ordinary atlas constructor is a direct reducer call with
             `Ω0 := BHW.ExtendedTube d n`,

@@ -346,6 +346,28 @@ theorem exists_glued_branch
 
 end BHWOrientedContinuationChainAtlasData
 
+/-- Initial chart data normalized against a starting branch `B0` on
+`Ω0 ∩ U`.  This is the local-chart input consumed by the certified
+transfer-cover atlas reducer; it contains no analytic continuation beyond the
+single starting chart and its normalization. -/
+structure BHWJostInitialChartData
+    [NeZero d] (hd : 2 ≤ d)
+    (n : ℕ) (τ : Equiv.Perm (Fin n))
+    (Ω0 U : Set (Fin n → Fin (d + 1) → ℂ))
+    (B0 : (Fin n → Fin (d + 1) → ℂ) → ℂ)
+    (p0 : Fin n → Fin (d + 1) → ℂ) where
+  C0 : BHWJostLocalOrientedContinuationChart hd n τ U
+  hp0C : p0 ∈ C0.carrier
+  start_patch : Set (Fin n → Fin (d + 1) → ℂ)
+  hstart_open : IsOpen start_patch
+  hstart_preconnected : IsPreconnected start_patch
+  hstart_nonempty : start_patch.Nonempty
+  hstart_mem : p0 ∈ start_patch
+  hstart_sub : start_patch ⊆ Ω0 ∩ C0.carrier
+  hstart_agree : ∀ y, y ∈ start_patch → C0.branch y = B0 y
+  initial_chart_mem : ∀ z, z ∈ Ω0 ∩ U → z ∈ C0.carrier
+  initial_branch_agree : ∀ z, z ∈ Ω0 ∩ U → C0.branch z = B0 z
+
 /-- Trace-level data sufficient to assemble a source-patch continuation
 atlas.  Unlike an arbitrary chain-atlas producer, this records the actual
 branch-free transfer trace selected for each terminal point and asks for the
