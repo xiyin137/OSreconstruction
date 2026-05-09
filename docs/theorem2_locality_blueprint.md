@@ -188,7 +188,7 @@ OS-II / OS I §4.5 branch-comparison route, beginning with the local-hull
 adaptive continuation atlas on the canonical Figure-2-4 source patch.  That
 atlas feeds the compact Figure-2-4 branch-difference theorem
 `BHW.os45Figure24_sourcePatch_pairing_eq_swappedSourcePatch_of_OSI45`; the
-compact theorem is Stage B, not the first Lean gate.
+compact theorem is Stage B, not the first proof-doc blocker.
 
 Current BHW interface correction: the **common fixed-`w`
 permuted-forward-tube gallery** is rejected, and the reachable-label `hOrbit`
@@ -204,9 +204,17 @@ Research interaction
 `v1_ChZjT1h1YWRpZUU1LThfdU1QMi1LRGVBEhZjT1h1YWRpZUU1LThfdU1QMi1LRGVB`.
 
 Current critical-path ledger for the `2 <= d` implementation, matching the
-global closure ledger in Section 8:
+global closure ledger in Section 8.  Strict readiness correction
+(2026-05-09): this ledger fixes the route order, but it is not a claim that
+the proof docs are 100% Lean-ready.  Earlier "ready" wording is superseded.
+The present proof-doc blocker is the SCV normal/Riemann packet headed by
+`BHW.sourceOrientedVariety_normal_riemannExtension`; until that packet has a
+Lean-transcribable local-ring/normality/removability transcript or a checked
+production proof, downstream atlas and theorem-2 closure implementation is
+blocked.
 
-1. **Stage A, current Lean gate.**  Prove the local-hull adaptive
+1. **Stage A, current proof-doc blocker.**  First make the normal/Riemann
+   support packet Lean-transcribable/proved, then prove the local-hull adaptive
    continuation atlas on the canonical Figure-2-4 source patch:
    `BHW.os45_BHWJost_initialLocalChart_ordinary_of_OSI45`,
    `BHW.os45_BHWJost_initialLocalChart_adjacent_of_OSI45`,
@@ -73931,18 +73939,22 @@ theorem surfaces for the OS route.
 
 ## 8. Global theorem-2 closure ledger
 
-This document is active-route only.  Its final section is now a global Lean
-closure ledger, not a stage-local readiness note.  The proof docs are
-implementation-ready for theorem 2 only if the production pass follows the
-ordered route below.  A theorem surface not named here is a route change and
-requires a docs update before Lean implementation.
+This document is active-route only.  Its final section is a global Lean
+closure ledger, not a stage-local readiness note.  Strict correction
+(2026-05-09): the ledger fixes the only allowed route, but the proof docs are
+not 100% Lean-ready until every active analytic input in the route has a
+Lean-transcribable proof transcript or a checked production proof.  The first
+unclosed blocker is the normal/Riemann support packet in Section 8.1.  A
+theorem surface not named here is a route change and requires a docs update
+before Lean implementation.
 
-### 8.1. Current implementation gate
+### 8.1. Current proof-doc blocker
 
-The current `2 <= d` gate is the direct OS I sec. 4.5 local-hull adaptive
-continuation atlas on the canonical Figure-2-4 source patch.  It is not the
-later Slot-6/Slot-7 Hall-Wightman/PET source theorem, and it is not a
-source-variety/descent substitute.
+The current `2 <= d` blocker is the SCV support packet needed before the
+direct OS I sec. 4.5 local-hull adaptive continuation atlas on the canonical
+Figure-2-4 source patch.  It is not the later Slot-6/Slot-7
+Hall-Wightman/PET source theorem, and it is not a source-variety/descent
+substitute.
 
 Before the atlas surfaces themselves, the initial-sector quotient-germ packet
 has two source-oriented SCV support surfaces that must be proved in this order:
@@ -74075,28 +74087,31 @@ Use existing files only:
 There is no file named `OSToWightmanLocality.lean`; it must not appear in
 verification checklists.
 
-### 8.7. Readiness audit for theorem-2 Lean closure
+### 8.7. Strict readiness audit for theorem-2 Lean closure
 
-This is the binding proof-doc readiness verdict after the 2026-05-09 global
-audit.  Older "not ready", "source import", or "current gate" language in
-archived sections is subordinate to this table.  It may explain historical
-support routes, but it does not define the active theorem-2 implementation
-gate.
+This is the binding proof-doc readiness correction after the 2026-05-09 global
+audit.  By the user's standard, the theorem-2 proof docs are **not** 100%
+Lean-ready.  Older "ready", "current gate", "source import", or local
+checkpoint language in archived sections is subordinate to this table.  It may
+explain historical support routes, but it does not define an active theorem-2
+implementation gate.
 
 | Stage | Lean-readiness status | Transcript source |
 | --- | --- | --- |
-| Stage A: OS45 local-hull adaptive atlas | Ready to implement first at the support-theorem level: prove `BHW.sourceOrientedVariety_normal_riemannExtension`, then `BHW.sourceOrientedQuotientValue_germHolomorphic_of_OSI45`, then the ordinary/adjacent initial-sector quotient-germ packet.  The initial-chart consumers are checked; the next production theorem is not an atlas wrapper. | Section 5, the normal/Riemann transcript, the quotient-germ bridge, and the field transcripts for the quotient germs, initial charts, one-step transition, chains, same-endpoint comparisons, and adjacent ordinary-Wick trace. |
-| Stage B: exact source-patch compact Wick pairing and Jost anchor | Ready after Stage A returns `BHW.OS45BHWJostHullData.toPairDataOfContinuationAtlases`.  The exact-source-patch consumers are checked; the only analytic producer is the OS I sec. 4.5/BHW-Jost compact theorem. | Sections 4-5 and the compact-source-patch ledger naming `BHW.os45CompactFigure24WickPairingEq_of_pairData_on_figure24SourcePatch` and `BHW.bvt_F_distributionalJostAnchor_of_pairData_on_figure24SourcePatch`. |
-| Stage C: Hall-Wightman source/PET single-valuedness | Ready after Stage B supplies the source/Jost anchor.  The active route proves the source-backed theorem in Lean; no source import, QFT axiom, or hF-perm-only shortcut is active. | Slot-6 source/PET transcript for `BHW.hallWightman_source_permutedBranch_compatibility_of_distributionalAnchor` and the PET assembly/equality corollaries. |
-| Stage D: Jost boundary and canonical shell | Ready after Stage C.  The only theorem-level analytic frontier is the OS I sec. 4.5/Jost boundary theorem with the displayed canonical pairing conclusion. | Slot 10 transcript for `bvt_F_jostBoundary_pairing_of_spacelike_of_two_le` and `bvt_F_swapCanonical_pairing_of_spacelike_of_two_le`. |
-| Stage E: boundary-value transfer to adjacent locality | Ready after Stage D.  This is a checked consumer step, not a new analytic theorem. | Slot 11 and `bv_local_commutativity_transfer_of_swap_pairing`. |
-| Stage F: `d = 1` branch | Ready as a separate branch.  It must not use the `2 <= d` OS45 local-hull atlas. | Section 6, Slots D1-1 through D1-4. |
+| Stage A: OS45 local-hull adaptive atlas | Not 100% proof-ready.  The route order is fixed, but the first gap is `BHW.sourceOrientedVariety_normal_riemannExtension`: the docs must still expand the normal analytic-subvariety predicate, source-oriented variety normality/algebraic normality input, local-ring normality transfer, singular-set codimension/density hypotheses, and finite-dimensional Riemann extension theorem into Lean-transcribable statements, or prove them in production.  Only after that may the quotient-germ bridge and ordinary/adjacent initial-sector packet be implemented. | Section 5, the normal/Riemann transcript, the quotient-germ bridge, and the field transcripts for the quotient germs, initial charts, one-step transition, chains, same-endpoint comparisons, and adjacent ordinary-Wick trace. |
+| Stage B: exact source-patch compact Wick pairing and Jost anchor | Blocked pending Stage A.  The exact-source-patch consumers are checked, but the OS I sec. 4.5/BHW-Jost compact producer is not 100% Lean-ready until Stage A is closed. | Sections 4-5 and the compact-source-patch ledger naming `BHW.os45CompactFigure24WickPairingEq_of_pairData_on_figure24SourcePatch` and `BHW.bvt_F_distributionalJostAnchor_of_pairData_on_figure24SourcePatch`. |
+| Stage C: Hall-Wightman source/PET single-valuedness | Blocked pending Stages A-B.  The active route is source-backed and forbids source imports, QFT axioms, and hF-perm-only shortcuts, but the source/PET proof transcript is not allowed to become an implementation target until the preceding OS45 anchor exists. | Slot-6 source/PET transcript for `BHW.hallWightman_source_permutedBranch_compatibility_of_distributionalAnchor` and the PET assembly/equality corollaries. |
+| Stage D: Jost boundary and canonical shell | Blocked pending Stage C.  The theorem surface is fixed, but it is not a current Lean target. | Slot 10 transcript for `bvt_F_jostBoundary_pairing_of_spacelike_of_two_le` and `bvt_F_swapCanonical_pairing_of_spacelike_of_two_le`. |
+| Stage E: boundary-value transfer to adjacent locality | Blocked pending Stage D.  The consumer transfer is checked infrastructure, but it cannot close theorem 2 before the upstream analytic route is proved. | Slot 11 and `bv_local_commutativity_transfer_of_swap_pairing`. |
+| Stage F: `d = 1` branch | Separate branch, not 100% proof-ready under this ledger unless its Slots D1-1 through D1-4 transcripts are independently checked/proved.  It must not use the `2 <= d` OS45 local-hull atlas. | Section 6, Slots D1-1 through D1-4. |
 
-No unresolved route decision remains in the proof docs.  Production Lean must
-now follow Stage A through Stage F in this order.  It must not introduce a new
+The route decisions are fixed, but unresolved proof-doc gaps do remain.
+Production Lean may attack only named support lemmas whose proof transcripts
+are complete enough to be checked line-by-line.  It must not introduce a new
 axiom, `sorry`, `admit`, QFT-specific source import, source-variety/descent
-wrapper, ambient source-label transport shortcut, or theorem-2 wrapper
-conditional on an unproved producer.
+wrapper, ambient source-label transport shortcut, theorem-2 wrapper
+conditional on an unproved producer, or additional consumer packaging around
+the unproved normal/Riemann packet.
 
 If later work needs a theorem not named in this Section 8 or in the detailed
 transcripts of Sections 4-6, the route has drifted and this blueprint must be

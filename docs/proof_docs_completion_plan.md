@@ -62,21 +62,31 @@ by the safe direction pair-swap → adjacent.  No theorem-2 Lean work may depend
 on the stronger property.
 
 Theorem-2 implementation ledger, global closure lock (2026-05-09): the proof
-documents are not ready merely because one subpacket is precise.  They are
-ready only with the following ordered Lean closure chain, and production Lean
-must not introduce a new theorem surface outside this chain without first
-updating this ledger and the theorem-2 blueprint.
+documents are not ready merely because one subpacket is precise.  They can
+become ready only after the following ordered Lean closure chain is fully
+transcribed/proved, and production Lean must not introduce a new theorem
+surface outside this chain without first updating this ledger and the
+theorem-2 blueprint.
 
-Post-audit readiness verdict (2026-05-09): the active theorem-2 proof docs are
-now considered implementation-ready exactly for the ordered Stage A--F route
-below.  Historical sections that mention older scalar-source gates,
-source-import audits, or local-EOW checkpoints are subordinate support/audit
-material.  They do not authorize an alternate first Lean target and they do
-not authorize any new `axiom`, `sorry`, `admit`, or QFT-specific source import.
+Strict readiness correction (2026-05-09): by the user's required standard, the
+theorem-2 proof docs are **not** 100% Lean-ready.  Earlier wording saying
+"implementation-ready" meant only route-order readiness and is superseded by
+this paragraph.  The ordered Stage A--F route below remains the binding route,
+but production Lean may proceed only on named support lemmas whose proof
+transcripts are fully Lean-transcribable.  The current proof-doc blocker is the
+finite-dimensional normal/Riemann packet headed by
+`BHW.sourceOrientedVariety_normal_riemannExtension`; until that packet is
+expanded into exact local-ring/normality/removability statements or proved in
+production, downstream atlas wrappers and theorem-2 closure steps are blocked.
+Historical sections that mention older scalar-source gates, source-import
+audits, or local-EOW checkpoints are subordinate support/audit material.  They
+do not authorize an alternate first Lean target and they do not authorize any
+new `axiom`, `sorry`, `admit`, or QFT-specific source import.
 
-Stage A, current gate: build the direct OS I sec. 4.5 local-hull adaptive
-continuation atlas on the canonical Figure-2-4 source patch.  The first Lean
-support surfaces are
+Stage A, current proof-doc blocker: build the direct OS I sec. 4.5 local-hull
+adaptive continuation atlas on the canonical Figure-2-4 source patch, but only
+after the SCV support packet has been made Lean-transcribable.  The first
+surfaces that must become fully explicit/proved are
 `BHW.sourceOrientedVariety_normal_riemannExtension`,
 `BHW.sourceOrientedQuotientValue_germHolomorphic_of_OSI45`, and
 `BHW.sourceOrientedQuotientValue_rankDeficient_germHolomorphic_of_OSI45`.
