@@ -595,6 +595,146 @@ theorem OS45BHWJostHullData.ordinaryWick_mem
     BHW.mem_os45BHWJostHull_ordinaryWick_of_figure24
       (d := d) (n := n) hd P P.xseed_mem hx
 
+/-- The stored local hull is contained in the concrete local BHW/Jost
+ambient. -/
+theorem OS45BHWJostHullData.ΩJ_subset_ambient
+    [NeZero d]
+    {hd : 2 ≤ d} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P) :
+    H.ΩJ ⊆ BHW.os45BHWJostAmbient d n P.τ := by
+  intro z hz
+  exact
+    BHW.os45BHWJostHull_subset_ambient
+      (d := d) (n := n) P.τ H.zbase
+      (H.ΩJ_subset_hull hz)
+
+/-- The ordinary extended tube is one initial domain for the local BHW/Jost
+ambient. -/
+theorem OS45BHWJostHullData.extendedTube_subset_ambient
+    [NeZero d]
+    {hd : 2 ≤ d} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (_H : BHW.OS45BHWJostHullData (d := d) hd n i hi P) :
+    BHW.ExtendedTube d n ⊆ BHW.os45BHWJostAmbient d n P.τ := by
+  intro z hz
+  exact BHW.os45BHWJostAmbient_mem_identity
+    (d := d) (n := n) P.τ hz
+
+/-- The selected adjacent permuted extended-tube sector is the other initial
+domain for the local BHW/Jost ambient. -/
+theorem OS45BHWJostHullData.permutedExtendedTubeSector_subset_ambient
+    [NeZero d]
+    {hd : 2 ≤ d} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (_H : BHW.OS45BHWJostHullData (d := d) hd n i hi P) :
+    BHW.permutedExtendedTubeSector d n P.τ ⊆
+      BHW.os45BHWJostAmbient d n P.τ := by
+  intro z hz
+  exact BHW.os45BHWJostAmbient_mem_adjacent
+    (d := d) (n := n) P.τ hz
+
+/-- Ordinary Wick rotations of the checked source patch lie in the ordinary
+extended tube. -/
+theorem OS45BHWJostHullData.ordinaryWick_mem_extendedTube
+    [NeZero d]
+    {hd : 2 ≤ d} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (_H : BHW.OS45BHWJostHullData (d := d) hd n i hi P) :
+    ∀ x, x ∈ P.V →
+      (fun k => wickRotatePoint (x k)) ∈ BHW.ExtendedTube d n := by
+  intro x hx
+  have hft_eq : BHW.ForwardTube d n = _root_.ForwardTube d n := by
+    ext z
+    simp only [BHW.ForwardTube, _root_.ForwardTube, Set.mem_setOf_eq]
+    exact forall_congr' fun k => inOpenForwardCone_iff _
+  have hroot :
+      (fun k => wickRotatePoint (x ((1 : Equiv.Perm (Fin n)) k))) ∈
+        _root_.ForwardTube d n :=
+    wickRotate_mem_forwardTube_of_mem_orderedPositiveTimeSector
+      (d := d) (n := n) (1 : Equiv.Perm (Fin n))
+      (P.V_ordered x hx)
+  have hBHW :
+      (fun k => wickRotatePoint (x ((1 : Equiv.Perm (Fin n)) k))) ∈
+        BHW.ForwardTube d n := by
+    simpa [hft_eq] using hroot
+  exact BHW.forwardTube_subset_extendedTube (by simpa using hBHW)
+
+/-- Adjacent Wick rotations of the checked source patch lie in the selected
+adjacent initial sector. -/
+theorem OS45BHWJostHullData.adjacentWick_mem_permutedExtendedTubeSector
+    [NeZero d]
+    {hd : 2 ≤ d} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (_H : BHW.OS45BHWJostHullData (d := d) hd n i hi P) :
+    ∀ x, x ∈ P.V →
+      (fun k => wickRotatePoint (x (P.τ k))) ∈
+        BHW.permutedExtendedTubeSector d n P.τ := by
+  intro x hx
+  have hsector :
+      (fun k => wickRotatePoint
+        (x ((Equiv.swap i ⟨i.val + 1, hi⟩) k))) ∈
+        BHW.permutedExtendedTubeSector d n
+          (Equiv.swap i ⟨i.val + 1, hi⟩) :=
+    BHW.os45_adjacentWick_mem_selectedAdjacentSector_of_ordered
+      (d := d) (n := n) i hi x (P.V_ordered x hx)
+  simpa [P.τ_eq] using hsector
+
+/-- The real source patch lies in the ordinary extended tube. -/
+theorem OS45BHWJostHullData.realPatch_mem_extendedTube
+    [NeZero d]
+    {hd : 2 ≤ d} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (_H : BHW.OS45BHWJostHullData (d := d) hd n i hi P) :
+    ∀ x, x ∈ P.V → BHW.realEmbed x ∈ BHW.ExtendedTube d n :=
+  P.V_ET
+
+/-- The real source patch also lies in the selected adjacent initial sector
+after applying the stored source permutation. -/
+theorem OS45BHWJostHullData.realPatch_mem_permutedExtendedTubeSector
+    [NeZero d]
+    {hd : 2 ≤ d} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (_H : BHW.OS45BHWJostHullData (d := d) hd n i hi P) :
+    ∀ x, x ∈ P.V →
+      BHW.realEmbed x ∈ BHW.permutedExtendedTubeSector d n P.τ := by
+  intro x hx
+  rw [BHW.permutedExtendedTubeSector]
+  simpa [BHW.permAct_realEmbed] using P.V_swapET x hx
+
+/-- The ordinary initial extended tube meets the stored local hull at the
+checked Figure-2-4 seed. -/
+theorem OS45BHWJostHullData.extendedTube_meets_ΩJ
+    [NeZero d]
+    {hd : 2 ≤ d} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P) :
+    (BHW.ExtendedTube d n ∩ H.ΩJ).Nonempty := by
+  refine ⟨fun k => wickRotatePoint (P.xseed k), ?_, ?_⟩
+  · exact H.ordinaryWick_mem_extendedTube P.xseed P.xseed_mem
+  · exact H.ordinaryWick_mem P.xseed P.xseed_mem
+
+/-- The selected adjacent initial sector meets the stored local hull at the
+checked Figure-2-4 adjacent Wick seed. -/
+theorem OS45BHWJostHullData.permutedExtendedTubeSector_meets_ΩJ
+    [NeZero d]
+    {hd : 2 ≤ d} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P) :
+    (BHW.permutedExtendedTubeSector d n P.τ ∩ H.ΩJ).Nonempty := by
+  refine ⟨fun k => wickRotatePoint (P.xseed (P.τ k)), ?_, ?_⟩
+  · exact H.adjacentWick_mem_permutedExtendedTubeSector P.xseed P.xseed_mem
+  · exact H.adjacentWick_mem P.xseed P.xseed_mem
+
 /-- Assemble the existing source-patch BHW/Jost pair carrier from the strict
 local BHW/Jost hull and two supplied branches on that hull.  The analytic
 work is exactly the production of the branches and the four trace equations;

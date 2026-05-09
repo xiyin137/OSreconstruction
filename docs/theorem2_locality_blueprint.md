@@ -49349,9 +49349,14 @@ Proof decomposition of this theorem, without hiding the analytic work:
                 (OS : OsterwalderSchraderAxioms d)
                 (lgc : OSLinearGrowthCondition d OS)
                 (n : Nat) (i : Fin n) (hi : i.val + 1 < n) :
+                let P :=
+                  BHW.os45_adjacent_identity_canonicalSourcePatch
+                    (d := d) hd i hi
+                let H :=
+                  BHW.os45_BHWJostHullData_of_figure24
+                    (d := d) hd i hi P
                 BHW.OS45SourcePatchBHWJostPairData
-                  hd OS lgc n i hi
-                    (BHW.os45Figure24SourcePatch (d := d) (n := n) i hi)
+                  hd OS lgc n i hi P.V
             ```
 
             `Bord` is the ordinary BHW/Jost branch and `Btau` is the adjacent
@@ -49378,9 +49383,144 @@ Proof decomposition of this theorem, without hiding the analytic work:
             proof-doc frontier; it is not final locality and not the oriented
             common-boundary envelope.
 
+            Strict-route reset, 2026-05-09: the checked implementation surface
+            for this frontier is now the local proper-complex carrier
+            `BHW.OS45BHWJostHullData` from
+            `OSToWightmanLocalityOS45BHWJostLocal.lean`, together with
+            `BHW.OS45BHWJostHullData.toPairDataOfBranches`.  The older
+            `OS45SourcePatchBHWJostHullData`/oriented-continuation transcript
+            below is retained as archived audit material only; it is not an
+            active theorem-2 implementation target and cannot be used to bypass
+            the direct OS I §4.5 branch-pair theorem.
+
             The implementation-level split of this frontier is now fixed.
             The public pair-data theorem may not be the first Lean target; it
-            must assemble the following lower surfaces:
+            must assemble the following current lower surface:
+
+            ```lean
+            theorem BHW.os45_BHWJostBranchPair_onLocalHull_of_OSI45
+                [NeZero d] (hd : 2 <= d)
+                (OS : OsterwalderSchraderAxioms d)
+                (lgc : OSLinearGrowthCondition d OS)
+                {i : Fin n} {hi : i.val + 1 < n}
+                {P : BHW.OS45Figure24CanonicalSourcePatchData
+                  (d := d) hd n i hi}
+                (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P) :
+                ∃ Bord Btau : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ,
+                  DifferentiableOn ℂ Bord H.ΩJ ∧
+                  DifferentiableOn ℂ Btau H.ΩJ ∧
+                  (∀ x, x ∈ P.V ->
+                    Bord (fun k => wickRotatePoint (x k)) =
+                      bvt_F OS lgc n (fun k => wickRotatePoint (x k))) ∧
+                  (∀ x, x ∈ P.V ->
+                    Btau (fun k => wickRotatePoint (x k)) =
+                      bvt_F OS lgc n
+                        (fun k => wickRotatePoint (x (P.τ k)))) ∧
+                  (∀ x, x ∈ P.V ->
+                    Bord (BHW.realEmbed x) =
+                      BHW.extendF (bvt_F OS lgc n) (BHW.realEmbed x)) ∧
+                  (∀ x, x ∈ P.V ->
+                    Btau (BHW.realEmbed x) =
+                      BHW.extendF (bvt_F OS lgc n)
+                        (BHW.realEmbed (fun k => x (P.τ k))))
+            ```
+
+            Its proof is the local BHW/Jost continuation theorem itself.  Once
+            it exists, the public pair-data theorem is mechanical: build `P`,
+            build `H`, destruct the branch-pair theorem, and call
+            `H.toPairDataOfBranches`.  The direct branch-pair transcript is:
+
+            The branch-pair theorem is Lean-ready only through the following
+            direct OS I §4.5 transcript.  Define
+            `Ωord := BHW.ExtendedTube d n`,
+            `Ωadj := BHW.permutedExtendedTubeSector d n P.τ`,
+            `B0ord := BHW.extendF (bvt_F OS lgc n)`, and
+            `B0adj z := BHW.extendF (bvt_F OS lgc n)
+              (BHW.permAct (d := d) P.τ z)`.  Use the checked openness and
+            holomorphy inputs
+            `BHW.isOpen_extendedTube`,
+            `BHW.isOpen_permutedExtendedTubeSector`,
+            `BHW.differentiableOn_extendF_bvt_F_extendedTube`, and
+            `BHW.differentiableOn_extendF_bvt_F_permAct_preimageExtendedTube`.
+            The starting domains are subsets of the local ambient by the
+            checked accessors `H.extendedTube_subset_ambient` and
+            `H.permutedExtendedTubeSector_subset_ambient`; `H.ΩJ` itself is
+            controlled by `H.ΩJ_subset_ambient`.  The two initial domains meet
+            `H.ΩJ` through `H.extendedTube_meets_ΩJ` and
+            `H.permutedExtendedTubeSector_meets_ΩJ`.  Pointwise source-patch
+            membership is exposed by `H.ordinaryWick_mem_extendedTube`,
+            `H.adjacentWick_mem_permutedExtendedTubeSector`,
+            `H.realPatch_mem_extendedTube`, and
+            `H.realPatch_mem_permutedExtendedTubeSector`.
+
+            The direct continuation theorem to prove is local and
+            proper-complex:
+
+            ```lean
+            theorem BHW.bhwJost_continue_initialBranch_on_localHull
+                [NeZero d] (hd : 2 <= d)
+                (n : Nat) (τ : Equiv.Perm (Fin n))
+                (Ω0 U : Set (Fin n -> Fin (d + 1) -> ℂ))
+                (B0 : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+                (hΩ0_open : IsOpen Ω0)
+                (hU_open : IsOpen U)
+                (hU_connected : IsConnected U)
+                (hΩ0_sub_ambient :
+                  Ω0 ⊆ BHW.os45BHWJostAmbient d n τ)
+                (hU_sub_ambient :
+                  U ⊆ BHW.os45BHWJostAmbient d n τ)
+                (hΩ0_meets_U : (Ω0 ∩ U).Nonempty)
+                (hB0_holo : DifferentiableOn ℂ B0 Ω0)
+                (hB0_realLorentz :
+                  ∀ R : RestrictedLorentzGroup d, ∀ z, z ∈ Ω0 ->
+                    BHW.complexLorentzAction
+                        (ComplexLorentzGroup.ofReal R) z ∈ Ω0 ->
+                      B0 (BHW.complexLorentzAction
+                            (ComplexLorentzGroup.ofReal R) z) = B0 z) :
+                ∃ B : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ,
+                  DifferentiableOn ℂ B U ∧
+                  (∀ z, z ∈ Ω0 -> z ∈ U -> B z = B0 z)
+            ```
+
+            Internally, the proof constructs
+            local proper-complex Lorentz neighborhoods, proves overlap equality
+            by the near-identity Hall-Wightman identity theorem from real
+            Lorentz covariance, and folds a finite path-cover of `H.ΩJ`.  The
+            ordinary Wick trace comes from agreement on `Ωord ∩ H.ΩJ` plus
+            `BHW.extendF_bvt_F_wickRotate_eq_of_ordered`; the ordinary real
+            trace comes from agreement and `P.V_ET`.  The adjacent real trace
+            comes from agreement on `Ωadj ∩ H.ΩJ`, `BHW.permAct_realEmbed`, and
+            the checked swapped real extended-tube field.  The adjacent ordinary
+            Wick trace is the separate concrete OS I §4.5 boundary theorem:
+
+            ```lean
+            theorem BHW.os45_BHWJost_adjacentBranch_ordinaryWickTrace_of_OSI45
+                [NeZero d] (hd : 2 <= d)
+                (OS : OsterwalderSchraderAxioms d)
+                (lgc : OSLinearGrowthCondition d OS)
+                {i : Fin n} {hi : i.val + 1 < n}
+                {P : BHW.OS45Figure24CanonicalSourcePatchData
+                  (d := d) hd n i hi}
+                (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P)
+                (Btau : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+                (Btau_holo : DifferentiableOn ℂ Btau H.ΩJ)
+                (hBtau_agree_adj :
+                  ∀ z, z ∈ BHW.permutedExtendedTubeSector d n P.τ ->
+                    z ∈ H.ΩJ ->
+                      Btau z =
+                        BHW.extendF (bvt_F OS lgc n)
+                          (BHW.permAct (d := d) P.τ z)) :
+                ∀ x, x ∈ P.V ->
+                  Btau (fun k => wickRotatePoint (x k)) =
+                    bvt_F OS lgc n (fun k => wickRotatePoint (x (P.τ k)))
+            ```
+
+            This trace theorem is the OS I Figure-2-4 boundary calculation for
+            the continued adjacent branch.  It is not derived from the false
+            claim that source-label permutation preserves the ordinary Wick edge
+            inside `ExtendedTube`.
+
+            The archived lower surfaces begin here:
 
             ```lean
             def BHW.os45SourcePatchBHWJostAmbient
@@ -52702,7 +52842,16 @@ Proof decomposition of this theorem, without hiding the analytic work:
             `Ω0 ∩ U`/`B0` chart included in the atlas so base agreement is a
             special case of the same trace single-valuedness comparison.
 
-            The two branch producers are:
+            Archived fork warning: the two branch producers below are the older
+            `OS45SourcePatchBHWJostHullData` surface.  They are not the active
+            strict-route implementation target after the local-hull reset.  The
+            active theorem is
+            `BHW.os45_BHWJostBranchPair_onLocalHull_of_OSI45` over
+            `H : BHW.OS45BHWJostHullData`; it returns the two branches and all
+            four trace equations in one packet and then feeds
+            `H.toPairDataOfBranches`.
+
+            The archived two-branch producer fork is:
 
             ```lean
             theorem BHW.os45_sourcePatch_ordinaryBranch_onHull_figure24SourcePatch
