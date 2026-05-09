@@ -10225,12 +10225,51 @@ common-boundary envelope, or any theorem that already assumes locality.
                (BHW.realEmbed (fun k => x (P.τ k))))
    ```
 
-   The proof of the public pair-data theorem is then pure assembly:
-   `rcases BHW.os45_BHWJostBranchPair_onLocalHull_of_OSI45 ... H` and pass the
-   six returned fields to `H.toPairDataOfBranches`.  This assembly is
-   Lean-ready; the branch-pair theorem itself is the OS I §4.5/BHW analytic
-   continuation theorem and is not to be replaced by an axiom, a source-oriented
-   descent result, PET independence, or final locality.
+   The hard atlas producer immediately below it is:
+
+   ```lean
+   theorem BHW.os45_BHWJostContinuationAtlases_onLocalHull_of_OSI45
+       [NeZero d] (hd : 2 <= d)
+       (OS : OsterwalderSchraderAxioms d)
+       (lgc : OSLinearGrowthCondition d OS)
+       {i : Fin n} {hi : i.val + 1 < n}
+       {P : BHW.OS45Figure24CanonicalSourcePatchData
+         (d := d) hd n i hi}
+       (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P) :
+       ∃ Aord :
+           BHW.BHWSourcePatchContinuationAtlas hd n P.τ
+             (BHW.ExtendedTube d n) H.ΩJ
+             (BHW.extendF (bvt_F OS lgc n)),
+       ∃ Aadj :
+           BHW.BHWSourcePatchContinuationAtlas hd n P.τ
+             (BHW.permutedExtendedTubeSector d n P.τ) H.ΩJ
+             (fun z =>
+               BHW.extendF (bvt_F OS lgc n)
+                 (BHW.permAct (d := d) P.τ z)),
+         ∀ x, x ∈ P.V ->
+           Aadj.glued (fun k => wickRotatePoint (x k)) =
+             bvt_F OS lgc n (fun k => wickRotatePoint (x (P.τ k)))
+   ```
+
+   This is the single remaining OS I §4.5/BHW analytic producer for the pair
+   carrier.  It packages two direct continuation atlases and the adjacent
+   Figure-2-4 boundary trace.  It is not to be replaced by an axiom, a
+   source-oriented descent result, PET independence, or final locality.
+
+   The branch-pair theorem is then pure assembly:
+
+   ```lean
+   rcases BHW.os45_BHWJostContinuationAtlases_onLocalHull_of_OSI45
+       (d := d) hd OS lgc H with ⟨Aord, Aadj, hBtau_wick⟩
+   let Pdata := H.toPairDataOfContinuationAtlases hd OS lgc Aord Aadj hBtau_wick
+   exact ⟨Pdata.Bord, Pdata.Btau, Pdata.Bord_holo, Pdata.Btau_holo,
+     Pdata.Bord_wick_trace, Pdata.Btau_wick_trace,
+     Pdata.Bord_real_trace, Pdata.Btau_real_trace⟩
+   ```
+
+   The public pair-data theorem then builds `P`, builds `H`, calls
+   `os45_BHWJostBranchPair_onLocalHull_of_OSI45`, and passes the returned fields
+   to `H.toPairDataOfBranches`.
 
    Lean-facing proof transcript for
    `BHW.os45_BHWJostBranchPair_onLocalHull_of_OSI45`:

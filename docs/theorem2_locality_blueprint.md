@@ -49430,6 +49430,39 @@ Proof decomposition of this theorem, without hiding the analytic work:
             build `H`, destruct the branch-pair theorem, and call
             `H.toPairDataOfBranches`.  The direct branch-pair transcript is:
 
+            ```lean
+            theorem BHW.os45_BHWJostContinuationAtlases_onLocalHull_of_OSI45
+                [NeZero d] (hd : 2 <= d)
+                (OS : OsterwalderSchraderAxioms d)
+                (lgc : OSLinearGrowthCondition d OS)
+                {i : Fin n} {hi : i.val + 1 < n}
+                {P : BHW.OS45Figure24CanonicalSourcePatchData
+                  (d := d) hd n i hi}
+                (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P) :
+                ∃ Aord :
+                    BHW.BHWSourcePatchContinuationAtlas hd n P.τ
+                      (BHW.ExtendedTube d n) H.ΩJ
+                      (BHW.extendF (bvt_F OS lgc n)),
+                ∃ Aadj :
+                    BHW.BHWSourcePatchContinuationAtlas hd n P.τ
+                      (BHW.permutedExtendedTubeSector d n P.τ) H.ΩJ
+                      (fun z =>
+                        BHW.extendF (bvt_F OS lgc n)
+                          (BHW.permAct (d := d) P.τ z)),
+                  ∀ x, x ∈ P.V ->
+                    Aadj.glued (fun k => wickRotatePoint (x k)) =
+                      bvt_F OS lgc n
+                        (fun k => wickRotatePoint (x (P.τ k)))
+            ```
+
+            This is the single hard OS I §4.5/BHW producer at the local branch
+            frontier.  The checked reducer
+            `H.toPairDataOfContinuationAtlases` consumes its output.  Therefore
+            `BHW.os45_BHWJostBranchPair_onLocalHull_of_OSI45` is assembly:
+            destruct the two atlases and trace from this theorem, call
+            `H.toPairDataOfContinuationAtlases`, and expose the eight pair-data
+            fields in existential form.
+
             The branch-pair theorem is Lean-ready only through the following
             direct OS I §4.5 transcript.  Define
             `Ωord := BHW.ExtendedTube d n`,
