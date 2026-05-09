@@ -48506,57 +48506,89 @@ Proof decomposition of this theorem, without hiding the analytic work:
            existing domain fields, and `hφ_supp hx : x ∈ hChart.V0` is
            already used inside `DΩ.lift_mem_of_support`.
 
-         * `os45_BHWJostBranch_onLocalHull_of_OSI45`.
-           This is the formal Bargmann-Hall-Wightman continuation theorem on
-           the local hull.  The inputs are `Dinit.branchτ_holo`,
-           `Dlor.branchτ_lorentzInvariant`, `hΩτ : Dinit.Ωτ ⊆ ΩJ`,
-           `hΩ_open`, `hΩ_conn`, and `hΩ_hull`.  The proof applies the
-           local BHW theorem: analytic continuation of a proper-complex
-           Lorentz invariant branch from one tube to the connected hull is
-           single-valued; the produced branch agrees with the initial branch
-           on all of `Dinit.Ωτ`.  In Lean this should be a genuine local BHW
-           theorem, for example:
+         * `OS45BHWJostHullData.toPairDataOfBranches`.
+           This checked strict-route constructor replaces
+           the older `Dinit/DΩ/hChart` pseudocode at this point of the route.
+           The checked carrier is the production object
+           `P : BHW.OS45Figure24CanonicalSourcePatchData (d := d) hd n i hi`
+           together with
+           `H : BHW.OS45BHWJostHullData (d := d) hd n i hi P`; the complex
+           domain is exactly `H.ΩJ`, the local proper-complex BHW/Jost hull.
+
+           The only additional data are the two OS I §4.5/BHW/Jost branches
+           already normalized on this hull:
 
            ```lean
-           BHW.bargmannHallWightman_continue_branch_on_localHull
-             (Ω0 := Dinit.Ωτ) (ΩJ := ΩJ) (B0 := Dinit.branchτ)
-             Dinit.Ωτ_open hΩ_open hΩ_conn hΩτ hΩ_hull
-             Dinit.branchτ_holo Dlor.branchτ_lorentzInvariant
+           (Bord Btau : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+           (Bord_holo : DifferentiableOn ℂ Bord H.ΩJ)
+           (Btau_holo : DifferentiableOn ℂ Btau H.ΩJ)
+           (Bord_wick_trace :
+             ∀ x, x ∈ P.V ->
+               Bord (fun k => wickRotatePoint (x k)) =
+                 bvt_F OS lgc n (fun k => wickRotatePoint (x k)))
+           (Btau_wick_trace :
+             ∀ x, x ∈ P.V ->
+               Btau (fun k => wickRotatePoint (x k)) =
+                 bvt_F OS lgc n (fun k => wickRotatePoint (x (P.τ k))))
+           (Bord_real_trace :
+             ∀ x, x ∈ P.V ->
+               Bord (BHW.realEmbed x) =
+                 BHW.extendF (bvt_F OS lgc n) (BHW.realEmbed x))
+           (Btau_real_trace :
+             ∀ x, x ∈ P.V ->
+               Btau (BHW.realEmbed x) =
+                 BHW.extendF (bvt_F OS lgc n)
+                   (BHW.realEmbed (fun k => x (P.τ k))))
            ```
 
-           This theorem is allowed to use the Hall-Wightman/Bargmann proof
-           internally.  It is not allowed to call a theorem whose conclusion
-           is global PET branch independence or final locality.
-           Its proof transcript is:
+           The constructor fills the existing checked
+           `BHW.OS45SourcePatchBHWJostPairData` surface by:
 
-           1. For a fixed `z ∈ Dinit.Ωτ`, study
-              `A ↦ Dinit.branchτ (BHW.complexLorentzAction A z)` on the open
-              subset of the proper complex Lorentz group where the argument
-              stays in `Dinit.Ωτ`.  In local complex coordinates on the group,
-              this is holomorphic.  On the real restricted Lorentz subgroup it
-              is constant by `Dlor.branchτ_lorentzInvariant`; the totally-real
-              identity theorem on the group chart makes it constant on the
-              local complex chart.
-           2. Cover a proper-complex Lorentz path by finitely many such charts.
-              This is Hall-Wightman Lemma 1 in local Lean form: the branch is
-              invariant under every proper complex Lorentz transformation for
-              which both endpoints stay in the current tube chart.
-           3. Prove single-valuedness for two representations of the same hull
-              point by the Hall-Wightman curve construction: if
-              `A • u = B • v` with `u,v ∈ Dinit.Ωτ`, then the scalar-product
-              data agree and the two tube points are connected by the finite
-              chain of complex-Lorentz charts in the selected component, so
-              the two analytic continuations give the same value.
-           4. Define `WJ z` by choosing any such representation/chain from
-              `Dinit.Ωτ` to `z`; step 3 proves this choice-independent.
-              Holomorphy of `WJ` on `ΩJ` is local, because near every hull
-              point the chosen final complex-Lorentz chart identifies `WJ`
-              with `Dinit.branchτ` precomposed with a complex-linear
-              coordinate map.
-           5. `WJ_agrees_Ωτ` is obtained by choosing the trivial chain.  The
-              global-looking Lorentz invariance field follows by appending one
-              more proper-complex Lorentz chart to the representing chain and
-              using the same single-valuedness argument.
+           ```lean
+           τ := P.τ
+           τ_eq := P.τ_eq
+           U := H.ΩJ
+           V_open := P.V_open
+           V_nonempty := P.V_nonempty
+           U_open := H.ΩJ_open
+           U_connected := H.ΩJ_connected
+           wick_mem := H.ordinaryWick_mem
+           real_mem := H.realPatch_mem
+           Bord := Bord
+           Btau := Btau
+           Bord_holo := Bord_holo
+           Btau_holo := Btau_holo
+           -- trace fields are copied from the displayed hypotheses
+           ```
+
+           The only new geometric support needed for this constructor is
+           `BHW.OS45BHWJostHullData.ordinaryWick_mem`.  Its proof is pure
+           Figure-2-4 hull geometry:
+
+           ```lean
+           have hreal_to_wick :
+             JoinedIn (BHW.os45BHWJostAmbient d n P.τ)
+               (BHW.realEmbed x) (fun k => wickRotatePoint (x k)) :=
+             -- both endpoints are in `ExtendedTube`; use path-connectedness
+             -- of `ExtendedTube` and the ordinary-sector field `P.V_ordered`.
+
+           exact
+             (BHW.os45Figure24_joined_adjacentWick_to_realPatch
+               (d := d) (n := n) hd P P.xseed P.xseed_mem).trans
+             ((BHW.os45Figure24_joined_realPatch_to_realPatch
+               (d := d) (n := n) hd P P.xseed_mem hx).trans
+               hreal_to_wick)
+           ```
+
+           This constructor does **not** prove the BHW/Jost branches; it makes
+           the exact remaining OS I §4.5 branch theorem Lean-facing.  The hard
+           producer is now the direct proper-complex theorem that supplies
+           `Bord`, `Btau`, their holomorphy on `H.ΩJ`, and the four displayed
+           trace equations.  That producer may use the paper's BHW/Jost
+           continuation proof internally, but it may not call global PET
+           independence, final locality, the source-oriented descent chain, or
+           any theorem whose proof already consumes the compact Figure-2-4
+           branch equality.
 
          * `os45_BHWJostRealBoundaryEq_of_OSI45`.
            This theorem is not a one-line appeal to the later generic

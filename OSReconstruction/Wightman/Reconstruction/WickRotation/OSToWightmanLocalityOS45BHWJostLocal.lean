@@ -377,6 +377,47 @@ private theorem os45Figure24_joined_realPatch_to_realPatch
     exact BHW.os45BHWJostAmbient_mem_identity
       (d := d) (n := n) P.τ hw)
 
+/-- A real point of the checked Figure-2-4 source patch is joined to its
+ordinary Wick edge inside the local BHW/Jost ambient. -/
+theorem os45Figure24_joined_realPatch_to_ordinaryWick
+    [NeZero d]
+    (hd : 2 ≤ d) {i : Fin n} {hi : i.val + 1 < n}
+    (P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi)
+    {x : NPointDomain d n} (hx : x ∈ P.V) :
+    JoinedIn (BHW.os45BHWJostAmbient d n P.τ)
+      (BHW.realEmbed x) (fun k => wickRotatePoint (x k)) := by
+  letI : LocallyConvexSpace ℝ ℂ := NormedSpace.toLocallyConvexSpace
+  letI : LocallyConvexSpace ℝ (Fin (d + 1) → ℂ) := Pi.locallyConvexSpace
+  letI : LocallyConvexSpace ℝ (Fin n → Fin (d + 1) → ℂ) :=
+    Pi.locallyConvexSpace
+  have hwick_ET :
+      (fun k => wickRotatePoint (x k)) ∈ BHW.ExtendedTube d n := by
+    have hroot :
+        (fun k => wickRotatePoint (x ((1 : Equiv.Perm (Fin n)) k))) ∈
+          _root_.ForwardTube d n :=
+      wickRotate_mem_forwardTube_of_mem_orderedPositiveTimeSector
+        (d := d) (n := n) (1 : Equiv.Perm (Fin n))
+        (P.V_ordered x hx)
+    have hBHW :
+        (fun k => wickRotatePoint (x ((1 : Equiv.Perm (Fin n)) k))) ∈
+          BHW.ForwardTube d n := by
+      simpa [BHW_forwardTube_eq (d := d) (n := n)] using hroot
+    exact BHW.forwardTube_subset_extendedTube (by simpa using hBHW)
+  have hpath : IsPathConnected (BHW.ExtendedTube d n) :=
+    (IsOpen.isConnected_iff_isPathConnected
+      (U := BHW.ExtendedTube d n) BHW.isOpen_extendedTube).mp
+      (BHW.isConnected_extendedTube (d := d) (n := n))
+  have hjoined :
+      JoinedIn (BHW.ExtendedTube d n)
+        (BHW.realEmbed x) (fun k => wickRotatePoint (x k)) :=
+    hpath.joinedIn (BHW.realEmbed x) (P.V_ET x hx)
+      (fun k => wickRotatePoint (x k)) hwick_ET
+  exact hjoined.mono (by
+    intro w hw
+    exact BHW.os45BHWJostAmbient_mem_identity
+      (d := d) (n := n) P.τ hw)
+
 /-- Every real point of the checked Figure-2-4 source patch lies in the local
 BHW/Jost hull based at any selected adjacent Wick point of the same patch. -/
 theorem mem_os45BHWJostHull_realPatch_of_figure24
@@ -415,6 +456,27 @@ theorem mem_os45BHWJostHull_adjLift0_of_figure24
         (d := d) (n := n) hd P hxbase hx).trans
         (BHW.os45Figure24_joined_adjLift0_to_realPatch
           (d := d) (n := n) hd P x hx).symm)
+
+/-- Every ordinary Wick point of the checked Figure-2-4 source patch lies in
+the local BHW/Jost hull based at any selected adjacent Wick point of the same
+source patch. -/
+theorem mem_os45BHWJostHull_ordinaryWick_of_figure24
+    [NeZero d]
+    (hd : 2 ≤ d) {i : Fin n} {hi : i.val + 1 < n}
+    (P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi)
+    {xbase x : NPointDomain d n}
+    (hxbase : xbase ∈ P.V) (hx : x ∈ P.V) :
+    (fun k => wickRotatePoint (x k)) ∈
+      BHW.os45BHWJostHull d n P.τ
+        (fun k => wickRotatePoint (xbase (P.τ k))) := by
+  exact
+    (BHW.os45Figure24_joined_adjacentWick_to_realPatch
+      (d := d) (n := n) hd P xbase hxbase).trans
+      ((BHW.os45Figure24_joined_realPatch_to_realPatch
+        (d := d) (n := n) hd P hxbase hx).trans
+        (BHW.os45Figure24_joined_realPatch_to_ordinaryWick
+          (d := d) (n := n) hd P hx))
 
 /-- Every selected adjacent Wick point of the checked Figure-2-4 source patch
 lies in the local BHW/Jost hull based at any selected adjacent Wick point of
@@ -517,6 +579,74 @@ def os45_BHWJostHullData_of_figure24
     simpa [zbase] using
       BHW.mem_os45BHWJostHull_adjLift0_of_figure24
         (d := d) (n := n) hd P P.xseed_mem hx
+
+/-- The ordinary Wick edge of the checked source patch lies in the stored
+local BHW/Jost hull. -/
+theorem OS45BHWJostHullData.ordinaryWick_mem
+    [NeZero d]
+    {hd : 2 ≤ d} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P) :
+    ∀ x, x ∈ P.V →
+      (fun k => wickRotatePoint (x k)) ∈ H.ΩJ := by
+  intro x hx
+  simpa [H.ΩJ_eq, H.zbase_eq] using
+    BHW.mem_os45BHWJostHull_ordinaryWick_of_figure24
+      (d := d) (n := n) hd P P.xseed_mem hx
+
+/-- Assemble the existing source-patch BHW/Jost pair carrier from the strict
+local BHW/Jost hull and two supplied branches on that hull.  The analytic
+work is exactly the production of the branches and the four trace equations;
+this constructor is only carrier bookkeeping. -/
+noncomputable def OS45BHWJostHullData.toPairDataOfBranches
+    [NeZero d]
+    (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P)
+    (Bord Btau : (Fin n → Fin (d + 1) → ℂ) → ℂ)
+    (Bord_holo : DifferentiableOn ℂ Bord H.ΩJ)
+    (Btau_holo : DifferentiableOn ℂ Btau H.ΩJ)
+    (Bord_wick_trace :
+      ∀ x, x ∈ P.V →
+        Bord (fun k => wickRotatePoint (x k)) =
+          bvt_F OS lgc n (fun k => wickRotatePoint (x k)))
+    (Btau_wick_trace :
+      ∀ x, x ∈ P.V →
+        Btau (fun k => wickRotatePoint (x k)) =
+          bvt_F OS lgc n (fun k => wickRotatePoint (x (P.τ k))))
+    (Bord_real_trace :
+      ∀ x, x ∈ P.V →
+        Bord (BHW.realEmbed x) =
+          BHW.extendF (bvt_F OS lgc n) (BHW.realEmbed x))
+    (Btau_real_trace :
+      ∀ x, x ∈ P.V →
+        Btau (BHW.realEmbed x) =
+          BHW.extendF (bvt_F OS lgc n)
+            (BHW.realEmbed (fun k => x (P.τ k)))) :
+    BHW.OS45SourcePatchBHWJostPairData
+      (d := d) hd OS lgc n i hi P.V where
+  τ := P.τ
+  τ_eq := P.τ_eq
+  U := H.ΩJ
+  V_open := P.V_open
+  V_nonempty := P.V_nonempty
+  U_open := H.ΩJ_open
+  U_connected := H.ΩJ_connected
+  wick_mem := H.ordinaryWick_mem
+  real_mem := H.realPatch_mem
+  Bord := Bord
+  Btau := Btau
+  Bord_holo := Bord_holo
+  Btau_holo := Btau_holo
+  Bord_wick_trace := Bord_wick_trace
+  Btau_wick_trace := Btau_wick_trace
+  Bord_real_trace := Bord_real_trace
+  Btau_real_trace := Btau_real_trace
 
 /-- Lorentz transport from the checked Figure-2-4 lift at `0` back to the
 selected adjacent Wick edge, for any branch invariant on the checked local
