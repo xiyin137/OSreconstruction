@@ -26,6 +26,26 @@ def IsRelOpenIn
     (V U : Set E) : Prop :=
   ∃ U0 : Set E, IsOpen U0 ∧ U = U0 ∩ V
 
+/-- Localize a closure statement to an open neighborhood.
+
+If `x` lies in an open set `Ω` and in the closure of `A`, then every
+neighborhood of `x` meets `Ω ∩ A`.  This is the topological helper used to
+turn global max-rank density into density inside a relatively open chart. -/
+theorem closure_inter_open_of_mem_open
+    {E : Type*}
+    [TopologicalSpace E]
+    {Ω A : Set E} {x : E}
+    (hΩ_open : IsOpen Ω)
+    (hxΩ : x ∈ Ω)
+    (hx_closure : x ∈ closure A) :
+    x ∈ closure (Ω ∩ A) := by
+  rw [mem_closure_iff]
+  intro U hU_open hxU
+  rw [mem_closure_iff] at hx_closure
+  rcases hx_closure (U ∩ Ω) (hU_open.inter hΩ_open) ⟨hxU, hxΩ⟩ with
+    ⟨y, hyUΩ, hyA⟩
+  exact ⟨y, ⟨hyUΩ.1, hyUΩ.2, hyA⟩⟩
+
 /-- A finite-equation analytic subvariety of an ambient carrier `V`.
 
 This is the elementary finite-dimensional form used by the current BHW route:

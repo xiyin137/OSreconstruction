@@ -4085,7 +4085,10 @@ implementation contract is:
    closure statement to every relatively open patch by
    `closure_inter_open_of_mem_open`.  This is the theorem
    `BHW.sourceComplexGramVariety_relOpen_subset_closure_inter_maxRank`; it is
-   not an automatic consequence of analyticity of the exceptional locus.  Only
+   not an automatic consequence of analyticity of the exceptional locus.  The
+   topology helper `BHW.closure_inter_open_of_mem_open` is now checked in
+   `SourceOrientedAnalyticSubvariety.lean`, so the relative-open localization
+   part of this density row is no longer prose-only.  Only
    then may the OS-free finite-dimensional-polymorphic normal-space Riemann theorem
    `BHW.normalAnalyticSubvariety_weaklyHolomorphic_localExtension` be applied
    to the branch-defined scalar value `phi`, returning local ambient charts

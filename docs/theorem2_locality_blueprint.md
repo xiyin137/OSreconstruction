@@ -27443,8 +27443,9 @@ Proof decomposition of this theorem, without hiding the analytic work:
          ```
 
          The last helper
-         `BHW.closure_inter_open_of_mem_open` is the standard topological
-         lemma: if `x ∈ Ω` and `x ∈ closure A`, with `Ω` open, then
+         `BHW.closure_inter_open_of_mem_open` is checked in
+         `SourceOrientedAnalyticSubvariety.lean`: if `x ∈ Ω` and
+         `x ∈ closure A`, with `Ω` open, then
          `x ∈ closure (Ω ∩ A)`.  Here `A` is the maximal-rank subset of the
          source Gram variety, so rewriting `U = Ω ∩ sourceComplexGramVariety`
          gives the required relative-open statement.  The proof does not use
