@@ -121,6 +121,13 @@ germs, normal varieties, invariant-ring normality, source-variety descent, PET
 single-valuedness, final locality, or an ambient source-label transport
 shortcut.
 
+The theorem-2 blueprint must keep the local OS I §4.5 input expanded: if a
+predicate such as `BHW.OSI45InitialBranch` is introduced, it must expose
+holomorphy, proper-complex Lorentz covariance, the local Jost-edge chart, the
+flat-coordinate EOW call to `BHW.edge_of_the_wedge_flat_instantiation`, and
+the finite closed-loop monodromy telescope.  It may not be a structure
+hypothesis on theorem 2 and may not be implemented as an axiom.
+
 The previously checked helpers
 `ordinaryInitialChartDataOfLocalChart`,
 `adjacentInitialChartDataOfLocalChart`, and their `...OfExists` variants are

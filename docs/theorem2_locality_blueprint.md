@@ -49807,6 +49807,52 @@ Proof decomposition of this theorem, without hiding the analytic work:
             preconnected overlaps; it is OS I §4.5 monodromy, not PET
             single-valuedness.
 
+            The local EOW conclusion must be implemented against the checked
+            SCV theorem, not as prose.  After flattening
+            `Fin n -> Fin (d + 1) -> ℂ` to `Fin (n * (d + 1)) -> ℂ`, the Lean
+            call is to
+            `BHW.edge_of_the_wedge_flat_instantiation` with:
+
+            * `f_plus` equal to the current local branch transported into the
+              positive BHW tube side by the selected proper-complex Lorentz
+              chart;
+            * `f_minus` equal to the candidate next branch on the opposite
+              side of the same real Jost edge;
+            * `E` the flattened open Euclidean Jost-edge patch;
+            * `bv` the OS Schwinger boundary trace on that edge;
+            * `hf_plus_bv` from the already constructed boundary value of the
+              current branch and the OS-II boundary-value theorem for `bvt_F`;
+            * `hf_minus_bv` from the adjacent/permuted OS-II boundary-value
+              theorem after the literal source relabelling;
+            * `hbv_cont` from continuity of the Schwinger distribution on the
+              finite-dimensional test patch already used in OS I §4.5.
+
+            The returned `(Ueow, Feow)` is then pulled back through the same
+            finite linear chart.  Shrink `Ueow` so that it lies in `H.ΩJ` and
+            in the selected proper-complex ambient chart.  The next atlas
+            chart is this shrink with branch `Feow` pulled back.  The positive
+            and negative agreement fields from
+            `edge_of_the_wedge_flat_instantiation` give the overlap identity
+            with the previous branch and the normalization against the next
+            side.  The uniqueness clause of the EOW theorem is the only
+            identity-principle input used locally; global PET
+            single-valuedness is not invoked.
+
+            The closed-loop monodromy proof is similarly finite.  Represent a
+            loop as a finite list of local EOW charts
+            `C_j : BHWSourcePatchContinuationAtlas`-style terminal charts,
+            with nonempty open preconnected overlaps
+            `O_j ⊆ C_j.carrier ∩ C_{j+1}.carrier`.  For each `j`, the EOW
+            uniqueness clause gives `Set.EqOn C_j.branch C_{j+1}.branch O_j`.
+            Shrink the stored terminal carriers at the beginning of the chain
+            so all overlaps used in the loop are connected; then telescope the
+            equalities around the loop.  The last equality identifies the final
+            germ with the initial germ on the initial-sector overlap, and the
+            ordinary identity theorem propagates it across the stored terminal
+            overlap.  In Lean this should be a finite `List`/`Fin` induction on
+            the loop length, with no source-invariant quotient and no normality
+            theorem.
+
             Proof transcript for
             `BHW.bhw_sourcePatchHull_has_continuationAtlas`: define a
             reachable local branch at `p ∈ U` to be a finite OS I §4.5
