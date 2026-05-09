@@ -93,6 +93,16 @@ consumers are
 `BHW.os45_BHWJostContinuationAtlases_onLocalHull_of_OSI45`, and
 `BHW.OS45BHWJostHullData.toPairDataOfContinuationAtlases`.
 
+The first Lean implementation substep is mechanical and does not assert any
+new analytic existence theorem: add the `OS45BHWJostHullData` helpers
+`ordinaryInitialChartDataOfLocalChart`,
+`adjacentInitialChartDataOfLocalChart`, and their `...OfExists` variants.
+They consume an already supplied local chart with the carrier/branch
+equalities of `os45_BHWJost_initialLocalChart_*_of_OSI45` and package it with
+`BHWJostInitialChartData.ofFullCarrier`.  They must not call the archived
+source-oriented scalar representative constructors and must not create a
+conditional theorem-2 wrapper.
+
 Stage B: turn the atlas into the exact-source-patch compact Wick pairing and
 the selected source/Jost anchor.  The boundary theorem is
 `BHW.os45Figure24_sourcePatch_pairing_eq_swappedSourcePatch_of_OSI45`.  It is

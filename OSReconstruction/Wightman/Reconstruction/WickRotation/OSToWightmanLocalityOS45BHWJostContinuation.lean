@@ -1,4 +1,5 @@
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanLocalityOS45BHWJost
+import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanLocalityOS45BHWJostLocal
 import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SourceOrientedContinuationProducers
 import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SourceOrientedScalarRepresentative
 
@@ -18,6 +19,121 @@ open Complex Topology LorentzLieGroup
 namespace BHW
 
 variable {d n : ℕ} [NeZero d]
+
+namespace OS45BHWJostHullData
+
+variable {hd : 2 ≤ d}
+variable {OS : OsterwalderSchraderAxioms d}
+variable {lgc : OSLinearGrowthCondition d OS}
+variable {i : Fin n} {hi : i.val + 1 < n}
+variable {P : BHW.OS45Figure24CanonicalSourcePatchData
+  (d := d) hd n i hi}
+
+/-- Package a supplied ordinary initial local BHW/Jost chart as the normalized
+initial chart data consumed by the Stage-A continuation atlas.
+
+This is the mechanical consumer of the local chart.  It does not assert that
+the OS I §4.5/BHW-Jost chart exists. -/
+noncomputable def ordinaryInitialChartDataOfLocalChart
+    (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P)
+    (C0 : BHWJostLocalOrientedContinuationChart hd n P.τ H.ΩJ)
+    (hcarrier : C0.carrier = BHW.ExtendedTube d n)
+    (hbranch :
+      C0.branch = BHW.extendF (bvt_F OS lgc n)) :
+    BHWJostInitialChartData hd n P.τ
+      (BHW.ExtendedTube d n) H.ΩJ
+      (BHW.extendF (bvt_F OS lgc n)) H.ordinaryBase :=
+  BHWJostInitialChartData.ofFullCarrier
+    (hd := hd) (τ := P.τ)
+    (Ω0 := BHW.ExtendedTube d n) (U := H.ΩJ)
+    (B0 := BHW.extendF (bvt_F OS lgc n))
+    (p0 := H.ordinaryBase)
+    C0 hcarrier (by
+      intro z _hz
+      simp [hbranch])
+    H.ordinaryBase_mem_extendedTube
+    BHW.isOpen_extendedTube
+    (BHW.isConnected_extendedTube (d := d) (n := n)).2
+
+/-- Existential form of
+`OS45BHWJostHullData.ordinaryInitialChartDataOfLocalChart`, matching the
+planned output shape of `os45_BHWJost_initialLocalChart_ordinary_of_OSI45`. -/
+noncomputable def ordinaryInitialChartDataOfLocalChartExists
+    (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P)
+    (hlocal :
+      ∃ C0 : BHWJostLocalOrientedContinuationChart hd n P.τ H.ΩJ,
+        C0.carrier = BHW.ExtendedTube d n ∧
+          C0.branch = BHW.extendF (bvt_F OS lgc n)) :
+    BHWJostInitialChartData hd n P.τ
+      (BHW.ExtendedTube d n) H.ΩJ
+      (BHW.extendF (bvt_F OS lgc n)) H.ordinaryBase := by
+  classical
+  let C0 := Classical.choose hlocal
+  have hspec := Classical.choose_spec hlocal
+  exact
+    H.ordinaryInitialChartDataOfLocalChart
+      (OS := OS) (lgc := lgc) C0 hspec.1 hspec.2
+
+/-- Package a supplied adjacent initial local BHW/Jost chart as the normalized
+initial chart data consumed by the Stage-A continuation atlas.
+
+This is the mechanical consumer of the local chart.  It does not assert that
+the OS I §4.5/BHW-Jost chart exists. -/
+noncomputable def adjacentInitialChartDataOfLocalChart
+    (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P)
+    (C0 : BHWJostLocalOrientedContinuationChart hd n P.τ H.ΩJ)
+    (hcarrier :
+      C0.carrier = BHW.permutedExtendedTubeSector d n P.τ)
+    (hbranch :
+      C0.branch =
+        fun z =>
+          BHW.extendF (bvt_F OS lgc n)
+            (BHW.permAct (d := d) P.τ z)) :
+    BHWJostInitialChartData hd n P.τ
+      (BHW.permutedExtendedTubeSector d n P.τ) H.ΩJ
+      (fun z =>
+        BHW.extendF (bvt_F OS lgc n)
+          (BHW.permAct (d := d) P.τ z)) H.adjacentBase :=
+  BHWJostInitialChartData.ofFullCarrier
+    (hd := hd) (τ := P.τ)
+    (Ω0 := BHW.permutedExtendedTubeSector d n P.τ) (U := H.ΩJ)
+    (B0 := fun z =>
+      BHW.extendF (bvt_F OS lgc n)
+        (BHW.permAct (d := d) P.τ z))
+    (p0 := H.adjacentBase)
+    C0 hcarrier (by
+      intro z _hz
+      simp [hbranch])
+    H.adjacentBase_mem_permutedExtendedTubeSector
+    (BHW.isOpen_permutedExtendedTubeSector (d := d) (n := n) P.τ)
+    (BHW.permutedExtendedTubeSector_isPreconnected
+      (d := d) (n := n) P.τ)
+
+/-- Existential form of
+`OS45BHWJostHullData.adjacentInitialChartDataOfLocalChart`, matching the
+planned output shape of `os45_BHWJost_initialLocalChart_adjacent_of_OSI45`. -/
+noncomputable def adjacentInitialChartDataOfLocalChartExists
+    (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P)
+    (hlocal :
+      ∃ C0 : BHWJostLocalOrientedContinuationChart hd n P.τ H.ΩJ,
+        C0.carrier = BHW.permutedExtendedTubeSector d n P.τ ∧
+          C0.branch =
+            fun z =>
+              BHW.extendF (bvt_F OS lgc n)
+                (BHW.permAct (d := d) P.τ z)) :
+    BHWJostInitialChartData hd n P.τ
+      (BHW.permutedExtendedTubeSector d n P.τ) H.ΩJ
+      (fun z =>
+        BHW.extendF (bvt_F OS lgc n)
+          (BHW.permAct (d := d) P.τ z)) H.adjacentBase := by
+  classical
+  let C0 := Classical.choose hlocal
+  have hspec := Classical.choose_spec hlocal
+  exact
+    H.adjacentInitialChartDataOfLocalChart
+      (OS := OS) (lgc := lgc) C0 hspec.1 hspec.2
+
+end OS45BHWJostHullData
 
 /-- Wick rotation of an ordered Euclidean source point lands in the BHW
 forward tube, in the namespace convention used by `extendF`. -/

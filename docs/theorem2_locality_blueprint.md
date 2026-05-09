@@ -49738,6 +49738,20 @@ Proof decomposition of this theorem, without hiding the analytic work:
             filled from `sourceOrientedScalarRepresentativeData_bvt_F`,
             normal/Riemann descent, PET independence, or final locality.
 
+            Lean implementation correction, 2026-05-09: the local chart
+            theorem is the first genuine analytic target.  Before proving it,
+            the production code may add only mechanical consumers with explicit
+            local-chart input.  The checked helper names should be
+            `BHW.OS45BHWJostHullData.ordinaryInitialChartDataOfLocalChart`,
+            `BHW.OS45BHWJostHullData.adjacentInitialChartDataOfLocalChart`,
+            and their `...OfExists` variants.  These helpers consume a concrete
+            `BHWJostLocalOrientedContinuationChart` plus the carrier/branch
+            equalities shown in the two `initialLocalChart_*` theorem
+            statements, then call `BHW.BHWJostInitialChartData.ofFullCarrier`.
+            They are not theorem-2 wrappers and must not assert existence of
+            the local chart.  The hard proof remains exactly the two
+            `initialLocalChart_*` theorems above.
+
             Once either local-chart theorem is available, the
             `BHWJostInitialChartData` wrapper is already mechanical via the
             checked generic constructor
