@@ -49808,35 +49808,59 @@ Proof decomposition of this theorem, without hiding the analytic work:
             single-valuedness.
 
             The local EOW conclusion must be implemented against the checked
-            SCV theorem, not as prose.  After flattening
-            `Fin n -> Fin (d + 1) -> ℂ` to `Fin (n * (d + 1)) -> ℂ`, the Lean
-            call is to
-            `BHW.edge_of_the_wedge_flat_instantiation` with:
+            SCV theorem, not as prose.  The local OS I chart is usually a
+            shrink of the two wedge sides, so the Lean call should be to
+            `SCV.local_continuous_edge_of_the_wedge_envelope`, after
+            flattening `Fin n -> Fin (d + 1) -> ℂ` to
+            `Fin (n * (d + 1)) -> ℂ`.  The arguments are exactly:
 
-            * `f_plus` equal to the current local branch transported into the
+            ```lean
+            SCV.local_continuous_edge_of_the_wedge_envelope
+              (hm := by positivity)
+              Ωplus Ωminus E C
+              hΩplus_open hΩminus_open hE_open hC_open hC_conv hC_ne
+              hlocal_wedge
+              Fplus Fminus hFplus_diff hFminus_diff
+              bv hbv_cont hFplus_bv hFminus_bv x0 hx0
+            ```
+
+            with:
+
+            * `Ωplus` and `Ωminus` the flattened local positive and negative
+              wedge-side neighborhoods inside the chosen proper-complex chart;
+            * `C` the flattened forward cone used by that chart, with
+              `hC_open`, `hC_conv`, and `hC_ne` coming from the checked
+              forward-cone geometry;
+            * `hlocal_wedge` the compact-wedge containment shrink supplied by
+              the local chart, proved by the checked tube-side membership
+              inequalities and compactness of the selected Figure-2-4 window;
+            * `Fplus` equal to the current local branch transported into the
               positive BHW tube side by the selected proper-complex Lorentz
               chart;
-            * `f_minus` equal to the candidate next branch on the opposite
+            * `Fminus` equal to the candidate next branch on the opposite
               side of the same real Jost edge;
             * `E` the flattened open Euclidean Jost-edge patch;
             * `bv` the OS Schwinger boundary trace on that edge;
-            * `hf_plus_bv` from the already constructed boundary value of the
+            * `hFplus_bv` from the already constructed boundary value of the
               current branch and the OS-II boundary-value theorem for `bvt_F`;
-            * `hf_minus_bv` from the adjacent/permuted OS-II boundary-value
+            * `hFminus_bv` from the adjacent/permuted OS-II boundary-value
               theorem after the literal source relabelling;
             * `hbv_cont` from continuity of the Schwinger distribution on the
               finite-dimensional test patch already used in OS I §4.5.
 
-            The returned `(Ueow, Feow)` is then pulled back through the same
-            finite linear chart.  Shrink `Ueow` so that it lies in `H.ΩJ` and
-            in the selected proper-complex ambient chart.  The next atlas
-            chart is this shrink with branch `Feow` pulled back.  The positive
-            and negative agreement fields from
-            `edge_of_the_wedge_flat_instantiation` give the overlap identity
-            with the previous branch and the normalization against the next
-            side.  The uniqueness clause of the EOW theorem is the only
-            identity-principle input used locally; global PET
-            single-valuedness is not invoked.
+            The returned envelope data are then pulled back through the same
+            finite linear chart.  Shrink the resulting open neighborhood so
+            that it lies in `H.ΩJ` and in the selected proper-complex ambient
+            chart.  The next atlas chart is this shrink with the returned
+            holomorphic function pulled back.  The positive and negative
+            agreement fields from the local EOW theorem give the overlap
+            identity with the previous branch and the normalization against the
+            next side.  Its uniqueness/identity-principle conclusion is the
+            only identity-principle input used locally; global PET
+            single-valuedness is not invoked.  The stronger
+            `BHW.edge_of_the_wedge_flat_instantiation` may be used only in a
+            special chart where the two side domains are literally full flat
+            tube domains, and the blueprint must say so before Lean uses it.
 
             The closed-loop monodromy proof is similarly finite.  Represent a
             loop as a finite list of local EOW charts

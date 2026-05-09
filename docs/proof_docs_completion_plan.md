@@ -124,9 +124,12 @@ shortcut.
 The theorem-2 blueprint must keep the local OS I §4.5 input expanded: if a
 predicate such as `BHW.OSI45InitialBranch` is introduced, it must expose
 holomorphy, proper-complex Lorentz covariance, the local Jost-edge chart, the
-flat-coordinate EOW call to `BHW.edge_of_the_wedge_flat_instantiation`, and
-the finite closed-loop monodromy telescope.  It may not be a structure
-hypothesis on theorem 2 and may not be implemented as an axiom.
+flattened local EOW call to
+`SCV.local_continuous_edge_of_the_wedge_envelope`, and the finite closed-loop
+monodromy telescope.  The stronger
+`BHW.edge_of_the_wedge_flat_instantiation` may be used only when the chosen
+chart has full flat-tube side domains.  No such predicate may be a structure
+hypothesis on theorem 2 or be implemented as an axiom.
 
 The previously checked helpers
 `ordinaryInitialChartDataOfLocalChart`,
