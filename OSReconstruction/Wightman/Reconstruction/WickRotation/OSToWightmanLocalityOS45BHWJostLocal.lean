@@ -845,6 +845,22 @@ theorem OS45BHWJostHullData.extendedTube_subset_ΩJ
     hOrd_base.trans hOrd_to_z
   simpa [H.ΩJ_eq, BHW.os45BHWJostHull] using hJoined
 
+/-- The ordinary initial sector has unchanged intersection with the selected
+local hull component. -/
+theorem OS45BHWJostHullData.extendedTube_inter_ΩJ_eq
+    [NeZero d]
+    {hd : 2 ≤ d} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P) :
+    BHW.ExtendedTube d n ∩ H.ΩJ = BHW.ExtendedTube d n := by
+  ext z
+  constructor
+  · intro hz
+    exact hz.1
+  · intro hz
+    exact ⟨hz, H.extendedTube_subset_ΩJ hz⟩
+
 /-- The ordinary chosen base is joined inside the stored hull to any target
 point of that hull. -/
 theorem OS45BHWJostHullData.ordinaryBase_joinedIn
@@ -939,6 +955,23 @@ theorem OS45BHWJostHullData.permutedExtendedTubeSector_subset_ΩJ
       JoinedIn (BHW.os45BHWJostAmbient d n P.τ) H.zbase z :=
     hAdj_base.trans hAdj_to_z
   simpa [H.ΩJ_eq, BHW.os45BHWJostHull] using hJoined
+
+/-- The selected adjacent initial sector has unchanged intersection with the
+selected local hull component. -/
+theorem OS45BHWJostHullData.permutedExtendedTubeSector_inter_ΩJ_eq
+    [NeZero d]
+    {hd : 2 ≤ d} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P) :
+    BHW.permutedExtendedTubeSector d n P.τ ∩ H.ΩJ =
+      BHW.permutedExtendedTubeSector d n P.τ := by
+  ext z
+  constructor
+  · intro hz
+    exact hz.1
+  · intro hz
+    exact ⟨hz, H.permutedExtendedTubeSector_subset_ΩJ hz⟩
 
 /-- The adjacent chosen base is joined inside the stored hull to any target
 point of that hull. -/

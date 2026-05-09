@@ -106,12 +106,14 @@ local Slot 1:
    `BHW.OS45BHWJostHullData.ordinaryBase_mem_ΩJ`,
    `BHW.OS45BHWJostHullData.ordinaryBase_mem_initial`,
    `BHW.OS45BHWJostHullData.extendedTube_subset_ΩJ`,
+   `BHW.OS45BHWJostHullData.extendedTube_inter_ΩJ_eq`,
    `BHW.OS45BHWJostHullData.ordinaryBase_joinedIn`,
    `BHW.OS45BHWJostHullData.adjacentBase`,
    `BHW.OS45BHWJostHullData.adjacentBase_mem_permutedExtendedTubeSector`,
    `BHW.OS45BHWJostHullData.adjacentBase_mem_ΩJ`,
    `BHW.OS45BHWJostHullData.adjacentBase_mem_initial`,
    `BHW.OS45BHWJostHullData.permutedExtendedTubeSector_subset_ΩJ`,
+   `BHW.OS45BHWJostHullData.permutedExtendedTubeSector_inter_ΩJ_eq`,
    `BHW.OS45BHWJostHullData.adjacentBase_joinedIn`, and
    `BHW.OS45BHWJostHullData.toPairDataOfBranches`,
    `BHW.OS45BHWJostHullData.toPairDataOfContinuationAtlases`, together with the
@@ -10311,7 +10313,10 @@ common-boundary envelope, or any theorem that already assumes locality.
       path-component inclusions `H.extendedTube_subset_ΩJ` and
       `H.permutedExtendedTubeSector_subset_ΩJ` put the full ordinary and
       adjacent initial sectors inside the selected hull component.  Thus
-      `Ω0 ∩ H.ΩJ = Ω0` for both initial-chart calls by subset extensionality,
+      `Ω0 ∩ H.ΩJ = Ω0` is now checked as
+      `H.extendedTube_inter_ΩJ_eq` and
+      `H.permutedExtendedTubeSector_inter_ΩJ_eq` for the two initial-chart
+      calls,
       while `H.ΩJ` itself remains controlled by `H.ΩJ_subset_ambient`.  The two
       initial domains meet `H.ΩJ` at the checked Figure-2-4 seed by
       `H.extendedTube_meets_ΩJ` and `H.permutedExtendedTubeSector_meets_ΩJ`.

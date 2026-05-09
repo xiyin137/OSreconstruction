@@ -49482,7 +49482,10 @@ Proof decomposition of this theorem, without hiding the analytic work:
             path-component accessors `H.extendedTube_subset_ΩJ` and
             `H.permutedExtendedTubeSector_subset_ΩJ` put the full ordinary and
             selected adjacent sectors inside the chosen hull component.  Hence
-            `Ω0 ∩ H.ΩJ = Ω0` for each initial-chart call by set extensionality,
+            `Ω0 ∩ H.ΩJ = Ω0` is checked as
+            `H.extendedTube_inter_ΩJ_eq` and
+            `H.permutedExtendedTubeSector_inter_ΩJ_eq` for the two
+            initial-chart calls,
             while `H.ΩJ` itself is controlled by `H.ΩJ_subset_ambient`.  The
             two initial domains meet `H.ΩJ` through
             `H.extendedTube_meets_ΩJ` and
@@ -49642,9 +49645,10 @@ Proof decomposition of this theorem, without hiding the analytic work:
             are `H.zbase_mem_ΩJ`, `H.ΩJ_nonempty`,
             `H.ΩJ_isPathConnected`, `H.ΩJ_subset_ambient`, the two ambient
             initial-sector subset lemmas, the two hull initial-sector subset
-            lemmas, the two named initial bases with their paired membership
-            and path facts, the two initial-sector intersection witnesses, and
-            the four source-patch pointwise membership lemmas.
+            lemmas, the two checked initial-sector intersection equalities, the
+            two named initial bases with their paired membership and path facts,
+            the two initial-sector intersection witnesses, and the four
+            source-patch pointwise membership lemmas.
 
             The finite-chain/atlas assembly step is Lean-ready as a generic
             reducer.  The OS I §4.5 analytic proof for each side must provide
