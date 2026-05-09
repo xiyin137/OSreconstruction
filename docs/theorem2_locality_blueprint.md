@@ -49604,7 +49604,9 @@ Proof decomposition of this theorem, without hiding the analytic work:
             membership facts `H.ordinaryBase_mem_extendedTube`,
             `H.ordinaryBase_mem_ΩJ`,
             `H.adjacentBase_mem_permutedExtendedTubeSector`, and
-            `H.adjacentBase_mem_ΩJ` give the
+            `H.adjacentBase_mem_ΩJ` give the component fields; the paired
+            facts `H.ordinaryBase_mem_initial` and
+            `H.adjacentBase_mem_initial` give the exact
             `base_mem : p0 ∈ Ω0 ∩ H.ΩJ` input for the continuation-chain
             fold.  The checked `H.ordinaryBase_joinedIn` and
             `H.adjacentBase_joinedIn` facts give the path from that base point
@@ -49630,7 +49632,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
             are `H.zbase_mem_ΩJ`, `H.ΩJ_nonempty`,
             `H.ΩJ_isPathConnected`, `H.ΩJ_subset_ambient`, the two initial
             sector subset lemmas, the two named initial bases with their
-            membership/path facts, the two initial-sector intersection
+            paired membership and path facts, the two initial-sector intersection
             witnesses, and the four source-patch pointwise membership lemmas.
 
             The archived lower surfaces begin here:

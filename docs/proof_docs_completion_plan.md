@@ -104,10 +104,12 @@ local Slot 1:
    `BHW.OS45BHWJostHullData.ordinaryBase`,
    `BHW.OS45BHWJostHullData.ordinaryBase_mem_extendedTube`,
    `BHW.OS45BHWJostHullData.ordinaryBase_mem_ΩJ`,
+   `BHW.OS45BHWJostHullData.ordinaryBase_mem_initial`,
    `BHW.OS45BHWJostHullData.ordinaryBase_joinedIn`,
    `BHW.OS45BHWJostHullData.adjacentBase`,
    `BHW.OS45BHWJostHullData.adjacentBase_mem_permutedExtendedTubeSector`,
-   `BHW.OS45BHWJostHullData.adjacentBase_mem_ΩJ`, and
+   `BHW.OS45BHWJostHullData.adjacentBase_mem_ΩJ`,
+   `BHW.OS45BHWJostHullData.adjacentBase_mem_initial`,
    `BHW.OS45BHWJostHullData.adjacentBase_joinedIn`, and
    `BHW.OS45BHWJostHullData.toPairDataOfBranches`,
    `BHW.OS45BHWJostHullData.toPairDataOfContinuationAtlases`, together with the
@@ -10509,8 +10511,10 @@ common-boundary envelope, or any theorem that already assumes locality.
    selected adjacent sector.  The checked membership facts
    `H.ordinaryBase_mem_extendedTube`, `H.ordinaryBase_mem_ΩJ`,
    `H.adjacentBase_mem_permutedExtendedTubeSector`, and
-   `H.adjacentBase_mem_ΩJ` supply the `base_mem : p0 ∈ Ω0 ∩ H.ΩJ`
-   field for the continuation-chain fold.  The checked path facts
+   `H.adjacentBase_mem_ΩJ` give the component fields; the paired facts
+   `H.ordinaryBase_mem_initial` and `H.adjacentBase_mem_initial` supply the
+   exact `base_mem : p0 ∈ Ω0 ∩ H.ΩJ` field for the continuation-chain fold.
+   The checked path facts
    `H.ordinaryBase_joinedIn` and `H.adjacentBase_joinedIn` connect those bases
    to an arbitrary target point of `H.ΩJ`; pull the local OS I §4.5 BHW/Jost
    transfer-neighborhood cover back along that path, take the checked finite

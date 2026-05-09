@@ -800,6 +800,17 @@ theorem OS45BHWJostHullData.ordinaryBase_mem_ΩJ
     H.ordinaryBase ∈ H.ΩJ :=
   (Classical.choose_spec H.extendedTube_meets_ΩJ).2
 
+/-- The ordinary chosen base has the exact initial-domain membership needed
+by continuation chains. -/
+theorem OS45BHWJostHullData.ordinaryBase_mem_initial
+    [NeZero d]
+    {hd : 2 ≤ d} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P) :
+    H.ordinaryBase ∈ BHW.ExtendedTube d n ∩ H.ΩJ :=
+  ⟨H.ordinaryBase_mem_extendedTube, H.ordinaryBase_mem_ΩJ⟩
+
 /-- The ordinary chosen base is joined inside the stored hull to any target
 point of that hull. -/
 theorem OS45BHWJostHullData.ordinaryBase_joinedIn
@@ -844,6 +855,17 @@ theorem OS45BHWJostHullData.adjacentBase_mem_ΩJ
     (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P) :
     H.adjacentBase ∈ H.ΩJ :=
   (Classical.choose_spec H.permutedExtendedTubeSector_meets_ΩJ).2
+
+/-- The adjacent chosen base has the exact initial-domain membership needed
+by continuation chains. -/
+theorem OS45BHWJostHullData.adjacentBase_mem_initial
+    [NeZero d]
+    {hd : 2 ≤ d} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P) :
+    H.adjacentBase ∈ BHW.permutedExtendedTubeSector d n P.τ ∩ H.ΩJ :=
+  ⟨H.adjacentBase_mem_permutedExtendedTubeSector, H.adjacentBase_mem_ΩJ⟩
 
 /-- The adjacent chosen base is joined inside the stored hull to any target
 point of that hull. -/
