@@ -854,6 +854,66 @@ theorem bhw_jost_orientedGluedBranch_of_pathConnected_certifiedTransferCover
     hstart_preconnected hstart_nonempty hstart_mem hstart_sub hstart_agree
     initial_chart_mem initial_branch_agree
 
+/-- A path-connected branch-free transfer cover whose center-forgotten
+controls are uniqueness-certified, plus certified terminal-point trace
+comparison, gives the actual source-patch continuation atlas on `U`.
+
+This is the atlas-valued analogue of
+`bhw_jost_orientedGluedBranch_of_pathConnected_certifiedTransferCover`; all
+analytic continuation content remains in the transfer cover, one-step
+uniqueness, terminal comparison, and initial chart inputs. -/
+noncomputable def
+    bhw_jost_orientedSourcePatchContinuationAtlas_of_pathConnected_certifiedTransferCover
+    [NeZero d] {hd : 2 ≤ d} {τ : Equiv.Perm (Fin n)}
+    {Ω0 U : Set (Fin n → Fin (d + 1) → ℂ)}
+    {B0 : (Fin n → Fin (d + 1) → ℂ) → ℂ}
+    (p0 : Fin n → Fin (d + 1) → ℂ)
+    (base_mem : p0 ∈ Ω0 ∩ U)
+    (hU_path : IsPathConnected U)
+    (T :
+      ∀ z, z ∈ U →
+        BHWJostOrientedBranchFreeTransferNeighborhood hd n τ U z)
+    (T_unique :
+      ∀ z (hz : z ∈ U),
+        BHWJostOrientedTransferControlHasUniqueNext
+          (BHWJostOrientedBranchFreeTransferNeighborhood.toTransferControl
+            (T z hz)))
+    (terminalPointComparison :
+      ∀ {y : Fin n → Fin (d + 1) → ℂ}
+        (T₁ T₂ :
+          BHWJostOrientedCertifiedTransferTerminalPointTrace
+            hd n τ Ω0 U B0 p0 y),
+        BHWLocalChartTerminalComparisonData
+          (T₁.trace.trace.chain.localChart
+            (Fin.last T₁.trace.trace.chain.m))
+          (T₂.trace.trace.chain.localChart
+            (Fin.last T₂.trace.trace.chain.m)) y)
+    (C0 : BHWJostLocalOrientedContinuationChart hd n τ U)
+    (hp0C : p0 ∈ C0.carrier)
+    (start_patch : Set (Fin n → Fin (d + 1) → ℂ))
+    (hstart_open : IsOpen start_patch)
+    (hstart_preconnected : IsPreconnected start_patch)
+    (hstart_nonempty : start_patch.Nonempty)
+    (hstart_mem : p0 ∈ start_patch)
+    (hstart_sub : start_patch ⊆ Ω0 ∩ C0.carrier)
+    (hstart_agree : ∀ y, y ∈ start_patch → C0.branch y = B0 y)
+    (initial_chart_mem :
+      ∀ z, z ∈ Ω0 ∩ U → z ∈ C0.carrier)
+    (initial_branch_agree :
+      ∀ z, z ∈ Ω0 ∩ U → C0.branch z = B0 z) :
+    BHWSourcePatchContinuationAtlas hd n τ Ω0 U B0 :=
+  (BHWOrientedContinuationTraceAtlasData.ofCertifiedTerminalPointComparisonsAndInitialChart
+    (hd := hd) (τ := τ) (Ω0 := Ω0) (U := U) (B0 := B0)
+    p0 base_mem
+    (bhw_jost_orientedCertifiedTransferContinuationTraceAt_of_pathConnected_transferCover
+      (hd := hd) (τ := τ) (Ω0 := Ω0) (U := U) (B0 := B0)
+      (p0 := p0) hU_path T T_unique C0 base_mem hp0C start_patch
+      hstart_open hstart_preconnected hstart_nonempty hstart_mem
+      hstart_sub hstart_agree)
+    terminalPointComparison C0 hp0C start_patch hstart_open
+    hstart_preconnected hstart_nonempty hstart_mem hstart_sub hstart_agree
+    initial_chart_mem initial_branch_agree).to_sourcePatchContinuationAtlas
+
 /-- Source-normal-form producer form of the certified path-connected gluing
 theorem.  The remaining analytic inputs are the uniform local descent theorem,
 one-step uniqueness for the center-forgotten controls produced by that descent,

@@ -10533,6 +10533,34 @@ common-boundary envelope, or any theorem that already assumes locality.
    product plus the separate adjacent ordinary-Wick boundary theorem
    `BHW.os45_BHWJost_adjacentBranch_ordinaryWickTrace_of_OSI45`.
 
+   Lean-ready reducer below the analytic OS I §4.5 content: once a side
+   supplies the following local BHW/Jost data,
+
+   - `p0 : Fin n -> Fin (d + 1) -> ℂ`,
+   - `base_mem : p0 ∈ Ω0 ∩ H.ΩJ`,
+   - `hU_path : IsPathConnected H.ΩJ`,
+   - `T : ∀ z, z ∈ H.ΩJ ->
+       BHW.BHWJostOrientedBranchFreeTransferNeighborhood hd n P.τ H.ΩJ z`,
+   - one-step uniqueness
+     `T_unique : ∀ z hz,
+       BHW.BHWJostOrientedTransferControlHasUniqueNext
+         ((T z hz).toTransferControl)`,
+   - certified terminal-point comparison
+     `terminalPointComparison` for any two certified terminal traces through
+     the same endpoint,
+   - the initial chart `C0`, its base membership `hp0C`, the normalized
+     `start_patch`, and the two initial agreement fields
+     `initial_chart_mem` and `initial_branch_agree`,
+
+   the generic checked reducer
+   `BHW.bhw_jost_orientedSourcePatchContinuationAtlas_of_pathConnected_certifiedTransferCover`
+   returns the required
+   `BHW.BHWSourcePatchContinuationAtlas hd n P.τ Ω0 H.ΩJ B0`.
+   This reducer is purely finite-chain/atlas assembly.  The OS I §4.5 proof
+   still has to provide `T`, `T_unique`, `terminalPointComparison`, and `C0`
+   for the ordinary and adjacent starting branches; those are exactly the
+   local BHW/Jost analytic obligations.
+
    Archived side note: the older `OS45SourcePatchBHWJostHullData` and
    `OS45SourcePatchBHWJostOrientedContinuationInputs` APIs remain in production
    as historical support and checked consumers, but they are not the active

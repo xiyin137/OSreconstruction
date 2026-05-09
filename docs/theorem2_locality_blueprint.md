@@ -49635,6 +49635,24 @@ Proof decomposition of this theorem, without hiding the analytic work:
             paired membership and path facts, the two initial-sector intersection
             witnesses, and the four source-patch pointwise membership lemmas.
 
+            The finite-chain/atlas assembly step is Lean-ready as a generic
+            reducer.  The OS I §4.5 analytic proof for each side must provide
+            `p0`, `base_mem : p0 ∈ Ω0 ∩ H.ΩJ`, `H.ΩJ_isPathConnected`, a local
+            transfer cover
+            `T : ∀ z, z ∈ H.ΩJ ->
+              BHW.BHWJostOrientedBranchFreeTransferNeighborhood hd n P.τ H.ΩJ z`,
+            one-step uniqueness for `T`, certified terminal-point comparison
+            for any two certified terminal traces through the same endpoint,
+            and the initial chart data `C0`, `hp0C`, `start_patch`,
+            `hstart_*`, `initial_chart_mem`, and `initial_branch_agree`.
+            Then the checked reducer
+            `BHW.bhw_jost_orientedSourcePatchContinuationAtlas_of_pathConnected_certifiedTransferCover`
+            returns the required
+            `BHW.BHWSourcePatchContinuationAtlas hd n P.τ Ω0 H.ΩJ B0`.
+            This reducer performs only compact path subdivision, trace folding,
+            certified terminal overlap, and atlas field assembly; it does not
+            prove the local BHW/Jost transfer cover or monodromy theorem.
+
             The archived lower surfaces begin here:
 
             ```lean
