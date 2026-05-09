@@ -49490,8 +49490,9 @@ Proof decomposition of this theorem, without hiding the analytic work:
             `H.realPatch_mem_extendedTube`, and
             `H.realPatch_mem_permutedExtendedTubeSector`.
 
-            The direct continuation theorem to prove is local and
-            proper-complex:
+            Archived branch-level sketch, retained only as an audit trail after
+            the adaptive atlas reset.  The older direct continuation theorem
+            shape was local and proper-complex:
 
             ```lean
             theorem BHW.bhwJost_continue_initialBranch_on_localHull
@@ -49519,16 +49520,21 @@ Proof decomposition of this theorem, without hiding the analytic work:
                   (∀ z, z ∈ Ω0 -> z ∈ U -> B z = B0 z)
             ```
 
-            Internally, the proof constructs
-            local proper-complex Lorentz neighborhoods, proves overlap equality
+            Internally, such a proof would construct
+            local proper-complex Lorentz neighborhoods, prove overlap equality
             by the near-identity Hall-Wightman identity theorem from real
-            Lorentz covariance, and folds a finite path-cover of `H.ΩJ`.  The
+            Lorentz covariance, and fold a finite path-cover of `H.ΩJ`.  This
+            branch-level theorem is no longer the active implementation
+            surface: the active route builds ordinary and adjacent
+            `BHWSourcePatchContinuationAtlas` values from selected chains and
+            same-endpoint comparisons, then consumes
+            `OS45BHWJostHullData.toPairDataOfContinuationAtlases`.  The
             ordinary Wick trace comes from agreement on `Ωord ∩ H.ΩJ` plus
             `BHW.extendF_bvt_F_wickRotate_eq_of_ordered`; the ordinary real
             trace comes from agreement and `P.V_ET`.  The adjacent real trace
             comes from agreement on `Ωadj ∩ H.ΩJ`, `BHW.permAct_realEmbed`, and
             the checked swapped real extended-tube field.  The adjacent ordinary
-            Wick trace is the separate concrete OS I §4.5 boundary theorem:
+            Wick trace was branch-level in this older sketch:
 
             ```lean
             theorem BHW.os45_BHWJost_adjacentBranch_ordinaryWickTrace_of_OSI45
@@ -49552,10 +49558,12 @@ Proof decomposition of this theorem, without hiding the analytic work:
                     bvt_F OS lgc n (fun k => wickRotatePoint (x (P.τ k)))
             ```
 
-            This trace theorem is the OS I Figure-2-4 boundary calculation for
-            the continued adjacent branch.  It is not derived from the false
-            claim that source-label permutation preserves the ordinary Wick edge
-            inside `ExtendedTube`.
+            The active theorem is the atlas-level
+            `BHW.os45_BHWJost_adjacentAtlas_ordinaryWickTrace_of_OSI45` stated
+            below; it is the same OS I Figure-2-4 boundary calculation applied
+            to `Aadj.glued`.  It is not derived from the false claim that
+            source-label permutation preserves the ordinary Wick edge inside
+            `ExtendedTube`.
 
             The mechanical reducer below the hard theorem is
             `BHW.OS45BHWJostHullData.toPairDataOfContinuationAtlases`: it
@@ -49633,7 +49641,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
             `os45_BHWJostContinuationAtlases_onLocalHull_of_OSI45` is only the
             product of them plus the separate adjacent ordinary-Wick boundary
             theorem
-            `BHW.os45_BHWJost_adjacentBranch_ordinaryWickTrace_of_OSI45`.
+            `BHW.os45_BHWJost_adjacentAtlas_ordinaryWickTrace_of_OSI45`.
             The current checked support accessors needed by this transcript are
             `H.zbase_mem_ΩJ`, `H.ΩJ_nonempty`, `H.ΩJ_isPathConnected`,
             `H.ΩJ_subset_ambient`, the two ambient initial-sector subset
@@ -49713,6 +49721,26 @@ Proof decomposition of this theorem, without hiding the analytic work:
             `branch_complexLorentzInvariant`, supplied by the local
             Hall-Wightman/Jost initial-branch theorem on that sector, not by a
             global source-variety descent theorem.
+
+            Field-by-field constructor transcript for the two initial local
+            charts: set `carrier` to the displayed initial sector and `branch`
+            to the displayed initial branch.  Fill `carrier_open`,
+            `carrier_preconnected`, `carrier_sub_U`, and
+            `carrier_is_lorentz_step` by the checked sector topology/subset
+            lemmas and the identity complex Lorentz element.  Define the local
+            `orientedDomain` to be the OS I §4.5 source-invariant coordinate
+            image of this sector on the selected proper-complex chart, not a
+            global source-variety domain.  The local BHW/Jost theorem supplies
+            `oriented_relOpen`, `oriented_preconnected`,
+            `oriented_sub_variety`, `oriented_mem`, `oriented_realizes`, the
+            coordinate function `Psi`, and `Psi_holo`.  The
+            `branch_eq_orientedPullback` field is the local scalar-product /
+            oriented-invariant representation of the initial branch on this
+            sector.  The fields `branch_same_sourceOrientedInvariant` and
+            `branch_complexLorentzInvariant` are the local proper-complex BHW
+            invariance statements on the carrier.  None of these fields may be
+            filled from `sourceOrientedScalarRepresentativeData_bvt_F`,
+            normal/Riemann descent, PET independence, or final locality.
 
             Once either local-chart theorem is available, the
             `BHWJostInitialChartData` wrapper is already mechanical via the
@@ -49804,22 +49832,51 @@ Proof decomposition of this theorem, without hiding the analytic work:
             the input is a genuine previously constructed continuation chain,
             not an arbitrary local chart.  Let
             `Cterm := Cprev.localChart (Fin.last Cprev.m)`.  The facts
-            `Cprev.final_mem`, `Cprev.chart_eq_local (Fin.last Cprev.m)`, and
+            `Cprev.final_mem`, `Cprev.node_last`,
+            `Cprev.chart_eq_local (Fin.last Cprev.m)`, and
             `Cprev.chart_sub_U (Fin.last Cprev.m)` put `p` in
             `Cterm.carrier ∩ H.ΩJ`.  Shrink the open carrier of `Cterm` around
             `p`; use `H.ΩJ_subset_ambient` to write `p` in the proper-complex
             BHW/Jost ambient; choose the corresponding OS I §4.5 local Lorentz
             normal chart around `p`; intersect the normal chart with
             `Cterm.carrier` and `H.ΩJ`; use
-            `exists_open_preconnected_neighborhood_subset` to obtain a
-            preconnected source patch containing `p` and any later `q` in the
-            selected shrink; define `Cnext` from the OS I local BHW germ on
-            that Lorentz normal chart; fill the transition patch by this
-            shrink; prove `source_branch_agree` by the identity theorem on the
-            preconnected overlap using the shared real/Jost source seed carried
-            by `Cprev` and OS I `(4.1)`, `(4.12)`, `(4.14)` as repaired by OS
-            II.  The theorem is local and does not mention final locality, PET
-            branch independence, or global source-variety descent.
+            `exists_open_preconnected_neighborhood_subset` to obtain an open
+            preconnected neighborhood `N` of `p` inside this intersection,
+            small enough that every `q ∈ N` lies in the next local normal
+            chart.  For each such `q`, define `Cnext` from the OS I local BHW
+            germ on that Lorentz normal chart and set the transition
+            `sourcePatch` to `N`; prove `source_branch_agree` by the identity
+            theorem on `N` using the shared real/Jost source seed carried by
+            `Cprev` and OS I `(4.1)`, `(4.12)`, `(4.14)` as repaired by OS II.
+            The theorem is local and does not mention final locality, PET
+            branch independence, or global source-variety descent.  When this
+            theorem is consumed by `BHWJostOrientedSourcePatchContinuationChain.snoc`,
+            rewrite the source parameter by `simpa [Cprev.node_last]` from the
+            returned transition over `p` to the required transition over
+            `Cprev.node (Fin.last Cprev.m)`.
+
+            Field-by-field transition transcript: choose `sourcePatch` as the
+            preconnected open shrink inside
+            `Cterm.carrier ∩ Cnext.carrier ∩ H.ΩJ`; the source point `p` and
+            target point `q` lie in it by construction.  The fields
+            `sourcePatch_open`, `sourcePatch_preconnected`,
+            `sourcePatch_nonempty`, `source_mem`, `target_mem_sourcePatch`,
+            `target_mem`, and `sourcePatch_sub` are then subset projections.
+            The field `source_branch_agree` is the local identity theorem on
+            that patch.  Define `orientedPatch` as the corresponding local
+            source-invariant image of `sourcePatch`; fill
+            `orientedPatch_relOpen`, `orientedPatch_preconnected`,
+            `orientedPatch_nonempty`, `orientedPatch_sub`,
+            `sourcePatch_oriented_mem`, and
+            `orientedPatch_source_realizes` from the same local coordinate
+            chart and the two charts' `oriented_mem` / `oriented_realizes`
+            fields.  The field `oriented_psi_agree` is the
+            oriented-coordinate version of `source_branch_agree`, rewritten
+            through the two charts' `branch_eq_orientedPullback` fields.  The
+            checked lemmas
+            `BHWJostOrientedTransitionData.orientedPatch_subset_left` and
+            `BHWJostOrientedTransitionData.orientedPatch_subset_right` are the
+            two projections of the stored `orientedPatch_sub` field.
 
             Selected chains are produced adaptively from that one-step theorem:
 
