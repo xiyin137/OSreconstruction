@@ -46249,7 +46249,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
       | `os45_adjacent_euclideanEdge_pairing_eq_on_timeSector` | Checked local Lean input for the Euclidean edge equality on ordered sectors. | Its public theorem statement; do not depend on the private helper `integral_perm_eq_self_locality` outside `OSToWightmanLocalityOS45.lean`. |
       | `BHW.OS45Figure24JostRuelleDomainData` and `BHW.os45Figure24_jostRuelleDomainData_of_chart` | Lean-shaped proof pinned; production Lean not started. | Choose `Ω := BHW.ExtendedTube d n`; use `BHW.isOpen_extendedTube`, `BHW.isConnected_extendedTube`, `hV_ET`, and `hChart.adjLift_mem_extendedTube`.  The swapped real-embedding field remains on the surrounding canonical surface for adjacent-source use, but this domain constructor must not infer extended-tube membership from bare `JostSet` membership or choose a second domain. |
       | `BHW.OS45Figure24OrdinaryBranchData` and `BHW.os45Figure24_ordinaryBranchData_of_bvt_F` | Transcript pinned but production Lean not started; mechanically ready after domain data. | `bvt_F_holomorphic`, `bvt_F_complexLorentzInvariant_forwardTube`, `bvt_F_restrictedLorentzInvariant_forwardTube`, `BHW.extendF_holomorphicOn`, `BHW.extendF_complex_lorentz_invariant`, and `DΩ.Ω_sub_extendedTube`. |
-      | `BHW.OS45BHWJostLocalContinuationData` and `BHW.os45_BHWJostLocalContinuationData_from_OSI45` | Split required by the route-cycle correction; production Lean not started. | The upstream BHW/Jost hull and branch-continuation pieces may feed `BHW.OS45SourcePatchBHWJostPairData`: `os45_BHWJostHullData_of_figure24`, `os45_BHWJostBranch_onLocalHull_of_OSI45`, the ordinary and selected adjacent branch continuations, holomorphy, complex-Lorentz invariance, and the Wick/real trace formulas from OS I equations (4.1), (4.12), and (4.14).  The full local-continuation data package, including `os45_BHWJostRealBoundaryEq_of_OSI45`, `os45_BHWJostLiftTransport_onSupport_of_OSI45`, and `os45_BHWJostLiftPairing_of_OSI45`, is downstream of the direct source-patch compact theorem and may consume it later.  No source scalar representative, PET independence, EOW envelope, `bvt_W`, final locality, or oriented common-boundary envelope. |
+      | `BHW.OS45BHWJostLocalContinuationData` and `BHW.os45_BHWJostLocalContinuationData_from_OSI45` | Split required by the route-cycle correction; first local ambient/hull geometry checked in `OSToWightmanLocalityOS45BHWJostLocal.lean`; carrier producer not started. | The upstream BHW/Jost hull and branch-continuation pieces may feed `BHW.OS45SourcePatchBHWJostPairData`: `os45_BHWJostHullData_of_figure24`, `os45_BHWJostBranch_onLocalHull_of_OSI45`, the ordinary and selected adjacent branch continuations, holomorphy, complex-Lorentz invariance, and the Wick/real trace formulas from OS I equations (4.1), (4.12), and (4.14).  The checked pure geometry slice now supplies `BHW.os45BHWJostAmbient`, `BHW.os45BHWJostHull`, open/hull accessors, and same-sector hull membership for the ordinary and selected adjacent sectors.  The full local-continuation data package, including `os45_BHWJostRealBoundaryEq_of_OSI45`, `os45_BHWJostLiftTransport_onSupport_of_OSI45`, and `os45_BHWJostLiftPairing_of_OSI45`, is downstream of the direct source-patch compact theorem and may consume it later.  No source scalar representative, PET independence, EOW envelope, `bvt_W`, final locality, or oriented common-boundary envelope. |
       | `BHW.OS45Figure24AdjacentBranchData` and `BHW.os45Figure24_adjacentBranchData_of_OSI45` | Downstream boundary-data transcript; not the first active source-patch producer. | After `BHW.os45Figure24_sourcePatch_pairing_eq_swappedSourcePatch_of_OSI45` is checked, this packet may combine the local continuation branch with the finished compact source-patch equality, the lift-transport theorem, and the initial compact boundary pairing.  Its `adjacent_realBoundary_eq_ordinary` field must not be used to prove the source-patch theorem. |
       | `BHW.os45Figure24_realBoundaryEq_of_OSI45` | Downstream mechanical extraction; production Lean not started. | Rewrite `Dord.ordinaryBranch` by `Dord.ordinaryBranch_def` and use `Dadj.adjacent_realBoundary_eq_ordinary` only after that adjacent boundary packet has been built downstream.  No scalar representative, local source equality, separate source-branch `= OS.S`, PET independence, or final locality. |
       | `BHW.os45Figure24_sourcePatch_pairing_eq_swappedSourcePatch_of_OSI45` | Route-cycle corrected; first BHW/Jost carrier/algebra layer checked, OS I §4.5 producer not started. | Direct OS I §4.5/BHW-Jost compact producer: checked Wick compact equality for every compact test supported in the chart, zero-diagonal conversion through equations (4.1), (4.12), and (4.14), construction of the checked `BHW.OS45SourcePatchBHWJostPairData` preferably on `BHW.os45Figure24SourcePatch`, checked subtraction through `BHW.OS45SourcePatchBHWJostPairData.difference`, direct edge/totally-real uniqueness on that carrier, and checked real-trace integration via `BHW.os45CompactFigure24WickPairingEq_of_pairData_on_figure24SourcePatch` or the broader canonical consumer.  A separate difference-data wrapper is optional only if it stores additional source provenance.  It must not call `BHW.os45_adjacent_commonBoundaryEnvelope`, the oriented branch-germ suppliers, the oriented adjacent `S'_n` seed/path package, individual real-branch `= OS.S` statements, PET independence, final locality, or the later OS-specific `JostRuelleCompactBoundaryData` package that consumes this compact theorem. |
@@ -48118,6 +48118,21 @@ Proof decomposition of this theorem, without hiding the analytic work:
          proper-complex Lorentz images.  They do not use PET branch
          independence, scalar representatives, or final locality.
 
+         Checked Lean checkpoint, 2026-05-09:
+         `OSToWightmanLocalityOS45BHWJostLocal.lean` now implements
+         `BHW.os45BHWJostAmbient`, `BHW.os45BHWJostHull`,
+         `BHW.os45BHWJostAmbient_mem_identity`,
+         `BHW.os45BHWJostAmbient_mem_adjacent`,
+         `BHW.os45BHWJostAmbient_open`, the hull open/connected/nonempty
+         accessors, and same-sector hull membership for both the ordinary
+         extended tube and the selected adjacent permuted sector.  The checked
+         `os45BHWJostAmbient_open` is slightly stronger than the pseudocode:
+         it needs no `hd` argument because the openness proof is only
+         Lorentz-action openness plus the existing open-sector theorems.  The
+         two Figure-2-4 joined-path theorems and the local BHW branch
+         continuation theorem remain the next unimplemented strict-route
+         content.
+
          ```lean
          theorem BHW.os45_BHWJostHullData_of_figure24
              ... :
@@ -49401,8 +49416,12 @@ Proof decomposition of this theorem, without hiding the analytic work:
             invariant continuation charts, not by postulating an atlas.  These
             charts are local Hall-Wightman/Jost proof objects; in the
             conditional ordinary fork they use scalar-product descent, while
-            in the strict route they use oriented-source descent.  In either
-            case they must not consume the global
+            in the strict route they use local oriented-invariant coordinate
+            charts as the finite-dimensional encoding of the same
+            proper-complex Hall-Wightman proof.  This is not the quarantined
+            global variety-descent/Riemann-extension route and it may not be
+            used as a standalone theorem-2 shortcut.  In either case they
+            must not consume the global
             `SourceScalarRepresentativeData` package as an input.  Each local
             chart carrier and scalar/oriented germ domain is explicitly
             preconnected: the identity theorem only propagates
