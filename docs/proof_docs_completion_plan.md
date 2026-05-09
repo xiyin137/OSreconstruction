@@ -61,10 +61,72 @@ as a stronger non-frontier predicate and related to the adjacent predicate only
 by the safe direction pair-swap → adjacent.  No theorem-2 Lean work may depend
 on the stronger property.
 
-Current theorem-2 implementation ledger: the downstream Hall-Wightman/Jost
-source package remains the route after the local OS45 envelope has been
-constructed, but it is not the immediate Lean gate.  The immediate gate is
-local Slot 1:
+Theorem-2 implementation ledger, global closure lock (2026-05-09): the proof
+documents are not ready merely because one subpacket is precise.  They are
+ready only with the following ordered Lean closure chain, and production Lean
+must not introduce a new theorem surface outside this chain without first
+updating this ledger and the theorem-2 blueprint.
+
+Stage A, current gate: build the direct OS I sec. 4.5 local-hull adaptive
+continuation atlas on the canonical Figure-2-4 source patch.  The analytic
+surfaces are exactly
+`BHW.os45_BHWJost_initialLocalChart_ordinary_of_OSI45`,
+`BHW.os45_BHWJost_initialLocalChart_adjacent_of_OSI45`,
+`BHW.os45_BHWJost_oneStepTransition_of_OSI45`,
+`BHW.os45_BHWJost_chainAt_ordinary_of_OSI45`,
+`BHW.os45_BHWJost_chainAt_adjacent_of_OSI45`,
+`BHW.os45_BHWJost_sameEndpointComparison_ordinary_of_OSI45`,
+`BHW.os45_BHWJost_sameEndpointComparison_adjacent_of_OSI45`, and
+`BHW.os45_BHWJost_adjacentAtlas_ordinaryWickTrace_of_OSI45`.  The mechanical
+consumers are
+`BHW.os45_BHWJost_initialChart_ordinary_of_OSI45`,
+`BHW.os45_BHWJost_initialChart_adjacent_of_OSI45`,
+`BHW.os45_BHWJostContinuationAtlas_ordinary_onLocalHull_of_OSI45`,
+`BHW.os45_BHWJostContinuationAtlas_adjacent_onLocalHull_of_OSI45`,
+`BHW.os45_BHWJostContinuationAtlases_onLocalHull_of_OSI45`, and
+`BHW.OS45BHWJostHullData.toPairDataOfContinuationAtlases`.
+
+Stage B: turn the atlas into the exact-source-patch compact Wick pairing and
+the selected source/Jost anchor.  The boundary theorem is
+`BHW.os45Figure24_sourcePatch_pairing_eq_swappedSourcePatch_of_OSI45`.  It is
+assembled through the checked consumers
+`BHW.os45CompactFigure24WickPairingEq_of_pairData_on_figure24SourcePatch`,
+`BHW.bvt_F_distributionalJostAnchor_of_pairData_on_figure24SourcePatch`, and
+the already-checked selected adjacent distributional-Jost constructors.  This
+stage is still upstream of PET single-valuedness and final locality; it must
+not call PET independence, final locality, source-variety descent, or a
+common-boundary envelope to manufacture its own source-patch input.
+
+Stage C: use the source/Jost anchor to close the Hall-Wightman source/PET
+single-valuedness layer:
+`BHW.hallWightman_source_permutedBranch_compatibility_of_distributionalAnchor`,
+`BHW.permutedExtendedTube_singleValued_of_forwardTube_symmetry`, and
+`bvt_F_bhwSingleValuedOn_permutedExtendedTube_of_two_le`.
+
+Stage D: discharge the Jost boundary and canonical-shell pairing layer:
+`bvt_F_jostBoundary_pairing_of_spacelike_of_two_le` and
+`bvt_F_swapCanonical_pairing_of_spacelike_of_two_le`.
+
+Stage E: perform the already-checked boundary-value transfer through
+`bv_local_commutativity_transfer_of_swap_pairing`, yielding the adjacent
+locality theorem `bvt_locally_commutative` for the reconstructed Wightman
+functions.
+
+Stage F: keep the `d = 1` proof on the separate Slots D1-1 through D1-4 route.
+It does not use the `2 <= d` OS45 local-hull atlas.
+
+Verification boundary for this locked route uses existing files only:
+`OSToWightmanLocalityOS45BHWJostLocal.lean`,
+`OSToWightmanLocalityOS45BHWJostContinuation.lean`,
+`OSToWightmanLocalityOS45Compact.lean`,
+`OSToWightmanSelectedWitness.lean`,
+`OSToWightmanBoundaryValuesComparison.lean`,
+`OSToWightmanBoundaryValues.lean`, and `OSToWightman.lean`.  There is no file
+named `OSToWightmanLocality.lean`; it must not appear in verification
+checklists.
+
+Expanded checked-support inventory for Stages A and B, subordinate to the
+locked route above:
 
 1. keep the checked bounded identity-order perturbation and raw real-open ball
    selector as support;
@@ -16882,12 +16944,13 @@ Current examples:
    locality theorem: Wightman properties except locality plus total symmetry
    imply locality. The remaining Slot-10 work is the Lean translation into the
    canonical-shell pairing theorem, not source identification.
-7. The theorem-2 Slot-6/Slot-7 interface no longer has two active branches.
-   The active Lean branch is the source-backed BHW single-valuedness packet:
-   use checked local source support from
-   `BHWPermutation/SourceExtension.lean`, then prove or source-import
+7. The theorem-2 Slot-6/Slot-7 interface no longer has two branches, but it is
+   a later Stage-C theorem-2 step, not the current Lean gate.  After the OS45
+   adaptive atlas, exact source-patch compact Wick pairing, and selected
+   source/Jost anchor have been produced, the unique Slot-6/Slot-7 branch is
+   the source-backed BHW single-valuedness packet:
    `hallWightman_source_permutedBranch_compatibility_of_distributionalAnchor`
-   and feed its sector-equality corollary to
+   followed by
    `bvt_F_bhwSingleValuedOn_permutedExtendedTube_of_two_le`.
    The common-forward-tube fixed-orbit gallery remains retired, because a
    common Lorentz witness for two ordinary permuted forward-tube chambers

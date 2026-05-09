@@ -73629,97 +73629,132 @@ The only dead route worth remembering is this:
 Those were not merely unfinished implementation ideas. They were the wrong
 theorem surfaces for the OS route.
 
-## 8. Status after this rewrite
+## 8. Global theorem-2 closure ledger
 
-This document is intentionally active-route only.  Its readiness claim is now
-stagewise rather than global.
+This document is active-route only.  Its final section is now a global Lean
+closure ledger, not a stage-local readiness note.  The proof docs are
+implementation-ready for theorem 2 only if the production pass follows the
+ordered route below.  A theorem surface not named here is a route change and
+requires a docs update before Lean implementation.
 
-### 8.1. Current implementation gate on the current branch
+### 8.1. Current implementation gate
 
-This section is the docs-first handoff gate for the next production Lean pass.
-The `2 <= d` route has one active Slot-6/Slot-7 interface.  Its generic BHW
-source surface has now been corrected to require the explicit distributional
-anchor; implementation should next construct that OS-II anchor and close the
-source compatibility theorem.  The direct
-hF_perm-only BHW single-valuedness theorem on permuted extended-tube sectors is
-archived as unsafe.  The active gate is the distributional
-Euclidean/Jost-anchored Hall-Wightman/EOW source theorem, or the OS-specific
-specialization that supplies that anchor from the OS-II `bvt_F` construction.
-The fixed-`w` forward-tube
-endpoint-gallery theorem is archived, not a production frontier.
+The current `2 <= d` gate is the direct OS I sec. 4.5 local-hull adaptive
+continuation atlas on the canonical Figure-2-4 source patch.  It is not the
+later Slot-6/Slot-7 Hall-Wightman/PET source theorem, and it is not a
+source-variety/descent substitute.
 
-Exact scope:
+The analytic surfaces to prove first are exactly:
 
-1. `Wightman/Reconstruction/WickRotation/OSToWightmanLocalityPETCompat.lean`
-   owns Slot 5
-   `bvt_F_adjacent_sector_compatibility_of_two_le`.
-2. `Wightman/Reconstruction/WickRotation/OSToWightmanSelectedWitness.lean`
-   already owns the selected branch notation and checked local facts
-   `bvt_selectedPETBranch`,
-   `bvt_selectedPETBranch_holomorphicOn_sector`, and
-   `bvt_selectedPETBranch_adjacent_eq_on_sector_overlap`.
-3. The next theorem-level BHW frontier is the source-backed scalar overlap and
-   cover-reaching packet in
-   `BHWPermutation/SourceExtension.lean`, culminating in
-   `hallWightman_source_permutedBranch_compatibility_of_distributionalAnchor`.
-4. The OS-specific consumer is
-   `bvt_F_bhwSingleValuedOn_permutedExtendedTube_of_two_le`, with no
-   `IsAdjacentLocallyCommutativeWeak` hypothesis.  It consumes the
-   `BHW.SourceDistributionalAdjacentTubeAnchor` supplied from OS-II selected
-   adjacent distributional Jost data.
-5. `PETOrbitChamberChain.lean` is archived common-slice infrastructure.
-   `PermutedTubeMonodromy.lean` is conditional infrastructure through the
-   checked lower-layer consumer
-   `BHW.extendF_pet_branch_independence_of_adjacent_of_orbitChamberConnected`.
+1. `BHW.os45_BHWJost_initialLocalChart_ordinary_of_OSI45`;
+2. `BHW.os45_BHWJost_initialLocalChart_adjacent_of_OSI45`;
+3. `BHW.os45_BHWJost_oneStepTransition_of_OSI45`;
+4. `BHW.os45_BHWJost_chainAt_ordinary_of_OSI45`;
+5. `BHW.os45_BHWJost_chainAt_adjacent_of_OSI45`;
+6. `BHW.os45_BHWJost_sameEndpointComparison_ordinary_of_OSI45`;
+7. `BHW.os45_BHWJost_sameEndpointComparison_adjacent_of_OSI45`;
+8. `BHW.os45_BHWJost_adjacentAtlas_ordinaryWickTrace_of_OSI45`.
 
-Exact verification boundary for that stage:
+Their mechanical consumers are exactly:
+
+1. `BHW.os45_BHWJost_initialChart_ordinary_of_OSI45`;
+2. `BHW.os45_BHWJost_initialChart_adjacent_of_OSI45`;
+3. `BHW.os45_BHWJostContinuationAtlas_ordinary_onLocalHull_of_OSI45`;
+4. `BHW.os45_BHWJostContinuationAtlas_adjacent_onLocalHull_of_OSI45`;
+5. `BHW.os45_BHWJostContinuationAtlases_onLocalHull_of_OSI45`;
+6. `BHW.OS45BHWJostHullData.toPairDataOfContinuationAtlases`.
+
+These surfaces are proved on the already-documented carriers
+`BHW.os45BHWJostAmbient`, `BHW.os45BHWJostHull`,
+`BHW.OS45BHWJostHullData`, and
+`BHW.BHWOrientedContinuationChainAtlasData`.  The proof transcript is the one
+recorded in Section 5: construct the initial local chart at the ordinary and
+adjacent bases, choose the next chart inside the previous chart along the
+compact path, prove the one-step overlap equality by the OS I sec. 4.5
+identity theorem on the oriented source invariant, compare any two charts with
+the same endpoint by terminal comparison, and assemble the ordinary/adjacent
+atlases with the adjacent ordinary-Wick trace.
+
+### 8.2. Compact source-patch and Jost anchor
+
+After the atlas is checked, the next boundary theorem is
+`BHW.os45Figure24_sourcePatch_pairing_eq_swappedSourcePatch_of_OSI45`.
+Its input is the pair data produced by
+`BHW.OS45BHWJostHullData.toPairDataOfContinuationAtlases`; its output feeds
+the checked compact and anchor consumers:
+
+1. `BHW.os45CompactFigure24WickPairingEq_of_pairData_on_figure24SourcePatch`;
+2. `BHW.bvt_F_distributionalJostAnchor_of_pairData_on_figure24SourcePatch`;
+3. the selected adjacent distributional-Jost constructors already recorded in
+   the OS45 compact sections.
+
+This step is still upstream of PET single-valuedness and final locality.  It
+must not use PET independence, final locality, source-variety descent, ambient
+source-label transport, or a common-boundary envelope to manufacture the
+source-patch input.
+
+### 8.3. Source/PET single-valuedness
+
+Only after the source/Jost anchor is available does the route enter the
+Hall-Wightman source/PET stage:
+
+1. prove
+   `BHW.hallWightman_source_permutedBranch_compatibility_of_distributionalAnchor`;
+2. apply the assembly/equality corollaries
+   `BHW.permutedExtendedTube_singleValued_of_forwardTube_symmetry` and the
+   already-recorded extension companion;
+3. specialize to OS by proving
+   `bvt_F_bhwSingleValuedOn_permutedExtendedTube_of_two_le`.
+
+The archived direct hF-perm theorem, the fixed-`w` forward-tube endpoint
+gallery, and the orbit-chamber monodromy consumer are not production theorem-2
+inputs unless their geometry is separately restated and audited in
+extended-tube terms.
+
+### 8.4. Jost boundary and final transfer
+
+The final `2 <= d` pairing layer is:
+
+1. `bvt_F_jostBoundary_pairing_of_spacelike_of_two_le`;
+2. `bvt_F_swapCanonical_pairing_of_spacelike_of_two_le`;
+3. `bv_local_commutativity_transfer_of_swap_pairing`;
+4. `bvt_locally_commutative`.
+
+The last two names are the checked boundary-value transfer surface in
+`OSToWightmanBoundaryValuesComparison.lean` and the adjacent-locality theorem
+in `OSToWightmanBoundaryValues.lean`.
+
+### 8.5. The `d = 1` branch
+
+The `d = 1` route remains the separate Slots D1-1 through D1-4 branch.  Its
+external analytic input is
+`d1_acrOne_complexEdgeData_of_permutedExtendedTubeSector`; the zero-on-data,
+PET-evaluation, adjacent-sector compatibility, and
+`bvt_locally_commutative_boundary_route_of_one` consumers are mechanical.  It
+does not use the `2 <= d` OS45 local-hull atlas.
+
+### 8.6. Verification boundary
+
+Use existing files only:
 
 1. `lake env lean
-   OSReconstruction/ComplexLieGroups/Connectedness/BHWPermutation/SourceExtension.lean`
+   OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanLocalityOS45BHWJostLocal.lean`
 2. `lake env lean
-   OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanLocalityPETCompat.lean`
+   OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanLocalityOS45BHWJostContinuation.lean`
 3. `lake env lean
-   OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanSelectedWitness.lean`
+   OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanLocalityOS45Compact.lean`
 4. `lake env lean
-   OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanLocality.lean`
+   OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanSelectedWitness.lean`
 5. `lake env lean
-   OSReconstruction/Wightman/Reconstruction/WickRotation.lean`
+   OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanBoundaryValuesComparison.lean`
+6. `lake env lean
+   OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanBoundaryValues.lean`
+7. `lake env lean
+   OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightman.lean`
 
-The exact Lean verification boundary above is recorded for later.  It is not a
-signal to widen theorem-2 implementation before the OS-specific
-distributional Jost anchor has been constructed and the Euclidean-anchored
-source theorem has been proved or explicitly approved as a source import under
-`AGENT.md`.
+There is no file named `OSToWightmanLocality.lean`; it must not appear in
+verification checklists.
 
-### 8.2. Later documented stages on the same theorem-2 route
-
-The rest of the theorem-2 route is also fixed here, but it is not part of the
-immediate implementation gate above.
-
-1. The checked OS45 geometry / Euclidean-edge layer is recorded in Section 3.
-2. The `2 <= d` route is frozen as Slots 1-11.
-3. Slot 6 is the source-backed Hall-Wightman theorem
-   `hallWightman_source_permutedBranch_compatibility_of_distributionalAnchor`
-   plus the assembly/equality corollaries
-   `BHW.permutedExtendedTube_extension_of_forwardTube_symmetry` and
-   `BHW.permutedExtendedTube_singleValued_of_forwardTube_symmetry`.
-4. Slot 7 is the OS specialization
-   `bvt_F_bhwSingleValuedOn_permutedExtendedTube_of_two_le`, fed by the
-   OS-II selected adjacent distributional Jost anchor through
-   `BHW.SourceDistributionalAdjacentTubeAnchor`.
-5. The `d = 1` route is frozen as Slots D1-1 through D1-4.
-6. The `d = 1` external analytic input is the one-gap data theorem
-   `d1_acrOne_complexEdgeData_of_permutedExtendedTubeSector`; the zero-on-data,
-   PET-evaluation, and adjacent-sector compatibility theorems are mechanical
-   consumers of that package plus the existing connected identity-theorem
-   infrastructure.
-7. The exact boundary-transfer consumer is
-   `bv_local_commutativity_transfer_of_swap_pairing`.
-8. The archived BHW monodromy consumer
-   `BHW.extendF_pet_branch_independence_of_adjacent_of_orbitChamberConnected`
-   must not be used for theorem 2 unless its geometry input is restated and
-   source-audited in extended-tube terms.
-
-If later work needs a theorem not named in Sections 4-6, that is a sign that
-the route has drifted and this blueprint should be revised before more
-production Lean is written.
+If later work needs a theorem not named in this Section 8 or in the detailed
+transcripts of Sections 4-6, the route has drifted and this blueprint must be
+revised before more production Lean is written.
