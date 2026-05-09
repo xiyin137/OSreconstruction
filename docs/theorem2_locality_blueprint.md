@@ -46249,7 +46249,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
       | `os45_adjacent_euclideanEdge_pairing_eq_on_timeSector` | Checked local Lean input for the Euclidean edge equality on ordered sectors. | Its public theorem statement; do not depend on the private helper `integral_perm_eq_self_locality` outside `OSToWightmanLocalityOS45.lean`. |
       | `BHW.OS45Figure24JostRuelleDomainData` and `BHW.os45Figure24_jostRuelleDomainData_of_chart` | Lean-shaped proof pinned; production Lean not started. | Choose `Ω := BHW.ExtendedTube d n`; use `BHW.isOpen_extendedTube`, `BHW.isConnected_extendedTube`, `hV_ET`, and `hChart.adjLift_mem_extendedTube`.  The swapped real-embedding field remains on the surrounding canonical surface for adjacent-source use, but this domain constructor must not infer extended-tube membership from bare `JostSet` membership or choose a second domain. |
       | `BHW.OS45Figure24OrdinaryBranchData` and `BHW.os45Figure24_ordinaryBranchData_of_bvt_F` | Transcript pinned but production Lean not started; mechanically ready after domain data. | `bvt_F_holomorphic`, `bvt_F_complexLorentzInvariant_forwardTube`, `bvt_F_restrictedLorentzInvariant_forwardTube`, `BHW.extendF_holomorphicOn`, `BHW.extendF_complex_lorentz_invariant`, and `DΩ.Ω_sub_extendedTube`. |
-      | `BHW.OS45BHWJostLocalContinuationData` and `BHW.os45_BHWJostLocalContinuationData_from_OSI45` | Split required by the route-cycle correction; first local ambient/hull geometry checked in `OSToWightmanLocalityOS45BHWJostLocal.lean`; carrier producer not started. | The upstream BHW/Jost hull and branch-continuation pieces may feed `BHW.OS45SourcePatchBHWJostPairData`: `os45_BHWJostHullData_of_figure24`, `os45_BHWJostBranch_onLocalHull_of_OSI45`, the ordinary and selected adjacent branch continuations, holomorphy, complex-Lorentz invariance, and the Wick/real trace formulas from OS I equations (4.1), (4.12), and (4.14).  The checked pure geometry slice now supplies `BHW.os45BHWJostAmbient`, `BHW.os45BHWJostHull`, open/hull accessors, and same-sector hull membership for the ordinary and selected adjacent sectors.  The full local-continuation data package, including `os45_BHWJostRealBoundaryEq_of_OSI45`, `os45_BHWJostLiftTransport_onSupport_of_OSI45`, and `os45_BHWJostLiftPairing_of_OSI45`, is downstream of the direct source-patch compact theorem and may consume it later.  No source scalar representative, PET independence, EOW envelope, `bvt_W`, final locality, or oriented common-boundary envelope. |
+      | `BHW.OS45BHWJostLocalContinuationData` and `BHW.os45_BHWJostLocalContinuationData_from_OSI45` | Split required by the route-cycle correction; pure local hull geometry checked in `OSToWightmanLocalityOS45BHWJostLocal.lean` through `BHW.OS45BHWJostHullData` and `BHW.os45_BHWJostHullData_of_figure24`; analytic branch continuation not started. | The upstream BHW/Jost hull and branch-continuation pieces may feed `BHW.OS45SourcePatchBHWJostPairData`: `os45_BHWJostHullData_of_figure24`, `os45_BHWJostBranch_onLocalHull_of_OSI45`, the ordinary and selected adjacent branch continuations, holomorphy, complex-Lorentz invariance, and the Wick/real trace formulas from OS I equations (4.1), (4.12), and (4.14).  The checked pure geometry slice now supplies `BHW.os45BHWJostAmbient`, `BHW.os45BHWJostHull`, open/hull accessors, Figure-2-4 joined paths, and the `OS45BHWJostHullData` pointwise membership fields.  The full local-continuation data package, including `os45_BHWJostRealBoundaryEq_of_OSI45`, `os45_BHWJostLiftTransport_onSupport_of_OSI45`, and `os45_BHWJostLiftPairing_of_OSI45`, is downstream of the direct source-patch compact theorem and may consume it later.  No source scalar representative, PET independence, EOW envelope, `bvt_W`, final locality, or oriented common-boundary envelope. |
       | `BHW.OS45Figure24AdjacentBranchData` and `BHW.os45Figure24_adjacentBranchData_of_OSI45` | Downstream boundary-data transcript; not the first active source-patch producer. | After `BHW.os45Figure24_sourcePatch_pairing_eq_swappedSourcePatch_of_OSI45` is checked, this packet may combine the local continuation branch with the finished compact source-patch equality, the lift-transport theorem, and the initial compact boundary pairing.  Its `adjacent_realBoundary_eq_ordinary` field must not be used to prove the source-patch theorem. |
       | `BHW.os45Figure24_realBoundaryEq_of_OSI45` | Downstream mechanical extraction; production Lean not started. | Rewrite `Dord.ordinaryBranch` by `Dord.ordinaryBranch_def` and use `Dadj.adjacent_realBoundary_eq_ordinary` only after that adjacent boundary packet has been built downstream.  No scalar representative, local source equality, separate source-branch `= OS.S`, PET independence, or final locality. |
       | `BHW.os45Figure24_sourcePatch_pairing_eq_swappedSourcePatch_of_OSI45` | Route-cycle corrected; first BHW/Jost carrier/algebra layer checked, OS I §4.5 producer not started. | Direct OS I §4.5/BHW-Jost compact producer: checked Wick compact equality for every compact test supported in the chart, zero-diagonal conversion through equations (4.1), (4.12), and (4.14), construction of the checked `BHW.OS45SourcePatchBHWJostPairData` preferably on `BHW.os45Figure24SourcePatch`, checked subtraction through `BHW.OS45SourcePatchBHWJostPairData.difference`, direct edge/totally-real uniqueness on that carrier, and checked real-trace integration via `BHW.os45CompactFigure24WickPairingEq_of_pairData_on_figure24SourcePatch` or the broader canonical consumer.  A separate difference-data wrapper is optional only if it stores additional source provenance.  It must not call `BHW.os45_adjacent_commonBoundaryEnvelope`, the oriented branch-germ suppliers, the oriented adjacent `S'_n` seed/path package, individual real-branch `= OS.S` statements, PET independence, final locality, or the later OS-specific `JostRuelleCompactBoundaryData` package that consumes this compact theorem. |
@@ -48091,32 +48091,93 @@ Proof decomposition of this theorem, without hiding the analytic work:
              z ∈ BHW.os45BHWJostAmbient d n τ
 
          theorem BHW.os45Figure24_joined_adjacentWick_to_adjLift0
-             ...
-             (x : NPointDomain d n) (hx : x ∈ hChart.V0) :
-             JoinedIn (BHW.os45BHWJostAmbient d n Dinit.τ)
-               (fun k => wickRotatePoint (x (Dinit.τ k)))
-               (hChart.adjLift x (0 : unitInterval))
+             [NeZero d]
+             (hd : 2 <= d) {i : Fin n} {hi : i.val + 1 < n}
+             (P : BHW.OS45Figure24CanonicalSourcePatchData
+               (d := d) hd n i hi)
+             (x : NPointDomain d n) (hx : x ∈ P.V) :
+             JoinedIn (BHW.os45BHWJostAmbient d n P.τ)
+               (fun k => wickRotatePoint (x (P.τ k)))
+               (BHW.os45Figure24AdjacentLift
+                 (d := d) (n := n) hd P.τ x (0 : unitInterval))
 
          theorem BHW.os45Figure24_joined_adjLift0_to_realPatch
-             ...
-             (x : NPointDomain d n) (hx : x ∈ hChart.V0) :
-             JoinedIn (BHW.os45BHWJostAmbient d n Dinit.τ)
-               (hChart.adjLift x (0 : unitInterval))
+             [NeZero d]
+             (hd : 2 <= d) {i : Fin n} {hi : i.val + 1 < n}
+             (P : BHW.OS45Figure24CanonicalSourcePatchData
+               (d := d) hd n i hi)
+             (x : NPointDomain d n) (hx : x ∈ P.V) :
+             JoinedIn (BHW.os45BHWJostAmbient d n P.τ)
+               (BHW.os45Figure24AdjacentLift
+                 (d := d) (n := n) hd P.τ x (0 : unitInterval))
                (BHW.realEmbed x)
+
+         theorem BHW.os45Figure24_joined_adjacentWick_to_realPatch
+             [NeZero d]
+             (hd : 2 <= d) {i : Fin n} {hi : i.val + 1 < n}
+             (P : BHW.OS45Figure24CanonicalSourcePatchData
+               (d := d) hd n i hi)
+             (x : NPointDomain d n) (hx : x ∈ P.V) :
+             JoinedIn (BHW.os45BHWJostAmbient d n P.τ)
+               (fun k => wickRotatePoint (x (P.τ k)))
+               (BHW.realEmbed x)
+
+         theorem BHW.mem_os45BHWJostHull_realPatch_of_figure24
+             [NeZero d]
+             (hd : 2 <= d) {i : Fin n} {hi : i.val + 1 < n}
+             (P : BHW.OS45Figure24CanonicalSourcePatchData
+               (d := d) hd n i hi)
+             {xbase x : NPointDomain d n}
+             (hxbase : xbase ∈ P.V) (hx : x ∈ P.V) :
+             BHW.realEmbed x ∈
+               BHW.os45BHWJostHull d n P.τ
+                 (fun k => wickRotatePoint (xbase (P.τ k)))
+
+         theorem BHW.mem_os45BHWJostHull_adjLift0_of_figure24
+             [NeZero d]
+             (hd : 2 <= d) {i : Fin n} {hi : i.val + 1 < n}
+             (P : BHW.OS45Figure24CanonicalSourcePatchData
+               (d := d) hd n i hi)
+             {xbase x : NPointDomain d n}
+             (hxbase : xbase ∈ P.V) (hx : x ∈ P.V) :
+             BHW.os45Figure24AdjacentLift
+                 (d := d) (n := n) hd P.τ x (0 : unitInterval) ∈
+               BHW.os45BHWJostHull d n P.τ
+                 (fun k => wickRotatePoint (xbase (P.τ k)))
+
+         theorem BHW.mem_os45BHWJostHull_adjacentWick_of_figure24
+             [NeZero d]
+             (hd : 2 <= d) {i : Fin n} {hi : i.val + 1 < n}
+             (P : BHW.OS45Figure24CanonicalSourcePatchData
+               (d := d) hd n i hi)
+             {xbase x : NPointDomain d n}
+             (hxbase : xbase ∈ P.V) (hx : x ∈ P.V) :
+             (fun k => wickRotatePoint (x (P.τ k))) ∈
+               BHW.os45BHWJostHull d n P.τ
+                 (fun k => wickRotatePoint (xbase (P.τ k)))
          ```
 
          The first joined theorem uses
          `BHW.figure24RotateAdjacentConfig_lorentz_inverse`,
-         `hChart.adjLift_def`, `BHW.os45Figure24IdentityPath_zero`, and a
-         path in the proper complex Lorentz group from `1` to `Λinv`; the
-         image path is `t ↦ complexLorentzAction (Λpath t) zraw`.  The second
-         joined theorem uses the deterministic Figure-2-4 path
-         `t ↦ hChart.adjLift x t`, its extended-tube membership, and the
-         endpoint calculation supplied by the chart's `figPath_closure`
-         field.  Both paths live in the ambient because the ambient contains
-         the identity tube and the adjacent tube together with their
-         proper-complex Lorentz images.  They do not use PET branch
-         independence, scalar representatives, or final locality.
+         the definitional `BHW.os45Figure24AdjacentLift`,
+         `BHW.os45Figure24IdentityPath_zero`, and a path in the proper
+         complex Lorentz group from the inverse Figure-2-4 rotation `Λinv`
+         back to `1`; the image path is
+         `t ↦ complexLorentzAction (Λpath t) (os45Figure24AdjacentLift hd P.τ x 0)`.
+         The second joined theorem must **not** assert that the deterministic
+         lift path ends at `BHW.realEmbed x`; the checked
+         `OS45Figure24CanonicalSourcePatchData` only gives
+         `P.adjLift_mem_extendedTube` for the lift and `P.V_ET` for the real
+         point.  The Lean proof therefore joins these two endpoints inside
+         the connected ordinary extended tube and then includes that path in
+         the BHW/Jost ambient through `BHW.os45BHWJostAmbient_mem_identity`.
+         This is still OS I §4.5 local hull geometry: it uses the Figure-2-4
+         rotated lift only to enter `ExtendedTube`, and it uses no PET branch
+         independence, scalar representatives, or final locality.  The four
+         hull-membership helpers are just `JoinedIn.trans` plus the definition
+         of `pathComponentIn`; they are the concrete finite-dimensional
+         membership pieces that `os45_BHWJostHullData_of_figure24` will
+         assemble, not a replacement for the later analytic BHW continuation.
 
          Checked Lean checkpoint, 2026-05-09:
          `OSToWightmanLocalityOS45BHWJostLocal.lean` now implements
@@ -48129,28 +48190,57 @@ Proof decomposition of this theorem, without hiding the analytic work:
          `os45BHWJostAmbient_open` is slightly stronger than the pseudocode:
          it needs no `hd` argument because the openness proof is only
          Lorentz-action openness plus the existing open-sector theorems.  The
-         two Figure-2-4 joined-path theorems and the local BHW branch
-         continuation theorem remain the next unimplemented strict-route
-         content.
+         two Figure-2-4 joined-path theorems and the pure hull-data producer
+         are Lean-ready against the actual `OS45Figure24CanonicalSourcePatchData`
+         carrier; the local BHW branch continuation theorem remains the next
+         analytic strict-route content after this checked geometry layer.
 
          ```lean
-         theorem BHW.os45_BHWJostHullData_of_figure24
-             ... :
-             ∃ ΩJ : Set (Fin n -> Fin (d + 1) -> ℂ),
-               IsOpen ΩJ ∧
-               IsConnected ΩJ ∧
-               ΩJ ⊆
-                 BHW.os45BHWJostHull d n Dinit.τ
-                   (fun k => wickRotatePoint (x0 (Dinit.τ k))) ∧
-               Dinit.Ωτ ⊆ ΩJ ∧
-               DΩ.Ω ⊆ ΩJ ∧
-               (∀ x, x ∈ hChart.V0 ->
-                 (fun k => wickRotatePoint (x (Dinit.τ k))) ∈ ΩJ) ∧
-               (∀ x, x ∈ hChart.V0 ->
-                 (fun k => wickRotatePoint (x k)) ∈ ΩJ) ∧
-               (∀ x, x ∈ hChart.V0 -> BHW.realEmbed x ∈ ΩJ) ∧
-               (∀ x, x ∈ tsupport (φ : NPointDomain d n -> ℂ) ->
-                 hChart.adjLift x (0 : unitInterval) ∈ ΩJ)
+         structure BHW.OS45BHWJostHullData
+             [NeZero d]
+             (hd : 2 <= d) {i : Fin n} {hi : i.val + 1 < n}
+             (P : BHW.OS45Figure24CanonicalSourcePatchData
+               (d := d) hd n i hi) where
+           zbase : Fin n -> Fin (d + 1) -> ℂ
+           zbase_eq :
+             zbase = fun k => wickRotatePoint (P.xseed (P.τ k))
+           ΩJ : Set (Fin n -> Fin (d + 1) -> ℂ)
+           ΩJ_eq :
+             ΩJ = BHW.os45BHWJostHull d n P.τ zbase
+           zbase_mem_ambient :
+             zbase ∈ BHW.os45BHWJostAmbient d n P.τ
+           ΩJ_open : IsOpen ΩJ
+           ΩJ_connected : IsConnected ΩJ
+           ΩJ_subset_hull :
+             ΩJ ⊆ BHW.os45BHWJostHull d n P.τ zbase
+           adjacentWick_mem :
+             ∀ x, x ∈ P.V ->
+               (fun k => wickRotatePoint (x (P.τ k))) ∈ ΩJ
+           realPatch_mem :
+             ∀ x, x ∈ P.V -> BHW.realEmbed x ∈ ΩJ
+           adjLift0_mem :
+             ∀ x, x ∈ P.V ->
+               BHW.os45Figure24AdjacentLift
+                 (d := d) (n := n) hd P.τ x (0 : unitInterval) ∈ ΩJ
+
+         def BHW.os45_BHWJostHullData_of_figure24
+             [NeZero d]
+             (hd : 2 <= d) {i : Fin n} {hi : i.val + 1 < n}
+             (P : BHW.OS45Figure24CanonicalSourcePatchData
+               (d := d) hd n i hi) :
+             BHW.OS45BHWJostHullData (d := d) hd P
+
+         /- This local carrier deliberately stops at the checked
+            finite-dimensional hull.  It does not include `Dinit.Ωτ ⊆ ΩJ`,
+            `DΩ.Ω ⊆ ΩJ`, or a branch `WJ`; those belong to the next layer,
+            where the initial OS-I adjacent branch packet and ordinary ET
+            neighborhood packet are present.  The producer sets
+            `zbase := fun k => wickRotatePoint (P.xseed (P.τ k))` and
+            `ΩJ := BHW.os45BHWJostHull d n P.τ zbase`; openness and
+            connectedness come from the checked hull accessors and
+            `zbase_mem_ambient`, and the three pointwise membership fields
+            are exactly the path-component helpers above with
+            `xbase := P.xseed`. -/
 
          theorem BHW.os45_BHWJostBranch_onLocalHull_of_OSI45
              ...
@@ -48172,6 +48262,14 @@ Proof decomposition of this theorem, without hiding the analytic work:
                  WJ (fun k => wickRotatePoint (x k)) =
                    bvt_F OS lgc n
                      (fun k => wickRotatePoint (x (Dinit.τ k))))
+         /- This theorem is the next genuine analytic blocker.  It must be
+            proved from the local OS-I §4.5/Bargmann-Hall-Wightman/Jost
+            continuation argument on the checked hull.  It may not call the
+            global `bargmann_hall_wightman` theorem for a completed
+            `WightmanFunctions` package, because that theorem assumes weak
+            locality as an input; using it here would be circular for theorem
+            2.  It also may not use PET branch independence, final locality,
+            EOW/common-boundary envelopes, or source-oriented descent. -/
 
          theorem BHW.os45_BHWJostRealTrace_of_initialBranch
              ...

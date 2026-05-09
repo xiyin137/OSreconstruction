@@ -195,4 +195,287 @@ theorem mem_os45BHWJostHull_of_permutedExtendedTubeSector
     exact BHW.os45BHWJostAmbient_mem_adjacent
       (d := d) (n := n) τ hw)
 
+/-- The selected adjacent Wick edge is joined to the checked Figure-2-4
+rotated lift inside the local BHW/Jost ambient. -/
+theorem os45Figure24_joined_adjacentWick_to_adjLift0
+    [NeZero d]
+    (hd : 2 ≤ d) {i : Fin n} {hi : i.val + 1 < n}
+    (P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi)
+    (x : NPointDomain d n) (hx : x ∈ P.V) :
+    JoinedIn (BHW.os45BHWJostAmbient d n P.τ)
+      (fun k => wickRotatePoint (x (P.τ k)))
+      (BHW.os45Figure24AdjacentLift
+        (d := d) (n := n) hd P.τ x (0 : unitInterval)) := by
+  classical
+  let zlift : Fin n → Fin (d + 1) → ℂ :=
+    BHW.os45Figure24AdjacentLift
+      (d := d) (n := n) hd P.τ x (0 : unitInterval)
+  let zadj : Fin n → Fin (d + 1) → ℂ :=
+    fun k => wickRotatePoint (x (P.τ k))
+  have hzlift_ET : zlift ∈ BHW.ExtendedTube d n := by
+    simpa [zlift] using
+      P.adjLift_mem_extendedTube x hx (0 : unitInterval)
+  rcases BHW.figure24RotateAdjacentConfig_lorentz_inverse
+      (d := d) (n := n) hd with
+    ⟨Λinv, hΛinv⟩
+  let Γ : Fin n → Fin (d + 1) → ℂ :=
+    BHW.os45Figure24IdentityPath (d := d) (n := n) x (0 : unitInterval)
+  have hInv :
+      BHW.complexLorentzAction Λinv zlift = zadj := by
+    have hraw :
+        BHW.complexLorentzAction Λinv zlift =
+          BHW.permAct (d := d) P.τ Γ := by
+      simpa [zlift, BHW.os45Figure24AdjacentLift, Γ] using
+        hΛinv (BHW.permAct (d := d) P.τ Γ)
+    calc
+      BHW.complexLorentzAction Λinv zlift
+          = BHW.permAct (d := d) P.τ Γ := hraw
+      _ = zadj := by
+        ext k μ
+        simp [zadj, Γ, BHW.os45Figure24IdentityPath_zero, BHW.permAct]
+  have hgrp :
+      JoinedIn (Set.univ : Set (ComplexLorentzGroup d)) Λinv 1 :=
+    (ComplexLorentzGroup.isPathConnected (d := d)).joinedIn
+      Λinv (Set.mem_univ _) 1 (Set.mem_univ _)
+  refine
+    ⟨{ toFun := fun t =>
+          BHW.complexLorentzAction (hgrp.somePath t) zlift
+       continuous_toFun :=
+          (BHW.continuous_complexLorentzAction_fst
+            (d := d) (n := n) zlift).comp
+            hgrp.somePath.continuous_toFun
+       source' := by
+          change
+            BHW.complexLorentzAction (hgrp.somePath 0) zlift = zadj
+          rw [hgrp.somePath.source]
+          exact hInv
+       target' := by
+          change
+            BHW.complexLorentzAction (hgrp.somePath 1) zlift = zlift
+          rw [hgrp.somePath.target]
+          exact BHW.complexLorentzAction_one zlift },
+      ?_⟩
+  intro t
+  exact Or.inl ⟨hgrp.somePath t, zlift, hzlift_ET, rfl⟩
+
+/-- The checked Figure-2-4 lift at `0` is joined to the real source patch
+inside the local BHW/Jost ambient through the ordinary extended tube. -/
+theorem os45Figure24_joined_adjLift0_to_realPatch
+    [NeZero d]
+    (hd : 2 ≤ d) {i : Fin n} {hi : i.val + 1 < n}
+    (P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi)
+    (x : NPointDomain d n) (hx : x ∈ P.V) :
+    JoinedIn (BHW.os45BHWJostAmbient d n P.τ)
+      (BHW.os45Figure24AdjacentLift
+        (d := d) (n := n) hd P.τ x (0 : unitInterval))
+      (BHW.realEmbed x) := by
+  letI : LocallyConvexSpace ℝ ℂ := NormedSpace.toLocallyConvexSpace
+  letI : LocallyConvexSpace ℝ (Fin (d + 1) → ℂ) := Pi.locallyConvexSpace
+  letI : LocallyConvexSpace ℝ (Fin n → Fin (d + 1) → ℂ) :=
+    Pi.locallyConvexSpace
+  let zlift : Fin n → Fin (d + 1) → ℂ :=
+    BHW.os45Figure24AdjacentLift
+      (d := d) (n := n) hd P.τ x (0 : unitInterval)
+  have hzlift_ET : zlift ∈ BHW.ExtendedTube d n := by
+    simpa [zlift] using
+      P.adjLift_mem_extendedTube x hx (0 : unitInterval)
+  have hreal_ET : BHW.realEmbed x ∈ BHW.ExtendedTube d n :=
+    P.V_ET x hx
+  have hpath : IsPathConnected (BHW.ExtendedTube d n) :=
+    (IsOpen.isConnected_iff_isPathConnected
+      (U := BHW.ExtendedTube d n) BHW.isOpen_extendedTube).mp
+      (BHW.isConnected_extendedTube (d := d) (n := n))
+  have hjoined :
+      JoinedIn (BHW.ExtendedTube d n) zlift (BHW.realEmbed x) :=
+    hpath.joinedIn zlift hzlift_ET (BHW.realEmbed x) hreal_ET
+  exact hjoined.mono (by
+    intro w hw
+    exact BHW.os45BHWJostAmbient_mem_identity
+      (d := d) (n := n) P.τ hw)
+
+/-- The selected adjacent Wick edge is joined to the real source patch inside
+the local BHW/Jost ambient. -/
+theorem os45Figure24_joined_adjacentWick_to_realPatch
+    [NeZero d]
+    (hd : 2 ≤ d) {i : Fin n} {hi : i.val + 1 < n}
+    (P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi)
+    (x : NPointDomain d n) (hx : x ∈ P.V) :
+    JoinedIn (BHW.os45BHWJostAmbient d n P.τ)
+      (fun k => wickRotatePoint (x (P.τ k)))
+      (BHW.realEmbed x) :=
+  (BHW.os45Figure24_joined_adjacentWick_to_adjLift0
+    (d := d) (n := n) hd P x hx).trans
+    (BHW.os45Figure24_joined_adjLift0_to_realPatch
+      (d := d) (n := n) hd P x hx)
+
+private theorem os45Figure24_joined_realPatch_to_realPatch
+    [NeZero d]
+    (hd : 2 ≤ d) {i : Fin n} {hi : i.val + 1 < n}
+    (P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi)
+    {x y : NPointDomain d n} (hx : x ∈ P.V) (hy : y ∈ P.V) :
+    JoinedIn (BHW.os45BHWJostAmbient d n P.τ)
+      (BHW.realEmbed x) (BHW.realEmbed y) := by
+  letI : LocallyConvexSpace ℝ ℂ := NormedSpace.toLocallyConvexSpace
+  letI : LocallyConvexSpace ℝ (Fin (d + 1) → ℂ) := Pi.locallyConvexSpace
+  letI : LocallyConvexSpace ℝ (Fin n → Fin (d + 1) → ℂ) :=
+    Pi.locallyConvexSpace
+  have hpath : IsPathConnected (BHW.ExtendedTube d n) :=
+    (IsOpen.isConnected_iff_isPathConnected
+      (U := BHW.ExtendedTube d n) BHW.isOpen_extendedTube).mp
+      (BHW.isConnected_extendedTube (d := d) (n := n))
+  have hjoined :
+      JoinedIn (BHW.ExtendedTube d n)
+        (BHW.realEmbed x) (BHW.realEmbed y) :=
+    hpath.joinedIn (BHW.realEmbed x) (P.V_ET x hx)
+      (BHW.realEmbed y) (P.V_ET y hy)
+  exact hjoined.mono (by
+    intro w hw
+    exact BHW.os45BHWJostAmbient_mem_identity
+      (d := d) (n := n) P.τ hw)
+
+/-- Every real point of the checked Figure-2-4 source patch lies in the local
+BHW/Jost hull based at any selected adjacent Wick point of the same patch. -/
+theorem mem_os45BHWJostHull_realPatch_of_figure24
+    [NeZero d]
+    (hd : 2 ≤ d) {i : Fin n} {hi : i.val + 1 < n}
+    (P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi)
+    {xbase x : NPointDomain d n}
+    (hxbase : xbase ∈ P.V) (hx : x ∈ P.V) :
+    BHW.realEmbed x ∈
+      BHW.os45BHWJostHull d n P.τ
+        (fun k => wickRotatePoint (xbase (P.τ k))) := by
+  exact
+    (BHW.os45Figure24_joined_adjacentWick_to_realPatch
+      (d := d) (n := n) hd P xbase hxbase).trans
+      (BHW.os45Figure24_joined_realPatch_to_realPatch
+        (d := d) (n := n) hd P hxbase hx)
+
+/-- The checked Figure-2-4 lift at `0` lies in the local BHW/Jost hull based
+at any selected adjacent Wick point of the same source patch. -/
+theorem mem_os45BHWJostHull_adjLift0_of_figure24
+    [NeZero d]
+    (hd : 2 ≤ d) {i : Fin n} {hi : i.val + 1 < n}
+    (P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi)
+    {xbase x : NPointDomain d n}
+    (hxbase : xbase ∈ P.V) (hx : x ∈ P.V) :
+    BHW.os45Figure24AdjacentLift
+        (d := d) (n := n) hd P.τ x (0 : unitInterval) ∈
+      BHW.os45BHWJostHull d n P.τ
+        (fun k => wickRotatePoint (xbase (P.τ k))) := by
+  exact
+    (BHW.os45Figure24_joined_adjacentWick_to_realPatch
+      (d := d) (n := n) hd P xbase hxbase).trans
+      ((BHW.os45Figure24_joined_realPatch_to_realPatch
+        (d := d) (n := n) hd P hxbase hx).trans
+        (BHW.os45Figure24_joined_adjLift0_to_realPatch
+          (d := d) (n := n) hd P x hx).symm)
+
+/-- Every selected adjacent Wick point of the checked Figure-2-4 source patch
+lies in the local BHW/Jost hull based at any selected adjacent Wick point of
+the same patch. -/
+theorem mem_os45BHWJostHull_adjacentWick_of_figure24
+    [NeZero d]
+    (hd : 2 ≤ d) {i : Fin n} {hi : i.val + 1 < n}
+    (P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi)
+    {xbase x : NPointDomain d n}
+    (hxbase : xbase ∈ P.V) (hx : x ∈ P.V) :
+    (fun k => wickRotatePoint (x (P.τ k))) ∈
+      BHW.os45BHWJostHull d n P.τ
+        (fun k => wickRotatePoint (xbase (P.τ k))) := by
+  exact
+    (BHW.os45Figure24_joined_adjacentWick_to_realPatch
+      (d := d) (n := n) hd P xbase hxbase).trans
+      ((BHW.os45Figure24_joined_realPatch_to_realPatch
+        (d := d) (n := n) hd P hxbase hx).trans
+        ((BHW.os45Figure24_joined_adjLift0_to_realPatch
+          (d := d) (n := n) hd P x hx).symm.trans
+          (BHW.os45Figure24_joined_adjacentWick_to_adjLift0
+            (d := d) (n := n) hd P x hx).symm))
+
+/-- Checked local OS45/BHW/Jost hull geometry for one canonical Figure-2-4
+source patch.  This record contains only the finite-dimensional path-component
+carrier and pointwise membership fields; analytic branch continuation is the
+next layer. -/
+structure OS45BHWJostHullData
+    [NeZero d]
+    (hd : 2 ≤ d)
+    (n : ℕ) (i : Fin n) (hi : i.val + 1 < n)
+    (P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi) where
+  zbase : Fin n → Fin (d + 1) → ℂ
+  zbase_eq :
+    zbase = fun k => wickRotatePoint (P.xseed (P.τ k))
+  ΩJ : Set (Fin n → Fin (d + 1) → ℂ)
+  ΩJ_eq :
+    ΩJ = BHW.os45BHWJostHull d n P.τ zbase
+  zbase_mem_ambient :
+    zbase ∈ BHW.os45BHWJostAmbient d n P.τ
+  ΩJ_open : IsOpen ΩJ
+  ΩJ_connected : IsConnected ΩJ
+  ΩJ_subset_hull :
+    ΩJ ⊆ BHW.os45BHWJostHull d n P.τ zbase
+  adjacentWick_mem :
+    ∀ x, x ∈ P.V →
+      (fun k => wickRotatePoint (x (P.τ k))) ∈ ΩJ
+  realPatch_mem :
+    ∀ x, x ∈ P.V → BHW.realEmbed x ∈ ΩJ
+  adjLift0_mem :
+    ∀ x, x ∈ P.V →
+      BHW.os45Figure24AdjacentLift
+        (d := d) (n := n) hd P.τ x (0 : unitInterval) ∈ ΩJ
+
+/-- Producer for the pure local BHW/Jost hull attached to the canonical
+Figure-2-4 source patch. -/
+def os45_BHWJostHullData_of_figure24
+    [NeZero d]
+    (hd : 2 ≤ d) (i : Fin n) (hi : i.val + 1 < n)
+    (P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi) :
+    BHW.OS45BHWJostHullData (d := d) hd n i hi P := by
+  classical
+  let zbase : Fin n → Fin (d + 1) → ℂ :=
+    fun k => wickRotatePoint (P.xseed (P.τ k))
+  have hzbase_ambient :
+      zbase ∈ BHW.os45BHWJostAmbient d n P.τ := by
+    simpa [zbase] using
+      (BHW.os45Figure24_joined_adjacentWick_to_realPatch
+        (d := d) (n := n) hd P P.xseed P.xseed_mem).source_mem
+  refine
+    { zbase := zbase
+      zbase_eq := rfl
+      ΩJ := BHW.os45BHWJostHull d n P.τ zbase
+      ΩJ_eq := rfl
+      zbase_mem_ambient := hzbase_ambient
+      ΩJ_open :=
+        BHW.os45BHWJostHull_open
+          (d := d) (n := n) P.τ zbase hzbase_ambient
+      ΩJ_connected :=
+        BHW.os45BHWJostHull_connected
+          (d := d) (n := n) P.τ zbase hzbase_ambient
+      ΩJ_subset_hull := ?_
+      adjacentWick_mem := ?_
+      realPatch_mem := ?_
+      adjLift0_mem := ?_ }
+  · intro z hz
+    exact hz
+  · intro x hx
+    simpa [zbase] using
+      BHW.mem_os45BHWJostHull_adjacentWick_of_figure24
+        (d := d) (n := n) hd P P.xseed_mem hx
+  · intro x hx
+    simpa [zbase] using
+      BHW.mem_os45BHWJostHull_realPatch_of_figure24
+        (d := d) (n := n) hd P P.xseed_mem hx
+  · intro x hx
+    simpa [zbase] using
+      BHW.mem_os45BHWJostHull_adjLift0_of_figure24
+        (d := d) (n := n) hd P P.xseed_mem hx
+
 end BHW

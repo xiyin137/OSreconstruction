@@ -9817,9 +9817,39 @@ path-connectedness API, `IsOpen.isConnected_iff_isPathConnected`,
 `os45Figure24_joined_adjacentWick_to_adjLift0`, using
 `figure24RotateAdjacentConfig_lorentz_inverse` and a path in the proper
 complex Lorentz group, and
-`os45Figure24_joined_adjLift0_to_realPatch`, using the deterministic
-Figure-2-4 lift path.  This pins `Dinit.Ωτ ⊆ ΩJ` and `DΩ.Ω ⊆ ΩJ` without
-global PET independence.
+`os45Figure24_joined_adjLift0_to_realPatch`.  Lean correction, 2026-05-09:
+both joined theorems are stated against the actual checked carrier
+`BHW.OS45Figure24CanonicalSourcePatchData`, not the archived
+`OS45Figure24SourceChartAt` pseudocode wrapper.  The first endpoint is
+`BHW.os45Figure24AdjacentLift hd P.τ x 0`; the proof applies
+`BHW.figure24RotateAdjacentConfig_lorentz_inverse` to this rotated lift and
+uses `BHW.os45Figure24IdentityPath_zero` to identify the inverse Lorentz
+image with the adjacent Wick edge
+`fun k => wickRotatePoint (x (P.τ k))`.  The second joined theorem must not
+pretend that the deterministic lift path `t ↦ os45Figure24AdjacentLift hd P.τ x t`
+ends at `BHW.realEmbed x`; that endpoint identity is not a checked field and
+is not generally a definitional fact of the carrier.  Instead, use
+`P.adjLift_mem_extendedTube x hx 0`, `P.V_ET x hx`, connectedness of
+`BHW.ExtendedTube d n`, and the ambient inclusion
+`BHW.os45BHWJostAmbient_mem_identity`.  This pins the local path component
+without global PET independence, source scalar representatives, or final
+locality.  The immediate Lean follow-up is the direct path-component
+membership quartet
+`os45Figure24_joined_adjacentWick_to_realPatch`,
+`mem_os45BHWJostHull_realPatch_of_figure24`,
+`mem_os45BHWJostHull_adjLift0_of_figure24`, and
+`mem_os45BHWJostHull_adjacentWick_of_figure24`.  Each is only
+`JoinedIn.trans` plus the definition of `BHW.os45BHWJostHull`; none is a
+branch-continuation theorem or a PET-independence substitute.
+After that quartet, the pure geometry carrier is
+`BHW.OS45BHWJostHullData` with producer
+`BHW.os45_BHWJostHullData_of_figure24`.  It is intentionally smaller than
+the older pseudocode existential: it stores only the path-component hull based
+at `fun k => wickRotatePoint (P.xseed (P.τ k))`, its open/connected facts,
+and pointwise membership of the adjacent Wick edge, real patch, and
+`adjLift · 0` for `x ∈ P.V`.  It does not claim `Dinit.Ωτ ⊆ ΩJ`,
+`DΩ.Ω ⊆ ΩJ`, or produce an analytic branch; those are the next OS-I/BHW layer
+where the branch packets are actually in scope.
 
 Checked Lean checkpoint, 2026-05-09:
 `OSToWightmanLocalityOS45BHWJostLocal.lean` now implements the local
@@ -9827,8 +9857,10 @@ ambient/hull definitions, ambient membership for the ordinary and selected
 adjacent sectors, openness of the proper-complex Lorentz saturation, the hull
 open/connected/nonempty accessors, and same-sector hull membership for both
 the ordinary extended tube and the selected adjacent permuted sector.  The
-remaining strict-route geometry is the two Figure-2-4 joined-path theorems
-feeding `os45_BHWJostHullData_of_figure24`, not source-oriented descent.
+remaining strict-route geometry in this slice is now checked through
+`BHW.OS45BHWJostHullData` and `BHW.os45_BHWJostHullData_of_figure24`, not
+source-oriented descent.  The next unimplemented strict-route content is the
+local BHW analytic branch continuation on that hull.
 
 The pointwise trace comparison of `WJ (realEmbed x)` with the swapped ordinary
 branch is now the active noncircular trace output: it follows from
@@ -9896,7 +9928,12 @@ single-valuedness for two representations of the same hull point using the
 Hall-Wightman curve/scalar-product construction; define `WJ` by a
 choice-independent chain; obtain holomorphy from the final chart and
 Lorentz-invariance by chain extension.  This is still a genuine lower BHW
-support theorem, not a wrapper and not a global PET-independence call.
+support theorem, not a wrapper and not a global PET-independence call.  It
+also must not call the global `bargmann_hall_wightman` theorem for a completed
+`WightmanFunctions` value: that theorem assumes weak locality as an input, so
+using it here would be circular for theorem 2.  The allowed source is the
+local OS-I §4.5 Euclidean-edge equations plus the BHW/Jost continuation
+argument on the checked local hull.
 
 Canonical producer implementation ledger.  This table is the checkpoint
 against wrapper drift: the checked Euclidean edge theorem is a real input, but
@@ -9908,7 +9945,7 @@ it is not the adjacent analytic branch producer.
 | `os45_adjacent_euclideanEdge_pairing_eq_on_timeSector` | Checked local Lean input for the Euclidean edge equality on ordered sectors. | Its public theorem statement; do not depend on the private helper `integral_perm_eq_self_locality` outside `OSToWightmanLocalityOS45.lean`. |
 | `BHW.OS45Figure24JostRuelleDomainData` and `BHW.os45Figure24_jostRuelleDomainData_of_chart` | Lean-shaped proof pinned; production Lean not started. | Choose `Ω := BHW.ExtendedTube d n`; use `BHW.isOpen_extendedTube`, `BHW.isConnected_extendedTube`, `hV_ET`, and `hChart.adjLift_mem_extendedTube`.  The swapped real-embedding field remains on the surrounding canonical surface for adjacent-source use, but this domain constructor must not infer extended-tube membership from bare `JostSet` membership or choose a second domain. |
 | `BHW.OS45Figure24OrdinaryBranchData` and `BHW.os45Figure24_ordinaryBranchData_of_bvt_F` | Transcript pinned but production Lean not started; mechanically ready after domain data. | `bvt_F_holomorphic`, `bvt_F_complexLorentzInvariant_forwardTube`, `bvt_F_restrictedLorentzInvariant_forwardTube`, `BHW.extendF_holomorphicOn`, `BHW.extendF_complex_lorentz_invariant`, and `DΩ.Ω_sub_extendedTube`. |
-| `BHW.OS45BHWJostLocalContinuationData` and `BHW.os45_BHWJostLocalContinuationData_from_OSI45` | Split required by the route-cycle correction; first local ambient/hull geometry checked in `OSToWightmanLocalityOS45BHWJostLocal.lean`; carrier producer not started. | The upstream BHW/Jost hull and branch-continuation pieces may feed `BHW.OS45SourcePatchBHWJostPairData`: `os45_BHWJostHullData_of_figure24`, `os45_BHWJostBranch_onLocalHull_of_OSI45`, the ordinary and selected adjacent branch continuations, holomorphy, complex-Lorentz invariance, and the Wick/real trace formulas from OS I equations (4.1), (4.12), and (4.14).  The checked pure geometry slice now supplies `BHW.os45BHWJostAmbient`, `BHW.os45BHWJostHull`, open/hull accessors, and same-sector hull membership for the ordinary and selected adjacent sectors.  The full local-continuation data package, including `os45_BHWJostRealBoundaryEq_of_OSI45`, `os45_BHWJostLiftTransport_onSupport_of_OSI45`, and `os45_BHWJostLiftPairing_of_OSI45`, is downstream of the direct source-patch compact theorem and may consume it later.  No source scalar representative, PET independence, EOW envelope, `bvt_W`, final locality, or oriented common-boundary envelope. |
+| `BHW.OS45BHWJostLocalContinuationData` and `BHW.os45_BHWJostLocalContinuationData_from_OSI45` | Split required by the route-cycle correction; pure local hull geometry checked in `OSToWightmanLocalityOS45BHWJostLocal.lean` through `BHW.OS45BHWJostHullData` and `BHW.os45_BHWJostHullData_of_figure24`; analytic branch continuation not started. | The upstream BHW/Jost hull and branch-continuation pieces may feed `BHW.OS45SourcePatchBHWJostPairData`: `os45_BHWJostHullData_of_figure24`, `os45_BHWJostBranch_onLocalHull_of_OSI45`, the ordinary and selected adjacent branch continuations, holomorphy, complex-Lorentz invariance, and the Wick/real trace formulas from OS I equations (4.1), (4.12), and (4.14).  The checked pure geometry slice now supplies `BHW.os45BHWJostAmbient`, `BHW.os45BHWJostHull`, open/hull accessors, Figure-2-4 joined paths, and the `OS45BHWJostHullData` pointwise membership fields.  The full local-continuation data package, including `os45_BHWJostRealBoundaryEq_of_OSI45`, `os45_BHWJostLiftTransport_onSupport_of_OSI45`, and `os45_BHWJostLiftPairing_of_OSI45`, is downstream of the direct source-patch compact theorem and may consume it later.  No source scalar representative, PET independence, EOW envelope, `bvt_W`, final locality, or oriented common-boundary envelope. |
 | `BHW.OS45Figure24AdjacentBranchData` and `BHW.os45Figure24_adjacentBranchData_of_OSI45` | Downstream boundary-data transcript; not the first active source-patch producer. | After `BHW.os45Figure24_sourcePatch_pairing_eq_swappedSourcePatch_of_OSI45` is checked, this packet may combine the local continuation branch with the finished compact source-patch equality, the lift-transport theorem, and the initial compact boundary pairing.  Its `adjacent_realBoundary_eq_ordinary` field must not be used to prove the source-patch theorem. |
 | `BHW.os45Figure24_realBoundaryEq_of_OSI45` | Downstream mechanical extraction; production Lean not started. | Rewrite `Dord.ordinaryBranch` by `Dord.ordinaryBranch_def` and use `Dadj.adjacent_realBoundary_eq_ordinary` only after that adjacent boundary packet has been built downstream.  No scalar representative, local source equality, separate source-branch `= OS.S`, PET independence, or final locality. |
 | `BHW.os45Figure24_sourcePatch_pairing_eq_swappedSourcePatch_of_OSI45` | Active route corrected; algebraic `OS45SourcePatchBHWJostPairData` consumer layer checked, analytic OS-I/BHW-Jost producer still open. | Direct OS I §4.5 / BHW-Jost compact producer.  Preferred target: construct `P : OS45SourcePatchBHWJostPairData ... (BHW.os45Figure24SourcePatch ... i hi)` for each adjacent pair.  The checked exact-source-patch consumer `os45CompactFigure24WickPairingEq_of_pairData_on_figure24SourcePatch` derives the compact Wick-pairing packet from that carrier: Euclidean-edge Wick zero, Wick/real-source integrability, `P.difference` identity propagation, and the family/source-anchor packaging are all checked.  A broader carrier on `V` remains acceptable only if it comes with canonical Figure-2-4 source-patch containment.  It must not call `BHW.os45_adjacent_commonBoundaryEnvelope`, `BHW.os45BranchHorizontalOrientedSourceGermAt_of_figure24_id`, `BHW.os45BranchHorizontalOrientedSourceGermAt_of_figure24_adjacent`, the oriented adjacent `S'_n` seed/path package, PET independence, final locality, or the later OS-specific `JostRuelleCompactBoundaryData` package that consumes this compact theorem.  The old common-boundary-envelope transcript was circular and is retained only as rejected archival material. |
