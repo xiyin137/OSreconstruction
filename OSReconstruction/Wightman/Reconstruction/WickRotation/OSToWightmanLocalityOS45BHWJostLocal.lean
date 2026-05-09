@@ -788,6 +788,104 @@ noncomputable def OS45BHWJostHullData.toPairDataOfBranches
   Bord_real_trace := Bord_real_trace
   Btau_real_trace := Btau_real_trace
 
+/-- Assemble the source-patch BHW/Jost pair carrier from two already-glued
+direct continuation atlases on the checked local hull.
+
+This is a strict-route reducer: the hard work remains the construction of the
+two atlases and the adjacent ordinary-Wick boundary trace. -/
+noncomputable def OS45BHWJostHullData.toPairDataOfContinuationAtlases
+    [NeZero d]
+    (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P)
+    (Aord :
+      BHW.BHWSourcePatchContinuationAtlas hd n P.τ
+        (BHW.ExtendedTube d n) H.ΩJ
+        (BHW.extendF (bvt_F OS lgc n)))
+    (Aadj :
+      BHW.BHWSourcePatchContinuationAtlas hd n P.τ
+        (BHW.permutedExtendedTubeSector d n P.τ) H.ΩJ
+        (fun z =>
+          BHW.extendF (bvt_F OS lgc n)
+            (BHW.permAct (d := d) P.τ z)))
+    (Btau_wick_trace :
+      ∀ x, x ∈ P.V →
+        Aadj.glued (fun k => wickRotatePoint (x k)) =
+          bvt_F OS lgc n (fun k => wickRotatePoint (x (P.τ k)))) :
+    BHW.OS45SourcePatchBHWJostPairData
+      (d := d) hd OS lgc n i hi P.V := by
+  refine
+    BHW.OS45BHWJostHullData.toPairDataOfBranches
+      (d := d) (n := n) hd OS lgc H
+      Aord.glued Aadj.glued
+      Aord.glued_differentiableOn
+      Aadj.glued_differentiableOn
+      ?_ Btau_wick_trace ?_ ?_
+  · intro x hx
+    have hxΩ : (fun k => wickRotatePoint (x k)) ∈ BHW.ExtendedTube d n :=
+      H.ordinaryWick_mem_extendedTube x hx
+    have hxH : (fun k => wickRotatePoint (x k)) ∈ H.ΩJ :=
+      H.ordinaryWick_mem x hx
+    have hagree :
+        Aord.glued (fun k => wickRotatePoint (x k)) =
+          BHW.extendF (bvt_F OS lgc n)
+            (fun k => wickRotatePoint (x k)) :=
+      Aord.glued_eq_B0_of_mem ⟨hxΩ, hxH⟩
+    have hF_holo :
+        DifferentiableOn ℂ (bvt_F OS lgc n) (BHW.ForwardTube d n) := by
+      simpa [BHW_forwardTube_eq (d := d) (n := n)] using
+        bvt_F_holomorphic (d := d) OS lgc n
+    have hF_lorentz :
+        ∀ (Λ : RestrictedLorentzGroup d)
+          (z : Fin n → Fin (d + 1) → ℂ), z ∈ BHW.ForwardTube d n →
+          bvt_F OS lgc n
+            (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * z k ν) =
+          bvt_F OS lgc n z := by
+      intro Λ z hz
+      exact bvt_F_restrictedLorentzInvariant_forwardTube
+        (d := d) OS lgc n Λ z
+        ((BHW_forwardTube_eq (d := d) (n := n)) ▸ hz)
+    have hx_forward :
+        (fun k => wickRotatePoint (x k)) ∈ BHW.ForwardTube d n := by
+      have hroot :
+          (fun k => wickRotatePoint
+            (x ((1 : Equiv.Perm (Fin n)) k))) ∈
+            _root_.ForwardTube d n :=
+        wickRotate_mem_forwardTube_of_mem_orderedPositiveTimeSector
+          (d := d) (n := n) (1 : Equiv.Perm (Fin n))
+          (P.V_ordered x hx)
+      simpa [BHW_forwardTube_eq (d := d) (n := n)] using hroot
+    calc
+      Aord.glued (fun k => wickRotatePoint (x k))
+          = BHW.extendF (bvt_F OS lgc n)
+              (fun k => wickRotatePoint (x k)) := hagree
+      _ = bvt_F OS lgc n (fun k => wickRotatePoint (x k)) :=
+          BHW.extendF_eq_on_forwardTube n (bvt_F OS lgc n)
+            hF_holo hF_lorentz (fun k => wickRotatePoint (x k)) hx_forward
+  · intro x hx
+    exact
+      Aord.glued_eq_B0_of_mem
+        ⟨H.realPatch_mem_extendedTube x hx, H.realPatch_mem x hx⟩
+  · intro x hx
+    have hagree :
+        Aadj.glued (BHW.realEmbed x) =
+          BHW.extendF (bvt_F OS lgc n)
+            (BHW.permAct (d := d) P.τ (BHW.realEmbed x)) :=
+      Aadj.glued_eq_B0_of_mem
+        ⟨H.realPatch_mem_permutedExtendedTubeSector x hx,
+          H.realPatch_mem x hx⟩
+    calc
+      Aadj.glued (BHW.realEmbed x)
+          = BHW.extendF (bvt_F OS lgc n)
+              (BHW.permAct (d := d) P.τ (BHW.realEmbed x)) := hagree
+      _ = BHW.extendF (bvt_F OS lgc n)
+            (BHW.realEmbed (fun k => x (P.τ k))) := by
+          simp [BHW.permAct_realEmbed]
+
 /-- Lorentz transport from the checked Figure-2-4 lift at `0` back to the
 selected adjacent Wick edge, for any branch invariant on the checked local
 hull. -/

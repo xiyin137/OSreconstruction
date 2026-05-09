@@ -49520,6 +49520,16 @@ Proof decomposition of this theorem, without hiding the analytic work:
             claim that source-label permutation preserves the ordinary Wick edge
             inside `ExtendedTube`.
 
+            The mechanical reducer below the hard theorem is
+            `BHW.OS45BHWJostHullData.toPairDataOfContinuationAtlases`: it
+            consumes an ordinary `BHWSourcePatchContinuationAtlas` from
+            `ExtendedTube`, an adjacent one from
+            `permutedExtendedTubeSector d n P.τ`, and the adjacent
+            ordinary-Wick trace theorem above, then calls
+            `H.toPairDataOfBranches`.  The atlas carrier is generic
+            branch/gluing data; this reducer does not consume the older
+            source-oriented continuation input packets or any descent theorem.
+
             The archived lower surfaces begin here:
 
             ```lean

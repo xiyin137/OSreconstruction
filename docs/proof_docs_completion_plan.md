@@ -98,7 +98,8 @@ local Slot 1:
    `BHW.OS45BHWJostHullData.realPatch_mem_permutedExtendedTubeSector`,
    `BHW.OS45BHWJostHullData.extendedTube_meets_ΩJ`,
    `BHW.OS45BHWJostHullData.permutedExtendedTubeSector_meets_ΩJ`, and
-   `BHW.OS45BHWJostHullData.toPairDataOfBranches`, together with the
+   `BHW.OS45BHWJostHullData.toPairDataOfBranches`,
+   `BHW.OS45BHWJostHullData.toPairDataOfContinuationAtlases`, together with the
    production carrier `BHW.OS45SourcePatchBHWJostPairData`,
    `BHW.continuous_wickRotateRealConfig`,
    `BHW.differentiable_permAct`,
@@ -10382,6 +10383,43 @@ common-boundary envelope, or any theorem that already assumes locality.
    5. Return the six fields in the existential order displayed in
       `BHW.os45_BHWJostBranchPair_onLocalHull_of_OSI45`.  The subsequent
       pair-data assembly contains no analysis.
+
+   A mechanical reducer may be implemented before the hard producer:
+
+   ```lean
+   noncomputable def BHW.OS45BHWJostHullData.toPairDataOfContinuationAtlases
+       [NeZero d] (hd : 2 <= d)
+       (OS : OsterwalderSchraderAxioms d)
+       (lgc : OSLinearGrowthCondition d OS)
+       {i : Fin n} {hi : i.val + 1 < n}
+       {P : BHW.OS45Figure24CanonicalSourcePatchData
+         (d := d) hd n i hi}
+       (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P)
+       (Aord :
+         BHW.BHWSourcePatchContinuationAtlas hd n P.τ
+           (BHW.ExtendedTube d n) H.ΩJ
+           (BHW.extendF (bvt_F OS lgc n)))
+       (Aadj :
+         BHW.BHWSourcePatchContinuationAtlas hd n P.τ
+           (BHW.permutedExtendedTubeSector d n P.τ) H.ΩJ
+           (fun z =>
+             BHW.extendF (bvt_F OS lgc n)
+               (BHW.permAct (d := d) P.τ z)))
+       (Btau_wick_trace :
+         ∀ x, x ∈ P.V ->
+           Aadj.glued (fun k => wickRotatePoint (x k)) =
+             bvt_F OS lgc n (fun k => wickRotatePoint (x (P.τ k)))) :
+       BHW.OS45SourcePatchBHWJostPairData (d := d) hd OS lgc n i hi P.V
+   ```
+
+   This reducer is not the BHW theorem.  It calls the checked atlas gluing
+   fields for holomorphy and initial-domain agreement, proves the ordinary Wick
+   trace by `BHW.extendF_eq_on_forwardTube` and `P.V_ordered`, proves both real
+   traces from `H.realPatch_mem_extendedTube`,
+   `H.realPatch_mem_permutedExtendedTubeSector`, and
+   `BHW.permAct_realEmbed`, and copies the supplied adjacent boundary trace.
+   The hard producer still has to construct the two atlases and prove
+   `Btau_wick_trace` by OS I §4.5.
 
    Archived side note: the older `OS45SourcePatchBHWJostHullData` and
    `OS45SourcePatchBHWJostOrientedContinuationInputs` APIs remain in production
