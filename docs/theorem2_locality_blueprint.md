@@ -204,25 +204,21 @@ Research interaction
 `v1_ChZjT1h1YWRpZUU1LThfdU1QMi1LRGVBEhZjT1h1YWRpZUU1LThfdU1QMi1LRGVB`.
 
 Current critical-path ledger for the `2 <= d` implementation, matching the
-global closure ledger in Section 8.  Completion correction (2026-05-09):
-the former proof-doc blocker, the SCV normal/Riemann packet headed by
-`BHW.sourceOrientedVariety_normal_riemannExtension`, is now expanded in
-Section 8.1.1 to theorem-by-theorem Lean-transcribable form.  Production Lean
-must begin there, not at an atlas wrapper.
+global closure ledger in Section 8.  Strict OS-II correction (2026-05-09,
+after Claude's route audit): the source-oriented normal/Riemann and
+quotient-germ packets are off-route for theorem 2.  Production Lean must begin
+only after the direct OS I §4.5 / OS-II proof transcript below is complete;
+that transcript must use BHW continuation, edge-of-the-wedge, and identity
+theorems on the local hull, not source-oriented variety descent.
 
-1. **Stage A, current implementation gate.**  First prove the normal/Riemann
-   support packet, then prove the local-hull adaptive
+1. **Stage A, current implementation gate.**  Prove the literal local-hull
    continuation atlas on the canonical Figure-2-4 source patch:
-   `BHW.os45_BHWJost_initialLocalChart_ordinary_of_OSI45`,
-   `BHW.os45_BHWJost_initialLocalChart_adjacent_of_OSI45`,
-   `BHW.os45_BHWJost_oneStepTransition_of_OSI45`,
-   `BHW.os45_BHWJost_chainAt_ordinary_of_OSI45`,
-   `BHW.os45_BHWJost_chainAt_adjacent_of_OSI45`,
-   `BHW.os45_BHWJost_sameEndpointComparison_ordinary_of_OSI45`,
-   `BHW.os45_BHWJost_sameEndpointComparison_adjacent_of_OSI45`, and
-   `BHW.os45_BHWJost_adjacentAtlas_ordinaryWickTrace_of_OSI45`, then assemble
-   the checked atlas consumers
-   `BHW.os45_BHWJostContinuationAtlases_onLocalHull_of_OSI45` and
+   `BHW.bhw_sourcePatchHull_has_continuationAtlas`,
+   `BHW.os45_BHWJostContinuationAtlas_ordinary_onLocalHull_of_OSI45`,
+   `BHW.os45_BHWJostContinuationAtlas_adjacent_onLocalHull_of_OSI45`,
+   `BHW.os45_BHWJost_adjacentAtlas_ordinaryWickTrace_of_OSI45`, and
+   `BHW.os45_BHWJostContinuationAtlases_onLocalHull_of_OSI45`, then assemble
+   the checked pair-data consumer
    `BHW.OS45BHWJostHullData.toPairDataOfContinuationAtlases`.
 2. **Stage B.**  From that pair data, prove the direct OS I §4.5/BHW-Jost
    compact source-patch equality
@@ -14876,7 +14872,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
       | `BHW.sourceOrientedMinkowskiInvariant`, `BHW.sourcePermuteOrientedGram`, `BHW.sourceMinkowskiGram_complexLorentzAction`, `BHW.sourceOrientedMinkowskiInvariant_complexLorentzAction`, `BHW.sourceOrientedMinkowskiInvariant_permAct`, `BHW.differentiable_sourcePermuteOrientedGram` | Checked in `OSReconstruction/ComplexLieGroups/Connectedness/BHWPermutation/SourceOriented.lean`. | Pair the source Gram invariance/permutation lemmas with the determinant lemmas above; no OS, EOW, PET, or locality input.  The oriented data type is a product-coordinate abbreviation, so the permutation map is differentiable and can be used by the germ precomposition API. |
       | `BHW.sourceOrientedGramVariety`, `BHW.sourceOrientedExtendedTubeDomain`, `BHW.sourceOrientedExtendedTubeDomain_subset_variety`, `BHW.sourcePermuteOrientedGram_mem_variety_iff`, `BHW.IsRelOpenInSourceOrientedGramVariety.preimage_sourcePermuteOrientedGram`, `BHW.IsRelOpenInSourceOrientedGramVariety.inter`, `BHW.IsRelOpenInSourceOrientedGramVariety.iUnion`, `BHW.sourceOrientedDoublePermutationDomain_one_eq`, `BHW.sourceOrientedDoublePermutationDomain_relOpen_of_sourceOrientedExtendedTubeDomain`, `BHW.sourceOrientedExtendedTubeDomain_connected`, `BHW.SourceOrientedVarietyGermHolomorphicOn`, `BHW.SourceOrientedVarietyGermHolomorphicOn.continuousOn`, `BHW.SourceOrientedVarietyGermHolomorphicOn.of_subset_relOpen`, `BHW.SourceOrientedVarietyGermHolomorphicOn.sub`, `BHW.SourceOrientedVarietyGermHolomorphicOn.precomp_sourcePermuteOrientedGram` | Checked in `OSReconstruction/ComplexLieGroups/Connectedness/BHWPermutation/SourceOriented.lean`. | Base oriented source-variety, double-domain topology, and germ-holomorphic calculus.  The double-domain relative-open theorem is deliberately conditional on relative openness of the oriented extended-tube image; the hard local-realization proof for that hypothesis remains in the `sourceOrientedExtendedTubeDomain_relOpen_connected` row. |
       | `BHW.os45SourcePatchBHWJostAmbient`, `BHW.os45SourcePatchBHWJostHull`, `BHW.isOpen_pathComponentIn_of_isOpen_normed`, `BHW.os45SourcePatchBHWJostHull_open`, `BHW.mem_os45SourcePatchBHWJostHull_of_extendedTube`, `BHW.os45SourcePatchOrientedAmbientDomain`, `BHW.UnitIntervalOrderedSubdivision`, `BHW.UnitIntervalOrderedSubdivision.interval_endpoints_mem_cover`, `BHW.exists_unitInterval_orderedSubdivision_of_openCover`, `BHW.unitInterval_orderedSubdivision_of_openCover`, `BHW.exists_unitInterval_orderedSubdivision_of_path_openCover`, `BHW.unitInterval_orderedSubdivision_of_path_openCover`, `BHW.exists_unitInterval_orderedSubdivision_of_orientedTransferCover`, `BHW.unitInterval_orderedSubdivision_of_orientedTransferCover`, `BHW.orientedTransferSubdivision_interval_endpoints_mem`, `BHW.exists_open_preconnected_neighborhood_subset`, `BHW.SourceOrientedMaxRankAt`, `BHW.sourceOrientedExceptionalRank_iff_not_maxRank`, `BHW.not_sourceOrientedExceptionalRank_iff_maxRank`, `BHW.BHWJostLocalOrientedContinuationChart`, `BHW.BHWJostOrientedTransitionData`, `BHW.BHWJostOrientedBranchFreeTransferNeighborhood`, `BHW.BHWJostOrientedSourcePatchContinuationChain`, `BHW.BHWJostOrientedTransferContinuationTrace`, `BHW.BHWJostOrientedTransferControlHasUniqueNext`, `BHW.BHWJostOrientedCertifiedTransferContinuationTrace`, `BHW.BHWJostOrientedCertifiedTransferTerminalPointTrace`, `BHW.BHWJostOrientedTransferTerminalPointTrace`, `BHW.BHWJostOrientedClosedContinuationLoop`, `BHW.BHWJostOrientedMaxRankClosedLoopSeed`, `BHW.BHWLocalChartTerminalComparisonData`, `BHW.BHWSourcePatchContinuationAtlas`, `BHW.BHWSourcePatchContinuationAtlas.glued`, `BHW.BHWSourcePatchContinuationAtlas.glued_eq_branch_of_mem`, `BHW.BHWSourcePatchContinuationAtlas.glued_differentiableOn`, `BHW.BHWSourcePatchContinuationAtlas.glued_eq_B0_of_mem`, `BHW.bhw_glue_sourcePatchContinuationAtlas`, `BHW.bhw_jost_orientedClosedChain_sourceMonodromy_of_orientedMonodromy`, and their mechanical branch/transition/closed-loop descent helpers, including `BHW.BHWJostLocalOrientedContinuationChart.carrier_is_lorentz_step`, `BHW.BHWJostLocalOrientedContinuationChart.exists_source_realization_branch_eq`, `BHW.BHWJostLocalOrientedContinuationChart.orientedDomain_connected_of_carrier_nonempty`, `BHW.BHWJostOrientedTransitionData.sameChart`, `BHW.BHWJostOrientedTransitionData.source_mem_right_carrier`, `BHW.BHWJostOrientedTransitionData.target_mem_overlap`, `BHW.BHWJostOrientedTransitionData.target_mem_left_carrier`, `BHW.BHWJostOrientedTransitionData.source_branch_agree_at_source`, `BHW.BHWJostOrientedTransitionData.source_branch_agree_at_target`, `BHW.BHWJostOrientedTransitionData.symm`, `BHW.BHWJostOrientedTransitionData.exists_sourcePatch_realization_of_orientedPatch`, `BHW.BHWJostOrientedTransitionData.orientedPatch_connected`, `BHW.BHWLocalChartTerminalComparisonData.branch_eq_at_endpoint`, `BHW.BHWLocalChartTerminalComparisonData.symm`, `BHW.BHWLocalChartTerminalComparisonData.trans`, `BHW.BHWLocalChartTerminalComparisonData.ofTransition`, `BHW.BHWJostOrientedCertifiedTransferContinuationTrace.base`, `BHW.BHWJostOrientedCertifiedTransferContinuationTrace.snocAtTerminalNode`, `BHW.BHWJostOrientedCertifiedTransferContinuationTrace.exists_of_nodeTransferSteps`, `BHW.BHWJostOrientedCertifiedTransferContinuationTrace.ofNodeTransferSteps`, `BHW.BHWJostOrientedCertifiedTransferContinuationTrace.exists_of_subdivision`, `BHW.BHWJostOrientedCertifiedTransferContinuationTrace.ofSubdivision`, `BHW.BHWJostOrientedCertifiedTransferContinuationTrace.exists_of_transferCover`, `BHW.BHWJostOrientedCertifiedTransferContinuationTrace.ofTransferCover`, `BHW.BHWJostOrientedCertifiedTransferContinuationTrace.toTerminalPointTrace`, `BHW.BHWJostOrientedCertifiedTransferContinuationTrace.atEndpoint`, `BHW.BHWJostOrientedCertifiedTransferTerminalPointTrace.toTerminalPointTrace`, `BHW.BHWJostOrientedCertifiedTransferTerminalPointTrace.ofTracePoint`, `BHW.BHWJostOrientedCertifiedTransferTerminalPointTrace.atEndpoint`, `BHW.BHWJostOrientedCertifiedTransferTerminalPointTrace.point_mem_terminalLocalChart`, `BHW.BHWJostOrientedTransferTerminalPointTrace.point_mem_terminalLocalChart`, `BHW.BHWJostOrientedSourceNormalFormGeometryPatch.exists_source_realization`, `BHW.BHWJostOrientedSourceNormalFormGeometryPatch.orientedDomain_connected`, `BHW.BHWJostOrientedClosedContinuationLoop.closing_orientedPatch_connected`, `BHW.BHWJostOrientedClosedContinuationLoop.exists_initial_final_source_realizations_of_closing`, `BHW.BHWJostOrientedClosedContinuationLoop.exists_initial_final_source_realizations_branch_eqs_of_closing`, `BHW.BHWJostOrientedBranchFreeTransferNeighborhood.ofSourceNormalFormPatch`, `BHW.BHWJostOrientedBranchFreeTransferNeighborhood.transfer_source_mem_next`, `BHW.BHWJostOrientedBranchFreeTransferNeighborhood.transfer_target_mem_next`, `BHW.BHWJostOrientedBranchFreeTransferNeighborhood.transfer_branch_agree_at_source`, `BHW.BHWJostOrientedSourcePatchContinuationChain.base`, `BHW.BHWJostOrientedSourcePatchContinuationChain.snoc`, `BHW.BHWJostOrientedSourcePatchContinuationChain.retargetTerminal`, `BHW.BHWJostOrientedSourcePatchContinuationChain.retargetTerminal_continuedValue_eq_branch`, `BHW.BHWJostOrientedSourcePatchContinuationChain.exists_of_nodeSteps`, `BHW.BHWJostOrientedSourcePatchContinuationChain.ofNodeSteps`, `BHW.BHWJostOrientedSourcePatchContinuationChain.exists_of_subdivision`, `BHW.BHWJostOrientedSourcePatchContinuationChain.ofSubdivision`, `BHW.BHWJostOrientedSourcePatchContinuationChain.exists_of_transferCover`, `BHW.BHWJostOrientedSourcePatchContinuationChain.ofTransferCover`, `BHW.BHWJostOrientedSourcePatchContinuationChain.chart_is_lorentz_step_of_localChart`, `BHW.BHWJostOrientedTransferContinuationTrace.HasUniqueSteps`, `BHW.BHWJostOrientedTransferContinuationTrace.hasUniqueSteps_base`, `BHW.BHWJostOrientedMaxRankClosedLoopSeed.exists_initial_final_source_realizations`, and `BHW.BHWJostOrientedMaxRankClosedLoopSeed.terminal_branch_eq_B0_on_seedRealizedClosingPatch` | Checked in `OSReconstruction/ComplexLieGroups/Connectedness/BHWPermutation/SourceOrientedContinuation.lean` and `OSReconstruction/ComplexLieGroups/Connectedness/BHWPermutation/SourceOrientedContinuationTrace.lean`. | Lower strict-route carrier/API layer.  It proves the OS45 ambient is open, the path-component hull is open when based in the ambient, contained in the ambient, and path-connected when based in the ambient, source points map one-way into the oriented union domain, the oriented union domain is relatively open assuming `sourceOrientedExtendedTubeDomain` is, the unit-interval open-cover subdivision is packaged in the correct `Nonempty` plus `noncomputable def` Lean shape, path-neighborhood and oriented-transfer covers have selected finite ordered subdivisions, subdivision interval endpoints lie in one common controlling cover/transfer member, open sets in real normed spaces have open preconnected local neighborhoods, max-rank transports across oriented invariant equality and complex-Lorentz action, exceptional-rank negation reduces definitionally to max-rank inside the oriented variety, local charts carry their Lorentz-step source-patch provenance intrinsically, source-normal-form patches with uniform descent become branch-free transfer neighborhoods, the zero-step and successor oriented continuation chain constructors are checked, selected node-step/subdivision/transfer-cover data are folded into full finite continuation chains, transfer-trace provenance records the exact branch-free transfer call behind every stored transition, and the uniqueness-certified-step interface now names the exact one-step comparison datum that future source-normal-form BHW descent must produce for each stored transfer control.  Certified transfer traces now have checked successor, finite-node, subdivision, and compact transfer-cover constructors, so `HasUniqueSteps` propagates through the same compact-cover fold as the raw trace.  Raw and certified terminal-point traces record arbitrary points of terminal charts for atlas-overlap comparison while preserving the one-step uniqueness certificate needed by the closed-path terminal comparison theorem.  Oriented germ equality descends to source-branch equality on transitions and closed loops, the chart-level terminal comparison carrier is checked from a transition overlap and has checked symmetry/transitivity after endpoint shrinkage, the atlas glue step is checked from open carriers, overlap equality, and local holomorphy, branch-free transfer neighborhoods expose the exact previous-chart-to-next-chart handoff at the old source point, transitions now store both endpoints in the overlap source patch and therefore have a checked symmetric transition, same-chart transitions and terminal retargeting turn terminal-chart membership into a same-endpoint chain without changing the terminal branch value, oriented realization fields now produce concrete source representatives for chart domains, transition patches, normal-form patches, every point of the closing oriented patch, and closed-loop max-rank seeds, and the basic nonempty/preconnected fields are exposed as connectedness lemmas for chart domains, transition patches, normal-form patch domains, and closing oriented patches.  The closing oriented-patch representative helpers also rewrite branch values through the stored `Psi` pullbacks, so the terminal-seed producer can focus on the genuine closed-path source-branch equality.  The redundant `transition_patch_eq_sourcePatch` field is not present in the checked chain; local chart agreement is derived from chain-level branch equality plus `branch_eq_local`.  It introduces no hard BHW monodromy theorem and no new `sorry`. |
-      | `BHW.bhw_jost_orientedBranchFreeTransferNeighborhood_at_of_sourceNormalFormProducer`, `BHW.bhw_jost_orientedContinuationChain_of_transferCover`, `BHW.bhw_jost_orientedContinuationChainAt_of_pathConnected_transferCover`, `BHW.bhw_jost_orientedTransferContinuationTrace_of_transferCover`, `BHW.bhw_jost_orientedTransferContinuationTraceAt_of_pathConnected_transferCover`, `BHW.bhw_jost_orientedCertifiedTransferContinuationTrace_of_transferCover`, `BHW.bhw_jost_orientedCertifiedTransferContinuationTraceAt_of_pathConnected_transferCover`, `BHW.bhw_jost_orientedGluedBranch_of_pathConnected_transferCover`, `BHW.bhw_jost_orientedGluedBranch_of_certifiedTraces`, `BHW.bhw_jost_orientedGluedBranch_of_pathConnected_certifiedTransferCover`, `BHW.bhw_jost_orientedGluedBranch_of_pathConnected_sourceNormalFormProducer`, `BHW.bhw_jost_orientedGluedBranch_of_pathConnected_certifiedTransferCover_retargetedComparisons`, `BHW.bhw_jost_orientedGluedBranch_of_pathConnected_sourceNormalFormProducer_retargetedComparisons`, `BHW.BHWOrientedContinuationChainAtlasData`, `BHW.BHWOrientedContinuationChainAtlasData.to_sourcePatchContinuationAtlas`, `BHW.BHWOrientedContinuationChainAtlasData.exists_glued_branch`, `BHW.BHWOrientedContinuationChainAtlasData.ofSameEndpointComparisons`, `BHW.BHWOrientedContinuationChainAtlasData.terminal_base_agree_of_sameEndpointComparison`, `BHW.BHWOrientedContinuationChainAtlasData.ofSameEndpointComparisonsAndBaseChain`, `BHW.BHWOrientedContinuationChainAtlasData.ofSameEndpointComparisonsAndInitialChart`, `BHW.BHWOrientedContinuationTraceAtlasData`, `BHW.BHWOrientedContinuationTraceAtlasData.ofSelectedComparisonsAndInitialChart`, `BHW.BHWOrientedContinuationTraceAtlasData.ofCertifiedTerminalPointComparisonsAndInitialChart`, `BHW.BHWOrientedContinuationTraceAtlasData.ofPathConnectedTransferCoverAndInitialChart`, `BHW.BHWOrientedTerminalChainComparisonData`, `BHW.BHWOrientedTerminalChainComparisonData.ofLocalChartComparison`, `BHW.BHWOrientedTerminalChainComparisonData.ofRetargetedTerminalPointTraceComparison`, `BHW.BHWOrientedTerminalChainComparisonData.ofCertifiedRetargetedTerminalPointTraceComparison`, `BHW.BHWOrientedTerminalChainComparisonData.continuedValue_eq` | Checked in `OSReconstruction/ComplexLieGroups/Connectedness/BHWPermutation/SourceOrientedContinuationProducers.lean`. | Producer-level assembly only.  The first theorem turns a normal-form patch producer plus uniform oriented descent into branch-free transfer neighborhoods at every point of `U`; the next two expose the compact transfer-cover chain fold and its path-connected selected-chain family.  The provenance-retaining analogues now select raw and certified transfer traces from the same compact-cover data, and the raw glued-branch theorem composes a path-connected transfer cover, raw terminal-point trace comparison, and initial chart into the glued holomorphic branch on `U`.  The certified glued-branch theorem is archival conditional infrastructure: it takes already selected certified traces, certified terminal-point comparison, and the initial chart, then forgets the certificates only at the checked atlas storage boundary.  The path-connected certified theorem first selects those certified traces from a uniqueness-certified transfer cover and then applies the certified glued theorem; the source-normal-form producer theorem specializes this to normal-form patches plus uniform descent, leaving the one-step uniqueness theorem for the produced controls and certified terminal comparison as the two hard analytic inputs.  The monodromy-facing certified variants replace the local terminal-chart comparison input by same-endpoint comparison of the two terminal-retargeted certified chains; the retargeted-comparison bridge then rewrites `retargetTerminal`/`snoc` to recover the atlas local-chart comparison mechanically.  The chain-atlas data object packages a fixed base point, one selected terminal chain through each point of `U`, terminal overlap equality, and base agreement, then assembles the checked source-patch atlas and glued branch.  The selected trace-atlas and certified constructors remain conditional transfer-cover consumers; they are not the active theorem-2 surface after the OS45 reset.  In that archived fork, the certified constructor asks only for comparisons between certified selected traces observed at actual overlap points, plus comparison with the certified zero-step base trace.  The same-endpoint comparison constructor remains a checked high-level consumer when arbitrary chain comparison is available; on that older source-backed fork the final producer instead uses selected certified transfer-trace comparison and then forgets trace provenance before storing terminal charts in the atlas.  The base-chain variant derives atlas base agreement by retargeting a normalized base chain to each `z ∈ Ω0 ∩ U` and comparing it with the selected chain ending at `z`; the initial-chart variant builds that normalized base chain as the zero-step chain from an initial chart covering `Ω0 ∩ U` with branch `B0` there.  The terminal-comparison data object packages the output terminal comparison patch, the local-chart constructor turns terminal local-chart comparison into chain comparison, and its consumer proves equality of continued values by evaluating the stored branch equality at the endpoint.  For this archived transfer-cover fork, the hard analytic inputs are the normal-form patch producer, uniform oriented descent theorem producing uniqueness-certified transfer controls, selected certified transfer-trace comparison via finite one-step uniqueness and closed-path source monodromy, and an initial chart covering `Ω0 ∩ U` with branch `B0`; the active OS45 proof surface later in this document is the adaptive chain-atlas route, and no new `sorry`, axiom, or public theorem-2 wrapper is introduced. |
+      | `BHW.bhw_jost_orientedBranchFreeTransferNeighborhood_at_of_sourceNormalFormProducer`, `BHW.bhw_jost_orientedContinuationChain_of_transferCover`, `BHW.bhw_jost_orientedContinuationChainAt_of_pathConnected_transferCover`, `BHW.bhw_jost_orientedTransferContinuationTrace_of_transferCover`, `BHW.bhw_jost_orientedTransferContinuationTraceAt_of_pathConnected_transferCover`, `BHW.bhw_jost_orientedCertifiedTransferContinuationTrace_of_transferCover`, `BHW.bhw_jost_orientedCertifiedTransferContinuationTraceAt_of_pathConnected_transferCover`, `BHW.bhw_jost_orientedGluedBranch_of_pathConnected_transferCover`, `BHW.bhw_jost_orientedGluedBranch_of_certifiedTraces`, `BHW.bhw_jost_orientedGluedBranch_of_pathConnected_certifiedTransferCover`, `BHW.bhw_jost_orientedGluedBranch_of_pathConnected_sourceNormalFormProducer`, `BHW.bhw_jost_orientedGluedBranch_of_pathConnected_certifiedTransferCover_retargetedComparisons`, `BHW.bhw_jost_orientedGluedBranch_of_pathConnected_sourceNormalFormProducer_retargetedComparisons`, `BHW.BHWOrientedContinuationChainAtlasData`, `BHW.BHWOrientedContinuationChainAtlasData.to_sourcePatchContinuationAtlas`, `BHW.BHWOrientedContinuationChainAtlasData.exists_glued_branch`, `BHW.BHWOrientedContinuationChainAtlasData.ofSameEndpointComparisons`, `BHW.BHWOrientedContinuationChainAtlasData.terminal_base_agree_of_sameEndpointComparison`, `BHW.BHWOrientedContinuationChainAtlasData.ofSameEndpointComparisonsAndBaseChain`, `BHW.BHWOrientedContinuationChainAtlasData.ofSameEndpointComparisonsAndInitialChart`, `BHW.BHWOrientedContinuationTraceAtlasData`, `BHW.BHWOrientedContinuationTraceAtlasData.ofSelectedComparisonsAndInitialChart`, `BHW.BHWOrientedContinuationTraceAtlasData.ofCertifiedTerminalPointComparisonsAndInitialChart`, `BHW.BHWOrientedContinuationTraceAtlasData.ofPathConnectedTransferCoverAndInitialChart`, `BHW.BHWOrientedTerminalChainComparisonData`, `BHW.BHWOrientedTerminalChainComparisonData.ofLocalChartComparison`, `BHW.BHWOrientedTerminalChainComparisonData.ofRetargetedTerminalPointTraceComparison`, `BHW.BHWOrientedTerminalChainComparisonData.ofCertifiedRetargetedTerminalPointTraceComparison`, `BHW.BHWOrientedTerminalChainComparisonData.continuedValue_eq` | Checked in `OSReconstruction/ComplexLieGroups/Connectedness/BHWPermutation/SourceOrientedContinuationProducers.lean`. | Producer-level assembly only.  The first theorem turns a normal-form patch producer plus uniform oriented descent into branch-free transfer neighborhoods at every point of `U`; the next two expose the compact transfer-cover chain fold and its path-connected selected-chain family.  The provenance-retaining analogues now select raw and certified transfer traces from the same compact-cover data, and the raw glued-branch theorem composes a path-connected transfer cover, raw terminal-point trace comparison, and initial chart into the glued holomorphic branch on `U`.  The certified glued-branch theorem is archival conditional infrastructure: it takes already selected certified traces, certified terminal-point comparison, and the initial chart, then forgets the certificates only at the checked atlas storage boundary.  The path-connected certified theorem first selects those certified traces from a uniqueness-certified transfer cover and then applies the certified glued theorem; the source-normal-form producer theorem specializes this to normal-form patches plus uniform descent, leaving the one-step uniqueness theorem for the produced controls and certified terminal comparison as the two hard analytic inputs.  The monodromy-facing certified variants replace the local terminal-chart comparison input by same-endpoint comparison of the two terminal-retargeted certified chains; the retargeted-comparison bridge then rewrites `retargetTerminal`/`snoc` to recover the atlas local-chart comparison mechanically.  The chain-atlas data object packages a fixed base point, one selected terminal chain through each point of `U`, terminal overlap equality, and base agreement, then assembles the checked source-patch atlas and glued branch.  The selected trace-atlas and certified constructors remain conditional transfer-cover consumers; they are not the active theorem-2 surface after the OS45 reset.  In that archived fork, the certified constructor asks only for comparisons between certified selected traces observed at actual overlap points, plus comparison with the certified zero-step base trace.  The same-endpoint comparison constructor remains a checked high-level consumer when arbitrary chain comparison is available; on that older source-backed fork the final producer instead uses selected certified transfer-trace comparison and then forgets trace provenance before storing terminal charts in the atlas.  The base-chain variant derives atlas base agreement by retargeting a normalized base chain to each `z ∈ Ω0 ∩ U` and comparing it with the selected chain ending at `z`; the initial-chart variant builds that normalized base chain as the zero-step chain from an initial chart covering `Ω0 ∩ U` with branch `B0` there.  The terminal-comparison data object packages the output terminal comparison patch, the local-chart constructor turns terminal local-chart comparison into chain comparison, and its consumer proves equality of continued values by evaluating the stored branch equality at the endpoint.  For this archived transfer-cover fork, the hard analytic inputs are the normal-form patch producer, uniform oriented descent theorem producing uniqueness-certified transfer controls, selected certified transfer-trace comparison via finite one-step uniqueness and closed-path source monodromy, and an initial chart covering `Ω0 ∩ U` with branch `B0`; the active OS45 proof surface later in this document is the literal source-domain atlas route, and no new `sorry`, axiom, or public theorem-2 wrapper is introduced. |
       | `BHW.SourceOrientedInvariantTransportEquiv`, `BHW.SourceOrientedInvariantTransportEquiv.toFun`, `BHW.SourceOrientedInvariantTransportEquiv.invFun`, `BHW.SourceOrientedInvariantTransportEquiv.left_inv`, `BHW.SourceOrientedInvariantTransportEquiv.right_inv`, `BHW.SourceOrientedInvariantTransportEquiv.continuous_toFun`, `BHW.SourceOrientedInvariantTransportEquiv.continuous_invFun`, `BHW.SourceOrientedInvariantTransportEquiv.isOpen_invFun_image`, `BHW.SourceOrientedInvariantTransportEquiv.invFun_mem_variety_iff`, `BHW.SourceOrientedInvariantTransportEquiv.invFun_maxRank_iff`, `BHW.SourceOrientedInvariantTransportEquiv.refl`, `BHW.sourceOrientedInvariantTransport_mem_inter_iff`, `BHW.sourceOrientedInvariantTransport_invFun_image_inter_variety_relOpen`, `BHW.sourceOrientedInvariantTransport_invFun_image_inter_variety_subset_image`, `BHW.sourceOrientedInvariantTransport_invFun_image_eq_inter_variety`, `BHW.sourceOrientedInvariantTransport_closure_maxRankDense` | Checked in `OSReconstruction/ComplexLieGroups/Connectedness/BHWPermutation/SourceOrientedTransport.lean`. | Legacy ambient transport interface for genuine full-coordinate homeomorphisms.  It remains useful where an ambient oriented invariant coordinate homeomorphism is actually available, but the source-matrix normal-form route no longer uses it: determinant coordinates make the ambient source-change shortcut false off the source variety.  Source-change consumers must use the variety-relative row immediately below. |
       | `BHW.SourceOrientedVariety`, `BHW.sourceOrientedVarietyUnderlyingSet`, `BHW.sourceOrientedVarietyUnderlyingSet_subset_variety`, `BHW.sourceOrientedVarietyUnderlyingSet_relOpen_of_isOpen`, `BHW.SourceOrientedVarietyTransportEquiv`, `BHW.SourceOrientedVarietyTransportEquiv.toFun`, `BHW.SourceOrientedVarietyTransportEquiv.invFun`, `BHW.SourceOrientedVarietyTransportEquiv.left_inv`, `BHW.SourceOrientedVarietyTransportEquiv.right_inv`, `BHW.SourceOrientedVarietyTransportEquiv.continuous_toFun`, `BHW.SourceOrientedVarietyTransportEquiv.continuous_invFun`, `BHW.SourceOrientedVarietyTransportEquiv.invFun_maxRank_iff`, `BHW.SourceOrientedVarietyTransportEquiv.refl`, `BHW.SourceOrientedVarietyTransportEquiv.isOpen_invFun_image`, `BHW.sourceOrientedVarietyTransport_invFun_image_subset_image`, `BHW.sourceOrientedVarietyTransport_invFun_image_eq`, `BHW.sourceOrientedVarietyTransport_invFun_image_underlying_relOpen`, `BHW.sourceOrientedVarietyTransport_closure_maxRankDense` | Checked in `OSReconstruction/ComplexLieGroups/Connectedness/BHWPermutation/SourceOrientedTransport.lean`. | Variety-relative transport interface for source changes whose determinant-coordinate formula is meaningful on actual alternating oriented data but not on arbitrary ambient ordered-frame coordinates.  This is now the chosen normal-form source-change interface; source matrices are supplied by `BHW.sourceOrientedVarietySourceMatrixTransportEquivOfMatrix` in `SourceNormalFormTransport.lean`.  The subtype set API transports open subtype images, converts them back to the repo's ambient relative-open predicate, transports exact parameter images, and transports max-rank density without ever extending the determinant-coordinate action to a false ambient homeomorphism. |
       | `BHW.complexLorentz_exp_nhd_of_one`, `BHW.exp_map_ofReal_bridge`, `BHW.reMatrixCLie`, `BHW.imMatrixCLie`, `BHW.matrix_re_im_decomp_CLie`, `BHW.reMatrixCLie_isInLorentzAlgebra`, `BHW.imMatrixCLie_isInLorentzAlgebra`, `BHW.norm_reMatrixCLie_map_le`, `BHW.norm_imMatrixCLie_map_le`, `BHW.bhw_near_identity_invariance_on_open`, `BHW.bhw_local_complexLorentz_invariance_of_real_invariance`, `BHW.bhw_branch_constant_along_complexLorentz_path`, `BHW.BHWJostLocalOrientedContinuationChart.branch_constant_along_complexLorentz_path`, `BHW.BHWJostOrientedSourcePatchContinuationChain.terminal_Psi_eq_initial_Psi_of_mem_all_orientedTransitions`, `BHW.BHWJostOrientedTransitionData.propagate_eqOn_to_right_maxRank`, `BHW.exists_maxRankSeed_eqOn_of_connected_domain`, `BHW.BHWJostOrientedTransitionData.exists_propagatedSeed_to_right`, `BHW.BHWJostOrientedMaxRankClosedLoopSeed.of_sourceRealized_branch_eq`, `BHW.BHWJostOrientedMaxRankClosedLoopSeed.of_commonTransitionSeed`, `BHW.BHWJostOrientedMaxRankClosedLoopSeed.exists_of_connectedDomainPropagation` | Checked in `OSReconstruction/ComplexLieGroups/Connectedness/BHWPermutation/SourceOrientedBHWInvariance.lean`. | Proper-complex BHW local invariance on an arbitrary open source chart, plus the seed-constructor/telescope/propagation bridge.  This publicizes the exponential neighborhood, real/imaginary Lie-algebra splitting, norm estimates, and one-variable identity-theorem argument from the forward-tube BHW proof, but with `ForwardTube d n` replaced by an arbitrary open carrier `Ω` and with the real restricted-Lorentz invariance hypothesis conditional on both source and transformed point lying in `Ω`.  The path theorem turns the local neighborhood statement into constancy along any `ComplexLorentzGroup d` path whose source orbit remains in `Ω`, by proving local constancy on `unitInterval`; the chart-specialized theorem feeds this directly from a stored `BHWJostLocalOrientedContinuationChart` using its `carrier_open`, `branch_holo`, and `branch_complexLorentzInvariant` fields.  These are the checked inputs needed when a previous local chart branch, rather than the original `B0`, becomes the seed for the next Hall-Wightman descent.  The source-realized seed constructor packages any genuinely produced terminal/initial source-representative branch equality on a nonempty relatively open max-rank seed into the exact `BHWJostOrientedMaxRankClosedLoopSeed` consumer; the common-transition constructor handles the sufficient telescope case where one seed lies in every stored oriented transition patch; the propagated-seed theorems advance accumulated germ equality across connected intermediate domains, then shrink target max-rank patches to new nonempty preconnected relatively open seeds; and the closing-domain theorem turns a propagated terminal/initial equality seed in a connected domain containing the closing patch into the final closed-loop seed object.  This proves no closed-loop monodromy and introduces no new `sorry`. |
@@ -49653,116 +49649,257 @@ Proof decomposition of this theorem, without hiding the analytic work:
             intersection witnesses, and the four source-patch pointwise
             membership lemmas.
 
-            The normalized initial chart is not an ad hoc tuple: the checked
-            generic carrier is
-            `BHW.BHWJostInitialChartData hd n P.τ Ω0 H.ΩJ B0 p0`, with fields
-            `C0`, `hp0C`, `start_patch`, the `hstart_*` proofs,
-            `hstart_sub`, `hstart_agree`, `initial_chart_mem`, and
-            `initial_branch_agree`.  The active finite-chain/atlas assembly
-            step is `BHW.BHWOrientedContinuationChainAtlasData`, not the older
-            path-connected certified transfer-cover reducer.
-
-            Strict-route initial-chart gate: the two
-            `os45_BHWJost_initialChart_*_of_OSI45` producers must not be
-            implemented by calling the archived
-            `SourceOrientedScalarRepresentativeData.toExtendedTubeInitialChart`,
-            `SourceOrientedScalarRepresentativeData.toPermutedExtendedTubeInitialChart`,
-            or the normal/Riemann source-oriented descent theorem.  Those
-            objects are side infrastructure.  On the active OS II / OS I §4.5
-            route, the hard analytic input is a local initial-sector
-            BHW/Jost oriented germ whose carrier is exactly the displayed
-            initial sector and whose branch is exactly the displayed initial
-            branch:
+            Strict-route carrier correction, 2026-05-09: the normalized
+            initial-chart and oriented-chain carriers are archived side
+            infrastructure, not the theorem-2 critical path.  They are honest
+            consumer APIs, but they require
+            `SourceOrientedVarietyGermHolomorphicOn` data and therefore force
+            the off-route quotient-germ/normal-variety problem.  The active OS
+            II / OS I §4.5 proof returns the already checked literal atlas
+            carrier:
 
             ```lean
-            theorem BHW.os45_BHWJost_initialLocalChart_ordinary_of_OSI45
+            structure BHW.BHWSourcePatchContinuationAtlas
                 [NeZero d] (hd : 2 <= d)
-                (OS : OsterwalderSchraderAxioms d)
-                (lgc : OSLinearGrowthCondition d OS)
-                {i : Fin n} {hi : i.val + 1 < n}
-                {P : BHW.OS45Figure24CanonicalSourcePatchData
-                  (d := d) hd n i hi}
-                (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P) :
-                ∃ C0 : BHW.BHWJostLocalOrientedContinuationChart
-                    hd n P.τ H.ΩJ,
-                  C0.carrier = BHW.ExtendedTube d n ∧
-                  C0.branch = BHW.extendF (bvt_F OS lgc n)
-
-            theorem BHW.os45_BHWJost_initialLocalChart_adjacent_of_OSI45
-                [NeZero d] (hd : 2 <= d)
-                (OS : OsterwalderSchraderAxioms d)
-                (lgc : OSLinearGrowthCondition d OS)
-                {i : Fin n} {hi : i.val + 1 < n}
-                {P : BHW.OS45Figure24CanonicalSourcePatchData
-                  (d := d) hd n i hi}
-                (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P) :
-                ∃ C0 : BHW.BHWJostLocalOrientedContinuationChart
-                    hd n P.τ H.ΩJ,
-                  C0.carrier =
-                    BHW.permutedExtendedTubeSector d n P.τ ∧
-                  C0.branch =
-                    (fun z =>
-                      BHW.extendF (bvt_F OS lgc n)
-                        (BHW.permAct (d := d) P.τ z))
+                (n : Nat) (τ : Equiv.Perm (Fin n))
+                (Ω0 U : Set (Fin n -> Fin (d + 1) -> ℂ))
+                (B0 : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ) where
+              chart : Type
+              carrier : chart -> Set (Fin n -> Fin (d + 1) -> ℂ)
+              branch : chart -> (Fin n -> Fin (d + 1) -> ℂ) -> ℂ
+              cover : ∀ z, z ∈ U -> ∃ a, z ∈ carrier a
+              carrier_open : ∀ a, IsOpen (carrier a)
+              carrier_sub_U : ∀ a, carrier a ⊆ U
+              branch_holo : ∀ a, DifferentiableOn ℂ (branch a) (carrier a)
+              overlap_eq :
+                ∀ a b,
+                  Set.EqOn (branch a) (branch b) (carrier a ∩ carrier b)
+              base_agree :
+                ∀ z, z ∈ Ω0 ∩ U ->
+                  ∃ a, z ∈ carrier a ∧ branch a z = B0 z
             ```
 
-            These theorems are the only remaining initial-chart analytic
-            obligations.  Their carrier fields are fixed: ordinary
-            `carrier_open`/`carrier_preconnected` are
-            `BHW.isOpen_extendedTube` and
-            `(BHW.isConnected_extendedTube (d := d) (n := n)).2`;
-            adjacent fields are `BHW.isOpen_permutedExtendedTubeSector` and
-            `BHW.permutedExtendedTubeSector_isPreconnected`.  Their
-            `carrier_sub_U` fields are exactly `H.extendedTube_subset_ΩJ` and
-            `H.permutedExtendedTubeSector_subset_ΩJ`.  Their
-            `carrier_is_lorentz_step` fields use identity Lorentz action on
-            the corresponding initial sector.  The non-mechanical fields are
-            precisely `orientedDomain`, `Psi`, `Psi_holo`,
-            `branch_eq_orientedPullback`,
-            `branch_same_sourceOrientedInvariant`, and
-            `branch_complexLorentzInvariant`, supplied by the local
-            Hall-Wightman/Jost initial-branch theorem on that sector, not by a
-            global source-variety descent theorem.
+            The first active analytic theorem is the literal OS I §4.5 atlas
+            theorem:
 
-            Field-by-field constructor transcript for the two initial local
-            charts: set `carrier` to the displayed initial sector and `branch`
-            to the displayed initial branch.  Fill `carrier_open`,
-            `carrier_preconnected`, `carrier_sub_U`, and
-            `carrier_is_lorentz_step` by the checked sector topology/subset
-            lemmas and the identity complex Lorentz element.  Define the local
-            `orientedDomain` to be the OS I §4.5 source-invariant coordinate
-            image of this sector on the selected proper-complex chart, not a
-            global source-variety domain.  The local BHW/Jost theorem supplies
-            `oriented_relOpen`, `oriented_preconnected`,
-            `oriented_sub_variety`, `oriented_mem`, `oriented_realizes`, the
-            coordinate function `Psi`, and `Psi_holo`.  The
-            `branch_eq_orientedPullback` field is the local scalar-product /
-            oriented-invariant representation of the initial branch on this
-            sector.  The fields `branch_same_sourceOrientedInvariant` and
-            `branch_complexLorentzInvariant` are the local proper-complex BHW
-            invariance statements on the carrier.  None of these fields may be
-            filled from `sourceOrientedScalarRepresentativeData_bvt_F`,
-            normal/Riemann descent, PET independence, or final locality.
+            ```lean
+            theorem BHW.bhw_sourcePatchHull_has_continuationAtlas
+                [NeZero d] (hd : 2 <= d)
+                (n : Nat) (τ : Equiv.Perm (Fin n))
+                (Ω0 U : Set (Fin n -> Fin (d + 1) -> ℂ))
+                (B0 : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+                (hΩ0_open : IsOpen Ω0)
+                (hU_open : IsOpen U)
+                (hU_connected : IsConnected U)
+                (hΩ0_sub_ambient :
+                  Ω0 ⊆ BHW.os45BHWJostAmbient d n τ)
+                (hU_sub_ambient :
+                  U ⊆ BHW.os45BHWJostAmbient d n τ)
+                (hΩ0_sub_U : Ω0 ⊆ U)
+                (hB0_holo : DifferentiableOn ℂ B0 Ω0)
+                (hB0_OSI45 :
+                  BHW.OSI45InitialBranch d n τ Ω0 B0) :
+                BHW.BHWSourcePatchContinuationAtlas hd n τ Ω0 U B0
+            ```
 
-            Lean implementation correction, 2026-05-09: the local chart
-            theorem is the first genuine analytic target.  Before proving it,
-            the production code may add only mechanical consumers with explicit
-            local-chart input.  The checked helper names should be
-            `BHW.OS45BHWJostHullData.ordinaryInitialChartDataOfLocalChart`,
-            `BHW.OS45BHWJostHullData.adjacentInitialChartDataOfLocalChart`,
-            and their `...OfExists` variants.  These helpers consume a concrete
-            `BHWJostLocalOrientedContinuationChart` plus the carrier/branch
-            equalities shown in the two `initialLocalChart_*` theorem
-            statements, then call `BHW.BHWJostInitialChartData.ofFullCarrier`.
-            They are not theorem-2 wrappers and must not assert existence of
-            the local chart.  The hard proof remains exactly the two
-            `initialLocalChart_*` theorems above.
+            Here `BHW.OSI45InitialBranch d n τ Ω0 B0` is not a new axiom and
+            not a QFT trust boundary.  It is a local proof predicate expanded
+            in the blueprint: `B0` is the OS-II branch on the initial sector,
+            has the OS-II boundary values on the selected Euclidean Jost edge,
+            satisfies the OS I §4.5 real/proper-complex Lorentz covariance
+            hypotheses on that sector, and obeys the OS I growth/local
+            boundedness estimates needed for edge-of-the-wedge.  In Lean this
+            predicate may be avoided by inlining the fields in the theorem
+            statement; if it is introduced, every field must be discharged from
+            `bvt_F_holomorphic`, the OS reconstruction boundary-value theorem,
+            OS Euclidean symmetry/reflection positivity exactly as used in OS
+            II, and the checked sector-membership accessors.
 
-            Initial-sector quotient-germ transcript, 2026-05-09: the two
-            `initialLocalChart_*` theorems are implementation-ready only after
-            the following local OS I sec. 4.5 support theorem is proved, not
-            assumed as a global source-variety/descent input.  Its ordinary
-            form is:
+            Lean-facing expansion of that predicate, if a predicate is used:
+
+            ```lean
+            structure BHW.OSI45InitialBranch
+                (d n : Nat) (τ : Equiv.Perm (Fin n))
+                (Ω0 : Set (Fin n -> Fin (d + 1) -> ℂ))
+                (B0 : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ) : Prop where
+              branch_holo : DifferentiableOn ℂ B0 Ω0
+              proper_lorentz_cov :
+                ∀ Λ z,
+                  z ∈ Ω0 ->
+                  BHW.complexLorentzAction Λ z ∈ Ω0 ->
+                  B0 (BHW.complexLorentzAction Λ z) = B0 z
+              local_jost_edge :
+                ∀ p, p ∈ BHW.os45BHWJostAmbient d n τ ->
+                  ∃ E N plus minus,
+                    IsOpen N ∧ p ∈ N ∧
+                    N ⊆ BHW.os45BHWJostAmbient d n τ ∧
+                    BHW.OSI45JostEdge d n τ E N plus minus
+              eow_on_local_edge :
+                ∀ p hp,
+                  BHW.OSI45LocalEOWConclusion d n τ Ω0 B0 p hp
+              closed_loop_monodromy :
+                ∀ L,
+                  BHW.OSI45ClosedBHWLoop d n τ Ω0 B0 L ->
+                  BHW.OSI45ClosedBHWLoopMonodromy d n τ Ω0 B0 L
+            ```
+
+            The auxiliary names in this display are not black boxes.  They are
+            documentation handles for the OS I §4.5 proof:
+            `OSI45JostEdge` stores the two opposite local wedges and their
+            common real Jost edge; `OSI45LocalEOWConclusion` is the direct
+            application of the already-formalized EOW theorem to the two local
+            branches with equal OS boundary trace; `OSI45ClosedBHWLoop` is a
+            finite list of such local continuations with consecutive
+            preconnected overlaps; and `OSI45ClosedBHWLoopMonodromy` is the
+            finite telescope of identity-theorem equalities around that loop.
+            If any of these names is introduced in Lean, it must be a theorem
+            or structure with these fields, not a hypothesis on theorem 2 and
+            not an axiom.
+
+            OS45 discharges of the predicate are exactly:
+
+            ```lean
+            theorem BHW.osi45InitialBranch_ordinary_bvt_F
+                [NeZero d] (hd : 2 <= d)
+                (OS : OsterwalderSchraderAxioms d)
+                (lgc : OSLinearGrowthCondition d OS)
+                {i : Fin n} {hi : i.val + 1 < n}
+                {P : BHW.OS45Figure24CanonicalSourcePatchData
+                  (d := d) hd n i hi}
+                (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P) :
+                BHW.OSI45InitialBranch d n P.τ
+                  (BHW.ExtendedTube d n)
+                  (BHW.extendF (bvt_F OS lgc n))
+
+            theorem BHW.osi45InitialBranch_adjacent_bvt_F
+                [NeZero d] (hd : 2 <= d)
+                (OS : OsterwalderSchraderAxioms d)
+                (lgc : OSLinearGrowthCondition d OS)
+                {i : Fin n} {hi : i.val + 1 < n}
+                {P : BHW.OS45Figure24CanonicalSourcePatchData
+                  (d := d) hd n i hi}
+                (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P) :
+                BHW.OSI45InitialBranch d n P.τ
+                  (BHW.permutedExtendedTubeSector d n P.τ)
+                  (fun z =>
+                    BHW.extendF (bvt_F OS lgc n)
+                      (BHW.permAct (d := d) P.τ z))
+            ```
+
+            Their proofs are field-by-field.  `branch_holo` is exactly
+            `BHW.differentiableOn_extendF_bvt_F_extendedTube` on the ordinary
+            side and
+            `BHW.differentiableOn_extendF_bvt_F_permAct_preimageExtendedTube`
+            restricted to the adjacent sector.  `proper_lorentz_cov` is the
+            BHW `extendF` proper-complex Lorentz invariance derived from
+            `bvt_F_complexLorentzInvariant_forwardTube`; on the adjacent side
+            precompose the equality by the finite permutation map and use only
+            points whose images stay in the displayed adjacent sector.  The
+            `local_jost_edge` field is the Figure-2-4 local geometry: choose
+            the OS I proper-complex Lorentz chart through `p`, shrink inside
+            `H.ΩJ`, and use the checked ordinary/adjacent Wick and real-patch
+            membership lemmas to identify the two local wedges and their common
+            Euclidean Jost edge.  The `eow_on_local_edge` field applies the SCV
+            edge-of-the-wedge theorem to those two branches, using OS
+            symmetric Schwinger functions only to equate the common boundary
+            trace on the selected Jost edge.  The `closed_loop_monodromy` field
+            is the finite identity-theorem telescope over consecutive
+            preconnected overlaps; it is OS I §4.5 monodromy, not PET
+            single-valuedness.
+
+            Proof transcript for
+            `BHW.bhw_sourcePatchHull_has_continuationAtlas`: define a
+            reachable local branch at `p ∈ U` to be a finite OS I §4.5
+            continuation chain from the initial sector `Ω0` to `p`.  A chain
+            consists of finitely many open source neighborhoods
+            `N_j ⊆ U`, holomorphic branches `B_j` on `N_j`, source points
+            `p_j ∈ N_j ∩ N_{j+1}`, and overlap identities
+            `Set.EqOn B_j B_{j+1} (N_j ∩ N_{j+1})`; `B_0` is the supplied
+            initial branch on an open subset of `Ω0`.  The local extension
+            step is exactly OS I §4.5/BHW: at a terminal point `p_j`, choose a
+            proper-complex Lorentz/Jost coordinate neighborhood inside
+            `os45BHWJostAmbient d n τ`; use the boundary-value equality on the
+            local Euclidean Jost edge plus edge-of-the-wedge to construct the
+            next holomorphic branch; use the identity theorem on the connected
+            overlap with `N_j` to prove the overlap identity.  This step is
+            applied only inside `U` after shrinking by `hU_sub_ambient`; it
+            never claims that a source-label permutation preserves
+            `ExtendedTube`.
+
+            Coverage is the standard open/closed continuation argument on the
+            connected hull.  Let `R = {p ∈ U | p has a reachable local branch}`.
+            The initial sector gives `Ω0 ⊆ R` by the zero-step chain, hence
+            `R` is nonempty.  The local extension step proves `R` is open in
+            `U`.  If `p` is in the closure of `R` relative to `U`, choose a
+            nearby reachable `q`, apply the local extension theorem at `q`,
+            and shrink the resulting chart so it contains `p`; this proves
+            `R` is closed in `U`.  Since `U` is connected, `R = U`.  For Lean,
+            implement this as `IsPreconnected.subset_closure`/relative-open
+            and relative-closed sets, or equivalently as a finite chain along
+            `JoinedIn` paths using compactness of `[0,1]`; both are the same
+            OS I continuation proof, but the chosen implementation must be
+            written out before coding.
+
+            The atlas `chart` type is the subtype of reachable chains.  For a
+            chart `a`, `carrier a` is its terminal neighborhood and
+            `branch a` is its terminal branch.  The fields `cover`,
+            `carrier_open`, `carrier_sub_U`, and `branch_holo` are projections
+            from reachability and the coverage proof.  The field `base_agree`
+            is the zero-step chain on `Ω0`, using `hΩ0_sub_U`.
+
+            The overlap field is the closed-path monodromy part of OS I §4.5.
+            Given two reachable chains whose terminal neighborhoods overlap,
+            choose `r ∈ carrier a ∩ carrier b`.  Concatenate chain `a`, the
+            terminal overlap segment to `r`, the reverse of chain `b`, and the
+            initial-sector overlap.  OS I §4.5 proves that analytic
+            continuation around this closed BHW/Jost loop returns to the same
+            germ: the proof reduces each adjacent pair to the local
+            edge-of-the-wedge identity theorem above, then telescopes the
+            finite chain.  Therefore the two terminal branches agree on the
+            connected component of `carrier a ∩ carrier b` containing `r`; after
+            shrinking terminal neighborhoods in the reachable-chain definition,
+            this is the whole stored overlap.  This is the only monodromy
+            theorem in Stage A.  It must not be replaced by PET
+            single-valuedness, final locality, source-oriented descent, or a
+            quotient-variety normality theorem.
+
+            The two OS45 applications are direct substitutions into this
+            literal theorem:
+
+            * ordinary: `Ω0 := BHW.ExtendedTube d n`,
+              `B0 := BHW.extendF (bvt_F OS lgc n)`, using
+              `BHW.isOpen_extendedTube`, `H.extendedTube_subset_ambient`,
+              `H.extendedTube_subset_ΩJ`, `H.ΩJ_open`,
+              `H.ΩJ_isPathConnected.isConnected`,
+              `BHW.differentiableOn_extendF_bvt_F_extendedTube`, and the
+              OS-II/OS-I proof of `BHW.OSI45InitialBranch` for the ordinary
+              Wick sector.
+            * adjacent: `Ω0 := BHW.permutedExtendedTubeSector d n P.τ`,
+              `B0 z := BHW.extendF (bvt_F OS lgc n)
+                (BHW.permAct (d := d) P.τ z)`, using
+              `BHW.isOpen_permutedExtendedTubeSector`,
+              `H.permutedExtendedTubeSector_subset_ambient`,
+              `H.permutedExtendedTubeSector_subset_ΩJ`,
+              `BHW.differentiableOn_extendF_bvt_F_permAct_preimageExtendedTube`,
+              and the same OS-II/OS-I initial-branch proof after literal source
+              relabelling on the adjacent Jost edge.
+
+            The previously checked
+            `OS45BHWJostHullData.ordinaryInitialChartDataOfLocalChart`,
+            `OS45BHWJostHullData.adjacentInitialChartDataOfLocalChart`, and
+            `BHWOrientedContinuationChainAtlasData` objects are archived
+            consumer infrastructure.  They are not the next Lean target and
+            must not be used to force source-oriented germ fields into the
+            strict OS-II proof.
+
+            Archived off-route quotient-germ transcript, superseded by the
+            strict OS-II correction of 2026-05-09: the following
+            source-oriented quotient-germ block is retained only as an audit
+            trail of a rejected reformulation.  It is not an active proof plan
+            for the literal atlas theorem and must not be
+            implemented on the theorem-2 route.  The active direct
+            atlas transcript is the block immediately above.  The rejected
+            ordinary form was:
 
             ```lean
             theorem BHW.osi45_initialSector_sourceOrientedQuotientGerm_ordinary
@@ -49995,58 +50132,58 @@ Proof decomposition of this theorem, without hiding the analytic work:
             `Psi (sourceOrientedMinkowskiInvariant d n z)` to the ordinary
             quotient equality at `BHW.permAct (d := d) τ z`.
 
-            Field-by-field construction of
-            `os45_BHWJost_initialLocalChart_ordinary_of_OSI45`: choose
-            `Psi` from
-            `osi45_initialSector_sourceOrientedQuotientGerm_ordinary`.
-            Define the chart with `carrier := BHW.ExtendedTube d n`,
-            `orientedDomain := BHW.sourceOrientedExtendedTubeDomain d n`,
-            `branch := BHW.extendF (bvt_F OS lgc n)`, and the chosen `Psi`.
-            The carrier fields are `BHW.isOpen_extendedTube`,
+            Archived source-oriented initial-chain transcript: the following
+            block records the pre-correction plan that tried to prove
+            `os45_BHWJost_initialLocalChart_ordinary_of_OSI45` on the literal
+            sector `BHW.ExtendedTube d n`.  Define the chart with
+            `carrier := BHW.ExtendedTube d n` and
+            `branch := BHW.extendF (bvt_F OS lgc n)`.  The carrier fields are
+            `BHW.isOpen_extendedTube`,
             `(BHW.isConnected_extendedTube (d := d) (n := n)).2`,
-            `H.extendedTube_subset_ΩJ`, and the identity Lorentz-step
-            witness.  The oriented fields are
-            `BHW.sourceOrientedExtendedTubeDomain_relOpen_connected`,
-            `BHW.sourceOrientedExtendedTubeDomain_subset_variety`,
-            `⟨z, hz, rfl⟩` for `oriented_mem`, and elimination of that
-            existential for `oriented_realizes`.  `Psi_holo` and
-            `branch_eq_orientedPullback` are the two fields of the support
-            theorem.  `branch_holo` is
-            `BHW.differentiableOn_extendF_bvt_F_extendedTube`.
-            `branch_same_sourceOrientedInvariant` rewrites both source points
-            through `branch_eq_orientedPullback`, and
-            `branch_complexLorentzInvariant` rewrites through
-            `BHW.sourceOrientedMinkowskiInvariant_complexLorentzAction`.
+            `H.extendedTube_subset_ΩJ`, and the identity Lorentz-step witness.
+            The non-mechanical chart data are obtained directly from OS-II
+            `bvt_F` and OS I §4.5: use `bvt_F_holomorphic` and
+            `extendF` holomorphy on the extended tube for `branch_holo`; use
+            the BHW theorem on the extended tube to choose the local
+            proper-complex Lorentz/Jost coordinates around each point of the
+            carrier; use OS-II boundary values and EOW on the selected local
+            Jost edge to identify the local representative with
+            `extendF (bvt_F OS lgc n)`; and use the identity theorem on the
+            connected local chart patch to prove agreement on overlaps.
+            This is not an active implementation plan, because the
+            `orientedDomain`, `Psi`, `Psi_holo`, and
+            `branch_eq_orientedPullback` fields of the existing carrier record
+            still force source-oriented variety-germ data.  If this archived
+            carrier is ever reused outside theorem 2, these fields must be
+            filled by local OS45/BHW coordinate chart data only.  They are not
+            quotient-germ fields and must not be produced from
+            `SourceOrientedVarietyGermHolomorphicOn`,
+            `sourceOrientedQuotientValue`, normal/Riemann extension, or SO
+            invariant-ring normality.
 
-            Field-by-field construction of
-            `os45_BHWJost_initialLocalChart_adjacent_of_OSI45`: choose `Psi`
-            from `osi45_initialSector_sourceOrientedQuotientGerm_adjacent`.
-            Define the chart with
-            `carrier := BHW.permutedExtendedTubeSector d n P.τ`,
-            `orientedDomain := {G | BHW.sourcePermuteOrientedGram d n P.τ G ∈
-            BHW.sourceOrientedExtendedTubeDomain d n}`, and
-            `branch := fun z => BHW.extendF (bvt_F OS lgc n)
-            (BHW.permAct (d := d) P.τ z)`.  The carrier topology fields are
+            Prove
+            `os45_BHWJost_initialLocalChart_adjacent_of_OSI45` on the literal
+            sector `BHW.permutedExtendedTubeSector d n P.τ`.  Define the
+            chart with that carrier and branch
+            `fun z => BHW.extendF (bvt_F OS lgc n)
+              (BHW.permAct (d := d) P.τ z)`.  The carrier topology fields are
             `BHW.isOpen_permutedExtendedTubeSector` and
             `BHW.permutedExtendedTubeSector_isPreconnected`; the subset field
-            is `H.permutedExtendedTubeSector_subset_ΩJ`.  The Lorentz-step
+            is `H.permutedExtendedTubeSector_subset_ΩJ`; the Lorentz-step
             witness again uses identity action on the adjacent initial sector.
-            The oriented rel-open and preconnected fields are the ordinary
-            domain fields transported by
-            `sourcePermuteOrientedGram`; the subset field uses
-            `BHW.sourcePermuteOrientedGram_mem_variety_iff`.  `oriented_mem`
-            and `oriented_realizes` are the same existential arguments as in
-            `SourceOrientedScalarRepresentativeData.toPermutedExtendedTubeInitialChart`,
-            using `BHW.sourceOrientedMinkowskiInvariant_permAct` and
-            `BHW.permAct` inverse cancellation.  `branch_holo` is
-            `BHW.differentiableOn_extendF_bvt_F_permAct_preimageExtendedTube`
-            restricted/reinterpreted by the definition of
-            `BHW.permutedExtendedTubeSector`.  The same-invariant and
-            complex-Lorentz fields rewrite through the chosen adjacent
-            `branch_eq_orientedPullback`; the complex-Lorentz case also uses
-            `BHW.sourceOrientedMinkowskiInvariant_complexLorentzAction`.
+            The local representative is obtained by applying the same OS-II /
+            OS I §4.5 BHW construction to the relabelled branch on
+            `permAct P.τ z`, then transporting it back by the literal source
+            relabelling used in the sector definition.  This uses
+            `bvt_F` holomorphy after precomposition by `permAct`,
+            Euclidean symmetry only on the OS45 Jost edge where OS I invokes
+            symmetric Schwinger functions, EOW on the selected adjacent local
+            edge, and the identity theorem on the connected local chart patch.
+            It does not assert that `permAct P.τ` preserves `ExtendedTube`,
+            and it does not use PET branch independence or final locality.
 
-            Once either local-chart theorem is available, the
+            In that archived fork, once either local-chart theorem is
+            available, the
             `BHWJostInitialChartData` wrapper is already mechanical via the
             checked generic constructor
             `BHW.BHWJostInitialChartData.ofFullCarrier`: pass the chart `C0`,
@@ -50095,15 +50232,17 @@ Proof decomposition of this theorem, without hiding the analytic work:
             chart containing `p` and then packages a transition patch
             containing both `p` and `q`; without a neighborhood chosen inside
             that previous chart this is stronger than the local OS I §4.5
-            analytic-continuation step.  The strict implementation surface is
-            therefore the already checked adaptive chain-atlas carrier
+            analytic-continuation step.  In this archived source-oriented fork,
+            the implementation surface would have been the already checked
+            adaptive chain-atlas carrier
             `BHW.BHWOrientedContinuationChainAtlasData`, assembled by
             `BHW.BHWOrientedContinuationChainAtlasData.ofSameEndpointComparisonsAndInitialChart`.
             It asks only for a selected continuation chain through each
-            endpoint and a same-endpoint monodromy comparison between chains.
+            endpoint and a same-endpoint monodromy comparison between chains,
+            but it is not the active strict OS-II theorem-2 carrier.
 
-            The local one-step theorem used inside the selected-chain proof is
-            chart-dependent:
+            The archived local one-step theorem used inside the selected-chain
+            proof is chart-dependent:
 
             ```lean
             theorem BHW.os45_BHWJost_oneStepTransition_of_OSI45
@@ -50182,7 +50321,8 @@ Proof decomposition of this theorem, without hiding the analytic work:
             `BHWJostOrientedTransitionData.orientedPatch_subset_right` are the
             two projections of the stored `orientedPatch_sub` field.
 
-            Selected chains are produced adaptively from that one-step theorem:
+            In the archived fork, selected chains are produced adaptively from
+            that one-step theorem:
 
             ```lean
             theorem BHW.os45_BHWJost_chainAt_ordinary_of_OSI45
@@ -50248,7 +50388,8 @@ Proof decomposition of this theorem, without hiding the analytic work:
             gives the chain ending at `z`.  No pre-fixed universal transfer
             cover, source-variety descent, or PET independence is used.
 
-            Same-endpoint comparison is the closed-path monodromy theorem:
+            The archived same-endpoint comparison is the closed-path monodromy
+            theorem:
 
             ```lean
             theorem BHW.os45_BHWJost_sameEndpointComparison_ordinary_of_OSI45
@@ -50300,8 +50441,8 @@ Proof decomposition of this theorem, without hiding the analytic work:
             This is the only monodromy theorem needed by the chain-atlas
             constructor.
 
-            With `I0`, `chainAt`, and `sameEndpointComparison`, each atlas
-            constructor is mechanical:
+            In that archived fork, with `I0`, `chainAt`, and
+            `sameEndpointComparison`, each atlas constructor is mechanical:
 
             ```lean
             noncomputable def BHW.os45_BHWJostContinuationAtlas_ordinary_onLocalHull_of_OSI45
@@ -50382,7 +50523,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
                   .to_sourcePatchContinuationAtlas
             ```
 
-            Finally,
+            In the archived fork,
             `BHW.os45_BHWJostContinuationAtlases_onLocalHull_of_OSI45`
             returns these two atlases and obtains the supplied adjacent
             ordinary-Wick trace from
@@ -50423,7 +50564,8 @@ Proof decomposition of this theorem, without hiding the analytic work:
                   (d := d) hd OS lgc H Aadj
             ```
 
-            The adjacent ordinary-Wick trace is the remaining Figure-2-4
+            The adjacent ordinary-Wick trace remains active, but the following
+            source-oriented statement is the archived fork's Figure-2-4
             boundary calculation:
 
             ```lean
@@ -50465,14 +50607,18 @@ Proof decomposition of this theorem, without hiding the analytic work:
             supplied by the Figure-2-4 construction; no claim is made that
             `permAct P.τ` preserves `ExtendedTube`.
 
-            The analytic surfaces remaining at this point are precisely the two
+            In this archived source-oriented fork, the analytic surfaces would
+            have been the two
             `initialLocalChart_*` local-germ theorems, the two `chainAt_*`
             selected-chain theorems, the two `sameEndpointComparison_*`
             monodromy theorems, and
             `os45_BHWJost_adjacentAtlas_ordinaryWickTrace_of_OSI45`.  The
             `initialChart_*` wrappers and the two atlas constructors are
             mechanical consumers of those surfaces.  None of these inputs may be
-            axiomatized or sourced from final locality.
+            axiomatized or sourced from final locality.  They are superseded on
+            the active strict route by the literal
+            `BHW.bhw_sourcePatchHull_has_continuationAtlas` theorem and its two
+            OS45 specializations.
 
             The archived lower surfaces begin here:
 
@@ -73937,40 +74083,40 @@ theorem surfaces for the OS route.
 ## 8. Global theorem-2 closure ledger
 
 This document is active-route only.  Its final section is a global Lean
-closure ledger, not a stage-local readiness note.  Completion correction
-(2026-05-09): the earlier "ready" wording was too weak, but the
-normal/Riemann packet is now expanded below to the required
-Lean-transcription level.  The first production target is therefore the
-support file proving `BHW.sourceOrientedVariety_normal_riemannExtension` and
-its named SCV/invariant-ring prerequisites, not an atlas wrapper.  A theorem
-surface not named here is a route change and requires a docs update before
-Lean implementation.
+closure ledger, not a stage-local readiness note.  Strict OS-II correction
+(2026-05-09): the source-oriented normal/Riemann and quotient-germ packets are
+off-route for theorem 2.  The first active proof-doc target is the direct
+OS I §4.5 / OS-II local BHW/Jost continuation proof for literal source-domain
+atlases on the extended tube and permuted-extended-tube sector inside `H.ΩJ`.
+A theorem surface not named here is a route change and requires a docs update
+before Lean implementation.
 
 ### 8.1. Current implementation gate
 
-The current `2 <= d` gate is the SCV support packet needed before the
-direct OS I sec. 4.5 local-hull adaptive continuation atlas on the canonical
-Figure-2-4 source patch.  It is not the later Slot-6/Slot-7
+The current `2 <= d` gate is the direct OS I sec. 4.5 local-hull continuation
+atlas on the canonical Figure-2-4 source patch.  The active carrier is the
+literal source-domain atlas `BHW.BHWSourcePatchContinuationAtlas`, not
+`BHW.BHWJostLocalOrientedContinuationChart`; the latter contains
+source-oriented variety-germ fields and is therefore archived side
+infrastructure for theorem 2.  Stage A is not the later Slot-6/Slot-7
 Hall-Wightman/PET source theorem, and it is not a source-variety/descent
 substitute.
 
-Before the atlas surfaces themselves, the initial-sector quotient-germ packet
-has two source-oriented SCV support surfaces that must be proved in this order:
+Before any Lean implementation, the blueprint must give a full direct proof
+transcript for these active OS45 analytic surfaces:
 
-0a. `BHW.sourceOrientedVariety_normal_riemannExtension`, the
-    finite-dimensional normal analytic-space Riemann theorem specialized to
-    the oriented source-invariant variety;
-0b. `BHW.sourceOrientedQuotientValue_germHolomorphic_of_OSI45`, the direct
-    bridge from `sourceOrientedQuotientValue_continuous_locallyBounded`,
-    max-rank local holomorphic representatives, and
-    `sourceOrientedVariety_normal_riemannExtension` to a
-    `SourceOrientedVarietyGermHolomorphicOn` proof on the whole oriented
-    extended-tube image;
-0c. `BHW.sourceOrientedQuotientValue_rankDeficient_germHolomorphic_of_OSI45`,
-    the local witness-extraction theorem used by the rank-deficient branch of
-    the initial-sector chart construction.
+0. `BHW.bhw_sourcePatchHull_has_continuationAtlas`;
+1. `BHW.os45_BHWJostContinuationAtlas_ordinary_onLocalHull_of_OSI45`;
+2. `BHW.os45_BHWJostContinuationAtlas_adjacent_onLocalHull_of_OSI45`;
+3. `BHW.os45_BHWJost_adjacentAtlas_ordinaryWickTrace_of_OSI45`;
+4. `BHW.os45_BHWJostContinuationAtlases_onLocalHull_of_OSI45`.
 
-#### 8.1.1. Normal/Riemann packet, Lean-transcribable transcript
+#### 8.1.1. Archived off-route normal/Riemann note
+
+The following normal/Riemann and quotient-germ material is retained only as an
+archived record of a rejected reformulation.  It is not an active theorem-2
+producer, not a prerequisite for Stage A, and not a permitted implementation
+surface under the strict OS-II directive.
 
 Implementation file: add a small support file, for example
 `OSReconstruction/ComplexLieGroups/Connectedness/BHWPermutation/SourceOrientedNormalRiemann.lean`.
@@ -74343,25 +74489,20 @@ local-boundedness, and density inputs.  It must not be treated as a
 holomorphic parameterization and must not be used to define the ambient
 representative `Psi`.
 
-The OS45 analytic surfaces to prove after those support surfaces are exactly:
+After the strict carrier correction, the active OS45 analytic surfaces are
+exactly:
 
-0. `BHW.osi45_initialSector_sourceOrientedQuotientGerm_ordinary` and
-   `BHW.osi45_initialSector_sourceOrientedQuotientGerm_adjacent`, the local
-   OS I sec. 4.5 support packet that supplies `Psi_holo` and the oriented
-   pullback law for the initial ordinary and adjacent sectors;
-1. `BHW.os45_BHWJost_initialLocalChart_ordinary_of_OSI45`;
-2. `BHW.os45_BHWJost_initialLocalChart_adjacent_of_OSI45`;
-3. `BHW.os45_BHWJost_oneStepTransition_of_OSI45`;
-4. `BHW.os45_BHWJost_chainAt_ordinary_of_OSI45`;
-5. `BHW.os45_BHWJost_chainAt_adjacent_of_OSI45`;
-6. `BHW.os45_BHWJost_sameEndpointComparison_ordinary_of_OSI45`;
-7. `BHW.os45_BHWJost_sameEndpointComparison_adjacent_of_OSI45`;
-8. `BHW.os45_BHWJost_adjacentAtlas_ordinaryWickTrace_of_OSI45`.
+0. `BHW.bhw_sourcePatchHull_has_continuationAtlas`;
+1. `BHW.os45_BHWJostContinuationAtlas_ordinary_onLocalHull_of_OSI45`;
+2. `BHW.os45_BHWJostContinuationAtlas_adjacent_onLocalHull_of_OSI45`;
+3. `BHW.os45_BHWJost_adjacentAtlas_ordinaryWickTrace_of_OSI45`;
+4. `BHW.os45_BHWJostContinuationAtlases_onLocalHull_of_OSI45`.
 
-Their mechanical consumers are exactly:
-
-1. `BHW.os45_BHWJost_initialChart_ordinary_of_OSI45`;
-2. `BHW.os45_BHWJost_initialChart_adjacent_of_OSI45`;
+Their checked mechanical consumer is exactly
+`BHW.OS45BHWJostHullData.toPairDataOfContinuationAtlases`.  The older
+`initialLocalChart_*`, `oneStepTransition`, `chainAt_*`, and
+`sameEndpointComparison_*` surfaces belong only to the archived
+source-oriented-chain fork.
 3. `BHW.os45_BHWJostContinuationAtlas_ordinary_onLocalHull_of_OSI45`;
 4. `BHW.os45_BHWJostContinuationAtlas_adjacent_onLocalHull_of_OSI45`;
 5. `BHW.os45_BHWJostContinuationAtlases_onLocalHull_of_OSI45`;
@@ -74460,26 +74601,27 @@ verification checklists.
 
 ### 8.7. Final readiness audit for theorem-2 Lean closure
 
-This is the binding proof-doc readiness verdict after the 2026-05-09
-normal/Riemann completion pass.  By the user's standard, the proof docs are
-now ready for implementation because the former blocker
-`BHW.sourceOrientedVariety_normal_riemannExtension` has a theorem-by-theorem
-Lean transcript in Section 8.1.1.  Older "ready", "not ready", "current
-gate", "source import", or local checkpoint language in archived sections is
-subordinate to this table.
+This is the binding proof-doc readiness correction after Claude's 2026-05-09
+strict-route audit.  The source-oriented normal/Riemann and quotient-germ
+packets are off-route for theorem 2.  Older "ready", "not ready", "current
+gate", "source import", normal/Riemann, or quotient-germ language in archived
+sections is subordinate to this table.
 
 | Stage | Lean-readiness status | Transcript source |
 | --- | --- | --- |
-| Stage A: OS45 local-hull adaptive atlas | Ready to implement first at the support-theorem level.  Start with `BHW.normalAnalyticSubvariety_weaklyHolomorphic_localExtension`, `BHW.normalAnalyticSubvariety_riemannExtension`, the invariant-ring normality chain ending in `BHW.sourceOrientedGramVariety_normal`, then `BHW.sourceOrientedVariety_normal_riemannExtension`, `BHW.sourceOrientedQuotientValue_germHolomorphic_of_OSI45`, and the ordinary/adjacent initial-sector quotient-germ packet.  The next production theorem is not an atlas wrapper. | Section 8.1.1 for the normal/Riemann packet; Section 5 for the quotient germs, initial charts, one-step transition, chains, same-endpoint comparisons, and adjacent ordinary-Wick trace. |
+| Stage A: OS45 local-hull literal atlas | Proof-doc route corrected; implementation must start from the literal `BHW.bhw_sourcePatchHull_has_continuationAtlas` transcript, then specialize it to the ordinary and adjacent OS45 atlases and prove the adjacent ordinary-Wick trace.  The proof is not permitted to use source-oriented quotient germs, normal varieties, invariant-ring normality, global descent, PET single-valuedness, or final locality. | Section 5 strict literal-atlas transcript for `BHW.bhw_sourcePatchHull_has_continuationAtlas`, the two OS45 atlas specializations, and `BHW.os45_BHWJost_adjacentAtlas_ordinaryWickTrace_of_OSI45`. |
 | Stage B: exact source-patch compact Wick pairing and Jost anchor | Ready after Stage A returns `BHW.OS45BHWJostHullData.toPairDataOfContinuationAtlases`.  The exact-source-patch consumers are checked; the analytic producer is the OS I sec. 4.5/BHW-Jost compact theorem. | Sections 4-5 and the compact-source-patch ledger naming `BHW.os45CompactFigure24WickPairingEq_of_pairData_on_figure24SourcePatch` and `BHW.bvt_F_distributionalJostAnchor_of_pairData_on_figure24SourcePatch`. |
 | Stage C: Hall-Wightman source/PET single-valuedness | Ready after Stage B supplies the source/Jost anchor.  The active route is source-backed and forbids source imports, QFT axioms, and hF-perm-only shortcuts. | Slot-6 source/PET transcript for `BHW.hallWightman_source_permutedBranch_compatibility_of_distributionalAnchor` and the PET assembly/equality corollaries. |
 | Stage D: Jost boundary and canonical shell | Ready after Stage C.  The theorem surface and consumer path are fixed. | Slot 10 transcript for `bvt_F_jostBoundary_pairing_of_spacelike_of_two_le` and `bvt_F_swapCanonical_pairing_of_spacelike_of_two_le`. |
 | Stage E: boundary-value transfer to adjacent locality | Ready after Stage D.  This is checked consumer infrastructure and cannot be used before the upstream analytic route is proved. | Slot 11 and `bv_local_commutativity_transfer_of_swap_pairing`. |
 | Stage F: `d = 1` branch | Ready as a separate branch.  It must not use the `2 <= d` OS45 local-hull atlas. | Section 6, Slots D1-1 through D1-4. |
 
-The route decisions and proof transcripts are fixed.  Production Lean must
-follow Stage A through Stage F in this order and may attack only the named
-support lemmas and producers above.  It must not introduce a new
+The route decision is fixed.  Production Lean must not start until the Stage-A
+literal-atlas transcript is kept as the implementation surface and any
+remaining proof-doc uncertainty is resolved in this blueprint rather than in
+Lean.  Once that standard is met, Lean must follow Stage A through Stage F in
+this order and may attack only the named support lemmas and producers above.
+It must not introduce a new
 axiom, `sorry`, `admit`, QFT-specific source import, source-variety/descent
 wrapper, ambient source-label transport shortcut, theorem-2 wrapper
 conditional on an unproved producer, or additional consumer packaging around

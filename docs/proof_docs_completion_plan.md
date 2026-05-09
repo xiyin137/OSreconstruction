@@ -66,89 +66,67 @@ documents are not ready merely because one subpacket is precise.  They can
 become ready only after the following ordered Lean closure chain is fully
 transcribed/proved, and production Lean must not introduce a new theorem
 surface outside this chain without first updating this ledger and the
-theorem-2 blueprint.  The 2026-05-09 normal/Riemann completion pass supplies
-the last missing proof-doc transcript for this ledger.
+theorem-2 blueprint.
 
-Completion correction (2026-05-09): by the user's required standard, the
-earlier "implementation-ready" wording was too weak because it meant only
-route-order readiness.  The theorem-2 blueprint now expands the former
-proof-doc blocker, the finite-dimensional normal/Riemann packet headed by
-`BHW.sourceOrientedVariety_normal_riemannExtension`, into exact
-local-ring/normality/removability theorem surfaces and proof order in
-Section 8.1.1.  The ordered Stage A--F route below is therefore the binding
-Lean implementation route.  Production Lean must begin with that named
-support packet, not with downstream atlas wrappers or theorem-2 closure steps.
+Strict OS-II correction (2026-05-09, after Claude's route audit): the
+normal/Riemann and quotient-germ packets are **off-route** for theorem 2.
+They are not active producers, not prerequisites, and not permitted
+substitutes for OS-II / OS I §4.5.  In particular,
+`BHW.sourceOrientedVariety_normal_riemannExtension`,
+`BHW.sourceOrientedQuotientValue_germHolomorphic_of_OSI45`,
+`BHW.sourceOrientedQuotientValue_rankDeficient_germHolomorphic_of_OSI45`,
+`BHW.osi45_initialSector_sourceOrientedQuotientGerm_ordinary`, and
+`BHW.osi45_initialSector_sourceOrientedQuotientGerm_adjacent` are removed
+from the active theorem-2 route.  The ordered Stage A--F route below is the
+binding Lean implementation route and must be proved directly from OS-II /
+OS I §4.5 BHW continuation, edge-of-the-wedge, and identity theorems on the
+local hull.
 Historical sections that mention older scalar-source gates, source-import
 audits, or local-EOW checkpoints are subordinate support/audit material.  They
 do not authorize an alternate first Lean target and they do not authorize any
 new `axiom`, `sorry`, `admit`, or QFT-specific source import.
 
 Stage A, current implementation gate: build the direct OS I sec. 4.5
-local-hull adaptive continuation atlas on the canonical Figure-2-4 source
-patch, but begin with the SCV support packet.  The first surfaces to implement
-are
-`BHW.sourceOrientedVariety_normal_riemannExtension`,
-`BHW.sourceOrientedQuotientValue_germHolomorphic_of_OSI45`, and
-`BHW.sourceOrientedQuotientValue_rankDeficient_germHolomorphic_of_OSI45`.
-Only after those are checked do the OS45 analytic surfaces begin:
-`BHW.os45_BHWJost_initialLocalChart_ordinary_of_OSI45`,
-`BHW.os45_BHWJost_initialLocalChart_adjacent_of_OSI45`,
-`BHW.os45_BHWJost_oneStepTransition_of_OSI45`,
-`BHW.os45_BHWJost_chainAt_ordinary_of_OSI45`,
-`BHW.os45_BHWJost_chainAt_adjacent_of_OSI45`,
-`BHW.os45_BHWJost_sameEndpointComparison_ordinary_of_OSI45`,
-`BHW.os45_BHWJost_sameEndpointComparison_adjacent_of_OSI45`, and
-`BHW.os45_BHWJost_adjacentAtlas_ordinaryWickTrace_of_OSI45`.  The mechanical
-consumers are
-`BHW.os45_BHWJost_initialChart_ordinary_of_OSI45`,
-`BHW.os45_BHWJost_initialChart_adjacent_of_OSI45`,
+local-hull continuation atlas on the canonical Figure-2-4 source patch.  The
+active carrier is the literal source-domain atlas
+`BHW.BHWSourcePatchContinuationAtlas`, whose fields are source carriers,
+source branches, holomorphy, overlap equality, and initial-sector agreement.
+It is **not** the source-oriented local-chart carrier
+`BHW.BHWJostLocalOrientedContinuationChart`, because that carrier contains
+`SourceOrientedVarietyGermHolomorphicOn` fields and would reintroduce the
+off-route quotient-germ/normal-variety problem.
+
+The first active analytic surfaces are exactly:
+`BHW.bhw_sourcePatchHull_has_continuationAtlas`,
 `BHW.os45_BHWJostContinuationAtlas_ordinary_onLocalHull_of_OSI45`,
 `BHW.os45_BHWJostContinuationAtlas_adjacent_onLocalHull_of_OSI45`,
-`BHW.os45_BHWJostContinuationAtlases_onLocalHull_of_OSI45`, and
+`BHW.os45_BHWJost_adjacentAtlas_ordinaryWickTrace_of_OSI45`, and
+`BHW.os45_BHWJostContinuationAtlases_onLocalHull_of_OSI45`.  The checked
+consumer is
 `BHW.OS45BHWJostHullData.toPairDataOfContinuationAtlases`.
 
-The first Lean implementation substep is mechanical and does not assert any
-new analytic existence theorem: add the `OS45BHWJostHullData` helpers
-`ordinaryInitialChartDataOfLocalChart`,
-`adjacentInitialChartDataOfLocalChart`, and their `...OfExists` variants.
-They consume an already supplied local chart with the carrier/branch
-equalities of `os45_BHWJost_initialLocalChart_*_of_OSI45` and package it with
-`BHWJostInitialChartData.ofFullCarrier`.  They must not call the archived
-source-oriented scalar representative constructors and must not create a
-conditional theorem-2 wrapper.
+The proof-doc target before any Lean implementation is therefore the direct
+atlas theorem `BHW.bhw_sourcePatchHull_has_continuationAtlas`: construct a
+literal continuation atlas on the connected local hull `H.ΩJ` from the OS-II
+branch `bvt_F`, OS I §4.5 BHW local continuation, edge-of-the-wedge on the
+selected Jost edge, and the identity theorem on connected local overlaps.  The
+ordinary OS45 atlas applies it with
+`Ω0 = BHW.ExtendedTube d n` and
+`B0 = BHW.extendF (bvt_F OS lgc n)`.  The adjacent OS45 atlas applies it with
+`Ω0 = BHW.permutedExtendedTubeSector d n P.τ` and
+`B0 z = BHW.extendF (bvt_F OS lgc n) (BHW.permAct P.τ z)`.  The adjacent
+ordinary-Wick trace is a separate OS I Figure-2-4 boundary calculation for the
+glued adjacent atlas.  None of these proofs may use source-oriented quotient
+germs, normal varieties, invariant-ring normality, source-variety descent, PET
+single-valuedness, final locality, or an ambient source-label transport
+shortcut.
 
-Post-bridge readiness correction (2026-05-09): after those helpers are
-checked, the next Lean target is still not the theorem-2 wrapper and not an
-atlas consumer.  It is the local OS I sec. 4.5 initial-sector quotient-germ
-packet documented in the theorem-2 blueprint:
-`BHW.osi45_initialSector_sourceOrientedQuotientGerm_ordinary` and
-`BHW.osi45_initialSector_sourceOrientedQuotientGerm_adjacent`.  The ordinary
-proof must define `Phi := BHW.sourceOrientedQuotientValue (d := d) n
-(bvt_F OS lgc n)`, use
-`BHW.extendedTube_same_sourceOrientedInvariant_extendF_eq` for
-well-definedness, use the checked max-rank local-section theorem on the
-max-rank locus, and prove
-`BHW.sourceOrientedQuotientValue_rankDeficient_germHolomorphic_of_OSI45`.
-The residual chart supplies continuity, compact bounds, cluster values,
-surjectivity, and max-rank density; it does not supply a holomorphic parameter
-map.  The missing bridge is now pinned in the blueprint: first prove
-`BHW.sourceOrientedVariety_normal_riemannExtension` from the recorded
-normality/analytic-subvariety/density/removability transcript, then prove
-`BHW.sourceOrientedQuotientValue_germHolomorphic_of_OSI45` by applying that
-theorem to `sourceOrientedQuotientValue_continuous_locallyBounded` and the
-max-rank local representatives.  The rank-deficient theorem is then exactly
-one local witness extraction from the resulting
-`SourceOrientedVarietyGermHolomorphicOn`, with the field order swapped from
-`EqOn`-then-subset to subset-then-`EqOn`.  This must not import
-`BHW.SourceOrientedNormalRiemannExtensionInput` as a hypothesis, must not call
-`BHW.hallWightman_sourceOrientedScalarRepresentativeData_of_normalRiemann`,
-and must not encode the finite-dimensional normal/removable theorem as an
-axiom.
-The adjacent packet is the source-permutation precomposition of the ordinary
-one via `sourcePermuteOrientedGram` and
-`sourceOrientedMinkowskiInvariant_permAct`.  Only after these two support
-theorems are proved should Lean implement the two
-`os45_BHWJost_initialLocalChart_*_of_OSI45` producers field by field.
+The previously checked helpers
+`ordinaryInitialChartDataOfLocalChart`,
+`adjacentInitialChartDataOfLocalChart`, and their `...OfExists` variants are
+now archived side infrastructure.  They may remain in production because they
+are honest consumers, but they are **not** on the strict theorem-2 critical
+path and are not the next Lean target.
 
 Stage B: turn the atlas into the exact-source-patch compact Wick pairing and
 the selected source/Jost anchor.  The boundary theorem is
@@ -198,18 +176,15 @@ locked route above:
    and `BHW.os45_adjacent_identity_horizontalEdge_sourcePatch` now choose the
    ordered seed inside `Ufig ∩ Upath`, shrink with compact closure, and export
    the closure-level Figure-2-4 path field;
-3. Stage-A strict-route frontier: finish the OS45 local-hull adaptive
+3. Stage-A strict-route frontier: finish the OS45 local-hull literal
    continuation atlas first, then use its pair-data output in the Stage-B
    compact source-patch theorem.  The Stage-A analytic producers are
-   `BHW.os45_BHWJost_initialLocalChart_ordinary_of_OSI45`,
-   `BHW.os45_BHWJost_initialLocalChart_adjacent_of_OSI45`,
-   `BHW.os45_BHWJost_oneStepTransition_of_OSI45`,
-   `BHW.os45_BHWJost_chainAt_ordinary_of_OSI45`,
-   `BHW.os45_BHWJost_chainAt_adjacent_of_OSI45`,
-   `BHW.os45_BHWJost_sameEndpointComparison_ordinary_of_OSI45`,
-   `BHW.os45_BHWJost_sameEndpointComparison_adjacent_of_OSI45`, and
-   `BHW.os45_BHWJost_adjacentAtlas_ordinaryWickTrace_of_OSI45`.  Only after
-   these assemble
+   `BHW.bhw_sourcePatchHull_has_continuationAtlas`,
+   `BHW.os45_BHWJostContinuationAtlas_ordinary_onLocalHull_of_OSI45`,
+   `BHW.os45_BHWJostContinuationAtlas_adjacent_onLocalHull_of_OSI45`,
+   `BHW.os45_BHWJost_adjacentAtlas_ordinaryWickTrace_of_OSI45`, and
+   `BHW.os45_BHWJostContinuationAtlases_onLocalHull_of_OSI45`.  Only after
+   these feed
    `BHW.OS45BHWJostHullData.toPairDataOfContinuationAtlases` may Stage B prove
    `BHW.os45Figure24_sourcePatch_pairing_eq_swappedSourcePatch_of_OSI45` as a
    direct OS I §4.5 / BHW-Jost compact theorem feeding
@@ -10493,9 +10468,10 @@ common-boundary envelope, or any theorem that already assumes locality.
       neighborhoods, use the near-identity Hall-Wightman identity theorem from
       real Lorentz covariance to compare overlapping local branches, and fold a
       finite path-cover of `H.ΩJ`.  This branch-level theorem is no longer the
-      active implementation surface: the active route builds ordinary and
-      adjacent `BHWSourcePatchContinuationAtlas` values from selected chains and
-      same-endpoint comparisons, then consumes
+      active implementation surface: the active route proves the literal
+      `BHW.bhw_sourcePatchHull_has_continuationAtlas` theorem and specializes
+      it to the ordinary and adjacent `BHWSourcePatchContinuationAtlas` values
+      on `H.ΩJ`, then consumes
       `OS45BHWJostHullData.toPairDataOfContinuationAtlases`.  The local
       invariance lemmas from `SourceOrientedBHWInvariance.lean` may be reused
       only for their proper-complex Lorentz analytic content; the active route
@@ -10702,19 +10678,21 @@ common-boundary envelope, or any theorem that already assumes locality.
    product plus the separate adjacent ordinary-Wick boundary theorem
    `BHW.os45_BHWJost_adjacentAtlas_ordinaryWickTrace_of_OSI45`.
 
-   The initial chart producer returns the checked generic carrier
+   Archived source-oriented chain fork: the initial chart producer returned
+   the checked generic carrier
    `BHW.BHWJostInitialChartData hd n P.τ Ω0 H.ΩJ B0 p0`; its fields are
    exactly `C0`, `hp0C`, `start_patch`, the `hstart_*` proofs,
    `hstart_sub`, `hstart_agree`, `initial_chart_mem`, and
    `initial_branch_agree`.  The ordinary and adjacent `initialChart_*`
    theorem surfaces below therefore return this carrier, not an ad hoc tuple.
 
-   Strict-route gate for the initial chart: do not implement these producers
+   Archived source-oriented initial-chart gate: do not implement these
+   producers
    from `SourceOrientedScalarRepresentativeData.toExtendedTubeInitialChart`,
    `SourceOrientedScalarRepresentativeData.toPermutedExtendedTubeInitialChart`,
-   or the normal/Riemann source-oriented descent theorem.  On the active OS II
-   / OS I §4.5 route the hard analytic input is the local initial-sector
-   BHW/Jost oriented germ:
+   or the normal/Riemann source-oriented descent theorem.  In this archived
+   fork the hard analytic input was the local initial-sector BHW/Jost oriented
+   germ:
 
    ```lean
    theorem BHW.os45_BHWJost_initialLocalChart_ordinary_of_OSI45
@@ -10814,14 +10792,15 @@ common-boundary envelope, or any theorem that already assumes locality.
              (BHW.permAct (d := d) P.τ z)) H.adjacentBase
    ```
 
-   Corrected active continuation surface: do not use the universal
+   Archived continuation-chain surface: do not use the universal
    branch-free transfer-cover producer as the theorem-2 implementation target.
    Its transfer operation is stronger than the local analytic step because it
    quantifies over an arbitrary previous chart containing `p` and then asks for
    a transition patch containing both `p` and `q`.  The OS I §4.5 step is
    chart-dependent: after `Cprev` and `p` are known, one chooses a neighborhood
-   inside `Cprev.carrier` and transfers only to `q` in that shrink.  The active
-   Lean-facing surface is therefore the checked chain-atlas carrier
+   inside `Cprev.carrier` and transfers only to `q` in that shrink.  In this
+   archived fork the Lean-facing surface was therefore the checked
+   chain-atlas carrier
    `BHW.BHWOrientedContinuationChainAtlasData`, assembled by
    `BHW.BHWOrientedContinuationChainAtlasData.ofSameEndpointComparisonsAndInitialChart`.
 
@@ -11116,20 +11095,22 @@ common-boundary envelope, or any theorem that already assumes locality.
    patch.  This is not a source-label transport statement and does not claim
    `permAct P.τ` preserves `ExtendedTube`.
 
-   The displayed `initialLocalChart_*`, `chainAt_*`,
+   In this archived fork, the displayed `initialLocalChart_*`, `chainAt_*`,
    `sameEndpointComparison_*`, and
    `os45_BHWJost_adjacentAtlas_ordinaryWickTrace_of_OSI45` names are the
-   remaining OS I §4.5 analytic theorem surfaces; the `initialChart_*` records
-   and atlas constructors are mechanical consumers.  These surfaces must be
+   OS I §4.5 analytic theorem surfaces; the `initialChart_*` records and atlas
+   constructors are mechanical consumers.  These surfaces must be
    proved from the local BHW/Jost argument and Figure-2-4 boundary calculation,
    not declared as axioms and not sourced from final locality.
 
    Archived side note: the older `OS45SourcePatchBHWJostHullData` and
    `OS45SourcePatchBHWJostOrientedContinuationInputs` APIs remain in production
    as historical support and checked consumers, but they are not the active
-   theorem-2 route.  The active implementation surface for this item is
-   `BHW.OS45BHWJostHullData` plus
-   `BHW.OS45BHWJostHullData.toPairDataOfBranches`.
+   theorem-2 route.  The active implementation surface is the literal
+   `BHW.BHWSourcePatchContinuationAtlas` returned by
+   `BHW.bhw_sourcePatchHull_has_continuationAtlas`, specialized to the checked
+   `BHW.OS45BHWJostHullData`, and then consumed by
+   `BHW.OS45BHWJostHullData.toPairDataOfContinuationAtlases`.
 
    The continuation-atlas transcript below is retained only as an audit trail
    for the older source-oriented implementation fork.  It is not an active
@@ -17231,26 +17212,20 @@ This doc is complete only when:
 7. the active BHW/Jost source-continuation packet is fixed at the direct
    OS45 local-hull surface, not at global source-variety descent.  The complete
    active producer list is:
-   `BHW.os45_BHWJost_initialLocalChart_ordinary_of_OSI45`,
-   `BHW.os45_BHWJost_initialLocalChart_adjacent_of_OSI45`,
-   `BHW.os45_BHWJost_oneStepTransition_of_OSI45`,
-   `BHW.os45_BHWJost_chainAt_ordinary_of_OSI45`,
-   `BHW.os45_BHWJost_chainAt_adjacent_of_OSI45`,
-   `BHW.os45_BHWJost_sameEndpointComparison_ordinary_of_OSI45`,
-   `BHW.os45_BHWJost_sameEndpointComparison_adjacent_of_OSI45`,
-   `BHW.os45_BHWJost_adjacentAtlas_ordinaryWickTrace_of_OSI45`, and the
-   mechanical consumers
-   `BHW.os45_BHWJost_initialChart_ordinary_of_OSI45`,
-   `BHW.os45_BHWJost_initialChart_adjacent_of_OSI45`,
+   `BHW.bhw_sourcePatchHull_has_continuationAtlas`,
    `BHW.os45_BHWJostContinuationAtlas_ordinary_onLocalHull_of_OSI45`,
-   `BHW.os45_BHWJostContinuationAtlas_adjacent_onLocalHull_of_OSI45`, and
-   `BHW.os45_BHWJostContinuationAtlases_onLocalHull_of_OSI45`.  Each analytic
+   `BHW.os45_BHWJostContinuationAtlas_adjacent_onLocalHull_of_OSI45`,
+   `BHW.os45_BHWJost_adjacentAtlas_ordinaryWickTrace_of_OSI45`, and
+   `BHW.os45_BHWJostContinuationAtlases_onLocalHull_of_OSI45`.  The checked
+   mechanical consumer is
+   `BHW.OS45BHWJostHullData.toPairDataOfContinuationAtlases`.  Each analytic
    producer must have a complete proof transcript and exact lower support
-   dependencies; each mechanical consumer must have a Lean skeleton against the
-   checked carrier API.  Source-oriented branch-law/descent and pure-Gram
-   scalar-representative packets are archived or conditional infrastructure
-   only, and no new axiom may discharge any theorem-2 producer unless it is
-   first justified as a documented correction to an actual OS paper error.
+   dependencies against the literal `BHW.BHWSourcePatchContinuationAtlas`
+   carrier.  Source-oriented branch-law/descent, oriented local-chain carriers,
+   and pure-Gram scalar-representative packets are archived or conditional
+   infrastructure only, and no new axiom may discharge any theorem-2 producer
+   unless it is first justified as a documented correction to an actual OS
+   paper error.
    Invariant-theory, analytic-normality, and QFT axioms are not valid shortcuts
    for the strict OS-II theorem-2 proof;
 8. the oriented adjacent `S'_n` packet keeps the canonical compact-boundary
