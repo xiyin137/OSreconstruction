@@ -769,6 +769,96 @@ theorem OS45BHWJostHullData.permutedExtendedTubeSector_meets_ΩJ
   · exact H.adjacentWick_mem_permutedExtendedTubeSector P.xseed P.xseed_mem
   · exact H.adjacentWick_mem P.xseed P.xseed_mem
 
+/-- A chosen base point in the ordinary initial sector and the stored
+local hull. -/
+noncomputable def OS45BHWJostHullData.ordinaryBase
+    [NeZero d]
+    {hd : 2 ≤ d} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P) :
+    Fin n → Fin (d + 1) → ℂ :=
+  Classical.choose H.extendedTube_meets_ΩJ
+
+/-- The ordinary chosen base lies in the ordinary extended tube. -/
+theorem OS45BHWJostHullData.ordinaryBase_mem_extendedTube
+    [NeZero d]
+    {hd : 2 ≤ d} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P) :
+    H.ordinaryBase ∈ BHW.ExtendedTube d n :=
+  (Classical.choose_spec H.extendedTube_meets_ΩJ).1
+
+/-- The ordinary chosen base lies in the stored local BHW/Jost hull. -/
+theorem OS45BHWJostHullData.ordinaryBase_mem_ΩJ
+    [NeZero d]
+    {hd : 2 ≤ d} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P) :
+    H.ordinaryBase ∈ H.ΩJ :=
+  (Classical.choose_spec H.extendedTube_meets_ΩJ).2
+
+/-- The ordinary chosen base is joined inside the stored hull to any target
+point of that hull. -/
+theorem OS45BHWJostHullData.ordinaryBase_joinedIn
+    [NeZero d]
+    {hd : 2 ≤ d} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P)
+    {z : Fin n → Fin (d + 1) → ℂ}
+    (hz : z ∈ H.ΩJ) :
+    JoinedIn H.ΩJ H.ordinaryBase z :=
+  H.ΩJ_isPathConnected.joinedIn
+    H.ordinaryBase H.ordinaryBase_mem_ΩJ z hz
+
+/-- A chosen base point in the selected adjacent initial sector and the stored
+local hull. -/
+noncomputable def OS45BHWJostHullData.adjacentBase
+    [NeZero d]
+    {hd : 2 ≤ d} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P) :
+    Fin n → Fin (d + 1) → ℂ :=
+  Classical.choose H.permutedExtendedTubeSector_meets_ΩJ
+
+/-- The adjacent chosen base lies in the selected adjacent initial sector. -/
+theorem OS45BHWJostHullData.adjacentBase_mem_permutedExtendedTubeSector
+    [NeZero d]
+    {hd : 2 ≤ d} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P) :
+    H.adjacentBase ∈ BHW.permutedExtendedTubeSector d n P.τ :=
+  (Classical.choose_spec H.permutedExtendedTubeSector_meets_ΩJ).1
+
+/-- The adjacent chosen base lies in the stored local BHW/Jost hull. -/
+theorem OS45BHWJostHullData.adjacentBase_mem_ΩJ
+    [NeZero d]
+    {hd : 2 ≤ d} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P) :
+    H.adjacentBase ∈ H.ΩJ :=
+  (Classical.choose_spec H.permutedExtendedTubeSector_meets_ΩJ).2
+
+/-- The adjacent chosen base is joined inside the stored hull to any target
+point of that hull. -/
+theorem OS45BHWJostHullData.adjacentBase_joinedIn
+    [NeZero d]
+    {hd : 2 ≤ d} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P)
+    {z : Fin n → Fin (d + 1) → ℂ}
+    (hz : z ∈ H.ΩJ) :
+    JoinedIn H.ΩJ H.adjacentBase z :=
+  H.ΩJ_isPathConnected.joinedIn
+    H.adjacentBase H.adjacentBase_mem_ΩJ z hz
+
 /-- Assemble the existing source-patch BHW/Jost pair carrier from the strict
 local BHW/Jost hull and two supplied branches on that hull.  The analytic
 work is exactly the production of the branches and the four trace equations;

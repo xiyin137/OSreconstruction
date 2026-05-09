@@ -100,7 +100,15 @@ local Slot 1:
    `BHW.OS45BHWJostHullData.realPatch_mem_extendedTube`,
    `BHW.OS45BHWJostHullData.realPatch_mem_permutedExtendedTubeSector`,
    `BHW.OS45BHWJostHullData.extendedTube_meets_ΩJ`,
-   `BHW.OS45BHWJostHullData.permutedExtendedTubeSector_meets_ΩJ`, and
+   `BHW.OS45BHWJostHullData.permutedExtendedTubeSector_meets_ΩJ`,
+   `BHW.OS45BHWJostHullData.ordinaryBase`,
+   `BHW.OS45BHWJostHullData.ordinaryBase_mem_extendedTube`,
+   `BHW.OS45BHWJostHullData.ordinaryBase_mem_ΩJ`,
+   `BHW.OS45BHWJostHullData.ordinaryBase_joinedIn`,
+   `BHW.OS45BHWJostHullData.adjacentBase`,
+   `BHW.OS45BHWJostHullData.adjacentBase_mem_permutedExtendedTubeSector`,
+   `BHW.OS45BHWJostHullData.adjacentBase_mem_ΩJ`, and
+   `BHW.OS45BHWJostHullData.adjacentBase_joinedIn`, and
    `BHW.OS45BHWJostHullData.toPairDataOfBranches`,
    `BHW.OS45BHWJostHullData.toPairDataOfContinuationAtlases`, together with the
    production carrier `BHW.OS45SourcePatchBHWJostPairData`,
@@ -10496,12 +10504,18 @@ common-boundary envelope, or any theorem that already assumes locality.
              (BHW.permAct (d := d) P.τ z))
    ```
 
-   For each constructor, choose the initial base point from
-   `H.extendedTube_meets_ΩJ` or `H.permutedExtendedTubeSector_meets_ΩJ`.
-   Use `H.ΩJ_isPathConnected` to connect that base to an arbitrary target
-   point of `H.ΩJ`; pull the local OS I §4.5 BHW/Jost transfer-neighborhood
-   cover back along the path; take the checked finite ordered subdivision of
-   `[0,1]`; and fold the one-step transfers into a continuation chain.  The
+   For each constructor, use the named initial base point:
+   `H.ordinaryBase` for the ordinary sector and `H.adjacentBase` for the
+   selected adjacent sector.  The checked membership facts
+   `H.ordinaryBase_mem_extendedTube`, `H.ordinaryBase_mem_ΩJ`,
+   `H.adjacentBase_mem_permutedExtendedTubeSector`, and
+   `H.adjacentBase_mem_ΩJ` supply the `base_mem : p0 ∈ Ω0 ∩ H.ΩJ`
+   field for the continuation-chain fold.  The checked path facts
+   `H.ordinaryBase_joinedIn` and `H.adjacentBase_joinedIn` connect those bases
+   to an arbitrary target point of `H.ΩJ`; pull the local OS I §4.5 BHW/Jost
+   transfer-neighborhood cover back along that path, take the checked finite
+   ordered subdivision of `[0,1]`, and fold the one-step transfers into a
+   continuation chain.  The
    initial chart is the concrete initial branch restricted to a preconnected
    neighborhood inside `Ω0 ∩ H.ΩJ`, with holomorphy from
    `BHW.differentiableOn_extendF_bvt_F_extendedTube` on the ordinary side and

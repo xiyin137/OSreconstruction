@@ -49598,13 +49598,19 @@ Proof decomposition of this theorem, without hiding the analytic work:
                       (BHW.permAct (d := d) P.τ z))
             ```
 
-            For each side, set `Ω0` to the displayed initial sector, choose
-            the base point from `H.extendedTube_meets_ΩJ` or
-            `H.permutedExtendedTubeSector_meets_ΩJ`, and use the checked
-            `H.ΩJ_isPathConnected` to obtain a path from that base point to
-            any target point of `H.ΩJ`.  Pull back the local OS I §4.5
-            BHW/Jost transfer-neighborhood cover along that path, choose the
-            finite ordered subdivision of `[0,1]`, and fold the one-step
+            For each side, set `Ω0` to the displayed initial sector and use
+            the named base point: `H.ordinaryBase` on the ordinary side and
+            `H.adjacentBase` on the selected adjacent side.  The checked
+            membership facts `H.ordinaryBase_mem_extendedTube`,
+            `H.ordinaryBase_mem_ΩJ`,
+            `H.adjacentBase_mem_permutedExtendedTubeSector`, and
+            `H.adjacentBase_mem_ΩJ` give the
+            `base_mem : p0 ∈ Ω0 ∩ H.ΩJ` input for the continuation-chain
+            fold.  The checked `H.ordinaryBase_joinedIn` and
+            `H.adjacentBase_joinedIn` facts give the path from that base point
+            to any target point of `H.ΩJ`.  Pull back the local OS I §4.5
+            BHW/Jost transfer-neighborhood cover along the chosen path, choose
+            the finite ordered subdivision of `[0,1]`, and fold the one-step
             transfers into a finite continuation chain.  The initial chart is
             the restriction of the concrete initial branch to a preconnected
             neighborhood inside `Ω0 ∩ H.ΩJ`, using
@@ -49623,8 +49629,9 @@ Proof decomposition of this theorem, without hiding the analytic work:
             The current checked support accessors needed by this transcript
             are `H.zbase_mem_ΩJ`, `H.ΩJ_nonempty`,
             `H.ΩJ_isPathConnected`, `H.ΩJ_subset_ambient`, the two initial
-            sector subset lemmas, the two initial-sector intersection witnesses,
-            and the four source-patch pointwise membership lemmas.
+            sector subset lemmas, the two named initial bases with their
+            membership/path facts, the two initial-sector intersection
+            witnesses, and the four source-patch pointwise membership lemmas.
 
             The archived lower surfaces begin here:
 
