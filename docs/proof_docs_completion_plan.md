@@ -10561,6 +10561,81 @@ common-boundary envelope, or any theorem that already assumes locality.
    for the ordinary and adjacent starting branches; those are exactly the
    local BHW/Jost analytic obligations.
 
+   The two concrete atlas constructors are therefore implemented by the
+   following Lean skeletons once the analytic inputs are proved.  For the
+   ordinary side:
+
+   ```lean
+   noncomputable def BHW.os45_BHWJostContinuationAtlas_ordinary_onLocalHull_of_OSI45
+       [NeZero d] (hd : 2 <= d)
+       (OS : OsterwalderSchraderAxioms d)
+       (lgc : OSLinearGrowthCondition d OS)
+       {i : Fin n} {hi : i.val + 1 < n}
+       {P : BHW.OS45Figure24CanonicalSourcePatchData
+         (d := d) hd n i hi}
+       (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P) :
+       BHW.BHWSourcePatchContinuationAtlas hd n P.τ
+         (BHW.ExtendedTube d n) H.ΩJ
+         (BHW.extendF (bvt_F OS lgc n)) := by
+     let Ω0 := BHW.ExtendedTube d n
+     let B0 := BHW.extendF (bvt_F OS lgc n)
+     let p0 := H.ordinaryBase
+     exact
+       BHW.bhw_jost_orientedSourcePatchContinuationAtlas_of_pathConnected_certifiedTransferCover
+         (hd := hd) (τ := P.τ) (Ω0 := Ω0) (U := H.ΩJ) (B0 := B0)
+         p0 H.ordinaryBase_mem_initial H.ΩJ_isPathConnected
+         (BHW.os45_BHWJost_ordinaryTransferCover_of_OSI45 hd OS lgc H)
+         (BHW.os45_BHWJost_ordinaryTransferCover_unique_of_OSI45 hd OS lgc H)
+         (BHW.os45_BHWJost_ordinaryTerminalComparison_of_OSI45 hd OS lgc H)
+         (BHW.os45_BHWJost_initialChart_ordinary_of_OSI45 hd OS lgc H).C0
+         (BHW.os45_BHWJost_initialChart_ordinary_of_OSI45 hd OS lgc H).hp0C
+         (BHW.os45_BHWJost_initialChart_ordinary_of_OSI45 hd OS lgc H).start_patch
+         (BHW.os45_BHWJost_initialChart_ordinary_of_OSI45 hd OS lgc H).hstart_open
+         (BHW.os45_BHWJost_initialChart_ordinary_of_OSI45 hd OS lgc H).hstart_preconnected
+         (BHW.os45_BHWJost_initialChart_ordinary_of_OSI45 hd OS lgc H).hstart_nonempty
+         (BHW.os45_BHWJost_initialChart_ordinary_of_OSI45 hd OS lgc H).hstart_mem
+         (BHW.os45_BHWJost_initialChart_ordinary_of_OSI45 hd OS lgc H).hstart_sub
+         (BHW.os45_BHWJost_initialChart_ordinary_of_OSI45 hd OS lgc H).hstart_agree
+         (BHW.os45_BHWJost_initialChart_ordinary_of_OSI45 hd OS lgc H).initial_chart_mem
+         (BHW.os45_BHWJost_initialChart_ordinary_of_OSI45 hd OS lgc H).initial_branch_agree
+   ```
+
+   The adjacent constructor is identical after replacing
+   `Ω0` by `BHW.permutedExtendedTubeSector d n P.τ`,
+   `B0` by
+   `fun z => BHW.extendF (bvt_F OS lgc n)
+     (BHW.permAct (d := d) P.τ z)`,
+   `p0` by `H.adjacentBase`, `base_mem` by
+   `H.adjacentBase_mem_initial`, and the ordinary analytic inputs by their
+   adjacent versions:
+   `os45_BHWJost_adjacentTransferCover_of_OSI45`,
+   `os45_BHWJost_adjacentTransferCover_unique_of_OSI45`,
+   `os45_BHWJost_adjacentTerminalComparison_of_OSI45`, and
+   `os45_BHWJost_initialChart_adjacent_of_OSI45`.
+
+   The product producer is then mechanical:
+
+   ```lean
+   theorem BHW.os45_BHWJostContinuationAtlases_onLocalHull_of_OSI45 ... := by
+     let Aord :=
+       BHW.os45_BHWJostContinuationAtlas_ordinary_onLocalHull_of_OSI45
+         (d := d) hd OS lgc H
+     let Aadj :=
+       BHW.os45_BHWJostContinuationAtlas_adjacent_onLocalHull_of_OSI45
+         (d := d) hd OS lgc H
+     refine ⟨Aord, Aadj, ?_⟩
+     exact
+       BHW.os45_BHWJost_adjacentAtlas_ordinaryWickTrace_of_OSI45
+         (d := d) hd OS lgc H Aadj
+   ```
+
+   The displayed `initialChart_*`, `*TransferCover*`,
+   `*TerminalComparison*`, and
+   `os45_BHWJost_adjacentAtlas_ordinaryWickTrace_of_OSI45` names are the
+   remaining OS I §4.5 analytic theorem surfaces.  They must be proved from
+   the local BHW/Jost argument and Figure-2-4 boundary calculation, not
+   declared as axioms and not sourced from final locality.
+
    Archived side note: the older `OS45SourcePatchBHWJostHullData` and
    `OS45SourcePatchBHWJostOrientedContinuationInputs` APIs remain in production
    as historical support and checked consumers, but they are not the active

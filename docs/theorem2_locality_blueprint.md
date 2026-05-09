@@ -49653,6 +49653,36 @@ Proof decomposition of this theorem, without hiding the analytic work:
             certified terminal overlap, and atlas field assembly; it does not
             prove the local BHW/Jost transfer cover or monodromy theorem.
 
+            Thus the ordinary atlas constructor is a direct reducer call with
+            `Ω0 := BHW.ExtendedTube d n`,
+            `B0 := BHW.extendF (bvt_F OS lgc n)`,
+            `p0 := H.ordinaryBase`,
+            `base_mem := H.ordinaryBase_mem_initial`, and the ordinary OS I
+            §4.5 analytic inputs
+            `os45_BHWJost_initialChart_ordinary_of_OSI45`,
+            `os45_BHWJost_ordinaryTransferCover_of_OSI45`,
+            `os45_BHWJost_ordinaryTransferCover_unique_of_OSI45`, and
+            `os45_BHWJost_ordinaryTerminalComparison_of_OSI45`.
+            The adjacent atlas constructor is the same reducer call with
+            `Ω0 := BHW.permutedExtendedTubeSector d n P.τ`,
+            `B0 z := BHW.extendF (bvt_F OS lgc n)
+              (BHW.permAct (d := d) P.τ z)`,
+            `p0 := H.adjacentBase`,
+            `base_mem := H.adjacentBase_mem_initial`, and the adjacent
+            analytic inputs
+            `os45_BHWJost_initialChart_adjacent_of_OSI45`,
+            `os45_BHWJost_adjacentTransferCover_of_OSI45`,
+            `os45_BHWJost_adjacentTransferCover_unique_of_OSI45`, and
+            `os45_BHWJost_adjacentTerminalComparison_of_OSI45`.
+            Finally,
+            `BHW.os45_BHWJostContinuationAtlases_onLocalHull_of_OSI45`
+            returns these two atlases and obtains the supplied adjacent
+            ordinary-Wick trace from
+            `BHW.os45_BHWJost_adjacentAtlas_ordinaryWickTrace_of_OSI45 H Aadj`.
+            Those named inputs are precisely the remaining OS I §4.5 analytic
+            work; they must be proved from the local BHW/Jost continuation and
+            Figure-2-4 boundary calculation, not axiomatized.
+
             The archived lower surfaces begin here:
 
             ```lean
