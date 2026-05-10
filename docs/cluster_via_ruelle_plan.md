@@ -1,7 +1,43 @@
 # Cluster theorem via Ruelle's bound + dominated convergence
 
-Status: 2026-05-05. Vetted by Gemini deep-think (this round confirmed
-Route (i) executes correctly with the right uniform bound).
+> **⚠️ SUPERSEDED / HISTORICAL (2026-05-09).** This document describes
+> an earlier plan that proposed a single QFT-specific production axiom
+> `ruelle_analytic_cluster_bound`. That approach was **abandoned**
+> during PR-#86 review:
+>
+> * The bound shape proposed here was found **vacuous** for any
+>   actual Wightman QFT (free-field counterexample; see
+>   `docs/ruelle_bound_vacuity_concern.md` for the diagnosis and the
+>   Streater-Wightman 3.1.1 boundary-distance regulator that fixes
+>   it).
+> * Per the project's axiom discipline, QFT-specific consequences
+>   (Wightman/GNS/Ruelle/cluster claims) are **not** added as
+>   production axioms; they are kept as conditional inputs or
+>   discharged as proved theorems.
+>
+> **The actual current approach** routes the cluster theorem through
+> the conditional structure
+> `RuelleAnalyticClusterHypotheses Wfn n m` (defined in
+> `OSReconstruction/Wightman/Reconstruction/WickRotation/RuelleClusterBound.lean`),
+> with explicit `bound` and `pointwise` hypothesis fields supplied at
+> call sites. The L4 reduction
+> `ruelle_analytic_cluster_bound_of` (in
+> `OSReconstruction/Wightman/Spectral/Ruelle/L4_UniformPolynomialBound.lean`)
+> proves the regulated bound from a separate conditional structure
+> `L4SpectralData`. **No `ruelle_analytic_cluster_bound` axiom is or
+> will be added.**
+>
+> The text below — including the architectural diagram, the literal
+> `axiom ruelle_analytic_cluster_bound` block, and the "Add the axiom"
+> instruction — is retained only as a record of the abandoned route.
+> See PR xiyin137#86 for the corrected approach.
+
+---
+
+Status: 2026-05-05 (since superseded). Vetted by Gemini deep-think
+(this round confirmed Route (i) executes correctly with the right
+uniform bound; subsequent vetting on 2026-05-08 found the bound shape
+itself was vacuous, prompting the redesign noted above).
 
 Supersedes: `route_i_plan.md`, `wick_rotated_pairing_eq_W_plan.md`,
 `cluster_routeA_plan.md`. (Files retained until execution starts so we
