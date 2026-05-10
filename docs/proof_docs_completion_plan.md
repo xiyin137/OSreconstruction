@@ -121,6 +121,46 @@ germs, normal varieties, invariant-ring normality, source-variety descent, PET
 single-valuedness, final locality, or an ambient source-label transport
 shortcut.
 
+Stage-A proof-doc gap audit, 2026-05-09: fixing the theorem name
+`BHW.bhw_sourcePatchHull_has_continuationAtlas` is not by itself enough for
+production Lean.  Before Lean implementation, the literal atlas theorem must
+be expanded into these source-domain substeps:
+
+0. `BHW.osi45BranchBoundaryTrace_ordinary_bvt_F` and
+   `BHW.osi45BranchBoundaryTrace_adjacent_bvt_F`: prove the explicit
+   `BHW.OSI45BranchBoundaryTrace` packet for the two initial sectors from
+   `bvt_F`, `extendF`, the OS-II boundary-value theorem, the OS Euclidean
+   symmetry of Schwinger functions, and checked Figure-2-4 membership/shrink
+   lemmas.
+1. `BHW.osi45LocalJostEOWData_of_sourcePatchPoint`: choose the local
+   proper-complex Lorentz/Jost coordinate window, the flattened side domains
+   `Ωplus` and `Ωminus`, the real edge `E`, the cone `C`, and the plus/minus
+   branch functions with their OS-II boundary traces.  The local invariant
+   carried between steps is `BHW.OSI45BranchBoundaryTrace`, an explicit
+   source-domain boundary-value packet for the current branch, not a
+   source-variety quotient-germ condition.
+2. `BHW.osi45LocalEOWStep_of_jostEOWData`: apply
+   `SCV.local_continuous_edge_of_the_wedge_envelope`, pull the returned
+   envelope back through
+   `SCV.localEOWComplexAffineEquiv.symm` and the finite source chart, shrink
+   inside `H.ΩJ`, and return the next source-domain chart.  The overlap
+   equality is proved by the ordinary identity theorem from the positive-side
+   agreement on a nonempty open subset of the overlap; it is not a
+   definitional rewrite.
+3. `BHW.osi45ReachableSet_open_closed`: define the reachable-source set by
+   finite local EOW chains and prove it is nonempty, relatively open, and
+   relatively closed in the connected hull.
+4. `BHW.osi45ClosedLoop_monodromy`: prove the finite identity-theorem
+   telescope for two reachable chains with overlapping terminal source charts.
+5. `BHW.bhw_sourcePatchHull_has_continuationAtlas`: assemble the checked
+   `BHW.BHWSourcePatchContinuationAtlas` from items 0--4.
+
+No item in this packet may be replaced by source-oriented quotient germs,
+normal/Riemann extension, global source descent, PET single-valuedness, final
+locality, or an axiom.  If implementation discovers that one of these six
+surfaces needs a different statement, the blueprint must be corrected before
+Lean work continues.
+
 The theorem-2 blueprint must keep the local OS I §4.5 input expanded: if a
 predicate such as `BHW.OSI45InitialBranch` is introduced, it must expose
 holomorphy, proper-complex Lorentz covariance, the local Jost-edge chart, the

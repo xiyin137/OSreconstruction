@@ -49696,26 +49696,35 @@ Proof decomposition of this theorem, without hiding the analytic work:
                 (hU_sub_ambient :
                   U ⊆ BHW.os45BHWJostAmbient d n τ)
                 (hΩ0_sub_U : Ω0 ⊆ U)
+                (hΩ0_preconnected : IsPreconnected Ω0)
                 (hB0_holo : DifferentiableOn ℂ B0 Ω0)
-                (hB0_OSI45 :
-                  BHW.OSI45InitialBranch d n τ Ω0 B0) :
+                (hB0_boundary :
+                  BHW.OSI45BranchBoundaryTrace hd n τ U Ω0 B0) :
                 BHW.BHWSourcePatchContinuationAtlas hd n τ Ω0 U B0
             ```
 
-            Here `BHW.OSI45InitialBranch d n τ Ω0 B0` is not a new axiom and
-            not a QFT trust boundary.  It is a local proof predicate expanded
-            in the blueprint: `B0` is the OS-II branch on the initial sector,
-            has the OS-II boundary values on the selected Euclidean Jost edge,
-            satisfies the OS I §4.5 real/proper-complex Lorentz covariance
-            hypotheses on that sector, and obeys the OS I growth/local
-            boundedness estimates needed for edge-of-the-wedge.  In Lean this
-            predicate may be avoided by inlining the fields in the theorem
-            statement; if it is introduced, every field must be discharged from
-            `bvt_F_holomorphic`, the OS reconstruction boundary-value theorem,
-            OS Euclidean symmetry/reflection positivity exactly as used in OS
-            II, and the checked sector-membership accessors.
+            Here `BHW.OSI45BranchBoundaryTrace hd n τ U Ω0 B0` is not a new
+            axiom and not a QFT trust boundary.  It is the explicit local
+            boundary-value/proper-complex chart packet expanded below: `B0` is
+            the OS-II branch on the initial sector, its local positive and
+            negative wedge boundary values have the same OS Schwinger trace on
+            the selected Euclidean Jost edge, and the compact-wedge containment
+            hypotheses needed by the checked local EOW theorem are present as
+            fields.  In Lean this predicate may be avoided by inlining the
+            fields in the theorem statement; if it is introduced, every field
+            must be discharged from `bvt_F_holomorphic`, the OS reconstruction
+            boundary-value theorem, OS Euclidean symmetry/reflection positivity
+            exactly as used in OS II, and the checked sector-membership
+            accessors.
 
-            Lean-facing expansion of that predicate, if a predicate is used:
+            The older `BHW.OSI45InitialBranch` display below is archived.  If
+            a compact initial predicate is kept in Lean, it must be definitionally
+            no stronger than `BHW.OSI45BranchBoundaryTrace` plus holomorphy and
+            preconnectedness of the initial carrier; it must not contain
+            quotient-germ, normal-variety, PET single-valuedness, or final
+            locality fields.
+
+            Archived Lean-facing expansion of the older predicate:
 
             ```lean
             structure BHW.OSI45InitialBranch
@@ -49756,7 +49765,60 @@ Proof decomposition of this theorem, without hiding the analytic work:
             or structure with these fields, not a hypothesis on theorem 2 and
             not an axiom.
 
-            OS45 discharges of the predicate are exactly:
+            The active OS45 discharges of the initial boundary-trace packet
+            are exactly:
+
+            ```lean
+            theorem BHW.osi45BranchBoundaryTrace_ordinary_bvt_F
+                [NeZero d] (hd : 2 <= d)
+                (OS : OsterwalderSchraderAxioms d)
+                (lgc : OSLinearGrowthCondition d OS)
+                {i : Fin n} {hi : i.val + 1 < n}
+                {P : BHW.OS45Figure24CanonicalSourcePatchData
+                  (d := d) hd n i hi}
+                (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P) :
+                BHW.OSI45BranchBoundaryTrace hd n P.τ H.ΩJ
+                  (BHW.ExtendedTube d n)
+                  (BHW.extendF (bvt_F OS lgc n))
+
+            theorem BHW.osi45BranchBoundaryTrace_adjacent_bvt_F
+                [NeZero d] (hd : 2 <= d)
+                (OS : OsterwalderSchraderAxioms d)
+                (lgc : OSLinearGrowthCondition d OS)
+                {i : Fin n} {hi : i.val + 1 < n}
+                {P : BHW.OS45Figure24CanonicalSourcePatchData
+                  (d := d) hd n i hi}
+                (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P) :
+                BHW.OSI45BranchBoundaryTrace hd n P.τ H.ΩJ
+                  (BHW.permutedExtendedTubeSector d n P.τ)
+                  (fun z =>
+                    BHW.extendF (bvt_F OS lgc n)
+                      (BHW.permAct (d := d) P.τ z))
+            ```
+
+            Their proofs are field-by-field.  `carrier_open` is
+            `BHW.isOpen_extendedTube` on the ordinary side and
+            `BHW.isOpen_permutedExtendedTubeSector P.τ` on the adjacent side.
+            `carrier_preconnected` is the checked tube-sector connectedness
+            used by the existing BHW continuation stack.  `carrier_sub_U` is
+            `H.extendedTube_subset_ΩJ` and
+            `H.permutedExtendedTubeSector_subset_ΩJ`.  `branch_holo` is
+            `BHW.differentiableOn_extendF_bvt_F_extendedTube` and
+            `BHW.differentiableOn_extendF_bvt_F_permAct_preimageExtendedTube`.
+            The `local_EOW_window` field chooses the OS I Figure-2-4 local
+            proper-complex Lorentz chart at the requested point, flattens it
+            by the finite coordinate equivalence, and sets `Fplus` to the
+            displayed branch on the positive side and `Fminus` to the
+            opposite side branch.  The boundary-value fields are exactly the
+            OS-II boundary-value theorem for `bvt_F`, with the adjacent side
+            obtained by literal finite source relabelling and the OS Euclidean
+            symmetry of the Schwinger functions.  The `Ωplus_sub_flat_prev`,
+            `Fplus_eq_prev`, and `Ωminus_sub_flat_U` fields are supplied by the
+            chosen chart shrink and the checked Figure-2-4 membership lemmas.
+            No source-invariant quotient or ambient source-label transport is
+            used.
+
+            Archived OS45 discharges of the older initial-branch predicate:
 
             ```lean
             theorem BHW.osi45InitialBranch_ordinary_bvt_F
@@ -49862,6 +49924,182 @@ Proof decomposition of this theorem, without hiding the analytic work:
             special chart where the two side domains are literally full flat
             tube domains, and the blueprint must say so before Lean uses it.
 
+            Stage-A Lean-transcription subledger, 2026-05-09: the local EOW
+            sentence above is not to be compressed into a black-box
+            `BHW.OSI45InitialBranch` proof.  The first implementable packet is:
+
+            ```lean
+            structure BHW.OSI45BranchBoundaryTrace
+                [NeZero d] (hd : 2 <= d)
+                (n : Nat) (τ : Equiv.Perm (Fin n))
+                (U carrier : Set (Fin n -> Fin (d + 1) -> ℂ))
+                (B : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ) : Prop where
+              carrier_open : IsOpen carrier
+              carrier_preconnected : IsPreconnected carrier
+              carrier_sub_U : carrier ⊆ U
+              branch_holo : DifferentiableOn ℂ B carrier
+              local_EOW_window :
+                ∀ p, p ∈ carrier ->
+                  ∃ m : Nat, ∃ hm : 0 < m,
+                  ∃ flat :
+                    (Fin n -> Fin (d + 1) -> ℂ) ≃L[ℂ] (Fin m -> ℂ),
+                  ∃ x0 : Fin m -> ℝ,
+                  ∃ Ωplus Ωminus : Set (Fin m -> ℂ),
+                  ∃ E C : Set (Fin m -> ℝ),
+                  ∃ Fplus Fminus : (Fin m -> ℂ) -> ℂ,
+                  ∃ bv : (Fin m -> ℝ) -> ℂ,
+                    IsOpen Ωplus ∧ IsOpen Ωminus ∧ IsOpen E ∧ IsOpen C ∧
+                    Convex ℝ C ∧ C.Nonempty ∧ x0 ∈ E ∧
+                    (∀ K : Set (Fin m -> ℝ), IsCompact K -> K ⊆ E ->
+                      ∀ Kη : Set (Fin m -> ℝ), IsCompact Kη -> Kη ⊆ C ->
+                        ∃ r : ℝ, 0 < r ∧
+                          ∀ x ∈ K, ∀ η ∈ Kη, ∀ ε : ℝ,
+                            0 < ε -> ε < r ->
+                              (fun a => (x a : ℂ) +
+                                (ε : ℂ) * (η a : ℂ) * Complex.I) ∈ Ωplus ∧
+                              (fun a => (x a : ℂ) -
+                                (ε : ℂ) * (η a : ℂ) * Complex.I) ∈ Ωminus) ∧
+                    DifferentiableOn ℂ Fplus Ωplus ∧
+                    DifferentiableOn ℂ Fminus Ωminus ∧
+                    ContinuousOn bv E ∧
+                    (∀ w, w ∈ Ωplus -> flat.symm w ∈ carrier) ∧
+                    (∀ w, w ∈ Ωplus -> Fplus w = B (flat.symm w)) ∧
+                    (∀ w, w ∈ Ωminus -> flat.symm w ∈ U) ∧
+                    (∀ x ∈ E, Filter.Tendsto Fplus
+                      (nhdsWithin (SCV.realEmbed x) Ωplus) (nhds (bv x))) ∧
+                    (∀ x ∈ E, Filter.Tendsto Fminus
+                      (nhdsWithin (SCV.realEmbed x) Ωminus) (nhds (bv x)))
+
+            structure BHW.OSI45LocalJostEOWData
+                [NeZero d] (hd : 2 <= d)
+                (n : Nat) (τ : Equiv.Perm (Fin n))
+                (U : Set (Fin n -> Fin (d + 1) -> ℂ))
+                (Bprev : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+                (p : Fin n -> Fin (d + 1) -> ℂ) : Prop where
+              prevCarrier : Set (Fin n -> Fin (d + 1) -> ℂ)
+              prev_open : IsOpen prevCarrier
+              prev_preconnected : IsPreconnected prevCarrier
+              p_mem_prev : p ∈ prevCarrier
+              prev_sub_U : prevCarrier ⊆ U
+              prev_holo : DifferentiableOn ℂ Bprev prevCarrier
+              m : Nat
+              hm : 0 < m
+              flat :
+                (Fin n -> Fin (d + 1) -> ℂ) ≃L[ℂ] (Fin m -> ℂ)
+              x0 : Fin m -> ℝ
+              Ωplus Ωminus : Set (Fin m -> ℂ)
+              E C : Set (Fin m -> ℝ)
+              Ωplus_open : IsOpen Ωplus
+              Ωminus_open : IsOpen Ωminus
+              E_open : IsOpen E
+              C_open : IsOpen C
+              C_conv : Convex ℝ C
+              C_ne : C.Nonempty
+              local_wedge :
+                ∀ K : Set (Fin m -> ℝ), IsCompact K -> K ⊆ E ->
+                  ∀ Kη : Set (Fin m -> ℝ), IsCompact Kη -> Kη ⊆ C ->
+                    ∃ r : ℝ, 0 < r ∧
+                      ∀ x ∈ K, ∀ η ∈ Kη, ∀ ε : ℝ, 0 < ε -> ε < r ->
+                        (fun a => (x a : ℂ) + (ε : ℂ) * (η a : ℂ) * Complex.I)
+                          ∈ Ωplus ∧
+                        (fun a => (x a : ℂ) - (ε : ℂ) * (η a : ℂ) * Complex.I)
+                          ∈ Ωminus
+              Fplus Fminus : (Fin m -> ℂ) -> ℂ
+              Fplus_holo : DifferentiableOn ℂ Fplus Ωplus
+              Fminus_holo : DifferentiableOn ℂ Fminus Ωminus
+              bv : (Fin m -> ℝ) -> ℂ
+              bv_cont : ContinuousOn bv E
+              Fplus_bv :
+                ∀ x ∈ E, Filter.Tendsto Fplus
+                  (nhdsWithin (SCV.realEmbed x) Ωplus) (nhds (bv x))
+              Fminus_bv :
+                ∀ x ∈ E, Filter.Tendsto Fminus
+                  (nhdsWithin (SCV.realEmbed x) Ωminus) (nhds (bv x))
+              x0_mem : x0 ∈ E
+              Ωplus_sub_flat_prev :
+                ∀ w, w ∈ Ωplus -> flat.symm w ∈ prevCarrier
+              Fplus_eq_prev :
+                ∀ w, w ∈ Ωplus -> Fplus w = Bprev (flat.symm w)
+              Ωminus_sub_flat_U :
+                ∀ w, w ∈ Ωminus -> flat.symm w ∈ U
+
+            theorem BHW.osi45LocalJostEOWData_of_sourcePatchPoint
+                [NeZero d] (hd : 2 <= d)
+                (n : Nat) (τ : Equiv.Perm (Fin n))
+                {U prevCarrier : Set (Fin n -> Fin (d + 1) -> ℂ)}
+                {Bprev : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ}
+                {p : Fin n -> Fin (d + 1) -> ℂ}
+                (hU_sub_ambient :
+                  U ⊆ BHW.os45BHWJostAmbient d n τ)
+                (hprev_open : IsOpen prevCarrier)
+                (hprev_preconnected : IsPreconnected prevCarrier)
+                (hp : p ∈ prevCarrier)
+                (hprev_sub_U : prevCarrier ⊆ U)
+                (hprev_holo : DifferentiableOn ℂ Bprev prevCarrier)
+                (hprev_boundary :
+                  BHW.OSI45BranchBoundaryTrace hd n τ U prevCarrier Bprev) :
+                BHW.OSI45LocalJostEOWData hd n τ U Bprev p
+
+            theorem BHW.osi45LocalEOWStep_of_jostEOWData
+                [NeZero d] {hd : 2 <= d}
+                {n : Nat} {τ : Equiv.Perm (Fin n)}
+                {U : Set (Fin n -> Fin (d + 1) -> ℂ)}
+                {Bprev : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ}
+                {p : Fin n -> Fin (d + 1) -> ℂ}
+                (D : BHW.OSI45LocalJostEOWData hd n τ U Bprev p) :
+                ∃ Nnext Bnext,
+                  IsOpen Nnext ∧ IsPreconnected Nnext ∧ p ∈ Nnext ∧
+                  Nnext ⊆ U ∧
+                  DifferentiableOn ℂ Bnext Nnext ∧
+                  Set.EqOn Bprev Bnext (D.prevCarrier ∩ Nnext) ∧
+                  BHW.OSI45BranchBoundaryTrace hd n τ U Nnext Bnext
+            ```
+
+            `OSI45BranchBoundaryTrace` is not a theorem-2 hypothesis and is
+            not a hidden source-variety quotient condition.  It is the local
+            OS-II boundary-value invariant carried by each literal source
+            branch.  For the initial ordinary branch, its fields are proved
+            from `bvt_F`, `extendF`, the checked extended-tube membership
+            window, and the OS Euclidean symmetry on the chosen Jost edge.  For
+            the adjacent branch, the same fields are proved after the literal
+            finite source relabelling used in OS I Figure 2-4.  The local EOW
+            step below propagates the structure to the next branch by using
+            the negative-side agreement field of the checked SCV theorem.
+
+            `osi45LocalJostEOWData_of_sourcePatchPoint` is the OS-II/BHW
+            boundary-value supplier.  It chooses the proper-complex local
+            chart, proves the two side-domain and cone hypotheses, and derives
+            `Fplus_bv`/`Fminus_bv` from the OS-II boundary values and the OS
+            Euclidean symmetry on the selected Jost edge.  It may consume only
+            `bvt_F` boundary-value facts, Figure-2-4 membership/shrink lemmas,
+            and checked SCV local-EOW infrastructure.
+
+            `osi45LocalEOWStep_of_jostEOWData` is the direct call to
+            `SCV.local_continuous_edge_of_the_wedge_envelope D.hm ...`.
+            The proof destructs the returned `ys, ρ, r, δ, F0` packet,
+            sets
+            `A := SCV.localEOWComplexAffineEquiv D.x0 ys hys_li`, defines
+            the raw next source neighborhood by
+            `{z | A.symm (D.flat z) ∈ Metric.ball (0 : Fin D.m -> ℂ) (δ / 2)}`,
+            and then takes the preconnected open component/shrink containing
+            `D.p_mem_prev` inside this raw set and `U`.  The next branch is
+            `Bnext z := F0 (A.symm (D.flat z))`.  Holomorphy is composition
+            of `hF0_diff`, differentiability of `A.symm`, and the continuous
+            linear equivalence `D.flat`.
+
+            The overlap equality is not a definitional rewrite.  On the
+            positive side of the returned ball, the checked EOW theorem gives
+            `F0 w = D.Fplus (SCV.localEOWChart D.x0 ys w)`.  The fields
+            `D.Ωplus_sub_flat_prev` and `D.Fplus_eq_prev` turn this into
+            equality with `Bprev` on a nonempty open subset of
+            `D.prevCarrier ∩ Nnext`.  Since both functions are holomorphic and
+            the chosen overlap is preconnected, the ordinary identity theorem
+            gives `Set.EqOn Bprev Bnext (D.prevCarrier ∩ Nnext)`.  The new
+            boundary trace for `Bnext` is built from the negative-side
+            agreement
+            `F0 w = D.Fminus (SCV.localEOWChart D.x0 ys w)`, the field
+            `D.Ωminus_sub_flat_U`, and the same local chart data.
+
             The closed-loop monodromy proof is similarly finite.  Represent a
             loop as a finite list of local EOW charts
             `C_j : BHWSourcePatchContinuationAtlas`-style terminal charts,
@@ -49876,6 +50114,91 @@ Proof decomposition of this theorem, without hiding the analytic work:
             overlap.  In Lean this should be a finite `List`/`Fin` induction on
             the loop length, with no source-invariant quotient and no normality
             theorem.
+
+            Lean-facing reachability and monodromy surfaces:
+
+            ```lean
+            structure BHW.OSI45ReachableChain
+                [NeZero d] (hd : 2 <= d)
+                (n : Nat) (τ : Equiv.Perm (Fin n))
+                (Ω0 U : Set (Fin n -> Fin (d + 1) -> ℂ))
+                (B0 : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+                (p : Fin n -> Fin (d + 1) -> ℂ) where
+              m : Nat
+              carrier : Fin (m + 1) -> Set (Fin n -> Fin (d + 1) -> ℂ)
+              branch :
+                Fin (m + 1) -> (Fin n -> Fin (d + 1) -> ℂ) -> ℂ
+              carrier_open : ∀ j, IsOpen (carrier j)
+              carrier_preconnected : ∀ j, IsPreconnected (carrier j)
+              carrier_sub_U : ∀ j, carrier j ⊆ U
+              branch_holo : ∀ j, DifferentiableOn ℂ (branch j) (carrier j)
+              start_sub : carrier 0 ⊆ Ω0 ∩ U
+              start_agree : Set.EqOn (branch 0) B0 (carrier 0)
+              terminal_mem : p ∈ carrier (Fin.last m)
+              step_overlap :
+                ∀ j : Fin m,
+                  (carrier (Fin.castSucc j) ∩ carrier (Fin.succ j)).Nonempty
+              step_eq :
+                ∀ j : Fin m,
+                  Set.EqOn (branch (Fin.castSucc j)) (branch (Fin.succ j))
+                    (carrier (Fin.castSucc j) ∩ carrier (Fin.succ j))
+
+            theorem BHW.osi45ReachableSet_open_closed
+                [NeZero d] (hd : 2 <= d)
+                (n : Nat) (τ : Equiv.Perm (Fin n))
+                (Ω0 U : Set (Fin n -> Fin (d + 1) -> ℂ))
+                (B0 : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+                (hU_open : IsOpen U)
+                (hU_connected : IsConnected U)
+                (hΩ0_sub_U : Ω0 ⊆ U)
+                (hΩ0_meets_U : (Ω0 ∩ U).Nonempty)
+                (hLocalStep :
+                  ∀ {p Bprev prevCarrier},
+                    p ∈ prevCarrier ->
+                    IsOpen prevCarrier ->
+                    IsPreconnected prevCarrier ->
+                    prevCarrier ⊆ U ->
+                    DifferentiableOn ℂ Bprev prevCarrier ->
+                    BHW.OSI45BranchBoundaryTrace hd n τ U prevCarrier Bprev ->
+                    ∃ Nnext Bnext,
+                      IsOpen Nnext ∧ IsPreconnected Nnext ∧ p ∈ Nnext ∧
+                      Nnext ⊆ U ∧
+                      DifferentiableOn ℂ Bnext Nnext ∧
+                      Set.EqOn Bprev Bnext (prevCarrier ∩ Nnext) ∧
+                      BHW.OSI45BranchBoundaryTrace hd n τ U Nnext Bnext) :
+                {p | ∃ C : BHW.OSI45ReachableChain hd n τ Ω0 U B0 p, True} = U
+
+            theorem BHW.osi45ClosedLoop_monodromy
+                [NeZero d] {hd : 2 <= d}
+                {n : Nat} {τ : Equiv.Perm (Fin n)}
+                {Ω0 U : Set (Fin n -> Fin (d + 1) -> ℂ)}
+                {B0 : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ}
+                {p : Fin n -> Fin (d + 1) -> ℂ}
+                (C₁ C₂ : BHW.OSI45ReachableChain hd n τ Ω0 U B0 p) :
+                Set.EqOn
+                  (C₁.branch (Fin.last C₁.m))
+                  (C₂.branch (Fin.last C₂.m))
+                  (C₁.carrier (Fin.last C₁.m) ∩
+                    C₂.carrier (Fin.last C₂.m))
+            ```
+
+            `osi45ReachableSet_open_closed` is the connected-hull coverage
+            proof.  Zero-step chains give nonemptiness on `Ω0 ∩ U`;
+            `hLocalStep` extends a terminal chain to prove relative openness;
+            closure points are handled by choosing a reachable point in a
+            small neighborhood and applying the same local step; connectedness
+            of `U` gives equality.  The implementation may use relative
+            open/closed subsets of `U` or `JoinedIn` paths plus compact
+            interval subdivision, but the chosen proof must not introduce a
+            different theorem surface.
+
+            `osi45ClosedLoop_monodromy` is the finite identity-theorem
+            telescope.  Concatenate `C₁`, a terminal-overlap point, and the
+            reverse of `C₂`; every adjacent pair has a nonempty preconnected
+            overlap and a stored `Set.EqOn`.  Induct over the finite overlap
+            list using the ordinary identity theorem on connected open chart
+            overlaps.  This is exactly the OS I §4.5 closed-path monodromy
+            step, not PET single-valuedness.
 
             Proof transcript for
             `BHW.bhw_sourcePatchHull_has_continuationAtlas`: define a
@@ -74573,21 +74896,20 @@ Their checked mechanical consumer is exactly
 `initialLocalChart_*`, `oneStepTransition`, `chainAt_*`, and
 `sameEndpointComparison_*` surfaces belong only to the archived
 source-oriented-chain fork.
-3. `BHW.os45_BHWJostContinuationAtlas_ordinary_onLocalHull_of_OSI45`;
-4. `BHW.os45_BHWJostContinuationAtlas_adjacent_onLocalHull_of_OSI45`;
-5. `BHW.os45_BHWJostContinuationAtlases_onLocalHull_of_OSI45`;
-6. `BHW.OS45BHWJostHullData.toPairDataOfContinuationAtlases`.
 
-These surfaces are proved on the already-documented carriers
+These surfaces are proved only on the literal carriers
 `BHW.os45BHWJostAmbient`, `BHW.os45BHWJostHull`,
 `BHW.OS45BHWJostHullData`, and
-`BHW.BHWOrientedContinuationChainAtlasData`.  The proof transcript is the one
-recorded in Section 5: construct the initial local chart at the ordinary and
-adjacent bases, choose the next chart inside the previous chart along the
-compact path, prove the one-step overlap equality by the OS I sec. 4.5
-identity theorem on the oriented source invariant, compare any two charts with
-the same endpoint by terminal comparison, and assemble the ordinary/adjacent
-atlases with the adjacent ordinary-Wick trace.
+`BHW.BHWSourcePatchContinuationAtlas`.  The proof transcript is the one
+recorded in Section 5: build `BHW.OSI45BranchBoundaryTrace` for the ordinary
+and adjacent initial branches, apply the local EOW step in literal source
+coordinates along finite reachable chains in `H.ΩJ`, prove overlap equality
+by the ordinary identity theorem on connected source-domain overlaps, prove
+finite closed-loop monodromy by telescoping those overlap equalities, and
+assemble the ordinary/adjacent continuation atlases with the adjacent
+ordinary-Wick trace.  No oriented source invariant, quotient germ, normal
+variety, or archived `BHWOrientedContinuationChainAtlasData` carrier is part
+of this active proof.
 
 ### 8.2. Compact source-patch and Jost anchor
 
