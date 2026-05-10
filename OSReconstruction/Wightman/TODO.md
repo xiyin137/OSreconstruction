@@ -1,277 +1,155 @@
-# Wightman TODO: OS Reconstruction Priority Queue
+# Wightman TODO: OS Reconstruction Remaining Work
 
-Last updated: 2026-04-27
+Last updated: 2026-05-10
 
-This file tracks the active blocker picture on the OS reconstruction path.
-Policy lock: no wrappers, no useless lemmas, no code bloat; close `sorry`s with substantial mathematical proofs.
+This file tracks the current OS reconstruction blockers after syncing with
+`upstream/main`. It is intentionally limited to live `sorry`s, active axioms,
+and remaining project-level TODOs.
 
-## Live Sorry Census
+## Current Progress
 
-Count convention: direct tactic holes only (`^[[:space:]]*sorry([[:space:]]|$)`).
-
-| Scope | Direct `sorry` lines |
-|-------|----------------------:|
-| `OSReconstruction/Wightman` | 19 |
-| `OSReconstruction/SCV` | 0 |
-| `OSReconstruction/ComplexLieGroups` | 2 |
-| `OSReconstruction/vNA` | 36 |
-| **Whole project** | **58** |
-
-Count cross-checked on 2026-04-27 with:
-```bash
-rg -c '^[[:space:]]*sorry([[:space:]]|$)' OSReconstruction --glob '*.lean'
-```
-
-Tracked production tree also currently contains one explicit Route 1 axiom:
-`reduced_bargmann_hall_wightman_of_input` in
-`Wightman/Reconstruction/WickRotation/BHWReducedExtension.lean`.
-
-## Current Root Blockers
-
-### `Wightman/SpectralEquivalence.lean` (0) — COMPLETE ON THE ONE-WAY LANE
-
-Status:
-- `SpectralEquivalence.lean` is now direct-`sorry`-free.
-- The one-way theorem
-  `ForwardTubeAnalyticity d W → SpectralConditionDistribution d W`
-  is proved on the live branch.
-- The old two-way surface has been dropped intentionally; the reverse direction
-  under the global polynomial-growth interface is not part of the active file.
-
-What landed:
-- difference-variable factorization through `exists_diffVar_distribution`
-- analytic diagonal-translation invariance on the forward tube
-- product-tube extraction from forward-tube analyticity
-- converse Paley-Wiener support argument on the product forward cone
-
-Current role:
-- no longer a live blocker for the Wightman lane
-- keep follow-up work, if any, limited to cleanup or future reverse-direction
-  redesign, not to the active OS reconstruction path
-
-## Priority Split In `Main.lean`
-
-There are two different lanes and they should not be conflated:
-
-1. Analyticity / Wick-rotation lane:
-   - `wightman_to_os`
-   - `os_to_wightman`
-   - critical files: `WickRotation/OSToWightmanSemigroup.lean`, `WickRotation/OSToWightman.lean`, `WickRotation/OSToWightmanBoundaryValues.lean`
-   - shared dependencies: `SCV/*`, `BHWExtension`, `BHWTranslation`, `ForwardTubeLorentz`, `SchwingerAxioms`
-
-2. Operator / GNS lane:
-   - `wightman_reconstruction`
-   - `wightman_uniqueness`
-   - critical files: `Reconstruction/GNSHilbertSpace.lean`, `Reconstruction/Main.lean`, `vNA/Unbounded/StoneTheorem.lean`
-
-Policy:
-- while the active target is OS analyticity, do not drift into Stone/self-adjoint-generator work unless it directly unblocks the split `OSToWightman*` lane
-- `StoneTheorem` is not needed for the analyticity chain
-- Stone is needed later for the reconstructed `spectrum_condition` / `vacuum_unique` operator-theoretic branches
-
-### 1. `WickRotation/OSToWightman*` split lane (8)
-
-Active upstream blockers:
-- `OSToWightman.lean` (1):
-  - `schwinger_continuation_base_step`
-- `OSToWightmanBoundaryValues.lean` (7):
-  - `boundary_values_tempered`
-  - `bv_translation_invariance_transfer`
-  - `bv_lorentz_covariance_transfer`
-  - `bv_local_commutativity_transfer`
-  - `bv_positive_definiteness_transfer`
-  - `bv_hermiticity_transfer`
-  - `bvt_cluster`
-
-Current status:
-- the fake intermediate Bochner path is off the active chain
-- the active continuation chain goes through the honest OS quotient/Hilbert semigroup already built in `OSToWightmanSemigroup.lean`
-- `OSLinearGrowthCondition` is already used upstream to prove polynomial growth of time-shift matrix elements and hence contraction of the Euclidean semigroup
-- the positive-time spectral-power continuity input is now landed in `vNA/Bochner/SemigroupRoots.lean`
-- `Wightman/SchwartzTensorProduct.lean` now contains genuine insertion operators (`productTensorUpdateCLM`, `prependFieldCLMLeft/Right`) for the Schwartz kernel-extension lane
-- the real remaining work is still:
-  - `schwinger_continuation_base_step` in `OSToWightman.lean`
-  - `boundary_values_tempered` in `OSToWightmanBoundaryValues.lean`
-  - the six transfer theorems in `OSToWightmanBoundaryValues.lean`
-  - `bvt_cluster` in `OSToWightmanBoundaryValues.lean`
-
-Immediate sharpened subgaps:
-- For `schwinger_continuation_base_step`: the next active target is the original 2-point Schwinger case, i.e. one difference variable after translation reduction. This must be stated on the honest Schwinger-side domain (`ZeroDiagonalSchwartz d 2` or an explicitly admissible Euclidean subspace promoted into it), not on ambient full Schwartz space.
-- For `schwinger_continuation_base_step`: no more active effort on the original 1-point case; it is mathematically trivial from translation invariance and not a blocker.
-- For `schwinger_continuation_base_step`: the honest remaining choice is between a concrete Schwinger-side two-point/difference-variable reduction and, only if forced later, a deeper Schwartz kernel-extension theorem. The tensor insertion maps do not close the blocker by themselves.
-- For `boundary_values_tempered`: the generic DCT/integrability/tempered-boundary package is now in `SCV/LaplaceSchwartz.lean`; the genuine missing content is deriving the two growth hypotheses `hpoly` and `hunif` from the OS input.
-
-Non-blocker but now complete:
-- `Wightman/SpectralEquivalence.lean` has exited the live blocker set; do not
-  spend active effort re-opening the old two-way theorem surface while the
-  `OSToWightman*` lane is still incomplete.
-
-### 2. `SCV` load-bearing infrastructure (2)
-
-`SCV/PaleyWiener.lean`:
-- sorry-free
-- no fake multidimensional Fourier-support interface remains
-- only the 1D and slice-wise theorems are active
-
-`SCV/LaplaceSchwartz.lean` (0):
-
-Status:
-- the interface split is now honest:
-  - weak `HasFourierLaplaceRepr`
-  - regular `HasFourierLaplaceReprRegular`
-- the fake weak-to-regular upgrade theorem has been removed
-- the generic boundary-distribution lemmas needed by `boundary_values_tempered`
-  are now extracted:
-  - `integrable_poly_weight_schwartz`
-  - `integrable_poly_growth_schwartz`
-  - `tendsto_boundary_integral`
-  - `boundary_distribution_bound`
-- the real missing theorem is now explicit: construct the growth inputs and/or
-  regular package from actual Fourier-Laplace input with the right dual-cone support
-
-`SCV/TubeDistributions.lean` (0):
-
-Status:
-- the weak bare-BV theorem fronts were removed instead of being carried as public placeholders
-- only the rigorous regular variants remain, built from explicit regular input data
-
-`SCV/BochnerTubeTheorem.lean` (2):
-- `bochner_local_extension`
-- `bochner_tube_extension`
-
-Status:
-- the old generic gluing theorem was too strong and has been replaced by the honest compatible-family theorem
-
-### 3. `Reconstruction/ForwardTubeDistributions.lean` (0) — COMPLETE
-
-**`distributional_uniqueness_forwardTube` — PROVED** (commit 5813d37).
-Proof: flattening via `flattenCLEquiv` + `distributional_uniqueness_tube_of_zero_bv`.
-
-All weak-BV sorrys eliminated. Only proved regular variants remain.
-
-Infrastructure (sorry-free):
-- `SCV/DistributionalUniqueness.lean`: `distributional_uniqueness_tube_of_zero_bv`,
-  `exists_integral_clm_of_continuous` (truncation → CLM via Banach-Steinhaus),
-  `eqOn_open_of_compactSupport_schwartz_integral_eq_of_continuousOn`
-- `SCV/SchwartzComplete.lean`: `CompleteSpace`, `BarrelledSpace`, Banach-Steinhaus chain
-
-### 4. Wick rotation downstream
-
-`WickRotation/SchwingerTemperedness.lean` (2):
-- `wick_rotated_kernel_mul_zeroDiagonal_integrable`
-- `constructedSchwinger_tempered_zeroDiagonal`
-
-`WickRotation/SchwingerAxioms.lean` (4):
-- `schwinger_os_term_eq_wightman_term`
-- `bhw_euclidean_reality_ae`
-- `bhw_pointwise_cluster_forwardTube`
-- `W_analytic_cluster_integral`
-
-Current blocker sharpening (2026-03-10):
-- `bhw_euclidean_reality_ae` is now reduced to the honest overlap problem on
-  `D = {z ∈ PET | hermitianReverse z ∈ PET}`.
-- Infrastructure now present in `SchwingerAxioms.lean`:
-  `hermitianReverseOverlap`, `differentiableOn_hermitianReverse_partner`,
-  `ae_euclidean_points_in_hermitianReverseOverlap`.
-- What still needs to be proved is the Schwarz-reflection identity `F = conj(F ∘ hermitianReverse)`
-  on that overlap, extracted from the real Jost-support boundary theorem
-  `wightman_real_on_jost_support`.
-
-Current blocker sharpening (2026-04-29):
-- `W_analytic_cluster_integral` and `bhw_pointwise_cluster_forwardTube` are now blocked
-  on a single live geometric refinement: the **identity-permutation ForwardTube
-  refinement** — lifting the a.e. TranslatedPET triple to identity-permutation
-  ForwardTube triples that `bhw_pointwise_cluster_forwardTube` consumes.
-- Mechanical scaffolding now present (PR #72): `integral_fin_append_split` (Fubini
-  over `Fin.append`), `ae_joint_triple_translatedPET` (a.e. block + joint TranslatedPET),
-  `bhw_euclidean_kernel_perm_invariant_ae` (a.e. permutation invariance of the kernel).
-- Two viable routes: (i) a block-respecting joint sorting argument that preserves the
-  tensor-product test function structure — joint-sorting generally interleaves the
-  (n, m) blocks and breaks `f ⊗ g_a`; or (ii) a TranslatedPET version of
-  `bhw_pointwise_cluster_forwardTube` itself (i.e., lifting the SCV cluster axiom's
-  ForwardTube hypothesis to TranslatedPET). Both are research-boundary work.
-
-`WickRotation/ForwardTubeLorentz.lean` (0) — COMPLETE
-- `wickRotation_not_in_PET_null` retired by the TranslatedPET migration: extension `F` is realized on TranslatedPET rather than the old ForwardTube k=0 surface (which broke translation invariance). The W11 false-statement counterexample is preserved in `W11Counterexample.lean` for the record.
-- `polynomial_growth_on_slice` discharged.
-- PR #72 additions (0 sorrys): `ae_joint_triple_translatedPET` — simultaneous a.e. TranslatedPET admissibility on the product space.
-
-`WickRotation/BHWTranslation.lean` (0) — COMPLETE
-- `isPreconnected_baseFiber` deleted as retired old-route surface (PR #72). It was unreachable from any live R→E lane after the merged path migrated to using `bhw_translation_invariant` directly. The geometric content (PET fiber connectivity via DOH or Lie-group fiber bundle theory) is no longer load-bearing and has been removed from the active TODO.
-
-`WickRotation/BHWReducedExtension.lean` (axiom 1):
-- `reduced_bargmann_hall_wightman_of_input`
-  - accepted as a strategically deferred reduced-coordinate BHW bridge
-  - this is the Route 1 replacement for the old base-fiber route on the merged path
-  - intended future discharge: descend the absolute BHW theorem through
-    translation invariance / quotient geometry
-  - see `docs/reduced_bhw_bridge_and_numerics.md`
-
-`WickRotation/BHWExtension.lean` (0):
-- Honest extendF-level adjacent-swap theorems are complete.
-- If raw real-edge values are ever needed again, the remaining mathematical input is
-  boundary continuity of the spectrum witness on the real ET edge, not more EOW/BHW infrastructure.
-
-New proved theorems (2026-03-10):
-- `W_analytic_swap_boundary_pairing_eq` — PROVED via distributional chain
-- `analytic_extended_local_commutativity` — pointwise swap for `extendF` at real ET points
-- `analytic_boundary_local_commutativity_of_boundary_continuous` — raw W_analytic with honest ContinuousWithinAt hypotheses
-
-Current assessment:
-- `R→E` has two independent hard roots:
-  - coincidence-singularity / zero-diagonal integrability
-  - Euclidean reality / reflection
-- the `boundary_values_tempered` extraction work on the E→R side does not by itself close either of those; it mainly prepares the tempered Wightman boundary package after E→R continuation exists
-
-## Secondary Blockers
-
-Not on the shortest OS reconstruction lane:
-- `Wightman/SpectralEquivalence.lean`: one-way implication complete; only future
-  reverse-direction or interface-cleanup work remains
-- `Wightman/Reconstruction/Main.lean`: `wightman_uniqueness`
-- `Wightman/Reconstruction/GNSHilbertSpace.lean`: one remaining spectral-theory blocker
-- `Wightman/WightmanAxioms.lean`: 4 infrastructural sorrys
-- `Wightman/NuclearSpaces/*`: side development, not first execution lane
-- `ComplexLieGroups` residual blockers: see the CLG status files
-
-## Execution Order
-
-1. Finish the live E→R root blocker `schwinger_continuation_base_step` in `OSToWightman.lean`.
-   - keep the hard gap explicit
-   - use the existing honest semigroup/spectral/Laplace infrastructure
-   - do not add abstract wrappers that hide the remaining step
-   - first close the nontrivial 2-point Schwinger reduction on `ZeroDiagonalSchwartz d 2` / an admissible Euclidean subspace
-   - do not spend active effort on one-point classification or ambient full-Schwartz surrogate theorems
-2. Use the extracted SCV boundary-distribution lemmas to reduce `boundary_values_tempered` in `OSToWightmanBoundaryValues.lean` to the genuine missing growth inputs `hpoly` and `hunif`.
-3. Keep the new tensor insertion infrastructure in `Wightman/SchwartzTensorProduct.lean` in mind if the continuation blocker turns into a genuine Schwartz kernel-extension theorem, but do not confuse that groundwork with closure of the live blocker.
-4. After `boundary_values_tempered`, finish the six transfer theorems and `bvt_cluster` in `OSToWightmanBoundaryValues.lean`.
-5. In parallel or next, attack the live R→E front after the Route 1 merge:
-   - `SchwingerTemperedness.lean`: coincidence-singularity / zero-diagonal continuity
-   - `SchwingerAxioms.lean`: Euclidean reality / reflection, OS=W term, cluster (live: identity-permutation ForwardTube refinement; see sharpening above)
-6. Keep `SpectralEquivalence.lean` off the active queue unless a downstream file
-   needs a small interface adaptation; the one-way theorem is already landed.
-7. Defer `StoneTheorem` / GNS operator-theoretic work until the analyticity lane is materially settled.
-
-## Recently Completed (2026-03-14)
-
-### Fiberwise antiderivative chain — COMPLETE (0 sorrys in test file)
-- `contDiff_fiberwiseAntiderivRaw` — C^∞ smoothness
-- `decay_fiberwiseAntiderivRaw` — Schwartz decay at all orders (induction on p)
-- `fiberwiseAntideriv` — SchwartzMap packaging
-- `lineDeriv_fiberwiseAntideriv` — head derivative recovers F
-- Ready for production extraction to `SliceIntegral.lean` (~165 lines)
-
-### Production extractions landed
-- `PartialToTotal.lean` — partial → total HasFDerivAt (0 sorrys)
-- `SchwartzCutoff.lean` — schwartz_tail_decay (0 sorrys)
-- `BEGTrigonometric.lean` — sinusoidal_pos_of_endpoints_pos (0 sorrys)
-- `SliceIntegral.lean` — iicZeroSlice chain + intervalPiece chain + fiberwiseAntiderivRaw (0 sorrys, 1990 lines total)
-- `TwoPointDescent.lean` — integral identities + center-shear translation (0 sorrys)
-
-## Commands
+Count convention: direct tactic holes only.
 
 ```bash
 rg -n '^[[:space:]]*sorry([[:space:]]|$)' OSReconstruction --glob '*.lean'
-lake build OSReconstruction.SCV
+```
+
+| Scope | Direct `sorry` lines |
+|-------|----------------------:|
+| `OSReconstruction/Wightman` | 16 |
+| `OSReconstruction/SCV` | 0 |
+| `OSReconstruction/ComplexLieGroups` | 2 |
+| `OSReconstruction/vNA` | 36 |
+| **Whole project** | **54** |
+
+Current axiom count in `OSReconstruction`: 12.
+
+## Wightman Remaining `sorry`s
+
+### E->R / OS-to-Wightman lane
+
+`os_to_wightman` starts from corrected Osterwalder-Schrader data
+(`OsterwalderSchraderAxioms`) plus the OS-II linear growth condition
+(`OSLinearGrowthCondition`) and constructs a checked Wightman core package.
+
+| Goal | Status | Completed | Remaining |
+|------|--------|-----------|-----------|
+| Analytic continuation / boundary values | Mostly complete | `OSToWightmanSemigroup.lean` gives the OS Hilbert semigroup, spectral/Laplace bridge, and one-variable holomorphic layer. `bvt_F`/`bvt_W` are built and `os_to_wightman_full` is wired. | 3 support `sorry`s in `OSToWightman.lean`, plus the `K2VI1/Frontier.lean` probe-side Euclidean reproduction `sorry`. SCV BV existence remains axiomatized. |
+| Temperedness, normalization, covariance, Hermiticity | Complete in the checked core | `constructWightmanFunctionsCore` fills `tempered`, `normalized`, `translation_invariant`, `lorentz_covariant`, and `hermitian`; several proofs live in `OSToWightmanBoundaryValuesComparison.lean`, not in `Main.lean`. | No direct `sorry` isolated for these fields beyond the analytic/BV trust surfaces they use. |
+| Spectrum condition | Complete in the checked core | `constructWightmanFunctionsCore.spectrum_condition` uses `bvt_F`, `bvt_F_holomorphic`, the global growth package, and `bvt_boundary_values`. | No separate direct Wightman `sorry`; remaining trust boundary is the analytic/BV and SCV/Fourier-support infrastructure. |
+| Positive definiteness | Complete | `constructWightmanFunctionsCore.positive_definite` is supplied by `bvt_positive_definite`, with theorem-3 positivity closed through `bvt_W_positive` and `OSToWightmanPositivity.lean`. | No direct `sorry` for this goal. |
+| Locality and cluster full upgrade | Partial | The core can be upgraded to full `WightmanFunctions` by `toWightmanFunctions` once locality and cluster are supplied. | 2 direct `sorry`s in `OSToWightmanBoundaryValues.lean`: `bvt_W_swap_pairing_of_spacelike` for theorem 2 locality and `bvt_F_clusterCanonicalEventually_translate` for theorem 4 cluster. |
+
+### R->E / Wick-rotation back lane
+
+`wightman_to_os` starts from Wightman functions and constructs Schwinger
+functions on the Euclidean side, packaged on the honest zero-diagonal test
+space. The full-Schwartz Euclidean surface is intentionally not claimed.
+
+| Goal | Status | Completed | Remaining |
+|------|--------|-----------|-----------|
+| Analytic Wick rotation / Schwinger construction | Complete modulo BHW trust surfaces | `wightman_to_os_full` is proved and returns `constructZeroDiagonalSchwingerFunctions` plus `IsWickRotationPair`. `BHWTranslation.lean` proves the active translation-invariance route; `ForwardTubeLorentz.lean` is sorry-free. | The reduced-coordinate BHW bridge remains the axiom `reduced_bargmann_hall_wightman_of_input`; the two `ComplexLieGroups` permutation blockers are separate geometric trust surfaces. |
+| Temperedness and linearity on zero-diagonal tests | Complete | `constructedSchwinger_tempered_zeroDiagonal` and `constructedZeroDiagonalSchwinger_linear` supply the exported `wightman_to_os_full` continuity/linearity fields. | No direct `sorry` for this goal under the current census. |
+| Euclidean symmetry and reality | Complete modulo BHW/SCV trust surfaces | `wickRotatedBoundaryPairing_symmetric`, `bhw_euclidean_reality_ae`, and `wickRotatedBoundaryPairing_reality` are proved in `SchwingerAxioms.lean`; these proofs are not visible from `Main.lean`. | No direct `sorry` for this goal; dependencies include the existing BHW/SCV trust surfaces. |
+| Reflection positivity | Open | The target has been sharpened to a direct spectral/Laplace proof, avoiding the invalid same-test-function comparison. | 1 direct `sorry`: `schwingerExtension_os_reflection_positive_from_spectralLaplace` in `SchwingerAxioms.lean`. |
+| Cluster / large-distance factorization | Partial | `bhw_pointwise_cluster_forwardTube` is proved using `distributional_cluster_lifts_to_tube`; `wickRotatedBoundaryPairing_cluster` and the OPTR `schwinger_E4_cluster_OPTR_case` are proved assuming `RuelleAnalyticClusterHypotheses`. | 1 direct analytic-estimate `sorry` in `RuelleClusterBound.lean` at `RACH.bound`; full arbitrary-zero-diagonal E4 still needs the OPTR-to-general bridge and SCV/Vladimirov axioms remain deferred. |
+
+### Operator / GNS lane
+
+`Reconstruction/Main.lean` has 1 direct `sorry`:
+- `wightman_uniqueness`
+
+This is not on the shortest analyticity path, but remains required for the full
+operator reconstruction story.
+
+### Nuclear-space side lane
+
+`NuclearSpaces/NuclearSpace.lean` has 2 direct `sorry`s:
+- `gauge_dominates_on_subspace_of_convex_nhd`
+- `product_seminorm_dominated`
+
+`NuclearSpaces/BochnerMinlos.lean` has 5 direct `sorry`s:
+- `bochner_tightness_and_limit`
+- `minlos_projective_consistency`
+- `minlos_nuclearity_tightness`
+- `eval_maps_generate_sigma_algebra`
+- `eval_charfun_implies_fd_distributions`
+
+These support the nuclear-space probability route. They are substantial
+functional-analysis tasks and should not distract from the active OS
+continuation chain unless that route becomes necessary.
+
+## Cross-Module Remaining TODOs
+
+### SCV
+
+Direct `sorry`s: 0.
+
+Remaining SCV work is axiom discharge, mainly:
+- `bochner_tube_extension` in `SCV/BochnerTubeTheorem.lean`
+- boundary-value existence and Fourier-support axioms in `SCV/TubeBoundaryValues.lean`,
+  `SCV/TubeBoundaryValueExistence.lean`, `SCV/FourierSupportCone.lean`, and
+  `SCV/VladimirovTillmann.lean`
+
+These are pure SCV / distribution theory trust boundaries used by the
+boundary-value transfer route.
+
+### ComplexLieGroups
+
+Direct `sorry`s: 2, both in
+`Connectedness/BHWPermutation/PermutationFlowBlocker.lean`:
+- `blocker_isConnected_permSeedSet_nontrivial`
+- `blocker_iterated_eow_hExtPerm_d1_nontrivial`
+
+The production permutation-flow file is sorry-free; the remaining work is the
+isolated `d = 1` geometric/permutation bridge.
+
+### vNA
+
+Direct `sorry`s: 36.
+
+Relevant to OS reconstruction:
+- `Unbounded/StoneTheorem.lean`: 1, `timeEvolution_generator`
+- `Predual.lean`: 2, sigma-weak/predual infrastructure
+- `MeasureTheory/CaratheodoryExtension.lean`: 11, measure-extension
+  infrastructure
+
+Future or currently non-consuming infrastructure:
+- `ModularTheory.lean`: 6
+- `ModularAutomorphism.lean`: 6
+- `KMS.lean`: 10
+
+The modular chain is not currently consumed by the reconstruction files.
+
+### General / Wightman axioms
+
+Active axioms outside SCV include:
+- `GeneralResults/SNAGTheorem.lean`: `snag_theorem`
+- `GeneralResults/SchwartzFubini.lean`: `schwartz_clm_fubini_exchange`
+- `Wightman/WightmanAxioms.lean`: `schwartz_nuclear_extension`,
+  `exists_continuousMultilinear_ofSeparatelyContinuous`
+- `Wightman/Reconstruction/WickRotation/BHWReducedExtension.lean`:
+  `reduced_bargmann_hall_wightman_of_input`
+
+## Execution Order
+
+1. Close the three `OSToWightman.lean` blockers, starting with
+   `schwinger_continuation_base_step`.
+2. Close the `K2VI1/Frontier.lean` probe-side Euclidean reproduction support
+   blocker for the E->R `k = 2` route.
+3. Finish the two `OSToWightmanBoundaryValues.lean` blockers: locality and
+   cluster transfer.
+4. Discharge the R->E frontier blockers in `SchwingerAxioms.lean` and
+   `RuelleClusterBound.lean`.
+5. Resolve the two `ComplexLieGroups` permutation blockers for the remaining
+   `d = 1` branch.
+6. Defer Stone/GNS/nuclear-space/vNA modular work unless it directly blocks the
+   active analyticity route.
+
+## Verification Commands
+
+```bash
+rg -n '^[[:space:]]*sorry([[:space:]]|$)' OSReconstruction --glob '*.lean'
+rg -n '^axiom ' OSReconstruction --glob '*.lean'
 lake build OSReconstruction.Wightman
 ```

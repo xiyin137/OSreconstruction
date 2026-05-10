@@ -6,14 +6,14 @@ A Lean 4 formalization of the **Osterwalder-Schrader reconstruction theorem** an
 
 The tracked production tree currently contains **12 explicit axioms** (verified by `rg '^axiom\s+\w' OSReconstruction --glob '*.lean'`):
 
-**Functional analysis (2):**
+**Functional analysis / general analysis (3):**
 - `schwartz_nuclear_extension` in `Wightman/WightmanAxioms.lean` — **partially proved**: nuclearity of Schwartz space is now proved in the [`gaussian-field`](https://github.com/or-n/gaussian-field) library; the remaining gap is importing the instance and deriving the kernel theorem
 - `exists_continuousMultilinear_ofSeparatelyContinuous` in `Wightman/WightmanAxioms.lean` — **proved** in [`gaussian-field`](https://github.com/mrdouglasny/gaussian-field) (`GeneralResults/SeparatelyContMultilinear.lean`, extension branch); remaining gap is importing the theorem
+- `schwartz_clm_fubini_exchange` in `GeneralResults/SchwartzFubini.lean` — CLM-integral exchange for Schwartz-valued families (Fréchet Bochner)
 
-**SCV / tube domain (8):**
+**SCV / tube domain (7):**
 - `bv_implies_fourier_support` in `SCV/VladimirovTillmann.lean` — growth + BV → spectral support in dual cone (Vladimirov 25.1)
 - `fl_representation_from_bv` in `SCV/VladimirovTillmann.lean` — Fourier-Laplace representation from BV + spectral support (Vladimirov 25.5)
-- `schwartz_clm_fubini_exchange` in `GeneralResults/SchwartzFubini.lean` — CLM-integral exchange for Schwartz-valued families (Fréchet Bochner)
 - `distributional_cluster_lifts_to_tube` in `SCV/VladimirovTillmann.lean` — distributional cluster on tube boundary lifts to pointwise cluster on tube interior
 - `tube_boundaryValueData_of_polyGrowth` in `SCV/TubeBoundaryValues.lean` — BV existence from global polynomial growth
 - `tube_boundaryValue_of_vladimirov_growth` in `SCV/TubeBoundaryValueExistence.lean` — BV existence from Vladimirov growth (M>0)
@@ -49,8 +49,8 @@ The L2 and L4 reductions
 `L4SpectralData` packets. They expose the textbook proof obligations
 as named hypothesis structures rather than as production axioms.
 
-**Active sorry (2026-05-08)**: the dominator-integrability step in
-`W_analytic_cluster_integral_via_ruelle` (`RuelleClusterBound.lean:718`).
+**Active sorry (2026-05-10)**: the dominator-integrability step in
+`W_analytic_cluster_integral_via_ruelle` (`RuelleClusterBound.lean:1076`).
 The `RACH.bound` shape was repaired (boundary-distance regulator added)
 after a vacuity finding; the cluster proof's existing dominator no
 longer matches the new shape and requires IBP rework (Streater-Wightman
@@ -162,7 +162,7 @@ This fetches Mathlib and dependencies automatically on first build.
 ## Project Status
 
 The tracked production tree currently includes **12 explicit `axiom`
-declarations** (2 FA + 8 SCV + 1 reconstruction bridge + 1 GNS spectral).
+declarations** (3 FA/general analysis + 7 SCV + 1 reconstruction bridge + 1 SNAG/spectral).
 See the axiom inventory at the top of this file for the complete list. Remaining work
 outside these deferred surfaces is represented by explicit theorem-level
 `sorry` placeholders.
@@ -170,14 +170,17 @@ The snapshot below counts only tracked production files; local scratch under
 `Proofideas/` and other untracked experiments are intentionally excluded.
 
 Current blocker map:
-- The analyticity-critical `E -> R` path is the split
+- The `E -> R` checked-core path is the split
   `WickRotation/OSToWightmanSemigroup.lean` ->
   `WickRotation/OSToWightman.lean` ->
   `WickRotation/OSToWightmanBoundaryValues.lean`.
-- The zero-diagonal `R -> E` temperedness front has been split out of the old
-  `SchwingerAxioms.lean` monolith into
-  `WickRotation/SchwingerTemperedness.lean`, so the live E0 `sorry`s now sit in
-  a small dedicated file rather than in a >3000-line axiom file.
+- `constructWightmanFunctionsCore` now fills the checked-core Wightman fields:
+  temperedness, normalization, translation invariance, Lorentz covariance,
+  spectrum condition, positive definiteness, and Hermiticity. Several proofs
+  live in boundary-value comparison / positivity support files rather than in
+  `Main.lean`.
+- The zero-diagonal `R -> E` temperedness front is now sorry-free in
+  `WickRotation/SchwingerTemperedness.lean`.
 - Route 1 translation invariance is now merged in production:
   `bhw_translation_invariant` is proved in `WickRotation/BHWTranslation.lean`,
   backed by one deferred reduced-BHW bridge axiom in
@@ -188,16 +191,18 @@ Current blocker map:
   file sorry-free on the moved tail.
 - `OSToWightmanSemigroup.lean` is the established OS semigroup/spectral/Laplace
   and one-variable holomorphic layer.
-- The live public `E -> R` blockers are now the theorem-2 locality frontier and
+- The live `E -> R` blockers are now the theorem-2 locality frontier and
   theorem-4 cluster frontier in
-  `WickRotation/OSToWightmanBoundaryValues.lean`.
-- `OSToWightman.lean` still carries older continuation support and three legacy
+  `WickRotation/OSToWightmanBoundaryValues.lean`, plus four continuation /
+  boundary-value support holes: three in `OSToWightman.lean` and one in
+  `K2VI1/Frontier.lean`.
+- `OSToWightman.lean` still carries older continuation support and three
   `sorry`s, but it is now an upstream support lane rather than the public
   frontier file.
 - The `K2VI1` stack remains production support infrastructure for the OS II
-  `k = 2` route, but `WickRotation/K2VI1/Frontier.lean` no longer contains a
-  live direct `sorry`; the old residual frontier block there is commented
-  archaeology.
+  `k = 2` route. `WickRotation/K2VI1/Frontier.lean` currently has one live
+  direct `sorry`, the probe-side Euclidean reproduction input for the fixed-strip
+  VI.1 route.
 - The `k = 2` support stack has been split across small files under
   `WickRotation/K2VI1/`, especially:
   `InputA*.lean`, `Bounds.lean`, `Damping.lean`, `DampedNorm.lean`,
@@ -216,14 +221,11 @@ Current blocker map:
   from `OSLinearGrowthCondition`.
 - On the merged `R -> E` path, the theorem-level front blockers have moved
   downstream past `BHWTranslation.lean`. `SchwingerTemperedness.lean` is now
-  sorry-free; the live reverse-direction front is in
-  `SchwingerAxioms.lean`.
-- After that, the remaining theorem-level `R -> E` blockers are the analytic
-  ones in `SchwingerAxioms.lean`, especially the OS=W term, Euclidean
-  reality/reflection, and the cluster bridge.
-- `isPreconnected_baseFiber` remains in `WickRotation/BHWTranslation.lean` as
-  an old-route residual theorem, but it is no longer the blocker used to obtain
-  `bhw_translation_invariant` on the merged path.
+  sorry-free; symmetry and Euclidean reality are proved in `SchwingerAxioms.lean`.
+- The remaining theorem-level `R -> E` blockers are reflection positivity in
+  `SchwingerAxioms.lean` and the Ruelle/AHR analytic cluster estimate in
+  `RuelleClusterBound.lean`.
+- `BHWTranslation.lean` is now sorry-free on the active route.
 - `ForwardTubeLorentz.lean` is now sorry-free and no longer a blocker on the
   active Wick-rotation lane.
 - `StoneTheorem` and the broader `vNA` operator lane matter for the separate
@@ -234,34 +236,29 @@ Current blocker map:
 
 - `E -> R`:
   the near-term goal is to close the remaining theorem-2 / theorem-4 frontiers
-  in `OSToWightmanBoundaryValues.lean`, together with the three older support
-  holes in `OSToWightman.lean`.
-- `E -> R` downstream:
-  `OSToWightmanBoundaryValues.lean` still carries the locality and cluster
-  transfer chain.
+  in `OSToWightmanBoundaryValues.lean`, together with the three support holes in
+  `OSToWightman.lean` and the one `K2VI1/Frontier.lean` support hole.
 - `R -> E`:
-  `SchwingerTemperedness.lean` is now sorry-free; the live direct blockers are
-  the remaining reverse-direction analytic obligations in
-  `SchwingerAxioms.lean`.
-- `R -> E` downstream:
-  `BHWTranslation.lean` still carries an old-route residual base-fiber
-  connectivity theorem.
+  `wightman_to_os_full` is wired and the zero-diagonal temperedness/linearity,
+  symmetry, and reality surfaces are proved modulo BHW/SCV trust surfaces.
+  The remaining direct blockers are reflection positivity and the cluster
+  analytic estimate.
 
-Snapshot (2026-04-20, tracked live production tree):
+Snapshot (2026-05-10, tracked live production tree):
 
 | Module | Direct `sorry` lines |
 |--------|-----------------------|
-| `Wightman/` | 17 |
+| `Wightman/` | 16 |
 | `SCV/` | 0 |
 | `ComplexLieGroups/` | 2 |
 | `vNA/` | 36 |
-| **Total** | **55** |
+| **Total** | **54** |
 
 Tracked production tree also contains `12` explicit axioms; see the current
 inventory at the top of this file.
 
-Raw grep on `^[[:space:]]*sorry([[:space:]]|$)` still returns `56` because one
-hit sits inside a commented legacy block in `WickRotation/K2VI1/Frontier.lean`.
+The count convention is direct tactic holes:
+`rg -n '^[[:space:]]*sorry([[:space:]]|$)' OSReconstruction --glob '*.lean'`.
 
 ### OS-Critical Sorry Flow Toward Reconstruction
 
@@ -273,13 +270,14 @@ flowchart TD
   M --> RE["wightman_to_os"]
   M --> ER["os_to_wightman"]
 
-  RE --> SA["WickRotation/SchwingerAxioms (2)"]
+  RE --> SA["WickRotation/SchwingerAxioms (1)"]
   SA --> ST["WickRotation/SchwingerTemperedness (0)"]
   ST --> VT["SCV/VladimirovTillmann (3 axioms)"]
-  SA --> BT["WickRotation/BHWTranslation (1 residual)"]
+  SA --> RC["WickRotation/RuelleClusterBound (1)"]
+  SA --> BT["WickRotation/BHWTranslation (0)"]
   BT --> BR["WickRotation/BHWReducedExtension (1 axiom)"]
   BR --> BE["WickRotation/BHWExtension (0)"]
-  SA --> FL["WickRotation/ForwardTubeLorentz (2)"]
+  SA --> FL["WickRotation/ForwardTubeLorentz (0)"]
   FL --> FTD["ForwardTubeDistributions (0)"]
   FTD --> DU["SCV/DistributionalUniqueness (0)"]
   FL --> AC["Reconstruction/AnalyticContinuation (0)"]
@@ -288,7 +286,7 @@ flowchart TD
 
   ER --> OWS["WickRotation/OSToWightmanSemigroup (0)"]
   OWS --> OWC["WickRotation/OSToWightman (3 legacy support)"]
-  OWS --> K2["WickRotation/K2VI1/* (support stack; Frontier has no live direct sorry)"]
+  OWS --> K2["WickRotation/K2VI1/* (support stack; Frontier has 1)"]
   K2 --> OWB["WickRotation/OSToWightmanBoundaryValues (2)"]
   K2 --> LS["SCV/LaplaceSchwartz (0)"]
   K2 --> BO["SCV/BochnerTubeTheorem (0 + 1 axiom)"]
@@ -307,13 +305,14 @@ flowchart TD
 | `Wightman/Reconstruction/ForwardTubeDistributions.lean` | 0 | distributional uniqueness / boundary-value lane complete |
 | `Wightman/Reconstruction/WickRotation/ForwardTubeLorentz.lean` | 0 | sorry-free |
 | `Wightman/Reconstruction/WickRotation/BHWExtension.lean` | 0 | honest distributional adjacent-swap lane complete |
-| `Wightman/Reconstruction/WickRotation/BHWTranslation.lean` | 1 | old-route base-fiber residual; merged path uses Route 1 reduced coordinates |
+| `Wightman/Reconstruction/WickRotation/BHWTranslation.lean` | 0 | Route 1 translation-invariance chain proved |
 | `Wightman/Reconstruction/WickRotation/BHWReducedExtension.lean` | 0 + 1 axiom | deferred reduced BHW bridge theorem |
 | `Wightman/Reconstruction/WickRotation/SchwingerTemperedness.lean` | 0 | zero-diagonal continuity / integrability lane now sorry-free |
-| `Wightman/Reconstruction/WickRotation/SchwingerAxioms.lean` | 2 | OS=W term + reverse-direction cluster |
+| `Wightman/Reconstruction/WickRotation/SchwingerAxioms.lean` | 1 | reflection positivity |
+| `Wightman/Reconstruction/WickRotation/RuelleClusterBound.lean` | 1 | Ruelle/AHR cluster dominator estimate |
 | `Wightman/Reconstruction/WickRotation/OSToWightmanSemigroup.lean` | 0 | OS semigroup, spectral/Laplace bridge, one-variable holomorphic infrastructure |
 | `Wightman/Reconstruction/WickRotation/OSToWightman.lean` | 3 | older continuation support; no longer the smallest root blocker |
-| `Wightman/Reconstruction/WickRotation/K2VI1/Frontier.lean` | 0 | commented legacy archaeology only; no live direct `sorry` |
+| `Wightman/Reconstruction/WickRotation/K2VI1/Frontier.lean` | 1 | probe-side Euclidean reproduction input for the fixed-strip VI.1 route |
 | `Wightman/Reconstruction/WickRotation/OSToWightmanBoundaryValues.lean` | 2 | theorem 2 locality + theorem 4 cluster |
 | `SCV/LaplaceSchwartz.lean` | 0 | generic tempered boundary-value lemmas extracted |
 | `SCV/TubeDistributions.lean` | 0 | sorry-free |
@@ -421,7 +420,7 @@ the tracked production tree, not as a complete file listing.
 │   │           ├── K2VI1/Regularization*.lean   # reflected regularization / seminorm / orbit-control stack
 │   │           ├── K2VI1/OrbitBridge.lean       # scalar boundary/orbit bridge on the direct VI.1 route
 │   │           ├── K2VI1/DCT.lean               # dominated-convergence packaging for the frontier
-│   │           ├── K2VI1/Frontier.lean          # commented legacy k=2 VI.1 archaeology; no live direct sorry
+│   │           ├── K2VI1/Frontier.lean          # isolated k=2 VI.1 frontier; one live support sorry
 │   │           ├── OSToWightmanSpatialMomentum.lean # one-point semigroup-group spectral bridge
 │   │           ├── SchwingerTemperedness.lean   # zero-diagonal temperedness front; VT-backed growth/integrability
 │   │           ├── WickRotationBridge.lean      # small Wick-rotation differentiability helpers
