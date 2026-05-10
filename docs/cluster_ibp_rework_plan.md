@@ -1,8 +1,8 @@
 # IBP / Schwartz-pairing rework plan for the cluster-proof dominator step
 
-**Branch**: `r2e/ruelle-poly-bound-chain` (will likely fork into `r2e/cluster-ibp-rework` for the actual implementation).
+**Branch**: `r2e/ruelle-poly-bound-chain` (likely fork into `r2e/cluster-ibp-rework` for implementation).
 **Target**: close the production `sorry` at `OSReconstruction/Wightman/Reconstruction/WickRotation/RuelleClusterBound.lean:718` in the body of `W_analytic_cluster_integral_via_ruelle`.
-**Vetting status**: DRAFT. **Original Tflat-based plan ruled out** by Gemini-deep-think vetting (2026-05-10). Probing the alternatives.
+**Vetting status**: DRAFT (Rev. 3, 2026-05-10). **Original Tflat-based plan ruled out** by Gemini-deep-think vetting; pivoted to GNS-Bochner shortcut after project + sister-repo probe.
 **Author**: Michael Douglas (Claude Code), 2026-05-10.
 
 ---
@@ -17,252 +17,459 @@
 > ```
 > converges to the product of single-block integrals `L_n · L_m` as `|⃗a| → ∞`.
 
-The current `sorry` is at the dominator-integrability step. The reason: post-vacuity-fix `RACH.bound` carries a `(1 + Δ⁻¹)^M` boundary regulator (Streater-Wightman 3.1.1 shape). After Wick rotation this becomes `1/Δ_time^M` — codimension-1 diagonal singularity, **not locally integrable for `M ≥ 1`**. So a pointwise dominator + dominated convergence cannot work.
+Current `sorry` is at the dominator-integrability step. After the post-vacuity-fix `RACH.bound` regulator, the naive pointwise dominator carries `(1 + Δ⁻¹)^M` — a codim-1 diagonal singularity not locally integrable for `M ≥ 1`. The pointwise + DC route is therefore structurally impossible.
 
-The textbook resolution (Streater-Wightman §3.4 / Ruelle 1962 / AHR 1962) routes through a **Schwartz dual pairing** with a tempered distribution `Tflat`, not pointwise dominators.
-
----
-
-## ⚠️ The FL trap that rules out the original Tflat-based plan
-
-**Vetting by Gemini (2026-05-10)** identified a fatal flaw in the original Schwartz-pairing plan that uses a single Tflat:
-
-For Wick-rotated points `z_k = wick(x_k) = (i τ_k, x_k)`, the FL kernel is
-```
-exp(i ξ_k · z_k) = exp(- E_k · Δτ_k - i p_k · Δx_k)
-```
-where Δτ_k are imaginary-time differences. Tflat's support in the dual cone (E_k ≥ 0) means the kernel is bounded **only when all Δτ_k > 0**.
-
-For OPTR-supported `f, g` independently, the within-block time differences are positive. But the **junction** Δτ_{n+1, n} = τ_{n+1} − τ_n (last time of f vs first time of g) is **unconstrained** — `f` and `g` are independent Schwartz tests on independent OPTR domains. Junction inversion (`τ_{n+1} < τ_n`) is generic.
-
-For junction-inverted z, the kernel `exp(i ξ · z)` has a factor `exp(+E · |Δτ_junction|)` that blows up exponentially as `E → ∞` in the Tflat support. So `ψ_z(ξ) := exp(i ξ · z)` **fails to be Schwartz**. Any application of `schwartz_clm_fubini_exchange` (which requires polynomial seminorm growth of the Schwartz-valued family) crashes here.
-
-**Conclusion**: a single Tflat representation `W_analytic_BHW(z) = Tflat(ψ_z)` does NOT extend to all of PET — it works only on configurations whose imaginary differences are all positive (= the unpermuted ForwardTube subset of PET). Joint configs with junction inversion lie outside the FL representation's natural domain.
-
-This rules out the original 6-sub-lemma plan.
+The textbook resolution (Streater-Wightman §3.4 / Ruelle 1962 / AHR 1962) is the **Schwartz dual pairing** with a tempered distribution, replacing the dominator argument with a CLM-continuity argument on Schwartz space.
 
 ---
 
-## Three viable alternatives
+## ⚠️ Why the original Tflat plan doesn't work
 
-### Alternative A — Per-permutation Tflat, glued by BHW symmetry
+**Gemini deep-think vetting (2026-05-10)** identified a fatal flaw:
 
-**Math**: PET is the permutation closure of ForwardTube. For each permutation σ ∈ S_{n+m}, `σ⁻¹(ForwardTube)` ⊂ PET admits a single Tflat representation. By BHW (`W_analytic_BHW` is permutation-invariant on PET), the Tflat's for different σ are related by permutation symmetry on the dual side.
+For Wick-rotated points `z_k = wick(x_k) = (i τ_k, x_k)`, the FL kernel `exp(i ξ_k · z_k) = exp(− E_k · Δτ_k − i p_k · Δx_k)` requires **all** `Δτ_k > 0` for boundedness against a Tflat with dual-cone support (`E_k ≥ 0`).
 
-For OPTR f, g with junction inversion, the natural permutation σ swaps the offending indices to put the joint config in ForwardTube under σ⁻¹. Apply Tflat_σ. Sum over the appropriate covering permutations.
+For OPTR-supported `f, g` independently, within-block differences are positive but the **junction** `Δτ_{n+1, n} = τ_{n+1} − τ_n` (last time of f vs first of g) is unconstrained — generic junction inversion makes the FL kernel exponentially blow up, violating Schwartz seminorm hypotheses needed for `schwartz_clm_fubini_exchange`. A single Tflat representation works only on the literal forward tube, not on PET in general.
 
-**Lean status**:
-- Requires a **family of Tflat distributions indexed by permutation**, with explicit symmetry relations.
-- Need to prove the family is consistent (uniqueness of W_analytic on overlapping pieces).
-- The Schwartz-Fubini exchange now has to be done per-Tflat_σ, then summed.
+Conclusion: ruled out. Pivot to the GNS-Bochner shortcut.
 
-**Estimated effort**: 3–5 weeks. Mathematical complexity dominates; Lean engineering is roughly proportional.
+---
 
-**Risk**: high — the per-σ FL machinery is a new layer, and the permutation symmetry relations on the dual side are not in the project today.
+## The GNS-Bochner shortcut (pivoted plan)
 
-### Alternative B — GNS-Bochner shortcut (Gemini's first recommendation)
+Use the Wightman reconstruction identity directly, working in the GNS Hilbert space. For `(z_1, ..., z_{n+m})` in PET:
+- Define analytic Hilbert states `Φ(u)`, `Φ(v)` ∈ `GNSHilbertSpace Wfn` for `u := (z̄_n,...,z̄_1)` and `v := (z_{n+1},...,z_{n+m})`.
+- Both `u, v` are independently in `ForwardTube` (positive successive Im differences within each block — the OPTR ordering of `f, g` makes this work).
+- **Inner product**: `⟨Φ(u), Φ(v)⟩ = W_analytic(joint)`. Well-defined regardless of junction ordering (no junction constraint at the Hilbert level).
+- Bochner-integrate: `Ψ_f := ∫ Φ(u(x)) f(x) dx`, `Ψ_g := ∫ Φ(v(x)) g(x) dx`.
+- `J(a) = ⟨Ψ_f, U(a) Ψ_g⟩`.
+- Apply existing `gns_orthogonal_spatial_cobounded_decay_of` (PR #86) for cluster decay → `J(a) → L_n · L_m`.
 
-**Math** (per Gemini): use the Wightman reconstruction identity directly. Define analytic Hilbert states `Φ(z) ∈ GNSHilbertSpace Wfn` for tube z via
+This route bypasses Tflat, FL kernels, and Schwartz-Fubini in dual space. It's correct (Gemini-vetted) and uses the project's existing GNS infrastructure.
+
+---
+
+## Two-layer decomposition
+
+The work splits cleanly into **two layers**, with one factorable into a sister repo:
+
+### Layer 1: operator-algebraic core (factor-out candidate)
+
+**Content**: PVM-derived bounded contraction semigroup.
+
 ```
-Φ(z₁,...,z_n) := exp(-Im(z_n)·P) φ̂(x_n) ... exp(-Im(z₁ - z₂)·P) φ̂(x_1) Ω
+Given:  H Hilbert,  U : ℝ^{d+1} → U(H) strongly-continuous unitary group,
+        joint spectrum of generators ⊆ V̄+ (forward light cone).
+
+Construct:  S : V̄+ → BoundedOp(H),  S(y) := ∫ exp(-y·p) dE(p)
+            where E is the joint PVM from SNAG.
+
+Properties:  ‖S(y)‖ ≤ 1,  S(0) = id,  S(y₁ + y₂) = S(y₁) ∘ S(y₂),
+             strongly continuous in y, self-adjoint when y real.
 ```
-(or some such formulation; spectrum_condition gives `e^{-yP}` bounded for `y ∈ V+`). Then:
-- `u := (z̄_n, ..., z̄_1)` for OPTR f-block: in ForwardTube (positive successive Im differences). ✓
-- `v := (z_{n+1}, ..., z_{n+m})` for OPTR g-block: in ForwardTube. ✓
-- **No junction constraint needed at the Hilbert level**: Φ(u) and Φ(v) are independently well-defined finite-norm vectors. Their inner product `⟨Φ(u), Φ(v)⟩` equals `W_analytic(joint)` regardless of junction ordering.
-- Bochner-integrate against f, g: `Ψ_f := ∫ Φ(u(x)) f(x) dx`, `Ψ_g := ∫ Φ(v(x)) g(x) dx`.
-- Joint integral `J(a) = ⟨Ψ_f, U(a) Ψ_g⟩`.
-- Apply existing `gns_orthogonal_spatial_cobounded_decay_of` (PR #86) to derive `J(a) → ⟨Ψ_f, Ω⟩ ⟨Ω, Ψ_g⟩ = L_n · L_m`.
 
-**Lean status (probed 2026-05-10)**:
-- ✅ GNS Hilbert space exists (`GNSHilbertSpace Wfn`, `gnsVacuum`).
-- ✅ `WightmanInnerProduct d Wfn.W F G` for Borchers sequences `F, G`.
-- ✅ `gns_cluster_completion`, `gns_orthogonal_spatial_cobounded_decay_of` (PR #86).
-- ✅ `poincareActGNS` (Poincaré rep on GNS, used as `U(a)`).
-- ❌ **No analytic Hilbert states `Φ(z)` for tube `z` defined.** This is the missing infrastructure.
-- ❌ No `e^{-yP}` bounded-operator infrastructure for forward-cone `y`.
-- ❌ No identity linking `⟨Φ(u), Φ(v)⟩` to `W_analytic(joint)` exposed as a lemma.
+This is **standard operator-theoretic infrastructure** (Reed-Simon I §VII, Conway IX), with two missing pieces:
 
-**Estimated effort to ship analytic-state machinery + glue**:
-- `e^{-yP}` semigroup as bounded operators on GNS (via spectral functional calculus on the joint translation rep): **1–2 weeks**.
-- Analytic-state construction `Φ(z)` for `z ∈ ForwardTube`: **1 week**, requires careful adjoint conventions and BHW-ordering analysis.
-- `⟨Φ(u), Φ(v)⟩ = W_analytic(joint)` identity: **3–5 days** if analytic-state machinery is clean; could be longer if Lean type-class issues bite.
-- Bochner integration of Schwartz-tame Hilbert-valued families: **2–3 days** (Mathlib has `MeasureTheory.Bochner` infrastructure, application is mechanical).
-- Glue with cluster-decay: **3 days**.
-- **Total: 3–5 weeks**.
+| Component | Status |
+|-----------|--------|
+| `ProjectionValuedMeasureOn α H` type + `snag_theorem` axiom | ✅ in `OSReconstruction/GeneralResults/SNAGTheorem.lean` |
+| Mathlib Borel functional calculus on PVMs (operator-valued integration) | ❌ not in Mathlib |
+| hille-yosida sister repo's PVM functional calc | ❌ not present (hille-yosida is scalar PD/BCR only currently) |
 
-**Risk**: medium. The analytic-Hilbert-state machinery is well-understood mathematically (Reed-Simon II §IX.8) but new to this project. Could compound with subtle technical obstacles around the spectral calculus and translation-by-imaginary-vector conventions.
+#### Where layer 1 belongs
 
-**Plus**: aligns with the project's existing GNS direction; the analytic-state machinery would also unlock other cluster / decay arguments for free.
+**Recommendation: extend `hille-yosida` (sister repo)** with new modules:
 
-### Alternative C — Axiomatize the joint-integral cluster (Gemini's fallback)
+```
+HilleYosida/PVMFunctionalCalculus.lean    — operator-valued ∫ f dE
+HilleYosida/ConeSemigroup.lean             — S(y) := ∫ exp(-y·p) dE(p) for y in dual cone
+HilleYosida/AnalyticContinuation.lean      — y ↦ S(y) holomorphic on dual cone interior
+```
 
-**Math**: rather than going through any spectral or Hilbert-side machinery, introduce a `ClusterSpectralData` hypothesis that directly asserts `J(a) → L_n · L_m` for the joint integral itself, with appropriate hypotheses (OPTR support, etc.).
+**Rationale**:
+- hille-yosida's scope is already "C₀-semigroups, generators, resolvents, Hille-Yosida bound, BCR Theorem 4.1.13" — i.e., **spectral / semigroup theory used in OS-style reconstructions**.
+- The repo's own README explicitly motivates with OS reconstruction's Euclidean-time contraction semigroups extending to unitary groups via spectral positivity.
+- Adding PVM functional calc + cone-direction operator semigroup extends the repo's mission cleanly.
+- The repo is yours (per its copyright), so internal coordination only.
+
+**Reusability** (downstream beneficiaries):
+- Future Haag-Kastler / modular theory formalizations (Tomita-Takesaki `Δ^z` analytic family is a special case).
+- OS reconstruction in d ≠ 4.
+- JLW-style 2D N=2 Wess-Zumino rigorous analytic-vector machinery.
+- Bisognano-Wichmann boost-modular identifications.
+- Connes-style entire cyclic cohomology with analytic-continuation traces.
+
+**Estimated effort for layer 1**: 3–5 days project-internal, +2–4 days if extracting to hille-yosida cleanly.
+
+#### ⚠️ Layer 1 critical implementation note: avoid operator-valued integrals
+
+**Per Gemini Lean-formalization review (2026-05-10)**: Mathlib's `MeasureTheory` infrastructure is built for *vector-valued* (Bochner) integration of strongly measurable functions. Projection-valued measures are only **strongly countably additive** in the operator topology, not strongly measurable as Banach-valued functions. Trying to define `S(y) := ∫ exp(-y·p) dE(p)` directly as an operator-valued Bochner-style integral against a PVM is a **multi-week Lean tarpit** — every basic measure-theoretic lemma will fight back.
+
+**The fix — scalarization trick** (textbook spectral theory):
+
+1. From the PVM `E`, build scalar complex measures `μ_{ϕ,ψ}(A) := ⟨ϕ, E(A) ψ⟩`. Mathlib handles scalar measures flawlessly.
+2. Define a **sesquilinear form**:
+   ```
+   B_y(ϕ, ψ) := ∫ exp(-y·p) dμ_{ϕ,ψ}(p)
+   ```
+   This is a scalar integral against a complex measure — no operator-valued machinery.
+3. **Boundedness** (because `|exp(-y·p)| ≤ 1` on the cone-restricted support):
+   ```
+   |B_y(ϕ, ψ)| ≤ ‖ϕ‖ · ‖ψ‖
+   ```
+4. **Lift to operator** via the Mathlib representation theorem for bounded sesquilinear forms (`InnerProductSpace.toDual` / `ContinuousLinearMap.adjoint` infrastructure):
+   ```
+   S(y) ∈ B(H)  with  ⟨ϕ, S(y) ψ⟩ = B_y(ϕ, ψ)
+   ```
+
+This route turns the multi-week construction into a 2–3 day mechanical exercise. **Do not implement layer 1 via direct operator-valued integration**; route through scalar sesquilinear forms.
+
+**Build location**: `OSReconstruction/GeneralResults/PVMConeSemigroup.lean` (project-internal first; refactor to hille-yosida later when API stabilizes — extraction is mechanical because the construction has no Wightman / OS dependencies beyond the SNAG axiom and ProjectionValuedMeasureOn type, both already in `OSReconstruction.GeneralResults`).
+
+### Layer 2: Wightman-specific analytic states
+
+**Content**: analytic Hilbert states for the GNS Hilbert space.
+
+```
+Given Wfn : WightmanFunctions d, with all GNS infrastructure.
+
+Construct:  Φ : ForwardTube d n → GNSHilbertSpace Wfn
+
+Properties:
+  - Φ(z) ∈ GNSHilbertSpace Wfn (well-defined as a Hilbert vector).
+  - ⟨Φ(u), Φ(v)⟩ = W_analytic(joint(z_1,...,z_{n+m}))  for u = (z̄_n,...,z̄_1), v = (z_{n+1},...,z_{n+m}).
+  - Holomorphic in each z_k (Hilbert-vector-valued analyticity).
+  - Boundary value as Im(z_k) → 0+ recovers the smeared real-time state.
+```
+
+This is **Wightman-specific** — stays in OSReconstruction.
+
+#### ⚠️ Layer 2 critical implementation note: avoid pointwise field at zero
+
+**Per Gemini Lean-formalization review (2026-05-10)**: an earlier draft of this layer wrote
+```
+φ(z) := S(Im(z)) U(Re(z)) φ(0) U(Re(z))⁻¹ S(Im(z))⁻¹
+Φ(z_1, ..., z_n) := φ(z_1) φ(z_2) ... φ(z_n) Ω
+```
+
+**Do not attempt this construction directly.** In rigorous Wightman theory, `φ(0)` is **not** an operator on the Hilbert space — the field is only an operator-valued distribution: `φ(f)` exists for Schwartz `f`, but `φ(x)` at a point does not. Multiplying iterated `φ(z_k)` and interleaving with `S(y)` is an inescapable tarpit of dense-domain tracking, type-coercion failures, and ad-hoc operator products.
+
+**The fix — top-down execution**: stub the analytic-state map and its inner-product identity as axioms first, build layers 3 and 4 against the stubs to close the cluster sorry structurally, then return to layer 2 (or fall back to Path C) at the end. Specifically:
 
 ```lean
-structure JointIntegralClusterData (Wfn : WightmanFunctions d) (n m : ℕ) : Prop where
-  decay :
-    ∀ (f : SchwartzNPoint d n) (g : SchwartzNPoint d m),
-      OPTR_supp f → OPTR_supp g → ∀ ε > 0,
-        ∃ R > 0, ∀ a, a 0 = 0, |⃗a| > R, ∀ g_a equiv to g(·−a),
-          ‖J(a) − L_n · L_m‖ < ε
+-- Stub these first to unblock Layers 3 & 4 immediately:
+axiom analytic_state {n : ℕ} (u : Fin n → Fin (d + 1) → ℂ) (hu : u ∈ ForwardTube d n) :
+    GNSHilbertSpace Wfn
+
+axiom analytic_state_inner {n m : ℕ}
+    (u : Fin n → Fin (d + 1) → ℂ) (hu : u ∈ ForwardTube d n)
+    (v : Fin m → Fin (d + 1) → ℂ) (hv : v ∈ ForwardTube d m) :
+    @inner ℂ _ _ (analytic_state u hu) (analytic_state v hv) =
+      (W_analytic_BHW Wfn (n + m)).val (...joint(u^*, v) form...)
+```
+Plus stubs for holomorphy and boundary recovery.
+
+**Why this works**:
+- Layers 3 (Bochner integration) and 4 (cluster-glue) consume the stubs as black boxes.
+- Closing `RuelleClusterBound.lean:718` becomes immediately tractable structurally — we get a Lean-typechecking proof that uses the stubs.
+- Returning to layer 2 to discharge the stubs with real definitions is independent work that can be done later (or skipped via Path C).
+
+**Layer 2 backfill strategy** (when ready to actually construct `Φ`):
+- The right approach is via the **GNS representation of the analytically continued Borchers algebra**, NOT via pointwise field at zero.
+- Define `Φ(z_1, ..., z_n)` as the equivalence class of a Borchers sequence whose `n`-th block evaluates the analytic continuation of `φ(f_1) ... φ(f_n) Ω` smeared with appropriate analytic test functions parameterized by `z`.
+- The bounded `S(y)` from layer 1 acts on the resulting GNS class without ever invoking pointwise fields.
+- This is non-trivial Lean engineering but at least does not collide with the operator-valued-distribution domain wall.
+- Reference: Streater-Wightman §3.3 (the reconstruction-side construction), Reed-Simon II §IX.8.
+
+**Soft 2-week budget**: if layer 2 backfill stalls past 2 weeks, the layer-2 stubs can be promoted to **vetted Path C axioms** (cleanly, since they're already isolated as axioms). Add to trust audit; OS4-cluster ships with one new vetted axiom instead of a fully-discharged construction.
+
+#### Sub-pieces
+
+- **L2.1**: define `Φ(z)` using layer 1's `S(y)` interleaved with smeared field operators. Care with operator domains (φ(0) is operator-valued distribution; multiplications need vectors in domain, etc.).
+- **L2.2**: prove `Φ(z)` is well-defined as a GNS-Hilbert vector for `z ∈ ForwardTube`.
+- **L2.3**: prove `⟨Φ(u), Φ(v)⟩ = W_analytic(joint)` identity. Direct computation via field-operator algebra + analytic continuation of multi-time correlation functions.
+- **L2.4**: holomorphy of `z ↦ Φ(z)` and boundary recovery.
+
+**Estimated effort for layer 2**: 1–1.5 weeks.
+
+**File location**: `OSReconstruction/Wightman/Reconstruction/AnalyticHilbertStates.lean` (new).
+
+### Layer 3: Bochner integration of Schwartz-tame Φ-families
+
+**Content**: smear analytic states against Schwartz tests via Bochner integration.
+
+```
+For f : SchwartzNPoint d n with OPTR support,
+  Ψ_f := ∫ Φ(wick(x)) · f(x) dx ∈ GNSHilbertSpace Wfn
 ```
 
-This is essentially the cluster-theorem statement promoted to a hypothesis structure, conditional only on Wfn (not on RACH).
+Pure Mathlib (`MeasureTheory.Integral.Bochner.Basic`). Need:
+- Strong measurability of `x ↦ Φ(wick(x))`.
+- Norm bound `‖Φ(wick(x))‖ ≤ K(x)` with `K(x) · |f(x)|` integrable (Schwartz fall-off).
 
-**Lean status**: trivial to write the structure. Discharge becomes its own future-work item.
+**Estimated effort**: 1–2 days.
 
-**Estimated effort**: 3–5 days for the structure + glue at the cluster proof site.
+### Layer 4: glue + cluster theorem closure
 
-**Risk**: low to ship; the discharge becomes another open item like RACH was (now partially closed). The new axiom (if shipped) sits at the QFT-trust-boundary — Xi's discipline applies, and we'd need vetting (Gemini chat + deep-think) and audit-table entry.
+**L4.1**: prove `J(a) = ⟨Ψ_f, U(a) Ψ_g⟩` via Schwartz-Fubini for Hilbert-valued integrals + L2.3 identity.
 
-**Trade-off**: this *transports* the unsolved content rather than solving it. It moves the open work from "prove the cluster theorem from RACH" to "supply `JointIntegralClusterData` from Wfn". The latter is essentially the textbook content and would be vetted as such.
+**L4.2**: split off `Ω`-projections: `Ψ_f = ⟨Ω, Ψ_f⟩·Ω + Ψ_f^⊥` (similarly for `Ψ_g`). Apply `gns_orthogonal_spatial_cobounded_decay_of` (PR #86) to the orthogonal-to-vacuum part. Disconnected limit `⟨Ψ_f, Ω⟩ ⟨Ω, Ψ_g⟩`.
+
+**L4.3**: identify `⟨Ψ_f, Ω⟩` with `L_n` (single-block boundary integral) and `⟨Ω, Ψ_g⟩` with `L_m`.
+
+**L4.4**: replace `RuelleClusterBound.lean:718` `sorry` body with the assembled argument.
+
+**Estimated effort**: 5–8 days.
 
 ---
 
-## Comparison and recommendation
+## Total effort estimate
 
-| Alternative | Effort | Risk | New axioms | Project alignment |
-|-------------|--------|------|------------|-------------------|
-| A — Per-permutation Tflat | 3–5 wk | High | None | Stays in SCV/FL track |
-| B — GNS-Bochner shortcut | 3–5 wk | Medium | None | Aligns with GNS / L2 work |
-| C — Axiomatize joint cluster | 3–5 days | Low ship, deferred discharge | One new vetted hypothesis | Transports problem |
+| Layer | Where | Effort |
+|-------|-------|--------|
+| 1 — PVM functional calc + cone semigroup | hille-yosida (recommended) | 5–10 days |
+| 2 — Analytic Hilbert states | OSReconstruction (project-internal) | 1–1.5 weeks |
+| 3 — Bochner-smeared states | OSReconstruction (uses Mathlib) | 1–2 days |
+| 4 — Glue + closure | OSReconstruction | 5–8 days |
+| **Total** | | **3–4 weeks** |
 
-**Pre-final recommendation** (subject to user vetting):
-
-**Pursue B (GNS-Bochner) as the primary path**, with **C as the explicit fallback** if the analytic-state infrastructure proves harder than estimated. Reasons:
-
-1. B aligns with the GNS direction the L2/L4 work in PR #86 already pushed.
-2. B's intermediate machinery (analytic-Hilbert states + bounded `e^{-yP}` semigroup) has independent value for future cluster / decay arguments.
-3. C is a 3–5 day fallback. If B's infrastructure work hits a 3–4 week wall, drop to C.
-4. A (per-permutation Tflat) is the highest-risk path with the least independent value; deprioritize.
-
-**A is genuinely an option** if Xi's E→R checkpoint work happens to expose Tflat or BHW symmetry infrastructure that we don't have yet — worth checking with him before committing.
+If layer 1 is built project-internal instead (faster but less reusable): subtract ~5 days, total **2.5–3.5 weeks**.
 
 ---
 
-## Sub-lemma decomposition for Alternative B
+## Risks
 
-Assuming we go with B:
+1. **Layer 1 scope creep**: PVM functional calculus is non-trivial. Operator-valued integration against PVMs requires careful domain analysis. Mathlib doesn't have it; we'd be building it from scratch in hille-yosida.
 
-### B.1 — Bounded `e^{-yP}` semigroup on GNS Hilbert space
+2. **Layer 2 — analytic-state construction subtleties**: Field operators are operator-valued distributions, not bounded operators. Constructing `φ(z) := S(y) φ(0) S(y)⁻¹` requires interleaving distributional smearing with bounded operator action; domain considerations are technical. Reed-Simon II §IX.8 has the textbook treatment but Lean formalization is unprecedented in the project.
 
-For `y ∈ V̄+` (forward cone closure), `exp(-y·P)` is a bounded operator on `GNSHilbertSpace Wfn`, where `P` is the joint translation generator (4-momentum) from SNAG.
+3. **Layer 4 — `⟨Ω, Ψ_f⟩ = L_n` identification**: needs careful handling of the boundary recovery for `Φ(wick(x))` as Im → 0+, plus the Wightman boundary-value clause from `Wfn.spectrum_condition`. Mostly mechanical but multiple Schwartz / Bochner / boundary lemmas to thread.
 
-**Building blocks**:
-- SNAG theorem axiom (existing) gives joint PVM `E` for the spacetime translation rep on GNS.
-- `exp(-y·P) := ∫ exp(-y·p) dE(p)` is a positive operator (since `p ∈ V̄+` on the spectrum, `y·p ≥ 0`, so `exp(-y·p) ≤ 1`).
-- Bounded with norm ≤ 1.
+4. **Strong measurability of `x ↦ Φ(wick(x))`** (layer 3): Schwartz functions are continuous, so this should follow from continuity of the construction in `x`, but pinning down "continuity in `x`" of the Hilbert-vector valued state requires care — analytic vector machinery.
 
-**Estimated effort**: 1–2 weeks. Spectral functional calculus on the SNAG-derived PVM.
-
-### B.2 — Analytic Hilbert states `Φ(z)` for `z ∈ ForwardTube d n`
-
-Define `Φ(z₁,...,z_n) ∈ GNSHilbertSpace Wfn` via the BHW-order convention:
-```
-Φ(z₁,...,z_n) := exp(-Im(z₁)·P) φ(Re(z₁)) ·
-                 exp(-Im(z₂ − z₁)·P) φ(Re(z₂ − z₁)) ·
-                 ... ·
-                 exp(-Im(z_n − z_{n-1})·P) φ(Re(z_n − z_{n-1})) Ω
-```
-Each `exp(-(y_k − y_{k-1})·P)` is bounded (B.1) since successive Im differences are in V+. The field operators `φ(x)` need to be applied to vectors in their domain — for analytic states `Φ(z)` with positive Im differences, these are standard arguments.
-
-**Estimated effort**: 1 week, including identification with existing project field-operator machinery.
-
-### B.3 — `⟨Φ(u), Φ(v)⟩ = W_analytic(joint(u,v))` identity
-
-Where `u := (z̄_n,...,z̄_1)` and `v := (z_{n+1},...,z_{n+m})` for `(z₁,...,z_{n+m}) ∈ PET`.
-
-The identity holds by direct computation: expanding both sides via the field-operator definitions and the BHW analytic-continuation theorem.
-
-**Estimated effort**: 3–5 days.
-
-### B.4 — Bochner-integrated Hilbert states from Schwartz tests
-
-For `f : SchwartzNPoint d n` (OPTR-supported), define
-```
-Ψ_f := ∫ Φ(wick(x)) f(x) dx ∈ GNSHilbertSpace Wfn
-```
-
-via Mathlib's `MeasureTheory.Bochner` infrastructure. Need:
-- Strong measurability of `x ↦ Φ(wick(x))` as a Hilbert-valued map.
-- Norm bound: `‖Φ(wick(x))‖ ≤ K(x)` with `K(x) · |f(x)|` integrable (from Schwartz fall-off).
-
-**Estimated effort**: 2–3 days. Mathlib's Bochner infrastructure is ready.
-
-### B.5 — Glue: joint integral = `⟨Ψ_f, U(a) Ψ_g⟩`
-
-Combine B.3 (per-config inner product) with B.4 (Bochner integral) via Schwartz-Fubini for Hilbert-valued integrals.
-
-**Estimated effort**: 3 days.
-
-### B.6 — Apply cluster-decay and identify limit
-
-With `J(a) = ⟨Ψ_f, U(a) Ψ_g⟩`:
-- Split off `Ω`-projections: `Ψ_f = ⟨Ω, Ψ_f⟩·Ω + (Ψ_f^⊥)`, similarly for `Ψ_g`.
-- Apply `gns_orthogonal_spatial_cobounded_decay_of` to the `(Ψ_f^⊥, Ψ_g^⊥)` part.
-- Disconnected limit: `⟨Ψ_f, Ω⟩ ⟨Ω, Ψ_g⟩`.
-- Identify these projections with `L_n` and `L_m` via boundary recovery.
-
-**Estimated effort**: 3–5 days.
-
-### B.7 — Wire into `W_analytic_cluster_integral_via_ruelle`
-
-Replace the `sorry` body with the assembled argument. The cluster theorem then becomes unconditional given `Wfn`'s axioms (not even RACH needed if the argument routes through GNS directly, though RACH may still be needed for other purposes in the broader cluster theorem).
-
-**Estimated effort**: 2–3 days.
-
-### Sub-total for B
-
-3–5 weeks, with B.1 (bounded `e^{-yP}`) being the largest piece.
+**Risk mitigation**: each layer is independently testable. After layer 1 is shipped (potentially merged into hille-yosida main), layer 2 builds on a stable foundation. After layer 2, layers 3–4 are mechanical.
 
 ---
 
-## Ordering of work
+## Strategic decisions (Gemini-vetted, 2026-05-10)
 
-If B is chosen:
-1. **B.1 first** — bounded `e^{-yP}` semigroup. This is the foundational infrastructure; everything else depends on it.
-2. **B.2 after B.1** — analytic Hilbert states.
-3. **B.3, B.4, B.5 in parallel-ish** — they're each ~3 days, independent given B.2.
-4. **B.6, B.7 last** — glue.
+1. **Layer 1 home**: build **project-internal first** in `OSReconstruction/GeneralResults/PVMConeSemigroup.lean`. Refactor to hille-yosida after OS4 cluster closes — extraction is mechanical because layer 1 has no Wightman dependencies (only SNAG axiom + ProjectionValuedMeasureOn type, both already in `GeneralResults/`).
 
-If C is chosen as fallback (after some progress on B reveals it's harder than estimated):
-1. Define `JointIntegralClusterData` structure.
-2. Wire into cluster proof.
-3. Defer discharge as future work.
+2. **Branch strategy**: fork `r2e/cluster-ibp-rework` from current `r2e/ruelle-poly-bound-chain` head **today**. Clean isolation between the chain-repair work (functional-analytic / FL hygiene) and the Hilbert-space rewrite (operator-algebraic).
+
+3. **Coordination with Xi**: ping **immediately** with a short summary of the pivot. He may have unpushed local WIP for analytic states or strong opinions on operator domains. Recommended message:
+   > Heads up — I'm pivoting the cluster-proof closure away from the dominator/IBP plan. The boundary regulator introduces a non-integrable codim-1 singularity, breaking the pointwise dominator. The Euclidean FL representation also blows up due to the unconstrained junction time difference between f's and g's OPTR supports. New plan: route through the Wightman reconstruction identity and Bochner integration in the GNS Hilbert space (Streater-Wightman §3.3 / Reed-Simon II §IX.8). Ping me if you have unpushed analytic-state machinery — `Φ(z) ∈ GNSHilbertSpace` for `z ∈ ForwardTube` — or strong opinions on operator domains for the construction. Plan doc: `docs/cluster_ibp_rework_plan.md` on `r2e/ruelle-poly-bound-chain`.
+
+4. **Chain-repair PR**: open today against `xiyin137/main` with the three commits `ebd007f`, `050449b`, `973617a`. They are mathematically sound, independently useful relaxations; merging them prevents bit-rot while we tackle the Hilbert-space rewrite.
+
+5. **2-week timebox**: hard budget of **1–2 weeks** on layers 1+2 combined. If by end of week 2 layer 2's analytic-state backfill is stalling on operator-domain or coercion issues, **pull the ripcord**: promote the layer-2 stubs to vetted Path C axioms (`analytic_state` + `analytic_state_inner`), add to trust audit, ship the cluster sorry closed conditionally on the new axioms.
+
+### What's still open
+
+- **Pace of layer 4 cluster-glue against stubs**: even with stubs unblocking layers 3–4 immediately, there's nontrivial work in routing the `Ω`-projection split through the existing `gns_orthogonal_spatial_cobounded_decay_of`. Tracking estimate: 5–8 days.
+
+- **Whether the chain-repair PR should go to xiyin137/main or stage on mrdouglasny/OSreconstruction first**: per CLAUDE.md "shared repo" policy, mrdouglasny first → PR to xiyin137 unless the change is small and self-contained. The chain-repair changes the `bv_implies_fourier_support` axiom signature; that's an interface change, so PR-against-xiyin137 path applies. Direct PR to xiyin137/main is the right move.
 
 ---
 
-## Open questions for the user
+## Appendix: Layer-4 sketch against stubs (verification)
 
-1. **Path choice**: B (GNS-Bochner, full infrastructure) or C (axiomatize, defer)? Per-permutation Tflat (A) is deprioritized.
-2. **Time budget**: 3–5 weeks for B is the realistic estimate. Acceptable, or push for C as a faster ship?
-3. **Coordination with Xi**: do we ping him now (post-pivot) or wait until we have concrete progress on B (or commitment to C)? Per his `bv_implies_fourier_support`-shaped previous reviews, he'd appreciate the Gemini-vetted FL-trap diagnosis even before code lands.
-4. **Branch**: fork `r2e/cluster-ibp-rework` from current `r2e/ruelle-poly-bound-chain` head? Or start a clean branch from main + cherry-pick the chain-repair commits?
-5. **PR cadence**: ship the chain-repair (commits `ebd007f`, `050449b`, `973617a`) as a small PR now — yes/no?
+**Purpose**: verify the stub interface is sufficient for layer 4's cluster glue, before committing to the full GNS-Bochner pivot.
+
+### Precise stub interface required
+
+```lean
+-- Core: existence of analytic states.
+axiom analytic_state {n : ℕ} (z : Fin n → Fin (d + 1) → ℂ)
+    (hz : z ∈ ForwardTube d n) :
+    GNSHilbertSpace Wfn
+
+-- Core: inner product = W_analytic on joint PET configs.
+-- Note convention: u corresponds to z̄_n,...,z̄_1; v to z_{n+1},...,z_{n+m}.
+axiom analytic_state_inner {n m : ℕ}
+    (u : Fin n → Fin (d + 1) → ℂ) (hu : u ∈ ForwardTube d n)
+    (v : Fin m → Fin (d + 1) → ℂ) (hv : v ∈ ForwardTube d m)
+    (hPET : (Fin.append (fun k => starRingEnd ℂ ∘ u (Fin.rev k)) v) ∈
+       PermutedExtendedTube d (n + m)) :
+    @inner ℂ _ _ (analytic_state u hu) (analytic_state v hv) =
+      (W_analytic_BHW Wfn (n + m)).val
+        (Fin.append (fun k => starRingEnd ℂ ∘ u (Fin.rev k)) v)
+
+-- Auxiliary: continuity needed for Bochner integrability.
+axiom analytic_state_continuous {n : ℕ} :
+    ContinuousOn (fun z : Fin n → Fin (d + 1) → ℂ =>
+      ∃ hz : z ∈ ForwardTube d n, analytic_state z hz)
+      (ForwardTube d n)
+-- (Lifted appropriately to handle the dependent type.)
+
+-- Auxiliary: norm bound (follows from ‖S(y)‖ ≤ 1 in the actual construction).
+axiom analytic_state_norm_bound {n : ℕ} (z : Fin n → Fin (d + 1) → ℂ)
+    (hz : z ∈ ForwardTube d n) :
+    ‖analytic_state z hz‖ ≤ K_n  -- some constant depending on n; could even be 1.
+
+-- Boundary recovery (needed to identify L_n with ⟨Ω, Ψ_f⟩):
+-- For OPTR-supported f, the smeared single-block analytic state has
+-- ⟨Ω, Φ(wick(x))⟩ = W_analytic(wick(x))  [single-config form of analytic_state_inner].
+-- This is implied by analytic_state_inner with empty u side.
+```
+
+### Layer-4 proof sketch
+
+```lean
+-- Given:
+--   f : SchwartzNPoint d n, OPTR-supported
+--   g : SchwartzNPoint d m, OPTR-supported
+--   ε > 0
+-- Goal: ∃ R, ∀ a (a 0 = 0, |⃗a| > R), ‖J(a) - L_n · L_m‖ < ε
+
+-- (1) Define Bochner-integrated states (layer 3).
+let Ψ_f : GNSHilbertSpace Wfn :=
+  ∫ x : NPointDomain d n, f.toFun x • analytic_state (wick(x)) (...)
+  -- requires: continuity + norm bound from stubs + Schwartz integrability.
+let Ψ_g : GNSHilbertSpace Wfn :=
+  ∫ x : NPointDomain d m, g.toFun x • analytic_state (wick(x)) (...)
+
+-- (2) J(a) = ⟨Ψ_f, U(a) Ψ_g⟩.
+-- Schwartz-Fubini for Hilbert-valued integrals + analytic_state_inner identity:
+have h_J_eq : ∀ a, J(a) = @inner ℂ _ _ Ψ_f
+    (poincareActGNS Wfn (PoincareGroup.translation' a) Ψ_g) := by
+  intro a
+  -- Schwartz-Fubini: ⟨∫ Φ_x f(x) dx, U(a) ∫ Φ_y g(y) dy⟩
+  --   = ∫∫ ⟨Φ_x, U(a) Φ_y⟩ f(x) g(y) dx dy
+  --   = ∫∫ analytic_state_inner(...wick(x), wick(y)+(0,a)...) f(x) g(y) dx dy
+  --   = ∫∫ W_analytic(...) f(x) g(y) dx dy
+  --   = J(a)
+  sorry  -- mechanical via Schwartz-Fubini + stubs
+
+-- (3) Split off Ω-projections.
+let cf : ℂ := @inner ℂ _ _ (gnsVacuum Wfn) Ψ_f  -- "L_n" candidate (modulo conjugation)
+let cg : ℂ := @inner ℂ _ _ (gnsVacuum Wfn) Ψ_g
+let Ψ_f_perp : GNSHilbertSpace Wfn := Ψ_f - (starRingEnd ℂ cf) • gnsVacuum Wfn
+let Ψ_g_perp : GNSHilbertSpace Wfn := Ψ_g - cg • gnsVacuum Wfn
+-- Both Ψ_f_perp, Ψ_g_perp are orthogonal to gnsVacuum.
+
+-- (4) Apply cluster decay to (Ψ_f_perp, Ψ_g_perp).
+-- ⚠️  GAP: gns_orthogonal_spatial_cobounded_decay_of REQUIRES
+--     L2SpectralData Wfn Ψ_f_perp Ψ_g_perp.
+--     This is NOT automatic — need to construct or supply.
+--
+-- Three options:
+--   (a) Construct L2SpectralData from SNAG + polarization + AC marginal claim
+--       for OUR specific Bochner-derived states. Real work.
+--   (b) Add another stub axiom: bochner_state_l2_data.
+--       Path-C-style; expands trust surface.
+--   (c) Use gns_cluster_completion (ray decay only, on PreHilbertSpace).
+--       Bochner states are in completion, not necessarily PreHilbert.
+--       Need lift PreHilbert ray decay → completion cobounded decay.
+
+-- Assuming (a) or (b):
+have hL2 : L2SpectralData Wfn Ψ_f_perp Ψ_g_perp := <stub or constructed>
+
+have h_perp_decay :
+    Tendsto (fun a : SpacetimeDim d =>
+      @inner ℂ _ _ Ψ_f_perp
+        (poincareActGNS Wfn (PoincareGroup.translation' a) Ψ_g_perp))
+      (Filter.principal {a | a 0 = 0} ⊓ Bornology.cobounded _) (𝓝 0) :=
+  gns_orthogonal_spatial_cobounded_decay_of Wfn Ψ_f_perp Ψ_g_perp hL2
+
+-- (5) Decompose ⟨Ψ_f, U(a) Ψ_g⟩ via the projection split.
+-- ⟨Ψ_f, U(a) Ψ_g⟩
+--   = ⟨cf·Ω + Ψ_f_perp, U(a) (cg·Ω + Ψ_g_perp)⟩
+--   = ⟨cf·Ω, cg · U(a) Ω⟩ + ⟨cf·Ω, U(a) Ψ_g_perp⟩
+--     + ⟨Ψ_f_perp, cg · U(a) Ω⟩ + ⟨Ψ_f_perp, U(a) Ψ_g_perp⟩
+--   = (starRingEnd cf · cg · ⟨Ω, U(a) Ω⟩)
+--     + cg · ⟨cf·Ω, U(a) Ω⟩  -- wait: U(a) Ψ_g_perp not Ω
+-- Need to use vacuum_invariant: U(a) Ω = Ω.
+--   ⟨Ψ_f_perp, U(a) Ω⟩ = ⟨Ψ_f_perp, Ω⟩ = 0 (since Ψ_f_perp ⊥ Ω).
+--   ⟨Ω, U(a) Ψ_g_perp⟩ = ⟨U(a)* Ω, Ψ_g_perp⟩ = ⟨Ω, Ψ_g_perp⟩ = 0.
+-- So:
+--   ⟨Ψ_f, U(a) Ψ_g⟩ = starRingEnd cf · cg + ⟨Ψ_f_perp, U(a) Ψ_g_perp⟩
+
+have h_split : ∀ a, @inner ℂ _ _ Ψ_f
+    (poincareActGNS Wfn (PoincareGroup.translation' a) Ψ_g) =
+    starRingEnd ℂ cf * cg +
+    @inner ℂ _ _ Ψ_f_perp
+      (poincareActGNS Wfn (PoincareGroup.translation' a) Ψ_g_perp) := by
+  intro a
+  -- Vacuum invariance: U(a) Ω = Ω.
+  -- ⟨Ψ_f_perp, Ω⟩ = 0 (by construction of Ψ_f_perp).
+  -- Linearity of inner product, expand the four-term sum.
+  sorry  -- mechanical
+
+-- (6) Combine: J(a) → starRingEnd cf · cg as |⃗a| → ∞.
+have h_J_decay :
+    Tendsto (fun a => J(a))
+      (Filter.principal {a | a 0 = 0} ⊓ Bornology.cobounded _)
+      (𝓝 (starRingEnd ℂ cf * cg)) := by
+  rw [show (starRingEnd ℂ cf * cg : ℂ) = starRingEnd ℂ cf * cg + 0 by ring]
+  exact (h_J_eq ▸ h_split ▸ (Tendsto.add tendsto_const_nhds h_perp_decay))
+
+-- (7) Identify the limit with L_n · L_m.
+-- L_n = ∫ W_analytic_BHW (wick x) f(x) dx = ∫ ⟨Ω, Φ(wick x)⟩ f(x) dx
+--     = ⟨Ω, ∫ Φ(wick x) f(x) dx⟩ = ⟨Ω, Ψ_f⟩ = cf.
+-- (Linearity of inner product over Bochner integral; uses analytic_state_inner with empty v.)
+have h_L_n_eq : L_n = cf := sorry
+have h_L_m_eq : L_m = cg := sorry  -- analogous; depends on convention.
+
+-- (8) Convert Tendsto to ε-R form.
+-- Standard cobounded → ε-R extraction (already done in PR #86 patterns).
+sorry
+```
+
+### Stub-interface findings
+
+**Sufficient (with caveats)**:
+- `analytic_state` + `analytic_state_inner` — needed for J(a) = ⟨Ψ_f, U(a) Ψ_g⟩ identity.
+- `analytic_state_continuous` — needed for Bochner integrability (strong measurability via continuity).
+- `analytic_state_norm_bound` — needed for Bochner integrability (norm-bound × Schwartz fall-off ⇒ integrable).
+
+**Identified gap**:
+- ⚠️ **`gns_orthogonal_spatial_cobounded_decay_of` requires `L2SpectralData` per pair of states.** For our Bochner-derived `Ψ_f_perp, Ψ_g_perp`, this isn't free. Either:
+  - Construct L2SpectralData via SNAG + polarization + AC marginal for these specific states. **Real work** — uses analytic-state machinery to identify Bochner-integrated states with smeared field-operator states, then SNAG joint PVM gives the spectral measure.
+  - Add a stub axiom `bochner_state_l2_data` for these states (Path-C-style).
+  - Use `gns_cluster_completion` (older theorem, ray decay on `PreHilbertSpace`) and lift to cobounded — needs Bochner states to be in PreHilbert (might not be) and ray-to-cobounded lift work.
+
+This adds **~3–5 days** to layer 4 (option a) or **a new vetted axiom** (option b) or **lift work** (option c).
+
+### Verification verdict
+
+The GNS-Bochner pivot IS Lean-feasible against the proposed stubs, modulo the L2SpectralData supply for the Bochner-derived states. The math is sound; the Lean engineering has identified obstacles but they're navigable.
+
+**Updated risk assessment**:
+- Layer 1 (scalarization): low risk, ~3 days.
+- Layer 2 (stubs deferred): low risk, ~1 day to define stubs.
+- Layer 3 (Bochner integration): low-medium risk, ~2 days, dependent on stub continuity property.
+- Layer 4 (cluster glue): **medium-high risk** — the L2SpectralData supply is the load-bearing piece. Original 5–8 day estimate likely needs 7–10 days with the additional sub-task.
+
+**Updated total**: 3–4 weeks, with the L2SpectralData construction being the highest-risk sub-piece.
+
+**Mitigation**: if option (a) for L2SpectralData stalls, fall back to (b) — promote to a stub axiom and ship with that as documented. This caps the L2SpectralData work at the same 2-week timebox.
 
 ---
 
 ## Pre-reqs already in place
 
 - ✅ `Wfn.spectrum_condition_compact_subset` (`973617a`) — satisfiable form for new code paths.
-- ✅ `bv_implies_fourier_support` relaxed (`ebd007f`) — though not used by Alternative B.
-- ✅ `vladimirov_tillmann` consumer relaxed.
-- ✅ `hasCompactSubsetGrowth_of_global_polyGrowth` helper.
-- ✅ `gns_cluster_completion` (existing).
-- ✅ `gns_orthogonal_spatial_cobounded_decay_of` (PR #86).
-- ✅ SNAG axiom (existing) — basis for B.1.
-- ✅ `WightmanInnerProduct` Borchers-sequence pairing (existing).
-- ❌ Bounded `e^{-yP}` semigroup — needs B.1.
-- ❌ Analytic Hilbert states `Φ(z)` for tube `z` — needs B.2.
+- ✅ `bv_implies_fourier_support` relaxed (`ebd007f`) — though not used by GNS-Bochner route.
+- ✅ `gns_cluster_completion`, `gns_orthogonal_spatial_cobounded_decay_of` (PR #86).
+- ✅ `poincareActGNS` Poincaré rep on GNS.
+- ✅ `WightmanInnerProduct` Borchers-sequence pairing.
+- ✅ SNAG axiom + `ProjectionValuedMeasureOn α H` type.
+- ✅ Wightman field operator `φ` infrastructure on GNS (smeared form).
+- ❌ Layer 1 — PVM functional calculus + bounded `e^{-yP}` semigroup.
+- ❌ Layer 2 — analytic Hilbert states `Φ(z)`.
 
 ---
 
-## Status of the FL-side Tflat machinery
+## Why this matters beyond OS4
 
-The chain-repair commits on this branch (`ebd007f`, `050449b`, `973617a`) **remain useful** independently of which alternative is chosen. They:
-- Make `bv_implies_fourier_support` hypothesis legitimate (Vladimirov H(T^C) form).
-- Add `Wfn.spectrum_condition_compact_subset` so new code doesn't perpetuate the unsatisfiable form.
-- Wire helper conversions at 4 call sites.
+Once layer 1 is in hille-yosida and layer 2 in OSReconstruction:
 
-These are project-trust-surface improvements regardless of the IBP rework path. Worth shipping as a small PR per Gemini's recommendation.
+- **Future modular theory work** (Tomita-Takesaki for vacuum states, Bisognano-Wichmann) inherits layer 1 directly. The modular operator `Δ^z` is exactly a PVM-derived bounded family on a strip.
+- **Future Haag-Kastler formalizations** can build analytic-state machinery on local algebras using the same layer 1 (Borchers' theorem on positive-spectrum analyticity is a direct application).
+- **JLW-style rigorous QFT models** (2D N=2 Wess-Zumino on cylinder, etc.) need analytic Hilbert states for index-theorem pairings; layer 2's framework adapts model-by-model.
+- **Connes-style entire cyclic cohomology** uses analytic-vector traces with similar bounded `Δ^z` structures.
+
+The 3–4 weeks is a real cost, but the infrastructure pays off for any future analytic-vector / spectral-decomposition work. For projects beyond OS4 cluster, layer 1 + layer 2 is a foundational layer.
+
+**Pragmatic alternative if 3–4 weeks is too much**: drop to Path C (axiomatize the joint-integral cluster directly, ~3–5 days ship). The infrastructure benefit is forfeited but OS4 closes faster. Add to the trust audit and vet via Gemini.
