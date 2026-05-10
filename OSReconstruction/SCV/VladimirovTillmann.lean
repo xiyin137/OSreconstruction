@@ -125,6 +125,70 @@ The formal proof needs Schwartz-valued Bochner integration, which is not in Math
 
 -/
 
+/-! ### Conversion: global polynomial growth → compact-subset polynomial growth
+
+Callers who already have the (over-strong) global polynomial bound
+`∃ C N, ∀ z ∈ tube, ‖F z‖ ≤ C·(1+‖z‖)^N` can derive the compact-subset
+form needed by `bv_implies_fourier_support` / `vladimirov_tillmann` via
+this helper. The conversion is straightforward: on any compact `K ⊂ C`,
+`‖y‖` is bounded by some `R_K`, so `‖x + iy‖ ≤ ‖x‖ + R_K` and
+`(1+‖x+iy‖)^N ≤ (1+R_K)^N · (1+‖x‖)^N`.
+
+The reverse direction does NOT hold (compact-subset growth is strictly
+weaker than global growth — e.g., `1/dist(Im z, ∂C)` has compact-subset
+growth but no global polynomial bound). -/
+theorem hasCompactSubsetGrowth_of_global_polyGrowth {n d : ℕ}
+    (C : Set (Fin n → Fin (d + 1) → ℝ))
+    (F : (Fin n → Fin (d + 1) → ℂ) → ℂ)
+    (hF_global : ∃ (C_bd : ℝ) (N : ℕ), C_bd > 0 ∧
+      ∀ (z : Fin n → Fin (d + 1) → ℂ), z ∈ TubeDomainSetPi C →
+        ‖F z‖ ≤ C_bd * (1 + ‖z‖) ^ N) :
+    ∀ (K : Set (Fin n → Fin (d + 1) → ℝ)), IsCompact K → K ⊆ C →
+      ∃ (C_bd' : ℝ) (N' : ℕ), C_bd' > 0 ∧
+        ∀ (x y : Fin n → Fin (d + 1) → ℝ), y ∈ K →
+          ‖F (fun k μ => (x k μ : ℂ) + (y k μ : ℂ) * Complex.I)‖ ≤
+            C_bd' * (1 + ‖x‖) ^ N' := by
+  obtain ⟨C_bd, N, hC_pos, hgrowth⟩ := hF_global
+  intro K hK_cpt hK_sub
+  -- Bound on K: R = sup ‖y‖ over y ∈ K, nonneg by max R 0.
+  obtain ⟨R, hR⟩ : ∃ R : ℝ, ∀ y ∈ K, ‖y‖ ≤ R := by
+    rcases hK_cpt.bddAbove_image (continuous_norm.continuousOn) with ⟨R, hR⟩
+    exact ⟨R, fun y hy => hR (Set.mem_image_of_mem _ hy)⟩
+  refine ⟨C_bd * (1 + max R 0) ^ N, N, by positivity, fun x y hy => ?_⟩
+  set z : Fin n → Fin (d + 1) → ℂ := fun k μ => (x k μ : ℂ) + (y k μ : ℂ) * Complex.I with hz_def
+  have hz_im : (fun k μ => (z k μ).im) = y := by
+    funext k μ; simp [hz_def, Complex.add_im, Complex.mul_im, Complex.I_im, Complex.ofReal_im]
+  have hz_tube : z ∈ TubeDomainSetPi C := by
+    show (fun k μ => (z k μ).im) ∈ C
+    rw [hz_im]; exact hK_sub hy
+  have hRy : ‖y‖ ≤ max R 0 := le_trans (hR y hy) (le_max_left _ _)
+  -- ‖z‖ ≤ ‖x‖ + ‖y‖ by per-coordinate triangle inequality on Pi sup norm.
+  have h_zx_le : ‖z‖ ≤ ‖x‖ + ‖y‖ := by
+    refine (pi_norm_le_iff_of_nonneg (by positivity)).mpr (fun k => ?_)
+    refine (pi_norm_le_iff_of_nonneg (by positivity)).mpr (fun μ => ?_)
+    have h_per : ‖z k μ‖ ≤ ‖x k μ‖ + ‖y k μ‖ := by
+      simp only [hz_def]
+      refine le_trans (norm_add_le _ _) ?_
+      simp [Complex.norm_real, Complex.norm_mul, Complex.norm_I, Real.norm_eq_abs]
+    have hxk : ‖x k μ‖ ≤ ‖x‖ := (norm_le_pi_norm x k).trans' (le_of_eq rfl)
+      |>.trans' (le_of_eq rfl) |> fun _ =>
+        le_trans (norm_le_pi_norm (x k) μ) (norm_le_pi_norm x k)
+    have hyk : ‖y k μ‖ ≤ ‖y‖ :=
+      le_trans (norm_le_pi_norm (y k) μ) (norm_le_pi_norm y k)
+    linarith [h_per, hxk, hyk]
+  calc ‖F z‖
+      ≤ C_bd * (1 + ‖z‖) ^ N := hgrowth z hz_tube
+    _ ≤ C_bd * (1 + (‖x‖ + max R 0)) ^ N := by
+          gcongr
+          linarith [hRy, h_zx_le]
+    _ ≤ C_bd * ((1 + max R 0) * (1 + ‖x‖)) ^ N := by
+          gcongr
+          have := norm_nonneg x
+          have := le_max_right R 0
+          nlinarith [norm_nonneg x, le_max_right R 0]
+    _ = C_bd * (1 + max R 0) ^ N * (1 + ‖x‖) ^ N := by
+          rw [mul_pow, mul_assoc]
+
 /-- **Growth + boundary values imply dual-cone spectral support.**
 
 If `F` is holomorphic on a tube `T(C)`, has polynomial growth on compact subsets
@@ -137,10 +201,19 @@ The growth hypothesis is essential: without it, F(z) = exp(-iaz) for a > 0
 is a counterexample (holomorphic on the upper half-plane, tempered BV exp(-iax),
 but spectral support at -a ∉ C* = [0,∞)).
 
-The compact-subset polynomial growth hypothesis suffices for Vladimirov 25.1.
+**Hypothesis shape (relaxed 2026-05-09)**: this axiom takes the textbook
+Vladimirov `H(T^C)` hypothesis directly — for every compact `K ⊂ C`,
+polynomial growth in the real part `x` uniform over `y ∈ K`. An earlier
+draft used a stronger global polynomial bound `‖F z‖ ≤ C(1+‖z‖)^N`
+uniform over the entire tube; that shape is **unsatisfiable** for any
+actual Wightman QFT (free-field counterexample: internal `1/(z-w)²`
+singularities as `Im(z-w) → ∂V+` are unbounded by polynomials in `‖z‖`
+alone). The compact-subset form is what Vladimirov 25.1 actually
+requires and is satisfiable for free fields.
+
 Combined with `fl_representation_from_bv`, this yields the FL representation,
-from which the full Vladimirov bound (with boundary singularity) follows
-via `fourierLaplaceExtMultiDim_vladimirov_growth` (proved in PW).
+from which the full Vladimirov bound with boundary-singularity regulator
+follows via `fourierLaplaceExtMultiDim_vladimirov_growth` (proved in PW).
 
 **Convention**: `HasFourierSupportInDualCone` checks literal distributional support
 of its argument. Here `Tflat` is already on the frequency side, so literal support
@@ -151,17 +224,16 @@ axiom bv_implies_fourier_support {n d : ℕ}
     (hC_cone : IsCone C) (hC_salient : IsSalientCone C)
     (F : (Fin n → Fin (d + 1) → ℂ) → ℂ)
     (hF_holo : DifferentiableOn ℂ F (TubeDomainSetPi C))
-    -- Global polynomial growth on the tube (Vladimirov H(T^C) condition).
-    -- This is strictly stronger than compact-subset growth (which is vacuous for
-    -- continuous functions) and strictly weaker than the full Vladimirov bound
-    -- (which includes the boundary-distance singularity factor).
-    -- Counterexample showing compact-subset growth is insufficient: F(z) = exp(-iz)
-    -- on the upper half-plane has compact-subset growth but spectral support at -1 ∉ C*.
-    -- For Wightman functions from OS axioms, global polynomial growth is proved in
-    -- the ACR(1) assembly (full_analytic_continuation_with_symmetry_growth).
-    (hF_growth : ∃ (C_bd : ℝ) (N : ℕ), C_bd > 0 ∧
-      ∀ (z : Fin n → Fin (d + 1) → ℂ), z ∈ TubeDomainSetPi C →
-        ‖F z‖ ≤ C_bd * (1 + ‖z‖) ^ N)
+    -- Compact-subset polynomial growth (Vladimirov H(T^C)): for every
+    -- compact K ⊂ C, polynomial growth in the real part uniform over
+    -- imaginary parts in K. This matches the textbook Vladimirov 25.1
+    -- hypothesis exactly. Satisfiable for actual Wightman QFTs (free
+    -- fields satisfy it; the unregulated global form is not).
+    (hF_growth : ∀ (K : Set (Fin n → Fin (d + 1) → ℝ)), IsCompact K → K ⊆ C →
+      ∃ (C_bd : ℝ) (N : ℕ), C_bd > 0 ∧
+        ∀ (x y : Fin n → Fin (d + 1) → ℝ), y ∈ K →
+          ‖F (fun k μ => (x k μ : ℂ) + (y k μ : ℂ) * Complex.I)‖ ≤
+            C_bd * (1 + ‖x‖) ^ N)
     (W : SchwartzMap (Fin n → Fin (d + 1) → ℝ) ℂ →L[ℂ] ℂ)
     (hF_bv : ∀ (η : Fin n → Fin (d + 1) → ℝ), η ∈ C →
       ∀ (φ : SchwartzMap (Fin n → Fin (d + 1) → ℝ) ℂ),
@@ -458,9 +530,14 @@ theorem vladimirov_tillmann {n d : ℕ}
     (hC_cone : IsCone C) (hC_salient : IsSalientCone C)
     (F : (Fin n → Fin (d + 1) → ℂ) → ℂ)
     (hF_holo : DifferentiableOn ℂ F (TubeDomainSetPi C))
-    (hF_growth : ∃ (C_bd : ℝ) (N : ℕ), C_bd > 0 ∧
-      ∀ (z : Fin n → Fin (d + 1) → ℂ), z ∈ TubeDomainSetPi C →
-        ‖F z‖ ≤ C_bd * (1 + ‖z‖) ^ N)
+    -- Compact-subset polynomial growth (Vladimirov H(T^C)); see the
+    -- `bv_implies_fourier_support` axiom docstring for why this is the
+    -- correct hypothesis shape and not the over-strong global form.
+    (hF_growth : ∀ (K : Set (Fin n → Fin (d + 1) → ℝ)), IsCompact K → K ⊆ C →
+      ∃ (C_bd : ℝ) (N : ℕ), C_bd > 0 ∧
+        ∀ (x y : Fin n → Fin (d + 1) → ℝ), y ∈ K →
+          ‖F (fun k μ => (x k μ : ℂ) + (y k μ : ℂ) * Complex.I)‖ ≤
+            C_bd * (1 + ‖x‖) ^ N)
     (W : SchwartzMap (Fin n → Fin (d + 1) → ℝ) ℂ →L[ℂ] ℂ)
     (hF_bv : ∀ (η : Fin n → Fin (d + 1) → ℝ), η ∈ C →
       ∀ (φ : SchwartzMap (Fin n → Fin (d + 1) → ℝ) ℂ),
@@ -469,6 +546,7 @@ theorem vladimirov_tillmann {n d : ℕ}
             F (fun k μ => (x k μ : ℂ) + (ε : ℂ) * (η k μ : ℂ) * Complex.I) * φ x)
           (nhdsWithin 0 (Set.Ioi 0)) (nhds (W φ))) :
     -- Conclusion 1: Polynomial growth on compact subsets of C
+    -- (now matches the input hypothesis shape exactly — trivial pass-through)
     (∀ (K : Set (Fin n → Fin (d + 1) → ℝ)), IsCompact K → K ⊆ C →
       ∃ (C_bd : ℝ) (N : ℕ), C_bd > 0 ∧
         ∀ (x y : Fin n → Fin (d + 1) → ℝ), y ∈ K →

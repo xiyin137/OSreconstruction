@@ -279,7 +279,8 @@ private theorem exists_flattened_bvt_W_dualCone_distribution
       DifferentiableOn ℂ (bvt_F OS lgc n)
         (TubeDomainSetPi (ForwardConeAbs d n)) := by
     simpa [forwardTube_eq_imPreimage] using bvt_F_holomorphic (d := d) OS lgc n
-  have hF_growth :
+  -- Global polynomial growth on the tube (from ACR(1) assembly).
+  have hF_global :
       ∃ (C_bd : ℝ) (N : ℕ), C_bd > 0 ∧
         ∀ z, z ∈ TubeDomainSetPi (ForwardConeAbs d n) →
           ‖bvt_F OS lgc n z‖ ≤ C_bd * (1 + ‖z‖) ^ N := by
@@ -296,6 +297,10 @@ private theorem exists_flattened_bvt_W_dualCone_distribution
     intro z hz
     simpa [forwardTube_eq_imPreimage] using
       hbound z (by simpa [forwardTube_eq_imPreimage] using hz)
+  -- Convert to compact-subset form (Vladimirov 25.1 hypothesis).
+  have hF_growth :=
+    hasCompactSubsetGrowth_of_global_polyGrowth
+      (ForwardConeAbs d n) (bvt_F OS lgc n) hF_global
   have hF_bv :
       ∀ (η : Fin n → Fin (d + 1) → ℝ), η ∈ ForwardConeAbs d n →
         ∀ (φ : SchwartzNPoint d n),
@@ -546,7 +551,8 @@ private theorem exists_flattened_bvt_F_dualCone_distribution_with_fourierLaplace
   have hF_holo :
       DifferentiableOn ℂ (bvt_F OS lgc n) (TubeDomainSetPi C) := by
     simpa [C, forwardTube_eq_imPreimage] using bvt_F_holomorphic (d := d) OS lgc n
-  have hF_growth :
+  -- Global polynomial growth on the tube (from ACR(1) assembly).
+  have hF_global :
       ∃ (C_bd : ℝ) (N : ℕ), C_bd > 0 ∧
         ∀ z, z ∈ TubeDomainSetPi C →
           ‖bvt_F OS lgc n z‖ ≤ C_bd * (1 + ‖z‖) ^ N := by
@@ -563,6 +569,9 @@ private theorem exists_flattened_bvt_F_dualCone_distribution_with_fourierLaplace
     intro z hz
     simpa [C, forwardTube_eq_imPreimage] using
       hbound z (by simpa [C, forwardTube_eq_imPreimage] using hz)
+  -- Convert to compact-subset form (Vladimirov 25.1 hypothesis).
+  have hF_growth :=
+    hasCompactSubsetGrowth_of_global_polyGrowth C (bvt_F OS lgc n) hF_global
   have hF_bv :
       ∀ (η : Fin n → Fin (d + 1) → ℝ), η ∈ C →
         ∀ (φ : SchwartzNPoint d n),
