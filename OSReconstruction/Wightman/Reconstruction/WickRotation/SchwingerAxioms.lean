@@ -2612,7 +2612,8 @@ private theorem mixed_back_forward_wick_F_ext_eq_W_analytic_BHW
     F_ext_on_translatedPET_total_eq_on_PET Wfn _ hc
   exact h1.trans h2
 
-/-- Reflection positivity for the Wick-restricted Schwinger family.
+/-
+Reflection positivity for the Wick-restricted Schwinger family.
 
     This is the honest replacement for the deleted same-test-function bridge
     `OSInnerProduct = WightmanInnerProduct`.  That bridge is false: the
@@ -2634,31 +2635,13 @@ private theorem mixed_back_forward_wick_F_ext_eq_W_analytic_BHW
     Hilbert-space-isomorphism theorem must state the intervening map explicitly.
 
     Ref: OS I, Section 3 and Section 5; Glimm-Jaffe Ch. 19;
-    Reed-Simon II, Section IX.8. -/
-theorem schwingerExtension_os_reflection_positive_from_spectralLaplace
-    (Wfn : WightmanFunctions d)
-    (F : BorchersSequence d)
-    (hsupp : ∀ n, tsupport ((F.funcs n : SchwartzNPoint d n) : NPointDomain d n → ℂ) ⊆
-      OrderedPositiveTimeRegion d n) :
-    (OSInnerProduct d (constructSchwingerFunctions Wfn) F F).re ≥ 0 := by
-  sorry
+    Reed-Simon II, Section IX.8.
 
-/-- Compatibility name for the older positivity boundary.  The canonical
-theorem is now `schwingerExtension_os_reflection_positive_from_spectralLaplace`,
-which records the spectral/Laplace route explicitly. -/
-theorem schwingerExtension_os_positivity (Wfn : WightmanFunctions d)
-    (F : BorchersSequence d)
-    (hsupp : ∀ n, tsupport ((F.funcs n : SchwartzNPoint d n) : NPointDomain d n → ℂ) ⊆
-      OrderedPositiveTimeRegion d n) :
-    (OSInnerProduct d (constructSchwingerFunctions Wfn) F F).re ≥ 0 :=
-  schwingerExtension_os_reflection_positive_from_spectralLaplace Wfn F hsupp
-
-theorem wickRotatedBoundaryPairing_reflection_positive (Wfn : WightmanFunctions d)
-    (F : BorchersSequence d)
-    (hsupp : ∀ n, tsupport ((F.funcs n : SchwartzNPoint d n) : NPointDomain d n → ℂ) ⊆
-      OrderedPositiveTimeRegion d n) :
-    (OSInnerProduct d (constructSchwingerFunctions Wfn) F F).re ≥ 0 :=
-  schwingerExtension_os_reflection_positive_from_spectralLaplace Wfn F hsupp
+    The proved reflection-positivity theorems with the historical public names
+    are downstream in `RToESchwingerAxiomsCompatibility.lean`.  This file is
+    upstream of the Section 4.3 R→E proof lane, so importing that proof here
+    would create a cycle through the OS→Wightman files.
+-/
 
 /-- F_ext is permutation-invariant on TranslatedPET. Same sorry pattern. -/
 theorem F_ext_permutation_invariant_translated (Wfn : WightmanFunctions d) (n : ℕ)

@@ -25,6 +25,7 @@ import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanLocalit
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanLocalityOS45TraceMembership
 import OSReconstruction.Wightman.Reconstruction.WickRotation.WickRotationBridge
 import OSReconstruction.Wightman.Reconstruction.WickRotation.RToEReflectionPositivity
+import OSReconstruction.Wightman.Reconstruction.WickRotation.RToESchwingerAxiomsCompatibility
 
 /-!
 # Wick Rotation and the OS Bridge Theorems

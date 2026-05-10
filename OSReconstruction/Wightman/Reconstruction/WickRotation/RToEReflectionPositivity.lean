@@ -16,9 +16,10 @@ on the Section 4.3 Wightman spectral region, the pairing descends through the
 positive-energy frequency quotients and its finite diagonal quadratic is
 nonnegative by the Wightman positivity axiom.
 
-The remaining R→E work is to produce `RToESection43WightmanSupport` from
-`Wfn.spectrum_condition`, and then identify compact ordered Euclidean
-Fourier-Laplace data with this quotient pairing.
+The file now produces `RToESection43WightmanSupport` from
+`Wfn.spectrum_condition`, identifies compact ordered Euclidean Fourier-Laplace
+data with the quotient pairing, and passes compact positivity to arbitrary
+ordered positive-time Borchers sequences by approximation.
 -/
 
 noncomputable section
@@ -392,6 +393,30 @@ noncomputable def rToESection43WightmanSupport_of_wightmanFunctions
     exact
       (rToESection43DualConeFLPackage_of_wightmanFunctions
         (d := d) Wfn N).boundary φflat
+
+/-- Public projection of the Section 4.3 spectral support derived from the
+Wightman axioms. -/
+theorem rToESection43WightmanSupport_of_wightmanFunctions_support
+    (Wfn : WightmanFunctions d) (N : ℕ) :
+    HasFourierSupportIn
+      (section43WightmanSpectralRegion d N)
+      ((rToESection43WightmanSupport_of_wightmanFunctions
+        (d := d) Wfn).Tflat N) :=
+  (rToESection43WightmanSupport_of_wightmanFunctions
+    (d := d) Wfn).support N
+
+/-- Public boundary-value identity for the flattened distribution in the
+canonical R→E Section 4.3 support package. -/
+theorem rToESection43WightmanSupport_of_wightmanFunctions_boundary
+    (Wfn : WightmanFunctions d)
+    (N : ℕ)
+    (φflat : SchwartzMap (Fin (N * (d + 1)) → ℝ) ℂ) :
+    Wfn.W N (unflattenSchwartzNPoint (d := d) φflat) =
+      (rToESection43WightmanSupport_of_wightmanFunctions
+        (d := d) Wfn).Tflat N
+        (physicsFourierFlatCLM φflat) :=
+  (rToESection43WightmanSupport_of_wightmanFunctions
+    (d := d) Wfn).boundary N φflat
 
 /-- The canonical support package uses the same flattened distribution as the
 canonical Wightman-side Fourier-Laplace package. -/
@@ -890,6 +915,460 @@ theorem compactOrderedSupport_constructSchwinger_cross_eq_wightman_frequency_pai
     Filter.Tendsto.congr' hEq.symm hIS
   exact tendsto_nhds_unique hIT_to_S hIT
 
+omit [NeZero d] in
+private noncomputable def rToE_schwartzConstOne_zero :
+    SchwartzNPoint d 0 :=
+  ⟨fun _ => 1, contDiff_const, fun k n =>
+    ⟨‖iteratedFDeriv ℝ n (fun _ : NPointDomain d 0 => (1 : ℂ)) 0‖, fun x => by
+      rw [show x = 0 from Subsingleton.elim x 0, norm_zero]
+      rcases eq_or_ne k 0 with rfl | hk
+      · simp
+      · rw [zero_pow hk, zero_mul]
+        exact norm_nonneg _⟩⟩
+
+omit [NeZero d] in
+@[simp] private theorem rToE_schwartzConstOne_zero_apply
+    (x : NPointDomain d 0) :
+    rToE_schwartzConstOne_zero (d := d) x = 1 := rfl
+
+omit [NeZero d] in
+private theorem rToE_volume_nPointDomain_zero_eq_dirac :
+    (MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d 0)) =
+      MeasureTheory.Measure.dirac 0 := by
+  rw [MeasureTheory.volume_pi, MeasureTheory.Measure.pi_of_empty
+    (x := (0 : NPointDomain d 0))]
+
+private theorem rToE_permutedExtendedTube_zero_mem
+    (z : Fin 0 → Fin (d + 1) → ℂ) :
+    z ∈ PermutedExtendedTube d 0 := by
+  rw [PermutedExtendedTube]
+  refine Set.mem_iUnion.2 ⟨1, ?_⟩
+  refine ⟨1, z, ?_, ?_⟩
+  · intro k
+    exact Fin.elim0 k
+  · ext k
+    exact Fin.elim0 k
+
+private theorem rToE_forwardTube_zero_mem
+    (z : Fin 0 → Fin (d + 1) → ℂ) :
+    z ∈ ForwardTube d 0 := by
+  intro k
+  exact Fin.elim0 k
+
+private theorem rToE_F_ext_on_translatedPET_total_zero_eq_one
+    (Wfn : WightmanFunctions d)
+    (z : Fin 0 → Fin (d + 1) → ℂ) :
+    F_ext_on_translatedPET_total Wfn z = 1 := by
+  classical
+  let e : SchwartzNPoint d 0 := rToE_schwartzConstOne_zero (d := d)
+  let η0 : Fin 0 → Fin (d + 1) → ℝ := fun k => Fin.elim0 k
+  have hη0 : InForwardCone d 0 η0 := by
+    intro k
+    exact Fin.elim0 k
+  have hconst_integral :
+      ∀ ε : ℝ,
+        (∫ x : NPointDomain d 0,
+          (Wfn.spectrum_condition 0).choose
+            (fun k μ => ↑(x k μ) + ε * ↑(η0 k μ) * Complex.I) * e x) =
+          (Wfn.spectrum_condition 0).choose z := by
+    intro ε
+    have hz :
+        (fun k μ => (ε : ℂ) * ↑(η0 k μ) * Complex.I) = z := by
+      ext k
+      exact Fin.elim0 k
+    have hdirac :=
+      (MeasureTheory.integral_dirac
+        (a := (0 : NPointDomain d 0))
+        (f := fun x : NPointDomain d 0 =>
+          (Wfn.spectrum_condition 0).choose
+            (fun k μ => ↑(x k μ) + ε * ↑(η0 k μ) * Complex.I) * e x))
+    simpa [rToE_volume_nPointDomain_zero_eq_dirac, e, hz] using hdirac
+  have hBV := (Wfn.spectrum_condition 0).choose_spec.2.2 e η0 hη0
+  have hlim_choose :
+      Filter.Tendsto
+        (fun _ : ℝ => (Wfn.spectrum_condition 0).choose z)
+        (nhdsWithin 0 (Set.Ioi 0)) (nhds (Wfn.W 0 e)) := by
+    simpa [hconst_integral] using hBV
+  have hlim_const :
+      Filter.Tendsto
+        (fun _ : ℝ => (Wfn.spectrum_condition 0).choose z)
+        (nhdsWithin 0 (Set.Ioi 0))
+        (nhds ((Wfn.spectrum_condition 0).choose z)) :=
+    tendsto_const_nhds
+  have hchoose :
+      (Wfn.spectrum_condition 0).choose z = 1 := by
+    have huniq := tendsto_nhds_unique hlim_const hlim_choose
+    have hnorm : Wfn.W 0 e = 1 := by
+      simpa [e] using Wfn.normalized e
+    simpa [hnorm] using huniq
+  have hPET : z ∈ PermutedExtendedTube d 0 :=
+    rToE_permutedExtendedTube_zero_mem (d := d) z
+  have hFT : z ∈ ForwardTube d 0 :=
+    rToE_forwardTube_zero_mem (d := d) z
+  calc
+    F_ext_on_translatedPET_total Wfn z
+        = (W_analytic_BHW Wfn 0).val z := by
+          exact F_ext_on_translatedPET_total_eq_on_PET Wfn z hPET
+    _ = (Wfn.spectrum_condition 0).choose z := by
+          exact (W_analytic_BHW Wfn 0).property.2.1 z hFT
+    _ = 1 := hchoose
+
+/-- Degree-zero constructed Schwinger/Wightman matching after identifying the
+two scalar Fourier-Laplace representatives. -/
+theorem compactOrderedSupport_constructSchwinger_zero_degree_from_evals
+    (Wfn : WightmanFunctions d)
+    (φ ψ f g : SchwartzNPoint d 0)
+    (hφ : φ 0 = f 0)
+    (hψ : ψ 0 = g 0) :
+    constructSchwingerFunctions Wfn 0
+        (ZeroDiagonalSchwartz.ofClassical (f.osConjTensorProduct g)) =
+      Wfn.W 0 (φ.conjTensorProduct ψ) := by
+  classical
+  have hvanish :
+      VanishesToInfiniteOrderOnCoincidence (f.osConjTensorProduct g) :=
+    VanishesToInfiniteOrderOnCoincidence_zero_degree (f.osConjTensorProduct g)
+  have hS :
+      constructSchwingerFunctions Wfn 0
+          (ZeroDiagonalSchwartz.ofClassical (f.osConjTensorProduct g)) =
+        (f.osConjTensorProduct g) 0 := by
+    calc
+      constructSchwingerFunctions Wfn 0
+          (ZeroDiagonalSchwartz.ofClassical (f.osConjTensorProduct g))
+          =
+        ∫ x : NPointDomain d 0,
+          F_ext_on_translatedPET_total Wfn (fun k => wickRotatePoint (x k)) *
+            ((ZeroDiagonalSchwartz.ofClassical (f.osConjTensorProduct g)).1 x) := by
+          rfl
+      _ =
+        ∫ x : NPointDomain d 0,
+          F_ext_on_translatedPET_total Wfn (fun k => wickRotatePoint (x k)) *
+            (f.osConjTensorProduct g) x := by
+          apply MeasureTheory.integral_congr_ae
+          filter_upwards with x
+          simp [hvanish]
+      _ = (f.osConjTensorProduct g) 0 := by
+          rw [rToE_volume_nPointDomain_zero_eq_dirac]
+          rw [MeasureTheory.integral_dirac]
+          rw [rToE_F_ext_on_translatedPET_total_zero_eq_one]
+          simp only [one_mul]
+  have hW :
+      Wfn.W 0 (φ.conjTensorProduct ψ) =
+        (φ.conjTensorProduct ψ) 0 :=
+    Wfn.normalized (φ.conjTensorProduct ψ)
+  calc
+    constructSchwingerFunctions Wfn 0
+        (ZeroDiagonalSchwartz.ofClassical (f.osConjTensorProduct g))
+        = (f.osConjTensorProduct g) 0 := hS
+    _ = (φ.conjTensorProduct ψ) 0 := by
+        rw [SchwartzMap.conjTensorProduct_apply]
+        change (SchwartzMap.tensorProduct f.osConj g) 0 =
+          starRingEnd ℂ (φ _) * ψ _
+        rw [SchwartzMap.tensorProduct_apply, SchwartzNPoint.osConj_apply]
+        have hfirst :
+            (fun i : Fin 0 =>
+              splitFirst 0 0 (0 : NPointDomain d (0 + 0)) (Fin.rev i)) =
+                (0 : NPointDomain d 0) := Subsingleton.elim _ _
+        have hlast :
+            splitLast 0 0 (0 : NPointDomain d (0 + 0)) =
+              (0 : NPointDomain d 0) := Subsingleton.elim _ _
+        have hreflect :
+            timeReflectionN d (splitFirst 0 0 (0 : NPointDomain d (0 + 0))) =
+              (0 : NPointDomain d 0) := Subsingleton.elim _ _
+        rw [hfirst, hlast, hreflect, hφ, hψ]
+    _ = Wfn.W 0 (φ.conjTensorProduct ψ) := hW.symm
+
+private theorem rToE_osConjTP_eq_osConj_osConjTP {n m : ℕ}
+    (f : SchwartzNPoint d m) (g : SchwartzNPoint d n)
+    (x : NPointDomain d (n + m)) :
+    ((g.osConjTensorProduct f).osConj) x =
+      (f.osConjTensorProduct g) (fun i => x (finAddFlip i)) := by
+  have hfarg :
+      splitLast n m (timeReflectionN d x) =
+        timeReflectionN d (splitFirst m n (fun i => x (finAddFlip i))) := by
+    ext k μ
+    by_cases hμ : μ = 0
+    · subst hμ
+      simp [splitFirst, splitLast, timeReflectionN, timeReflection,
+        finAddFlip_apply_castAdd]
+    · simp [splitFirst, splitLast, timeReflectionN, timeReflection, hμ,
+        finAddFlip_apply_castAdd]
+  have hgarg :
+      timeReflectionN d (splitFirst n m (timeReflectionN d x)) =
+        splitLast m n (fun i => x (finAddFlip i)) := by
+    ext k μ
+    by_cases hμ : μ = 0
+    · subst hμ
+      simp [splitFirst, splitLast, timeReflectionN, timeReflection,
+        finAddFlip_apply_natAdd]
+    · simp [splitFirst, splitLast, timeReflectionN, timeReflection, hμ,
+        finAddFlip_apply_natAdd]
+  simp only [SchwartzNPoint.osConj_apply, SchwartzNPoint.osConjTensorProduct,
+    SchwartzMap.tensorProduct_apply, map_mul, starRingEnd_self_apply]
+  rw [mul_comm]
+  rw [hfarg, hgarg]
+
+private theorem rToE_wickRotatedBoundaryPairing_eq_of_cast
+    (Wfn : WightmanFunctions d)
+    (k₁ k₂ : ℕ) (hk : k₁ = k₂)
+    (f : SchwartzNPoint d k₁) (g : SchwartzNPoint d k₂)
+    (hfg : ∀ x, f x = g (fun i => x (Fin.cast hk.symm i))) :
+    wickRotatedBoundaryPairing Wfn k₁ f =
+      wickRotatedBoundaryPairing Wfn k₂ g := by
+  subst hk
+  congr 1
+  ext x
+  exact hfg x
+
+omit [NeZero d] in
+private theorem rToE_cast_schwartz_apply {k₁ k₂ : ℕ}
+    (hk : k₁ = k₂) (f : SchwartzNPoint d k₁) (x : NPointDomain d k₂) :
+    (cast (congrArg (SchwartzNPoint d) hk) f) x =
+      f (fun i => x (Fin.cast hk i)) := by
+  cases hk
+  rfl
+
+private def rToE_blockSwapPerm (m n : ℕ) : Equiv.Perm (Fin (n + m)) where
+  toFun := fun i =>
+    (finAddFlip : Fin (m + n) ≃ Fin (n + m)) (Fin.cast (Nat.add_comm m n).symm i)
+  invFun := fun i =>
+    Fin.cast (Nat.add_comm m n)
+      ((finAddFlip : Fin (m + n) ≃ Fin (n + m)).symm i)
+  left_inv := by
+    intro i
+    simp
+  right_inv := by
+    intro i
+    simp
+
+@[simp] private theorem rToE_blockSwapPerm_cast_eq_finAddFlip {m n : ℕ}
+    (i : Fin (m + n)) :
+    rToE_blockSwapPerm m n (Fin.cast (Nat.add_comm m n) i) =
+      (finAddFlip : Fin (m + n) ≃ Fin (n + m)) i := by
+  simp [rToE_blockSwapPerm]
+
+/-- Right-empty Schwinger scalar Hermiticity. -/
+theorem constructSchwinger_osScalar_zero_right_hermitian
+    (Wfn : WightmanFunctions d)
+    {n : ℕ}
+    (f : SchwartzNPoint d (n + 1))
+    (hf_ord :
+      tsupport (f : NPointDomain d (n + 1) → ℂ) ⊆
+        OrderedPositiveTimeRegion d (n + 1))
+    (g : SchwartzNPoint d 0)
+    (hg_ord :
+      tsupport (g : NPointDomain d 0 → ℂ) ⊆ OrderedPositiveTimeRegion d 0) :
+    constructSchwingerFunctions Wfn ((n + 1) + 0)
+        (ZeroDiagonalSchwartz.ofClassical (f.osConjTensorProduct g)) =
+      starRingEnd ℂ
+        (constructSchwingerFunctions Wfn (0 + (n + 1))
+          (ZeroDiagonalSchwartz.ofClassical (g.osConjTensorProduct f))) := by
+  classical
+  have hfg :
+      VanishesToInfiniteOrderOnCoincidence (f.osConjTensorProduct g) :=
+    VanishesToInfiniteOrderOnCoincidence_osConjTensorProduct_of_tsupport_subset_orderedPositiveTimeRegion
+      (d := d) (f := f) (g := g) hf_ord hg_ord
+  have hgf :
+      VanishesToInfiniteOrderOnCoincidence (g.osConjTensorProduct f) :=
+    VanishesToInfiniteOrderOnCoincidence_osConjTensorProduct_of_tsupport_subset_orderedPositiveTimeRegion
+      (d := d) (f := g) (g := f) hg_ord hf_ord
+  have hstar :
+      starRingEnd ℂ
+        (constructSchwingerFunctions Wfn (0 + (n + 1))
+          (ZeroDiagonalSchwartz.ofClassical (g.osConjTensorProduct f))) =
+        constructSchwingerFunctions Wfn ((n + 1) + 0)
+          (ZeroDiagonalSchwartz.ofClassical (f.osConjTensorProduct g)) := by
+    let A : SchwartzNPoint d (0 + (n + 1)) := g.osConjTensorProduct f
+    let C' : SchwartzNPoint d ((n + 1) + 0) := f.osConjTensorProduct g
+    let C : SchwartzNPoint d (0 + (n + 1)) :=
+      cast (congrArg (SchwartzNPoint d) (Nat.add_comm (n + 1) 0)) C'
+    let B : SchwartzNPoint d (0 + (n + 1)) :=
+      reindexSchwartz (d := d)
+        (σ := (finAddFlip : Fin ((n + 1) + 0) ≃ Fin (0 + (n + 1)))) C'
+    have hreal :
+        starRingEnd ℂ (wickRotatedBoundaryPairing Wfn (0 + (n + 1)) A) =
+          wickRotatedBoundaryPairing Wfn (0 + (n + 1)) B := by
+      calc
+        starRingEnd ℂ (wickRotatedBoundaryPairing Wfn (0 + (n + 1)) A)
+            = wickRotatedBoundaryPairing Wfn (0 + (n + 1)) A.osConj := by
+              exact wickRotatedBoundaryPairing_reality Wfn (0 + (n + 1)) A
+        _ = wickRotatedBoundaryPairing Wfn (0 + (n + 1)) B := by
+              congr 1
+              ext x
+              simpa [A, B, C', reindexSchwartz_apply, SchwartzNPoint.osConj_apply]
+                using
+                  (rToE_osConjTP_eq_osConj_osConjTP
+                    (d := d) (n := 0) (m := n + 1) (f := f) (g := g) x)
+    have hcast :
+        wickRotatedBoundaryPairing Wfn ((n + 1) + 0) C' =
+          wickRotatedBoundaryPairing Wfn (0 + (n + 1)) C := by
+      refine rToE_wickRotatedBoundaryPairing_eq_of_cast Wfn
+        ((n + 1) + 0) (0 + (n + 1)) (Nat.add_comm (n + 1) 0) C' C ?_
+      intro x
+      rw [show C = cast (congrArg (SchwartzNPoint d) (Nat.add_comm (n + 1) 0)) C' by rfl]
+      rw [rToE_cast_schwartz_apply (hk := Nat.add_comm (n + 1) 0) (f := C')
+        (x := fun i => x (Fin.cast (Nat.add_comm (n + 1) 0).symm i))]
+      simp
+    have hperm :
+        wickRotatedBoundaryPairing Wfn (0 + (n + 1)) C =
+          wickRotatedBoundaryPairing Wfn (0 + (n + 1)) B := by
+      refine wickRotatedBoundaryPairing_symmetric
+        (Wfn := Wfn) (n := 0 + (n + 1))
+        (σ := rToE_blockSwapPerm (n + 1) 0) (f := C) (g := B) ?_
+      intro x
+      change B x = C (fun i => x (rToE_blockSwapPerm (n + 1) 0 i))
+      rw [show C = cast (congrArg (SchwartzNPoint d) (Nat.add_comm (n + 1) 0)) C' by rfl]
+      rw [rToE_cast_schwartz_apply (hk := Nat.add_comm (n + 1) 0) (f := C')
+        (x := fun i => x (rToE_blockSwapPerm (n + 1) 0 i))]
+      simp [B, C', reindexSchwartz_apply]
+    calc
+      starRingEnd ℂ
+          (constructSchwingerFunctions Wfn (0 + (n + 1))
+            (ZeroDiagonalSchwartz.ofClassical (g.osConjTensorProduct f)))
+          =
+        starRingEnd ℂ (wickRotatedBoundaryPairing Wfn (0 + (n + 1)) A) := by
+          change starRingEnd ℂ
+            (wickRotatedBoundaryPairing Wfn (0 + (n + 1))
+              (ZeroDiagonalSchwartz.ofClassical (g.osConjTensorProduct f)).1) =
+            starRingEnd ℂ (wickRotatedBoundaryPairing Wfn (0 + (n + 1)) A)
+          rw [ZeroDiagonalSchwartz.coe_ofClassical_of_vanishes
+            (g.osConjTensorProduct f) hgf]
+      _ = wickRotatedBoundaryPairing Wfn (0 + (n + 1)) B := hreal
+      _ = wickRotatedBoundaryPairing Wfn (0 + (n + 1)) C := hperm.symm
+      _ = wickRotatedBoundaryPairing Wfn ((n + 1) + 0) C' := hcast.symm
+      _ = constructSchwingerFunctions Wfn ((n + 1) + 0)
+            (ZeroDiagonalSchwartz.ofClassical (f.osConjTensorProduct g)) := by
+          change wickRotatedBoundaryPairing Wfn ((n + 1) + 0) C' =
+            wickRotatedBoundaryPairing Wfn ((n + 1) + 0)
+              (ZeroDiagonalSchwartz.ofClassical (f.osConjTensorProduct g)).1
+          rw [ZeroDiagonalSchwartz.coe_ofClassical_of_vanishes
+            (f.osConjTensorProduct g) hfg]
+  exact hstar.symm
+
+/-- The `m = 0, n = n' + 1` compact ordered-support cross term follows by
+flipping to the already compiled successor-right branch. -/
+theorem compactOrderedSupport_constructSchwinger_cross_eq_wightman_frequency_pairing_zeroRight_succLeft
+    (Wfn : WightmanFunctions d)
+    {n : ℕ}
+    (f : euclideanPositiveTimeSubmodule (d := d) (n + 1))
+    (g : euclideanPositiveTimeSubmodule (d := d) 0)
+    (hf_compact : HasCompactSupport (f.1 : NPointDomain d (n + 1) → ℂ))
+    (hg_compact : HasCompactSupport (g.1 : NPointDomain d 0 → ℂ))
+    (Φ : SchwartzNPoint d (n + 1)) (Ψ : SchwartzNPoint d 0)
+    (hΦ_rep : section43FourierLaplaceRepresentative d (n + 1) f Φ)
+    (hΨ_rep : section43FourierLaplaceRepresentative d 0 g Ψ) :
+    constructSchwingerFunctions Wfn ((n + 1) + 0)
+      (ZeroDiagonalSchwartz.ofClassical (f.1.osConjTensorProduct g.1)) =
+      Wfn.W ((n + 1) + 0)
+        ((section43FrequencyRepresentativeInv d (n + 1) Φ).conjTensorProduct
+          (section43FrequencyRepresentativeInv d 0 Ψ)) := by
+  classical
+  let φ : SchwartzNPoint d (n + 1) := section43FrequencyRepresentativeInv d (n + 1) Φ
+  let ψ : SchwartzNPoint d 0 := section43FrequencyRepresentativeInv d 0 Ψ
+  have hflip :
+      constructSchwingerFunctions Wfn (0 + (n + 1))
+        (ZeroDiagonalSchwartz.ofClassical (g.1.osConjTensorProduct f.1)) =
+        Wfn.W (0 + (n + 1)) (ψ.conjTensorProduct φ) := by
+    simpa [φ, ψ] using
+      compactOrderedSupport_constructSchwinger_cross_eq_wightman_frequency_pairing_succRight
+        (d := d) (n := 0) (m := n) Wfn g f
+        hg_compact hf_compact Ψ Φ hΨ_rep hΦ_rep
+  have hSflip :
+      constructSchwingerFunctions Wfn ((n + 1) + 0)
+        (ZeroDiagonalSchwartz.ofClassical (f.1.osConjTensorProduct g.1)) =
+        starRingEnd ℂ
+          (constructSchwingerFunctions Wfn (0 + (n + 1))
+            (ZeroDiagonalSchwartz.ofClassical (g.1.osConjTensorProduct f.1))) :=
+    constructSchwinger_osScalar_zero_right_hermitian
+      (d := d) Wfn f.1 f.2 g.1 g.2
+  have hWflip :
+      Wfn.W ((n + 1) + 0) (φ.conjTensorProduct ψ) =
+        starRingEnd ℂ (Wfn.W (0 + (n + 1)) (ψ.conjTensorProduct φ)) := by
+    let Fφ : BorchersSequence d := BorchersSequence.single (n + 1) φ
+    let Gψ : BorchersSequence d := BorchersSequence.single 0 ψ
+    have hFG :
+        WightmanInnerProduct d Wfn.W Fφ Gψ =
+          Wfn.W ((n + 1) + 0) (φ.conjTensorProduct ψ) := by
+      simpa [Fφ, Gψ] using
+        WightmanInnerProduct_single_single (d := d) (W := Wfn.W)
+          (hlin := Wfn.linear) (n := n + 1) (m := 0) (f := φ) (g := ψ)
+    have hGF :
+        WightmanInnerProduct d Wfn.W Gψ Fφ =
+          Wfn.W (0 + (n + 1)) (ψ.conjTensorProduct φ) := by
+      simpa [Fφ, Gψ] using
+        WightmanInnerProduct_single_single (d := d) (W := Wfn.W)
+          (hlin := Wfn.linear) (n := 0) (m := n + 1) (f := ψ) (g := φ)
+    calc
+      Wfn.W ((n + 1) + 0) (φ.conjTensorProduct ψ)
+          = WightmanInnerProduct d Wfn.W Fφ Gψ := hFG.symm
+      _ = starRingEnd ℂ (WightmanInnerProduct d Wfn.W Gψ Fφ) :=
+          WightmanInnerProduct_hermitian_of (d := d) (W := Wfn.W)
+            Wfn.hermitian Fφ Gψ
+      _ = starRingEnd ℂ (Wfn.W (0 + (n + 1)) (ψ.conjTensorProduct φ)) := by
+          rw [hGF]
+  calc
+    constructSchwingerFunctions Wfn ((n + 1) + 0)
+        (ZeroDiagonalSchwartz.ofClassical (f.1.osConjTensorProduct g.1))
+        = starRingEnd ℂ
+            (constructSchwingerFunctions Wfn (0 + (n + 1))
+              (ZeroDiagonalSchwartz.ofClassical (g.1.osConjTensorProduct f.1))) := hSflip
+    _ = starRingEnd ℂ (Wfn.W (0 + (n + 1)) (ψ.conjTensorProduct φ)) := by
+        rw [hflip]
+    _ = Wfn.W ((n + 1) + 0) (φ.conjTensorProduct ψ) := hWflip.symm
+
+/-- Compact ordered-support cross term for the constructed Schwinger family,
+phrased in terms of arbitrary Section 4.3 Fourier-Laplace representatives. -/
+theorem compactOrderedSupport_constructSchwinger_cross_eq_wightman_frequency_pairing
+    (Wfn : WightmanFunctions d)
+    {n m : ℕ}
+    (f : euclideanPositiveTimeSubmodule (d := d) n)
+    (g : euclideanPositiveTimeSubmodule (d := d) m)
+    (hf_compact : HasCompactSupport (f.1 : NPointDomain d n → ℂ))
+    (hg_compact : HasCompactSupport (g.1 : NPointDomain d m → ℂ))
+    (Φ : SchwartzNPoint d n) (Ψ : SchwartzNPoint d m)
+    (hΦ_rep : section43FourierLaplaceRepresentative d n f Φ)
+    (hΨ_rep : section43FourierLaplaceRepresentative d m g Ψ) :
+    constructSchwingerFunctions Wfn (n + m)
+      (ZeroDiagonalSchwartz.ofClassical (f.1.osConjTensorProduct g.1)) =
+      Wfn.W (n + m)
+        ((section43FrequencyRepresentativeInv d n Φ).conjTensorProduct
+          (section43FrequencyRepresentativeInv d m Ψ)) := by
+  classical
+  cases m with
+  | succ m =>
+      exact
+        compactOrderedSupport_constructSchwinger_cross_eq_wightman_frequency_pairing_succRight
+          (d := d) (m := m) Wfn f g hf_compact hg_compact Φ Ψ hΦ_rep hΨ_rep
+  | zero =>
+      cases n with
+      | zero =>
+          let φ : SchwartzNPoint d 0 := section43FrequencyRepresentativeInv d 0 Φ
+          let ψ : SchwartzNPoint d 0 := section43FrequencyRepresentativeInv d 0 Ψ
+          have hφ_rep :
+              section43FourierLaplaceRepresentative d 0 f
+                (section43FrequencyRepresentative (d := d) 0 φ) := by
+            simpa [φ, section43FrequencyRepresentativeInv_right] using hΦ_rep
+          have hψ_rep :
+              section43FourierLaplaceRepresentative d 0 g
+                (section43FrequencyRepresentative (d := d) 0 ψ) := by
+            simpa [ψ, section43FrequencyRepresentativeInv_right] using hΨ_rep
+          have hφ0 : φ 0 = f.1 0 := by
+            have h :=
+              section43FourierLaplaceRepresentative_zero_apply
+                d f.1 (section43FrequencyRepresentative (d := d) 0 φ) f.2 hφ_rep
+            simpa [section43FrequencyRepresentative_zero_apply] using h
+          have hψ0 : ψ 0 = g.1 0 := by
+            have h :=
+              section43FourierLaplaceRepresentative_zero_apply
+                d g.1 (section43FrequencyRepresentative (d := d) 0 ψ) g.2 hψ_rep
+            simpa [section43FrequencyRepresentative_zero_apply] using h
+          simpa [φ, ψ] using
+            compactOrderedSupport_constructSchwinger_zero_degree_from_evals
+              (d := d) Wfn φ ψ f.1 g.1 hφ0 hψ0
+      | succ n =>
+          exact
+            compactOrderedSupport_constructSchwinger_cross_eq_wightman_frequency_pairing_zeroRight_succLeft
+              (d := d) (n := n) Wfn f g hf_compact hg_compact Φ Ψ hΦ_rep hΨ_rep
+
 /-- Successor-right descent of the Wightman tensor scalar through Section 4.3
 frequency projections, assuming the flattened Section 4.3 spectral support
 package for `Wfn.W`.
@@ -1307,6 +1786,47 @@ theorem rToESection43SpectralPairingOfWfn_apply
     (rToESection43WightmanSupport_of_wightmanFunctions (d := d) Wfn)
     n m φ ψ
 
+/-- Compact ordered-support cross term for the constructed Schwinger family,
+descended to the current Section 4.3 spectral-pairing API. -/
+theorem compactOrderedSupport_constructSchwinger_cross_eq_section43_spectralPairing_currentAPI
+    (Wfn : WightmanFunctions d)
+    {n m : ℕ}
+    (f : euclideanPositiveTimeSubmodule (d := d) n)
+    (g : euclideanPositiveTimeSubmodule (d := d) m)
+    (hf_compact : HasCompactSupport (f.1 : NPointDomain d n → ℂ))
+    (hg_compact : HasCompactSupport (g.1 : NPointDomain d m → ℂ)) :
+    constructSchwingerFunctions Wfn (n + m)
+      (ZeroDiagonalSchwartz.ofClassical (f.1.osConjTensorProduct g.1)) =
+    rToESection43SpectralPairing (d := d) Wfn
+      (rToESection43WightmanSupport_of_wightmanFunctions (d := d) Wfn) n m
+      (section43FourierLaplaceTransformComponent d n f.1 f.2 hf_compact)
+      (section43FourierLaplaceTransformComponent d m g.1 g.2 hg_compact) := by
+  classical
+  let hSupp := rToESection43WightmanSupport_of_wightmanFunctions (d := d) Wfn
+  rcases section43FourierLaplaceTransformComponent_has_representative
+      d n f.1 f.2 hf_compact with
+    ⟨Φ, hΦ_rep, hΦ_q⟩
+  rcases section43FourierLaplaceTransformComponent_has_representative
+      d m g.1 g.2 hg_compact with
+    ⟨Ψ, hΨ_rep, hΨ_q⟩
+  rw [← hΦ_q, ← hΨ_q]
+  have hpair :
+      rToESection43SpectralPairing (d := d) Wfn hSupp n m
+          (section43PositiveEnergyQuotientMap (d := d) n Φ)
+          (section43PositiveEnergyQuotientMap (d := d) m Ψ) =
+        Wfn.W (n + m)
+          ((section43FrequencyRepresentativeInv d n Φ).conjTensorProduct
+            (section43FrequencyRepresentativeInv d m Ψ)) := by
+    simpa [section43FrequencyProjection, section43FrequencyRepresentativeInv_right] using
+      rToESection43SpectralPairing_apply
+        (d := d) Wfn hSupp n m
+        (section43FrequencyRepresentativeInv d n Φ)
+        (section43FrequencyRepresentativeInv d m Ψ)
+  rw [hpair]
+  exact
+    compactOrderedSupport_constructSchwinger_cross_eq_wightman_frequency_pairing
+      (d := d) Wfn f g hf_compact hg_compact Φ Ψ hΦ_rep hΨ_rep
+
 /-- Finite Section 4.3 quadratic form built from the R→E descended spectral
 pairing. -/
 noncomputable def rToE_finiteSection43Quadratic
@@ -1604,5 +2124,374 @@ theorem rToE_finiteSection43Quadratic_nonneg_from_wfn
     (d := d) Wfn
     (rToESection43WightmanSupport_of_wightmanFunctions (d := d) Wfn)
     B u
+
+/-- Compact ordered-support OS reflection positivity for the constructed
+Schwinger family.
+
+This is the compact-support bridge from the unfolded OS quadratic form to the
+finite Section 4.3 spectral quadratic. -/
+theorem compactOrderedSupport_constructSchwinger_osInner_nonneg
+    (Wfn : WightmanFunctions d)
+    (F : BorchersSequence d)
+    (hsupp : ∀ n,
+      tsupport ((F.funcs n : SchwartzNPoint d n) : NPointDomain d n → ℂ) ⊆
+        OrderedPositiveTimeRegion d n)
+    (hcompact : ∀ n, n ≤ F.bound →
+      HasCompactSupport
+        ((F.funcs n : SchwartzNPoint d n) : NPointDomain d n → ℂ)) :
+    0 ≤ (OSInnerProduct d (constructSchwingerFunctions Wfn) F F).re := by
+  classical
+  let hSupp := rToESection43WightmanSupport_of_wightmanFunctions (d := d) Wfn
+  let u : Section43FiniteComponentProduct d F.bound :=
+    fun n =>
+      section43FourierLaplaceTransformComponent d n.val
+        (F.funcs n.val) (hsupp n.val)
+        (hcompact n.val (Nat.lt_succ_iff.mp n.isLt))
+  rw [OSInnerProduct_constructSchwinger_unfolded
+    (d := d) Wfn F F hsupp hsupp]
+  have hsum :
+      ∑ n ∈ Finset.range (F.bound + 1),
+        ∑ m ∈ Finset.range (F.bound + 1),
+          ∫ x : NPointDomain d (n + m),
+            F_ext_on_translatedPET_total Wfn
+              (fun k => wickRotatePoint (x k)) *
+            ((F.funcs n).osConjTensorProduct (F.funcs m)) x =
+        rToE_finiteSection43Quadratic (d := d) Wfn hSupp F.bound u := by
+    unfold rToE_finiteSection43Quadratic
+    rw [Finset.sum_fin_eq_sum_range]
+    apply Finset.sum_congr rfl
+    intro n hn
+    have hn_lt : n < F.bound + 1 := Finset.mem_range.mp hn
+    have hn_le : n ≤ F.bound := Nat.lt_succ_iff.mp hn_lt
+    rw [dif_pos hn_lt]
+    rw [Finset.sum_fin_eq_sum_range]
+    apply Finset.sum_congr rfl
+    intro m hm
+    have hm_lt : m < F.bound + 1 := Finset.mem_range.mp hm
+    have hm_le : m ≤ F.bound := Nat.lt_succ_iff.mp hm_lt
+    have hf_mem : F.funcs n ∈ euclideanPositiveTimeSubmodule (d := d) n := by
+      simpa [euclideanPositiveTimeSubmodule] using hsupp n
+    have hg_mem : F.funcs m ∈ euclideanPositiveTimeSubmodule (d := d) m := by
+      simpa [euclideanPositiveTimeSubmodule] using hsupp m
+    let fn : euclideanPositiveTimeSubmodule (d := d) n := ⟨F.funcs n, hf_mem⟩
+    let gm : euclideanPositiveTimeSubmodule (d := d) m := ⟨F.funcs m, hg_mem⟩
+    have hzero :
+        VanishesToInfiniteOrderOnCoincidence
+          ((F.funcs n).osConjTensorProduct (F.funcs m)) :=
+      VanishesToInfiniteOrderOnCoincidence_osConjTensorProduct_of_tsupport_subset_orderedPositiveTimeRegion
+        (d := d) (f := F.funcs n) (g := F.funcs m)
+        (hsupp n) (hsupp m)
+    have hcross :=
+      compactOrderedSupport_constructSchwinger_cross_eq_section43_spectralPairing_currentAPI
+        (d := d) Wfn fn gm (hcompact n hn_le) (hcompact m hm_le)
+    have hintegral :
+        (∫ x : NPointDomain d (n + m),
+            F_ext_on_translatedPET_total Wfn
+              (fun k => wickRotatePoint (x k)) *
+            ((F.funcs n).osConjTensorProduct (F.funcs m)) x) =
+          rToESection43SpectralPairing (d := d) Wfn hSupp n m
+            (section43FourierLaplaceTransformComponent d n (F.funcs n)
+              (hsupp n) (hcompact n hn_le))
+            (section43FourierLaplaceTransformComponent d m (F.funcs m)
+              (hsupp m) (hcompact m hm_le)) := by
+      rw [← hcross]
+      unfold constructSchwingerFunctions wickRotatedBoundaryPairing
+      rw [ZeroDiagonalSchwartz.coe_ofClassical_of_vanishes
+        ((F.funcs n).osConjTensorProduct (F.funcs m)) hzero]
+    simpa [u, fn, gm, hn_le, hm_le] using hintegral
+  rw [hsum]
+  exact rToE_finiteSection43Quadratic_nonneg (d := d) Wfn hSupp F.bound u
+
+/-- Package a Borchers sequence with ordered positive-time support as a
+`PositiveTimeBorchersSequence`. -/
+def positiveTimeBorchersOfSupport
+    (F : BorchersSequence d)
+    (hsupp : ∀ n,
+      tsupport ((F.funcs n : SchwartzNPoint d n) : NPointDomain d n → ℂ) ⊆
+        OrderedPositiveTimeRegion d n) :
+    PositiveTimeBorchersSequence d where
+  toBorchersSequence := F
+  ordered_tsupport := hsupp
+
+/-- Compact ordered positive-time approximants for an ordered positive-time
+Borchers sequence, using the existing ball cutoff approximation machinery. -/
+theorem orderedPositiveSupport_borchersApproximation
+    (F : BorchersSequence d)
+    (hsupp : ∀ n,
+      tsupport ((F.funcs n : SchwartzNPoint d n) : NPointDomain d n → ℂ) ⊆
+        OrderedPositiveTimeRegion d n) :
+    ∃ U : ℕ → BorchersSequence d,
+      (∀ N, (U N).bound = F.bound) ∧
+      (∀ N n,
+        tsupport (((U N).funcs n : SchwartzNPoint d n) :
+          NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n) ∧
+      (∀ N n, n ≤ F.bound →
+        HasCompactSupport (((U N).funcs n : SchwartzNPoint d n) :
+          NPointDomain d n → ℂ)) ∧
+      (∀ N n, n ≤ F.bound → ∃ δ > 0,
+        tsupport (((U N).funcs n : SchwartzNPoint d n) :
+          NPointDomain d n → ℂ) ⊆
+          {x |
+            (∀ i : Fin n, δ ≤ x i 0) ∧
+            (∀ i j : Fin n, i < j → δ ≤ x j 0 - x i 0)}) ∧
+      (∀ n,
+        Tendsto (fun N => (U N).funcs n) Filter.atTop
+          (nhds (F.funcs n))) := by
+  classical
+  let Fpos : PositiveTimeBorchersSequence d :=
+    positiveTimeBorchersOfSupport (d := d) F hsupp
+  refine ⟨fun N => (compactApproxPositiveTimeBorchers (d := d) Fpos N :
+    BorchersSequence d), ?_, ?_, ?_, ?_, ?_⟩
+  · intro N
+    rfl
+  · intro N n
+    exact (compactApproxPositiveTimeBorchers (d := d) Fpos N).ordered_tsupport n
+  · intro N n _hn
+    exact compactApproxPositiveTimeBorchers_component_compact
+      (d := d) Fpos N n
+  · intro N n _hn
+    exact exists_orderedPositiveTimeRegion_margin_of_compact_tsupport_subset
+      d n
+      (((compactApproxPositiveTimeBorchers (d := d) Fpos N :
+          PositiveTimeBorchersSequence d) : BorchersSequence d).funcs n)
+      ((compactApproxPositiveTimeBorchers (d := d) Fpos N).ordered_tsupport n)
+      (compactApproxPositiveTimeBorchers_component_compact (d := d) Fpos N n)
+  · intro n
+    simpa [Fpos, positiveTimeBorchersOfSupport] using
+      tendsto_compactApproxPositiveTimeBorchers_component (d := d) Fpos n
+
+set_option maxHeartbeats 4000000 in
+/-- Componentwise convergence of Borchers sequences implies convergence of each
+OS-conjugated tensor-product component. -/
+theorem rToE_osConjTensorProduct_tendsto_of_componentwise
+    (U : ℕ → BorchersSequence d)
+    (F : BorchersSequence d)
+    (n m : ℕ)
+    (htendsto : ∀ k,
+      Tendsto (fun N => (U N).funcs k) Filter.atTop (nhds (F.funcs k))) :
+    Tendsto
+      (fun N =>
+        ((U N).funcs n : SchwartzNPoint d n).osConjTensorProduct
+          ((U N).funcs m : SchwartzNPoint d m))
+      Filter.atTop
+      (nhds
+        (((F.funcs n : SchwartzNPoint d n).osConjTensorProduct
+          (F.funcs m : SchwartzNPoint d m)))) := by
+  have hpair :
+      Tendsto
+        (fun N : ℕ =>
+          (((U N).funcs n : SchwartzNPoint d n),
+            ((U N).funcs m : SchwartzNPoint d m)))
+        Filter.atTop
+        (nhds
+          (((F.funcs n : SchwartzNPoint d n),
+            (F.funcs m : SchwartzNPoint d m)))) :=
+    (htendsto n).prodMk_nhds (htendsto m)
+  have hcont :
+      Continuous
+        (fun fg : SchwartzNPoint d n × SchwartzNPoint d m =>
+          fg.1.osConjTensorProduct fg.2) :=
+    SchwartzNPoint.osConjTensorProduct_continuous (d := d)
+  exact (hcont.tendsto _).comp hpair
+
+set_option maxHeartbeats 4000000 in
+/-- Componentwise convergence also holds after promoting ordered positive-time
+OS-conjugated tensor products to the zero-diagonal test space. -/
+theorem rToE_zeroDiagonal_osConjTensorProduct_tendsto_of_componentwise
+    (U : ℕ → BorchersSequence d)
+    (F : BorchersSequence d)
+    (n m : ℕ)
+    (htendsto : ∀ k,
+      Tendsto (fun N => (U N).funcs k) Filter.atTop (nhds (F.funcs k)))
+    (hsuppU : ∀ N k,
+      tsupport (((U N).funcs k : SchwartzNPoint d k) :
+        NPointDomain d k → ℂ) ⊆ OrderedPositiveTimeRegion d k)
+    (hsuppF : ∀ k,
+      tsupport ((F.funcs k : SchwartzNPoint d k) :
+        NPointDomain d k → ℂ) ⊆ OrderedPositiveTimeRegion d k) :
+    Tendsto
+      (fun N =>
+        ZeroDiagonalSchwartz.ofClassical
+          (((U N).funcs n : SchwartzNPoint d n).osConjTensorProduct
+            ((U N).funcs m : SchwartzNPoint d m)))
+      Filter.atTop
+      (nhds
+        (ZeroDiagonalSchwartz.ofClassical
+          (((F.funcs n : SchwartzNPoint d n).osConjTensorProduct
+            (F.funcs m : SchwartzNPoint d m))))) := by
+  have hvanishU : ∀ N,
+      VanishesToInfiniteOrderOnCoincidence
+        (((U N).funcs n : SchwartzNPoint d n).osConjTensorProduct
+          ((U N).funcs m : SchwartzNPoint d m)) := by
+    intro N
+    exact
+      VanishesToInfiniteOrderOnCoincidence_osConjTensorProduct_of_tsupport_subset_orderedPositiveTimeRegion
+        (d := d) (f := (U N).funcs n) (g := (U N).funcs m)
+        (hsuppU N n) (hsuppU N m)
+  have hvanishF :
+      VanishesToInfiniteOrderOnCoincidence
+        (((F.funcs n : SchwartzNPoint d n).osConjTensorProduct
+          (F.funcs m : SchwartzNPoint d m))) :=
+    VanishesToInfiniteOrderOnCoincidence_osConjTensorProduct_of_tsupport_subset_orderedPositiveTimeRegion
+      (d := d) (f := F.funcs n) (g := F.funcs m)
+      (hsuppF n) (hsuppF m)
+  have hsub :
+      Tendsto
+        (fun N : ℕ =>
+          (Subtype.mk
+            (((U N).funcs n : SchwartzNPoint d n).osConjTensorProduct
+              ((U N).funcs m : SchwartzNPoint d m))
+            (hvanishU N) : ↥(zeroDiagonalSubmodule d (n + m))))
+        Filter.atTop
+        (nhds
+          (Subtype.mk
+            (((F.funcs n : SchwartzNPoint d n).osConjTensorProduct
+              (F.funcs m : SchwartzNPoint d m)))
+            hvanishF : ↥(zeroDiagonalSubmodule d (n + m)))) := by
+    rw [tendsto_subtype_rng]
+    exact
+      rToE_osConjTensorProduct_tendsto_of_componentwise
+        (d := d) U F n m htendsto
+  have hUeq :
+      (fun N : ℕ =>
+        ZeroDiagonalSchwartz.ofClassical
+          (((U N).funcs n : SchwartzNPoint d n).osConjTensorProduct
+            ((U N).funcs m : SchwartzNPoint d m)))
+        =
+      (fun N : ℕ =>
+        (Subtype.mk
+          (((U N).funcs n : SchwartzNPoint d n).osConjTensorProduct
+            ((U N).funcs m : SchwartzNPoint d m))
+          (hvanishU N) : ZeroDiagonalSchwartz d (n + m))) := by
+    funext N
+    exact ZeroDiagonalSchwartz.ofClassical_of_vanishes
+      (((U N).funcs n : SchwartzNPoint d n).osConjTensorProduct
+        ((U N).funcs m : SchwartzNPoint d m))
+      (hvanishU N)
+  have hFeq :
+      ZeroDiagonalSchwartz.ofClassical
+          (((F.funcs n : SchwartzNPoint d n).osConjTensorProduct
+            (F.funcs m : SchwartzNPoint d m)))
+        =
+      (Subtype.mk
+        (((F.funcs n : SchwartzNPoint d n).osConjTensorProduct
+          (F.funcs m : SchwartzNPoint d m)))
+        hvanishF : ZeroDiagonalSchwartz d (n + m)) :=
+    ZeroDiagonalSchwartz.ofClassical_of_vanishes
+      (((F.funcs n : SchwartzNPoint d n).osConjTensorProduct
+        (F.funcs m : SchwartzNPoint d m)))
+      hvanishF
+  rw [hUeq, hFeq]
+  exact hsub
+
+set_option maxHeartbeats 4000000 in
+/-- Componentwise Schwartz convergence of ordered positive-time Borchers
+sequences implies convergence of their constructed-Schwinger OS quadratic
+forms. -/
+theorem OSInnerProduct_constructSchwinger_tendsto_of_componentwise
+    (Wfn : WightmanFunctions d)
+    (U : ℕ → BorchersSequence d)
+    (F : BorchersSequence d)
+    (hbound : ∀ N, (U N).bound = F.bound)
+    (htendsto : ∀ n,
+      Tendsto (fun N => (U N).funcs n) Filter.atTop (nhds (F.funcs n)))
+    (hsuppU : ∀ N n,
+      tsupport (((U N).funcs n : SchwartzNPoint d n) :
+        NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    (hsuppF : ∀ n,
+      tsupport ((F.funcs n : SchwartzNPoint d n) :
+        NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n) :
+    Tendsto
+      (fun N => OSInnerProduct d (constructSchwingerFunctions Wfn) (U N) (U N))
+      Filter.atTop
+      (nhds (OSInnerProduct d (constructSchwingerFunctions Wfn) F F)) := by
+  classical
+  have hOS_eq : ∀ N,
+      OSInnerProduct d (constructSchwingerFunctions Wfn) (U N) (U N) =
+        ∑ n ∈ Finset.range (F.bound + 1),
+          ∑ m ∈ Finset.range (F.bound + 1),
+            constructSchwingerFunctions Wfn (n + m)
+              (ZeroDiagonalSchwartz.ofClassical
+                (((U N).funcs n : SchwartzNPoint d n).osConjTensorProduct
+                  ((U N).funcs m : SchwartzNPoint d m))) := by
+    intro N
+    unfold OSInnerProduct
+    rw [hbound N]
+  have hF_eq :
+      OSInnerProduct d (constructSchwingerFunctions Wfn) F F =
+        ∑ n ∈ Finset.range (F.bound + 1),
+          ∑ m ∈ Finset.range (F.bound + 1),
+            constructSchwingerFunctions Wfn (n + m)
+              (ZeroDiagonalSchwartz.ofClassical
+                (((F.funcs n : SchwartzNPoint d n).osConjTensorProduct
+                  (F.funcs m : SchwartzNPoint d m)))) := by
+    rfl
+  refine Filter.Tendsto.congr' (Filter.Eventually.of_forall fun N => (hOS_eq N).symm) ?_
+  rw [hF_eq]
+  refine tendsto_finset_sum _ (fun n _hn => ?_)
+  refine tendsto_finset_sum _ (fun m _hm => ?_)
+  have hzeroDiag :
+      Tendsto
+        (fun N =>
+          ZeroDiagonalSchwartz.ofClassical
+            (((U N).funcs n : SchwartzNPoint d n).osConjTensorProduct
+              ((U N).funcs m : SchwartzNPoint d m)))
+        Filter.atTop
+        (nhds
+          (ZeroDiagonalSchwartz.ofClassical
+            (((F.funcs n : SchwartzNPoint d n).osConjTensorProduct
+              (F.funcs m : SchwartzNPoint d m))))) :=
+    rToE_zeroDiagonal_osConjTensorProduct_tendsto_of_componentwise
+      (d := d) U F n m htendsto hsuppU hsuppF
+  exact
+    ((constructedSchwinger_tempered_zeroDiagonal Wfn (n + m)).tendsto _).comp
+      hzeroDiag
+
+/-- Reflection positivity for `constructSchwingerFunctions` on Borchers
+sequences supported in the ordered positive-time region.  Compact ordered
+approximants supply positivity, and continuity of the finite OS quadratic form
+passes it to the limit. -/
+theorem rToE_schwingerExtension_os_positivity (Wfn : WightmanFunctions d)
+    (F : BorchersSequence d)
+    (hsupp : ∀ n,
+      tsupport ((F.funcs n : SchwartzNPoint d n) :
+        NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n) :
+    (OSInnerProduct d (constructSchwingerFunctions Wfn) F F).re ≥ 0 := by
+  classical
+  rcases orderedPositiveSupport_borchersApproximation (d := d) F hsupp with
+    ⟨U, hbound, hsuppU, hcompactU, _hmarginU, htendstoU⟩
+  have hnonnegU : ∀ N,
+      0 ≤
+        (OSInnerProduct d (constructSchwingerFunctions Wfn)
+          (U N) (U N)).re := by
+    intro N
+    have hcompactUN : ∀ n, n ≤ (U N).bound →
+        HasCompactSupport (((U N).funcs n : SchwartzNPoint d n) :
+          NPointDomain d n → ℂ) := by
+      intro n hn
+      exact hcompactU N n (by simpa [hbound N] using hn)
+    exact
+      compactOrderedSupport_constructSchwinger_osInner_nonneg
+        (d := d) Wfn (U N) (hsuppU N) hcompactUN
+  have hlim :
+      Tendsto
+        (fun N =>
+          OSInnerProduct d (constructSchwingerFunctions Wfn) (U N) (U N))
+        Filter.atTop
+        (nhds (OSInnerProduct d (constructSchwingerFunctions Wfn) F F)) :=
+    OSInnerProduct_constructSchwinger_tendsto_of_componentwise
+      (d := d) Wfn U F hbound htendstoU hsuppU hsupp
+  have hlim_re :
+      Tendsto
+        (fun N =>
+          (OSInnerProduct d (constructSchwingerFunctions Wfn)
+            (U N) (U N)).re)
+        Filter.atTop
+        (nhds (OSInnerProduct d (constructSchwingerFunctions Wfn) F F).re) :=
+    (Complex.continuous_re.tendsto
+      (OSInnerProduct d (constructSchwingerFunctions Wfn) F F)).comp hlim
+  exact
+    isClosed_Ici.mem_of_tendsto hlim_re
+      (Filter.Eventually.of_forall hnonnegU)
 
 end OSReconstruction
