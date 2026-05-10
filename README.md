@@ -4,7 +4,7 @@ A Lean 4 formalization of the **Osterwalder-Schrader reconstruction theorem** an
 
 ## Current Axiom Inventory
 
-The tracked production tree currently contains **11 explicit axioms**:
+The tracked production tree currently contains **12 explicit axioms** (verified by `rg '^axiom\s+\w' OSReconstruction --glob '*.lean'`):
 
 **Functional analysis (2):**
 - `schwartz_nuclear_extension` in `Wightman/WightmanAxioms.lean` — **partially proved**: nuclearity of Schwartz space is now proved in the [`gaussian-field`](https://github.com/or-n/gaussian-field) library; the remaining gap is importing the instance and deriving the kernel theorem
@@ -20,8 +20,50 @@ The tracked production tree currently contains **11 explicit axioms**:
 - `tube_boundaryValue_realizes_dualCone_distribution` in `SCV/FourierSupportCone.lean` — BV realized by dual-cone distribution
 - `bochner_tube_extension` in `SCV/BochnerTubeTheorem.lean` — global Bochner tube extension theorem
 
+**SNAG / spectral (1):**
+- `snag_theorem` in `GeneralResults/SNAGTheorem.lean` — Stone-Naimark-Ambrose-Godement: every strongly-continuous unitary representation of a locally compact abelian group has a joint projection-valued spectral measure (Reed-Simon I VIII.12 / Mackey 1957). Vetted "Standard"; see `docs/cluster_axiom_vetting.md` entry 1.
+
 **Reconstruction bridge (1):**
 - `reduced_bargmann_hall_wightman_of_input` in `Wightman/Reconstruction/WickRotation/BHWReducedExtension.lean`
+
+Per the project's axiom discipline, new production axioms encode classical background infrastructure (SNAG, Bochner tube, Schwartz-Fubini, nuclearity, Vladimirov-style SCV/FA). QFT-specific consequences (Wightman / GNS / Ruelle / cluster claims) are kept as conditional inputs or discharged via proved theorems on the proof route, not added to the axiom inventory.
+
+### Conditional theorems and inventoried frontier lemmas
+
+The R→E cluster route (`W_analytic_cluster_integral`,
+`wickRotatedBoundaryPairing_cluster`, `schwinger_E4_cluster_OPTR_case`
+in `Wightman/Reconstruction/WickRotation/RuelleClusterBound.lean`)
+is a **conditional theorem**: it takes an explicit
+`RuelleAnalyticClusterHypotheses Wfn n m` parameter packaging the two
+textbook Ruelle 1962 / Araki-Hepp-Ruelle 1962 inputs (uniform polynomial
+bound + pointwise factorization on PET). Both fields are conditional
+inputs supplied at call sites — neither is discharged via production
+axiom on the QFT side.
+
+The L2 and L4 reductions
+(`gns_orthogonal_spatial_cobounded_decay_of` in
+`Wightman/Spectral/Ruelle/L2_NoZeroMomentumAtom.lean` and
+`ruelle_analytic_cluster_bound_of` in
+`Wightman/Spectral/Ruelle/L4_UniformPolynomialBound.lean`) are
+**conditional reductions** taking explicit `L2SpectralData` and
+`L4SpectralData` packets. They expose the textbook proof obligations
+as named hypothesis structures rather than as production axioms.
+
+**Active sorry (2026-05-08)**: the dominator-integrability step in
+`W_analytic_cluster_integral_via_ruelle` (`RuelleClusterBound.lean:718`).
+The `RACH.bound` shape was repaired (boundary-distance regulator added)
+after a vacuity finding; the cluster proof's existing dominator no
+longer matches the new shape and requires IBP rework (Streater-Wightman
+§3.4 / Ruelle 1962). See `docs/ruelle_bound_vacuity_concern.md`.
+
+L5 (`OSReconstruction/Wightman/Spectral/Ruelle/L5_SpectralRiemannLebesgue.lean`)
+— pure measure-theoretic Riemann-Lebesgue for finite measures with AC
+spatial marginal — is now **fully proved** (`#print axioms
+spectral_riemann_lebesgue` shows only `[propext, Classical.choice,
+Quot.sound]`, no sorryAx, no project axioms beyond Mathlib).
+
+The Path A blueprint and L2 (no zero-momentum atom) reductions are
+parked in `Proofideas/` as architectural reference, not in production.
 
 The former `vladimirov_tillmann` axiom has been **proved as a theorem** from 3 of the SCV axioms above plus ~10K lines of Paley-Wiener-Schwartz proofs. See `docs/vladimirov_tillmann_summary.md` for details.
 
@@ -119,9 +161,9 @@ This fetches Mathlib and dependencies automatically on first build.
 
 ## Project Status
 
-The tracked production tree currently includes **11 explicit `axiom`
-declarations** (2 FA + 8 SCV + 1 reconstruction bridge). See the axiom
-inventory at the top of this file for the complete list. Remaining work
+The tracked production tree currently includes **12 explicit `axiom`
+declarations** (2 FA + 8 SCV + 1 reconstruction bridge + 1 GNS spectral).
+See the axiom inventory at the top of this file for the complete list. Remaining work
 outside these deferred surfaces is represented by explicit theorem-level
 `sorry` placeholders.
 The snapshot below counts only tracked production files; local scratch under
@@ -215,7 +257,7 @@ Snapshot (2026-04-20, tracked live production tree):
 | `vNA/` | 36 |
 | **Total** | **55** |
 
-Tracked production tree also contains `11` explicit axioms; see the current
+Tracked production tree also contains `12` explicit axioms; see the current
 inventory at the top of this file.
 
 Raw grep on `^[[:space:]]*sorry([[:space:]]|$)` still returns `56` because one
