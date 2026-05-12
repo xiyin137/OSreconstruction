@@ -78539,7 +78539,9 @@ Implementation transcript for
          value at `BHW.realEmbed (y u)`.  The path `Δu` supplies the
          Figure-2-4 continuation corridor; the endpoint branch formula is still
          justified only by `P.closure_pulled_tau`, not by an ambient
-         permutation-stability claim.
+         permutation-stability claim.  This endpoint conversion is now checked
+         in Lean as
+         `BHW.os45Figure24OrientedPath_endpoint_extendF_eq_adjacentPulledRealBranch`.
       3. Identify the Wick-anchor side of that germ with the OS
          Fourier-Laplace boundary value by the checked coordinate identities
          `BHW.os45QuarterTurn_perm_wickRotate_eq_common_plus`,

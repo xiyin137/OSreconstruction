@@ -3,6 +3,7 @@ import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanLocalit
 import OSReconstruction.SCV.CompactSupportIntegralCLM
 import OSReconstruction.SCV.EuclideanWeylOpen
 import OSReconstruction.SCV.LocalEOWSideContinuity
+import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SourceHWBranchLaw
 
 /-!
 # OS45 local BHW/Jost hull geometry
@@ -3534,6 +3535,119 @@ theorem OS45BHWJostHullData.ΩJ_eq_localSPrimeTwoSectorHull
     BHW.os45BHWJostHull, BHW.localSPrimeTwoSectorAmbient,
     BHW.os45BHWJostAmbient_eq_initialSector_union
       (d := d) (n := n) P.τ]
+
+/-- The endpoint of the oriented Figure-2-4 adjacent lift represents the same
+`extendF` value as the adjacent pulled real branch at the horizontal common
+edge.  This is the endpoint bookkeeping used inside the OS I §4.5
+common-boundary source pairing: the path `Δ` comes from the checked oriented
+Figure-2-4 packet, while the equality of endpoint branch values is the checked
+Hall-Wightman source branch law on equal oriented source invariants. -/
+theorem os45Figure24OrientedPath_endpoint_extendF_eq_adjacentPulledRealBranch
+    [NeZero d] (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {n : ℕ} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (hP_oriented :
+      ∀ x, x ∈ closure P.V →
+        BHW.OS45Figure24OrientedPathField (d := d) n i hi x)
+    {u : NPointDomain d n} (hu : u ∈ closure P.V) :
+    ∃ Γ Δ : unitInterval → Fin n → Fin (d + 1) → ℂ,
+      Continuous Γ ∧
+      Continuous Δ ∧
+      Γ (0 : unitInterval) = (fun k => wickRotatePoint (u k)) ∧
+      Γ (1 : unitInterval) =
+        (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+          (BHW.realEmbed
+            (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+              (1 : Equiv.Perm (Fin n)) u)) ∧
+      (∀ t, Γ t ∈ BHW.ExtendedTube d n) ∧
+      (∀ t, Δ t ∈ BHW.ExtendedTube d n) ∧
+      BHW.extendF (bvt_F OS lgc n) (Δ (1 : unitInterval)) =
+        BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+          (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+          (BHW.realEmbed
+            (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+              (1 : Equiv.Perm (Fin n)) u)) := by
+  classical
+  let τswap : Equiv.Perm (Fin n) := Equiv.swap i ⟨i.val + 1, hi⟩
+  let y : NPointDomain d n :=
+    BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+      (1 : Equiv.Perm (Fin n)) u
+  have hpath := hP_oriented u hu
+  dsimp [BHW.OS45Figure24OrientedPathField, τswap, y] at hpath
+  rcases hpath with
+    ⟨Γ, Δ, hΓ_cont, hΔ_cont, hΓ_zero, hΓ_one, hΓ_ET, hΔ_ET,
+      hΔ_inv⟩
+  refine ⟨Γ, Δ, hΓ_cont, hΔ_cont, hΓ_zero, ?_, hΓ_ET, hΔ_ET, ?_⟩
+  · simpa [y] using hΓ_one
+  · have hF_holo :
+        DifferentiableOn ℂ (bvt_F OS lgc n) (BHW.ForwardTube d n) := by
+      simpa [BHW_forwardTube_eq (d := d) (n := n)] using
+        bvt_F_holomorphic (d := d) OS lgc n
+    have hF_cinv :
+        ∀ (Λ : ComplexLorentzGroup d)
+          (z : Fin n → Fin (d + 1) → ℂ),
+          z ∈ BHW.ForwardTube d n →
+          BHW.complexLorentzAction Λ z ∈ BHW.ForwardTube d n →
+          bvt_F OS lgc n (BHW.complexLorentzAction Λ z) =
+            bvt_F OS lgc n z := by
+      intro Λ z hz hΛz
+      exact bvt_F_complexLorentzInvariant_forwardTube
+        (d := d) OS lgc n Λ z
+        ((BHW_forwardTube_eq (d := d) (n := n)) ▸ hz)
+        ((BHW_forwardTube_eq (d := d) (n := n)) ▸ hΛz)
+    let w : Fin n → Fin (d + 1) → ℂ :=
+      BHW.permAct (d := d) P.τ (Γ (1 : unitInterval))
+    have hw_ET : w ∈ BHW.ExtendedTube d n := by
+      have hpulled := P.closure_pulled_tau u hu
+      have hσ :
+          P.τ.symm = P.τ := by
+        rw [P.τ_eq]
+        ext k
+        simp
+      change
+        BHW.permAct (d := d) P.τ.symm
+            ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+              (BHW.realEmbed y)) ∈ BHW.ExtendedTube d n at hpulled
+      rw [hσ] at hpulled
+      simpa [w, y, hΓ_one] using hpulled
+    have hτswap_eq : τswap = P.τ := by
+      simpa [τswap] using P.τ_eq.symm
+    have hinv :
+        BHW.sourceOrientedMinkowskiInvariant d n (Δ (1 : unitInterval)) =
+          BHW.sourceOrientedMinkowskiInvariant d n w := by
+      calc
+        BHW.sourceOrientedMinkowskiInvariant d n (Δ (1 : unitInterval))
+            =
+          BHW.sourcePermuteOrientedGram d n τswap
+            (BHW.sourceOrientedMinkowskiInvariant d n
+              (Γ (1 : unitInterval))) := hΔ_inv (1 : unitInterval)
+        _ =
+          BHW.sourcePermuteOrientedGram d n P.τ
+            (BHW.sourceOrientedMinkowskiInvariant d n
+              (Γ (1 : unitInterval))) := by
+            simp [hτswap_eq]
+        _ =
+          BHW.sourceOrientedMinkowskiInvariant d n w := by
+            simpa [w] using
+              (BHW.sourceOrientedMinkowskiInvariant_permAct
+                (d := d) (n := n) P.τ
+                (Γ (1 : unitInterval))).symm
+    have hbranch :
+        BHW.extendF (bvt_F OS lgc n) (Δ (1 : unitInterval)) =
+          BHW.extendF (bvt_F OS lgc n) w :=
+      BHW.extendedTube_same_sourceOrientedInvariant_extendF_eq
+        (d := d) hd n (bvt_F OS lgc n) hF_holo hF_cinv
+        (hΔ_ET (1 : unitInterval)) hw_ET hinv
+    have hpull :
+        BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+            (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+            (BHW.realEmbed y) =
+          BHW.extendF (bvt_F OS lgc n) w := by
+      simp [BHW.os45PulledRealBranch, w, y, hΓ_one]
+    exact hbranch.trans hpull.symm
 
 /-- The single local `S'_n` reference branch produced on the checked OS45
 BHW/Jost hull.  The two restriction fields are exactly the ordinary initial

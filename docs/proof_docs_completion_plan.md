@@ -1249,7 +1249,9 @@ not record the determinant/proper-component data.
    `BHW.extendF (bvt_F OS lgc n) (Δ 1)` with the adjacent pulled branch value.
    The path `Δ` supplies the Figure-2-4 continuation corridor; the endpoint
    branch formula is justified by `P.closure_pulled_tau`, not by a claim that
-   `permAct P.τ` preserves the whole ordinary path.
+   `permAct P.τ` preserves the whole ordinary path.  This endpoint conversion
+   is now checked in Lean as
+   `BHW.os45Figure24OrientedPath_endpoint_extendF_eq_adjacentPulledRealBranch`.
    Identify the Wick-anchor values by
    `BHW.os45QuarterTurn_perm_wickRotate_eq_common_plus`,
    `BHW.os45QuarterTurn_perm_realEmbed_eq_common_minus`,
