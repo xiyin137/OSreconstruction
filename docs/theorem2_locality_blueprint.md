@@ -79170,20 +79170,23 @@ Implementation transcript for
                     BHW.ExtendedTube d n
 
               theorem
-                BHW.os45Figure24_BHWExtension_eq_initialSnBranch_on_adjacentWick_of_OSI45
+                BHW.os45Figure24_adjacentWick_extendF_eq_ordinaryWick_extendF_of_OSI45
                   [NeZero d] (hd : 2 <= d)
                   (OS : OsterwalderSchraderAxioms d)
                   (lgc : OSLinearGrowthCondition d OS)
                   {n : Nat} {i : Fin n} {hi : i.val + 1 < n}
                   {P : BHW.OS45Figure24CanonicalSourcePatchData
                     (d := d) hd n i hi}
+                  (hP_oriented :
+                    ∀ x, x ∈ closure P.V ->
+                      BHW.OS45Figure24OrientedPathField
+                        (d := d) n i hi x)
                   {u : NPointDomain d n} (hu : u ∈ P.V) :
                   BHW.extendF (bvt_F OS lgc n)
                     (BHW.permAct (d := d) P.τ
                       (fun k => wickRotatePoint (u k))) =
-                    bvt_F OS lgc n
-                      (BHW.permAct (d := d) P.τ
-                        (fun k => wickRotatePoint (u k)))
+                    BHW.extendF (bvt_F OS lgc n)
+                      (fun k => wickRotatePoint (u k))
 
               theorem BHW.os45Figure24_adjacentWick_extendF_permAct_eq_bvt_F
                   [NeZero d] (hd : 2 <= d)
@@ -79192,6 +79195,10 @@ Implementation transcript for
                   {n : Nat} {i : Fin n} {hi : i.val + 1 < n}
                   {P : BHW.OS45Figure24CanonicalSourcePatchData
                     (d := d) hd n i hi}
+                  (hP_oriented :
+                    ∀ x, x ∈ closure P.V ->
+                      BHW.OS45Figure24OrientedPathField
+                        (d := d) n i hi x)
                   {u : NPointDomain d n} (hu : u ∈ P.V) :
                   BHW.extendF (bvt_F OS lgc n)
                     (BHW.permAct (d := d) P.τ
@@ -79212,58 +79219,95 @@ Implementation transcript for
               the ordinary Wick point lands in `BHW.ExtendedTube d n`.
 
               The third theorem is the real OS I §4.5 analytic content behind
-              the adjacent trace.  It says that, on the local Figure-2-4
-              adjacent Wick edge, the BHW extension of the ordinary
-              forward-tube branch agrees with the symmetric initial
-              `S_n`/permuted-forward-tube branch constructed in OS I from
-              Euclidean symmetry and equations `(4.1)`, `(4.12)`, and
-              `(4.14)`.  Its proof is **not** an application of
+              the adjacent trace.  It compares the adjacent BHW edge value
+              with the ordinary Wick edge value by the specific non-circular
+              Figure-2-4 continuation chain; it is **not** an application of
               `BHW.extendF_eq_on_forwardTube`, and it is **not** a consequence
               of `bvt_F_perm` alone.  The Lean transcript must build or invoke
-              the OS I initial-domain theorem:
+              the local OS I chain theorem:
 
               ```lean
               theorem
-                BHW.extendF_bvt_F_eq_bvt_F_on_local_initialSn_overlap_of_OSI45
+                BHW.os45_BHWJost_adjacentToOrdinaryWick_chainComparison_of_OSI45
                   [NeZero d] (hd : 2 <= d)
                   (OS : OsterwalderSchraderAxioms d)
                   (lgc : OSLinearGrowthCondition d OS)
                   {n : Nat} {i : Fin n} {hi : i.val + 1 < n}
                   {P : BHW.OS45Figure24CanonicalSourcePatchData
                     (d := d) hd n i hi}
-                  {z : Fin n -> Fin (d + 1) -> ℂ}
-                  (hzET : z ∈ BHW.ExtendedTube d n)
-                  (hzPFT : z ∈ BHW.PermutedForwardTube d n P.τ)
-                  (hzFig :
-                    ∃ u ∈ P.V,
-                      z =
-                        BHW.permAct (d := d) P.τ
-                          (fun k => wickRotatePoint (u k))) :
-                  BHW.extendF (bvt_F OS lgc n) z =
-                    bvt_F OS lgc n z
+                  (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P)
+                  (hP_oriented :
+                    ∀ x, x ∈ closure P.V ->
+                      BHW.OS45Figure24OrientedPathField
+                        (d := d) n i hi x)
+                  {u : NPointDomain d n} (hu : u ∈ P.V) :
+                  BHW.extendF (bvt_F OS lgc n)
+                    (BHW.permAct (d := d) P.τ
+                      (fun k => wickRotatePoint (u k))) =
+                    BHW.extendF (bvt_F OS lgc n)
+                      (fun k => wickRotatePoint (u k))
               ```
 
-              Proof transcript for this local initial-overlap theorem:
-              construct the OS I initial symmetric branch on
-              `S_n = ⋃ σ, BHW.PermutedForwardTube d n σ` using exactly the
-              paper's inputs `E2`, `(4.1)`, `(4.12)`, and `(4.14)`; identify
-              its identity-sector restriction with `bvt_F OS lgc n` on the
-              ordinary forward tube; use the Bargmann-Hall-Wightman extension
-              theorem to compare the BHW extension with that initial branch on
-              the local component of
-              `BHW.ExtendedTube d n ∩ BHW.PermutedForwardTube d n P.τ`
-              reached by the checked Figure-2-4 corridor; then specialize to
-              the displayed adjacent Wick point.  This is the strict OS I
-              §4.5 step.  Any proof that treats `BHW.permAct P.τ` as a
-              complex Lorentz transform, or that assumes `extendF` uses a
-              canonical permutation projection, is rejected.
+              Proof transcript for this chain theorem: set
+              `z0 := fun k => wickRotatePoint (u k)` and
+              `zτ := BHW.permAct (d := d) P.τ z0`.  Build the ordinary
+              initial element
+              `Ford := BHW.extendF (bvt_F OS lgc n)` on
+              `BHW.ExtendedTube d n` and the selected adjacent initial
+              element
+              `Fadj y := BHW.extendF (bvt_F OS lgc n)
+                (BHW.permAct (d := d) P.τ y)` on
+              `BHW.permutedExtendedTubeSector d n P.τ`.  Use the checked
+              hull/corridor data from `H`, the checked joined paths
+              `BHW.os45Figure24_joined_adjacentWick_to_adjLift0`,
+              `BHW.os45Figure24_joined_adjLift0_to_realPatch`, and
+              `BHW.os45Figure24_joined_realPatch_to_ordinaryWick`, and the
+              oriented endpoint field `hP_oriented` to build the finite OS I
+              §4.5 continuation certificate from the adjacent Wick edge to the
+              ordinary Wick edge.  The local-step payloads are exactly the
+              paper's allowed proper-complex-Lorentz BHW identity steps and
+              the Figure-2-4 real Jost-edge EOW step; the boundary equality in
+              the EOW payload is supplied by `OS.E3` and equations `(4.1)`,
+              `(4.12)`, `(4.14)`.
+
+              The implementation-level endpoint comparison is:
+
+              ```lean
+              have hcert :
+                  BHW.OS45AdjacentWickToOrdinaryWickChainCertificate
+                    hd OS lgc H hP_oriented u hu := by
+                -- finite list of the three checked path pieces above,
+                -- with each local step carrying its BHW/EOW payload
+                exact
+                  BHW.os45AdjacentWickToOrdinaryWickChainCertificate.ofFigure24
+                    (d := d) hd OS lgc H hP_oriented u hu
+              exact hcert.value_eq
+              ```
+
+              `OS45AdjacentWickToOrdinaryWickChainCertificate` is a private
+              implementation device, not a theorem-2 hypothesis and not a
+              substitute for the `S'_n` branch.  Its fields are the two
+              endpoint values, the finite list of checked OS I §4.5 local
+              steps, the proof that consecutive local charts agree on the
+              certified overlap, and the final equality `value_eq`.  It may
+              consume the direct local Figure-2-4 EOW payload, but it may not
+              consume `BHW.os45_BHWJost_SPrimeBranchData_of_OSI45`, the local
+              `S'_n` EOW seed being built later, PET single-valuedness, source
+              varieties, normal/Riemann extension, or final locality.  Any
+              proof that treats `BHW.permAct P.τ` as a complex Lorentz
+              transform, or that assumes `extendF` uses a canonical
+              permutation projection, is rejected.
 
               After this theorem is available,
               `BHW.os45Figure24_adjacentWick_extendF_permAct_eq_bvt_F` is
-              mechanical: apply the local initial-overlap theorem at
-              `z = BHW.permAct P.τ (wick u)` and close the right-hand side by
-              unfolding `BHW.permAct`.  This is OS I `(4.12)` for the selected
-              adjacent analytic element; it is not a forward-tube
+              mechanical: rewrite the left side by
+              `BHW.os45Figure24_adjacentWick_extendF_eq_ordinaryWick_extendF_of_OSI45
+              hd OS lgc hP_oriented hu`,
+              normalize the ordinary Wick value with
+              `BHW.extendF_bvt_F_wickRotate_eq_of_ordered`, and use
+              `bvt_F_perm OS lgc n P.τ (fun k => wickRotatePoint (u k))`
+              in the final orientation.  This is OS I `(4.12)` for the
+              selected adjacent analytic element; it is not a forward-tube
               normalization of `fun k => wickRotatePoint (u (P.τ k))`.
             * Ordinary horizontal endpoint:
               unfold `BHW.os45PulledRealBranch` at branch label `1` and close
@@ -79361,13 +79405,17 @@ Implementation transcript for
            horizontal trace are pointwise subtraction rewrites from the four
            trace fields above.  This is the exact input consumed by the
            checked reducer.  Current readiness status: the chart topology and
-           horizontal pullback transcript are Lean-facing, but the OS I
-           initial-overlap theorem
-           `BHW.extendF_bvt_F_eq_bvt_F_on_local_initialSn_overlap_of_OSI45`
-           is not yet expanded to Lean-transcription detail.  Until that
-           theorem is written at the same level as the topology and horizontal
-           pullback pieces, the proof docs are **not** ready for
-           implementation of this producer.
+           horizontal pullback transcript are Lean-facing, and the adjacent
+           Wick comparison has been separated as the non-circular OS I §4.5
+           chain certificate above.  That certificate is part of the local
+           Figure-2-4 chart proof; it must not use the later local `S'_n`
+           branch.  The remaining proof frontier for the full Stage-A
+           reference branch is still the local EOW seed theorem
+           `BHW.os45_BHWJost_localSPrimeEOWSeed_of_OSI45` and its
+           common-boundary CLM subproducer
+           `BHW.os45FlatCommonChart_commonBoundaryCLM_of_OSI45`, whose
+           Lean-transcription transcript is recorded in the Stage-A local EOW
+           section below.
 
          Lean checkpoint: the mechanical reducer
          `BHW.os45CommonEdge_localHorizontalDifference_representsZero_of_germ`
