@@ -18722,11 +18722,18 @@ continuous zero-diagonal functionals:
 `BHW.OS45Figure24SourceCutoffData.apply_toSideZeroDiagonalCLM_tendstoUniformlyOn_zero`.
 The remaining Stage-A Lean focus is therefore the proof-bearing OS-specific
 seed packet: rewrite the plus and minus side integrals to Schwinger pairings by
-the OS I `(4.12)`/Wick restriction calculation, use `OS.E3` to identify the
-two limiting CLMs, then call `SCV.chartDistributionalEOW_local_envelope` and
-the identity theorem to obtain `BHW.os45_BHWJost_localSPrimeEOWSeed_of_OSI45`.
-Further theorem-surface changes before Lean implementation remain route
-changes and must be documented before code is written.
+the OS I `(4.12)`/Wick restriction calculation, using `OS.E3` inside the minus
+side integral rewrite.  The minus branch label is `P.τ.symm * 1`, but the
+cutoff-pulled source-test label remains the same common-edge label `1`; do not
+claim `D.toZeroDiagonalCLM P.τ φ` is a permutation of
+`D.toZeroDiagonalCLM 1 φ`, since the cutoff is not permutation-invariant.  The
+side-integral rewrite first needs the compact-in-open support shrink ensuring
+the shifted flat tests remain in the Figure-2-4 edge `P.V`; cutoff support
+alone only gives `P.Ufig` and is not enough for the ordered-sector E3 theorem.
+Then call `SCV.chartDistributionalEOW_local_envelope` and the identity theorem
+to obtain `BHW.os45_BHWJost_localSPrimeEOWSeed_of_OSI45`.  Further
+theorem-surface changes before Lean implementation remain route changes and
+must be documented before code is written.
 
 ## 4.3. `theorem4_cluster_blueprint.md`
 

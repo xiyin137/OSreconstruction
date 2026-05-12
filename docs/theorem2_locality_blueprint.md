@@ -77928,9 +77928,9 @@ Implementation transcript for
        TendstoUniformlyOn
          (fun ε η =>
            BHW.os45FlatCommonChartSideTestCLM
-             hd P (P.τ.symm * 1) (-1 : ℝ) ε η φ)
+             hd P 1 (-1 : ℝ) ε η φ)
          (fun _ =>
-           D.toZeroDiagonalCLM P.τ φ)
+           D.toZeroDiagonalCLM (1 : Equiv.Perm (Fin n)) φ)
          (nhdsWithin 0 (Set.Ioi 0)) Kη
      ```
      in the Schwartz topology.  These are finite-dimensional chain-rule and
@@ -77963,6 +77963,50 @@ Implementation transcript for
      proofs.  What remains is the OS I `(4.12)`/`(4.14)` side-integral rewrite
      identifying the holomorphic side integrals with those side-test
      Schwinger pairings.
+   * Before the side integral rewrites, prove the compact support shrink that
+     makes the E3 theorem applicable to the **shifted** tests:
+     ```lean
+     theorem BHW.os45FlatCommonChart_sideSupport_radius
+       ... (Kη : Set (BHW.OS45FlatCommonChartReal d n))
+       (hKη : IsCompact Kη) (hKηC : Kη ⊆ BHW.os45FlatCommonChartCone d n)
+       (φ : SchwartzMap (BHW.OS45FlatCommonChartReal d n) ℂ)
+       (hφ_compact : HasCompactSupport (φ : _ → ℂ))
+       (hφE :
+         tsupport (φ : _ → ℂ) ⊆
+           BHW.os45FlatCommonChartEdgeSet d n P (1 : Equiv.Perm (Fin n))) :
+       ∃ r : ℝ, 0 < r ∧
+         ∀ ε : ℝ, 0 < ε → ε < r →
+         ∀ η ∈ Kη,
+           tsupport
+             (SCV.translateSchwartz ((ε : ℝ) • η) φ : _ → ℂ) ⊆
+               BHW.os45FlatCommonChartEdgeSet d n P (1 : Equiv.Perm (Fin n)) ∧
+           tsupport
+             (SCV.translateSchwartz ((-ε : ℝ) • η) φ : _ → ℂ) ⊆
+               BHW.os45FlatCommonChartEdgeSet d n P (1 : Equiv.Perm (Fin n))
+     ```
+     Proof: `tsupport φ` is compact and contained in the open edge set; since
+     `Kη` is compact, the addition map
+     `(x, ε, η) ↦ x ± ε • η` is uniformly continuous on
+     `tsupport φ × [0,1] × Kη`.  Choose `r > 0` so both shifted compact sets
+     stay in the open edge.  This is a topological compact-in-open shrink, not
+     an analytic theorem.
+   * Use that shrink with a source-pullback support theorem:
+     ```lean
+     theorem BHW.OS45Figure24SourceCutoffData.toShiftedSchwartzNPointCLM_tsupport_subset_V
+       ... (a : BHW.OS45FlatCommonChartReal d n)
+       (φ : SchwartzMap (BHW.OS45FlatCommonChartReal d n) ℂ)
+       (hφE :
+         tsupport (SCV.translateSchwartz a φ : _ → ℂ) ⊆
+           BHW.os45FlatCommonChartEdgeSet d n P (1 : Equiv.Perm (Fin n))) :
+       tsupport
+         (D.toShiftedSchwartzNPointCLM
+           (1 : Equiv.Perm (Fin n)) a φ : NPointDomain d n → ℂ) ⊆ P.V
+     ```
+     The proof uses the defining image of
+     `BHW.os45FlatCommonChartEdgeSet`: if
+     `BHW.os45CommonEdgeFlatCLE d n 1 x` lies in that edge image, injectivity
+     of the checked common-edge linear equivalence recovers `x ∈ P.V`.  The
+     cutoff support alone is insufficient here; it only gives `P.Ufig`.
    * Prove the plus integral rewrite
      ```lean
      theorem BHW.os45FlatCommonChart_plus_integral_eq_schwinger_sideTest
@@ -77976,30 +78020,41 @@ Implementation transcript for
      a Wick-rotated ordered Euclidean configuration, applying
      `BHW.extendF_eq_on_forwardTube`, and then
      `bvt_euclidean_restriction`.
-   * Prove the minus integral rewrite with the branch label
-     `P.τ.symm * 1`:
+   * Prove the minus integral rewrite with branch label `P.τ.symm * 1` but
+     the same common-edge source-test label `1`.  The branch label changes the
+     holomorphic branch value; it does **not** change the flat source test
+     pullback.  This follows from the checked common-point identity
+     `BHW.os45PulledRealBranch_apply_reindexed_commonPoint`.
      ```lean
      theorem BHW.os45FlatCommonChart_minus_integral_eq_schwinger_sideTest
        ... (ε : ℝ) (hε : 0 < ε) (hεsmall : ε < r) (η ∈ Kη) :
        ∫ x, Fminus (x - ε • η • I) * φ x =
          OS.S n
            (BHW.os45FlatCommonChartSideTestCLM
-             hd P (P.τ.symm * 1) (-1 : ℝ) ε η φ)
+             hd P 1 (-1 : ℝ) ε η φ)
      ```
-     using the checked reindexed common-point identity before applying
-     `BHW.extendF_eq_on_forwardTube`.  The forward-tube membership here is for
-     the **side point with `ε > 0` in its own ordered chart**, not for the
-     rejected swapped zero-height point.
-   * Apply continuity of `OsterwalderSchraderAxioms.schwingerCLM OS n` to the
-     two side-test convergence lemmas.  The plus target is
-     `OS.S n (D.toZeroDiagonalCLM 1 φ) = T φ`.  The minus target is first
-     `OS.S n (D.toZeroDiagonalCLM P.τ φ)`.
-   * Apply `OS.E3_symmetric` with the adjacent transposition `P.τ` and the
-     checked identity
+     using the checked reindexed common-point identity before applying the
+     Wick-restriction calculation.  The adjacent `OS.E3` input enters through
+     the same source-test integral identity as
+     `BHW.os45_adjacent_euclideanEdge_pairing_eq_on_timeSector`: after the
+     relabelled branch has been rewritten to
+     `BHW.extendF (bvt_F OS lgc n) (BHW.realEmbed (fun k => x (P.τ k)))`,
+     the Euclidean permutation symmetry argument identifies the adjacent
+     pairing with the ordinary Schwinger pairing for the **same** cutoff-pulled
+     source test.  Do not assert
      `D.toZeroDiagonalCLM P.τ φ =
-       permuteZeroDiagonalSchwartz P.τ.symm
-         (D.toZeroDiagonalCLM 1 φ)`
-     to rewrite the minus target to the same `T φ`.
+       permuteZeroDiagonalSchwartz P.τ.symm (D.toZeroDiagonalCLM 1 φ)`;
+     the arbitrary cutoff `D.χ` is not permutation-invariant.
+
+     The forward-tube membership here is for the **side point with `ε > 0` in
+     its own ordered chart**, not for the rejected swapped zero-height point.
+   * Apply continuity of `OsterwalderSchraderAxioms.schwingerCLM OS n` to the
+     checked side-test convergence theorem
+     `BHW.OS45Figure24SourceCutoffData.apply_toSideZeroDiagonalCLM_tendstoUniformlyOn_zero`.
+     Both plus and minus convergence targets are already
+     `OS.S n (D.toZeroDiagonalCLM 1 φ) = T φ`; `OS.E3` is used in the minus
+     side integral rewrite, not by comparing two cutoff-pulled CLMs after the
+     convergence step.
    * Uniformity over compact direction sets `Kη ⊆ C` is inherited from the
      uniform side-test convergence and continuity of the Schwinger CLM.  The
      side-domain membership needed for the integral rewrites is exactly the
