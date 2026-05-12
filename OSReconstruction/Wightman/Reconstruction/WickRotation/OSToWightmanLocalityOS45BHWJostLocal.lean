@@ -291,6 +291,17 @@ def os45CommonEdgeFlatCLE
   (BHW.os45CommonEdgeRealCLE (d := d) (n := n) ρperm).trans
     (flattenCLEquivReal n (d + 1))
 
+/-- Absolute Jacobian of the OS45 source-to-flat common-edge map.  The common
+edge map halves the time coordinate of each source point; permutations and
+flattening have absolute determinant `1`. -/
+noncomputable def os45CommonEdgeFlatJacobianAbs (n : ℕ) : ℝ :=
+  (1 / 2 : ℝ) ^ n
+
+theorem os45CommonEdgeFlatJacobianAbs_pos (n : ℕ) :
+    0 < BHW.os45CommonEdgeFlatJacobianAbs n := by
+  dsimp [BHW.os45CommonEdgeFlatJacobianAbs]
+  positivity
+
 /-- Unflattening the complexification of a flattened real configuration
 recovers its standard complex real embedding. -/
 @[simp] theorem unflattenCfg_ofReal_flattenCfgReal
@@ -1179,7 +1190,8 @@ noncomputable def os45FlatCommonChartSideTestCLM
   D.toSideZeroDiagonalCLM ρperm sgn ε η
 
 /-- The common-boundary Schwinger functional in flattened common-chart
-coordinates. -/
+coordinates, including the absolute Jacobian for the source-to-flat real
+change of variables. -/
 noncomputable def os45_BHWJost_flatCommonChart_schwingerCLM
     [NeZero d] (hd : 2 ≤ d)
     (OS : OsterwalderSchraderAxioms d)
@@ -1191,8 +1203,9 @@ noncomputable def os45_BHWJost_flatCommonChart_schwingerCLM
     SchwartzMap (BHW.OS45FlatCommonChartReal d n) ℂ →L[ℂ] ℂ :=
   let D := Classical.choice
     (BHW.exists_os45Figure24SourceCutoffData (d := d) P)
-  (OsterwalderSchraderAxioms.schwingerCLM (d := d) OS n).comp
-    (D.toZeroDiagonalCLM ρperm)
+  ((BHW.os45CommonEdgeFlatJacobianAbs n : ℂ)) •
+    ((OsterwalderSchraderAxioms.schwingerCLM (d := d) OS n).comp
+      (D.toZeroDiagonalCLM ρperm))
 
 /-- Points of the ordinary extended tube lie in the local BHW/Jost ambient. -/
 theorem os45BHWJostAmbient_mem_identity
