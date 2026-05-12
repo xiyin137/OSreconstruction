@@ -601,6 +601,14 @@ Archived connected-overlap shortcut, not active:
    eventual equality of the two original branch functions at a common interior
    edge point.
 
+   **Superseded historical route.**  The theorem surfaces in the following
+   code block are not active after the 2026-05-12 common-edge seed correction:
+   the strict OS-I §4.5 route now produces a local open seed centered at
+   `BHW.os45Figure24CommonEdgeSPrimeSeed d n P`, then invokes the authorized
+   neutral `BHW.localSPrime_twoSectorBranch_of_EOW_BHW` theorem.  Do not
+   implement `BHW.os45_BHWJost_overlap_connected_of_two_le` or the
+   real-edge eventual-equality route as theorem-2 prerequisites.
+
    ```lean
    theorem SCV.local_continuous_edge_of_the_wedge_eventuallyEq_at_common_edge
        {m : ℕ} (hm : 0 < m)
@@ -928,7 +936,10 @@ theorem surfaces `BHW.os45_BHWJost_localSPrimeEOWSeed_of_OSI45` and
 `BHW.os45_BHWJost_SPrimeBranchData_of_OSI45`; the seed theorem must be proved
 through the distributional local EOW assembly described in
 `docs/theorem2_locality_blueprint.md`, not through a pointwise continuous-EOW
-shortcut.
+shortcut.  The seed center is the horizontal common-edge inverse-quarter-turn
+point `BHW.os45Figure24CommonEdgeSPrimeSeed d n P`, not
+`BHW.realEmbed P.xseed`; therefore the branch reducer must use the generalized
+`BHW.os45_BHWJost_SPrimeBranchData_of_localSPrimeEOWSeedAt` surface.
 
 The finite-chain packet remains downstream support only.  Its items
 `BHW.OS45BHWJostFiniteContinuationChainData`,
@@ -11831,16 +11842,25 @@ common-boundary envelope, or any theorem that already assumes locality.
       `Ford := BHW.extendF (bvt_F OS lgc n)` and
       `Fadj z := BHW.extendF (bvt_F OS lgc n)
         (BHW.permAct (d := d) P.τ z)`.
-   2. Use the checked Figure-2-4 seed, usually `P.xseed`, and set
-      `zE := BHW.realEmbed P.xseed`.  The checked fields
-      `H.realPatch_mem`, `H.realPatch_mem_extendedTube`, and
-      `H.realPatch_mem_permutedExtendedTubeSector` put `zE` in
-      `(H.ΩJ ∩ ExtendedTube d n) ∩
-        (H.ΩJ ∩ permutedExtendedTubeSector d n P.τ)`.
-   3. Flatten the source product around `zE` by the finite-dimensional complex
-      linear equivalence already used by the checked Figure-2-4 local EOW
-      data.  The positive side is the ordinary extended-tube side; the
-      negative side is the adjacent permuted-tube side.  Obtain the common
+   2. Set
+      `zE := BHW.os45Figure24CommonEdgeSPrimeSeed d n P`, the original
+      `S'_n` point obtained by applying
+      `(BHW.os45QuarterTurnCLE (d := d) (n := n)).symm` to the horizontal
+      common edge
+      `BHW.realEmbed (BHW.os45CommonEdgeRealPoint (d := d) (n := n) 1 P.xseed)`.
+      The required membership lemmas are
+      `BHW.os45Figure24CommonEdgeSPrimeSeed_mem_extendedTube`,
+      `BHW.os45Figure24CommonEdgeSPrimeSeed_mem_permutedExtendedTubeSector`,
+      and
+      `BHW.OS45BHWJostHullData.commonEdgeSPrimeSeed_mem_ΩJ`; these are
+      mechanical from `P.V_pulled_id`, `P.V_pulled_tau`, and
+      `H.extendedTube_subset_ΩJ`.
+   3. Flatten the horizontal common edge by the finite-dimensional complex
+      coordinate system already used by the checked Figure-2-4 local EOW
+      data.  The positive side is the ordinary branch domain
+      `BHW.os45FlatCommonChartOmega d n 1`; the negative side is the adjacent
+      branch domain
+      `BHW.os45FlatCommonChartOmega d n (P.τ.symm * 1)`.  Obtain the common
       boundary CLM `T` and its two local representation fields from
       `BHW.os45FlatCommonChart_commonBoundaryCLM_of_OSI45`, applied to
       `P := Poriented.toCanonical` and
@@ -11855,20 +11875,22 @@ common-boundary envelope, or any theorem that already assumes locality.
       CLM construction; do not replace this with the rejected zero-height
       pointwise trace route and do not identify `T` with the Schwinger CLM.
    4. Call
-      `SCV.chartDistributionalEOW_local_envelope` exactly at this real Jost
-      edge.  The returned envelope function `F0` is holomorphic on the local
-      EOW envelope and has nonempty open plus/minus side subsets on which it
-      agrees with `Ford` and `Fadj` after unflattening.  Apply the ordinary
-      several-complex-variables identity theorem on the returned connected
-      envelope component to obtain
-      `Ford =ᶠ[nhds zE] Fadj`.
-   5. Propagate from the real-edge germ to the whole local-hull overlap by the
-      OS I §4.5 BHW single-valuedness statement: every point of
-      `(H.ΩJ ∩ ExtendedTube d n) ∩
-        (H.ΩJ ∩ permutedExtendedTubeSector d n P.τ)` lies in the same
-      proper-complex Lorentz/Jost continuation component as a Figure-2-4 real
-      edge point.  In Lean this is a local-hull overlap theorem, not a
-      source-variety theorem:
+      `SCV.chartDistributionalEOW_local_envelope` at
+      `xflat := BHW.os45FlatCommonChartSeed d n P 1`.  Choose the EOW basis
+      `ys` first by `SCV.open_set_contains_basis`; the distributional theorem
+      returns `ρ r δ R Hcoord`.  Then use the pure helper
+      `SCV.localEOW_envelope_eqOn_small_twoSector_ball` to shrink the returned
+      ball into both branch domains and obtain equality of the pulled
+      flat-coordinate branches on a small coordinate ball.
+   5. Pull that small ball back to original configurations by
+      `w ↦ (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+        (BHW.unflattenCfg n d (SCV.localEOWChart xflat ys w))`.  The image is
+      open, preconnected, contains `zE` by
+      `BHW.os45Figure24CommonEdgeSPrimeSeed_eq_chart_zero`, lies in the local
+      two-sector hull by the membership lemmas above, and satisfies
+      `Set.EqOn Ford Fadj`.  This is exactly the seed consumed by
+      `BHW.localSPrime_twoSectorBranch_of_EOW_BHW`; no separate propagation to
+      the whole local-hull overlap is done at this stage.
 
       ```lean
       theorem BHW.os45_BHWJost_overlap_identityPropagation_of_OSI45
@@ -19003,11 +19025,15 @@ the two local representation fields, the checked generic finite-partition
 reducer `SCV.distribution_representation_of_local_representations_for_test`
 gives the plus/minus zero-height compact pairings into that same `T`; the
 checked `_of_zeroHeight_pairingCLM` reducers then feed
-`SCV.chartDistributionalEOW_local_envelope`, then
-`BHW.localSPrime_twoSectorBranch_of_EOW_BHW`, to obtain
-`BHW.os45_BHWJost_localSPrimeEOWSeed_of_OSI45`.  Further theorem-surface
-changes before Lean implementation remain route changes and must be documented
-before code is written.
+`SCV.chartDistributionalEOW_local_envelope`; after shrinking the returned
+coordinate ball into both flat branch domains and applying the identity
+theorem, the inverse-quarter-turn image gives
+`BHW.os45_BHWJost_localSPrimeEOWSeed_of_OSI45` centered at
+`BHW.os45Figure24CommonEdgeSPrimeSeed d n P`.  The generalized
+`BHW.os45_BHWJost_SPrimeBranchData_of_localSPrimeEOWSeedAt` then feeds that
+seed to `BHW.localSPrime_twoSectorBranch_of_EOW_BHW`.  Further
+theorem-surface changes before Lean implementation remain route changes and
+must be documented before code is written.
 
 ## 4.3. `theorem4_cluster_blueprint.md`
 
