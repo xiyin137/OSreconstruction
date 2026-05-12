@@ -1420,6 +1420,7 @@ not record the determinant/proper-component data.
        (U : Set (NPointDomain d n))
        (hU_open : IsOpen U)
        (hU_connected : IsConnected U)
+       (hU_compact : IsCompact (closure U))
        (hU_closure : closure U ⊆ P.V) :
        ∃ (Ucx : Set (Fin n -> Fin (d + 1) -> ℂ))
          (Hdiff : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ),
@@ -1456,6 +1457,19 @@ not record the determinant/proper-component data.
    This is the direct OS I §4.5 local germ producer, not an axiom and not a
    source-variety wrapper.
 
+   Readiness correction for this producer: its proof must first construct the
+   two-branch local continuation chart
+   `BHW.os45Figure24_localTwoBranchGerm_of_OSI45`, using the compact source
+   window `hU_compact`, the joint continuity lemmas
+   `BHW.continuous_os45Figure24IdentityPath_joint` and
+   `BHW.continuous_os45Figure24AdjacentLift`, compact-open tube stability over
+   `closure U × unitInterval`, and the checked endpoint conversions
+   `BHW.os45Figure24Path_endpoint_extendF_eq_ordinaryPulledRealBranch` and
+   `BHW.os45Figure24OrientedPath_endpoint_extendF_eq_adjacentPulledRealBranch`.
+   The chart theorem returns `Ucx`, `Hord`, and `Hadj`; then this producer sets
+   `Hdiff z := Hadj z - Hord z`.  This is the OS I `(4.1)`, `(4.12)`,
+   `(4.14)` analytic continuation step, not a distributional/locality theorem.
+
    **Checked reducer.**  The mechanical theorem
    `BHW.os45CommonEdge_localHorizontalDifference_representsZero_of_germ` is
    now checked in `OSToWightmanLocalityOS45BHWJostLocal.lean`.  It consumes
@@ -1473,6 +1487,7 @@ not record the determinant/proper-component data.
        hcommon_mem, hHdiff_holo, hwick_trace, hcommon_trace⟩ :=
      BHW.os45CommonEdge_localFigure24DifferenceGerm_of_OSI45
        (d := d) hd OS lgc hP_oriented U hU_open hU_connected
+       hU_compact
        (fun x hx => hW_closure (subset_closure (hUclosure hx)))
    ```
 

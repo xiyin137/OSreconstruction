@@ -78744,6 +78744,7 @@ Implementation transcript for
              hcommon_mem, hHdiff_holo, hwick_trace, hcommon_trace⟩ :=
            BHW.os45CommonEdge_localFigure24DifferenceGerm_of_OSI45
              (d := d) hd OS lgc hP_oriented U hU_open hU_connected
+             hU_compact
              (fun x hx => hW_closure (subset_closure (hUclosure hx)))
          ```
 
@@ -78775,6 +78776,7 @@ Implementation transcript for
              (U : Set (NPointDomain d n))
              (hU_open : IsOpen U)
              (hU_connected : IsConnected U)
+             (hU_compact : IsCompact (closure U))
              (hU_closure : closure U ⊆ P.V) :
              ∃ (Ucx : Set (Fin n -> Fin (d + 1) -> ℂ))
                (Hdiff : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ),
@@ -78817,6 +78819,98 @@ Implementation transcript for
          conversion lemmas and BHW branch law, but it may not use source
          varieties, normal/Riemann extension, PET single-valuedness, or final
          locality.
+
+         Lean-pseudocode proof transcript for the producer:
+
+         * First prove the two-branch local continuation theorem
+           `BHW.os45Figure24_localTwoBranchGerm_of_OSI45`.  This is still an
+           OS I §4.5 theorem, not an axiom: it is allowed to mention the
+           concrete OS45 source patch and `bvt_F`, but it is not allowed to use
+           Schwinger symmetry, locality, the common-boundary CLM being proved,
+           `SCV.RepresentsDistributionOn`, source varieties, or the final
+           local `S'_n` branch.
+
+           ```lean
+           theorem BHW.os45Figure24_localTwoBranchGerm_of_OSI45
+               [NeZero d] (hd : 2 <= d)
+               (OS : OsterwalderSchraderAxioms d)
+               (lgc : OSLinearGrowthCondition d OS)
+               {n : Nat} {i : Fin n} {hi : i.val + 1 < n}
+               {P : BHW.OS45Figure24CanonicalSourcePatchData
+                 (d := d) hd n i hi}
+               (hP_oriented :
+                 ∀ x, x ∈ closure P.V ->
+                   BHW.OS45Figure24OrientedPathField (d := d) n i hi x)
+               (U : Set (NPointDomain d n))
+               (hU_open : IsOpen U)
+               (hU_connected : IsConnected U)
+               (hU_compact : IsCompact (closure U))
+               (hU_closure : closure U ⊆ P.V) :
+               ∃ (Ucx : Set (Fin n -> Fin (d + 1) -> ℂ))
+                 (Hord Hadj : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ),
+                 IsOpen Ucx ∧ IsConnected Ucx ∧
+                 (∀ u ∈ U, (fun k => wickRotatePoint (u k)) ∈ Ucx) ∧
+                 (∀ u ∈ U,
+                   (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+                     (BHW.realEmbed
+                       (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                         (1 : Equiv.Perm (Fin n)) u)) ∈ Ucx) ∧
+                 DifferentiableOn ℂ Hord Ucx ∧
+                 DifferentiableOn ℂ Hadj Ucx ∧
+                 (∀ u ∈ U,
+                   Hord (fun k => wickRotatePoint (u k)) =
+                     bvt_F OS lgc n (fun k => wickRotatePoint (u k))) ∧
+                 (∀ u ∈ U,
+                   Hadj (fun k => wickRotatePoint (u k)) =
+                     bvt_F OS lgc n
+                       (fun k => wickRotatePoint (u (P.τ k)))) ∧
+                 (∀ u ∈ U,
+                   Hord
+                     ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+                       (BHW.realEmbed
+                         (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                           (1 : Equiv.Perm (Fin n)) u))) =
+                     BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                       (1 : Equiv.Perm (Fin n))
+                       (BHW.realEmbed
+                         (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                           (1 : Equiv.Perm (Fin n)) u))) ∧
+                 (∀ u ∈ U,
+                   Hadj
+                       ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+                         (BHW.realEmbed
+                           (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                             (1 : Equiv.Perm (Fin n)) u))) =
+                     BHW.os45PulledRealBranch (d := d) (n := n)
+                       OS lgc (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+                       (BHW.realEmbed
+                         (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                           (1 : Equiv.Perm (Fin n)) u)))
+           ```
+
+         * The theorem's proof constructs the local chart from the compact
+           path image over `closure U × unitInterval`.  Use
+           `BHW.continuous_os45Figure24IdentityPath_joint` for the ordinary
+           path, `BHW.continuous_os45Figure24AdjacentLift` for the adjacent
+           lift, `hU_compact.prod isCompact_univ`, and compact-open tube
+           stability to obtain one finite chain of ordinary/adjacent local
+           BHW continuation charts covering both strips.  The connected
+           carrier `Ucx` is the finite union of this chain, with connectedness
+           from consecutive nonempty chart overlaps.  This is exactly OS I
+           `(4.1)`, `(4.12)`, `(4.14)` in Lean form; the overlap equalities are
+           local Hall-Wightman branch-law equalities, not distributional
+           locality.
+
+         * The ordinary Wick trace rewrites by `BHW.extendF_eq_on_forwardTube` and
+           `wickRotate_mem_forwardTube_of_mem_orderedPositiveTimeSector`.
+           The adjacent Wick trace rewrites by the same forward-tube theorem
+           after `P.τ_eq` and `bvt_F_perm`.  The ordinary horizontal endpoint
+           is exactly
+           `BHW.os45Figure24Path_endpoint_extendF_eq_ordinaryPulledRealBranch`;
+           the adjacent horizontal endpoint is exactly
+           `BHW.os45Figure24OrientedPath_endpoint_extendF_eq_adjacentPulledRealBranch`.
+           Finally set `Hdiff z := Hadj z - Hord z` and use
+           `DifferentiableOn.sub` for `hHdiff_holo`.
 
          Lean checkpoint: the mechanical reducer
          `BHW.os45CommonEdge_localHorizontalDifference_representsZero_of_germ`
