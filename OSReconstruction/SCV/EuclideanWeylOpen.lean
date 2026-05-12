@@ -412,6 +412,252 @@ theorem euclideanDistribution_representation_of_finite_partition_for_test
       exact hrep i (localized i) (hloc_support i)
     _ = ∫ x : EuclideanSpace ℝ ι, H x * φ x := hintegral_sum.symm
 
+/-- A function represents a Schwartz distribution on tests supported in `V`;
+generic version of `RepresentsEuclideanDistributionOn`. -/
+def RepresentsDistributionOn
+    {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+    [MeasureSpace E]
+    (T : SchwartzMap E ℂ →L[ℂ] ℂ)
+    (H : E → ℂ) (V : Set E) : Prop :=
+  ∀ φ : SchwartzMap E ℂ,
+    SupportsInOpen (φ : E → ℂ) V →
+      T φ = ∫ x, H x * φ x
+
+/-- Generic finite partition summation for a single compactly supported test. -/
+theorem distribution_representation_of_finite_partition_for_test
+    {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+    [MeasureSpace E] [BorelSpace E] [IsLocallyFiniteMeasure (volume : Measure E)]
+    {α : Type*} [Fintype α]
+    (T : SchwartzMap E ℂ →L[ℂ] ℂ)
+    (H : E → ℂ)
+    {U : α → Set E}
+    (hU_open : ∀ i, IsOpen (U i))
+    (hH_cont : ∀ i, ContinuousOn H (U i))
+    (hrep : ∀ i, RepresentsDistributionOn T H (U i))
+    (χ : α → SchwartzMap E ℂ)
+    (φ : SchwartzMap E ℂ)
+    (hχ_support : ∀ i, tsupport (χ i : E → ℂ) ⊆ U i)
+    (hpart : ∀ x ∈ tsupport (φ : E → ℂ), ∑ i, χ i x = 1)
+    (hφ_compact : HasCompactSupport (φ : E → ℂ)) :
+    T φ = ∫ x : E, H x * φ x := by
+  let localized : α → SchwartzMap E ℂ := fun i =>
+    SchwartzMap.smulLeftCLM ℂ (χ i : E → ℂ) φ
+  have hφ_decomp : φ = ∑ i, localized i := by
+    simpa [localized] using
+      schwartzMap_eq_finset_sum_smulLeftCLM_of_sum_eq_one_on_tsupport
+        (Finset.univ : Finset α) χ φ (by simpa using hpart)
+  have hloc_support :
+      ∀ i, SupportsInOpen (localized i : E → ℂ) (U i) := by
+    intro i
+    simpa [localized] using
+      supportsInOpen_partition_mul_left (χ := χ i) (φ := φ)
+        (U := U i) (V := Set.univ) (hχ_support i)
+        (⟨hφ_compact, subset_univ _⟩ :
+          SupportsInOpen (φ : E → ℂ) Set.univ)
+  have hloc_int :
+      ∀ i, Integrable fun x : E => H x * localized i x := by
+    intro i
+    exact integrable_continuousOn_mul_schwartz_of_supportsInOpen
+      (hU_open i) (hH_cont i) (hloc_support i)
+  have hintegral_sum :
+      (∫ x : E, H x * φ x) =
+        ∑ i, ∫ x : E, H x * localized i x := by
+    calc
+      (∫ x : E, H x * φ x) =
+          ∫ x : E, H x * (∑ i, localized i) x := by
+            rw [hφ_decomp]
+      _ = ∫ x : E, ∑ i, H x * localized i x := by
+            apply MeasureTheory.integral_congr_ae
+            filter_upwards with x
+            simp [Finset.mul_sum]
+      _ = ∑ i, ∫ x : E, H x * localized i x := by
+            simpa using
+              (MeasureTheory.integral_finset_sum
+                (s := (Finset.univ : Finset α))
+                (f := fun i => fun x : E => H x * localized i x)
+                (by intro i _; exact hloc_int i))
+  calc
+    T φ = T (∑ i, localized i) := by rw [hφ_decomp]
+    _ = ∑ i, T (localized i) := by simp
+    _ = ∑ i, ∫ x : E, H x * localized i x := by
+      apply Finset.sum_congr rfl
+      intro i _
+      exact hrep i (localized i) (hloc_support i)
+    _ = ∫ x : E, H x * φ x := hintegral_sum.symm
+
+/-- Generic local representation neighborhoods around every point of the
+support of a compactly supported test assemble to a global representation for
+that test. -/
+theorem distribution_representation_of_local_representations_for_test
+    {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+    [FiniteDimensional ℝ E]
+    [MeasureSpace E] [BorelSpace E] [IsLocallyFiniteMeasure (volume : Measure E)]
+    (T : SchwartzMap E ℂ →L[ℂ] ℂ)
+    (H : E → ℂ)
+    (φ : SchwartzMap E ℂ)
+    (hφ_compact : HasCompactSupport (φ : E → ℂ))
+    (hlocal :
+      ∀ x ∈ tsupport (φ : E → ℂ),
+        ∃ U : Set E, IsOpen U ∧ x ∈ U ∧ ContinuousOn H U ∧
+          RepresentsDistributionOn T H U) :
+    T φ = ∫ x : E, H x * φ x := by
+  let K : Set E := tsupport (φ : E → ℂ)
+  let β := {x : E // x ∈ K}
+  have hK_compact : IsCompact K := by
+    simpa [K] using hφ_compact.isCompact
+  let Uβ : β → Set E := fun a => (hlocal a a.property).choose
+  have hUβ_open : ∀ a : β, IsOpen (Uβ a) := by
+    intro a
+    exact (hlocal a a.property).choose_spec.1
+  have hUβ_mem : ∀ a : β, (a : E) ∈ Uβ a := by
+    intro a
+    exact (hlocal a a.property).choose_spec.2.1
+  have hUβ_cont : ∀ a : β, ContinuousOn H (Uβ a) := by
+    intro a
+    exact (hlocal a a.property).choose_spec.2.2.1
+  have hUβ_rep : ∀ a : β, RepresentsDistributionOn T H (Uβ a) := by
+    intro a
+    exact (hlocal a a.property).choose_spec.2.2.2
+  have hball_exists :
+      ∀ a : β, ∃ r : ℝ, 0 < r ∧ Metric.ball (a : E) r ⊆ Uβ a := by
+    intro a
+    exact Metric.mem_nhds_iff.mp ((hUβ_open a).mem_nhds (hUβ_mem a))
+  let rβ : β → ℝ := fun a => (hball_exists a).choose
+  have hrβ_pos : ∀ a : β, 0 < rβ a := by
+    intro a
+    exact (hball_exists a).choose_spec.1
+  have hrβ_sub : ∀ a : β, Metric.ball (a : E) (rβ a) ⊆ Uβ a := by
+    intro a
+    exact (hball_exists a).choose_spec.2
+  let Vβ : β → Set E := fun a => Metric.ball (a : E) (rβ a / 2)
+  have hVβ_open : ∀ a : β, IsOpen (Vβ a) := by
+    intro a
+    exact isOpen_ball
+  have hVβ_subset_Uβ : ∀ a : β, Vβ a ⊆ Uβ a := by
+    intro a x hx
+    exact hrβ_sub a (Metric.ball_subset_ball (by linarith [hrβ_pos a]) hx)
+  have hK_cover : K ⊆ ⋃ a : β, Vβ a := by
+    intro x hx
+    refine mem_iUnion.mpr ⟨⟨x, hx⟩, ?_⟩
+    simp [Vβ, hrβ_pos]
+  obtain ⟨t, htcover⟩ :=
+    hK_compact.elim_finite_subcover Vβ hVβ_open hK_cover
+  let α := {a : β // a ∈ t}
+  let Uα : α → Set E := fun a => Vβ a.1
+  have hUα_open : ∀ a : α, IsOpen (Uα a) := by
+    intro a
+    exact hVβ_open a.1
+  have hUα_relcompact : ∀ a : α, ∃ c R, Uα a ⊆ Metric.closedBall c R := by
+    intro a
+    exact ⟨(a.1 : E), rβ a.1 / 2, Metric.ball_subset_closedBall⟩
+  have hK_coverα : K ⊆ ⋃ a : α, Uα a := by
+    intro x hx
+    rcases mem_iUnion₂.mp (htcover hx) with ⟨a, hat, hxa⟩
+    exact mem_iUnion.mpr ⟨⟨a, hat⟩, hxa⟩
+  obtain ⟨χ, _hχ_compact, hχ_support, hχ_part⟩ :=
+    exists_finite_schwartz_partitionOfUnity_on_compact
+      (α := α) hK_compact hUα_open hUα_relcompact hK_coverα
+  have hUα_cont : ∀ a : α, ContinuousOn H (Uα a) := by
+    intro a
+    exact (hUβ_cont a.1).mono (hVβ_subset_Uβ a.1)
+  have hUα_rep : ∀ a : α, RepresentsDistributionOn T H (Uα a) := by
+    intro a ψ hψ
+    exact hUβ_rep a.1 ψ
+      ⟨hψ.1, hψ.2.trans (hVβ_subset_Uβ a.1)⟩
+  exact distribution_representation_of_finite_partition_for_test
+    T H hUα_open hUα_cont hUα_rep χ φ hχ_support
+    (by simpa [K] using hχ_part) hφ_compact
+
+/-- Local representation neighborhoods around every point of the support of a
+compactly supported test assemble to a global representation for that test. -/
+theorem euclideanDistribution_representation_of_local_representations_for_test
+    {ι : Type*} [Fintype ι]
+    (T : SchwartzMap (EuclideanSpace ℝ ι) ℂ →L[ℂ] ℂ)
+    (H : EuclideanSpace ℝ ι → ℂ)
+    (φ : SchwartzMap (EuclideanSpace ℝ ι) ℂ)
+    (hφ_compact : HasCompactSupport
+      (φ : EuclideanSpace ℝ ι → ℂ))
+    (hlocal :
+      ∀ x ∈ tsupport (φ : EuclideanSpace ℝ ι → ℂ),
+        ∃ U : Set (EuclideanSpace ℝ ι),
+          IsOpen U ∧ x ∈ U ∧ ContinuousOn H U ∧
+            RepresentsEuclideanDistributionOn T H U) :
+    T φ = ∫ x : EuclideanSpace ℝ ι, H x * φ x := by
+  let K : Set (EuclideanSpace ℝ ι) :=
+    tsupport (φ : EuclideanSpace ℝ ι → ℂ)
+  let β := {x : EuclideanSpace ℝ ι // x ∈ K}
+  have hK_compact : IsCompact K := by
+    simpa [K] using hφ_compact.isCompact
+  let Uβ : β → Set (EuclideanSpace ℝ ι) := fun a =>
+    (hlocal a a.property).choose
+  have hUβ_open : ∀ a : β, IsOpen (Uβ a) := by
+    intro a
+    exact (hlocal a a.property).choose_spec.1
+  have hUβ_mem : ∀ a : β, (a : EuclideanSpace ℝ ι) ∈ Uβ a := by
+    intro a
+    exact (hlocal a a.property).choose_spec.2.1
+  have hUβ_cont : ∀ a : β, ContinuousOn H (Uβ a) := by
+    intro a
+    exact (hlocal a a.property).choose_spec.2.2.1
+  have hUβ_rep :
+      ∀ a : β, RepresentsEuclideanDistributionOn T H (Uβ a) := by
+    intro a
+    exact (hlocal a a.property).choose_spec.2.2.2
+  have hball_exists :
+      ∀ a : β, ∃ r : ℝ, 0 < r ∧
+        Metric.ball (a : EuclideanSpace ℝ ι) r ⊆ Uβ a := by
+    intro a
+    exact Metric.mem_nhds_iff.mp ((hUβ_open a).mem_nhds (hUβ_mem a))
+  let rβ : β → ℝ := fun a => (hball_exists a).choose
+  have hrβ_pos : ∀ a : β, 0 < rβ a := by
+    intro a
+    exact (hball_exists a).choose_spec.1
+  have hrβ_sub : ∀ a : β,
+      Metric.ball (a : EuclideanSpace ℝ ι) (rβ a) ⊆ Uβ a := by
+    intro a
+    exact (hball_exists a).choose_spec.2
+  let Vβ : β → Set (EuclideanSpace ℝ ι) := fun a =>
+    Metric.ball (a : EuclideanSpace ℝ ι) (rβ a / 2)
+  have hVβ_open : ∀ a : β, IsOpen (Vβ a) := by
+    intro a
+    exact isOpen_ball
+  have hVβ_subset_Uβ : ∀ a : β, Vβ a ⊆ Uβ a := by
+    intro a x hx
+    exact hrβ_sub a (Metric.ball_subset_ball (by linarith [hrβ_pos a]) hx)
+  have hK_cover : K ⊆ ⋃ a : β, Vβ a := by
+    intro x hx
+    refine mem_iUnion.mpr ⟨⟨x, hx⟩, ?_⟩
+    simp [Vβ, hrβ_pos]
+  obtain ⟨t, htcover⟩ :=
+    hK_compact.elim_finite_subcover Vβ hVβ_open hK_cover
+  let α := {a : β // a ∈ t}
+  let Uα : α → Set (EuclideanSpace ℝ ι) := fun a => Vβ a.1
+  have hUα_open : ∀ a : α, IsOpen (Uα a) := by
+    intro a
+    exact hVβ_open a.1
+  have hUα_relcompact : ∀ a : α, ∃ c R, Uα a ⊆ Metric.closedBall c R := by
+    intro a
+    exact ⟨(a.1 : EuclideanSpace ℝ ι), rβ a.1 / 2,
+      Metric.ball_subset_closedBall⟩
+  have hK_coverα : K ⊆ ⋃ a : α, Uα a := by
+    intro x hx
+    rcases mem_iUnion₂.mp (htcover hx) with ⟨a, hat, hxa⟩
+    exact mem_iUnion.mpr ⟨⟨a, hat⟩, hxa⟩
+  obtain ⟨χ, _hχ_compact, hχ_support, hχ_part⟩ :=
+    exists_finite_schwartz_partitionOfUnity_on_compact
+      (α := α) hK_compact hUα_open hUα_relcompact hK_coverα
+  have hUα_cont : ∀ a : α, ContinuousOn H (Uα a) := by
+    intro a
+    exact (hUβ_cont a.1).mono (hVβ_subset_Uβ a.1)
+  have hUα_rep :
+      ∀ a : α, RepresentsEuclideanDistributionOn T H (Uα a) := by
+    intro a ψ hψ
+    exact hUβ_rep a.1 ψ
+      ⟨hψ.1, hψ.2.trans (hVβ_subset_Uβ a.1)⟩
+  exact euclideanDistribution_representation_of_finite_partition_for_test
+    T H hUα_open hUα_cont hUα_rep χ φ hχ_support
+    (by simpa [K] using hχ_part) hφ_compact
+
 /-- Local Euclidean Weyl regularity on an arbitrary open set.  If a continuous
 Schwartz functional annihilates the Euclidean Laplacian of every compactly
 supported test in `V`, then it is represented on `V` by a smooth function. -/

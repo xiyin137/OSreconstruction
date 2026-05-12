@@ -1085,18 +1085,182 @@ setup names, not local-abbreviation theorem surfaces:
 checked as `BHW.exists_uniform_side_radius_of_compact_real_edge` and
 `BHW.os45_BHWJost_flatCommonChart_localWedge_of_figure24`, with
 `BHW.unflattenCfg_ofReal_flattenCfgReal` as the real-to-complex flattening
-bridge.  The common boundary CLM is also no longer an unnamed prose object.
-It is the checked chart-pulled Schwinger CLM
-`BHW.os45_BHWJost_flatCommonChart_schwingerCLM hd OS lgc P 1`, built from
+bridge.  The chart-pulled Schwinger CLM is also no longer an unnamed prose
+object:
+`BHW.os45_BHWJost_flatCommonChart_schwingerCLM hd OS lgc P 1` is built from
 `BHW.os45CommonEdgeFlatCLE`, `BHW.OS45Figure24SourceCutoffData`,
 `BHW.exists_os45Figure24SourceCutoffData`,
-`BHW.OS45Figure24SourceCutoffData.toSchwartzNPointCLM`,
-and `BHW.OS45Figure24SourceCutoffData.toZeroDiagonalCLM`.  The cutoff is the standard
-smooth compact-support cutoff equal to one on `closure P.V` and supported in
-`P.Ufig`, using `P.closureV_compact`, `P.Ufig_open`,
-`P.closureV_sub_Ufig`, `exists_open_between_and_isCompact_closure`, and
+`BHW.OS45Figure24SourceCutoffData.toSchwartzNPointCLM`, and
+`BHW.OS45Figure24SourceCutoffData.toZeroDiagonalCLM`.  It is an anchor
+normalization object, not the common-boundary CLM required by local EOW.  The
+actual common-boundary CLM is the remaining OS I §4.5 object
+`BHW.os45FlatCommonChart_commonBoundaryCLM_of_OSI45`, producing a single
+`T : SchwartzMap (BHW.OS45FlatCommonChartReal d n) ℂ →L[ℂ] ℂ` represented
+locally by both the ordinary and adjacent zero-height branches.  The blueprint
+now fixes its internal construction rather than leaving a prose gluing step:
+
+1. prove the pure compact-support multiplier CLM
+   `SCV.compactSupport_integralMultiplierCLM_fin`, using
+   `SchwartzMap.mkCLMtoNormedSpace` on a finite closed ball and then replacing
+   the set integral by the full integral because the multiplier vanishes off
+   that ball.  **Checked** in
+   `OSReconstruction/SCV/CompactSupportIntegralCLM.lean`;
+2. define
+   `BHW.os45FlatCommonChart_ordinaryEdgeCLM hd OS lgc P` directly in flat
+   coordinates by integrating the compactly supported multiplier
+   `x ↦ D.χ ((BHW.os45CommonEdgeFlatCLE d n 1).symm x) *
+     BHW.os45FlatCommonChartBranch d n OS lgc 1 (fun a => (x a : ℂ))`.
+   The source-variable expression with
+   `BHW.os45CommonEdgeFlatJacobianAbs n` is only the change-of-variables form
+   used in the Wick-anchor calculation.  **Checked** as
+   `BHW.os45FlatCommonChart_ordinaryEdgeMultiplier`,
+   `BHW.os45FlatCommonChart_ordinaryEdgeCLM`, and
+   `BHW.os45FlatCommonChart_ordinaryEdgeCLM_apply`;
+3. prove
+   `BHW.os45FlatCommonChart_ordinaryEdgeCLM_represents`, using `D.χ = 1` on
+   `P.V`, the support condition in `SupportsInOpen`, and branch continuity
+   from `BHW.os45PulledRealBranch_holomorphicOn`.  **Checked** as
+   `BHW.os45FlatCommonChart_ordinaryEdgeCLM_represents`;
+4. prove
+   `BHW.os45FlatCommonChart_commonBoundaryDifference_integral_zero_of_OSI45`,
+   the true remaining OS I §4.5 source theorem in this packet:
+
+   ```lean
+   theorem BHW.os45FlatCommonChart_commonBoundaryDifference_integral_zero_of_OSI45
+       [NeZero d] (hd : 2 <= d)
+       (OS : OsterwalderSchraderAxioms d)
+       (lgc : OSLinearGrowthCondition d OS)
+       {n : Nat} {i : Fin n} {hi : i.val + 1 < n}
+       {P : BHW.OS45Figure24CanonicalSourcePatchData
+         (d := d) hd n i hi}
+       (φ : SchwartzMap (BHW.OS45FlatCommonChartReal d n) ℂ)
+       (hφ_compact :
+         HasCompactSupport
+           (φ : BHW.OS45FlatCommonChartReal d n -> ℂ))
+       (hφE :
+         tsupport (φ : BHW.OS45FlatCommonChartReal d n -> ℂ) ⊆
+           BHW.os45FlatCommonChartEdgeSet d n P
+             (1 : Equiv.Perm (Fin n))) :
+       ∫ x : BHW.OS45FlatCommonChartReal d n,
+         (BHW.os45FlatCommonChartBranch d n OS lgc
+             (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+             (fun a => (x a : ℂ)) -
+           BHW.os45FlatCommonChartBranch d n OS lgc
+             (1 : Equiv.Perm (Fin n))
+             (fun a => (x a : ℂ))) * φ x = 0
+   ```
+
+   Its implementation must not call the existing direct-coordinate
+   `BHW.AdjacentOSEOWDifferenceEnvelope`: that packet transports a Wick trace
+   to `BHW.realEmbed x`, while this theorem is about the horizontal
+   Figure-2-4 common edge
+   `BHW.realEmbed (BHW.os45CommonEdgeRealPoint (d := d) (n := n) 1 x)`.
+   The proof instead uses the OS I §4.5 Figure-2-4 horizontal germ itself.
+   The source-side OS I theorem consumed by the flat statement is the following
+   exact distributional pairing, not a pointwise edge equality:
+
+   ```lean
+   theorem BHW.os45CommonEdge_sourceBranchDifference_pairing_zero_of_OSI45
+       [NeZero d] (hd : 2 <= d)
+       (OS : OsterwalderSchraderAxioms d)
+       (lgc : OSLinearGrowthCondition d OS)
+       {n : Nat} {i : Fin n} {hi : i.val + 1 < n}
+       {P : BHW.OS45Figure24CanonicalSourcePatchData
+         (d := d) hd n i hi}
+       (ψ : SchwartzNPoint d n)
+       (hψ_compact : HasCompactSupport (ψ : NPointDomain d n -> ℂ))
+       (hψV : tsupport (ψ : NPointDomain d n -> ℂ) ⊆ P.V)
+       (hψ_zero : VanishesToInfiniteOrderOnCoincidence ψ) :
+       ∫ u : NPointDomain d n,
+         (BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+             (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+             (BHW.realEmbed
+               (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                 (1 : Equiv.Perm (Fin n)) u)) -
+           BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+             (1 : Equiv.Perm (Fin n))
+             (BHW.realEmbed
+               (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                 (1 : Equiv.Perm (Fin n)) u))) * ψ u = 0
+   ```
+
+   Proof transcript for this source theorem: localize `ψ` by a finite
+   Schwartz partition subordinate to precompact subsets of `P.V`; on each
+   piece use `P.figPath_closure`, `P.closure_pulled_id`, and
+   `P.closure_pulled_tau` to obtain the OS I Figure-2-4 horizontal germ
+   carrying both pulled branches; identify the Wick-anchor values by
+   `BHW.os45QuarterTurn_perm_wickRotate_eq_common_plus`,
+   `BHW.os45QuarterTurn_perm_realEmbed_eq_common_minus`,
+   `BHW.os45CommonEdgeRealPoint_adjacent_swap_eq`, and
+   `bvt_euclidean_restriction`; use exactly one `OS.E3_symmetric` call for the
+   adjacent Wick-anchor test.  Then propagate the anchored distributional
+   equality to the horizontal real common edge by the OS I §4.5
+   edge-of-the-wedge/identity theorem on that local Figure-2-4 germ and sum
+   the partition pieces.  The cutoff is not assumed permutation-invariant.
+
+   The mechanical flat/source layer uses the already checked cutoff-pullback:
+   choose `D := Classical.choice (BHW.exists_os45Figure24SourceCutoffData P)`
+   and set
+   `ψ := D.toSchwartzNPointCLM (1 : Equiv.Perm (Fin n)) φ`.  The checked
+   accessor
+   `D.toSchwartzNPointCLM_hasCompactSupport` gives compact support; the
+   checked accessor `D.toSchwartzNPointCLM_tsupport_subset_V` and `hφE` give
+   `tsupport ψ ⊆ P.V`; `D.toSchwartzNPointCLM_mem_zeroDiagonal` gives the
+   zero-diagonal condition.  The pointwise formulas
+   `D.toSchwartzNPointCLM_apply`,
+   `D.toSchwartzNPointCLM_eq_plain_of_tsupport_subset_edge`,
+   `BHW.os45FlatCommonChartBranch_real_commonEdgeFlatCLE`, and
+   `BHW.os45FlatCommonChart_commonBoundaryDifference_sourceIntegrand_eq` are
+   checked.  The finite-dimensional theorem
+   `BHW.os45CommonEdgeFlatCLE_integral_comp` is now checked: its proof factors
+   the common-edge map into a diagonal time-halving map
+   `BHW.os45CommonEdgeTimeHalfFlatLinearMap`, flattening, and source-label
+   permutation, with determinant `(1 / 2)^n`.  Its specialization
+   `BHW.os45FlatCommonChart_commonBoundaryDifference_integral_eq_sourcePullback`
+   is also checked: its proof proves integrability of the compactly supported
+   flat branch-difference multiplier from
+   `SCV.continuous_mul_of_continuousOn_of_tsupport_subset_open`,
+   `BHW.differentiableOn_os45FlatCommonChartBranch`,
+   `BHW.os45FlatCommonChart_real_mem_omega_id`, and
+   `BHW.os45FlatCommonChart_real_mem_omega_adjacent`; then it applies
+   `BHW.os45CommonEdgeFlatCLE_integral_comp` and rewrites the pulled-back
+   integrand by
+   `BHW.os45FlatCommonChart_commonBoundaryDifference_sourceIntegrand_eq`.
+   The checked theorem rewrites the displayed flat integral as
+   `BHW.os45CommonEdgeFlatJacobianAbs n` times the source integral in
+   `BHW.os45CommonEdge_sourceBranchDifference_pairing_zero_of_OSI45`.  The
+   source theorem then makes this source integral zero.  This source theorem
+   is the only unimplemented OS-I mathematical content in the common-boundary
+   CLM packet;
+5. prove
+   `BHW.os45FlatCommonChart_adjacent_represents_ordinaryEdgeCLM_of_OSI45`
+   mechanically from step 4.  Use the same open neighborhood
+   `U := BHW.os45CommonEdgeFlatCLE d n 1 '' P.V` as the ordinary
+   representation.  Continuity is from
+   `BHW.differentiableOn_os45FlatCommonChartBranch`.  For a test supported
+   in `U`, rewrite
+   `BHW.os45FlatCommonChart_ordinaryEdgeCLM_apply`, use `D.χ = 1` on `P.V`
+   on the support of the test, and apply
+   `BHW.os45FlatCommonChart_commonBoundaryDifference_integral_zero_of_OSI45`
+   to replace the ordinary integral by the adjacent integral;
+6. define
+   `BHW.os45FlatCommonChart_commonBoundaryCLM_of_OSI45` by
+   `T := BHW.os45FlatCommonChart_ordinaryEdgeCLM hd OS lgc P`, with the
+   ordinary local representation from step 3 and the adjacent local
+   representation from step 5.
+
+The cutoff is the standard smooth compact-support cutoff equal to one on
+`closure P.V` and supported in `P.Ufig`, using `P.closureV_compact`,
+`P.Ufig_open`, `P.closureV_sub_Ufig`,
+`exists_open_between_and_isCompact_closure`, and
 `exists_smooth_one_nhds_of_subset_interior`; temperate growth is supplied by
-the existing Mathlib lemma `HasCompactSupport.hasTemperateGrowth`.
+`HasCompactSupport.hasTemperateGrowth`, and the packet exposes the checked
+compact-support accessor `D.χ_compact`.  The global continuity of the flat
+multiplier is
+supplied by the pure topological cutoff lemma
+`SCV.continuous_mul_of_continuousOn_of_tsupport_subset_open`: at points inside
+the Figure-2-4 branch domain use branch continuity, and at points outside it
+use `tsupport χ ⊆ U` to make the product locally zero.
 
 The negative common-chart branch is
 labelled by `P.τ.symm * (1 : Equiv.Perm (Fin n))`, not by `P.τ`; only after
@@ -1120,24 +1284,25 @@ not the ordinary forward tube.  Therefore the local EOW seed cannot be proved
 by evaluating both side branches at zero height and applying
 `BHW.extendF_eq_on_forwardTube` plus `bvt_F_perm`.
 
-The active local EOW boundary inputs are the genuine OS I §4.5 distributional
-boundary-value theorems:
+The active local EOW boundary input is the genuine OS I §4.5 common-boundary
+CLM theorem:
 
 ```lean
-BHW.os45_BHWJost_flatCommonChart_distributionalBoundaryValue_plus_of_OSI45
-BHW.os45_BHWJost_flatCommonChart_distributionalBoundaryValue_minus_of_OSI45
+BHW.os45FlatCommonChart_commonBoundaryCLM_of_OSI45
 ```
 
-Both target the same CLM
-`BHW.os45_BHWJost_flatCommonChart_schwingerCLM hd OS lgc P 1`.  Their proof
-content is OS I equations `(4.1)`, `(4.12)`, `(4.14)` plus `OS.E3`:
-the plus side is the ordinary boundary value of the Fourier-Laplace/Wick
-branch against the cutoff-pulled test, and the minus side is first rewritten
-to the adjacent cutoff-pulled test and then identified with the ordinary CLM
-by Euclidean permutation symmetry.  These theorems are distributional
-boundary-value statements against compactly supported flat-chart Schwartz
-tests; they are not pointwise branch equalities, and they are not downstream
-`bvt_W` locality.
+It returns one `T` together with local `SCV.RepresentsDistributionOn` fields
+for the ordinary branch and the adjacent branch.  The checked generic reducers
+`BHW.os45_BHWJost_flatCommonChart_distributionalBoundaryValue_plus_of_zeroHeight_pairingCLM`
+and
+`BHW.os45_BHWJost_flatCommonChart_distributionalBoundaryValue_minus_of_zeroHeight_pairingCLM`
+then target that same `T`.  The proof content is OS I equations `(4.1)`,
+`(4.12)`, `(4.14)` plus `OS.E3`: the plus side is the ordinary boundary germ,
+and the minus side is first rewritten to the adjacent cutoff-pulled test and
+then matched to the ordinary germ by Euclidean permutation symmetry.  These are
+distributional boundary-value statements against compactly supported flat-chart
+Schwartz tests; they are not pointwise branch equalities, they do not identify
+`T` with the Schwinger CLM, and they are not downstream `bvt_W` locality.
 
 After those inputs are named, destruct the pure theorem output into `B`,
 `hB_holo`, `hB_ord`, and `hB_adj` and return the
@@ -11598,16 +11763,18 @@ common-boundary envelope, or any theorem that already assumes locality.
    3. Flatten the source product around `zE` by the finite-dimensional complex
       linear equivalence already used by the checked Figure-2-4 local EOW
       data.  The positive side is the ordinary extended-tube side; the
-      negative side is the adjacent permuted-tube side.  The boundary value is
-      the chart-pulled Schwinger CLM
-      `BHW.os45_BHWJost_flatCommonChart_schwingerCLM hd OS lgc P 1`.  The
-      plus and minus boundary limits are the distributional theorems
-      `BHW.os45_BHWJost_flatCommonChart_distributionalBoundaryValue_plus_of_OSI45`
+      negative side is the adjacent permuted-tube side.  Obtain the common
+      boundary CLM `T` and its two local representation fields from
+      `BHW.os45FlatCommonChart_commonBoundaryCLM_of_OSI45`.  The generic
+      finite-partition reducer then gives both zero-height compact pairings
+      into `T`, and the checked CLM-valued boundary reducers
+      `BHW.os45_BHWJost_flatCommonChart_distributionalBoundaryValue_plus_of_zeroHeight_pairingCLM`
       and
-      `BHW.os45_BHWJost_flatCommonChart_distributionalBoundaryValue_minus_of_OSI45`,
-      with equality supplied by OS I `(4.1)`, `(4.12)`, `(4.14)` and
-      `OS.E3`.  Do not replace this with the rejected zero-height pointwise
-      trace route.
+      `BHW.os45_BHWJost_flatCommonChart_distributionalBoundaryValue_minus_of_zeroHeight_pairingCLM`
+      give the plus and minus boundary limits.  The equality is supplied by OS
+      I `(4.1)`, `(4.12)`, `(4.14)` and `OS.E3` through the common-boundary
+      CLM construction; do not replace this with the rejected zero-height
+      pointwise trace route and do not identify `T` with the Schwinger CLM.
    4. Call
       `SCV.chartDistributionalEOW_local_envelope` exactly at this real Jost
       edge.  The returned envelope function `F0` is holomorphic on the local
@@ -18710,30 +18877,53 @@ This doc is complete only when:
 
 Completion status, 2026-05-12 EOW-boundary correction: the pure neutral
 theorem `BHW.localSPrime_twoSectorBranch_of_EOW_BHW` has been explicitly
-authorized and introduced.  The side-test CLM construction is now checked in
-Lean via
-`BHW.OS45Figure24SourceCutoffData.toShiftedSchwartzNPointCLM`,
-`BHW.OS45Figure24SourceCutoffData.toShiftedZeroDiagonalCLM`,
-`BHW.OS45Figure24SourceCutoffData.toSideZeroDiagonalCLM`, and
-`BHW.os45FlatCommonChartSideTestCLM`; the signed shift parameter is real
-(`sgn : ℝ`), while the complex `I` appears only in the branch-side approach to
-the tube.  The compact-direction convergence part is also checked for
-continuous zero-diagonal functionals:
-`BHW.OS45Figure24SourceCutoffData.apply_toSideZeroDiagonalCLM_tendstoUniformlyOn_zero`.
-The remaining Stage-A Lean focus is therefore the proof-bearing OS-specific
-seed packet: rewrite the plus and minus side integrals to Schwinger pairings by
-the OS I `(4.12)`/Wick restriction calculation, using `OS.E3` inside the minus
-side integral rewrite.  The minus branch label is `P.τ.symm * 1`, but the
-cutoff-pulled source-test label remains the same common-edge label `1`; do not
-claim `D.toZeroDiagonalCLM P.τ φ` is a permutation of
-`D.toZeroDiagonalCLM 1 φ`, since the cutoff is not permutation-invariant.  The
-side-integral rewrite first needs the compact-in-open support shrink ensuring
-the shifted flat tests remain in the Figure-2-4 edge `P.V`; cutoff support
-alone only gives `P.Ufig` and is not enough for the ordered-sector E3 theorem.
-Then call `SCV.chartDistributionalEOW_local_envelope` and the identity theorem
-to obtain `BHW.os45_BHWJost_localSPrimeEOWSeed_of_OSI45`.  Further
-theorem-surface changes before Lean implementation remain route changes and
-must be documented before code is written.
+authorized and introduced.  The side-test CLM construction is checked in Lean,
+but it is now a normalization check rather than the proof route for the
+one-sided boundary values.  The direction-uniform convergence step has been
+reduced to the pure compact-support lemma
+`SCV.tendstoUniformlyOn_sideIntegral_of_zeroHeight_pairing`, and the OS45
+CLM-valued plus/minus reducers
+`BHW.os45_BHWJost_flatCommonChart_distributionalBoundaryValue_plus_of_zeroHeight_pairingCLM`
+and
+`BHW.os45_BHWJost_flatCommonChart_distributionalBoundaryValue_minus_of_zeroHeight_pairingCLM`
+are checked.  The older Schwinger-specialized reducers remain conditional
+specializations only; they are not the active theorem-2 route.
+
+Therefore the remaining Stage-A Lean focus is exactly the OS-specific
+common-boundary distribution:
+`BHW.os45FlatCommonChart_commonBoundaryCLM_of_OSI45`.  It must produce a single
+CLM `T : SchwartzMap (BHW.OS45FlatCommonChartReal d n) ℂ →L[ℂ] ℂ` and local
+`SCV.RepresentsDistributionOn` neighborhoods for both the ordinary branch and
+the adjacent branch on the same real common-chart edge.  Its implementation
+must follow the now-explicit four-step split:
+`SCV.compactSupport_integralMultiplierCLM_fin`,
+`BHW.os45FlatCommonChart_ordinaryEdgeCLM`,
+`BHW.os45FlatCommonChart_ordinaryEdgeCLM_represents`, and
+`BHW.os45FlatCommonChart_adjacent_represents_ordinaryEdgeCLM_of_OSI45`.
+The first three are now checked in Lean; the adjacent representation is the
+remaining OS-I §4.5 analytic source step in this packet.
+The direct OS I §4.5 content is equations `(4.1)`, `(4.12)`, and `(4.14)`, the
+Figure-2-4 horizontal common-boundary germ, Wick-anchor normalization, and
+exactly one `OS.E3_symmetric` call in the adjacent compatibility.  The common
+CLM `T` is the ordinary edge CLM from this split; it is not claimed to be
+`BHW.os45_BHWJost_flatCommonChart_schwingerCLM hd OS lgc P 1`; the Schwinger
+functional only normalizes the Wick anchor and cannot be used to assert
+fixed-test constancy along the horizontal path.  The minus branch label is
+`P.τ.symm * 1`, but the cutoff-pulled source-test label remains the same
+common-edge label `1`; do not claim `D.toZeroDiagonalCLM P.τ φ` is a
+permutation of `D.toZeroDiagonalCLM 1 φ`, since the cutoff is not
+permutation-invariant.
+
+After `BHW.os45FlatCommonChart_commonBoundaryCLM_of_OSI45` supplies `T` and
+the two local representation fields, the checked generic finite-partition
+reducer `SCV.distribution_representation_of_local_representations_for_test`
+gives the plus/minus zero-height compact pairings into that same `T`; the
+checked `_of_zeroHeight_pairingCLM` reducers then feed
+`SCV.chartDistributionalEOW_local_envelope`, then
+`BHW.localSPrime_twoSectorBranch_of_EOW_BHW`, to obtain
+`BHW.os45_BHWJost_localSPrimeEOWSeed_of_OSI45`.  Further theorem-surface
+changes before Lean implementation remain route changes and must be documented
+before code is written.
 
 ## 4.3. `theorem4_cluster_blueprint.md`
 
