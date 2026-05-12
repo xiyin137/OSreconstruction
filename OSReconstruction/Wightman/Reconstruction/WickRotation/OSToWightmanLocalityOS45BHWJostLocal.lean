@@ -643,6 +643,31 @@ noncomputable def OS45Figure24SourceCutoffData.toShiftedSchwartzNPointCLM
       SchwartzNPoint d n :=
   (D.toSchwartzNPointCLM ρperm).comp (SCV.translateSchwartzCLM a)
 
+/-- Shifted cutoff-pulled common-chart tests are supported inside the
+Figure-2-4 Jost neighborhood controlled by the fixed source cutoff. -/
+theorem OS45Figure24SourceCutoffData.toShiftedSchwartzNPointCLM_tsupport_subset_Ufig
+    [NeZero d] {hd : 2 ≤ d} {n : ℕ}
+    {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (D : BHW.OS45Figure24SourceCutoffData P)
+    (ρperm : Equiv.Perm (Fin n))
+    (a : BHW.OS45FlatCommonChartReal d n)
+    (φ : SchwartzMap (BHW.OS45FlatCommonChartReal d n) ℂ) :
+    tsupport (D.toShiftedSchwartzNPointCLM ρperm a φ :
+      NPointDomain d n → ℂ) ⊆ P.Ufig := by
+  have hsupport :=
+    SchwartzMap.tsupport_smulLeftCLM_subset D.χ
+      ((SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
+        (BHW.os45CommonEdgeFlatCLE d n ρperm))
+        (SCV.translateSchwartzCLM a φ))
+  exact
+    (by
+      simpa [BHW.OS45Figure24SourceCutoffData.toShiftedSchwartzNPointCLM,
+        BHW.OS45Figure24SourceCutoffData.toSchwartzNPointCLM,
+        ContinuousLinearMap.comp_apply] using
+        hsupport.trans (Set.inter_subset_right.trans D.tsupport_subset_Ufig))
+
 /-- Shifted cutoff-pulled common-chart tests still lie in the zero-diagonal OS
 test space; the fixed source cutoff keeps their support inside the Figure-2-4
 Jost neighborhood. -/
@@ -657,10 +682,11 @@ theorem OS45Figure24SourceCutoffData.toShiftedSchwartzNPointCLM_mem_zeroDiagonal
     (φ : SchwartzMap (BHW.OS45FlatCommonChartReal d n) ℂ) :
     VanishesToInfiniteOrderOnCoincidence
       (D.toShiftedSchwartzNPointCLM ρperm a φ) := by
-  simpa [BHW.OS45Figure24SourceCutoffData.toShiftedSchwartzNPointCLM,
-    ContinuousLinearMap.comp_apply, SCV.translateSchwartzCLM_apply] using
-    D.toSchwartzNPointCLM_mem_zeroDiagonal ρperm
-      (SCV.translateSchwartz a φ)
+  exact
+    BHW.zeroDiagonal_of_tsupport_subset_jostOverlap
+      (V := P.Ufig) P.Ufig_jost
+      (D.toShiftedSchwartzNPointCLM ρperm a φ)
+      (D.toShiftedSchwartzNPointCLM_tsupport_subset_Ufig ρperm a φ)
 
 /-- The shifted cutoff-pulled common-chart tests as a continuous linear map
 into the zero-diagonal OS test space. -/

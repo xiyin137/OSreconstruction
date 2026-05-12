@@ -77944,6 +77944,7 @@ Implementation transcript for
      The exact checked side-test maps are:
      ```lean
      noncomputable def BHW.OS45Figure24SourceCutoffData.toShiftedSchwartzNPointCLM
+     theorem BHW.OS45Figure24SourceCutoffData.toShiftedSchwartzNPointCLM_tsupport_subset_Ufig
      theorem BHW.OS45Figure24SourceCutoffData.toShiftedSchwartzNPointCLM_mem_zeroDiagonal
      noncomputable def BHW.OS45Figure24SourceCutoffData.toShiftedZeroDiagonalCLM
      noncomputable def BHW.OS45Figure24SourceCutoffData.toSideZeroDiagonalCLM
