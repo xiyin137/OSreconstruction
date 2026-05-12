@@ -78583,7 +78583,18 @@ Implementation transcript for
          Proof of this local theorem after the representation lemma:
 
          ```lean
-         let Ghoriz : NPointDomain d n -> ℂ := ...
+         let Ghoriz : NPointDomain d n -> ℂ :=
+           fun u =>
+             BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                 (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+                 (BHW.realEmbed
+                   (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                     (1 : Equiv.Perm (Fin n)) u)) -
+               BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                 (1 : Equiv.Perm (Fin n))
+                 (BHW.realEmbed
+                   (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                     (1 : Equiv.Perm (Fin n)) u))
          have hlocal :
              ∀ u ∈ tsupport (ψ : NPointDomain d n -> ℂ),
                ∃ U : Set (NPointDomain d n),
@@ -78684,20 +78695,193 @@ Implementation transcript for
          reindexed zero-diagonal Schwartz test
          `BHW.permuteZeroDiagonalSchwartz`; it is not a claim that a cutoff
          commutes with `P.τ`.
+         Package this mechanical conversion once as:
+
+         ```lean
+         theorem BHW.os45CommonEdge_wickDifference_integral_zero_of_E3
+             [NeZero d] (hd : 2 <= d)
+             (OS : OsterwalderSchraderAxioms d)
+             (lgc : OSLinearGrowthCondition d OS)
+             {n : Nat} {i : Fin n} {hi : i.val + 1 < n}
+             {P : BHW.OS45Figure24CanonicalSourcePatchData
+               (d := d) hd n i hi}
+             (φ : SchwartzNPoint d n)
+             (hφ_compact :
+               HasCompactSupport (φ : NPointDomain d n -> ℂ))
+             (hφP :
+               tsupport (φ : NPointDomain d n -> ℂ) ⊆ P.V) :
+             ∫ u : NPointDomain d n,
+               (bvt_F OS lgc n
+                   (fun k => wickRotatePoint (u (P.τ k))) -
+                 bvt_F OS lgc n
+                   (fun k => wickRotatePoint (u k))) * φ u = 0
+         ```
+
+         Proof: use
+         `BHW.integrable_wickEdge_bvt_F_mul_schwartz_of_orderedSector` and
+         `BHW.integrable_bvt_F_wickRotate_mul_schwartz_of_orderedSector` for
+         the two summands, rewrite the integral of the difference by
+         `MeasureTheory.integral_sub`, and apply
+         `BHW.os45_adjacent_euclideanEdge_pairing_eq_on_timeSector` with
+         `V := P.V`; normalize the selected adjacent transposition by
+         `P.τ_eq`.
       4. Apply the OS I §4.5 edge-of-the-wedge/identity theorem on this local
          Figure-2-4 germ to transport that **branch-difference distribution**
          from the Wick anchor to the horizontal common real edge.  In Lean this
          is the representation field of
          `BHW.os45CommonEdge_localHorizontalDifference_representsZero_of_OSI45`.
-         For an arbitrary test `φ` with `SupportsInOpen φ U`, the proof
-         constructs the local Figure-2-4 EOW chart from the ordinary endpoint
-         path `Γ`, the oriented adjacent lift `Δ`, and the two checked endpoint
-         conversion lemmas.  The branch-difference holomorphic function has
-         zero distributional boundary value on the Wick side by item 3; the
-         distributional edge-of-the-wedge theorem plus the SCV identity theorem
-         make the same zero distribution represent the horizontal edge on
-         `U`.  The result is exactly
-         `SCV.RepresentsDistributionOn 0 Ghoriz U`.
+         The proof uses the checked identity-theorem API
+         `eqOn_openConnected_of_distributional_wickSection_eq_on_realOpen`,
+         not a new black-box continuation statement.  Inside the proof, obtain
+         the local Figure-2-4 germ fields by:
+
+         ```lean
+         obtain ⟨Ucx, Hdiff, hUcx_open, hUcx_connected, hwick_mem,
+             hcommon_mem, hHdiff_holo, hwick_trace, hcommon_trace⟩ :=
+           BHW.os45CommonEdge_localFigure24DifferenceGerm_of_OSI45
+             (d := d) hd OS lgc hP_oriented U hU_open hU_connected
+             (fun x hx => hW_closure (subset_closure (hUclosure hx)))
+         ```
+
+         The local Figure-2-4 germ fields are supplied by equations `(4.1)`,
+         `(4.12)`, and `(4.14)`: `Ucx` is the connected local EOW/BHW chart
+         containing the Wick section and the horizontal common-edge section,
+         `Hdiff` is the adjacent-minus-ordinary branch difference in that
+         chart, `hwick_trace` is the Wick-side formula, and
+         `hcommon_trace` is the horizontal endpoint formula.  The endpoint
+         formula uses
+         `BHW.os45Figure24Path_endpoint_extendF_eq_ordinaryPulledRealBranch`
+         and
+         `BHW.os45Figure24OrientedPath_endpoint_extendF_eq_adjacentPulledRealBranch`.
+         To keep this producer honest in Lean, implement those local `let`
+         fields through the following private theorem before proving the
+         representation theorem:
+
+         ```lean
+         theorem BHW.os45CommonEdge_localFigure24DifferenceGerm_of_OSI45
+             [NeZero d] (hd : 2 <= d)
+             (OS : OsterwalderSchraderAxioms d)
+             (lgc : OSLinearGrowthCondition d OS)
+             {n : Nat} {i : Fin n} {hi : i.val + 1 < n}
+             {P : BHW.OS45Figure24CanonicalSourcePatchData
+               (d := d) hd n i hi}
+             (hP_oriented :
+               ∀ x, x ∈ closure P.V ->
+                 BHW.OS45Figure24OrientedPathField (d := d) n i hi x)
+             (U : Set (NPointDomain d n))
+             (hU_open : IsOpen U)
+             (hU_connected : IsConnected U)
+             (hU_closure : closure U ⊆ P.V) :
+             ∃ (Ucx : Set (Fin n -> Fin (d + 1) -> ℂ))
+               (Hdiff : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ),
+               IsOpen Ucx ∧ IsConnected Ucx ∧
+               (∀ u ∈ U, (fun k => wickRotatePoint (u k)) ∈ Ucx) ∧
+               (∀ u ∈ U,
+                 (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+                   (BHW.realEmbed
+                     (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                       (1 : Equiv.Perm (Fin n)) u)) ∈ Ucx) ∧
+               DifferentiableOn ℂ Hdiff Ucx ∧
+               (∀ u ∈ U,
+                 Hdiff (fun k => wickRotatePoint (u k)) =
+                   bvt_F OS lgc n
+                     (fun k => wickRotatePoint (u (P.τ k))) -
+                     bvt_F OS lgc n
+                       (fun k => wickRotatePoint (u k))) ∧
+               (∀ u ∈ U,
+                 Hdiff
+                   ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+                     (BHW.realEmbed
+                       (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                         (1 : Equiv.Perm (Fin n)) u))) =
+                   BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                       (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+                       (BHW.realEmbed
+                         (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                           (1 : Equiv.Perm (Fin n)) u)) -
+                     BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                       (1 : Equiv.Perm (Fin n))
+                       (BHW.realEmbed
+                         (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                           (1 : Equiv.Perm (Fin n)) u)))
+         ```
+
+         This theorem is the local OS I §4.5 Figure-2-4 germ producer.  It is
+         not an axiom and not a reusable public wrapper: its proof body is the
+         direct transcription of the paper's local BHW/Jost construction on
+         the chosen source neighborhood `U`.  It may use the checked endpoint
+         conversion lemmas and BHW branch law, but it may not use source
+         varieties, normal/Riemann extension, PET single-valuedness, or final
+         locality.
+
+         Then call:
+
+         ```lean
+         have hHdiff_zero : Set.EqOn Hdiff (fun _ => 0) Ucx := by
+           refine
+             eqOn_openConnected_of_distributional_wickSection_eq_on_realOpen
+               (d := d) (n := n)
+               Ucx U hUcx_open hUcx_connected hU_open ⟨u0, hu0⟩
+               hwick_mem Hdiff (fun _ => 0) hHdiff_holo
+               (differentiableOn_const (c := (0 : ℂ))) ?_
+           intro φ hφ_compact hφ_suppU
+           have hwick_zero :
+               ∫ u : NPointDomain d n,
+                   (bvt_F OS lgc n
+                       (fun k => wickRotatePoint (u (P.τ k))) -
+                     bvt_F OS lgc n
+                       (fun k => wickRotatePoint (u k))) * φ u = 0 := by
+             have hφ_suppP :
+                 tsupport (φ : NPointDomain d n -> ℂ) ⊆ P.V := by
+               intro u hu
+               exact hU_closure (subset_closure (hφ_suppU hu))
+             exact
+               BHW.os45CommonEdge_wickDifference_integral_zero_of_E3
+                 (d := d) hd OS lgc (P := P) φ hφ_compact hφ_suppP
+           calc
+             ∫ u : NPointDomain d n,
+                 Hdiff (fun k => wickRotatePoint (u k)) * φ u
+                 =
+               ∫ u : NPointDomain d n,
+                 (bvt_F OS lgc n
+                     (fun k => wickRotatePoint (u (P.τ k))) -
+                   bvt_F OS lgc n
+                     (fun k => wickRotatePoint (u k))) * φ u := by
+                   apply MeasureTheory.integral_congr_ae
+                   filter_upwards with u
+                   by_cases hu : u ∈ U
+                   · simp [hwick_trace u hu]
+                   · have hφu : φ u = 0 := by
+                       exact image_eq_zero_of_notMem_tsupport
+                         (fun hsupp => hu (hφ_suppU hsupp))
+                     simp [hφu]
+             _ = 0 := hwick_zero
+             _ = ∫ u : NPointDomain d n, (0 : ℂ) * φ u := by simp
+         ```
+
+         Finally derive the representation field:
+
+         ```lean
+         intro φ hφU
+         have hpoint :
+             ∀ u ∈ U, Ghoriz u = 0 := by
+           intro u hu
+           have h0 := hHdiff_zero (hcommon_mem u hu)
+           simpa [hcommon_trace u hu] using h0
+         calc
+           (0 : SchwartzMap (NPointDomain d n) ℂ ->L[ℂ] ℂ) φ = 0 := by simp
+           _ = ∫ u : NPointDomain d n, Ghoriz u * φ u := by
+             symm
+             apply integral_eq_of_tsupport_subset_of_pointwise_on
+               (d := d) (n := n) U Ghoriz (fun _ => 0) φ hφU.2
+             intro u hu
+             simp [hpoint u hu]
+         ```
+
+         This result is exactly
+         `SCV.RepresentsDistributionOn 0 Ghoriz U`.  No pointwise equality of
+         finite-height side values is asserted; the identity theorem is applied
+         only after the Wick-side compact-test equality has been established.
       5. The public source theorem is then the generic local-representation
          assembly displayed in item 1.  No source-oriented variety,
          normal/Riemann extension, PET single-valuedness, final locality, or

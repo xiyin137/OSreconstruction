@@ -1295,7 +1295,18 @@ not record the determinant/proper-component data.
    The proof of the localized theorem is then:
 
    ```lean
-   let Ghoriz : NPointDomain d n -> ℂ := ...
+   let Ghoriz : NPointDomain d n -> ℂ :=
+     fun u =>
+       BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+           (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+           (BHW.realEmbed
+             (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+               (1 : Equiv.Perm (Fin n)) u)) -
+         BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+           (1 : Equiv.Perm (Fin n))
+           (BHW.realEmbed
+             (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+               (1 : Equiv.Perm (Fin n)) u))
    have hlocal :
        ∀ u ∈ tsupport (ψ : NPointDomain d n -> ℂ),
          ∃ U : Set (NPointDomain d n),
@@ -1358,10 +1369,143 @@ not record the determinant/proper-component data.
    `V := P.V`, `ρ := 1`, `hV_jost := P.V_jost`, `P.V_ordered`, and
    `P.V_swap_ordered`.  This theorem is the only `OS.E3_symmetric` call; it
    uses `BHW.permuteZeroDiagonalSchwartz`, not cutoff permutation-invariance.
+   First package the resulting difference-integral form as the mechanical
+   helper:
+
+   ```lean
+   theorem BHW.os45CommonEdge_wickDifference_integral_zero_of_E3
+       [NeZero d] (hd : 2 <= d)
+       (OS : OsterwalderSchraderAxioms d)
+       (lgc : OSLinearGrowthCondition d OS)
+       {n : Nat} {i : Fin n} {hi : i.val + 1 < n}
+       {P : BHW.OS45Figure24CanonicalSourcePatchData
+         (d := d) hd n i hi}
+       (φ : SchwartzNPoint d n)
+       (hφ_compact : HasCompactSupport (φ : NPointDomain d n -> ℂ))
+       (hφP : tsupport (φ : NPointDomain d n -> ℂ) ⊆ P.V) :
+       ∫ u : NPointDomain d n,
+         (bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k))) -
+           bvt_F OS lgc n (fun k => wickRotatePoint (u k))) * φ u = 0
+   ```
+
+   Its proof is only integral algebra: integrability is supplied by
+   `BHW.integrable_wickEdge_bvt_F_mul_schwartz_of_orderedSector` and
+   `BHW.integrable_bvt_F_wickRotate_mul_schwartz_of_orderedSector`;
+   `MeasureTheory.integral_sub` rewrites the integral of the difference; and
+   `BHW.os45_adjacent_euclideanEdge_pairing_eq_on_timeSector`, normalized by
+   `P.τ_eq`, makes the two integrals equal.
+
    The OS I §4.5 edge-of-the-wedge/identity theorem then transports that
    zero branch-difference distribution from the Wick anchor to the horizontal
-   common real edge, giving the displayed
-   `SCV.RepresentsDistributionOn 0 Ghoriz U` field.
+   common real edge by the checked API
+   `eqOn_openConnected_of_distributional_wickSection_eq_on_realOpen`.
+   Inside the proof, obtain the local Figure-2-4 germ fields from the private
+   theorem
+   `BHW.os45CommonEdge_localFigure24DifferenceGerm_of_OSI45`:
+
+   ```lean
+   theorem BHW.os45CommonEdge_localFigure24DifferenceGerm_of_OSI45
+       [NeZero d] (hd : 2 <= d)
+       (OS : OsterwalderSchraderAxioms d)
+       (lgc : OSLinearGrowthCondition d OS)
+       {n : Nat} {i : Fin n} {hi : i.val + 1 < n}
+       {P : BHW.OS45Figure24CanonicalSourcePatchData
+         (d := d) hd n i hi}
+       (hP_oriented :
+         ∀ x, x ∈ closure P.V ->
+           BHW.OS45Figure24OrientedPathField (d := d) n i hi x)
+       (U : Set (NPointDomain d n))
+       (hU_open : IsOpen U)
+       (hU_connected : IsConnected U)
+       (hU_closure : closure U ⊆ P.V) :
+       ∃ (Ucx : Set (Fin n -> Fin (d + 1) -> ℂ))
+         (Hdiff : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ),
+         IsOpen Ucx ∧ IsConnected Ucx ∧
+         (∀ u ∈ U, (fun k => wickRotatePoint (u k)) ∈ Ucx) ∧
+         (∀ u ∈ U,
+           (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+             (BHW.realEmbed
+               (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                 (1 : Equiv.Perm (Fin n)) u)) ∈ Ucx) ∧
+         DifferentiableOn ℂ Hdiff Ucx ∧
+         (∀ u ∈ U,
+           Hdiff (fun k => wickRotatePoint (u k)) =
+             bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k))) -
+               bvt_F OS lgc n (fun k => wickRotatePoint (u k))) ∧
+         (∀ u ∈ U,
+           Hdiff
+             ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+               (BHW.realEmbed
+                 (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                   (1 : Equiv.Perm (Fin n)) u))) =
+             BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                 (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+                 (BHW.realEmbed
+                   (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                     (1 : Equiv.Perm (Fin n)) u)) -
+               BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                 (1 : Equiv.Perm (Fin n))
+                 (BHW.realEmbed
+                   (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                     (1 : Equiv.Perm (Fin n)) u)))
+   ```
+
+   This is the direct OS I §4.5 local germ producer, not an axiom and not a
+   source-variety wrapper.
+
+   The representation proof destructs that theorem as:
+
+   ```lean
+   obtain ⟨Ucx, Hdiff, hUcx_open, hUcx_connected, hwick_mem,
+       hcommon_mem, hHdiff_holo, hwick_trace, hcommon_trace⟩ :=
+     BHW.os45CommonEdge_localFigure24DifferenceGerm_of_OSI45
+       (d := d) hd OS lgc hP_oriented U hU_open hU_connected
+       (fun x hx => hW_closure (subset_closure (hUclosure hx)))
+   ```
+
+   The Lean call is:
+
+   ```lean
+   have hHdiff_zero : Set.EqOn Hdiff (fun _ => 0) Ucx := by
+     refine
+       eqOn_openConnected_of_distributional_wickSection_eq_on_realOpen
+         (d := d) (n := n)
+         Ucx U hUcx_open hUcx_connected hU_open ⟨u0, hu0⟩
+         hwick_mem Hdiff (fun _ => 0) hHdiff_holo
+         (differentiableOn_const (c := (0 : ℂ))) ?_
+     intro φ hφ_compact hφ_suppU
+     have hφ_suppP :
+         tsupport (φ : NPointDomain d n -> ℂ) ⊆ P.V := by
+       intro u hu
+       exact hU_closure (subset_closure (hφ_suppU hu))
+     have hwick_zero :=
+       BHW.os45CommonEdge_wickDifference_integral_zero_of_E3
+         (d := d) hd OS lgc (P := P) φ hφ_compact hφ_suppP
+     calc
+       ∫ u : NPointDomain d n,
+           Hdiff (fun k => wickRotatePoint (u k)) * φ u
+           =
+         ∫ u : NPointDomain d n,
+           (bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k))) -
+             bvt_F OS lgc n (fun k => wickRotatePoint (u k))) * φ u := by
+             apply MeasureTheory.integral_congr_ae
+             filter_upwards with u
+             by_cases hu : u ∈ U
+             · simp [hwick_trace u hu]
+             · have hφu : φ u = 0 :=
+                 image_eq_zero_of_notMem_tsupport
+                   (fun hsupp => hu (hφ_suppU hsupp))
+               simp [hφu]
+       _ = 0 := hwick_zero
+       _ = ∫ u : NPointDomain d n, (0 : ℂ) * φ u := by simp
+   ```
+
+   Then for `φ` with `SupportsInOpen φ U`, pointwise zero on the horizontal
+   section follows from `hHdiff_zero (hcommon_mem u hu)` and `hcommon_trace`;
+   `integral_eq_of_tsupport_subset_of_pointwise_on` rewrites
+   `∫ u, Ghoriz u * φ u` to `0`, which is precisely the
+   `SCV.RepresentsDistributionOn 0 Ghoriz U` field.  No pointwise equality of
+   finite-height side values is asserted.
 
    The mechanical flat/source layer uses the already checked cutoff-pullback:
    choose `D := Classical.choice (BHW.exists_os45Figure24SourceCutoffData P)`
