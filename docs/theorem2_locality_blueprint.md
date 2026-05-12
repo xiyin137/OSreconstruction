@@ -78889,7 +78889,158 @@ Implementation transcript for
                        (BHW.realEmbed
                          (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
                            (1 : Equiv.Perm (Fin n)) u)))
-           ```
+         ```
+
+         Lean-transcription decomposition for the two-branch germ.  The proof
+         is not allowed to call the common-edge distributional-zero theorem
+         being built in this section, and it is not allowed to manufacture a
+         single merged branch by assuming real-edge equality.  It must first
+         produce the two analytic branches with their four trace formulas; the
+         checked reducer then uses the Wick-anchor E3 integral zero to prove
+         the horizontal common-edge distributional zero.
+
+         The implementation must split the theorem into these two private
+         pieces, and only the second piece is currently mechanical.  The first
+         piece is the remaining OS I §4.5 analytic continuation theorem for
+         this source window; it must be proved from the paper's two analytic
+         elements and checked corridor geometry before the local difference
+         producer is implemented.
+
+         ```lean
+         theorem BHW.os45Figure24_twoBranchContinuationChart_of_OSI45
+             [NeZero d] (hd : 2 <= d)
+             (OS : OsterwalderSchraderAxioms d)
+             (lgc : OSLinearGrowthCondition d OS)
+             {n : Nat} {i : Fin n} {hi : i.val + 1 < n}
+             {P : BHW.OS45Figure24CanonicalSourcePatchData
+               (d := d) hd n i hi}
+             (hP_oriented :
+               ∀ x, x ∈ closure P.V ->
+                 BHW.OS45Figure24OrientedPathField (d := d) n i hi x)
+             (U : Set (NPointDomain d n))
+             (hU_open : IsOpen U)
+             (hU_connected : IsConnected U)
+             (u0 : NPointDomain d n) (hu0 : u0 ∈ U)
+             (hU_compact : IsCompact (closure U))
+             (hU_closure : closure U ⊆ P.V) :
+             ∃ (Ucx : Set (Fin n -> Fin (d + 1) -> ℂ))
+               (Hord Hadj : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ),
+               IsOpen Ucx ∧ IsConnected Ucx ∧
+               (∀ u ∈ U, (fun k => wickRotatePoint (u k)) ∈ Ucx) ∧
+               (∀ u ∈ U,
+                 (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+                   (BHW.realEmbed
+                     (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                       (1 : Equiv.Perm (Fin n)) u)) ∈ Ucx) ∧
+               DifferentiableOn ℂ Hord Ucx ∧
+               DifferentiableOn ℂ Hadj Ucx ∧
+               (∀ u ∈ U,
+                 Hord (fun k => wickRotatePoint (u k)) =
+                   bvt_F OS lgc n (fun k => wickRotatePoint (u k))) ∧
+               (∀ u ∈ U,
+                 Hadj (fun k => wickRotatePoint (u k)) =
+                   bvt_F OS lgc n
+                     (fun k => wickRotatePoint (u (P.τ k)))) ∧
+               (∀ u ∈ U,
+                 Hord
+                   ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+                     (BHW.realEmbed
+                       (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                         (1 : Equiv.Perm (Fin n)) u))) =
+                   BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                     (1 : Equiv.Perm (Fin n))
+                     (BHW.realEmbed
+                       (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                         (1 : Equiv.Perm (Fin n)) u))) ∧
+               (∀ u ∈ U,
+                 Hadj
+                   ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+                     (BHW.realEmbed
+                       (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                         (1 : Equiv.Perm (Fin n)) u))) =
+                   BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                     (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+                     (BHW.realEmbed
+                       (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                         (1 : Equiv.Perm (Fin n)) u)))
+         ```
+
+         The chart theorem is the exact OS I §4.5 analytic continuation step.
+         Its proof transcript is binding:
+
+         1. Set
+            `K := closure U` and use `hU_compact`.  The two corridor maps are
+            the checked deterministic maps
+            `Γord p := BHW.os45Figure24IdentityPath (d := d) (n := n) p.1 p.2`
+            and
+            `Γadj p := BHW.os45Figure24AdjacentLift (d := d) (n := n) hd P.τ p.1 p.2`
+            on `K × unitInterval`.  Their joint continuities are exactly
+            `BHW.continuous_os45Figure24IdentityPath_joint` and
+            `BHW.continuous_os45Figure24AdjacentLift`.
+
+         2. Tube membership on the compact corridor is not a new analytic
+            assertion.  For `Γord`, use
+            `BHW.os45Figure24IdentityPath_mem_forwardTube` plus
+            `BHW.forwardTube_subset_extendedTube`, with orderedness supplied
+            by `P.closure_ordered (hU_closure hk)`.  For `Γadj`, use the
+            fifth field of `P.figPath_closure x (hU_closure hk)`, which is
+            already the checked statement that the deterministic adjacent lift
+            remains in `BHW.ExtendedTube d n` for every `t`.
+
+         3. The two initial analytic elements are fixed before any path
+            continuation is invoked:
+
+            ```lean
+            Ford0 u := bvt_F OS lgc n (fun k => wickRotatePoint (u k))
+            Fadj0 u := bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k)))
+            ```
+
+            `Ford0` is the ordinary OS I `(4.1)` Fourier-Laplace element on
+            the ordered source sector.  `Fadj0` is the adjacent OS I `(4.12)`
+            element on the selected adjacent ordered sector.  `Fadj0` is not
+            obtained by proving `wick (u ∘ P.τ)` lies in the ordinary forward
+            tube.  The only equality between these two Wick-anchor pairings is
+            the checked distributional one
+            `BHW.os45CommonEdge_wickDifference_integral_zero_of_E3`, used
+            later by the reducer; the chart theorem itself records both trace
+            fields separately.
+
+         4. Apply the local OS-I BHW continuation argument along the compact
+            corridors from step 1.  The output is the displayed
+            `BHW.os45Figure24_twoBranchContinuationChart_of_OSI45`, not an
+            unnamed existence claim.  If Lean needs a helper, its conclusion
+            must spell out exactly the four trace fields displayed above:
+            ordinary Wick, adjacent Wick, ordinary horizontal endpoint, and
+            adjacent horizontal endpoint.  In particular, no proof-doc or Lean
+            theorem may contain a dummy value field, a hidden merged branch, or
+            an unexpanded "there exists a branch with the right values"
+            placeholder.
+
+         5. The already checked endpoint theorems are used only to discharge
+            the endpoint value laws in step 3:
+            `BHW.os45Figure24Path_endpoint_extendF_eq_ordinaryPulledRealBranch`
+            for the ordinary endpoint and
+            `BHW.os45Figure24OrientedPath_endpoint_extendF_eq_adjacentPulledRealBranch`
+            for the adjacent endpoint.  The adjacent Wick normalization at
+            `t = 0` must come from OS I `(4.12)` / the selected adjacent
+            analytic element, not from
+            `BHW.extendF_eq_on_forwardTube`.
+
+         The second private piece is then purely algebraic:
+
+         ```lean
+         theorem BHW.os45CommonEdge_localFigure24DifferenceGerm_of_twoBranch
+             ... :
+             -- same statement as
+             -- `BHW.os45CommonEdge_localFigure24DifferenceGerm_of_OSI45`
+         ```
+
+         Proof: destruct
+         `BHW.os45Figure24_twoBranchContinuationChart_of_OSI45`, set
+         `Hdiff z := Hadj z - Hord z`, use `DifferentiableOn.sub`, and prove
+         the two trace fields by `simp`/`rw` from the four branch trace fields.
+         This algebraic reducer is ready for Lean, but it must not be written
+         until the chart theorem above has a fully proved implementation.
 
          * Rejected shortcut, now removed from the active proof.  Do **not**
            define the adjacent branch by

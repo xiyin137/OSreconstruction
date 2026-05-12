@@ -1484,7 +1484,86 @@ not record the determinant/proper-component data.
    and `Hadj` fields displayed in the blueprint.  After that theorem is
    available, this producer sets `Hdiff z := Hadj z - Hord z`, proves
    holomorphy by `DifferentiableOn.sub`, and obtains the two trace fields by
-   pointwise subtraction.  Until the proof transcript for
+   pointwise subtraction.  The implementation split is therefore:
+
+   ```lean
+   theorem BHW.os45Figure24_twoBranchContinuationChart_of_OSI45
+       [NeZero d] (hd : 2 <= d)
+       (OS : OsterwalderSchraderAxioms d)
+       (lgc : OSLinearGrowthCondition d OS)
+       {n : Nat} {i : Fin n} {hi : i.val + 1 < n}
+       {P : BHW.OS45Figure24CanonicalSourcePatchData
+         (d := d) hd n i hi}
+       (hP_oriented :
+         ∀ x, x ∈ closure P.V ->
+           BHW.OS45Figure24OrientedPathField (d := d) n i hi x)
+       (U : Set (NPointDomain d n))
+       (hU_open : IsOpen U)
+       (hU_connected : IsConnected U)
+       (u0 : NPointDomain d n) (hu0 : u0 ∈ U)
+       (hU_compact : IsCompact (closure U))
+       (hU_closure : closure U ⊆ P.V) :
+       ∃ (Ucx : Set (Fin n -> Fin (d + 1) -> ℂ))
+         (Hord Hadj : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ),
+         IsOpen Ucx ∧ IsConnected Ucx ∧
+         (∀ u ∈ U, (fun k => wickRotatePoint (u k)) ∈ Ucx) ∧
+         (∀ u ∈ U,
+           (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+             (BHW.realEmbed
+               (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                 (1 : Equiv.Perm (Fin n)) u)) ∈ Ucx) ∧
+         DifferentiableOn ℂ Hord Ucx ∧
+         DifferentiableOn ℂ Hadj Ucx ∧
+         (∀ u ∈ U,
+           Hord (fun k => wickRotatePoint (u k)) =
+             bvt_F OS lgc n (fun k => wickRotatePoint (u k))) ∧
+         (∀ u ∈ U,
+           Hadj (fun k => wickRotatePoint (u k)) =
+             bvt_F OS lgc n
+               (fun k => wickRotatePoint (u (P.τ k)))) ∧
+         (∀ u ∈ U,
+           Hord
+             ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+               (BHW.realEmbed
+                 (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                   (1 : Equiv.Perm (Fin n)) u))) =
+             BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+               (1 : Equiv.Perm (Fin n))
+               (BHW.realEmbed
+                 (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                   (1 : Equiv.Perm (Fin n)) u))) ∧
+         (∀ u ∈ U,
+           Hadj
+             ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+               (BHW.realEmbed
+                 (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                   (1 : Equiv.Perm (Fin n)) u))) =
+             BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+               (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+               (BHW.realEmbed
+                 (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                   (1 : Equiv.Perm (Fin n)) u)))
+   ```
+
+   The proof starts with the checked compact corridor maps
+   `BHW.os45Figure24IdentityPath` and `BHW.os45Figure24AdjacentLift`,
+   their joint-continuity theorems, and the tube-membership fields from
+   `P.closure_ordered`, `BHW.os45Figure24IdentityPath_mem_forwardTube`,
+   `BHW.forwardTube_subset_extendedTube`, and the fifth field of
+   `P.figPath_closure`.  The initial analytic elements are exactly
+   `u ↦ bvt_F OS lgc n (wick u)` and
+   `u ↦ bvt_F OS lgc n (wick (u ∘ P.τ))`; the second is the OS I `(4.12)`
+   adjacent analytic element, not a forward-tube normalization of the
+   permuted Wick point.  The endpoint trace fields use only the checked
+   endpoint conversions
+   `BHW.os45Figure24Path_endpoint_extendF_eq_ordinaryPulledRealBranch`
+   and
+   `BHW.os45Figure24OrientedPath_endpoint_extendF_eq_adjacentPulledRealBranch`.
+   A helper theorem may be introduced only if it returns these same four
+   scalar trace fields; a merged branch, dummy value field, or unexpanded
+   existence placeholder is off-route.
+
+   Until the proof transcript for
    `BHW.os45Figure24_localTwoBranchGerm_of_OSI45` is written at Lean
    transcription level, the proof docs are not ready for Lean implementation
    of `BHW.os45CommonEdge_localFigure24DifferenceGerm_of_OSI45`.
