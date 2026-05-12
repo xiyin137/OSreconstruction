@@ -1235,6 +1235,8 @@ not record the determinant/proper-component data.
    On a fixed `W`, use `P.closure_pulled_id` and
    `P.closure_pulled_tau` for the two endpoint branch-domain memberships.
    Use `P.figPath_closure` only for the ordinary extended-tube path `Γ`.
+   The ordinary endpoint conversion is checked as
+   `BHW.os45Figure24Path_endpoint_extendF_eq_ordinaryPulledRealBranch`.
    For the adjacent branch, do **not** claim
    `BHW.permAct P.τ (Γ t) ∈ BHW.ExtendedTube d n`; instead destruct
    `hP_oriented u hu` to get the adjacent lift `Δ`, with

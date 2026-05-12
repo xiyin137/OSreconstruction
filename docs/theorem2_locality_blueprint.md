@@ -78505,7 +78505,9 @@ Implementation transcript for
          `Γu 1 =
            (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
              (BHW.realEmbed (y u))`, which is exactly the endpoint read by
-         `BHW.os45PulledRealBranch ... 1`.
+         `BHW.os45PulledRealBranch ... 1`; this ordinary endpoint conversion
+         is now checked as
+         `BHW.os45Figure24Path_endpoint_extendF_eq_ordinaryPulledRealBranch`.
 
          The adjacent endpoint is **not** obtained by claiming
          `BHW.permAct P.τ (Γu t) ∈ BHW.ExtendedTube d n`.  Instead use the

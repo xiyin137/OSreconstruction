@@ -3536,6 +3536,41 @@ theorem OS45BHWJostHullData.ΩJ_eq_localSPrimeTwoSectorHull
     BHW.os45BHWJostAmbient_eq_initialSector_union
       (d := d) (n := n) P.τ]
 
+/-- The endpoint of the ordinary Figure-2-4 path is exactly the ordinary pulled
+real branch argument at the horizontal common edge. -/
+theorem os45Figure24Path_endpoint_extendF_eq_ordinaryPulledRealBranch
+    [NeZero d] (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {n : ℕ} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    {u : NPointDomain d n} (hu : u ∈ closure P.V) :
+    ∃ Γ : unitInterval → Fin n → Fin (d + 1) → ℂ,
+      Continuous Γ ∧
+      Γ (0 : unitInterval) = (fun k => wickRotatePoint (u k)) ∧
+      Γ (1 : unitInterval) =
+        (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+          (BHW.realEmbed
+            (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+              (1 : Equiv.Perm (Fin n)) u)) ∧
+      (∀ t, Γ t ∈ BHW.ExtendedTube d n) ∧
+      BHW.extendF (bvt_F OS lgc n) (Γ (1 : unitInterval)) =
+        BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+          (1 : Equiv.Perm (Fin n))
+          (BHW.realEmbed
+            (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+              (1 : Equiv.Perm (Fin n)) u)) := by
+  classical
+  let y : NPointDomain d n :=
+    BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+      (1 : Equiv.Perm (Fin n)) u
+  rcases P.figPath_closure u hu with
+    ⟨Γ, hΓ_cont, hΓ_zero, hΓ_one, hΓ_ET, _hΔ_ET, _hgram⟩
+  refine ⟨Γ, hΓ_cont, hΓ_zero, ?_, hΓ_ET, ?_⟩
+  · simpa [y] using hΓ_one
+  · simp [BHW.os45PulledRealBranch, hΓ_one]
+
 /-- The endpoint of the oriented Figure-2-4 adjacent lift represents the same
 `extendF` value as the adjacent pulled real branch at the horizontal common
 edge.  This is the endpoint bookkeeping used inside the OS I §4.5
