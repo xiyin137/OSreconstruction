@@ -78725,6 +78725,10 @@ Implementation transcript for
          `BHW.os45_adjacent_euclideanEdge_pairing_eq_on_timeSector` with
          `V := P.V`; normalize the selected adjacent transposition by
          `P.τ_eq`.
+
+         Lean checkpoint: `BHW.os45CommonEdge_wickDifference_integral_zero_of_E3`
+         is now checked in
+         `OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanLocalityOS45BHWJostLocal.lean`.
       4. Apply the OS I §4.5 edge-of-the-wedge/identity theorem on this local
          Figure-2-4 germ to transport that **branch-difference distribution**
          from the Wick anchor to the horizontal common real edge.  In Lean this

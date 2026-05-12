@@ -3772,6 +3772,68 @@ theorem os45Figure24OrientedPath_endpoint_extendF_eq_adjacentPulledRealBranch
       simp [BHW.os45PulledRealBranch, w, y, hΓ_one]
     exact hbranch.trans hpull.symm
 
+/-- The Wick-anchor branch difference integrates to zero on the canonical
+Figure-2-4 source patch.  This is just the checked Euclidean E3 edge theorem
+rewritten into difference-integral form; the horizontal common-edge transfer is
+the later OS I §4.5 germ step. -/
+theorem os45CommonEdge_wickDifference_integral_zero_of_E3
+    [NeZero d] (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {n : ℕ} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (φ : SchwartzNPoint d n)
+    (hφ_compact : HasCompactSupport (φ : NPointDomain d n → ℂ))
+    (hφP : tsupport (φ : NPointDomain d n → ℂ) ⊆ P.V) :
+    ∫ u : NPointDomain d n,
+      (bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k))) -
+        bvt_F OS lgc n (fun k => wickRotatePoint (u k))) * φ u = 0 := by
+  classical
+  have hint_adj :
+      Integrable
+        (fun u : NPointDomain d n =>
+          bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k))) * φ u) :=
+    BHW.integrable_wickEdge_bvt_F_mul_schwartz_of_orderedSector
+      (d := d) OS lgc n P.V P.V_open P.V_ordered P.τ
+      φ hφ_compact hφP
+  have hint_ord :
+      Integrable
+        (fun u : NPointDomain d n =>
+          bvt_F OS lgc n (fun k => wickRotatePoint (u k)) * φ u) :=
+    BHW.integrable_bvt_F_wickRotate_mul_schwartz_of_orderedSector
+      (d := d) OS lgc n P.V P.V_open P.V_ordered φ hφ_compact hφP
+  have hV_swap_ordered :
+      ∀ x ∈ P.V,
+        (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+          EuclideanOrderedPositiveTimeSector (d := d) (n := n)
+            ((Equiv.swap i ⟨i.val + 1, hi⟩).symm *
+              (1 : Equiv.Perm (Fin n))) := by
+    intro x hx
+    simpa [P.τ_eq] using P.V_swap_ordered x hx
+  have hpair_swap :=
+    BHW.os45_adjacent_euclideanEdge_pairing_eq_on_timeSector
+      (d := d) OS lgc n i hi P.V P.V_jost
+      (1 : Equiv.Perm (Fin n)) P.V_ordered hV_swap_ordered φ hφP
+  have hpair :
+      ∫ u : NPointDomain d n,
+          bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k))) * φ u =
+        ∫ u : NPointDomain d n,
+          bvt_F OS lgc n (fun k => wickRotatePoint (u k)) * φ u := by
+    simpa [P.τ_eq] using hpair_swap
+  calc
+    ∫ u : NPointDomain d n,
+        (bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k))) -
+          bvt_F OS lgc n (fun k => wickRotatePoint (u k))) * φ u
+        =
+      (∫ u : NPointDomain d n,
+          bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k))) * φ u) -
+        ∫ u : NPointDomain d n,
+          bvt_F OS lgc n (fun k => wickRotatePoint (u k)) * φ u := by
+        simpa [sub_mul] using
+          (MeasureTheory.integral_sub hint_adj hint_ord)
+    _ = 0 := sub_eq_zero.mpr hpair
+
 /-- The single local `S'_n` reference branch produced on the checked OS45
 BHW/Jost hull.  The two restriction fields are exactly the ordinary initial
 formula and the selected adjacent initial formula. -/

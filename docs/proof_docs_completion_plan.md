@@ -1394,6 +1394,9 @@ not record the determinant/proper-component data.
    `MeasureTheory.integral_sub` rewrites the integral of the difference; and
    `BHW.os45_adjacent_euclideanEdge_pairing_eq_on_timeSector`, normalized by
    `P.τ_eq`, makes the two integrals equal.
+   **Checked** as
+   `BHW.os45CommonEdge_wickDifference_integral_zero_of_E3` in
+   `OSToWightmanLocalityOS45BHWJostLocal.lean`.
 
    The OS I §4.5 edge-of-the-wedge/identity theorem then transports that
    zero branch-difference distribution from the Wick anchor to the horizontal
