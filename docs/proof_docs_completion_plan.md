@@ -1098,6 +1098,13 @@ actual common-boundary CLM is the remaining OS I §4.5 object
 `T : SchwartzMap (BHW.OS45FlatCommonChartReal d n) ℂ →L[ℂ] ℂ` represented
 locally by both the ordinary and adjacent zero-height branches.  The blueprint
 now fixes its internal construction rather than leaving a prose gluing step:
+the producer must be instantiated from the checked oriented canonical packet,
+or equivalently it must carry
+`hP_oriented : ∀ x ∈ closure P.V,
+  BHW.OS45Figure24OrientedPathField (d := d) n i hi x`.  The pure scalar
+`P.figPath_closure` field is not sufficient by itself for the proper
+complex-Lorentz BHW branch argument, because scalar Gram equality alone does
+not record the determinant/proper-component data.
 
 1. prove the pure compact-support multiplier CLM
    `SCV.compactSupport_integralMultiplierCLM_fin`, using
@@ -1133,6 +1140,9 @@ now fixes its internal construction rather than leaving a prose gluing step:
        {n : Nat} {i : Fin n} {hi : i.val + 1 < n}
        {P : BHW.OS45Figure24CanonicalSourcePatchData
          (d := d) hd n i hi}
+       (hP_oriented :
+         ∀ x, x ∈ closure P.V →
+           BHW.OS45Figure24OrientedPathField (d := d) n i hi x)
        (φ : SchwartzMap (BHW.OS45FlatCommonChartReal d n) ℂ)
        (hφ_compact :
          HasCompactSupport
@@ -1167,6 +1177,9 @@ now fixes its internal construction rather than leaving a prose gluing step:
        {n : Nat} {i : Fin n} {hi : i.val + 1 < n}
        {P : BHW.OS45Figure24CanonicalSourcePatchData
          (d := d) hd n i hi}
+       (hP_oriented :
+         ∀ x, x ∈ closure P.V →
+           BHW.OS45Figure24OrientedPathField (d := d) n i hi x)
        (ψ : SchwartzNPoint d n)
        (hψ_compact : HasCompactSupport (ψ : NPointDomain d n -> ℂ))
        (hψV : tsupport (ψ : NPointDomain d n -> ℂ) ⊆ P.V)
@@ -1185,10 +1198,59 @@ now fixes its internal construction rather than leaving a prose gluing step:
    ```
 
    Proof transcript for this source theorem: localize `ψ` by a finite
-   Schwartz partition subordinate to precompact subsets of `P.V`; on each
-   piece use `P.figPath_closure`, `P.closure_pulled_id`, and
-   `P.closure_pulled_tau` to obtain the OS I Figure-2-4 horizontal germ
-   carrying both pulled branches; identify the Wick-anchor values by
+   Schwartz partition subordinate to open `Wα` with `closure Wα ⊆ P.V`.
+   The local theorem applied to each partition piece is:
+
+   ```lean
+   theorem BHW.os45CommonEdge_localSourceBranchDifference_pairing_zero_of_OSI45
+       [NeZero d] (hd : 2 <= d)
+       (OS : OsterwalderSchraderAxioms d)
+       (lgc : OSLinearGrowthCondition d OS)
+       {n : Nat} {i : Fin n} {hi : i.val + 1 < n}
+       {P : BHW.OS45Figure24CanonicalSourcePatchData
+         (d := d) hd n i hi}
+       (hP_oriented :
+         ∀ x, x ∈ closure P.V →
+           BHW.OS45Figure24OrientedPathField (d := d) n i hi x)
+       (W : Set (NPointDomain d n))
+       (hW_open : IsOpen W)
+       (hW_closure : closure W ⊆ P.V)
+       (ψ : SchwartzNPoint d n)
+       (hψ_compact : HasCompactSupport (ψ : NPointDomain d n -> ℂ))
+       (hψW : tsupport (ψ : NPointDomain d n -> ℂ) ⊆ W)
+       (hψ_zero : VanishesToInfiniteOrderOnCoincidence ψ) :
+       ∫ u : NPointDomain d n,
+         (BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+             (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+             (BHW.realEmbed
+               (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                 (1 : Equiv.Perm (Fin n)) u)) -
+           BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+             (1 : Equiv.Perm (Fin n))
+             (BHW.realEmbed
+               (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                 (1 : Equiv.Perm (Fin n)) u))) * ψ u = 0
+   ```
+
+   On a fixed `W`, use `P.closure_pulled_id` and
+   `P.closure_pulled_tau` for the two endpoint branch-domain memberships.
+   Use `P.figPath_closure` only for the ordinary extended-tube path `Γ`.
+   For the adjacent branch, do **not** claim
+   `BHW.permAct P.τ (Γ t) ∈ BHW.ExtendedTube d n`; instead destruct
+   `hP_oriented u hu` to get the adjacent lift `Δ`, with
+   `Δ t ∈ BHW.ExtendedTube d n` and equality of
+   `sourceOrientedMinkowskiInvariant` with the permuted ordinary invariant.
+   At `t = 1`, rewrite by
+   `BHW.sourceOrientedMinkowskiInvariant_permAct`; use
+   `P.closure_pulled_tau` to put
+   `BHW.permAct (d := d) P.τ (Γ 1)` in `BHW.ExtendedTube d n`; then apply the
+   checked branch law
+   `BHW.extendedTube_same_sourceOrientedInvariant_extendF_eq` to identify
+   `BHW.extendF (bvt_F OS lgc n) (Δ 1)` with the adjacent pulled branch value.
+   The path `Δ` supplies the Figure-2-4 continuation corridor; the endpoint
+   branch formula is justified by `P.closure_pulled_tau`, not by a claim that
+   `permAct P.τ` preserves the whole ordinary path.
+   Identify the Wick-anchor values by
    `BHW.os45QuarterTurn_perm_wickRotate_eq_common_plus`,
    `BHW.os45QuarterTurn_perm_realEmbed_eq_common_minus`,
    `BHW.os45CommonEdgeRealPoint_adjacent_swap_eq`, and
@@ -1229,9 +1291,9 @@ now fixes its internal construction rather than leaving a prose gluing step:
    The checked theorem rewrites the displayed flat integral as
    `BHW.os45CommonEdgeFlatJacobianAbs n` times the source integral in
    `BHW.os45CommonEdge_sourceBranchDifference_pairing_zero_of_OSI45`.  The
-   source theorem then makes this source integral zero.  This source theorem
-   is the only unimplemented OS-I mathematical content in the common-boundary
-   CLM packet;
+   source theorem, applied with `hP_oriented`, then makes this source integral
+   zero.  This source theorem is the only unimplemented OS-I mathematical
+   content in the common-boundary CLM packet;
 5. prove
    `BHW.os45FlatCommonChart_adjacent_represents_ordinaryEdgeCLM_of_OSI45`
    mechanically from step 4.  Use the same open neighborhood
@@ -1247,7 +1309,12 @@ now fixes its internal construction rather than leaving a prose gluing step:
    `BHW.os45FlatCommonChart_commonBoundaryCLM_of_OSI45` by
    `T := BHW.os45FlatCommonChart_ordinaryEdgeCLM hd OS lgc P`, with the
    ordinary local representation from step 3 and the adjacent local
-   representation from step 5.
+   representation from step 5.  At the Stage-A entry point, set
+   `Poriented :=
+     BHW.os45_adjacent_identity_canonicalSourcePatch_with_orientedPath
+       (d := d) (n := n) hd i hi`,
+   `P := Poriented.toCanonical`, and pass
+   `Poriented.orientedPath_closure` as `hP_oriented`.
 
 The cutoff is the standard smooth compact-support cutoff equal to one on
 `closure P.V` and supported in `P.Ufig`, using `P.closureV_compact`,
@@ -1285,10 +1352,15 @@ by evaluating both side branches at zero height and applying
 `BHW.extendF_eq_on_forwardTube` plus `bvt_F_perm`.
 
 The active local EOW boundary input is the genuine OS I §4.5 common-boundary
-CLM theorem:
+CLM theorem, applied to the oriented canonical packet:
 
 ```lean
+let Poriented :=
+  BHW.os45_adjacent_identity_canonicalSourcePatch_with_orientedPath
+    (d := d) (n := n) hd i hi
+let P := Poriented.toCanonical
 BHW.os45FlatCommonChart_commonBoundaryCLM_of_OSI45
+  (d := d) hd OS lgc (P := P) Poriented.orientedPath_closure
 ```
 
 It returns one `T` together with local `SCV.RepresentsDistributionOn` fields
@@ -1297,12 +1369,13 @@ for the ordinary branch and the adjacent branch.  The checked generic reducers
 and
 `BHW.os45_BHWJost_flatCommonChart_distributionalBoundaryValue_minus_of_zeroHeight_pairingCLM`
 then target that same `T`.  The proof content is OS I equations `(4.1)`,
-`(4.12)`, `(4.14)` plus `OS.E3`: the plus side is the ordinary boundary germ,
-and the minus side is first rewritten to the adjacent cutoff-pulled test and
-then matched to the ordinary germ by Euclidean permutation symmetry.  These are
-distributional boundary-value statements against compactly supported flat-chart
-Schwartz tests; they are not pointwise branch equalities, they do not identify
-`T` with the Schwinger CLM, and they are not downstream `bvt_W` locality.
+`(4.12)`, `(4.14)` plus `OS.E3` and the checked oriented Figure-2-4 path: the
+plus side is the ordinary boundary germ, and the minus side is first rewritten
+to the adjacent cutoff-pulled test and then matched to the ordinary germ by
+Euclidean permutation symmetry.  These are distributional boundary-value
+statements against compactly supported flat-chart Schwartz tests; they are not
+pointwise branch equalities, they do not identify `T` with the Schwinger CLM,
+and they are not downstream `bvt_W` locality.
 
 After those inputs are named, destruct the pure theorem output into `B`,
 `hB_holo`, `hB_ord`, and `hB_adj` and return the
@@ -11765,7 +11838,9 @@ common-boundary envelope, or any theorem that already assumes locality.
       data.  The positive side is the ordinary extended-tube side; the
       negative side is the adjacent permuted-tube side.  Obtain the common
       boundary CLM `T` and its two local representation fields from
-      `BHW.os45FlatCommonChart_commonBoundaryCLM_of_OSI45`.  The generic
+      `BHW.os45FlatCommonChart_commonBoundaryCLM_of_OSI45`, applied to
+      `P := Poriented.toCanonical` and
+      `hP_oriented := Poriented.orientedPath_closure`.  The generic
       finite-partition reducer then gives both zero-height compact pairings
       into `T`, and the checked CLM-valued boundary reducers
       `BHW.os45_BHWJost_flatCommonChart_distributionalBoundaryValue_plus_of_zeroHeight_pairingCLM`
@@ -18894,8 +18969,13 @@ common-boundary distribution:
 `BHW.os45FlatCommonChart_commonBoundaryCLM_of_OSI45`.  It must produce a single
 CLM `T : SchwartzMap (BHW.OS45FlatCommonChartReal d n) ℂ →L[ℂ] ℂ` and local
 `SCV.RepresentsDistributionOn` neighborhoods for both the ordinary branch and
-the adjacent branch on the same real common-chart edge.  Its implementation
-must follow the now-explicit four-step split:
+the adjacent branch on the same real common-chart edge.  It is instantiated
+with `P := Poriented.toCanonical` from
+`BHW.os45_adjacent_identity_canonicalSourcePatch_with_orientedPath` and with
+`hP_oriented := Poriented.orientedPath_closure`; an arbitrary canonical patch
+without the oriented path field is not sufficient for the proper-Lorentz
+Figure-2-4 germ.  Its implementation must follow the now-explicit four-step
+split:
 `SCV.compactSupport_integralMultiplierCLM_fin`,
 `BHW.os45FlatCommonChart_ordinaryEdgeCLM`,
 `BHW.os45FlatCommonChart_ordinaryEdgeCLM_represents`, and

@@ -77859,7 +77859,10 @@ Implementation transcript for
 	       (lgc : OSLinearGrowthCondition d OS)
 	       {n : Nat} {i : Fin n} {hi : i.val + 1 < n}
 	       {P : BHW.OS45Figure24CanonicalSourcePatchData
-	         (d := d) hd n i hi} :
+	         (d := d) hd n i hi}
+	       (hP_oriented :
+	         ∀ x, x ∈ closure P.V →
+	           BHW.OS45Figure24OrientedPathField (d := d) n i hi x) :
 	       ∃ T : SchwartzMap (BHW.OS45FlatCommonChartReal d n) ℂ →L[ℂ] ℂ,
 	         (∀ x0 ∈ BHW.os45FlatCommonChartEdgeSet d n P
 	             (1 : Equiv.Perm (Fin n)), ∃ U, IsOpen U ∧ x0 ∈ U ∧
@@ -78121,6 +78124,16 @@ Implementation transcript for
    representation of this common `T` by the corresponding zero-height branch on
    a real common-chart neighborhood.
 
+   **Oriented Figure-2-4 input required.**  The common-boundary CLM producer is
+   not a theorem for an arbitrary pure `OS45Figure24CanonicalSourcePatchData`.
+   The proper-complex-Lorentz BHW argument must know that the adjacent lifted
+   path is in the same `SO^+(1,d;ℂ)` orbit as the permuted ordinary path, not
+   merely that their scalar Gram matrices agree.  The checked selector already
+   provides this as
+   `BHW.OS45Figure24OrientedCanonicalSourcePatchData.orientedPath_closure`.
+   Therefore the Lean theorem surface carries the closure-level oriented-path
+   field explicitly:
+
    ```lean
    theorem BHW.os45FlatCommonChart_commonBoundaryCLM_of_OSI45
        [NeZero d] (hd : 2 <= d)
@@ -78128,7 +78141,10 @@ Implementation transcript for
        (lgc : OSLinearGrowthCondition d OS)
        {n : Nat} {i : Fin n} {hi : i.val + 1 < n}
        {P : BHW.OS45Figure24CanonicalSourcePatchData
-         (d := d) hd n i hi} :
+         (d := d) hd n i hi}
+       (hP_oriented :
+         ∀ x, x ∈ closure P.V →
+           BHW.OS45Figure24OrientedPathField (d := d) n i hi x) :
        ∃ T : SchwartzMap (BHW.OS45FlatCommonChartReal d n) ℂ →L[ℂ] ℂ,
          (∀ x0 ∈ BHW.os45FlatCommonChartEdgeSet d n P
              (1 : Equiv.Perm (Fin n)),
@@ -78340,7 +78356,10 @@ Implementation transcript for
           (lgc : OSLinearGrowthCondition d OS)
           {n : Nat} {i : Fin n} {hi : i.val + 1 < n}
           {P : BHW.OS45Figure24CanonicalSourcePatchData
-            (d := d) hd n i hi} :
+            (d := d) hd n i hi}
+          (hP_oriented :
+            ∀ x, x ∈ closure P.V →
+              BHW.OS45Figure24OrientedPathField (d := d) n i hi x) :
           ∀ x0 ∈ BHW.os45FlatCommonChartEdgeSet d n P
               (1 : Equiv.Perm (Fin n)),
             ∃ U : Set (BHW.OS45FlatCommonChartReal d n),
@@ -78371,6 +78390,9 @@ Implementation transcript for
           {n : Nat} {i : Fin n} {hi : i.val + 1 < n}
           {P : BHW.OS45Figure24CanonicalSourcePatchData
             (d := d) hd n i hi}
+          (hP_oriented :
+            ∀ x, x ∈ closure P.V →
+              BHW.OS45Figure24OrientedPathField (d := d) n i hi x)
           (φ : SchwartzMap (BHW.OS45FlatCommonChartReal d n) ℂ)
           (hφ_compact :
             HasCompactSupport
@@ -78407,6 +78429,9 @@ Implementation transcript for
           {n : Nat} {i : Fin n} {hi : i.val + 1 < n}
           {P : BHW.OS45Figure24CanonicalSourcePatchData
             (d := d) hd n i hi}
+          (hP_oriented :
+            ∀ x, x ∈ closure P.V →
+              BHW.OS45Figure24OrientedPathField (d := d) n i hi x)
           (ψ : SchwartzNPoint d n)
           (hψ_compact : HasCompactSupport (ψ : NPointDomain d n -> ℂ))
           (hψV : tsupport (ψ : NPointDomain d n -> ℂ) ⊆ P.V)
@@ -78433,14 +78458,88 @@ Implementation transcript for
          Schwartz partition theorem to reduce to tests supported in one
          `Wα`.  This is the same local-to-global distributional mechanism as
          `SCV.distribution_representation_of_local_representations_for_test`,
-         but now on source variables.
-      2. On a fixed `Wα`, use `P.figPath_closure` for every point of
-         `closure Wα`, together with `P.closure_pulled_id` and
-         `P.closure_pulled_tau`, to get the local Figure-2-4 horizontal germ
-         whose two boundary branches are
-         `BHW.os45PulledRealBranch ... 1` and
-         `BHW.os45PulledRealBranch ... (P.τ.symm * 1)` evaluated at
-         `BHW.realEmbed (BHW.os45CommonEdgeRealPoint ... 1 u)`.
+         but now on source variables.  The local theorem used on each patch
+         has the following precise surface:
+
+         ```lean
+         theorem BHW.os45CommonEdge_localSourceBranchDifference_pairing_zero_of_OSI45
+             [NeZero d] (hd : 2 <= d)
+             (OS : OsterwalderSchraderAxioms d)
+             (lgc : OSLinearGrowthCondition d OS)
+             {n : Nat} {i : Fin n} {hi : i.val + 1 < n}
+             {P : BHW.OS45Figure24CanonicalSourcePatchData
+               (d := d) hd n i hi}
+             (hP_oriented :
+               ∀ x, x ∈ closure P.V →
+                 BHW.OS45Figure24OrientedPathField (d := d) n i hi x)
+             (W : Set (NPointDomain d n))
+             (hW_open : IsOpen W)
+             (hW_closure : closure W ⊆ P.V)
+             (ψ : SchwartzNPoint d n)
+             (hψ_compact : HasCompactSupport (ψ : NPointDomain d n -> ℂ))
+             (hψW : tsupport (ψ : NPointDomain d n -> ℂ) ⊆ W)
+             (hψ_zero : VanishesToInfiniteOrderOnCoincidence ψ) :
+             ∫ u : NPointDomain d n,
+               (BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                   (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+                   (BHW.realEmbed
+                     (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                       (1 : Equiv.Perm (Fin n)) u)) -
+                 BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                   (1 : Equiv.Perm (Fin n))
+                   (BHW.realEmbed
+                     (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                       (1 : Equiv.Perm (Fin n)) u))) * ψ u = 0
+         ```
+
+      2. On a fixed `W`, set
+         `K := tsupport (ψ : NPointDomain d n -> ℂ)`.  From
+         `hψW`, `subset_closure`, and `hW_closure`, every point of `K` lies in
+         `P.V`, and every point of `closure W` has the checked Figure-2-4
+         endpoint-domain fields
+         `P.closure_pulled_id` and `P.closure_pulled_tau`.  Define, for
+         `u ∈ closure W`,
+         `y u := BHW.os45CommonEdgeRealPoint (d := d) (n := n) 1 u`,
+         `Γu` from `P.figPath_closure u`, and
+         `Δu` from `hP_oriented u`.  The ordinary endpoint is
+         `Γu 1 =
+           (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+             (BHW.realEmbed (y u))`, which is exactly the endpoint read by
+         `BHW.os45PulledRealBranch ... 1`.
+
+         The adjacent endpoint is **not** obtained by claiming
+         `BHW.permAct P.τ (Γu t) ∈ BHW.ExtendedTube d n`.  Instead use the
+         oriented path field:
+
+         ```lean
+         hP_oriented u hu_closure :
+           ∃ Γ Δ, Continuous Γ ∧ Continuous Δ ∧
+             Γ 0 = (fun k => wickRotatePoint (u k)) ∧
+             Γ 1 = (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+               (BHW.realEmbed (y u)) ∧
+             (∀ t, Γ t ∈ BHW.ExtendedTube d n) ∧
+             (∀ t, Δ t ∈ BHW.ExtendedTube d n) ∧
+             (∀ t,
+               BHW.sourceOrientedMinkowskiInvariant d n (Δ t) =
+                 BHW.sourcePermuteOrientedGram d n P.τ
+                   (BHW.sourceOrientedMinkowskiInvariant d n (Γ t)))
+         ```
+
+         At the endpoint, rewrite the oriented-invariant equality by
+         `BHW.sourceOrientedMinkowskiInvariant_permAct` to compare
+         `Δu 1` with
+         `BHW.permAct (d := d) P.τ (Γu 1)`.  The first point is in
+         `BHW.ExtendedTube d n` by the oriented path field; the second point is
+         in `BHW.ExtendedTube d n` by `P.closure_pulled_tau`.  The checked
+         Hall-Wightman branch law
+         `BHW.extendedTube_same_sourceOrientedInvariant_extendF_eq`, applied to
+         `bvt_F OS lgc n` with `bvt_F_holomorphic` and
+         `bvt_F_complexLorentzInvariant_forwardTube`, identifies
+         `BHW.extendF (bvt_F OS lgc n) (Δu 1)` with the adjacent pulled branch
+         value at `BHW.realEmbed (y u)`.  The path `Δu` supplies the
+         Figure-2-4 continuation corridor; the endpoint branch formula is still
+         justified only by `P.closure_pulled_tau`, not by an ambient
+         permutation-stability claim.
       3. Identify the Wick-anchor side of that germ with the OS
          Fourier-Laplace boundary value by the checked coordinate identities
          `BHW.os45QuarterTurn_perm_wickRotate_eq_common_plus`,
@@ -78454,7 +78553,12 @@ Implementation transcript for
          that the cutoff commutes with `P.τ`.
       4. Apply the OS I §4.5 edge-of-the-wedge/identity theorem on this local
          Figure-2-4 germ to transport the anchored distributional equality to
-         the horizontal common real edge.  The conclusion for the localized
+         the horizontal common real edge.  In Lean this is the proof body of
+         `BHW.os45CommonEdge_localSourceBranchDifference_pairing_zero_of_OSI45`;
+         it consumes only the local data listed above, `bvt_F` holomorphy and
+         boundary-value restriction, `OS.E3_symmetric`, proper-complex Lorentz
+         invariance of the BHW branch, and the SCV identity theorem on the
+         local Figure-2-4 EOW chart.  The conclusion for the localized
          test is the displayed source integral equals zero.
       5. Sum the finite partition pieces by linearity of the integral.  No
          source-oriented variety, normal/Riemann extension, PET
@@ -78564,10 +78668,10 @@ Implementation transcript for
         is positive by `BHW.os45CommonEdgeFlatJacobianAbs_pos n`.
       * apply
         `BHW.os45CommonEdge_sourceBranchDifference_pairing_zero_of_OSI45` to
-        `ψ`, using the checked compact-support, `P.V`-support, and
-        zero-diagonal accessors above.  The change-of-variables theorem then
-        rewrites the flat branch-difference integral as
-        `BHW.os45CommonEdgeFlatJacobianAbs n * 0`, hence zero.
+        `hP_oriented` and `ψ`, using the checked compact-support,
+        `P.V`-support, and zero-diagonal accessors above.  The
+        change-of-variables theorem then rewrites the flat branch-difference
+        integral as `BHW.os45CommonEdgeFlatJacobianAbs n * 0`, hence zero.
 
       Once this theorem is checked, the adjacent representation is
       mechanical.  Use the same open set
@@ -78582,9 +78686,15 @@ Implementation transcript for
       enter through `bvt_euclidean_restriction`, equation `(4.14)` enters
       through the BHW/Jost pullback branch
       `BHW.os45PulledRealBranch`, and Figure 2-4 supplies the horizontal
-      common chart.  The proof does not use source varieties, normal/Riemann
-      extension, final locality, PET single-valuedness, or the rejected
-      zero-height Schwinger-CLM identification.
+      common chart together with the oriented proper-Lorentz path field.  The
+      proof does not use source varieties, normal/Riemann extension, final
+      locality, PET single-valuedness, or the rejected zero-height
+      Schwinger-CLM identification.  At the final Stage-A entry point set
+      `Poriented :=
+        BHW.os45_adjacent_identity_canonicalSourcePatch_with_orientedPath
+          (d := d) (n := n) hd i hi`,
+      `P := Poriented.toCanonical`, and pass
+      `Poriented.orientedPath_closure` as `hP_oriented`.
 
    The global zero-height pairing theorems below are then finite-partition
    reducers, not wrappers.  Given compact `K := tsupport φ ⊆ edgeSet`, choose
@@ -78869,6 +78979,15 @@ Implementation transcript for
 5. Apply the checked distributional local EOW theorem at `xflat`:
 
    ```lean
+   let Poriented :=
+     BHW.os45_adjacent_identity_canonicalSourcePatch_with_orientedPath
+       (d := d) (n := n) hd i hi
+   let P := Poriented.toCanonical
+   have hP_oriented :
+       ∀ x, x ∈ closure P.V →
+         BHW.OS45Figure24OrientedPathField (d := d) n i hi x := by
+     intro x hx
+     exact Poriented.orientedPath_closure x hx
    let σplus : Equiv.Perm (Fin n) := 1
    let σminus : Equiv.Perm (Fin n) :=
      P.τ.symm * (1 : Equiv.Perm (Fin n))
@@ -78885,7 +79004,7 @@ Implementation transcript for
 	   let Fminus := BHW.os45FlatCommonChartBranch d n OS lgc σminus
 	   obtain ⟨T, hplus_local, hminus_local⟩ :=
 	     BHW.os45FlatCommonChart_commonBoundaryCLM_of_OSI45
-	       (d := d) hd OS lgc (P := P)
+	       (d := d) hd OS lgc (P := P) hP_oriented
 	   have hplus_zero := fun φ hφ_compact hφE =>
 	     BHW.os45FlatCommonChart_plus_zeroHeight_pairing_eq_CLM_of_localRepresents
 	       (d := d) hd OS lgc T hplus_local φ hφ_compact hφE
@@ -80050,7 +80169,7 @@ sections is subordinate to this table.
 
 | Stage | Lean-readiness status | Transcript source |
 | --- | --- | --- |
-| Stage A: OS45 local-hull `S'_n` reference branch and pair carrier | The corrected Lorentz-invariant neutral foundational theorem `BHW.localSPrime_twoSectorBranch_of_EOW_BHW` is now an authorized production axiom.  The arbitrary-holomorphic union-ambient version and the later zero-height pointwise trace route are both rejected as false.  The public Stage-A target is still the checked pair carrier `BHW.os45_BHWJostPairData_onLocalHull_of_OSI45`, but it must be produced from the single local `S'_n` reference branch `BHW.os45_BHWJost_SPrimeBranchData_of_OSI45`, not from arbitrary finite-chain monodromy and not from a global connected-overlap theorem.  The remaining Stage-A Lean work is the OS I §4.5 adapter's EOW seed: the ordinary/adjacent holomorphy and complex-Lorentz invariance adapters for `Ford`/`Fadj` are checked, the local-wedge shrink is checked, and the common boundary must now be proved as a single common-boundary CLM `T` by `BHW.os45FlatCommonChart_commonBoundaryCLM_of_OSI45`.  The checked CLM-valued reducers `BHW.os45_BHWJost_flatCommonChart_distributionalBoundaryValue_plus_of_zeroHeight_pairingCLM` and `BHW.os45_BHWJost_flatCommonChart_distributionalBoundaryValue_minus_of_zeroHeight_pairingCLM` then turn the plus/minus zero-height identities into the distributional boundary values required by local EOW.  `T` is not identified with `BHW.os45_BHWJost_flatCommonChart_schwingerCLM hd OS lgc P 1`; the Schwinger functional only normalizes the Wick anchor and enters the adjacent compatibility through `OS.E3`.  The boundary equality comes from OS I equations `(4.1)`, `(4.12)`, `(4.14)` plus the Figure-2-4 common-boundary germ, not from forward-tube membership of the swapped zero-height point and not from fixed-test constancy along the horizontal path.  The axiom has no `OS`, no `bvt_F`, no Wightman boundary distribution, no OS45 source-patch record, no OS45 hull record, no local-commutativity predicate, and no proper-complex Lorentz sweep in its ambient; its ambient is the union `BHW.ExtendedTube d n ∪ BHW.permutedExtendedTubeSector d n τ`, it requires `BHW.ComplexLorentzInvariantOn d n (BHW.ExtendedTube d n) Ford` and `BHW.ComplexLorentzInvariantOn d n (BHW.permutedExtendedTubeSector d n τ) Fadj`, and its seed neighborhood `W` lies inside `BHW.localSPrimeTwoSectorHull d n τ zbase ∩ BHW.ExtendedTube d n ∩ BHW.permutedExtendedTubeSector d n τ`.  Once that branch exists, `BHW.os45_BHWJost_initialSectorOverlap_eqOn_of_OSI45`, `BHW.os45_BHWJost_singleValuedBranch_onLocalHull_of_OSI45`, `BHW.os45_BHWJost_canonicalContinuationData_of_OSI45`, same-endpoint/finite-chain comparison, and `BHW.os45_BHWJostPairData_onLocalHull_of_OSI45` are reducers against `S.B`.  The optional `BHW.OS45BHWJostInitialOverlapCircuitData` package is downstream diagnostic bookkeeping only.  This stage must not use `BHW.adjacent_extendedTube_overlap_connected_of_two_le`, arbitrary same-initial chain monodromy, simply-connectedness of `H.ΩJ`, source-oriented quotient germs, normal varieties, invariant-ring normality, global descent, public theorem-2 atlas wrappers, PET single-valuedness, final locality, generic common-chart selectors, generic closed-loop retargeting, ambient source-label transport, or any locality-consuming `bargmann_hall_wightman` theorem. | Section 8.1 Stage-A Deep Research correction, the authorized Lorentz-invariant neutral axiom `BHW.localSPrime_twoSectorBranch_of_EOW_BHW`, the common-boundary CLM transcript, and the Lean transcript for `BHW.os45_BHWJost_SPrimeBranchData_of_OSI45` followed by the `H.toPairDataOfBranches` reducer with `S.B` in both branch slots. |
+| Stage A: OS45 local-hull `S'_n` reference branch and pair carrier | The corrected Lorentz-invariant neutral foundational theorem `BHW.localSPrime_twoSectorBranch_of_EOW_BHW` is now an authorized production axiom.  The arbitrary-holomorphic union-ambient version and the later zero-height pointwise trace route are both rejected as false.  The public Stage-A target is still the checked pair carrier `BHW.os45_BHWJostPairData_onLocalHull_of_OSI45`, but it must be produced from the single local `S'_n` reference branch `BHW.os45_BHWJost_SPrimeBranchData_of_OSI45`, not from arbitrary finite-chain monodromy and not from a global connected-overlap theorem.  The remaining Stage-A Lean work is the OS I §4.5 adapter's EOW seed: the ordinary/adjacent holomorphy and complex-Lorentz invariance adapters for `Ford`/`Fadj` are checked, the local-wedge shrink is checked, and the common boundary must now be proved as a single common-boundary CLM `T` by `BHW.os45FlatCommonChart_commonBoundaryCLM_of_OSI45`, instantiated with `P := Poriented.toCanonical` and `hP_oriented := Poriented.orientedPath_closure` from `BHW.os45_adjacent_identity_canonicalSourcePatch_with_orientedPath`.  The checked CLM-valued reducers `BHW.os45_BHWJost_flatCommonChart_distributionalBoundaryValue_plus_of_zeroHeight_pairingCLM` and `BHW.os45_BHWJost_flatCommonChart_distributionalBoundaryValue_minus_of_zeroHeight_pairingCLM` then turn the plus/minus zero-height identities into the distributional boundary values required by local EOW.  `T` is not identified with `BHW.os45_BHWJost_flatCommonChart_schwingerCLM hd OS lgc P 1`; the Schwinger functional only normalizes the Wick anchor and enters the adjacent compatibility through `OS.E3`.  The boundary equality comes from OS I equations `(4.1)`, `(4.12)`, `(4.14)` plus the Figure-2-4 common-boundary germ and the checked oriented proper-Lorentz path field, not from forward-tube membership of the swapped zero-height point, scalar Gram equality alone, or fixed-test constancy along the horizontal path.  The axiom has no `OS`, no `bvt_F`, no Wightman boundary distribution, no OS45 source-patch record, no OS45 hull record, no local-commutativity predicate, and no proper-complex Lorentz sweep in its ambient; its ambient is the union `BHW.ExtendedTube d n ∪ BHW.permutedExtendedTubeSector d n τ`, it requires `BHW.ComplexLorentzInvariantOn d n (BHW.ExtendedTube d n) Ford` and `BHW.ComplexLorentzInvariantOn d n (BHW.permutedExtendedTubeSector d n τ) Fadj`, and its seed neighborhood `W` lies inside `BHW.localSPrimeTwoSectorHull d n τ zbase ∩ BHW.ExtendedTube d n ∩ BHW.permutedExtendedTubeSector d n τ`.  Once that branch exists, `BHW.os45_BHWJost_initialSectorOverlap_eqOn_of_OSI45`, `BHW.os45_BHWJost_singleValuedBranch_onLocalHull_of_OSI45`, `BHW.os45_BHWJost_canonicalContinuationData_of_OSI45`, same-endpoint/finite-chain comparison, and `BHW.os45_BHWJostPairData_onLocalHull_of_OSI45` are reducers against `S.B`.  The optional `BHW.OS45BHWJostInitialOverlapCircuitData` package is downstream diagnostic bookkeeping only.  This stage must not use `BHW.adjacent_extendedTube_overlap_connected_of_two_le`, arbitrary same-initial chain monodromy, simply-connectedness of `H.ΩJ`, source-oriented quotient germs, normal varieties, invariant-ring normality, global descent, public theorem-2 atlas wrappers, PET single-valuedness, final locality, generic common-chart selectors, generic closed-loop retargeting, ambient source-label transport, or any locality-consuming `bargmann_hall_wightman` theorem. | Section 8.1 Stage-A Deep Research correction, the authorized Lorentz-invariant neutral axiom `BHW.localSPrime_twoSectorBranch_of_EOW_BHW`, the common-boundary CLM transcript, and the Lean transcript for `BHW.os45_BHWJost_SPrimeBranchData_of_OSI45` followed by the `H.toPairDataOfBranches` reducer with `S.B` in both branch slots. |
 | Stage B: exact source-patch compact Wick pairing and Jost anchor | Ready after Stage A returns `BHW.OS45SourcePatchBHWJostPairData` on the local hull.  Stage B itself is mechanical: instantiate the canonical Figure-2-4 source patch, restrict/rewrite the pair carrier onto `BHW.os45Figure24SourcePatch`, and consume the checked exact-source-patch compact/source-anchor constructors.  There is no independent compact analytic producer after Stage A. | Section 8.2 and the compact-source-patch ledger naming `BHW.os45_BHWJostPairData_on_figure24SourcePatch_of_OSI45`, `BHW.os45_BHWJostPairData_family_on_figure24SourcePatch_of_OSI45`, `BHW.os45CompactFigure24WickPairingEq_family_of_pairData_on_figure24SourcePatch`, and `BHW.bvt_F_distributionalJostAnchor_of_pairData_on_figure24SourcePatch`. |
 | Stage C: Hall-Wightman source/PET single-valuedness | Ready after Stage B supplies the source/Jost anchor.  The active route is the direct Hall-Wightman scalar-product continuation theorem on `S''_n`; it forbids source-oriented imports, QFT axioms, hF-perm-only shortcuts, quotient germs, normal/Riemann extension, and unsupplied full-component pure-Gram representative calls. | Slot-6 source/PET transcript for `BHW.HallWightmanPETSourceData`, `BHW.hallWightman_sourceScalarRepresentative_perm_invariant`, `BHW.hallWightman_petSourceData_of_distributionalAnchor`, `BHW.hallWightman_source_permutedBranch_compatibility_of_distributionalAnchor`, and the PET assembly/equality corollaries. |
 | Stage D: Jost boundary limit | Ready after Stage C.  The theorem surface is the OS I §4.5/Jost boundary-value limit for compactly supported tests, not finite-height canonical equality.  The compact-support Jost cover, partition of unity, boundary-approach trace lemmas, and single-valued branch assembly are now named explicitly. | Slot 10 transcript for `bvt_F_jostBoundary_pairing_compact_tendsto_zero_of_spacelike_of_two_le` and its sub-obligations. |
