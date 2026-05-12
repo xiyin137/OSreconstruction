@@ -264,6 +264,51 @@ def os45FlatCommonChartSeed
   BHW.flattenCfgReal n d
     (BHW.os45CommonEdgeRealPoint (d := d) (n := n) ρperm P.xseed)
 
+/-- The original `S'_n` point under the horizontal Figure-2-4 common edge.
+
+The flat local EOW chart is centered at the real common-chart point
+`os45CommonEdgeRealPoint 1 P.xseed`; undoing the OS45 quarter-turn gives the
+actual point in the original extended-tube variables. -/
+noncomputable def os45Figure24CommonEdgeSPrimeSeed
+    (d n : ℕ) [NeZero d]
+    {hd : 2 ≤ d} {i : Fin n} {hi : i.val + 1 < n}
+    (P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi) :
+    Fin n → Fin (d + 1) → ℂ :=
+  (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+    (BHW.realEmbed
+      (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+        (1 : Equiv.Perm (Fin n)) P.xseed))
+
+/-- The horizontal common-edge seed lies in the ordinary extended tube. -/
+theorem os45Figure24CommonEdgeSPrimeSeed_mem_extendedTube
+    [NeZero d] (hd : 2 ≤ d)
+    {n : ℕ} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi} :
+    BHW.os45Figure24CommonEdgeSPrimeSeed d n P ∈
+      BHW.ExtendedTube d n := by
+  simpa [BHW.os45Figure24CommonEdgeSPrimeSeed,
+    BHW.os45PulledRealBranchDomain] using
+    P.V_pulled_id P.xseed P.xseed_mem
+
+/-- The horizontal common-edge seed lies in the selected adjacent permuted
+extended-tube sector. -/
+theorem os45Figure24CommonEdgeSPrimeSeed_mem_permutedExtendedTubeSector
+    [NeZero d] (hd : 2 ≤ d)
+    {n : ℕ} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi} :
+    BHW.os45Figure24CommonEdgeSPrimeSeed d n P ∈
+      BHW.permutedExtendedTubeSector d n P.τ := by
+  have hτsymm : P.τ.symm = P.τ := by
+    rw [P.τ_eq]
+    simp
+  simpa [BHW.os45Figure24CommonEdgeSPrimeSeed,
+    BHW.os45PulledRealBranchDomain, BHW.permutedExtendedTubeSector,
+    BHW.permAct, hτsymm] using
+    P.V_pulled_tau P.xseed P.xseed_mem
+
 /-- The flattened common-chart branch-domain side is open. -/
 theorem isOpen_os45FlatCommonChartOmega
     (d n : ℕ) [NeZero d] (σ : Equiv.Perm (Fin n)) :
@@ -610,6 +655,37 @@ theorem os45FlatCommonChartSeed_mem_edgeSet
   exact
     ⟨BHW.os45CommonEdgeRealPoint (d := d) (n := n) ρperm P.xseed,
       ⟨P.xseed, P.xseed_mem, rfl⟩, rfl⟩
+
+/-- The zero of a flat local EOW chart pulls back to the horizontal
+common-edge `S'_n` seed. -/
+theorem os45Figure24CommonEdgeSPrimeSeed_eq_chart_zero
+    [NeZero d] (hd : 2 ≤ d)
+    {n : ℕ} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    {ys : Fin (BHW.os45FlatCommonChartDim d n) →
+        Fin (BHW.os45FlatCommonChartDim d n) → ℝ} :
+    (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+      (BHW.unflattenCfg n d
+        (SCV.localEOWChart
+          (BHW.os45FlatCommonChartSeed d n P
+            (1 : Equiv.Perm (Fin n))) ys 0)) =
+    BHW.os45Figure24CommonEdgeSPrimeSeed d n P := by
+  have hunflatten :
+      BHW.unflattenCfg n d
+        (SCV.realEmbed
+          (BHW.flattenCfgReal n d
+            (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+              (1 : Equiv.Perm (Fin n)) P.xseed))) =
+        BHW.realEmbed
+          (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+            (1 : Equiv.Perm (Fin n)) P.xseed) := by
+    funext k μ
+    simp [BHW.unflattenCfg, BHW.flattenCfgReal, BHW.realEmbed,
+      SCV.realEmbed]
+  simp [BHW.os45Figure24CommonEdgeSPrimeSeed,
+    BHW.os45FlatCommonChartSeed, SCV.localEOWChart_zero,
+    hunflatten]
 
 /-- Membership in the flattened Figure-2-4 edge, restricted to the linear
 source chart image, is exactly membership in the original source slice. -/
@@ -3405,6 +3481,18 @@ theorem OS45BHWJostHullData.extendedTube_inter_ΩJ_eq
   · intro hz
     exact ⟨hz, H.extendedTube_subset_ΩJ hz⟩
 
+/-- The horizontal common-edge seed lies in the stored local BHW/Jost hull. -/
+theorem OS45BHWJostHullData.commonEdgeSPrimeSeed_mem_ΩJ
+    [NeZero d]
+    {hd : 2 ≤ d} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P) :
+    BHW.os45Figure24CommonEdgeSPrimeSeed d n P ∈ H.ΩJ :=
+  H.extendedTube_subset_ΩJ
+    (BHW.os45Figure24CommonEdgeSPrimeSeed_mem_extendedTube
+      (d := d) hd)
+
 /-- The ordinary chosen base is joined inside the stored hull to any target
 point of that hull. -/
 theorem OS45BHWJostHullData.ordinaryBase_joinedIn
@@ -3707,10 +3795,11 @@ structure OS45BHWJostSPrimeBranchData
           (BHW.permAct (d := d) P.τ z))
       (BHW.permutedExtendedTubeSector d n P.τ ∩ H.ΩJ)
 
-/-- Once the OS I section 4.5 Figure-2-4 local EOW seed is available, the
-authorized neutral local `S'_n` theorem mechanically produces the single
-reference branch on the checked OS45 local hull. -/
-noncomputable def os45_BHWJost_SPrimeBranchData_of_localSPrimeEOWSeed
+/-- Once a local EOW seed has been produced at an actual point of the
+two-sector `S'_n` overlap, the authorized neutral local BHW theorem
+mechanically produces the single reference branch on the checked OS45 local
+hull. -/
+noncomputable def os45_BHWJost_SPrimeBranchData_of_localSPrimeEOWSeedAt
     [NeZero d] (hd : 2 ≤ d)
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS)
@@ -3718,10 +3807,14 @@ noncomputable def os45_BHWJost_SPrimeBranchData_of_localSPrimeEOWSeed
     {P : BHW.OS45Figure24CanonicalSourcePatchData
       (d := d) hd n i hi}
     (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P)
+    (zseed : Fin n → Fin (d + 1) → ℂ)
+    (hzseed :
+      zseed ∈ H.ΩJ ∩ BHW.ExtendedTube d n ∩
+        BHW.permutedExtendedTubeSector d n P.τ)
     (hEOW_seed :
       ∃ W : Set (Fin n → Fin (d + 1) → ℂ),
         IsOpen W ∧ IsPreconnected W ∧
-        BHW.realEmbed P.xseed ∈ W ∧
+        zseed ∈ W ∧
         W ⊆ BHW.localSPrimeTwoSectorHull d n P.τ H.zbase ∩
           BHW.ExtendedTube d n ∩
           BHW.permutedExtendedTubeSector d n P.τ ∧
@@ -3772,18 +3865,18 @@ noncomputable def os45_BHWJost_SPrimeBranchData_of_localSPrimeEOWSeed
   have hΩ : H.ΩJ = BHW.localSPrimeTwoSectorHull d n P.τ H.zbase :=
     H.ΩJ_eq_localSPrimeTwoSectorHull
   have hseed :
-      BHW.realEmbed P.xseed ∈
+      zseed ∈
         BHW.localSPrimeTwoSectorHull d n P.τ H.zbase ∩
           BHW.ExtendedTube d n ∩
           BHW.permutedExtendedTubeSector d n P.τ := by
     refine ⟨⟨?_, ?_⟩, ?_⟩
-    · simpa [hΩ] using H.realPatch_mem P.xseed P.xseed_mem
-    · exact H.realPatch_mem_extendedTube P.xseed P.xseed_mem
-    · exact H.realPatch_mem_permutedExtendedTubeSector P.xseed P.xseed_mem
+    · simpa [hΩ] using hzseed.1.1
+    · exact hzseed.1.2
+    · exact hzseed.2
   have hEOW_seed' :
       ∃ W : Set (BHW.SPrimeConfig d n),
         IsOpen W ∧ IsPreconnected W ∧
-        BHW.realEmbed P.xseed ∈ W ∧
+        zseed ∈ W ∧
         W ⊆ BHW.localSPrimeTwoSectorHull d n P.τ H.zbase ∩
           BHW.ExtendedTube d n ∩
           BHW.permutedExtendedTubeSector d n P.τ ∧
@@ -3791,7 +3884,7 @@ noncomputable def os45_BHWJost_SPrimeBranchData_of_localSPrimeEOWSeed
     simpa [Ford, Fadj] using hEOW_seed
   let hbranch :=
     BHW.localSPrime_twoSectorBranch_of_EOW_BHW
-      (d := d) hd P.τ H.zbase (BHW.realEmbed P.xseed)
+      (d := d) hd P.τ H.zbase zseed
       hbase hseed Ford Fadj hFord_holo hFadj_holo
       hFord_cinv hFadj_cinv hEOW_seed'
   let B := Classical.choose hbranch
@@ -3818,6 +3911,42 @@ noncomputable def os45_BHWJost_SPrimeBranchData_of_localSPrimeEOWSeed
   · simpa [hΩ] using hB_holo
   · simpa [Ford, hΩ] using hB_ord
   · simpa [Fadj, hΩ] using hB_adj
+
+/-- Fixed-real-patch specialization of
+`os45_BHWJost_SPrimeBranchData_of_localSPrimeEOWSeedAt`.  The strict
+Figure-2-4 route uses the generalized version above at the horizontal
+common-edge `S'_n` seed; this form preserves older callers whose seed is the
+stored real patch point. -/
+noncomputable def os45_BHWJost_SPrimeBranchData_of_localSPrimeEOWSeed
+    [NeZero d] (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {n : ℕ} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P)
+    (hEOW_seed :
+      ∃ W : Set (Fin n → Fin (d + 1) → ℂ),
+        IsOpen W ∧ IsPreconnected W ∧
+        BHW.realEmbed P.xseed ∈ W ∧
+        W ⊆ BHW.localSPrimeTwoSectorHull d n P.τ H.zbase ∩
+          BHW.ExtendedTube d n ∩
+          BHW.permutedExtendedTubeSector d n P.τ ∧
+        Set.EqOn
+          (BHW.extendF (bvt_F OS lgc n))
+          (fun z =>
+            BHW.extendF (bvt_F OS lgc n)
+              (BHW.permAct (d := d) P.τ z))
+          W) :
+    BHW.OS45BHWJostSPrimeBranchData hd OS lgc H :=
+  BHW.os45_BHWJost_SPrimeBranchData_of_localSPrimeEOWSeedAt
+    (d := d) hd OS lgc H (BHW.realEmbed P.xseed)
+    (by
+      refine ⟨⟨?_, ?_⟩, ?_⟩
+      · exact H.realPatch_mem P.xseed P.xseed_mem
+      · exact H.realPatch_mem_extendedTube P.xseed P.xseed_mem
+      · exact H.realPatch_mem_permutedExtendedTubeSector P.xseed P.xseed_mem)
+    hEOW_seed
 
 /-- A two-open-cover holomorphy gluing lemma for an `if`-defined branch.
 
