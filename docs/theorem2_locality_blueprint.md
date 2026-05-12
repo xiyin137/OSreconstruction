@@ -77964,8 +77964,8 @@ Implementation transcript for
      proofs.  What remains is the OS I `(4.12)`/`(4.14)` side-integral rewrite
      identifying the holomorphic side integrals with those side-test
      Schwinger pairings.
-   * Before the side integral rewrites, prove the compact support shrink that
-     makes the E3 theorem applicable to the **shifted** tests:
+   * The compact support shrink that makes the E3 theorem applicable to the
+     **shifted** tests is now checked:
      ```lean
      theorem BHW.os45FlatCommonChart_sideSupport_radius
        ... (Kη : Set (BHW.OS45FlatCommonChartReal d n))
@@ -77985,13 +77985,15 @@ Implementation transcript for
              (SCV.translateSchwartz ((-ε : ℝ) • η) φ : _ → ℂ) ⊆
                BHW.os45FlatCommonChartEdgeSet d n P (1 : Equiv.Perm (Fin n))
      ```
-     Proof: `tsupport φ` is compact and contained in the open edge set; since
-     `Kη` is compact, the addition map
-     `(x, ε, η) ↦ x ± ε • η` is uniformly continuous on
-     `tsupport φ × [0,1] × Kη`.  Choose `r > 0` so both shifted compact sets
-     stay in the open edge.  This is a topological compact-in-open shrink, not
-     an analytic theorem.
-   * Use that shrink with a source-pullback support theorem:
+     Checked proof: `tsupport φ` is compact and contained in the open edge
+     set.  Apply `IsCompact.exists_thickening_subset_open` to the compact
+     zero-height set
+     `(tsupport φ ×ˢ Kη) ×ˢ {0}` inside the open side-window cut out by the
+     two maps `(x, η, ε) ↦ x - ε • η` and `(x, η, ε) ↦ x + ε • η`.  Then use
+     `BHW.tsupport_translateSchwartz_subset_preimage` to convert translated
+     topological support back to `tsupport φ`.
+   * The source-pullback support theorem consuming that edge support is now
+     checked:
      ```lean
      theorem BHW.OS45Figure24SourceCutoffData.toShiftedSchwartzNPointCLM_tsupport_subset_V
        ... (a : BHW.OS45FlatCommonChartReal d n)

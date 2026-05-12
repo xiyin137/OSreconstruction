@@ -345,6 +345,61 @@ theorem os45FlatCommonChartSeed_mem_edgeSet
     ⟨BHW.os45CommonEdgeRealPoint (d := d) (n := n) ρperm P.xseed,
       ⟨P.xseed, P.xseed_mem, rfl⟩, rfl⟩
 
+/-- Membership in the flattened Figure-2-4 edge, restricted to the linear
+source chart image, is exactly membership in the original source slice. -/
+theorem os45CommonEdgeFlatCLE_mem_edgeSet_iff
+    (d n : ℕ) [NeZero d]
+    {hd : 2 ≤ d} {i : Fin n} {hi : i.val + 1 < n}
+    (P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi)
+    (ρperm : Equiv.Perm (Fin n))
+    (x : NPointDomain d n) :
+    BHW.os45CommonEdgeFlatCLE d n ρperm x ∈
+        BHW.os45FlatCommonChartEdgeSet d n P ρperm ↔
+      x ∈ P.V := by
+  constructor
+  · intro hx
+    rcases hx with ⟨y, ⟨z, hzV, rfl⟩, hyx⟩
+    have hflat_z :
+        BHW.flattenCfgReal n d
+            (BHW.os45CommonEdgeRealPoint (d := d) (n := n) ρperm z) =
+          (flattenCLEquivReal n (d + 1))
+            (BHW.os45CommonEdgeRealPoint (d := d) (n := n) ρperm z) := by
+      ext a
+      simp [BHW.flattenCfgReal, flattenCLEquivReal_apply]
+    have hflat_eq :
+        (flattenCLEquivReal n (d + 1))
+            (BHW.os45CommonEdgeRealPoint (d := d) (n := n) ρperm z) =
+          (flattenCLEquivReal n (d + 1))
+            (BHW.os45CommonEdgeRealPoint (d := d) (n := n) ρperm x) := by
+      rw [← hflat_z]
+      change
+        BHW.flattenCfgReal n d
+            (BHW.os45CommonEdgeRealPoint (d := d) (n := n) ρperm z) =
+          BHW.os45CommonEdgeFlatCLE d n ρperm x
+      exact hyx
+    have hcommon :
+        BHW.os45CommonEdgeRealPoint (d := d) (n := n) ρperm z =
+          BHW.os45CommonEdgeRealPoint (d := d) (n := n) ρperm x :=
+      (flattenCLEquivReal n (d + 1)).injective hflat_eq
+    have hz_eq_x : z = x :=
+      (BHW.os45CommonEdgeRealCLE (d := d) (n := n) ρperm).injective
+        (by simpa using hcommon)
+    simpa [hz_eq_x] using hzV
+  · intro hxV
+    have hflat_x :
+        BHW.flattenCfgReal n d
+            (BHW.os45CommonEdgeRealPoint (d := d) (n := n) ρperm x) =
+          (flattenCLEquivReal n (d + 1))
+            (BHW.os45CommonEdgeRealPoint (d := d) (n := n) ρperm x) := by
+      ext a
+      simp [BHW.flattenCfgReal, flattenCLEquivReal_apply]
+    exact
+      ⟨BHW.os45CommonEdgeRealPoint (d := d) (n := n) ρperm x,
+        ⟨x, hxV, rfl⟩, by
+          rw [hflat_x]
+          rfl⟩
+
 /-- The flattened common-chart dimension is positive for an adjacent slot. -/
 theorem os45FlatCommonChartDim_pos_of_adjacent
     (d n : ℕ) {i : Fin n} (hi : i.val + 1 < n) :
@@ -667,6 +722,181 @@ theorem OS45Figure24SourceCutoffData.toShiftedSchwartzNPointCLM_tsupport_subset_
         BHW.OS45Figure24SourceCutoffData.toSchwartzNPointCLM,
         ContinuousLinearMap.comp_apply] using
         hsupport.trans (Set.inter_subset_right.trans D.tsupport_subset_Ufig))
+
+/-- If the shifted flat test is supported on the flattened common edge, then
+the shifted cutoff-pulled source test is supported in the original source
+slice.  This is the source-side support conversion used in the OS I `4.12` /
+`4.14` side-boundary rewrite. -/
+theorem OS45Figure24SourceCutoffData.toShiftedSchwartzNPointCLM_tsupport_subset_V
+    [NeZero d] {hd : 2 ≤ d} {n : ℕ}
+    {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (D : BHW.OS45Figure24SourceCutoffData P)
+    (ρperm : Equiv.Perm (Fin n))
+    (a : BHW.OS45FlatCommonChartReal d n)
+    (φ : SchwartzMap (BHW.OS45FlatCommonChartReal d n) ℂ)
+    (hφE :
+      tsupport (SCV.translateSchwartz a φ :
+        BHW.OS45FlatCommonChartReal d n → ℂ) ⊆
+        BHW.os45FlatCommonChartEdgeSet d n P ρperm) :
+    tsupport (D.toShiftedSchwartzNPointCLM ρperm a φ :
+      NPointDomain d n → ℂ) ⊆ P.V := by
+  intro x hx
+  let e := BHW.os45CommonEdgeFlatCLE d n ρperm
+  let ψ : SchwartzMap (BHW.OS45FlatCommonChartReal d n) ℂ :=
+    SCV.translateSchwartzCLM a φ
+  have hsupport :=
+    SchwartzMap.tsupport_smulLeftCLM_subset D.χ
+      ((SchwartzMap.compCLMOfContinuousLinearEquiv ℂ e) ψ)
+  have hx_smul :
+      x ∈ tsupport
+        (SchwartzMap.smulLeftCLM ℂ D.χ
+          ((SchwartzMap.compCLMOfContinuousLinearEquiv ℂ e) ψ) :
+          NPointDomain d n → ℂ) := by
+    simpa [BHW.OS45Figure24SourceCutoffData.toShiftedSchwartzNPointCLM,
+      BHW.OS45Figure24SourceCutoffData.toSchwartzNPointCLM,
+      ContinuousLinearMap.comp_apply, e, ψ] using hx
+  have hx_comp :
+      x ∈ tsupport
+        (((SchwartzMap.compCLMOfContinuousLinearEquiv ℂ e) ψ) :
+          NPointDomain d n → ℂ) :=
+    (hsupport hx_smul).1
+  have hcomp_support :
+      tsupport ((ψ : BHW.OS45FlatCommonChartReal d n → ℂ) ∘
+          fun y : NPointDomain d n => e y) ⊆
+        e ⁻¹' tsupport (ψ : BHW.OS45FlatCommonChartReal d n → ℂ) := by
+    exact tsupport_comp_subset_preimage
+      (ψ : BHW.OS45FlatCommonChartReal d n → ℂ) e.continuous
+  have hx_comp' :
+      x ∈ tsupport ((ψ : BHW.OS45FlatCommonChartReal d n → ℂ) ∘
+          fun y : NPointDomain d n => e y) := by
+    simpa [SchwartzMap.compCLMOfContinuousLinearEquiv_apply] using hx_comp
+  have hx_flat :
+      e x ∈ tsupport
+        (SCV.translateSchwartz a φ :
+          BHW.OS45FlatCommonChartReal d n → ℂ) := by
+    simpa [ψ, SCV.translateSchwartzCLM_apply] using
+      hcomp_support hx_comp'
+  exact
+    (BHW.os45CommonEdgeFlatCLE_mem_edgeSet_iff d n P ρperm x).mp
+      (hφE hx_flat)
+
+/-- Topological-support transport for real Schwartz translations in flattened
+coordinates. -/
+theorem tsupport_translateSchwartz_subset_preimage
+    {m : ℕ} (a : Fin m → ℝ)
+    (φ : SchwartzMap (Fin m → ℝ) ℂ) :
+    tsupport (SCV.translateSchwartz a φ : (Fin m → ℝ) → ℂ) ⊆
+      (fun x : Fin m → ℝ => x + a) ⁻¹'
+        tsupport (φ : (Fin m → ℝ) → ℂ) := by
+  have hsub :
+      tsupport ((φ : (Fin m → ℝ) → ℂ) ∘
+          fun x : Fin m → ℝ => x + a) ⊆
+        (fun x : Fin m → ℝ => x + a) ⁻¹'
+          tsupport (φ : (Fin m → ℝ) → ℂ) := by
+    exact tsupport_comp_subset_preimage
+      (φ : (Fin m → ℝ) → ℂ) (continuous_id.add continuous_const)
+  intro x hx
+  exact hsub (by simpa [SCV.translateSchwartz_apply] using hx)
+
+/-- Compactly supported flat common-chart tests remain supported on the
+Figure-2-4 common edge after sufficiently small positive and negative side
+translations, uniformly over a compact set of side directions. -/
+theorem os45FlatCommonChart_sideSupport_radius
+    [NeZero d] {hd : 2 ≤ d} {n : ℕ}
+    {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (Kη : Set (BHW.OS45FlatCommonChartReal d n))
+    (hKη : IsCompact Kη)
+    (_hKηC : Kη ⊆ BHW.os45FlatCommonChartCone d n)
+    (φ : SchwartzMap (BHW.OS45FlatCommonChartReal d n) ℂ)
+    (hφ_compact : HasCompactSupport
+      (φ : BHW.OS45FlatCommonChartReal d n → ℂ))
+    (hφE :
+      tsupport (φ : BHW.OS45FlatCommonChartReal d n → ℂ) ⊆
+        BHW.os45FlatCommonChartEdgeSet d n P
+          (1 : Equiv.Perm (Fin n))) :
+    ∃ r : ℝ, 0 < r ∧
+      ∀ ε : ℝ, 0 < ε → ε < r →
+      ∀ η ∈ Kη,
+        tsupport
+          (SCV.translateSchwartz ((ε : ℝ) • η) φ :
+            BHW.OS45FlatCommonChartReal d n → ℂ) ⊆
+            BHW.os45FlatCommonChartEdgeSet d n P
+              (1 : Equiv.Perm (Fin n)) ∧
+        tsupport
+          (SCV.translateSchwartz ((-ε : ℝ) • η) φ :
+            BHW.OS45FlatCommonChartReal d n → ℂ) ⊆
+            BHW.os45FlatCommonChartEdgeSet d n P
+              (1 : Equiv.Perm (Fin n)) := by
+  let R := BHW.OS45FlatCommonChartReal d n
+  let S : Set R := tsupport (φ : R → ℂ)
+  let E : Set R :=
+    BHW.os45FlatCommonChartEdgeSet d n P (1 : Equiv.Perm (Fin n))
+  let zeroEdge : Set ((R × R) × ℝ) := (S ×ˢ Kη) ×ˢ ({0} : Set ℝ)
+  let sideWindow : Set ((R × R) × ℝ) :=
+    {p | p.1.1 - p.2 • p.1.2 ∈ E ∧ p.1.1 + p.2 • p.1.2 ∈ E}
+  have hE_open : IsOpen E := by
+    simpa [E] using
+      BHW.isOpen_os45FlatCommonChartEdgeSet d n P
+        (1 : Equiv.Perm (Fin n))
+  have hminus_cont :
+      Continuous (fun p : (R × R) × ℝ => p.1.1 - p.2 • p.1.2) := by
+    fun_prop
+  have hplus_cont :
+      Continuous (fun p : (R × R) × ℝ => p.1.1 + p.2 • p.1.2) := by
+    fun_prop
+  have hside_open : IsOpen sideWindow := by
+    exact (hE_open.preimage hminus_cont).inter
+      (hE_open.preimage hplus_cont)
+  have hS_compact : IsCompact S := by
+    simpa [S] using hφ_compact.isCompact
+  have hzero_compact : IsCompact zeroEdge :=
+    (hS_compact.prod hKη).prod isCompact_singleton
+  have hzero_sub : zeroEdge ⊆ sideWindow := by
+    rintro ⟨⟨x, η⟩, ε⟩ ⟨⟨hxS, _hη⟩, hε0⟩
+    have hε : ε = 0 := by simpa using hε0
+    subst ε
+    constructor <;> simpa [sideWindow, E] using hφE hxS
+  obtain ⟨r, hr_pos, hr_sub⟩ :=
+    hzero_compact.exists_thickening_subset_open hside_open hzero_sub
+  refine ⟨r, hr_pos, ?_⟩
+  intro ε hε_pos hε_lt η hη
+  have hside :
+      ∀ x ∈ S, x - ε • η ∈ E ∧ x + ε • η ∈ E := by
+    intro x hxS
+    have hmem : (((x, η), ε) : (R × R) × ℝ) ∈
+        Metric.thickening r zeroEdge := by
+      rw [Metric.mem_thickening_iff]
+      refine ⟨((x, η), (0 : ℝ)), ?_, ?_⟩
+      · exact ⟨⟨hxS, hη⟩, by simp⟩
+      · simpa [Prod.dist_eq, Real.dist_eq, abs_of_nonneg hε_pos.le] using
+          ⟨hr_pos, hε_lt⟩
+    exact hr_sub hmem
+  constructor
+  · intro y hy
+    have hyS :
+        y + ε • η ∈ S :=
+      BHW.tsupport_translateSchwartz_subset_preimage
+        ((ε : ℝ) • η) φ hy
+    have hEminus : y + ε • η - ε • η ∈ E :=
+      (hside (y + ε • η) hyS).1
+    have hcancel : y + ε • η - ε • η = y := by
+      simp
+    simpa [E, hcancel] using hEminus
+  · intro y hy
+    have hyS :
+        y + (-ε : ℝ) • η ∈ S :=
+      BHW.tsupport_translateSchwartz_subset_preimage
+        ((-ε : ℝ) • η) φ hy
+    have hEplus : y + (-ε : ℝ) • η + ε • η ∈ E :=
+      (hside (y + (-ε : ℝ) • η) hyS).2
+    have hcancel : y + (-ε : ℝ) • η + ε • η = y := by
+      rw [add_assoc, ← add_smul]
+      simp
+    simpa [E, hcancel] using hEplus
 
 /-- Shifted cutoff-pulled common-chart tests still lie in the zero-diagonal OS
 test space; the fixed source cutoff keeps their support inside the Figure-2-4
