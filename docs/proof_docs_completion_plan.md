@@ -1480,6 +1480,209 @@ not record the determinant/proper-component data.
    remain endpoint/corridor data only; they do not supply the adjacent Wick
    trace.
 
+   2026-05-12 audit correction: this producer is non-circular only if the
+   local chart is built inside the **single-sector overlap**
+
+   ```lean
+   Ωτ :=
+     BHW.ExtendedTube d n ∩
+       BHW.permutedExtendedTubeSector d n P.τ
+   Hord z := BHW.extendF (bvt_F OS lgc n) z
+   Hadj z :=
+     BHW.extendF (bvt_F OS lgc n)
+       (BHW.permAct (d := d) P.τ z)
+   ```
+
+   The future Lean theorem should therefore carry, at least internally, the
+   field
+
+   ```lean
+   hUcx_subset :
+     Ucx ⊆
+       BHW.ExtendedTube d n ∩
+         BHW.permutedExtendedTubeSector d n P.τ
+   ```
+
+   so that holomorphy of `Hord` and `Hadj` is obtained by restricting the
+   checked single-sector holomorphy lemmas.  It may not use
+   `BHW.localSPrime_twoSectorBranch_of_EOW_BHW`, common-boundary CLM equality,
+   the local `S'_n` branch, source-oriented quotient/descent, or final
+   locality.
+
+   The exact Lean-facing sublemmas before this producer is implementation-ready
+   are:
+
+   ```lean
+   theorem BHW.os45Figure24IdentityPath_mem_initialSectorOverlap
+       [NeZero d] (hd : 2 <= d)
+       {n : Nat} {i : Fin n} {hi : i.val + 1 < n}
+       {P : BHW.OS45Figure24CanonicalSourcePatchData
+         (d := d) hd n i hi}
+       {x : NPointDomain d n} (hx : x ∈ closure P.V) :
+       ∀ t : unitInterval,
+         BHW.os45Figure24IdentityPath (d := d) (n := n) x t ∈
+           BHW.ExtendedTube d n ∩
+             BHW.permutedExtendedTubeSector d n P.τ
+
+   theorem BHW.os45Figure24_adjacentWick_mem_permutedForwardTube
+       [NeZero d] (hd : 2 <= d)
+       {n : Nat} {i : Fin n} {hi : i.val + 1 < n}
+       {P : BHW.OS45Figure24CanonicalSourcePatchData
+         (d := d) hd n i hi}
+       {u : NPointDomain d n} (hu : u ∈ P.V) :
+       BHW.permAct (d := d) P.τ
+         (fun k => wickRotatePoint (u k)) ∈
+         BHW.PermutedForwardTube d n P.τ
+
+   theorem BHW.os45Figure24_adjacentWick_mem_extendedTube
+       [NeZero d] (hd : 2 <= d)
+       {n : Nat} {i : Fin n} {hi : i.val + 1 < n}
+       {P : BHW.OS45Figure24CanonicalSourcePatchData
+         (d := d) hd n i hi}
+       {u : NPointDomain d n} (hu : u ∈ P.V) :
+       BHW.permAct (d := d) P.τ
+         (fun k => wickRotatePoint (u k)) ∈
+         BHW.ExtendedTube d n
+
+   theorem
+     BHW.os45Figure24_BHWExtension_eq_initialSnBranch_on_adjacentWick_of_OSI45
+       [NeZero d] (hd : 2 <= d)
+       (OS : OsterwalderSchraderAxioms d)
+       (lgc : OSLinearGrowthCondition d OS)
+       {n : Nat} {i : Fin n} {hi : i.val + 1 < n}
+       {P : BHW.OS45Figure24CanonicalSourcePatchData
+         (d := d) hd n i hi}
+       {u : NPointDomain d n} (hu : u ∈ P.V) :
+       BHW.extendF (bvt_F OS lgc n)
+         (BHW.permAct (d := d) P.τ
+           (fun k => wickRotatePoint (u k))) =
+         bvt_F OS lgc n
+           (BHW.permAct (d := d) P.τ
+             (fun k => wickRotatePoint (u k)))
+
+   theorem BHW.os45Figure24_adjacentWick_extendF_permAct_eq_bvt_F
+       [NeZero d] (hd : 2 <= d)
+       (OS : OsterwalderSchraderAxioms d)
+       (lgc : OSLinearGrowthCondition d OS)
+       {n : Nat} {i : Fin n} {hi : i.val + 1 < n}
+       {P : BHW.OS45Figure24CanonicalSourcePatchData
+         (d := d) hd n i hi}
+       {u : NPointDomain d n} (hu : u ∈ P.V) :
+       BHW.extendF (bvt_F OS lgc n)
+         (BHW.permAct (d := d) P.τ
+           (fun k => wickRotatePoint (u k))) =
+         bvt_F OS lgc n
+           (fun k => wickRotatePoint (u (P.τ k)))
+
+   theorem BHW.os45Figure24CommonEdge_permAct_extendF_eq_adjacentPulledRealBranch
+       [NeZero d] (hd : 2 <= d)
+       (OS : OsterwalderSchraderAxioms d)
+       (lgc : OSLinearGrowthCondition d OS)
+       {n : Nat} {i : Fin n} {hi : i.val + 1 < n}
+       {P : BHW.OS45Figure24CanonicalSourcePatchData
+         (d := d) hd n i hi}
+       (u : NPointDomain d n) :
+       BHW.extendF (bvt_F OS lgc n)
+         (BHW.permAct (d := d) P.τ
+           ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+             (BHW.realEmbed
+               (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                 (1 : Equiv.Perm (Fin n)) u)))) =
+         BHW.os45PulledRealBranch (d := d) (n := n)
+           OS lgc (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+           (BHW.realEmbed
+             (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+               (1 : Equiv.Perm (Fin n)) u))
+   ```
+
+   The first lemma is pure Figure-2-4 geometry: `ExtendedTube` comes from
+   `BHW.os45Figure24IdentityPath_mem_forwardTube` and
+   `BHW.forwardTube_subset_extendedTube`; the permuted-sector component comes
+   from `P.figPath_closure`, `BHW.figure24RotateAdjacentConfig_lorentz_inverse`,
+   and `BHW.complexLorentzAction_mem_extendedTube`.  The two adjacent-Wick
+   membership lemmas then split the two different facts that earlier audits
+   conflated: `BHW.PermutedForwardTube` membership is a direct `P.τ`-twice
+   calculation plus ordinary forward-tube membership, while ordinary
+   `BHW.ExtendedTube` membership comes from the permuted-sector component of
+   the Figure-2-4 overlap lemma at `t = 0`.
+
+   The theorem
+   `BHW.os45Figure24_BHWExtension_eq_initialSnBranch_on_adjacentWick_of_OSI45`
+   is the true OS I `(4.12)` analytic input.  It is not proved by
+   `BHW.extendF_eq_on_forwardTube`; the adjacent Wick point is not an ordinary
+   forward-tube point.  It is also not proved by `bvt_F_perm` alone, and it is
+   not valid to treat the particle-label permutation `BHW.permAct P.τ` as a
+   complex Lorentz transform.  The Lean transcript must factor through the
+   local initial-domain theorem:
+
+   ```lean
+   theorem
+     BHW.extendF_bvt_F_eq_bvt_F_on_local_initialSn_overlap_of_OSI45
+       [NeZero d] (hd : 2 <= d)
+       (OS : OsterwalderSchraderAxioms d)
+       (lgc : OSLinearGrowthCondition d OS)
+       {n : Nat} {i : Fin n} {hi : i.val + 1 < n}
+       {P : BHW.OS45Figure24CanonicalSourcePatchData
+         (d := d) hd n i hi}
+       {z : Fin n -> Fin (d + 1) -> ℂ}
+       (hzET : z ∈ BHW.ExtendedTube d n)
+       (hzPFT : z ∈ BHW.PermutedForwardTube d n P.τ)
+       (hzFig :
+         ∃ u ∈ P.V,
+           z =
+             BHW.permAct (d := d) P.τ
+               (fun k => wickRotatePoint (u k))) :
+       BHW.extendF (bvt_F OS lgc n) z =
+         bvt_F OS lgc n z
+   ```
+
+   Proof transcript for this theorem: construct the OS I §4.5 initial
+   symmetric branch on
+   `S_n = ⋃ σ, BHW.PermutedForwardTube d n σ` from `E2` and equations
+   `(4.1)`, `(4.12)`, `(4.14)`; identify its identity-sector restriction with
+   `bvt_F OS lgc n` on the ordinary forward tube; apply the
+   Bargmann-Hall-Wightman continuation theorem to compare that initial branch
+   with `BHW.extendF (bvt_F OS lgc n)` on the local component of
+   `BHW.ExtendedTube d n ∩ BHW.PermutedForwardTube d n P.τ` reached by the
+   checked Figure-2-4 corridor; specialize using `hzFig`.  After this theorem,
+   `BHW.os45Figure24_adjacentWick_extendF_permAct_eq_bvt_F` is a rewrite of
+   `BHW.permAct`.  The common-edge pullback theorem remains definitional:
+   unfold `BHW.os45PulledRealBranch`, simplify `(P.τ.symm * 1).symm` to
+   `P.τ`, and close by `simp`.
+
+   After those sublemmas, build the compact chart by applying a neutral
+   topology helper
+
+   ```lean
+   theorem exists_open_connected_neighborhood_of_compact_connected_subset_open
+       {E : Type*} [NormedAddCommGroup E] [NormedSpace ℂ E]
+       {K Ω : Set E}
+       (hK_compact : IsCompact K)
+       (hK_connected : IsConnected K)
+       (hΩ_open : IsOpen Ω)
+       (hKΩ : K ⊆ Ω) :
+       ∃ Ucx : Set E, IsOpen Ucx ∧ IsConnected Ucx ∧ K ⊆ Ucx ∧ Ucx ⊆ Ω
+   ```
+
+   Lean proof of this neutral helper: use compactness of `K`, openness of
+   `Ω`, and `K ⊆ Ω` to obtain `ε > 0` with
+   `{x | infDist x K < ε} ⊆ Ω` by the standard finite-subcover/Lebesgue-number
+   argument.  Let `Ucx := {x | ∃ k ∈ K, dist x k < ε / 2}`.  It is open as a
+   union of balls; it contains `K` by centering at each `k`; it lies in `Ω`
+   because every point has distance `< ε` from `K`.  For connectedness, either
+   realize `Ucx` as the image of `K × Metric.ball 0 (ε/2)` under
+   `(k,v) ↦ k + v`, or use the equivalent union-of-balls lemma: each ball is
+   connected and every ball meets the connected set `K`, so their union with
+   `K` is connected.  This helper is pure topology and should live outside the
+   OS45/QFT files.
+
+   to the image of
+   `(x,t) ↦ BHW.os45Figure24IdentityPath (d := d) (n := n) x t` on
+   `closure U × unitInterval`.  The image is compact by `hU_compact` and
+   continuity, connected by `hU_connected.closure` and connectedness of
+   `unitInterval`, and lies in `Ωτ` by the first sublemma.  The Wick and
+   horizontal membership fields are the `t = 0` and `t = 1` specializations.
+
    Concretely, the two-branch germ theorem returns the same `Ucx`, `Hord`,
    and `Hadj` fields displayed in the blueprint.  After that theorem is
    available, this producer sets `Hdiff z := Hadj z - Hord z`, proves
@@ -1506,6 +1709,9 @@ not record the determinant/proper-component data.
        ∃ (Ucx : Set (Fin n -> Fin (d + 1) -> ℂ))
          (Hord Hadj : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ),
          IsOpen Ucx ∧ IsConnected Ucx ∧
+         Ucx ⊆
+           BHW.ExtendedTube d n ∩
+             BHW.permutedExtendedTubeSector d n P.τ ∧
          (∀ u ∈ U, (fun k => wickRotatePoint (u k)) ∈ Ucx) ∧
          (∀ u ∈ U,
            (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
@@ -1545,28 +1751,31 @@ not record the determinant/proper-component data.
                    (1 : Equiv.Perm (Fin n)) u)))
    ```
 
-   The proof starts with the checked compact corridor maps
-   `BHW.os45Figure24IdentityPath` and `BHW.os45Figure24AdjacentLift`,
-   their joint-continuity theorems, and the tube-membership fields from
-   `P.closure_ordered`, `BHW.os45Figure24IdentityPath_mem_forwardTube`,
-   `BHW.forwardTube_subset_extendedTube`, and the fifth field of
-   `P.figPath_closure`.  The initial analytic elements are exactly
-   `u ↦ bvt_F OS lgc n (wick u)` and
+   The proof starts with the checked compact corridor map
+   `BHW.os45Figure24IdentityPath`, the adjacent-lift membership data from
+   `BHW.os45Figure24AdjacentLift`, their joint-continuity theorems, and the
+   overlap-membership fields from `P.closure_ordered`,
+   `BHW.os45Figure24IdentityPath_mem_forwardTube`,
+   `BHW.forwardTube_subset_extendedTube`, `P.figPath_closure`,
+   `BHW.figure24RotateAdjacentConfig_lorentz_inverse`, and
+   `BHW.complexLorentzAction_mem_extendedTube`.  The initial analytic elements
+   are exactly `u ↦ bvt_F OS lgc n (wick u)` and
    `u ↦ bvt_F OS lgc n (wick (u ∘ P.τ))`; the second is the OS I `(4.12)`
-   adjacent analytic element, not a forward-tube normalization of the
-   permuted Wick point.  The endpoint trace fields use only the checked
-   endpoint conversions
-   `BHW.os45Figure24Path_endpoint_extendF_eq_ordinaryPulledRealBranch`
-   and
-   `BHW.os45Figure24OrientedPath_endpoint_extendF_eq_adjacentPulledRealBranch`.
-   A helper theorem may be introduced only if it returns these same four
-   scalar trace fields; a merged branch, dummy value field, or unexpanded
-   existence placeholder is off-route.
+   adjacent analytic element, not a forward-tube normalization of the permuted
+   Wick point.  The horizontal trace fields are common-chart pullback
+   simplifications of `BHW.os45PulledRealBranch`; the stronger endpoint
+   theorems remain corridor audit support, not branch-normalization shortcuts.
+   A helper theorem may be introduced only if it returns these same four scalar
+   trace fields plus the overlap-subset field; a merged branch, dummy value
+   field, or unexpanded existence placeholder is off-route.
 
-   Until the proof transcript for
-   `BHW.os45Figure24_localTwoBranchGerm_of_OSI45` is written at Lean
-   transcription level, the proof docs are not ready for Lean implementation
-   of `BHW.os45CommonEdge_localFigure24DifferenceGerm_of_OSI45`.
+   Current readiness status: the chart topology, Figure-2-4 overlap
+   membership, and horizontal pullback transcript are now Lean-facing, but the
+   OS I initial-overlap theorem
+   `BHW.extendF_bvt_F_eq_bvt_F_on_local_initialSn_overlap_of_OSI45` is not yet
+   expanded to Lean-transcription detail.  Until that theorem is written at
+   the same level, the proof docs are not ready for Lean implementation of
+   `BHW.os45CommonEdge_localFigure24DifferenceGerm_of_OSI45`.
 
    **Checked reducer.**  The mechanical theorem
    `BHW.os45CommonEdge_localHorizontalDifference_representsZero_of_germ` is
