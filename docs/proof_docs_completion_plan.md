@@ -11878,10 +11878,15 @@ common-boundary envelope, or any theorem that already assumes locality.
       `SCV.chartDistributionalEOW_local_envelope` at
       `xflat := BHW.os45FlatCommonChartSeed d n P 1`.  Choose the EOW basis
       `ys` first by `SCV.open_set_contains_basis`; the distributional theorem
-      returns `ρ r δ R Hcoord`.  Then use the pure helper
+      returns `ρ r δ R Hcoord`.  Then use the now-checked pure helper
       `SCV.localEOW_envelope_eqOn_small_twoSector_ball` to shrink the returned
       ball into both branch domains and obtain equality of the pulled
-      flat-coordinate branches on a small coordinate ball.
+      flat-coordinate branches on a small coordinate ball.  This helper is
+      checked in `OSReconstruction/SCV/LocalEOWDistributionalEnvelope.lean`;
+      it chooses a smaller metric ball from openness at chart zero, applies
+      the several-variable identity theorem from the positive and negative
+      strict-side seed points, and combines the two identities through
+      `Hcoord`.
    5. Pull that small ball back to original configurations by
       `w ↦ (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
         (BHW.unflattenCfg n d (SCV.localEOWChart xflat ys w))`.  The image is
@@ -19025,9 +19030,10 @@ the two local representation fields, the checked generic finite-partition
 reducer `SCV.distribution_representation_of_local_representations_for_test`
 gives the plus/minus zero-height compact pairings into that same `T`; the
 checked `_of_zeroHeight_pairingCLM` reducers then feed
-`SCV.chartDistributionalEOW_local_envelope`; after shrinking the returned
-coordinate ball into both flat branch domains and applying the identity
-theorem, the inverse-quarter-turn image gives
+`SCV.chartDistributionalEOW_local_envelope`; the checked helper
+`SCV.localEOW_envelope_eqOn_small_twoSector_ball` shrinks the returned
+coordinate ball into both flat branch domains and applies the identity
+theorem, and the inverse-quarter-turn image gives
 `BHW.os45_BHWJost_localSPrimeEOWSeed_of_OSI45` centered at
 `BHW.os45Figure24CommonEdgeSPrimeSeed d n P`.  The generalized
 `BHW.os45_BHWJost_SPrimeBranchData_of_localSPrimeEOWSeedAt` then feeds that

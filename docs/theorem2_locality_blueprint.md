@@ -79217,6 +79217,16 @@ Implementation transcript for
    before invoking the identity theorem.  It does not claim that
    `Fplus ∘ Φ` or `Fminus ∘ Φ` is holomorphic on the entire original EOW ball.
 
+   Lean checkpoint: `SCV.localEOW_envelope_eqOn_small_twoSector_ball` is now
+   checked in `OSReconstruction/SCV/LocalEOWDistributionalEnvelope.lean`.  The
+   proof chooses the smaller radius from the open set
+   `Metric.ball 0 R ∩ Φ ⁻¹' Ωplus ∩ Φ ⁻¹' Ωminus`, uses the explicit seed
+   points `fun _ => (R0 / 4 : ℂ) * Complex.I` and its negative inside the
+   smaller ball, propagates `Hcoord = Fplus ∘ Φ` and
+   `Hcoord = Fminus ∘ Φ` by
+   `AnalyticOnNhd.eqOn_of_preconnected_of_eventuallyEq`, and combines the two
+   equalities on the smaller ball.
+
 7. Pull the small coordinate ball back to original `S'_n` variables through
    the inverse quarter-turn:
 
@@ -80445,7 +80455,9 @@ CLM-valued plus/minus reducers
 `BHW.os45_BHWJost_flatCommonChart_distributionalBoundaryValue_plus_of_zeroHeight_pairingCLM`
 and
 `BHW.os45_BHWJost_flatCommonChart_distributionalBoundaryValue_minus_of_zeroHeight_pairingCLM`.
-The next unproved Lean packet is the strict OS I §4.5 common-boundary CLM
+The SCV shrink/identity helper
+`SCV.localEOW_envelope_eqOn_small_twoSector_ball` is checked.  The next
+unproved Lean packet is the strict OS I §4.5 common-boundary CLM
 `BHW.os45FlatCommonChart_commonBoundaryCLM_of_OSI45`, followed by
 `BHW.os45_BHWJost_localSPrimeEOWSeed_of_OSI45`.  Once the seed producer
 is checked, the generalized reducer
