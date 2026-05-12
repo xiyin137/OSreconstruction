@@ -3834,6 +3834,128 @@ theorem os45CommonEdge_wickDifference_integral_zero_of_E3
           (MeasureTheory.integral_sub hint_adj hint_ord)
     _ = 0 := sub_eq_zero.mpr hpair
 
+/-- A local Figure-2-4 holomorphic difference germ whose Wick trace has zero
+distributional pairing represents the zero distribution on the horizontal
+common edge.  This is the checked identity-theorem reducer; the actual OS I
+§4.5 work is the production of the germ hypotheses. -/
+theorem os45CommonEdge_localHorizontalDifference_representsZero_of_germ
+    [NeZero d] (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {n : ℕ} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (U : Set (NPointDomain d n))
+    (hU_open : IsOpen U)
+    (hU_nonempty : U.Nonempty)
+    (hU_sub_PV : U ⊆ P.V)
+    (Ucx : Set (Fin n → Fin (d + 1) → ℂ))
+    (Hdiff : (Fin n → Fin (d + 1) → ℂ) → ℂ)
+    (hUcx_open : IsOpen Ucx)
+    (hUcx_connected : IsConnected Ucx)
+    (hwick_mem :
+      ∀ u ∈ U, (fun k => wickRotatePoint (u k)) ∈ Ucx)
+    (hcommon_mem :
+      ∀ u ∈ U,
+        (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+          (BHW.realEmbed
+            (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+              (1 : Equiv.Perm (Fin n)) u)) ∈ Ucx)
+    (hHdiff_holo : DifferentiableOn ℂ Hdiff Ucx)
+    (hwick_trace :
+      ∀ u ∈ U,
+        Hdiff (fun k => wickRotatePoint (u k)) =
+          bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k))) -
+            bvt_F OS lgc n (fun k => wickRotatePoint (u k)))
+    (hcommon_trace :
+      ∀ u ∈ U,
+        Hdiff
+          ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u))) =
+          BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+              (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+              (BHW.realEmbed
+                (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                  (1 : Equiv.Perm (Fin n)) u)) -
+            BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+              (1 : Equiv.Perm (Fin n))
+              (BHW.realEmbed
+                (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                  (1 : Equiv.Perm (Fin n)) u))) :
+    SCV.RepresentsDistributionOn
+      (0 : SchwartzMap (NPointDomain d n) ℂ →L[ℂ] ℂ)
+      (fun u =>
+        BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+            (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u)) -
+          BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+            (1 : Equiv.Perm (Fin n))
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u))) U := by
+  classical
+  let Ghoriz : NPointDomain d n → ℂ :=
+    fun u =>
+      BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+          (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+          (BHW.realEmbed
+            (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+              (1 : Equiv.Perm (Fin n)) u)) -
+        BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+          (1 : Equiv.Perm (Fin n))
+          (BHW.realEmbed
+            (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+              (1 : Equiv.Perm (Fin n)) u))
+  have hHdiff_zero : Set.EqOn Hdiff (fun _ => 0) Ucx := by
+    refine
+      eqOn_openConnected_of_distributional_wickSection_eq_on_realOpen
+        (d := d) (n := n)
+        Ucx U hUcx_open hUcx_connected hU_open hU_nonempty
+        hwick_mem Hdiff (fun _ => 0) hHdiff_holo
+        (differentiableOn_const (c := (0 : ℂ))) ?_
+    intro φ hφ_compact hφ_suppU
+    have hφ_suppP :
+        tsupport (φ : NPointDomain d n → ℂ) ⊆ P.V := fun u hu =>
+      hU_sub_PV (hφ_suppU hu)
+    have hwick_zero :=
+      BHW.os45CommonEdge_wickDifference_integral_zero_of_E3
+        (d := d) hd OS lgc (P := P) φ hφ_compact hφ_suppP
+    calc
+      ∫ u : NPointDomain d n,
+          Hdiff (fun k => wickRotatePoint (u k)) * φ u
+          =
+        ∫ u : NPointDomain d n,
+          (bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k))) -
+            bvt_F OS lgc n (fun k => wickRotatePoint (u k))) * φ u := by
+          apply MeasureTheory.integral_congr_ae
+          filter_upwards with u
+          by_cases hu : u ∈ U
+          · simp [hwick_trace u hu]
+          · have hφu : φ u = 0 :=
+              image_eq_zero_of_notMem_tsupport
+                (fun hsupp => hu (hφ_suppU hsupp))
+            simp [hφu]
+      _ = 0 := hwick_zero
+      _ = ∫ u : NPointDomain d n, (0 : ℂ) * φ u := by simp
+  intro φ hφU
+  have hpoint :
+      ∀ u ∈ U, Ghoriz u = 0 := by
+    intro u hu
+    exact (hcommon_trace u hu).symm.trans
+      (hHdiff_zero (hcommon_mem u hu))
+  calc
+    (0 : SchwartzMap (NPointDomain d n) ℂ →L[ℂ] ℂ) φ
+        = ∫ u : NPointDomain d n, (0 : ℂ) * φ u := by simp
+    _ = ∫ u : NPointDomain d n, Ghoriz u * φ u := by
+        exact
+          (BHW.integral_eq_of_tsupport_subset_of_pointwise_on
+            (d := d) (n := n) U Ghoriz (fun _ => 0) φ hφU.2
+            hpoint).symm
+
 /-- The single local `S'_n` reference branch produced on the checked OS45
 BHW/Jost hull.  The two restriction fields are exactly the ordinary initial
 formula and the selected adjacent initial formula. -/

@@ -78818,7 +78818,17 @@ Implementation transcript for
          varieties, normal/Riemann extension, PET single-valuedness, or final
          locality.
 
-         Then call:
+         Lean checkpoint: the mechanical reducer
+         `BHW.os45CommonEdge_localHorizontalDifference_representsZero_of_germ`
+         is checked in
+         `OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanLocalityOS45BHWJostLocal.lean`.
+         It consumes exactly the `Ucx`/`Hdiff` fields above and proves the
+         `SCV.RepresentsDistributionOn 0 Ghoriz U` conclusion below.  Thus the
+         remaining mathematical proof obligation at this layer is precisely the
+         local OS I §4.5 germ producer, not the distributional identity
+         transport.
+
+         The checked reducer's core call is:
 
          ```lean
          have hHdiff_zero : Set.EqOn Hdiff (fun _ => 0) Ucx := by

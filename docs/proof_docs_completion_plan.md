@@ -1456,7 +1456,17 @@ not record the determinant/proper-component data.
    This is the direct OS I §4.5 local germ producer, not an axiom and not a
    source-variety wrapper.
 
-   The representation proof destructs that theorem as:
+   **Checked reducer.**  The mechanical theorem
+   `BHW.os45CommonEdge_localHorizontalDifference_representsZero_of_germ` is
+   now checked in `OSToWightmanLocalityOS45BHWJostLocal.lean`.  It consumes
+   the local `Ucx`/`Hdiff` fields above, calls
+   `eqOn_openConnected_of_distributional_wickSection_eq_on_realOpen`, uses
+   the checked Wick-anchor zero theorem, and returns
+   `SCV.RepresentsDistributionOn 0 Ghoriz U`.  The only remaining
+   mathematical obligation in this local source-representation layer is the
+   OS I §4.5 germ producer itself.
+
+   After the germ producer is available, destruct it as:
 
    ```lean
    obtain ⟨Ucx, Hdiff, hUcx_open, hUcx_connected, hwick_mem,
@@ -1542,8 +1552,9 @@ not record the determinant/proper-component data.
    `BHW.os45CommonEdgeFlatJacobianAbs n` times the source integral in
    `BHW.os45CommonEdge_sourceBranchDifference_pairing_zero_of_OSI45`.  The
    source theorem, applied with `hP_oriented`, then makes this source integral
-   zero.  This source theorem is the only unimplemented OS-I mathematical
-   content in the common-boundary CLM packet;
+   zero.  The source theorem still has to be assembled in Lean, but after the
+   checked reducer its only unimplemented OS-I mathematical input is the local
+   Figure-2-4 germ producer;
 5. prove
    `BHW.os45FlatCommonChart_adjacent_represents_ordinaryEdgeCLM_of_OSI45`
    mechanically from step 4.  Use the same open neighborhood
