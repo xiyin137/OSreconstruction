@@ -78459,14 +78459,95 @@ Implementation transcript for
       Proof transcript for
       `os45CommonEdge_sourceBranchDifference_pairing_zero_of_OSI45`:
 
-      1. Let `K := tsupport (ψ : NPointDomain d n -> ℂ)`.  From
-         `hψ_compact` and `hψV`, cover `K` by finitely many open source
-         neighborhoods `Wα` with compact closure in `P.V`; use the checked
-         Schwartz partition theorem to reduce to tests supported in one
-         `Wα`.  This is the same local-to-global distributional mechanism as
-         `SCV.distribution_representation_of_local_representations_for_test`,
-         but now on source variables.  The local theorem used on each patch
-         has the following precise surface:
+      1. Let `K := tsupport (ψ : NPointDomain d n -> ℂ)` and define the
+         horizontal common-edge branch difference
+
+         ```lean
+         let Ghoriz : NPointDomain d n -> ℂ :=
+           fun u =>
+             BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                 (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+                 (BHW.realEmbed
+                   (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                     (1 : Equiv.Perm (Fin n)) u)) -
+               BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                 (1 : Equiv.Perm (Fin n))
+                 (BHW.realEmbed
+                   (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                     (1 : Equiv.Perm (Fin n)) u))
+         ```
+
+         The global source theorem is not proved by a hand-written partition
+         argument.  It is a direct instantiation of the checked generic
+         local-representation assembler
+         `SCV.distribution_representation_of_local_representations_for_test`
+         with
+         `T := 0 : SchwartzMap (NPointDomain d n) ℂ ->L[ℂ] ℂ`,
+         `H := Ghoriz`, and `φ := ψ`.  The only local input needed by that
+         assembler is:
+
+         ```lean
+         theorem BHW.os45CommonEdge_localHorizontalDifference_representsZero_of_OSI45
+             [NeZero d] (hd : 2 <= d)
+             (OS : OsterwalderSchraderAxioms d)
+             (lgc : OSLinearGrowthCondition d OS)
+             {n : Nat} {i : Fin n} {hi : i.val + 1 < n}
+             {P : BHW.OS45Figure24CanonicalSourcePatchData
+               (d := d) hd n i hi}
+             (hP_oriented :
+               ∀ x, x ∈ closure P.V ->
+                 BHW.OS45Figure24OrientedPathField (d := d) n i hi x)
+             (W : Set (NPointDomain d n))
+             (hW_open : IsOpen W)
+             (hW_closure : closure W ⊆ P.V)
+             (u0 : NPointDomain d n) (hu0 : u0 ∈ W) :
+             ∃ U : Set (NPointDomain d n),
+               IsOpen U ∧ IsConnected U ∧ u0 ∈ U ∧
+               IsCompact (closure U) ∧ closure U ⊆ W ∧
+               ContinuousOn
+                 (fun u =>
+                   BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                       (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+                       (BHW.realEmbed
+                         (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                           (1 : Equiv.Perm (Fin n)) u)) -
+                     BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                       (1 : Equiv.Perm (Fin n))
+                       (BHW.realEmbed
+                         (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                           (1 : Equiv.Perm (Fin n)) u))) U ∧
+               SCV.RepresentsDistributionOn
+                 (0 : SchwartzMap (NPointDomain d n) ℂ ->L[ℂ] ℂ)
+                 (fun u =>
+                   BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                       (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+                       (BHW.realEmbed
+                         (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                           (1 : Equiv.Perm (Fin n)) u)) -
+                     BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                       (1 : Equiv.Perm (Fin n))
+                       (BHW.realEmbed
+                         (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                           (1 : Equiv.Perm (Fin n)) u))) U
+         ```
+
+         Its proof is the literal local Figure-2-4 EOW calculation from
+         OS I section 4.5.  The neighborhood `U` is chosen with
+         `BHW.exists_connected_open_precompact_subset hW_open hu0`, so
+         `U` is open and connected, `u0 ∈ U`, `closure U` is compact, and
+         `closure U ⊆ W`; hence `closure U ⊆ P.V`.  The continuity field
+         follows from `P.closure_pulled_id`,
+         `P.closure_pulled_tau`, `BHW.isOpen_os45PulledRealBranchDomain`,
+         and `BHW.os45PulledRealBranch_holomorphicOn.continuousOn`.  The
+         representation field says that every Schwartz test supported in
+         `U` pairs to zero against `Ghoriz`; because `closure U ⊆ P.V` and
+         `P.V_jost` holds, such a test is promoted to
+         `ZeroDiagonalSchwartz` by
+         `zeroDiagonal_of_tsupport_subset_jostOverlap`, so the use of
+         `OS.E3_symmetric` is legitimate and local.
+
+         The local theorem used by the public source theorem has the following
+         precise surface:
 
          ```lean
          theorem BHW.os45CommonEdge_localSourceBranchDifference_pairing_zero_of_OSI45
@@ -78499,13 +78580,49 @@ Implementation transcript for
                        (1 : Equiv.Perm (Fin n)) u))) * ψ u = 0
          ```
 
-      2. On a fixed `W`, set
-         `K := tsupport (ψ : NPointDomain d n -> ℂ)`.  From
-         `hψW`, `subset_closure`, and `hW_closure`, every point of `K` lies in
-         `P.V`, and every point of `closure W` has the checked Figure-2-4
-         endpoint-domain fields
+         Proof of this local theorem after the representation lemma:
+
+         ```lean
+         let Ghoriz : NPointDomain d n -> ℂ := ...
+         have hlocal :
+             ∀ u ∈ tsupport (ψ : NPointDomain d n -> ℂ),
+               ∃ U : Set (NPointDomain d n),
+                 IsOpen U ∧ u ∈ U ∧ ContinuousOn Ghoriz U ∧
+                   SCV.RepresentsDistributionOn
+                     (0 : SchwartzMap (NPointDomain d n) ℂ ->L[ℂ] ℂ)
+                     Ghoriz U := by
+           intro u hu
+           have huW : u ∈ W := hψW hu
+           rcases
+             BHW.os45CommonEdge_localHorizontalDifference_representsZero_of_OSI45
+               (d := d) hd OS lgc hP_oriented W hW_open hW_closure
+               u huW with
+             ⟨U, hUopen, hUconn, huU, hUcompact, hUclosure, hGcont, hGrep⟩
+           exact ⟨U, hUopen, huU, hGcont, hGrep⟩
+         have hzeroRep :
+             (0 : SchwartzMap (NPointDomain d n) ℂ ->L[ℂ] ℂ) ψ =
+               ∫ u : NPointDomain d n, Ghoriz u * ψ u :=
+           SCV.distribution_representation_of_local_representations_for_test
+             (T := (0 : SchwartzMap (NPointDomain d n) ℂ ->L[ℂ] ℂ))
+             (H := Ghoriz) (φ := ψ) hψ_compact hlocal
+         simpa [Ghoriz] using hzeroRep.symm
+         ```
+
+         The `closure U ⊆ W` field is kept in the local representation
+         theorem even though the generic assembler does not need it; it is the
+         Lean guardrail ensuring every OS-I Figure-2-4 path and every
+         zero-diagonal promotion is made inside the prescribed source patch.
+
+      2. Proof of
+         `BHW.os45CommonEdge_localHorizontalDifference_representsZero_of_OSI45`.
+         On a fixed `W` and `u0 ∈ W`, call the checked theorem
+         `BHW.exists_connected_open_precompact_subset hW_open hu0` to choose
+         an open connected neighborhood `U` with compact closure,
+         `u0 ∈ U`, and `closure U ⊆ W`.  Then
+         `closure U ⊆ P.V` by `hW_closure`, so every point of `closure U`
+         has the checked Figure-2-4 endpoint-domain fields
          `P.closure_pulled_id` and `P.closure_pulled_tau`.  Define, for
-         `u ∈ closure W`,
+         `u ∈ closure U`,
          `y u := BHW.os45CommonEdgeRealPoint (d := d) (n := n) 1 u`,
          `Γu` from `P.figPath_closure u`, and
          `Δu` from `hP_oriented u`.  The ordinary endpoint is
@@ -78556,24 +78673,34 @@ Implementation transcript for
          `BHW.os45QuarterTurn_perm_wickRotate_eq_common_plus`,
          `BHW.os45QuarterTurn_perm_realEmbed_eq_common_minus`,
          `BHW.os45CommonEdgeRealPoint_adjacent_swap_eq`, and
-         `BHW.os45PulledRealBranch_apply_reindexed_commonPoint`.
-         Apply `bvt_euclidean_restriction` to the localized zero-diagonal
-         source test; apply `OS.E3_symmetric` exactly once to match the
-         adjacent Wick-anchor test to the ordinary one.  The adjacent test is
-         the explicitly reindexed zero-diagonal Schwartz test, not a claim
-         that the cutoff commutes with `P.τ`.
+         `BHW.os45PulledRealBranch_apply_reindexed_commonPoint`.  The
+         Wick-anchor distributional zero is not reproved by hand: for a test
+         `φ` with `SupportsInOpen (φ : NPointDomain d n -> ℂ) U`, use
+         `tsupport φ ⊆ U ⊆ closure U ⊆ P.V` and instantiate the checked
+         theorem `BHW.os45_adjacent_euclideanEdge_pairing_eq_on_timeSector`
+         with `V := P.V`, `ρ := 1`, `hV_jost := P.V_jost`,
+         `P.V_ordered`, and `P.V_swap_ordered`.  This checked theorem is the
+         single `OS.E3_symmetric` use in the whole packet, via the explicit
+         reindexed zero-diagonal Schwartz test
+         `BHW.permuteZeroDiagonalSchwartz`; it is not a claim that a cutoff
+         commutes with `P.τ`.
       4. Apply the OS I §4.5 edge-of-the-wedge/identity theorem on this local
-         Figure-2-4 germ to transport the anchored distributional equality to
-         the horizontal common real edge.  In Lean this is the proof body of
-         `BHW.os45CommonEdge_localSourceBranchDifference_pairing_zero_of_OSI45`;
-         it consumes only the local data listed above, `bvt_F` holomorphy and
-         boundary-value restriction, `OS.E3_symmetric`, proper-complex Lorentz
-         invariance of the BHW branch, and the SCV identity theorem on the
-         local Figure-2-4 EOW chart.  The conclusion for the localized
-         test is the displayed source integral equals zero.
-      5. Sum the finite partition pieces by linearity of the integral.  No
-         source-oriented variety, normal/Riemann extension, PET
-         single-valuedness, final locality, or
+         Figure-2-4 germ to transport that **branch-difference distribution**
+         from the Wick anchor to the horizontal common real edge.  In Lean this
+         is the representation field of
+         `BHW.os45CommonEdge_localHorizontalDifference_representsZero_of_OSI45`.
+         For an arbitrary test `φ` with `SupportsInOpen φ U`, the proof
+         constructs the local Figure-2-4 EOW chart from the ordinary endpoint
+         path `Γ`, the oriented adjacent lift `Δ`, and the two checked endpoint
+         conversion lemmas.  The branch-difference holomorphic function has
+         zero distributional boundary value on the Wick side by item 3; the
+         distributional edge-of-the-wedge theorem plus the SCV identity theorem
+         make the same zero distribution represent the horizontal edge on
+         `U`.  The result is exactly
+         `SCV.RepresentsDistributionOn 0 Ghoriz U`.
+      5. The public source theorem is then the generic local-representation
+         assembly displayed in item 1.  No source-oriented variety,
+         normal/Riemann extension, PET single-valuedness, final locality, or
          `BHW.AdjacentOSEOWDifferenceEnvelope` is used.
 
       Lean transcript for the mechanical part of

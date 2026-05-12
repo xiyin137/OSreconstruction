@@ -1208,9 +1208,58 @@ not record the determinant/proper-component data.
                  (1 : Equiv.Perm (Fin n)) u))) * ψ u = 0
    ```
 
-   Proof transcript for this source theorem: localize `ψ` by a finite
-   Schwartz partition subordinate to open `Wα` with `closure Wα ⊆ P.V`.
-   The local theorem applied to each partition piece is:
+   Proof transcript for this source theorem: define the horizontal
+   branch-difference function `Ghoriz` and use the checked generic assembler
+   `SCV.distribution_representation_of_local_representations_for_test` with
+   `T := 0 : SchwartzMap (NPointDomain d n) ℂ ->L[ℂ] ℂ`, `H := Ghoriz`,
+   and `φ := ψ`.  The local representation input is:
+
+   ```lean
+   theorem BHW.os45CommonEdge_localHorizontalDifference_representsZero_of_OSI45
+       [NeZero d] (hd : 2 <= d)
+       (OS : OsterwalderSchraderAxioms d)
+       (lgc : OSLinearGrowthCondition d OS)
+       {n : Nat} {i : Fin n} {hi : i.val + 1 < n}
+       {P : BHW.OS45Figure24CanonicalSourcePatchData
+         (d := d) hd n i hi}
+       (hP_oriented :
+         ∀ x, x ∈ closure P.V →
+           BHW.OS45Figure24OrientedPathField (d := d) n i hi x)
+       (W : Set (NPointDomain d n))
+       (hW_open : IsOpen W)
+       (hW_closure : closure W ⊆ P.V)
+       (u0 : NPointDomain d n) (hu0 : u0 ∈ W) :
+       ∃ U : Set (NPointDomain d n),
+         IsOpen U ∧ IsConnected U ∧ u0 ∈ U ∧
+         IsCompact (closure U) ∧ closure U ⊆ W ∧
+         ContinuousOn
+           (fun u =>
+             BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                 (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+                 (BHW.realEmbed
+                   (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                     (1 : Equiv.Perm (Fin n)) u)) -
+               BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                 (1 : Equiv.Perm (Fin n))
+                 (BHW.realEmbed
+                   (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                     (1 : Equiv.Perm (Fin n)) u))) U ∧
+         SCV.RepresentsDistributionOn
+           (0 : SchwartzMap (NPointDomain d n) ℂ ->L[ℂ] ℂ)
+           (fun u =>
+             BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                 (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+                 (BHW.realEmbed
+                   (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                     (1 : Equiv.Perm (Fin n)) u)) -
+               BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                 (1 : Equiv.Perm (Fin n))
+                 (BHW.realEmbed
+                   (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                     (1 : Equiv.Perm (Fin n)) u))) U
+   ```
+
+   The localized theorem applied to a test supported in one such `W` is:
 
    ```lean
    theorem BHW.os45CommonEdge_localSourceBranchDifference_pairing_zero_of_OSI45
@@ -1243,7 +1292,40 @@ not record the determinant/proper-component data.
                  (1 : Equiv.Perm (Fin n)) u))) * ψ u = 0
    ```
 
-   On a fixed `W`, use `P.closure_pulled_id` and
+   The proof of the localized theorem is then:
+
+   ```lean
+   let Ghoriz : NPointDomain d n -> ℂ := ...
+   have hlocal :
+       ∀ u ∈ tsupport (ψ : NPointDomain d n -> ℂ),
+         ∃ U : Set (NPointDomain d n),
+           IsOpen U ∧ u ∈ U ∧ ContinuousOn Ghoriz U ∧
+             SCV.RepresentsDistributionOn
+               (0 : SchwartzMap (NPointDomain d n) ℂ ->L[ℂ] ℂ)
+               Ghoriz U := by
+     intro u hu
+     have huW : u ∈ W := hψW hu
+     rcases
+     BHW.os45CommonEdge_localHorizontalDifference_representsZero_of_OSI45
+         (d := d) hd OS lgc hP_oriented W hW_open hW_closure u huW with
+       ⟨U, hUopen, hUconn, huU, hUcompact, hUclosure, hGcont, hGrep⟩
+     exact ⟨U, hUopen, huU, hGcont, hGrep⟩
+   have hrep :
+       (0 : SchwartzMap (NPointDomain d n) ℂ ->L[ℂ] ℂ) ψ =
+         ∫ u : NPointDomain d n, Ghoriz u * ψ u :=
+     SCV.distribution_representation_of_local_representations_for_test
+       (T := (0 : SchwartzMap (NPointDomain d n) ℂ ->L[ℂ] ℂ))
+       (H := Ghoriz) (φ := ψ) hψ_compact hlocal
+   simpa [Ghoriz] using hrep.symm
+   ```
+
+   The proof of
+   `BHW.os45CommonEdge_localHorizontalDifference_representsZero_of_OSI45`
+   starts by calling the checked theorem
+   `BHW.exists_connected_open_precompact_subset hW_open hu0` to choose an
+   open connected `U` with compact closure, `u0 ∈ U`, and
+   `closure U ⊆ W`.  Then
+   `closure U ⊆ P.V`, so use `P.closure_pulled_id` and
    `P.closure_pulled_tau` for the two endpoint branch-domain memberships.
    Use `P.figPath_closure` only for the ordinary extended-tube path `Γ`.
    The ordinary endpoint conversion is checked as
@@ -1269,11 +1351,17 @@ not record the determinant/proper-component data.
    `BHW.os45QuarterTurn_perm_wickRotate_eq_common_plus`,
    `BHW.os45QuarterTurn_perm_realEmbed_eq_common_minus`,
    `BHW.os45CommonEdgeRealPoint_adjacent_swap_eq`, and
-   `bvt_euclidean_restriction`; use exactly one `OS.E3_symmetric` call for the
-   adjacent Wick-anchor test.  Then propagate the anchored distributional
-   equality to the horizontal real common edge by the OS I §4.5
-   edge-of-the-wedge/identity theorem on that local Figure-2-4 germ and sum
-   the partition pieces.  The cutoff is not assumed permutation-invariant.
+   `BHW.os45PulledRealBranch_apply_reindexed_commonPoint`.  For any
+   `φ` with `SupportsInOpen (φ : NPointDomain d n -> ℂ) U`, the support
+   inclusion `tsupport φ ⊆ U ⊆ closure U ⊆ P.V` lets the checked theorem
+   `BHW.os45_adjacent_euclideanEdge_pairing_eq_on_timeSector` be applied with
+   `V := P.V`, `ρ := 1`, `hV_jost := P.V_jost`, `P.V_ordered`, and
+   `P.V_swap_ordered`.  This theorem is the only `OS.E3_symmetric` call; it
+   uses `BHW.permuteZeroDiagonalSchwartz`, not cutoff permutation-invariance.
+   The OS I §4.5 edge-of-the-wedge/identity theorem then transports that
+   zero branch-difference distribution from the Wick anchor to the horizontal
+   common real edge, giving the displayed
+   `SCV.RepresentsDistributionOn 0 Ghoriz U` field.
 
    The mechanical flat/source layer uses the already checked cutoff-pullback:
    choose `D := Classical.choice (BHW.exists_os45Figure24SourceCutoffData P)`
