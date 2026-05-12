@@ -1420,6 +1420,7 @@ not record the determinant/proper-component data.
        (U : Set (NPointDomain d n))
        (hU_open : IsOpen U)
        (hU_connected : IsConnected U)
+       (u0 : NPointDomain d n) (hu0 : u0 ∈ U)
        (hU_compact : IsCompact (closure U))
        (hU_closure : closure U ⊆ P.V) :
        ∃ (Ucx : Set (Fin n -> Fin (d + 1) -> ℂ))
@@ -1457,18 +1458,36 @@ not record the determinant/proper-component data.
    This is the direct OS I §4.5 local germ producer, not an axiom and not a
    source-variety wrapper.
 
-   Readiness correction for this producer: its proof must first construct the
-   two-branch local continuation chart
-   `BHW.os45Figure24_localTwoBranchGerm_of_OSI45`, using the compact source
-   window `hU_compact`, the joint continuity lemmas
-   `BHW.continuous_os45Figure24IdentityPath_joint` and
-   `BHW.continuous_os45Figure24AdjacentLift`, compact-open tube stability over
-   `closure U × unitInterval`, and the checked endpoint conversions
-   `BHW.os45Figure24Path_endpoint_extendF_eq_ordinaryPulledRealBranch` and
-   `BHW.os45Figure24OrientedPath_endpoint_extendF_eq_adjacentPulledRealBranch`.
-   The chart theorem returns `Ucx`, `Hord`, and `Hadj`; then this producer sets
-   `Hdiff z := Hadj z - Hord z`.  This is the OS I `(4.1)`, `(4.12)`,
-   `(4.14)` analytic continuation step, not a distributional/locality theorem.
+   Readiness correction for this producer: the tempting deterministic
+   double-tube chart
+   `Rτ z := BHW.figure24RotateAdjacentConfig hd (BHW.permAct P.τ z)` is **not**
+   the adjacent analytic branch.  It only records the Figure-2-4 lift.  The
+   Lean attempt to prove its Wick normalization exposed the issue:
+   `P.V_swap_ordered u hu` says
+   `(fun k => u (P.τ k)) ∈ EuclideanOrderedPositiveTimeSector P.τ`; after
+   the selected adjacent transposition's involutivity, the forward-tube theorem
+   returns the ordinary Wick point again, not
+   `fun k => wickRotatePoint (u (P.τ k))`.  Therefore
+   `BHW.extendF_eq_on_forwardTube` cannot prove the adjacent Wick trace.
+
+   The honest missing producer is the OS I §4.5 two-branch germ theorem
+   `BHW.os45Figure24_localTwoBranchGerm_of_OSI45`.  It must construct
+   `Ucx`, `Hord`, and `Hadj` from the paper's local BHW/Jost continuation:
+   `Hord` is normalized on `u ↦ wick u`, `Hadj` is normalized on
+   `u ↦ wick (u ∘ P.τ)`, and both are continued to the horizontal common edge
+   using equations `(4.1)`, `(4.12)`, `(4.14)`.  The deterministic ordinary
+   path, the deterministic adjacent lift, and the oriented endpoint theorem
+   remain endpoint/corridor data only; they do not supply the adjacent Wick
+   trace.
+
+   Concretely, the two-branch germ theorem returns the same `Ucx`, `Hord`,
+   and `Hadj` fields displayed in the blueprint.  After that theorem is
+   available, this producer sets `Hdiff z := Hadj z - Hord z`, proves
+   holomorphy by `DifferentiableOn.sub`, and obtains the two trace fields by
+   pointwise subtraction.  Until the proof transcript for
+   `BHW.os45Figure24_localTwoBranchGerm_of_OSI45` is written at Lean
+   transcription level, the proof docs are not ready for Lean implementation
+   of `BHW.os45CommonEdge_localFigure24DifferenceGerm_of_OSI45`.
 
    **Checked reducer.**  The mechanical theorem
    `BHW.os45CommonEdge_localHorizontalDifference_representsZero_of_germ` is
@@ -1487,6 +1506,7 @@ not record the determinant/proper-component data.
        hcommon_mem, hHdiff_holo, hwick_trace, hcommon_trace⟩ :=
      BHW.os45CommonEdge_localFigure24DifferenceGerm_of_OSI45
        (d := d) hd OS lgc hP_oriented U hU_open hU_connected
+       u0 hu0
        hU_compact
        (fun x hx => hW_closure (subset_closure (hUclosure hx)))
    ```

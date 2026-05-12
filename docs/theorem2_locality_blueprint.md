@@ -78744,6 +78744,7 @@ Implementation transcript for
              hcommon_mem, hHdiff_holo, hwick_trace, hcommon_trace⟩ :=
            BHW.os45CommonEdge_localFigure24DifferenceGerm_of_OSI45
              (d := d) hd OS lgc hP_oriented U hU_open hU_connected
+             u0 hu0
              hU_compact
              (fun x hx => hW_closure (subset_closure (hUclosure hx)))
          ```
@@ -78754,9 +78755,9 @@ Implementation transcript for
          `Hdiff` is the adjacent-minus-ordinary branch difference in that
          chart, `hwick_trace` is the Wick-side formula, and
          `hcommon_trace` is the horizontal endpoint formula.  The endpoint
-         formula uses
+         formula uses the ordinary checked endpoint lemma
          `BHW.os45Figure24Path_endpoint_extendF_eq_ordinaryPulledRealBranch`
-         and
+         and the checked oriented adjacent endpoint lemma
          `BHW.os45Figure24OrientedPath_endpoint_extendF_eq_adjacentPulledRealBranch`.
          To keep this producer honest in Lean, implement those local `let`
          fields through the following private theorem before proving the
@@ -78776,6 +78777,7 @@ Implementation transcript for
              (U : Set (NPointDomain d n))
              (hU_open : IsOpen U)
              (hU_connected : IsConnected U)
+             (u0 : NPointDomain d n) (hu0 : u0 ∈ U)
              (hU_compact : IsCompact (closure U))
              (hU_closure : closure U ⊆ P.V) :
              ∃ (Ucx : Set (Fin n -> Fin (d + 1) -> ℂ))
@@ -78844,6 +78846,7 @@ Implementation transcript for
                (U : Set (NPointDomain d n))
                (hU_open : IsOpen U)
                (hU_connected : IsConnected U)
+               (u0 : NPointDomain d n) (hu0 : u0 ∈ U)
                (hU_compact : IsCompact (closure U))
                (hU_closure : closure U ⊆ P.V) :
                ∃ (Ucx : Set (Fin n -> Fin (d + 1) -> ℂ))
@@ -78888,29 +78891,55 @@ Implementation transcript for
                            (1 : Equiv.Perm (Fin n)) u)))
            ```
 
-         * The theorem's proof constructs the local chart from the compact
-           path image over `closure U × unitInterval`.  Use
-           `BHW.continuous_os45Figure24IdentityPath_joint` for the ordinary
-           path, `BHW.continuous_os45Figure24AdjacentLift` for the adjacent
-           lift, `hU_compact.prod isCompact_univ`, and compact-open tube
-           stability to obtain one finite chain of ordinary/adjacent local
-           BHW continuation charts covering both strips.  The connected
-           carrier `Ucx` is the finite union of this chain, with connectedness
-           from consecutive nonempty chart overlaps.  This is exactly OS I
-           `(4.1)`, `(4.12)`, `(4.14)` in Lean form; the overlap equalities are
-           local Hall-Wightman branch-law equalities, not distributional
-           locality.
+         * Rejected shortcut, now removed from the active proof.  Do **not**
+           define the adjacent branch by
+           `Hadj z := BHW.extendF (bvt_F OS lgc n)
+             (BHW.figure24RotateAdjacentConfig hd (BHW.permAct P.τ z))`.
+           That double-tube expression gives a useful deterministic
+           Figure-2-4 lift, but it does not provide the OS-I adjacent branch
+           normalization at the Wick section.  Concretely,
+           `P.V_swap_ordered u hu` has type
+           `(fun k => u (P.τ k)) ∈ EuclideanOrderedPositiveTimeSector P.τ`;
+           after using the selected adjacent transposition's involutivity,
+           `wickRotate_mem_forwardTube_of_mem_orderedPositiveTimeSector`
+           recovers the ordinary Wick point again.  It does **not** prove
+           `fun k => wickRotatePoint (u (P.τ k)) ∈ BHW.ForwardTube d n`.
+           Therefore a proof ending with `BHW.extendF_eq_on_forwardTube` at
+           the adjacent Wick point is not a valid Lean-pseudocode proof.
 
-         * The ordinary Wick trace rewrites by `BHW.extendF_eq_on_forwardTube` and
-           `wickRotate_mem_forwardTube_of_mem_orderedPositiveTimeSector`.
-           The adjacent Wick trace rewrites by the same forward-tube theorem
-           after `P.τ_eq` and `bvt_F_perm`.  The ordinary horizontal endpoint
-           is exactly
-           `BHW.os45Figure24Path_endpoint_extendF_eq_ordinaryPulledRealBranch`;
-           the adjacent horizontal endpoint is exactly
-           `BHW.os45Figure24OrientedPath_endpoint_extendF_eq_adjacentPulledRealBranch`.
-           Finally set `Hdiff z := Hadj z - Hord z` and use
-           `DifferentiableOn.sub` for `hHdiff_holo`.
+         * The displayed theorem is the honest producer: a two-branch OS-I
+           §4.5 continuation theorem, not a deterministic formula for `Hadj`.
+           Its proof transcript must start from OS I `(4.1)` and `(4.12)`:
+           the two initial analytic elements are the ordinary Wick element
+           `u ↦ bvt_F OS lgc n (wick u)` and the adjacent Wick element
+           `u ↦ bvt_F OS lgc n (wick (u ∘ P.τ))`.  The second analytic
+           element is **not** obtained by placing `wick (u ∘ P.τ)` in the
+           ordinary forward tube.  Its normalization is the OS-I adjacent
+           Wick analytic element selected in the Figure-2-4 argument.  The
+           subsequent continuation to the horizontal common edge is OS I
+           `(4.14)` plus the BHW/Jost branch law along the checked ordinary
+           path and the checked oriented adjacent path.
+
+         * The deterministic paths already checked in Lean are still used,
+           but only as the geometric corridors and endpoint identifications.
+           For the ordinary endpoint use
+           `BHW.os45Figure24Path_endpoint_extendF_eq_ordinaryPulledRealBranch`.
+           For the adjacent endpoint use the already checked
+           `BHW.os45Figure24OrientedPath_endpoint_extendF_eq_adjacentPulledRealBranch`,
+           which consumes `hP_oriented`, `P.closure_pulled_tau`, and
+           `BHW.extendedTube_same_sourceOrientedInvariant_extendF_eq`.  These
+           endpoint lemmas justify the horizontal trace fields after the
+           OS-I two-branch germ has produced `Hord` and `Hadj`; they do not
+           justify the adjacent Wick trace by themselves.
+
+         * After `BHW.os45Figure24_localTwoBranchGerm_of_OSI45` returns the
+           two branch functions, set `Hdiff z := Hadj z - Hord z`.  The
+           holomorphy field is `DifferentiableOn.sub`; the Wick trace and
+           horizontal trace are pointwise subtraction rewrites from the four
+           trace fields above.  This is the exact input consumed by the
+           checked reducer.  Until the two-branch germ theorem has a
+           Lean-ready proof transcript, the proof docs are **not** ready for
+           implementation of this producer.
 
          Lean checkpoint: the mechanical reducer
          `BHW.os45CommonEdge_localHorizontalDifference_representsZero_of_germ`
