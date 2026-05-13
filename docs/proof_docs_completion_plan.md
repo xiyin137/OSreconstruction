@@ -19671,6 +19671,33 @@ split:
 `BHW.os45FlatCommonChart_adjacent_represents_ordinaryEdgeCLM_of_OSI45`.
 The first three are now checked in Lean; the adjacent representation is the
 remaining OS-I §4.5 analytic source step in this packet.
+Inside that adjacent representation, the first unclosed theorem is the
+adjacent Wick branch-normalization field
+`BHW.os45Figure24_adjacentWick_extendF_permAct_eq_bvt_F`, consumed by the
+local two-branch Figure-2-4 germ.  This theorem must be proved before
+`BHW.os45CommonEdge_localFigure24DifferenceGerm_of_OSI45`,
+`BHW.os45CommonEdge_localHorizontalDifference_representsZero_of_OSI45`,
+`BHW.os45CommonEdge_sourceBranchDifference_pairing_zero_of_OSI45`,
+`BHW.os45FlatCommonChart_commonBoundaryDifference_integral_zero_of_OSI45`,
+and `BHW.os45FlatCommonChart_adjacent_represents_ordinaryEdgeCLM_of_OSI45`
+can be implemented.  It is not a new axiom candidate under the project
+discipline, because it refers to the OS witness `bvt_F` and to OS I §4.5
+branch normalization; it must be proved from the paper's `(4.1)/(4.12)/(4.14)`
+construction plus the checked oriented Figure-2-4 corridor.
+
+The adjacent Wick branch-normalization proof may use the checked facts
+`BHW.os45Figure24_adjacentWick_mem_permutedForwardTube`,
+`BHW.os45Figure24_adjacentWick_mem_extendedTube`,
+`BHW.os45Figure24IdentityPath_mem_initialSectorOverlap`, and
+`BHW.os45Figure24_initialSectorOverlap_chartNeighborhood`, but it may not use
+the later local `S'_n` branch, `SelectedAdjacentPermutationEdgeData`,
+`BHW.AdjacentOSEOWDifferenceEnvelope`, PET branch independence, final
+locality, or the common-boundary CLM being constructed from it.  It also
+cannot be replaced by an ACR-one shortcut: the checked ACR-one membership
+lemmas put the ordinary Wick point and the appropriately relabelled ordered
+Wick trace in `AnalyticContinuationRegion d n 1`; they do not prove that
+`BHW.permAct P.τ (fun k => wickRotatePoint (u k))` is in the ordinary
+forward tube or give `BHW.extendF_eq_on_forwardTube` at that point.
 The direct OS I §4.5 content is equations `(4.1)`, `(4.12)`, and `(4.14)`, the
 Figure-2-4 horizontal common-boundary germ, Wick-anchor normalization, and
 exactly one `OS.E3_symmetric` call in the adjacent compatibility.  The common

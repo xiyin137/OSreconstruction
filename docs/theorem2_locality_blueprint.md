@@ -78424,6 +78424,33 @@ Implementation transcript for
       horizontal common edge
       `BHW.realEmbed (BHW.os45CommonEdgeRealPoint (d := d) (n := n) 1 x)`.
 
+      The first unclosed theorem inside this packet is more precise than the
+      flat statement above: the local Figure-2-4 germ requires the adjacent
+      Wick branch-normalization theorem
+      `BHW.os45Figure24_adjacentWick_extendF_permAct_eq_bvt_F`.  Close this
+      theorem before implementing any of the larger adjacent-representation
+      wrappers.  It is OS-specific and therefore not a foundational axiom
+      candidate; it must be proved from OS I `(4.1)/(4.12)/(4.14)`, the OS-II
+      corrected `bvt_F` construction, and the checked oriented Figure-2-4
+      corridor.
+
+      Rejected reductions for this theorem:
+      * Do not call `SelectedAdjacentPermutationEdgeData` or
+        `BHW.AdjacentOSEOWDifferenceEnvelope`; both encode real-edge equality
+        that is downstream of this common-boundary packet.
+      * Do not call the later local `S'_n` branch or
+        `BHW.localSPrime_twoSectorBranch_of_EOW_BHW`; the local EOW seed for
+        that theorem is produced from this packet.
+      * Do not use PET branch independence or final locality.
+      * Do not end with `BHW.extendF_eq_on_forwardTube` at
+        `BHW.permAct P.τ (fun k => wickRotatePoint (u k))`; the checked
+        membership facts put that point in `BHW.ExtendedTube d n` and in the
+        selected permuted initial sector, not in the ordinary forward tube.
+      * Do not use a pure ACR-one identity theorem without first proving the
+        needed connected continuation domain: the existing ACR-one lemmas
+        cover the ordered Wick traces, not this permuted extended-tube point
+        as an ordinary forward-tube point.
+
       The OS-I source theorem underneath the flat statement has this exact
       Lean surface.  It is the only theorem in this packet whose proof uses
       OS I equations `(4.1)`, `(4.12)`, `(4.14)`, and OS symmetry:
