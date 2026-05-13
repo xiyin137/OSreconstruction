@@ -1719,17 +1719,18 @@ not record the determinant/proper-component data.
            (d := d) OS lgc n hu_ordered).symm
    ```
 
-   The common-edge pullback theorem
-   remains definitional:
-   unfold `BHW.os45PulledRealBranch`, simplify `(P.τ.symm * 1).symm` to
-   `P.τ`, and close by `simp`.
+   The common-edge pullback theorem is now checked in Lean as
+   `BHW.os45Figure24CommonEdge_permAct_extendF_eq_adjacentPulledRealBranch`.
+   Its proof is definitional: unfold `BHW.os45PulledRealBranch`, simplify
+   `(P.τ.symm * 1).symm` to `P.τ`, and close by `simp`.
 
-   After those sublemmas, build the compact chart by applying a neutral
-   topology helper
+   After those sublemmas, build the compact chart by applying the checked
+   neutral topology helper
 
    ```lean
-   theorem exists_open_connected_neighborhood_of_compact_connected_subset_open
-       {E : Type*} [NormedAddCommGroup E] [NormedSpace ℂ E]
+   theorem SCV.exists_open_connected_neighborhood_of_compact_connected_subset_open
+       {E : Type*} [TopologicalSpace E] [LocallyCompactSpace E]
+       [RegularSpace E] [LocallyConnectedSpace E]
        {K Ω : Set E}
        (hK_compact : IsCompact K)
        (hK_connected : IsConnected K)
@@ -1738,24 +1739,27 @@ not record the determinant/proper-component data.
        ∃ Ucx : Set E, IsOpen Ucx ∧ IsConnected Ucx ∧ K ⊆ Ucx ∧ Ucx ⊆ Ω
    ```
 
-   Lean proof of this neutral helper: use compactness of `K`, openness of
-   `Ω`, and `K ⊆ Ω` to obtain `ε > 0` with
-   `{x | infDist x K < ε} ⊆ Ω` by the standard finite-subcover/Lebesgue-number
-   argument.  Let `Ucx := {x | ∃ k ∈ K, dist x k < ε / 2}`.  It is open as a
-   union of balls; it contains `K` by centering at each `k`; it lies in `Ω`
-   because every point has distance `< ε` from `K`.  For connectedness, either
-   realize `Ucx` as the image of `K × Metric.ball 0 (ε/2)` under
-   `(k,v) ↦ k + v`, or use the equivalent union-of-balls lemma: each ball is
-   connected and every ball meets the connected set `K`, so their union with
-   `K` is connected.  This helper is pure topology and should live outside the
-   OS45/QFT files.
+   This helper is checked in `OSReconstruction/SCV/ConnectedNeighborhood.lean`.
+   Lean proof: choose `x0 ∈ K` from `hK_connected.nonempty`, apply
+   `exists_open_between_and_isCompact_closure` to get an open `V` with
+   `K ⊆ V` and `closure V ⊆ Ω`, and set
+   `Ucx := connectedComponentIn V x0`.  `LocallyConnectedSpace` makes `Ucx`
+   open by `locallyConnectedSpace_iff_connectedComponentIn_open`;
+   `isPreconnected_connectedComponentIn` and `mem_connectedComponentIn` give
+   `IsConnected Ucx`; `hK_connected.isPreconnected.subset_connectedComponentIn`
+   gives `K ⊆ Ucx`; and `connectedComponentIn_subset` plus
+   `V ⊆ closure V ⊆ Ω` gives `Ucx ⊆ Ω`.
 
-   to the image of
+   This specialization is now checked in Lean as
+   `BHW.os45Figure24_initialSectorOverlap_chartNeighborhood`.  Its proof
+   applies the SCV helper to the image of
    `(x,t) ↦ BHW.os45Figure24IdentityPath (d := d) (n := n) x t` on
    `closure U × unitInterval`.  The image is compact by `hU_compact` and
    continuity, connected by `hU_connected.closure` and connectedness of
-   `unitInterval`, and lies in `Ωτ` by the first sublemma.  The Wick and
-   horizontal membership fields are the `t = 0` and `t = 1` specializations.
+   `unitInterval`, and lies in `Ωτ` by the path-in-overlap lemma.  The Wick
+   and horizontal membership fields are the `t = 0` and `t = 1`
+   specializations, using `BHW.os45Figure24IdentityPath_zero` and
+   `BHW.os45Figure24IdentityPath_one`.
 
    Concretely, the two-branch germ theorem returns the same `Ucx`, `Hord`,
    and `Hadj` fields displayed in the blueprint.  After that theorem is

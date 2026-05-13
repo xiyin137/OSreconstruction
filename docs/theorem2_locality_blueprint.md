@@ -79095,14 +79095,14 @@ Implementation transcript for
             ```
 
             on `closure U × unitInterval`.  Prove compactness from
-            `hU_compact.prod compactSpace_univ` and connectedness from
+            `hU_compact.prod isCompact_univ` and connectedness from
             `hU_connected.closure` and connectedness of `unitInterval`.
-            The required topology helper should be a neutral lemma, for
-            example:
+            The required topology helper is now the checked neutral lemma:
 
             ```lean
-            theorem exists_open_connected_neighborhood_of_compact_connected_subset_open
-                {E : Type*} [NormedAddCommGroup E] [NormedSpace ℂ E]
+            theorem SCV.exists_open_connected_neighborhood_of_compact_connected_subset_open
+                {E : Type*} [TopologicalSpace E] [LocallyCompactSpace E]
+                [RegularSpace E] [LocallyConnectedSpace E]
                 {K Ω : Set E}
                 (hK_compact : IsCompact K)
                 (hK_connected : IsConnected K)
@@ -79112,25 +79112,21 @@ Implementation transcript for
                   IsOpen Ucx ∧ IsConnected Ucx ∧ K ⊆ Ucx ∧ Ucx ⊆ Ω
             ```
 
-            Lean proof of this helper: obtain `ε > 0` with
-            `{x | infDist x K < ε} ⊆ Ω` from compactness of `K`, openness of
-            `Ω`, and `K ⊆ Ω` by the standard finite-subcover/Lebesgue-number
-            argument.  Set
-            `Ucx := {x | ∃ k ∈ K, dist x k < ε / 2}`.  Openness is by union
-            of open balls.  The inclusion `K ⊆ Ucx` uses `k` itself and
-            `ε / 2 > 0`; `Ucx ⊆ Ω` follows from `dist x k < ε / 2 < ε`.
-            Connectedness is not a new SCV input: identify `Ucx` with the
-            image of
-            `{p : K × E | ‖p.2‖ < ε / 2}` under `(k,v) ↦ k.1 + v`.  The
-            first factor is connected by `hK_connected`, the ball factor is
-            convex hence connected, the product is connected, and continuous
-            image preserves connectedness.  If Lean's subtype/product API is
-            awkward, use the equivalent union-of-balls proof: for every
-            `k ∈ K`, `Metric.ball k (ε/2)` is connected and meets `K`; the
-            union of connected sets each meeting the connected set `K` is
-            connected.
+            Lean checkpoint: this helper is checked in
+            `OSReconstruction/SCV/ConnectedNeighborhood.lean`.  Its proof
+            chooses an open shrink `V` with `K ⊆ V` and `closure V ⊆ Ω` by
+            `exists_open_between_and_isCompact_closure`, then takes the
+            connected component `connectedComponentIn V x0` through a point
+            `x0 ∈ K`.  Local connectedness makes the component open; connected
+            component preconnectedness plus `x0 ∈ V` makes it connected; the
+            connectedness of `K` puts all of `K` in that same component; and
+            `connectedComponentIn_subset` plus `closure V ⊆ Ω` gives the
+            final inclusion.
 
-            Apply it to
+            Lean checkpoint: this specialization is now checked as
+            `BHW.os45Figure24_initialSectorOverlap_chartNeighborhood` in
+            `OSToWightmanLocalityOS45BHWJostLocal.lean`.  It applies the SCV
+            helper to
             `Kcx := γ '' (closure U × Set.univ : Set
               (NPointDomain d n × unitInterval))` and
             `Ω := Ωτ`.  The endpoint membership fields
@@ -79345,11 +79341,13 @@ Implementation transcript for
                           (1 : Equiv.Perm (Fin n)) u))
               ```
 
-              Proof: unfold `BHW.os45PulledRealBranch`, simplify
-              `(P.τ.symm * 1).symm` to `P.τ`, and close by `simp`.  The
-              stronger oriented endpoint theorem remains useful for the
-              corridor audit, but this particular chart-value law is just the
-              definition of the branch-specific common-chart pullback.
+              Lean checkpoint: this theorem is now checked in
+              `OSToWightmanLocalityOS45BHWJostLocal.lean`.  Its proof unfolds
+              `BHW.os45PulledRealBranch`, simplifies `(P.τ.symm * 1).symm`
+              to `P.τ`, and closes by `simp`.  The stronger oriented endpoint
+              theorem remains useful for the corridor audit, but this
+              particular chart-value law is just the definition of the
+              branch-specific common-chart pullback.
 
          The second private piece is then purely algebraic:
 

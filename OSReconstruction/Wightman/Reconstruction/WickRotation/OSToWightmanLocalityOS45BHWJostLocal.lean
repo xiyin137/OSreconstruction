@@ -2,6 +2,7 @@ import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanLocalit
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanLocalityOS45CommonEdge
 import OSReconstruction.SCV.CompactSupportIntegralCLM
 import OSReconstruction.SCV.EuclideanWeylOpen
+import OSReconstruction.SCV.ConnectedNeighborhood
 import OSReconstruction.SCV.LocalEOWSideContinuity
 import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SourceHWBranchLaw
 
@@ -3446,6 +3447,87 @@ theorem os45Figure24_commonEdge_mem_initialSectorOverlap
     BHW.os45Figure24IdentityPath_mem_initialSectorOverlap
       (d := d) (n := n) (hd := hd) (P := P) hx (1 : unitInterval)
 
+/-- A compact connected source window in a checked Figure-2-4 patch has an
+open connected complex chart contained in the initial-sector overlap and
+containing both the Wick section and the horizontal common-edge section.
+
+This is the topology/geometry part of the local two-branch Figure-2-4 germ
+producer.  It does not construct or identify branch values. -/
+theorem os45Figure24_initialSectorOverlap_chartNeighborhood
+    [NeZero d]
+    {hd : 2 ≤ d} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    {U : Set (NPointDomain d n)}
+    (hU_compact : IsCompact (closure U))
+    (hU_connected : IsConnected U)
+    (hU_closure : closure U ⊆ P.V) :
+    ∃ Ucx : Set (Fin n → Fin (d + 1) → ℂ),
+      IsOpen Ucx ∧ IsConnected Ucx ∧
+      (∀ u ∈ U, (fun k => wickRotatePoint (u k)) ∈ Ucx) ∧
+      (∀ u ∈ U,
+        (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+          (BHW.realEmbed
+            (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+              (1 : Equiv.Perm (Fin n)) u)) ∈ Ucx) ∧
+      Ucx ⊆ BHW.ExtendedTube d n ∩
+        BHW.permutedExtendedTubeSector d n P.τ := by
+  let Ωτ : Set (Fin n → Fin (d + 1) → ℂ) :=
+    BHW.ExtendedTube d n ∩ BHW.permutedExtendedTubeSector d n P.τ
+  let γ : (NPointDomain d n × unitInterval) →
+      Fin n → Fin (d + 1) → ℂ :=
+    fun p => BHW.os45Figure24IdentityPath (d := d) (n := n) p.1 p.2
+  let K : Set (Fin n → Fin (d + 1) → ℂ) :=
+    γ '' ((closure U) ×ˢ (Set.univ : Set unitInterval))
+  have hdomain_compact :
+      IsCompact ((closure U) ×ˢ (Set.univ : Set unitInterval)) :=
+    hU_compact.prod isCompact_univ
+  have hγ_cont : Continuous γ := by
+    simpa [γ] using
+      BHW.continuous_os45Figure24IdentityPath_joint (d := d) (n := n)
+  have hK_compact : IsCompact K :=
+    hdomain_compact.image hγ_cont
+  have hclosure_connected : IsConnected (closure U) :=
+    hU_connected.closure
+  have hdomain_connected :
+      IsConnected ((closure U) ×ˢ (Set.univ : Set unitInterval)) :=
+    hclosure_connected.prod isConnected_univ
+  have hK_connected : IsConnected K :=
+    hdomain_connected.image γ hγ_cont.continuousOn
+  have hΩ_open : IsOpen Ωτ :=
+    BHW.isOpen_extendedTube.inter
+      (BHW.isOpen_permutedExtendedTubeSector (d := d) (n := n) P.τ)
+  have hKΩ : K ⊆ Ωτ := by
+    rintro z ⟨p, hp, rfl⟩
+    exact BHW.os45Figure24IdentityPath_mem_initialSectorOverlap
+      (d := d) (n := n) (hd := hd) (P := P)
+      (subset_closure (hU_closure hp.1)) p.2
+  letI : Module ℝ ℂ := instInnerProductSpaceRealComplex.toModule
+  rcases SCV.exists_open_connected_neighborhood_of_compact_connected_subset_open
+      (E := Fin n → Fin (d + 1) → ℂ)
+      hK_compact hK_connected hΩ_open hKΩ with
+    ⟨Ucx, hUcx_open, hUcx_connected, hK_Ucx, hUcx_Ω⟩
+  refine ⟨Ucx, hUcx_open, hUcx_connected, ?_, ?_, hUcx_Ω⟩
+  · intro u hu
+    have huc : u ∈ closure U := subset_closure hu
+    have hzK : (fun k => wickRotatePoint (u k)) ∈ K := by
+      refine ⟨(u, (0 : unitInterval)), ?_, ?_⟩
+      · exact ⟨huc, trivial⟩
+      · simpa [γ] using
+          BHW.os45Figure24IdentityPath_zero (d := d) (n := n) u
+    exact hK_Ucx hzK
+  · intro u hu
+    have huc : u ∈ closure U := subset_closure hu
+    have hzK :
+        (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+          (BHW.realEmbed
+            (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+              (1 : Equiv.Perm (Fin n)) u)) ∈ K := by
+      refine ⟨(u, (1 : unitInterval)), ?_, ?_⟩
+      · exact ⟨huc, trivial⟩
+      · simp [γ, BHW.os45Figure24IdentityPath_one (d := d) (n := n) u]
+    exact hK_Ucx hzK
+
 /-- Adjacent Wick rotations of the checked source patch lie in the selected
 adjacent initial sector. -/
 theorem OS45BHWJostHullData.adjacentWick_mem_permutedExtendedTubeSector
@@ -3786,6 +3868,32 @@ theorem os45Figure24Path_endpoint_extendF_eq_ordinaryPulledRealBranch
   refine ⟨Γ, hΓ_cont, hΓ_zero, ?_, hΓ_ET, ?_⟩
   · simpa [y] using hΓ_one
   · simp [BHW.os45PulledRealBranch, hΓ_one]
+
+/-- At the horizontal Figure-2-4 common edge, the adjacent branch obtained by
+precomposing the ordinary BHW extension with the selected source permutation is
+definitionally the adjacent pulled real branch.  This is only endpoint
+bookkeeping; it contains no EOW, no OS symmetry, and no common-boundary
+identification. -/
+theorem os45Figure24CommonEdge_permAct_extendF_eq_adjacentPulledRealBranch
+    [NeZero d] (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {n : ℕ} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (u : NPointDomain d n) :
+    BHW.extendF (bvt_F OS lgc n)
+        (BHW.permAct (d := d) P.τ
+          ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u)))) =
+      BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+        (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+        (BHW.realEmbed
+          (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+            (1 : Equiv.Perm (Fin n)) u)) := by
+  simp [BHW.os45PulledRealBranch]
 
 /-- The endpoint of the oriented Figure-2-4 adjacent lift represents the same
 `extendF` value as the adjacent pulled real branch at the horizontal common
