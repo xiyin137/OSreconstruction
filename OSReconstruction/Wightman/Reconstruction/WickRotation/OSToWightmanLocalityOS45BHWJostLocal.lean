@@ -4070,6 +4070,207 @@ theorem os45CommonEdge_wickDifference_integral_zero_of_E3
           (MeasureTheory.integral_sub hint_adj hint_ord)
     _ = 0 := sub_eq_zero.mpr hpair
 
+/-- Private arbitrary-atlas gluing function for the local Figure-2-4
+branch-difference producer.  All analytic continuation content is in the
+local branches and their overlap equality; this definition only chooses a
+chart through a point of the union. -/
+private noncomputable def os45LocalGluedIUnion
+    {ι : Type*}
+    (N : ι → Set (Fin n → Fin (d + 1) → ℂ))
+    (D : ι → (Fin n → Fin (d + 1) → ℂ) → ℂ) :
+    (Fin n → Fin (d + 1) → ℂ) → ℂ :=
+  fun z =>
+    if hz : z ∈ ⋃ i, N i then
+      D (Classical.choose (Set.mem_iUnion.mp hz)) z
+    else 0
+
+/-- The privately glued arbitrary-atlas branch agrees with any selected local
+branch on that branch's carrier. -/
+private theorem os45LocalGluedIUnion_eq_of_mem
+    {ι : Type*}
+    {N : ι → Set (Fin n → Fin (d + 1) → ℂ)}
+    {D : ι → (Fin n → Fin (d + 1) → ℂ) → ℂ}
+    (overlap_eq : ∀ i j, Set.EqOn (D i) (D j) (N i ∩ N j))
+    {i : ι} {z : Fin n → Fin (d + 1) → ℂ}
+    (hzU : z ∈ ⋃ i, N i) (hzi : z ∈ N i) :
+    os45LocalGluedIUnion N D z = D i z := by
+  unfold os45LocalGluedIUnion
+  rw [dif_pos hzU]
+  let j := Classical.choose (Set.mem_iUnion.mp hzU)
+  have hzj : z ∈ N j :=
+    Classical.choose_spec (Set.mem_iUnion.mp hzU)
+  exact overlap_eq j i ⟨hzj, hzi⟩
+
+/-- Holomorphy of the privately glued arbitrary-atlas branch on the union. -/
+private theorem os45LocalGluedIUnion_differentiableOn
+    {ι : Type*}
+    {N : ι → Set (Fin n → Fin (d + 1) → ℂ)}
+    {D : ι → (Fin n → Fin (d + 1) → ℂ) → ℂ}
+    (N_open : ∀ i, IsOpen (N i))
+    (D_holo : ∀ i, DifferentiableOn ℂ (D i) (N i))
+    (overlap_eq : ∀ i j, Set.EqOn (D i) (D j) (N i ∩ N j)) :
+    DifferentiableOn ℂ (os45LocalGluedIUnion N D) (⋃ i, N i) := by
+  intro z hzU
+  rcases Set.mem_iUnion.mp hzU with ⟨i, hzi⟩
+  have hdiffAt : DifferentiableAt ℂ (D i) z :=
+    (D_holo i).differentiableAt ((N_open i).mem_nhds hzi)
+  refine hdiffAt.differentiableWithinAt.congr_of_eventuallyEq ?_ ?_
+  · filter_upwards [self_mem_nhdsWithin,
+      mem_nhdsWithin_of_mem_nhds ((N_open i).mem_nhds hzi)]
+      with w hwU hwi
+    exact os45LocalGluedIUnion_eq_of_mem overlap_eq hwU hwi
+  · exact os45LocalGluedIUnion_eq_of_mem overlap_eq hzU hzi
+
+/-- Private reducer from a compatible local branch-difference family on the
+compact Figure-2-4 corridor to one connected holomorphic difference germ. -/
+private theorem os45LocalDifferenceFamily_to_germ
+    [NeZero d] (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {n : ℕ} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    {U : Set (NPointDomain d n)}
+    {Kcx : Set (Fin n → Fin (d + 1) → ℂ)}
+    (hKcx_connected : IsConnected Kcx)
+    (N : Kcx → Set (Fin n → Fin (d + 1) → ℂ))
+    (D : Kcx → (Fin n → Fin (d + 1) → ℂ) → ℂ)
+    (N_open : ∀ q, IsOpen (N q))
+    (N_ball : ∀ q, ∃ r : ℝ, 0 < r ∧ N q = Metric.ball q.1 r)
+    (center_mem : ∀ q, q.1 ∈ N q)
+    (wick_index : ∀ u, u ∈ U → Kcx)
+    (wick_index_eq :
+      ∀ u (hu : u ∈ U),
+        (wick_index u hu).1 = (fun k => wickRotatePoint (u k)))
+    (common_index : ∀ u, u ∈ U → Kcx)
+    (common_index_eq :
+      ∀ u (hu : u ∈ U),
+        (common_index u hu).1 =
+          (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u)))
+    (D_holo : ∀ q, DifferentiableOn ℂ (D q) (N q))
+    (overlap_eq : ∀ q r, Set.EqOn (D q) (D r) (N q ∩ N r))
+    (wick_trace :
+      ∀ q u (_hu : u ∈ U),
+        (fun k => wickRotatePoint (u k)) ∈ N q →
+          D q (fun k => wickRotatePoint (u k)) =
+            bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k))) -
+              bvt_F OS lgc n (fun k => wickRotatePoint (u k)))
+    (common_trace :
+      ∀ q u (_hu : u ∈ U),
+        (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+          (BHW.realEmbed
+            (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+              (1 : Equiv.Perm (Fin n)) u)) ∈ N q →
+          D q
+            ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+              (BHW.realEmbed
+                (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                  (1 : Equiv.Perm (Fin n)) u))) =
+            BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+                (BHW.realEmbed
+                  (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                    (1 : Equiv.Perm (Fin n)) u)) -
+              BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                (1 : Equiv.Perm (Fin n))
+                (BHW.realEmbed
+                  (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                    (1 : Equiv.Perm (Fin n)) u))) :
+    ∃ Ucx Hdiff,
+      IsOpen Ucx ∧ IsConnected Ucx ∧
+      (∀ u ∈ U, (fun k => wickRotatePoint (u k)) ∈ Ucx) ∧
+      (∀ u ∈ U,
+        (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+          (BHW.realEmbed
+            (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+              (1 : Equiv.Perm (Fin n)) u)) ∈ Ucx) ∧
+      DifferentiableOn ℂ Hdiff Ucx ∧
+      (∀ u ∈ U,
+        Hdiff (fun k => wickRotatePoint (u k)) =
+          bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k))) -
+            bvt_F OS lgc n (fun k => wickRotatePoint (u k))) ∧
+      (∀ u ∈ U,
+        Hdiff
+          ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u))) =
+          BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+              (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+              (BHW.realEmbed
+                (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                  (1 : Equiv.Perm (Fin n)) u)) -
+            BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+              (1 : Equiv.Perm (Fin n))
+              (BHW.realEmbed
+                (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                  (1 : Equiv.Perm (Fin n)) u))) := by
+  classical
+  let Ucx : Set (Fin n → Fin (d + 1) → ℂ) := ⋃ q : Kcx, N q
+  let Hdiff : (Fin n → Fin (d + 1) → ℂ) → ℂ :=
+    os45LocalGluedIUnion N D
+  have hUcx_open : IsOpen Ucx := by
+    simpa [Ucx] using isOpen_iUnion N_open
+  have hN_conn : ∀ q : Kcx, IsConnected (N q) := by
+    intro q
+    rcases N_ball q with ⟨r, hr, hNr⟩
+    simpa [hNr] using Metric.isConnected_ball (x := q.1) hr
+  have hattach : ∀ q : Kcx, (Kcx ∩ N q).Nonempty := by
+    intro q
+    exact ⟨q.1, q.2, center_mem q⟩
+  have hK_subset : Kcx ⊆ ⋃ q : Kcx, N q := by
+    intro z hz
+    exact Set.mem_iUnion.mpr ⟨⟨z, hz⟩, center_mem ⟨z, hz⟩⟩
+  have hUcx_connected : IsConnected Ucx := by
+    simpa [Ucx] using
+      SCV.isConnected_iUnion_of_connected_core
+        (K := Kcx) (N := N) hKcx_connected hN_conn hattach hK_subset
+  have hHdiff_holo : DifferentiableOn ℂ Hdiff Ucx := by
+    simpa [Hdiff, Ucx] using
+      os45LocalGluedIUnion_differentiableOn N_open D_holo overlap_eq
+  refine ⟨Ucx, Hdiff, hUcx_open, hUcx_connected, ?_, ?_, hHdiff_holo, ?_, ?_⟩
+  · intro u hu
+    have hmem : (fun k => wickRotatePoint (u k)) ∈ N (wick_index u hu) := by
+      rw [← wick_index_eq u hu]
+      exact center_mem (wick_index u hu)
+    exact Set.mem_iUnion.mpr ⟨wick_index u hu, hmem⟩
+  · intro u hu
+    have hmem :
+        (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+          (BHW.realEmbed
+            (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+              (1 : Equiv.Perm (Fin n)) u)) ∈ N (common_index u hu) := by
+      rw [← common_index_eq u hu]
+      exact center_mem (common_index u hu)
+    exact Set.mem_iUnion.mpr ⟨common_index u hu, hmem⟩
+  · intro u hu
+    have hmem : (fun k => wickRotatePoint (u k)) ∈ N (wick_index u hu) := by
+      rw [← wick_index_eq u hu]
+      exact center_mem (wick_index u hu)
+    have hzU : (fun k => wickRotatePoint (u k)) ∈ Ucx :=
+      Set.mem_iUnion.mpr ⟨wick_index u hu, hmem⟩
+    exact (os45LocalGluedIUnion_eq_of_mem overlap_eq hzU hmem).trans
+      (wick_trace (wick_index u hu) u hu hmem)
+  · intro u hu
+    have hmem :
+        (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+          (BHW.realEmbed
+            (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+              (1 : Equiv.Perm (Fin n)) u)) ∈ N (common_index u hu) := by
+      rw [← common_index_eq u hu]
+      exact center_mem (common_index u hu)
+    have hzU :
+        (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+          (BHW.realEmbed
+            (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+              (1 : Equiv.Perm (Fin n)) u)) ∈ Ucx :=
+      Set.mem_iUnion.mpr ⟨common_index u hu, hmem⟩
+    exact (os45LocalGluedIUnion_eq_of_mem overlap_eq hzU hmem).trans
+      (common_trace (common_index u hu) u hu hmem)
+
 /-- A local Figure-2-4 holomorphic difference germ whose Wick trace has zero
 distributional pairing represents the zero distribution on the horizontal
 common edge.  This is the checked identity-theorem reducer; the actual OS I
