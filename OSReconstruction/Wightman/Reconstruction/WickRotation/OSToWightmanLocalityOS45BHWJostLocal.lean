@@ -3318,6 +3318,134 @@ theorem OS45BHWJostHullData.ordinaryWick_mem_extendedTube
     simpa [hft_eq] using hroot
   exact BHW.forwardTube_subset_extendedTube (by simpa using hBHW)
 
+/-- Adjacent Wick rotations of a checked Figure-2-4 source point lie in the
+selected adjacent permuted forward tube.  This is the unfolded forward-tube
+membership behind the OS I `(4.12)` trace normalization; it does not identify
+the adjacent branch value. -/
+theorem os45Figure24_adjacentWick_mem_permutedForwardTube
+    [NeZero d]
+    {hd : 2 ≤ d} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    {u : NPointDomain d n} (hu : u ∈ P.V) :
+    BHW.permAct (d := d) P.τ (fun k => wickRotatePoint (u k)) ∈
+      BHW.PermutedForwardTube d n P.τ := by
+  have hft_eq : BHW.ForwardTube d n = _root_.ForwardTube d n := by
+    ext z
+    simp only [BHW.ForwardTube, _root_.ForwardTube, Set.mem_setOf_eq]
+    exact forall_congr' fun k => inOpenForwardCone_iff _
+  have hroot :
+      (fun k => wickRotatePoint (u ((1 : Equiv.Perm (Fin n)) k))) ∈
+        _root_.ForwardTube d n :=
+    wickRotate_mem_forwardTube_of_mem_orderedPositiveTimeSector
+      (d := d) (n := n) (1 : Equiv.Perm (Fin n))
+      (P.V_ordered u hu)
+  have hBHW :
+      (fun k => wickRotatePoint (u k)) ∈ BHW.ForwardTube d n := by
+    simpa [hft_eq] using hroot
+  simpa [BHW.PermutedForwardTube, BHW.permAct, P.τ_eq] using hBHW
+
+/-- Applying the selected adjacent label permutation to an ordinary Wick edge
+of the checked Figure-2-4 source patch lands in the ordinary extended tube.
+
+The proof uses the `t = 0` endpoint of the checked adjacent Figure-2-4 lift
+and the inverse proper-complex-Lorentz rotation of
+`figure24RotateAdjacentConfig`; it is not a forward-tube normalization of the
+adjacent Wick boundary value. -/
+theorem os45Figure24_adjacentWick_mem_extendedTube
+    [NeZero d]
+    {hd : 2 ≤ d} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    {u : NPointDomain d n} (hu : u ∈ P.V) :
+    BHW.permAct (d := d) P.τ (fun k => wickRotatePoint (u k)) ∈
+      BHW.ExtendedTube d n := by
+  have hu_closure : u ∈ closure P.V := subset_closure hu
+  rcases P.figPath_closure u hu_closure with
+    ⟨_Γ, _hΓ_cont, _hΓ_zero, _hΓ_one, _hΓ_ET, hΔ_ET, _hgram⟩
+  let Δ0 : Fin n → Fin (d + 1) → ℂ :=
+    BHW.os45Figure24AdjacentLift
+      (d := d) (n := n) hd P.τ u (0 : unitInterval)
+  have hΔ0_ET : Δ0 ∈ BHW.ExtendedTube d n := by
+    simpa [Δ0] using hΔ_ET (0 : unitInterval)
+  rcases BHW.figure24RotateAdjacentConfig_lorentz_inverse
+      (d := d) (n := n) hd with
+    ⟨Λinv, hΛinv⟩
+  have hInv :
+      BHW.complexLorentzAction Λinv Δ0 =
+        BHW.permAct (d := d) P.τ (fun k => wickRotatePoint (u k)) := by
+    simpa [Δ0, BHW.os45Figure24AdjacentLift,
+      BHW.os45Figure24IdentityPath_zero] using
+      hΛinv
+        (BHW.permAct (d := d) P.τ
+          (BHW.os45Figure24IdentityPath
+            (d := d) (n := n) u (0 : unitInterval)))
+  have hact :
+      BHW.complexLorentzAction Λinv Δ0 ∈ BHW.ExtendedTube d n :=
+    BHW.complexLorentzAction_mem_extendedTube (d := d) n Λinv hΔ0_ET
+  simpa [hInv] using hact
+
+/-- The checked identity Figure-2-4 path lies in the overlap of the ordinary
+extended tube with the selected adjacent sector.
+
+The ordinary component is direct forward-tube geometry.  The selected-sector
+component comes from the rotated adjacent lift and the inverse
+proper-complex-Lorentz rotation of `figure24RotateAdjacentConfig`. -/
+theorem os45Figure24IdentityPath_mem_initialSectorOverlap
+    [NeZero d]
+    {hd : 2 ≤ d} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    {x : NPointDomain d n} (hx : x ∈ closure P.V) :
+    ∀ t : unitInterval,
+      BHW.os45Figure24IdentityPath (d := d) (n := n) x t ∈
+        BHW.ExtendedTube d n ∩
+          BHW.permutedExtendedTubeSector d n P.τ := by
+  intro t
+  constructor
+  · exact BHW.forwardTube_subset_extendedTube
+      (BHW.os45Figure24IdentityPath_mem_forwardTube
+        (d := d) (n := n) (P.closure_ordered x hx) t)
+  · rcases P.figPath_closure x hx with
+      ⟨_Γ, _hΓ_cont, _hΓ_zero, _hΓ_one, _hΓ_ET, hΔ_ET, _hgram⟩
+    let Δ : Fin n → Fin (d + 1) → ℂ :=
+      BHW.os45Figure24AdjacentLift (d := d) (n := n) hd P.τ x t
+    have hΔ : Δ ∈ BHW.ExtendedTube d n := by
+      simpa [Δ] using hΔ_ET t
+    rcases BHW.figure24RotateAdjacentConfig_lorentz_inverse
+        (d := d) (n := n) hd with
+      ⟨Λinv, hΛinv⟩
+    have hInv :
+        BHW.complexLorentzAction Λinv Δ =
+          BHW.permAct (d := d) P.τ
+            (BHW.os45Figure24IdentityPath (d := d) (n := n) x t) := by
+      simpa [Δ, BHW.os45Figure24AdjacentLift] using
+        hΛinv
+          (BHW.permAct (d := d) P.τ
+            (BHW.os45Figure24IdentityPath (d := d) (n := n) x t))
+    have hact :
+        BHW.complexLorentzAction Λinv Δ ∈ BHW.ExtendedTube d n :=
+      BHW.complexLorentzAction_mem_extendedTube (d := d) n Λinv hΔ
+    simpa [BHW.permutedExtendedTubeSector, BHW.permAct, hInv] using hact
+
+/-- The horizontal common-edge endpoint of the checked identity Figure-2-4
+path lies in the same initial-sector overlap. -/
+theorem os45Figure24_commonEdge_mem_initialSectorOverlap
+    [NeZero d]
+    {hd : 2 ≤ d} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    {x : NPointDomain d n} (hx : x ∈ closure P.V) :
+    (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+      (BHW.realEmbed
+        (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+          (1 : Equiv.Perm (Fin n)) x)) ∈
+      BHW.ExtendedTube d n ∩
+        BHW.permutedExtendedTubeSector d n P.τ := by
+  simpa [BHW.os45Figure24IdentityPath_one (d := d) (n := n) x] using
+    BHW.os45Figure24IdentityPath_mem_initialSectorOverlap
+      (d := d) (n := n) (hd := hd) (P := P) hx (1 : unitInterval)
+
 /-- Adjacent Wick rotations of the checked source patch lie in the selected
 adjacent initial sector. -/
 theorem OS45BHWJostHullData.adjacentWick_mem_permutedExtendedTubeSector
