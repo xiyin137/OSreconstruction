@@ -50,5 +50,62 @@ theorem exists_open_connected_neighborhood_of_compact_connected_subset_open
     (connectedComponentIn_subset V x0).trans hVΩ
   exact ⟨U, hU_open, hU_connected, hK_U, hUΩ⟩
 
-end SCV
+/-- A connected core with connected attached sets has connected union, provided
+the core is covered by the union and every attached set meets the core. -/
+theorem isConnected_iUnion_of_connected_core
+    {E ι : Type*} [TopologicalSpace E]
+    {K : Set E} {N : ι → Set E}
+    (hK : IsConnected K)
+    (hN : ∀ i, IsConnected (N i))
+    (hattach : ∀ i, (K ∩ N i).Nonempty)
+    (hK_subset : K ⊆ ⋃ i, N i) :
+    IsConnected (⋃ i, N i) := by
+  classical
+  let S : Option ι → Set E := fun o =>
+    match o with
+    | none => K
+    | some i => N i
+  let R : Option ι → Option ι → Prop := fun a b => (S a ∩ S b).Nonempty
+  have hS_conn : ∀ o : Option ι, IsConnected (S o) := by
+    intro o
+    cases o with
+    | none => simpa [S] using hK
+    | some i => simpa [S] using hN i
+  have h_none_some : ∀ j : ι, R none (some j) := by
+    intro j
+    simpa [R, S] using hattach j
+  have h_some_none : ∀ i : ι, R (some i) none := by
+    intro i
+    simpa [R, S, Set.inter_comm] using hattach i
+  have hreach : ∀ o p : Option ι, Relation.ReflTransGen R o p := by
+    intro o p
+    cases o with
+    | none =>
+        cases p with
+        | none => exact Relation.ReflTransGen.refl
+        | some j => exact Relation.ReflTransGen.single (h_none_some j)
+    | some i =>
+        cases p with
+        | none => exact Relation.ReflTransGen.single (h_some_none i)
+        | some j =>
+            have step1 : Relation.ReflTransGen R (some i) none :=
+              Relation.ReflTransGen.single (h_some_none i)
+            have step2 : Relation.ReflTransGen R none (some j) :=
+              Relation.ReflTransGen.single (h_none_some j)
+            exact step1.trans step2
+  have hUnion_conn : IsConnected (⋃ o : Option ι, S o) := by
+    exact IsConnected.iUnion_of_reflTransGen hS_conn hreach
+  have hEq : (⋃ o : Option ι, S o) = (⋃ i, N i) := by
+    ext x
+    constructor
+    · intro hx
+      rcases Set.mem_iUnion.mp hx with ⟨o, hxo⟩
+      cases o with
+      | none => exact hK_subset hxo
+      | some i => exact Set.mem_iUnion.mpr ⟨i, hxo⟩
+    · intro hx
+      rcases Set.mem_iUnion.mp hx with ⟨i, hxi⟩
+      exact Set.mem_iUnion.mpr ⟨some i, hxi⟩
+  simpa [hEq] using hUnion_conn
 
+end SCV
