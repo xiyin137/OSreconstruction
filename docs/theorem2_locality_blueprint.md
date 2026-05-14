@@ -80938,8 +80938,8 @@ Implementation transcript for
    `P.V_pulled_tau P.xseed P.xseed_mem`; the third is
    `H.extendedTube_subset_ΩJ` applied to the first.
 
-   The fixed-real-seed wrapper must therefore be generalized before the
-   final `S'_n` producer is implemented:
+   The fixed-real-seed wrapper has therefore been replaced by the generalized
+   common-edge-seed entry point:
 
    ```lean
    noncomputable def BHW.os45_BHWJost_SPrimeBranchData_of_localSPrimeEOWSeedAt
@@ -80971,13 +80971,12 @@ Implementation transcript for
        BHW.OS45BHWJostSPrimeBranchData hd OS lgc H
    ```
 
-   Its proof is the existing checked reducer
-   `BHW.os45_BHWJost_SPrimeBranchData_of_localSPrimeEOWSeed`, except that the
-   call to `BHW.localSPrime_twoSectorBranch_of_EOW_BHW` uses the supplied
-   `zseed` and `hzseed` rather than `BHW.realEmbed P.xseed`.  The old fixed
-   wrapper can remain as the special case `zseed := BHW.realEmbed P.xseed`,
-   but the strict OS-I §4.5 common-edge construction uses the new `...SeedAt`
-   entry point.
+   Its proof calls `BHW.localSPrime_twoSectorBranch_of_EOW_BHW` with the
+   supplied `zseed` and `hzseed`, then rewrites the returned hull by
+   `H.ΩJ_eq_localSPrimeTwoSectorHull`.  The old fixed-real-seed specialization
+   was unused wrapper churn and is not part of the active Lean surface; the
+   strict OS-I §4.5 common-edge construction uses only the `...SeedAt` entry
+   point.
 
    The rejected pointwise zero-height trace route must not be used here: the
    swapped inverse quarter-turn point lies in the selected permuted tube, not
@@ -82250,6 +82249,17 @@ The checked mechanical pair consumer remains exactly
 `sameEndpointComparison_*`, and atlas-specialization surfaces belong only to
 archived/source-oriented support unless they are used privately after the
 reference branch already exists.
+
+2026-05-14 wrapper/import cleanup: the unused fixed-real-seed specialization
+of `BHW.os45_BHWJost_SPrimeBranchData_of_localSPrimeEOWSeedAt` has been
+removed from Lean, and the OS45 BHW/Jost carrier file no longer imports
+`SourceOrientedContinuation`.  The source-oriented finite-overlap/monodromy
+surfaces were audited again and remain consumers of a terminal equality seed,
+not producers of the OS-I `(4.12)` seed-to-Wick transport.  Likewise the
+deterministic formula
+`z ↦ extendF (bvt_F OS lgc n) (BHW.permAct P.τ z) - extendF (bvt_F OS lgc n) z`
+is not an upstream `Hdiff` construction: its horizontal endpoint conversion is
+checked, but its Wick trace still requires the missing adjacent OS-I transport.
 
 These surfaces are proved only on the literal carriers
 `BHW.os45BHWJostAmbient`, `BHW.os45BHWJostHull`, and

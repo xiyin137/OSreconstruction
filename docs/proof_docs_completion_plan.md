@@ -106,9 +106,8 @@ The downstream sequence is:
 2. the flat/common-boundary comparison against
    `BHW.os45FlatCommonChart_ordinaryEdgeCLM`;
 3. the common-boundary CLM theorem;
-4. `BHW.os45_BHWJost_SPrimeBranchData_of_localSPrimeEOWSeedAt` and
-   `BHW.os45_BHWJost_SPrimeBranchData_of_localSPrimeEOWSeed` (already checked
-   consumers of the local EOW seed);
+4. `BHW.os45_BHWJost_SPrimeBranchData_of_localSPrimeEOWSeedAt` (already checked
+   consumer of the local EOW seed at the actual common-edge seed);
 5. `BHW.os45_BHWJostPairData_onLocalHull_of_OSI45`, obtained by destructing
    `S := BHW.os45_BHWJost_SPrimeBranchData_of_OSI45 hd OS lgc H`, calling
    `H.toPairDataOfBranches hd OS lgc S.B S.B`, and proving the four trace
@@ -217,6 +216,33 @@ machinery, quotient germs, the direct `extendF ∘ permAct` formula as the
 upstream source of the adjacent Wick trace, a finite-walk
 `DifferenceChainData` package, or the downstream pointwise adjacent Wick trace
 theorem.
+
+Source-oriented import audit, 2026-05-14: the checked finite-overlap and
+closed-loop monodromy surfaces in
+`SourceOrientedBHWFiniteOverlap.lean`/`SourceOrientedContinuationMonodromyComparison.lean`
+are consumers of a terminal equality seed.  Their fields
+`terminalSeed_eq`/`hsource_eq` are exactly the branch-law content still missing
+for this Stage-A `Hdiff` producer.  They must therefore not be substituted for
+the direct OS-I `(4.12)` seed-to-Wick transport or the finite-gallery overlap
+seed construction.  The active Lean surface was tightened accordingly: the
+unused fixed-real-seed `S'_n` specialization and the unused
+`SourceOrientedContinuation` import from the OS45 BHW/Jost carrier file were
+removed, while the generalized common-edge-seed consumer
+`BHW.os45_BHWJost_SPrimeBranchData_of_localSPrimeEOWSeedAt` remains.
+
+Deterministic-difference audit, 2026-05-14: the tempting local definition
+`Hdiff z := BHW.extendF (bvt_F OS lgc n) (BHW.permAct P.τ z) -
+  BHW.extendF (bvt_F OS lgc n) z`
+has the expected horizontal endpoint bookkeeping, but it does not by itself
+prove the upstream Wick trace
+`bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k))) -
+  bvt_F OS lgc n (fun k => wickRotatePoint (u k))`.
+At the ordinary Wick endpoint, the first deterministic term is
+`extendF (bvt_F OS lgc n)` evaluated at the adjacent Wick point, which is in
+`ExtendedTube` but not supplied as an ordinary `ForwardTube` point.  Rewriting
+that value is precisely the missing OS-I `(4.12)` adjacent seed-to-Wick
+transport, not a consequence of `bvt_F_perm` or
+`BHW.extendF_eq_on_forwardTube`.
 
 Gemini Deep Research interaction
 `v1_ChdJcFlFYXZtbERMaUJrZFVQOXJ5TGdRbxIXSXBZRWF2bWxETGlCa2RVUDlyeUxnUW8`

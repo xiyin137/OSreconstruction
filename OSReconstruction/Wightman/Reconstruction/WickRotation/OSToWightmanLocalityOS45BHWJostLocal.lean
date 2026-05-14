@@ -4909,42 +4909,6 @@ noncomputable def os45_BHWJost_SPrimeBranchData_of_localSPrimeEOWSeedAt
   · simpa [Ford, hΩ] using hB_ord
   · simpa [Fadj, hΩ] using hB_adj
 
-/-- Fixed-real-patch specialization of
-`os45_BHWJost_SPrimeBranchData_of_localSPrimeEOWSeedAt`.  The strict
-Figure-2-4 route uses the generalized version above at the horizontal
-common-edge `S'_n` seed; this form preserves older callers whose seed is the
-stored real patch point. -/
-noncomputable def os45_BHWJost_SPrimeBranchData_of_localSPrimeEOWSeed
-    [NeZero d] (hd : 2 ≤ d)
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS)
-    {n : ℕ} {i : Fin n} {hi : i.val + 1 < n}
-    {P : BHW.OS45Figure24CanonicalSourcePatchData
-      (d := d) hd n i hi}
-    (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P)
-    (hEOW_seed :
-      ∃ W : Set (Fin n → Fin (d + 1) → ℂ),
-        IsOpen W ∧ IsPreconnected W ∧
-        BHW.realEmbed P.xseed ∈ W ∧
-        W ⊆ BHW.localSPrimeTwoSectorHull d n P.τ H.zbase ∩
-          BHW.ExtendedTube d n ∩
-          BHW.permutedExtendedTubeSector d n P.τ ∧
-        Set.EqOn
-          (BHW.extendF (bvt_F OS lgc n))
-          (fun z =>
-            BHW.extendF (bvt_F OS lgc n)
-              (BHW.permAct (d := d) P.τ z))
-          W) :
-    BHW.OS45BHWJostSPrimeBranchData hd OS lgc H :=
-  BHW.os45_BHWJost_SPrimeBranchData_of_localSPrimeEOWSeedAt
-    (d := d) hd OS lgc H (BHW.realEmbed P.xseed)
-    (by
-      refine ⟨⟨?_, ?_⟩, ?_⟩
-      · exact H.realPatch_mem P.xseed P.xseed_mem
-      · exact H.realPatch_mem_extendedTube P.xseed P.xseed_mem
-      · exact H.realPatch_mem_permutedExtendedTubeSector P.xseed P.xseed_mem)
-    hEOW_seed
-
 /-- A two-open-cover holomorphy gluing lemma for an `if`-defined branch.
 
 On the second open set, the overlap equality makes the `if_pos` branch agree

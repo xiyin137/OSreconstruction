@@ -1,6 +1,5 @@
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanLocalityOS45Compact
 import OSReconstruction.SCV.EuclideanWeylOpen
-import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SourceOrientedContinuation
 
 /-!
 # OS45 BHW/Jost source-patch carriers
