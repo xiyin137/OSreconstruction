@@ -60,6 +60,16 @@ theorem isOpen_permAct_preimage_extendedTube
   BHW.isOpen_extendedTube.preimage
     (BHW.continuous_permAct (d := d) (n := n) σ)
 
+omit [NeZero d] in
+/-- The adjacent preimage of the ordinary forward tube under a finite source
+permutation is open. -/
+theorem isOpen_permAct_preimage_forwardTube
+    (σ : Equiv.Perm (Fin n)) :
+    IsOpen {z : Fin n → Fin (d + 1) → ℂ |
+      BHW.permAct (d := d) σ z ∈ BHW.ForwardTube d n} :=
+  BHW.isOpen_forwardTube.preimage
+    (BHW.continuous_permAct (d := d) (n := n) σ)
+
 /-- The BHW extension of the selected boundary-value witness is holomorphic on
 the ordinary extended tube. -/
 theorem differentiableOn_extendF_bvt_F_extendedTube
@@ -111,6 +121,34 @@ theorem differentiableOn_extendF_bvt_F_permAct_preimageExtendedTube
     exact hz
   intro z hz
   exact (hExtend _ (hmaps hz)).comp z
+    ((hperm_diff z).differentiableWithinAt) hmaps
+
+/-- The OS-II forward-tube boundary-value witness precomposed with a finite
+source permutation is holomorphic on the corresponding preimage of the ordinary
+forward tube. -/
+theorem differentiableOn_bvt_F_permAct_preimageForwardTube
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (n : ℕ) (σ : Equiv.Perm (Fin n)) :
+    DifferentiableOn ℂ
+      (fun z : Fin n → Fin (d + 1) → ℂ =>
+        bvt_F OS lgc n (BHW.permAct (d := d) σ z))
+      {z | BHW.permAct (d := d) σ z ∈ BHW.ForwardTube d n} := by
+  have hF_holo_BHW :
+      DifferentiableOn ℂ (bvt_F OS lgc n) (BHW.ForwardTube d n) := by
+    simpa [BHW_forwardTube_eq (d := d) (n := n)] using
+      bvt_F_holomorphic (d := d) OS lgc n
+  have hperm_diff := BHW.differentiable_permAct (d := d) (n := n) σ
+  have hmaps :
+      Set.MapsTo
+        (fun z : Fin n → Fin (d + 1) → ℂ =>
+          BHW.permAct (d := d) σ z)
+        {z | BHW.permAct (d := d) σ z ∈ BHW.ForwardTube d n}
+        (BHW.ForwardTube d n) := by
+    intro z hz
+    exact hz
+  intro z hz
+  exact (hF_holo_BHW (BHW.permAct (d := d) σ z) (hmaps hz)).comp z
     ((hperm_diff z).differentiableWithinAt) hmaps
 
 /-- Real-trace rewrite for an adjacent BHW/Jost branch normalized on one

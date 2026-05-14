@@ -155,22 +155,66 @@ common-boundary CLM, then the local `S'_n` reference branch, and only then uses
 that branch to fill the two fields of the checked pair carrier.
 
 Stage-A completion correction, 2026-05-13: the proof documents now pin the
-construction transcript for the first theorem in the chain,
+construction transcript for the first public theorem in the chain,
 
 ```lean
 BHW.os45CommonEdge_localFigure24DifferenceGerm_of_OSI45
 ```
 
 It is not enough to say that OS I equations `(4.1)`, `(4.12)`, and `(4.14)`
-"supply" `Hdiff`.  The Lean proof must explicitly build the OS I local
-analytic element at every point of the checked Figure-2-4 compact corridor,
-prove pairwise complex-overlap equality for those local elements, glue the
-arbitrary atlas to one holomorphic difference function on the connected chart
-`Ucx`, and prove the Wick and horizontal common-edge trace fields by endpoint
-indices.  Production Lean must not add another consumer wrapper around
-`Hdiff`, must not start the final theorem-2 wrapper, and must not replace this
-producer by source-oriented normal/Riemann machinery, quotient germs, the
-archived two-branch `extendF ∘ permAct` split, a finite-walk
+"supply" `Hdiff`.  The Lean proof must first implement the direct-coordinate
+OS I local analytic-element theorem whose **adjacent initial germ is the
+`(4.12)` germ**, not the deterministic downstream branch
+`z ↦ BHW.extendF (bvt_F OS lgc n) (BHW.permAct P.τ z)`.  This distinction is a
+completion gate.  The checked carrier
+`BHW.OS45BHWJostInitialBranchData.adjacent` intentionally stores the later
+deterministic adjacent initial-sector branch used by
+`BHW.localSPrime_twoSectorBranch_of_EOW_BHW`; it is therefore not, by itself,
+the upstream `Hdiff` adjacent Wick seed.  Reusing it here would reintroduce the
+exact pointwise adjacent Wick normalization that the Gemini audits rejected as
+circular.
+
+The corrected local analytic-element proof still takes its compact path
+subdivision from a geometric cover of the checked Figure-2-4 path, independent
+of any incoming branch.  But the local transfer datum for the upstream `Hdiff`
+producer must carry two distinct proof-local initial data tuples:
+
+* ordinary: the OS I `(4.1)` branch `BHW.extendF (bvt_F OS lgc n)` on the
+  ordinary forward/extended-tube side, with Wick normalization proved by
+  `BHW.extendF_eq_on_forwardTube`;
+* adjacent: the OS I `(4.12)` branch normalized on the selected adjacent Wick
+  edge by
+  `bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k)))`, with the
+  deterministic `extendF ∘ permAct` branch forbidden until after the
+  common-boundary CLM and local EOW seed have produced the local `S'_n`
+  reference branch.
+
+Each local transfer step must advance these two OS-I analytic elements through
+the ordinary sector, the selected adjacent sector, or the flat real-Jost EOW
+case, and return a complex-open equality that is strong enough to propagate the
+two branches by the ordinary identity theorem.  With those actual OS-I
+transfers in hand, the proof builds the local branch-difference germ at every
+point of the Figure-2-4 compact corridor, proves pairwise complex-overlap
+equality by finite analytic-continuation uniqueness, glues the arbitrary atlas
+to one holomorphic function on the connected chart `Ucx`, and proves the Wick
+and horizontal common-edge trace fields by endpoint-centered charts.
+
+Wrapper audit, 2026-05-14: the previously checked private carrier files
+`OSToWightmanLocalityOS45BHWJostBranchFree.lean`,
+`OSToWightmanLocalityOS45BHWJostHdiff.lean`, and the custom
+`Topology/UnitIntervalSubdivision.lean` package were removed from the active
+Lean surface.  They organized already-supplied chains, balls, overlap seeds,
+and local families, but they did not prove the genuine mathematical gap: the
+OS-I local transfer theorem, the adjacent `(4.12)` seed-to-Wick transport, or
+the finite-gallery branch-law seed on nonempty overlaps.  The next Lean pass
+must target the public producer
+`BHW.os45CommonEdge_localFigure24DifferenceGerm_of_OSI45` directly, with any
+subdivision, chart, or endpoint data kept as proof-local witnesses unless it
+discharges one of those analytic statements.  Production Lean must not add
+another consumer wrapper around `Hdiff`, must not start the final theorem-2
+wrapper, and must not replace this producer by source-oriented normal/Riemann
+machinery, quotient germs, the direct `extendF ∘ permAct` formula as the
+upstream source of the adjacent Wick trace, a finite-walk
 `DifferenceChainData` package, or the downstream pointwise adjacent Wick trace
 theorem.
 
@@ -199,6 +243,22 @@ Its verdict was that using this as the adjacent branch before the local
 OS-II linear-growth/boundary-value package must remain an explicit input, and
 the adjacent Wick normalization must enter through the OS-I/OS-II local
 analytic element, not through an `extendF ∘ permAct` shortcut.
+
+Follow-up Deep Research interaction
+`v1_ChdFdTRFYXZfWkhKdWl2ZElQbTZDc3NRYxIXRXU0RWF2X1pISnVpdmRJUG02Q3NzUWM`
+completed on 2026-05-13 and reconciles this with the paper-level deterministic
+branch language.  It endorses the local analytic-element route as the
+Lean-faithful formulation: the upstream `Hdiff` producer must keep the
+OS-I-normalized adjacent Wick trace
+`bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k)))`, while the
+deterministic branch
+`z ↦ BHW.extendF (bvt_F OS lgc n) (BHW.permAct P.τ z)` is introduced only
+after the common-boundary CLM/local EOW seed stage, as the selected adjacent
+initial-sector branch for the local `S'_n` theorem.  The audit rejects the
+alternative of anchoring the common-edge equality on Jost/locality data,
+because that would assume Wightman locality before theorem 2 proves it, and it
+classifies the direct pointwise deterministic Wick normalization as the hard
+OS I Figure-2-4 geometric step rather than a prerequisite for the E3 reducer.
 
 Fast Gemini sanity check on 2026-05-13 for the corrected `Hdiff` packet:
 the local branch-difference atlas is mathematically faithful to OS I §4.5 and
@@ -298,8 +358,17 @@ with:
   `D (wick_index u hu) (wick u) =
     bvt_F OS lgc n (wick (u ∘ P.τ)) - bvt_F OS lgc n (wick u)`;
 - the selected horizontal common-edge trace
-  `D (common_index u hu) (commonEdge u) = ...`, equal to the
-  pulled real-branch difference.
+  `D (common_index u hu) (commonEdge u) =
+    BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+      (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+      (BHW.realEmbed
+        (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+          (1 : Equiv.Perm (Fin n)) u)) -
+    BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+      (1 : Equiv.Perm (Fin n))
+      (BHW.realEmbed
+        (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+          (1 : Equiv.Perm (Fin n)) u))`.
 
 The endpoint selectors are essential.  A compact source window gives endpoint
 sections contained in the compact corridor `Kcx`; Lean must not assume one
@@ -308,30 +377,25 @@ containing every common-edge endpoint.  The arbitrary atlas recovers the trace
 at the endpoint by selecting the endpoint itself as an element of `Kcx`, using
 `center_mem`, and then transporting to the glued function by `all_overlap_eq`.
 
+After the wrapper audit, this compact-corridor bookkeeping is part of the
+direct producer proof rather than a separate carrier.  The proof must still
+construct `Kcx`, prove compactness, connectedness, and `Kcx ⊆ Ωτ`, and define
+the Wick/common endpoint indices.  Those fields are useful only insofar as
+they feed the direct gluing of the local branch differences after the OS-I
+local elements and branch-law seeds have been proved.
+
 Lean-ready atlas construction of the `Hdiff` germ.  This is the exact private
 construction that must precede `BHW.os45CommonEdge_localFigure24DifferenceGerm_of_OSI45`;
 it is not a public theorem surface.
 
-First prove, inside the same Lean section, the local analytic-element family
-that OS I sec. 4.5 supplies.  This is the only non-topological input to the
-constructor:
+Inside the same proof of
+`BHW.os45CommonEdge_localFigure24DifferenceGerm_of_OSI45`, construct the local
+analytic-element family that OS I sec. 4.5 supplies.  This is the only
+non-topological input to the direct producer, and it should be a proof-local
+`have`, not a named wrapper theorem:
 
 ```lean
-private theorem OS45Figure24LocalDifferenceFamily.of_OSI45
-    [NeZero d] (hd : 2 <= d)
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS)
-    {n : Nat} {i : Fin n} {hi : i.val + 1 < n}
-    {P : BHW.OS45Figure24CanonicalSourcePatchData
-      (d := d) hd n i hi}
-    (hP_oriented :
-      ∀ x, x ∈ closure P.V ->
-        BHW.OS45Figure24OrientedPathField (d := d) n i hi x)
-    (U : Set (NPointDomain d n))
-    (hU_open : IsOpen U)
-    (hU_connected : IsConnected U)
-    (hU_compact : IsCompact (closure U))
-    (hU_closure : closure U ⊆ P.V) :
+have hlocal_family :
     let Kcx : Set (Fin n -> Fin (d + 1) -> ℂ) :=
       (fun p =>
         BHW.os45Figure24IdentityPath (d := d) (n := n) p.1 p.2) ''
@@ -374,101 +438,61 @@ private theorem OS45Figure24LocalDifferenceFamily.of_OSI45
                     (1 : Equiv.Perm (Fin n)) u)))
 ```
 
-Proof transcript for the local family:
+Proof transcript for this proof-local family block:
 
-First isolate the pointwise local OS I analytic element as a private theorem,
-then fold it into the family.  This theorem is not a new assumption: it is the
-Lean transcription of the local Hall-Wightman construction invoked in OS I
-sec. 4.5.
+Do not introduce a private `OS45Figure24LocalAnalyticElementData` structure,
+an `of_OSI45` theorem, or an `eqOn_overlap` theorem.  Inside the proof of
+`BHW.os45CommonEdge_localFigure24DifferenceGerm_of_OSI45`, construct the
+pointwise local OS-I analytic elements as proof-local existential witnesses and
+keep the finite-chain provenance in scope until the overlap seeds have been
+proved.  The local witness at a fixed `q : Kcx` has this tuple shape:
 
 ```lean
-private structure OS45Figure24LocalAnalyticElementData
-    [NeZero d] (hd : 2 <= d)
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS)
-    {n : Nat} {i : Fin n} {hi : i.val + 1 < n}
-    {P : BHW.OS45Figure24CanonicalSourcePatchData
-      (d := d) hd n i hi}
-    (U : Set (NPointDomain d n))
-    (Kcx : Set (Fin n -> Fin (d + 1) -> ℂ))
-    (q : Kcx) : Type where
-  N : Set (Fin n -> Fin (d + 1) -> ℂ)
-  D : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ
-  N_open : IsOpen N
-  N_ball : ∃ r : ℝ, 0 < r ∧ N = Metric.ball q.1 r
-  center_mem : q.1 ∈ N
-  N_subset_overlap :
-    N ⊆ BHW.ExtendedTube d n ∩
-      BHW.permutedExtendedTubeSector d n P.τ
-  D_holo : DifferentiableOn ℂ D N
-  wick_trace :
-    ∀ u (hu : u ∈ U),
-      (fun k => wickRotatePoint (u k)) ∈ N ->
-        D (fun k => wickRotatePoint (u k)) =
-          bvt_F OS lgc n
-            (fun k => wickRotatePoint (u (P.τ k))) -
-          bvt_F OS lgc n (fun k => wickRotatePoint (u k))
-  common_trace :
-    ∀ u (hu : u ∈ U),
-      (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
-        (BHW.realEmbed
-          (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
-            (1 : Equiv.Perm (Fin n)) u)) ∈ N ->
-        D
-          ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+have hpoint_q :
+    ∃ (N : Set (Fin n -> Fin (d + 1) -> ℂ))
+      (Ord Adj D : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ),
+      IsOpen N ∧
+      (∃ r : ℝ, 0 < r ∧ N = Metric.ball q.1 r) ∧
+      q.1 ∈ N ∧
+      N ⊆ BHW.ExtendedTube d n ∩
+        BHW.permutedExtendedTubeSector d n P.τ ∧
+      DifferentiableOn ℂ Ord N ∧
+      DifferentiableOn ℂ Adj N ∧
+      D = fun z => Adj z - Ord z ∧
+      DifferentiableOn ℂ D N ∧
+      -- endpoint-centered Wick trace
+      (∀ u (hu : u ∈ U),
+        q.1 = (fun k => wickRotatePoint (u k)) ->
+          D q.1 =
+            bvt_F OS lgc n
+              (fun k => wickRotatePoint (u (P.τ k))) -
+            bvt_F OS lgc n (fun k => wickRotatePoint (u k))) ∧
+      -- endpoint-centered horizontal common-edge trace
+      (∀ u (hu : u ∈ U),
+        q.1 =
+          (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
             (BHW.realEmbed
               (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
-                (1 : Equiv.Perm (Fin n)) u))) =
-          BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
-              (P.τ.symm * (1 : Equiv.Perm (Fin n)))
-              (BHW.realEmbed
-                (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
-                  (1 : Equiv.Perm (Fin n)) u)) -
+                (1 : Equiv.Perm (Fin n)) u)) ->
+          D q.1 =
             BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
-              (1 : Equiv.Perm (Fin n))
-              (BHW.realEmbed
-                (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
-                  (1 : Equiv.Perm (Fin n)) u))
-
-private theorem OS45Figure24LocalAnalyticElement.of_OSI45
-    [NeZero d] (hd : 2 <= d)
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS)
-    {n : Nat} {i : Fin n} {hi : i.val + 1 < n}
-    {P : BHW.OS45Figure24CanonicalSourcePatchData
-      (d := d) hd n i hi}
-    (hP_oriented :
-      ∀ x, x ∈ closure P.V ->
-        BHW.OS45Figure24OrientedPathField (d := d) n i hi x)
-    (U : Set (NPointDomain d n))
-    (hU_closure : closure U ⊆ P.V)
-    (Kcx : Set (Fin n -> Fin (d + 1) -> ℂ))
-    (hKcx_def :
-      Kcx =
-        (fun p =>
-          BHW.os45Figure24IdentityPath (d := d) (n := n) p.1 p.2) ''
-          (closure U ×ˢ (Set.univ : Set unitInterval)))
-    (q : Kcx) :
-    Nonempty
-      (OS45Figure24LocalAnalyticElementData
-        hd OS lgc (P := P) U Kcx q)
-
-private theorem OS45Figure24LocalAnalyticElement.eqOn_overlap
-    [NeZero d] (hd : 2 <= d)
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS)
-    {n : Nat} {i : Fin n} {hi : i.val + 1 < n}
-    {P : BHW.OS45Figure24CanonicalSourcePatchData
-      (d := d) hd n i hi}
-    (U : Set (NPointDomain d n))
-    (Kcx : Set (Fin n -> Fin (d + 1) -> ℂ))
-    {q r : Kcx}
-    (A : OS45Figure24LocalAnalyticElementData hd OS lgc (P := P) U Kcx q)
-    (B : OS45Figure24LocalAnalyticElementData hd OS lgc (P := P) U Kcx r) :
-    Set.EqOn A.D B.D (A.N ∩ B.N)
+                (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+                (BHW.realEmbed
+                  (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                    (1 : Equiv.Perm (Fin n)) u)) -
+              BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                (1 : Equiv.Perm (Fin n))
+                (BHW.realEmbed
+                  (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                    (1 : Equiv.Perm (Fin n)) u)))
 ```
 
-Proof transcript for `OS45Figure24LocalAnalyticElement.of_OSI45`:
+Keep the two one-branch chains in scope after this tuple is built.  Prove the
+overlap seed while the ordinary and adjacent one-branch chains for the two
+centers are still available; then store the result as the family-level
+`hall_overlap` field before discarding the chain provenance.
+
+Proof transcript for the proof-local pointwise local element:
 
 1. Destructure `q.property` as `⟨(x,t), hx : x ∈ closure U, ht, hq⟩`.
    From `hU_closure hx` get `x ∈ P.V`; hence `P.V_ordered x`,
@@ -507,32 +531,13 @@ Proof transcript for `OS45Figure24LocalAnalyticElement.of_OSI45`:
    `BHW.os45Figure24Path_endpoint_extendF_eq_ordinaryPulledRealBranch` and
    `BHW.os45Figure24OrientedPath_endpoint_extendF_eq_adjacentPulledRealBranch`.
 
-Lean lowering of the non-topological step.  The implementation of
-`OS45Figure24LocalAnalyticElement.of_OSI45` must not contain a prose call to
-"Hall-Wightman continuation".  It is lowered through the following private
-terminal-branch constructor, proved directly from OS I §4.5 with the OS-II
-linear-growth witness `lgc`:
+Lean lowering of the non-topological step.  The implementation must not
+contain a prose call to "Hall-Wightman continuation", but it also must not land
+a private terminal-branch constructor.  Prove the terminal branch packet as a
+proof-local `have hterminal_q` in the public producer:
 
 ```lean
-private theorem OS45Figure24LocalAnalyticElement.terminalBranches_of_subpath
-    [NeZero d] (hd : 2 <= d)
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS)
-    {n : Nat} {i : Fin n} {hi : i.val + 1 < n}
-    {P : BHW.OS45Figure24CanonicalSourcePatchData
-      (d := d) hd n i hi}
-    (hP_oriented :
-      ∀ x, x ∈ closure P.V ->
-        BHW.OS45Figure24OrientedPathField (d := d) n i hi x)
-    (U : Set (NPointDomain d n))
-    (hU_closure : closure U ⊆ P.V)
-    {Kcx : Set (Fin n -> Fin (d + 1) -> ℂ)}
-    (hKcx_def :
-      Kcx =
-        (fun p =>
-          BHW.os45Figure24IdentityPath (d := d) (n := n) p.1 p.2) ''
-          (closure U ×ˢ (Set.univ : Set unitInterval)))
-    (q : Kcx) :
+have hterminal_q :
     ∃ (N : Set (Fin n -> Fin (d + 1) -> ℂ))
       (Ord Adj : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ),
       IsOpen N ∧
@@ -542,81 +547,736 @@ private theorem OS45Figure24LocalAnalyticElement.terminalBranches_of_subpath
         BHW.permutedExtendedTubeSector d n P.τ ∧
       DifferentiableOn ℂ Ord N ∧
       DifferentiableOn ℂ Adj N ∧
-      (∀ u (hu : u ∈ U),
-        (fun k => wickRotatePoint (u k)) ∈ N ->
-          Ord (fun k => wickRotatePoint (u k)) =
-            bvt_F OS lgc n (fun k => wickRotatePoint (u k))) ∧
-      (∀ u (hu : u ∈ U),
-        (fun k => wickRotatePoint (u k)) ∈ N ->
-          Adj (fun k => wickRotatePoint (u k)) =
-            bvt_F OS lgc n
-              (fun k => wickRotatePoint (u (P.τ k)))) ∧
-      (∀ u (hu : u ∈ U),
-        (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
-          (BHW.realEmbed
-            (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
-              (1 : Equiv.Perm (Fin n)) u)) ∈ N ->
-          Ord
-            ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
-              (BHW.realEmbed
-                (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
-                  (1 : Equiv.Perm (Fin n)) u))) =
-            BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
-              (1 : Equiv.Perm (Fin n))
-              (BHW.realEmbed
-                (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
-                  (1 : Equiv.Perm (Fin n)) u))) ∧
-      (∀ u (hu : u ∈ U),
-        (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
-          (BHW.realEmbed
-            (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
-              (1 : Equiv.Perm (Fin n)) u)) ∈ N ->
-          Adj
-            ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
-              (BHW.realEmbed
-                (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
-                  (1 : Equiv.Perm (Fin n)) u))) =
-            BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
-              (P.τ.symm * (1 : Equiv.Perm (Fin n)))
-              (BHW.realEmbed
-                (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
-                  (1 : Equiv.Perm (Fin n)) u)))
+      ordinary_center_trace Ord q ∧
+      adjacent_center_trace Adj q ∧
+      ordinary_common_center_trace Ord q ∧
+      adjacent_common_center_trace Adj q := by
+  -- two one-branch OS-I continuations and endpoint-centered trace packet
 ```
 
-Proof script: destructure `q = γ (x,t)`.  Build the ordinary terminal branch
-by restricting `extendF (bvt_F OS lgc n)` along the checked ordinary
-Figure-2-4 path.  Build the adjacent terminal branch from the OS-I `(4.12)`
-germ and the oriented path field `hP_oriented x (hU_closure hx)`, using only
-OS-II-backed boundary values and the Hall-Wightman/BHW local branch law on
-proper-complex Lorentz/Jost overlaps.  Compactness of the subinterval `[0,t]`
-supplies the finite private subpath chain; the terminal ball is shrunk into
-the checked initial-sector overlap.  The four trace fields are exactly
-`(4.1)`, `(4.12)`, and `(4.14)` after the checked endpoint-conversion lemmas.
-Then `OS45Figure24LocalAnalyticElement.of_OSI45` defines `D := Adj - Ord` and
-fills its two trace fields by subtracting the corresponding `Adj` and `Ord`
-terminal trace fields.  The theorem above is private proof data, not a public
-producer or a theorem-2 assumption.
+The four trace predicates above are local abbreviations in the proof body for
+the displayed Wick and horizontal endpoint equations.  Immediately after
+obtaining `hterminal_q`, set `D := fun z => Adj z - Ord z` locally and fill the
+pointwise local element fields; do not name or export a terminal branch
+surface.
 
-Proof transcript for `eqOn_overlap`:
+Private lowering of the compact subpath continuation.  Inside the pointwise
+local-element proof, the local continuation cover must be built from the
+corrected direct-coordinate OS-I transfer transcript on the Figure-2-4 subpath.
+The proof may reuse the checked compact-cover fold pattern, but it must not
+call the checked fold with `BHW.OS45BHWJostInitialBranchData.adjacent`: that
+constructor stores the later deterministic `extendF ∘ permAct` branch.
+
+Do not land `OS45Figure24InitialGermKind`,
+`OS45Figure24InitialGermData`, or constructor theorems for the ordinary and
+adjacent starts.  For each branch run, introduce the following variables as
+proof-local data:
+
+```lean
+have hinit :
+    ∃ (Ω0 : Set (Fin n -> Fin (d + 1) -> ℂ))
+      (B0 : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+      (p0 : Fin n -> Fin (d + 1) -> ℂ),
+      p0 = gamma 0 ∧
+      IsOpen Ω0 ∧
+      Ω0 ⊆ H.ΩJ ∧
+      p0 ∈ Ω0 ∧
+      DifferentiableOn ℂ B0 Ω0 ∧
+      B0 p0 = branchWickValue ∧
+      (∀ W : Set (Fin n -> Fin (d + 1) -> ℂ),
+        IsOpen W -> p0 ∈ W -> W ⊆ H.ΩJ ->
+          ∃ (C0 : Set (Fin n -> Fin (d + 1) -> ℂ))
+            (C0branch : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ),
+            p0 ∈ C0 ∧
+            IsOpen C0 ∧
+            IsPreconnected C0 ∧
+            C0 ⊆ Ω0 ∩ W ∧
+            DifferentiableOn ℂ C0branch C0 ∧
+            Set.EqOn C0branch B0 C0)
+```
+
+For the ordinary run, `branchWickValue` is
+`bvt_F OS lgc n (fun k => wickRotatePoint (x k))`; prove the fields directly
+from the ordinary extended-tube seed.  For the adjacent run,
+`branchWickValue` is
+`bvt_F OS lgc n (fun k => wickRotatePoint (x (P.τ k)))`; prove it only from
+the corrected `hadj412` seed-to-Wick transport below.  The ordinary and
+adjacent continuations may have different compact subdivisions, so run the
+one-branch finite induction twice from these local data and then intersect the
+two terminal balls.  This removes the synchronized two-branch chain and the
+initial-germ record at the same time.
+
+```lean
+have hchain :
+    ∃ (m : Nat)
+      (node : Fin (m + 1) -> unitInterval)
+      (N : Fin (m + 1) -> Set (Fin n -> Fin (d + 1) -> ℂ))
+      (B : Fin (m + 1) ->
+        (Fin n -> Fin (d + 1) -> ℂ) -> ℂ),
+      node 0 = 0 ∧
+      node ⟨m, Nat.lt_succ_self m⟩ = t ∧
+      (∀ j, node j ∈ Set.Icc (min 0 t) (max 0 t)) ∧
+      (∀ j, IsOpen (N j)) ∧
+      (∀ j, ∃ r : ℝ, 0 < r ∧
+        N j = Metric.ball (gamma (node j)) r) ∧
+      (∀ j, gamma (node j) ∈ N j) ∧
+      (∀ j, N j ⊆ BHW.ExtendedTube d n ∩
+        BHW.permutedExtendedTubeSector d n P.τ) ∧
+      (∀ j, DifferentiableOn ℂ (B j) (N j)) ∧
+        Set.EqOn (B 0) B0 (N 0 ∩ Ω0) ∧
+      (∀ j : Fin m, ∃ W : Set (Fin n -> Fin (d + 1) -> ℂ),
+        IsOpen W ∧ W.Nonempty ∧
+        W ⊆ N (Fin.castSucc j) ∩ N (Fin.succ j) ∧
+        Set.EqOn (B (Fin.castSucc j)) (B (Fin.succ j)) W) := by
+  -- One-branch compact-subdivision induction from the local OS-I transfer.
+```
+
+Proof script for the private initial-germ constructors:
+
+1. `ordinary41_of_OSI45`: set `Ω0 := BHW.ExtendedTube d n ∩ H.ΩJ`,
+   `B0 := BHW.extendF (bvt_F OS lgc n)`, and
+   `p0 := gamma 0 = fun k => wickRotatePoint (x k)`.  Use
+   `BHW.os45Figure24IdentityPath_mem_initialSectorOverlap` at `0`,
+   `BHW.isOpen_extendedTube`, `H.ΩJ_open`, and
+   `BHW.differentiableOn_extendF_bvt_F_extendedTube`.  The base trace is
+   proved directly from `BHW.extendF_eq_on_forwardTube`,
+   `bvt_F_holomorphic`, forward-tube Lorentz invariance, and
+   `P.V_ordered` or `P.closure_ordered x (hU_closure hx)`.  The
+   `localChartInWindow` field is the same metric-ball restriction argument as the checked
+   `BHW.OS45BHWJostInitialBranchData.localChartInWindow`, but applied to this
+   private `Ω0/B0` pair.
+2. `adjacent412_of_OSI45`: do not leave the OS I `(4.12)` adjacent germ as a
+   prose choice.  The tempting definition
+
+   ```lean
+   Ω0 :=
+     {z : Fin n -> Fin (d + 1) -> ℂ |
+       BHW.permAct (d := d) P.τ z ∈ BHW.ForwardTube d n} ∩ H.ΩJ
+
+   B0 z :=
+     bvt_F OS lgc n (BHW.permAct (d := d) P.τ z)
+
+   p0 := gamma 0
+   ```
+
+   is **not Lean-ready** when `gamma 0` is the ordinary Wick endpoint.  A direct
+   Lean probe shows that the checked Figure-2-4 patch fields give
+   `fun k => wickRotatePoint (x k) ∈ BHW.ForwardTube d n` and the adjacent
+   OS45 seed-domain/sector membership, but they do not prove
+
+   ```lean
+   BHW.permAct (d := d) P.τ (fun k => wickRotatePoint (x k)) ∈
+     BHW.ForwardTube d n
+   ```
+
+   from `P.closure_swap_ordered`; after unfolding
+   `EuclideanOrderedPositiveTimeSector`, that field simplifies back to the
+   ordinary ordered condition.  Therefore the active transcript must not
+   implement the paragraph above as `adjacent412_of_OSI45`.
+
+   The adjacent constructor is now represented by the exact seed-to-Wick
+   transport surface below.  It takes the second option: an adjacent seed point
+   lies in the displayed permuted-forward-tube preimage, and a checked
+   OS-I `(4.12)` complex-overlap transport theorem carries that seed to the
+   ordinary Wick endpoint.  The deterministic downstream branch
+   `z ↦ BHW.extendF (bvt_F OS lgc n) (BHW.permAct P.τ z)` remains forbidden as
+   the upstream source of the adjacent Wick trace.
+
+   Existing checked continuation reducers confirm the gap rather than closing
+   it.  In particular,
+   `BHW.OS45SourcePatchBHWJostHullData.adjacentBranchOfOrientedContinuationInputs`
+   glues a branch from the larger preimage
+   `{z | BHW.permAct (d := d) H.τ z ∈ BHW.ExtendedTube d n}` and its pair-data
+   consumer still takes an explicit `adjacent_wick_trace` argument.  That
+   theorem may be reused only downstream after the upstream `(4.12)` trace has
+   been proved; it is not the missing trace producer.
+
+   The current Lean-facing target for that correction is a proof-local
+   existential inside `adjacent412_of_OSI45`, not a private record and not the
+   failed `p0_mem` claim:
+
+   ```lean
+   have hadj412 :
+       ∃ (Ω412 : Set (Fin n -> Fin (d + 1) -> ℂ))
+         (B412 : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+         (seed : Set (Fin n -> Fin (d + 1) -> ℂ)),
+         IsOpen Ω412 ∧
+         IsConnected Ω412 ∧
+         Ω412 ⊆ H.ΩJ ∧
+         gamma 0 ∈ Ω412 ∧
+         DifferentiableOn ℂ B412 Ω412 ∧
+         B412 (gamma 0) =
+           bvt_F OS lgc n (fun k => wickRotatePoint (x (P.τ k))) ∧
+         IsOpen seed ∧
+         BHW.permAct (d := d) P.τ (gamma 0) ∈ seed ∧
+         seed ⊆ Ω412 ∩
+           ({z : Fin n -> Fin (d + 1) -> ℂ |
+               BHW.permAct (d := d) P.τ z ∈ BHW.ForwardTube d n} ∩ H.ΩJ) ∧
+         Set.EqOn B412
+           (fun z => bvt_F OS lgc n (BHW.permAct (d := d) P.τ z))
+           seed := by
+     -- Direct OS I `(4.12)` seed-to-Wick transport proof.
+   ```
+
+   The proof of `hadj412` is the actual OS I `(4.12)` local analytic-germ
+   argument: choose a connected complex-open Figure-2-4 neighborhood
+   `Ω412 ⊆ H.ΩJ` containing both the ordinary Wick endpoint `gamma 0` and
+   the selected adjacent Wick point `BHW.permAct P.τ (gamma 0)`, choose a
+   nonempty seed subwindow around that adjacent Wick point in the permuted
+   forward-tube preimage, prove `seed_eq` from the Fourier-Laplace formula
+   there, and propagate the analytic element to `gamma 0` by the local
+   EOW/identity theorem on complex-open overlaps.  The adjacent initial data
+   for the one-branch induction are then the proof-local tuple
+   `Ω0 := Ω412`, `B0 := B412`, `p0 := gamma 0`, together with the metric-ball
+   restriction argument applied to `Ω412`, `B412`, and the proved
+   `gamma 0 ∈ Ω412`.
+
+   The intended seed point for `of_OSI45` is not `gamma 0`; it is
+   `zadj := fun k => wickRotatePoint (x (P.τ k))`.  Existing checked geometry
+   supplies the topological half of this route:
+   `BHW.os45Figure24_adjacentWick_mem_permutedForwardTube` puts `zadj` in the
+   displayed permuted forward-tube preimage after unfolding
+   `BHW.PermutedForwardTube`, `H.adjacentWick_mem x hxP` puts `zadj` in
+   `H.ΩJ`, and `H.ordinaryWick_mem x hxP` puts `gamma 0` in the same hull.
+   The open seed shrink uses `BHW.isOpen_permutedForwardTube`, `H.ΩJ_open`,
+   and the finite-product differentiability of `BHW.permAct`
+   (`BHW.differentiable_permAct`) to make
+   `z ↦ bvt_F OS lgc n (BHW.permAct P.τ z)` holomorphic on the seed by
+   composition with `bvt_F_holomorphic`.
+   The public path/corridor data are obtained from
+   `H.ΩJ_isPathConnected.joinedIn`, using the hull membership wrappers
+   `BHW.mem_os45BHWJostHull_adjacentWick_of_figure24`/
+   `BHW.mem_os45BHWJostHull_ordinaryWick_of_figure24`, or equivalently the
+   fields `H.adjacentWick_mem` and `H.ordinaryWick_mem`.  The more explicit
+   joinedness helpers through the real patch are useful audit evidence, but
+   Lean code in this file should not depend on private helper names from
+   `OSToWightmanLocalityOS45BHWJostLocal.lean`.  What remains for `of_OSI45`
+   is exactly the analytic OS I `(4.12)` continuation/identity theorem that
+   transports the branch value from the `seed_eq` window at `zadj` to the
+   ordinary Wick endpoint and proves the displayed `wick_trace`; the geometry
+   alone must not be treated as that branch-value theorem.  In particular,
+   evaluating `seed_eq` at `zadj` gives the value of the seed formula at the
+   adjacent seed, not the required adjacent Wick trace at `gamma 0`; the latter
+   is precisely the OS I analytic continuation statement.
+
+   Implementation-order warning: the display order below names the adjacent
+   proof-local surface before the one-branch chain because that is how the
+   final data are consumed.  The proof of the `hadj412` existential may itself
+   reuse the same proof-local OS-I transfer case split on the short corridor
+   from `zadj` to `gamma 0`, or prove that corridor transfer inline.  It must not be
+   installed as an opaque assumption just to make
+   the proof-local one-branch induction typecheck.
+
+   Lean-facing correction: prove this surface through a private
+   seed-to-Wick transport theorem.  Define
+   `zord := gamma 0` and
+   `zadj := BHW.permAct (d := d) P.τ zord`; after rewriting
+   `gamma 0 = fun k => wickRotatePoint (x k)` and `P.τ_eq`, Lean proves
+   `zadj = fun k => wickRotatePoint (x (P.τ k))` by extensionality.  The
+   actual `(4.12)` seed is
+
+   ```lean
+   Ωseed :=
+     {z : Fin n -> Fin (d + 1) -> ℂ |
+       BHW.permAct (d := d) P.τ z ∈ BHW.ForwardTube d n} ∩ H.ΩJ
+
+   Bseed z :=
+     bvt_F OS lgc n (BHW.permAct (d := d) P.τ z)
+   ```
+
+   with base point `zadj`.  The proof of `zadj ∈ Ωseed` is now the checked
+   seed-window lemma
+   `BHW.OS45BHWJostHullData.adjacentWick_mem_OS412SeedWindow`; internally it
+   uses `BHW.os45Figure24_permAct_adjacentWick_eq_ordinaryWick` and
+   `BHW.os45Figure24_ordinaryWick_mem_forwardTube` for the forward-tube part,
+   and `H.adjacentWick_mem x hxP` for the hull part.  Consequently
+   `Bseed zadj = bvt_F OS lgc n (fun k => wickRotatePoint (x k))` by
+   `BHW.os45Figure24_OS412SeedBranch_adjacentWick_eq_ordinaryWick`.  This is
+   not the desired adjacent Wick trace; the hard OS-I `(4.12)` transport is
+   precisely the statement that the continuation of this seed has value
+   `bvt_F OS lgc n (fun k => wickRotatePoint (x (P.τ k)))` at `zord`.
+
+   The geometric portion is elementary and should be proved inline with the
+   adjacent `(4.12)` surface: the concrete `zord/zadj`, the displayed
+   `Ωseed/Bseed`, `Ωseed_open`, `zadj ∈ Ωseed`, holomorphy of `Bseed`, and the
+   ordinary seed value
+   `Bseed zadj = bvt_F OS lgc n (fun k => wickRotatePoint (x k))`.  This still
+   does not prove the terminal trace at `zord`.
+   The open and holomorphic seed fields are now checked neutral support:
+   `BHW.isOpen_permAct_preimage_forwardTube` gives the forward-tube preimage
+   openness, intersect with `H.ΩJ_open` for `Ωseed_open`, and
+   `BHW.differentiableOn_bvt_F_permAct_preimageForwardTube` gives
+   `Bseed_holo` before restricting to `Ωseed`.
+
+   Work directly with the following proof-local data, not a new wrapper record:
+   `zord`, `zadj`, the displayed `Ωseed/Bseed`, `Ωseed_open`,
+   `zseed_mem`, `Bseed_holo`, `seed_trace`, a continuous corridor
+   `η : unitInterval -> Fin n -> Fin (d + 1) -> ℂ` with
+   `η 0 = zadj`, `η 1 = zord`, and `η t ∈ H.ΩJ`, plus for each subdivision
+   edge a proof-local case split that chooses `N`, `incoming`, `outgoing`,
+   the successor carrier/branch tuple, and an overlap tuple
+   `(O, O_open, O_preconnected, O_nonempty, O_sub_left, O_sub_right, branch_eq)`;
+   the glued output is
+   `Ω412/B412` with `Ω412_open`, `Ω412_connected`, `Ω412_sub_hull`,
+   `zord ∈ Ω412`, `B412_holo`, a nonempty open `seed ⊆ Ω412 ∩ Ωseed`
+   containing `zadj`, `Set.EqOn B412 Bseed seed`, and
+   `B412 zord =
+     bvt_F OS lgc n (fun k => wickRotatePoint (x (P.τ k)))`.
+
+   The corridor `η` should be built from the checked Figure-2-4 path data:
+   either concatenate the public joined paths
+   `BHW.os45Figure24_joined_adjacentWick_to_adjLift0`,
+   `BHW.os45Figure24_joined_adjLift0_to_realPatch`, and
+   `BHW.os45Figure24_joined_realPatch_to_ordinaryWick`, or use the checked
+   local-hull shortcut
+   `BHW.OS45BHWJostHullData.OS412Seed_joinedIn_ordinaryWick`.
+   The compact fold instantiates the proof-local transfer step with
+   `{Ω0 := Ωseed, B0 := Bseed}`.  Adjacent-sector steps retain the
+   `(4.12)` seed provenance; proper-Lorentz steps use proof-local inverse
+   Lorentz, real-seed, and totally-real identity-theorem data; the flat
+   real-Jost step uses proof-local side-role boundary traces, OS.E3, the
+   checked continuous local EOW helper, and the product identity theorem.  The
+   final `hadj412` existential simply returns `Ω412/B412`,
+   `pwick_mem`, `seed_eq`, and `wick_trace` from these proof-local objects.
+
+   Wrapper audit, 2026-05-14: the earlier split into a seed-geometry packet, a
+   tail packet, and recombination reducers was retired.  It made the file
+   cleaner to type-check but did not prove the actual adjacent `(4.12)`
+   seed-to-Wick transport.  The Lean proof should instead build the concrete
+   seed geometry and the corridor/tail while proving `hadj412`, then
+   immediately assemble the initial germ from those fields.
+
+   Gemini Deep Research interaction
+   `v1_Chc1M29GYXV2M051R2l2ZElQOU9qRHdRYxIXNTNvRmF1djNOdUdpdmRJUDlPakR3UWM`
+   completed on 2026-05-14 and sanity-checks this theorem shape: the seed at
+   `zadj` is mathematically legitimate, and the fact that
+   `Bseed zadj` is the ordinary Wick value is the intended OS-I crossover, not
+   a contradiction.  It also warns against a tempting false Lean shortcut:
+   do not derive `wick_trace` by applying the identity theorem directly to
+   `B412` and `fun z => bvt_F OS lgc n (BHW.permAct P.τ z)` on all of
+   `Ω412` unless a separate local theorem proves the permuted image of
+   `Ω412` lies in a domain where that second function is holomorphic.  The
+   active transcript avoids that extra assumption: `terminal_trace` is the
+   output of the OS-I `(4.12)` seed-to-Wick transport theorem itself, while
+   `seed_eq` records only the starting germ window.
+
+   The final field assembly for the adjacent initial germ has no hidden
+   mathematics.  Its Lean body is:
+
+   ```lean
+   {
+     Ω0 := Ω412
+     B0 := B412
+     p0 := gamma 0
+     p0_eq := rfl
+     Ω0_open := hΩ412_open
+     Ω0_sub_hull := hΩ412_sub_hull
+     p0_mem := hpwick_mem
+     B0_holo := hB412_holo
+     wick_base_trace := hwick_trace
+     localChartInWindow := by
+      intro W hW_open hpW _hW_sub
+      obtain ⟨r, hr_pos, hball⟩ :=
+        SCV.exists_metric_ball_subset_inter_of_mem_open
+          hΩ412_open hpwick_mem hW_open hpW
+      refine ⟨Metric.ball (gamma 0) r, B412, ?_, ?_, ?_, ?_, ?_, ?_⟩
+      · exact Metric.mem_ball_self hr_pos
+      · exact Metric.isOpen_ball
+      · exact (convex_ball (gamma 0) r).isPreconnected
+      · exact hball
+      · exact hB412_holo.mono (fun z hz => (hball hz).1)
+      · intro z hz
+        rfl
+  }
+  ```
+
+   Thus the only nonmechanical adjacent constructor remains
+   the proof-local `hadj412` seed-to-Wick transport.
+
+Proof script for the proof-local one-branch finite induction:
+
+1. Set `gamma s := BHW.os45Figure24IdentityPath x s` and
+   `hxP := hU_closure hx`.  The checked overlap membership is
+   `BHW.os45Figure24IdentityPath_mem_initialSectorOverlap (P := P) hxP s`.
+2. For each `s ∈ Iqt`, do not build a transfer-neighborhood record.  Inside
+   the finite-induction step, choose the OS-I Figure-2-4 local chart case at
+   `gamma s`, define `N`, `incoming`, `outgoing`, prove the open/subset fields
+   needed at that edge, and immediately construct the explicit proof-local
+   transition tuple
+
+   ```lean
+   ∃ (Nnext : Set (Fin n -> Fin (d + 1) -> ℂ))
+     (Bnext : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+     (O : Set (Fin n -> Fin (d + 1) -> ℂ)),
+     IsOpen Nnext ∧ IsPreconnected Nnext ∧ q ∈ Nnext ∧
+     Nnext ⊆ outgoing ∧
+     DifferentiableOn ℂ Bnext Nnext ∧
+     IsOpen O ∧ IsPreconnected O ∧ O.Nonempty ∧ p ∈ O ∧
+     O ⊆ CprevCarrier ∩ Nnext ∧
+     Set.EqOn CprevBranch Bnext O
+   ```
+
+   The subproof is generic in arbitrary
+   `{Ω0 B0}` and consumes only
+   the local provenance tuple for the incoming chart: a finite list of earlier
+   overlap seeds back to `{Ω0, B0}`, plus the current carrier/branch/open/subset/
+   holomorphic fields.  The one-branch chain instantiates this provenance with
+   the locally destructed `Ω0/B0`; the adjacent seed-to-Wick theorem instantiates
+   it with the displayed `Ωseed/Bseed`.  This avoids circularly requiring an
+   initial datum already based at `gamma 0`.
+3. The local transfer has exactly three geometric cases:
+   `ordinarySector`, `adjacentSector`, and `flatRealJostEOW`.
+   In the ordinary case,
+   `incoming = outgoing = BHW.ExtendedTube d n ∩ H.ΩJ`.
+   In the adjacent case,
+   `incoming = outgoing =
+     BHW.permutedExtendedTubeSector d n P.τ ∩ H.ΩJ`.  The concrete
+   `(4.12)` forward-tube preimage appears only through the corrected
+   adjacent surface's `seed` and `seed_eq` fields, or through a later
+   transport theorem from such a seed to the ordinary Wick endpoint; it is not
+   asserted to contain `gamma 0`.
+   In the flat real-Jost case, use proof-local flat EOW geometry rather than a
+   named record: `flat`, `edge`, `cone`, `x0`, `sideInDomain`,
+   `sideOutDomain`, the local-wedge field, the side-domain subset fields into
+   `overlap`, and the two side-neighborhood facts at `SCV.realEmbed x0`.  The
+   domains are
+   `incoming = flat.symm '' sideInDomain ∩ H.ΩJ` and
+   `outgoing = flat.symm '' sideOutDomain ∩ H.ΩJ`, where the side labels are
+   supplied by the oriented Figure-2-4 path field.
+4. The ordinary and adjacent sector cases store only the proof-local
+   `branch_eq : Set.EqOn Bleft Bright O` on a complex-open overlap `O`;
+   proper-Lorentz subcases obtain that equality from proof-local data:
+   a local inverse Lorentz action, an open nonempty totally-real seed in the
+   overlap, equality on that seed from OS Euclidean invariance, and
+   `SCV.identity_theorem_totally_real_product`.  The flat real-Jost case builds
+   proof-local side-role tuples, one-sided boundary traces, an OS.E3 equality
+   of the two boundary values, calls
+   `SCV.local_continuous_edge_of_the_wedge_eventuallyEq_at_common_edge`, and
+   propagates the resulting eventual equality across the complex-open overlap
+   by `SCV.identity_theorem_product`.  The finite chain consumes only this
+   complex-open `branch_eq`; it never glues on the real edge.
+   In all three cases the proof-local step begins with
+   `intro p q hpN hqN Ω0 B0 Cprev hCcert hpC hpIncoming hCIncoming` and
+   inspects the incoming branch only through `hCcert`.  This is what lets the
+   same proof pattern serve the one-branch chain with the locally destructed `Ω0/B0` and the
+   adjacent seed-to-Wick theorem with `Ωseed/Bseed`.
+
+   Wrapper audit, 2026-05-14: the selector/step-output packet plan is retired.
+   Do not implement `OS45Figure24TransferStepOutput`,
+   `OS45Figure24LocalTransferSelectorData`, `OS45Figure24FlatEOWStepSource`, or
+   a replacement local-transfer record.  Those names only wrap the same
+   three-case transfer problem.  The finite-induction proof should destruct the
+   OS-I local Figure-2-4 case directly in its proof body, construct `Cnext` and
+   the allowed transition immediately, and retain the side-role/EOW payload
+   facts as local `have`s until they fill the transition record.  The flat
+   real-Jost case is now part of the OS-I local chart case itself, not an
+   inference from certification.  Its local selector must return exactly one
+   of the two following proof-local alternatives:
+
+   * `directRoles`: the current incoming chart already carries a side role
+     and the successor chart is chosen with the opposite side role.  The
+     selector returns side domains `sideInDomain`, `sideOutDomain`, subset
+     proofs
+     `CprevCarrier ⊆ flat.symm '' sideInDomain ∩ H.ΩJ` and
+     `Nnext ⊆ flat.symm '' sideOutDomain ∩ H.ΩJ`, the two boundary-value
+     convergence facts for `CprevBranch` and `Bnext`, and the OS-I real-edge
+     equality of the two boundary values.
+   * `comparisonRoles`: the current and successor charts are only certified
+     continuations.  The selector also returns side-role charts
+     `(NinSide, BinSide)` and `(NoutSide, BoutSide)`, complex-open comparison
+     overlaps `Oin ⊆ CprevCarrier ∩ NinSide` and
+     `Oout ⊆ NoutSide ∩ Nnext`, equality of branches on those overlaps, and
+     the same EOW boundary package for `BinSide` and `BoutSide`.
+
+   In both alternatives, the EOW package is consumed immediately to produce a
+   complex-open `Set.EqOn` between the incoming and outgoing branch actually
+   stored in the transition tuple.  No proof may synthesize side roles from
+   `hCcert`, from `CprevCarrier ⊆ incoming`, or from carrier membership alone.
+
+   Lean-pseudocode for the proof-local OS-I transfer step is now fixed
+   case-by-case.  Start with
+   `center := BHW.os45Figure24IdentityPath (d := d) (n := n) x s`.  The OS-I
+   local Figure-2-4 chart selector must choose exactly one of the following
+   cases and produce the listed chart, sheet, and overlap-equality data:
+
+   * Ordinary sector:
+     Set `incoming = outgoing = BHW.ExtendedTube d n ∩ H.ΩJ`, prove
+     `incoming_eq := rfl`, `outgoing_eq := rfl`, open/subset fields from the
+     selected ball and `H.ΩJ_open`, and define `step` by
+     `intro p q hpN hqN Ω0 B0 Cprev hCcert hpC hpIncoming hCIncoming`.
+     The successor chart is the OS-I `(4.1)` chart on a ball around `q`
+     inside `outgoing`.  The transition overlap is a ball `O` around `p` with
+     `O ⊆ Cprev.carrier ∩ Cnext`; the final proof-local `branch_eq` is either
+     the certified same-sheet `(4.1)` branch equality or the proof-local
+     proper-Lorentz identity-theorem propagation.  Fill the displayed tuple
+     directly with `Nnext := CnextCarrier`, `Bnext := CnextBranch`, `O`,
+     `p_overlap`, `q_mem`, and `Cnext_sub_outgoing`; no transition record is
+     exported.
+   * Adjacent sector:
+     Set `incoming = outgoing =
+     BHW.permutedExtendedTubeSector d n P.τ ∩ H.ΩJ`; record the seed window
+     exactly as
+     `{z | BHW.permAct (d := d) P.τ z ∈ BHW.ForwardTube d n} ∩ H.ΩJ` and
+     prove `seedWindow_sub_incoming`.  The `step` body has the same binder list
+     as the ordinary sector, but `Cnext` is the OS-I `(4.12)` local chart
+     selected at `q`.  Its equality source is the `(4.12)` branch law plus
+     certified complex-open OS-I transitions; on the seed window it may use the
+     corrected `seed_eq` field, and away from the seed it may only propagate by
+     the identity theorem.  It must not rewrite `Cnext.branch` to the
+     deterministic `extendF ∘ permAct` branch.
+   * Flat real-Jost EOW:
+     The proof-local case must include `xE`, `xE_mem`, `overlap`, the flat
+     equivalence `flat`, the real edge/cone data, and `sideInDomain`/
+     `sideOutDomain`; set
+     `incoming = flat.symm '' sideInDomain ∩ H.ΩJ` and
+     `outgoing = flat.symm '' sideOutDomain ∩ H.ΩJ`.
+     The `step` body again has the same generic branch-provenance binders
+     `p q hpN hqN Ω0 B0 CprevCarrier CprevBranch hCprev_open
+     hCprev_preconnected hpC hpIncoming hCprev_sub_incoming hCprev_holo
+     hCcert`; it may use `Ω0/B0` only through `hCcert`.
+     In the `directRoles` subcase, use the returned side-role fields for
+     `CprevBranch` and `Bnext`, derive the two one-sided boundary `Tendsto`
+     fields, use OS.E3 to identify the boundary values on the real edge, call
+     `SCV.local_continuous_edge_of_the_wedge_eventuallyEq_at_common_edge`, and
+     store the `branch_eq` obtained by `SCV.identity_theorem_product` on the
+     complex-open overlap.  In the `comparisonRoles` subcase, first prove the
+     same EOW equality between the selected side-role charts, then compose the
+     incoming comparison equality, that EOW equality, and the outgoing
+     comparison equality on a named complex-open `finalOverlap`; store the
+     composed `Set.EqOn CprevBranch Bnext finalOverlap` in the final transition
+     tuple.  A real-edge equality alone is never stored in the finite chain.
+
+   * Ordinary-sector field recipe:
+     `incoming = outgoing = BHW.ExtendedTube d n ∩ H.ΩJ`, `N` is the selector
+     ball inside that sheet, `Cnext.carrier := N`, and
+     `Cnext.branch := BHW.extendF (bvt_F OS lgc n)`.  The overlap is a smaller
+     metric ball `O ⊆ Cprev.carrier ∩ N` around the left endpoint `p`.
+     `branch_eq` on `O` is proved from certified-chart ordinary branch law and
+     `(4.1)`; in proper-Lorentz subcases it is exactly the proof-local
+     totally-real identity-theorem propagation.
+   * Adjacent-sector field recipe:
+     `incoming = outgoing = BHW.permutedExtendedTubeSector d n P.τ ∩ H.ΩJ`.
+     `Cnext` is the local OS-I `(4.12)` analytic chart at `q`, not the
+     deterministic `extendF ∘ permAct` branch.  On the genuine seed window
+     `{z | BHW.permAct (d := d) P.τ z ∈ BHW.ForwardTube d n} ∩ H.ΩJ`,
+     its formula is related to
+     `fun z => bvt_F OS lgc n (BHW.permAct (d := d) P.τ z)` by the corrected
+     adjacent surface's `seed_eq`; elsewhere equality propagates only through
+     certified complex-open OS-I transitions and the identity theorem.
+   * Flat real-Jost EOW field recipe:
+     the proof-local case supplies `xE`, `overlap`, `flat`, the side domains,
+     and side labels `sideIn/sideOut`.  Set
+     `incoming = flat.symm '' sideInDomain ∩ H.ΩJ` and
+     `outgoing = flat.symm '' sideOutDomain ∩ H.ΩJ`.
+     The proof explicitly consumes one of the two selector alternatives above.
+     In `directRoles`, derive the two side boundary traces for `CprevBranch`
+     and `Bnext`, combine them by OS.E3, call
+     `SCV.local_continuous_edge_of_the_wedge_eventuallyEq_at_common_edge`, and
+     set the transition equality to the resulting
+     `SCV.identity_theorem_product` propagation.  In `comparisonRoles`, build
+     the EOW equality between the selected side charts and transport its
+     complex-open equality through the two same-sheet comparison transitions
+     before filling the final nested transfer goal.
+     The EOW eventual equality is upgraded on the complex-open `overlap` by
+     `SCV.identity_theorem_product`; no real-edge-only equality is stored in
+     the finite chain.
+5. Apply Mathlib's unit-interval open-cover subdivision theorem directly to
+   the cover `s ↦ gamma ⁻¹' (T s).N`.  This yields a finite ordered subdivision
+   for this one branch.  Do not reintroduce a custom subdivision wrapper unless
+   the final proof genuinely needs a reusable theorem that Mathlib does not
+   already provide.
+6. Initialize with `G.localChartInWindow` on the first incoming sheet.  Then
+   repeat the checked fold pattern: at each step restrict the current certified
+   chart to the incoming sheet by the metric-ball restriction helper, apply the
+   local transfer to the restricted chart, combine the restriction equality
+   with the returned complex-open transition equality, and append the
+   successor chart.  The transition overlap contains the left endpoint; the
+   successor chart contains the right endpoint; no right-endpoint-in-overlap
+   condition is required.
+
+   Wrapper audit, 2026-05-14: the checked compact-cover fold through
+   `OS45BHWJostFiniteContinuationChainData` was removed from the active Lean
+   surface.  The finite induction is still the right proof method, but it
+   should live inside the direct OS-I local-element proof until it discharges
+   the actual terminal chart, trace, and overlap-seed goals.
+
+The proof-local terminal packet then performs only deterministic extraction
+after its two chains and endpoint trace packet are available.  Destructure
+`q = gamma t`; choose
+
+```lean
+let H :=
+  BHW.os45_BHWJostHullData_of_figure24
+    (d := d) (n := n) hd i hi P
+```
+
+then build
+the ordinary initial tuple directly from `(4.1)`, and build the adjacent
+initial tuple only after the corrected adjacent `(4.12)` proof-local transport
+above exists.  Then run the one-branch finite induction separately for those
+two tuples.  Let `lastOrd` and `lastAdj` be the two terminal
+indices.  Choose the two terminal ball radii from `Cord.N_ball lastOrd` and
+`Cadj.N_ball lastAdj`; set the common radius to their minimum and
+`N := Metric.ball q.1 r`.  Set `Ord := Cord.B lastOrd` and
+`Adj := Cadj.B lastAdj` restricted to `N`.  The overlap target
+`N ⊆ BHW.ExtendedTube d n ∩ BHW.permutedExtendedTubeSector d n P.τ` follows
+from the ordinary chain's `N_subset_overlap` after shrinking.
+
+The deterministic terminal-ball intersection is proof-local.  After the
+ordinary and adjacent terminal charts are known at the same endpoint `q.1`,
+choose their two metric-ball radii, shrink to the minimum, restrict the two
+holomorphic branches to that common ball, and set `D := Adj - Ord`.  This
+algebraic shrink is not a separate theorem target; the hard content is still
+the construction of the two one-branch continuations and the endpoint trace
+equalities.
+
+The terminal center traces are not finite-height pointwise shortcuts.  In the
+endpoint cases used later by the family proof, build the endpoint-centered
+local element with the endpoint parameter itself: for the Wick section use
+`t = 0`, so the ordinary trace is the checked `(4.1)` constructor and the
+adjacent trace is supplied only by the corrected proof-local `hadj412`
+seed-to-Wick transport, or by the alternative adjacent-path plus
+complex-overlap transport surface if that route is chosen.  It is not supplied
+by the failed
+permuted-forward-tube `p0_mem` paragraph and not by the downstream
+`extendF ∘ permAct` branch.  For the horizontal common edge use `t = 1`, so the
+ordinary and adjacent traces are `(4.14)` plus
+`BHW.os45Figure24Path_endpoint_extendF_eq_ordinaryPulledRealBranch` and
+`BHW.os45Figure24OrientedPath_endpoint_extendF_eq_adjacentPulledRealBranch`.
+If the same complex endpoint also lies in another selected chart, its trace is
+obtained later from the proof-local `hall_overlap` field, not by asserting a
+global formula for every chart at once.
+Then define `D := Adj - Ord` and fill only the endpoint-centered trace fields
+by subtraction.  This is ordinary algebra inside the proof of the public
+producer, not a public carrier and not a theorem-2 assumption.
+
+Proof transcript for the proof-local `hall_overlap` field:
 
 1. If `A.N ∩ B.N` is empty, take
    `hEmpty : ¬ (A.N ∩ B.N).Nonempty`; after `intro z hz`, close by
    `False.elim (hEmpty ⟨z, hz⟩)`.
-2. Otherwise choose `z0 ∈ A.N ∩ B.N`.  The two local elements are both
-   Hall-Wightman continuations of the same ordered/adjacent OS I analytic germs
-   along the same checked Figure-2-4 corridor.  The local branch law gives a
-   nonempty complex subball `W ⊆ A.N ∩ B.N` on which `A.D = B.D`.
-3. `A.N` and `B.N` are metric balls, so `A.N ∩ B.N` is convex, hence
+2. Otherwise choose `z0 ∈ A.N ∩ B.N`.  The branch-law seed must be proved
+   while the finite-chain provenance of `A` and `B` is still in scope.  It
+   cannot be recovered after the ordinary and adjacent chains have been
+   forgotten.  In the direct producer proof, construct the proof-local tuple
+   for `q` together with the two ordinary/adjacent one-branch chains that
+   produced it, and prove overlap seeds before choosing the proof-local family
+   fields.
+3. For the ordinary branches, take the ordinary chain for the two selected
+   local tuples, retarget both terminal charts to the observed point `z0` by a
+   same-chart terminal step, and compare the resulting finite galleries from
+   the same `(4.1)` initial germ.  The initial charts agree on a small ball
+   around the ordinary initial point because both first charts satisfy
+   `first_eq` with the ordinary `B0` on `N 0 ∩ Ω0`.  Each successor comparison is supplied by the
+   stored `step_seed` complex-open overlap.  The finite-gallery identity
+   argument is the ordinary holomorphic identity theorem propagated across
+   this finite chain of connected metric balls: once two adjacent branch
+   representatives agree on the nonempty complex-open seed recorded in
+   `step_seed`, the equality extends on the next chart component; iterating
+   along both galleries yields a nonempty complex ball
+   `Word` inside the two selected terminal balls around `z0` with equality of
+   the two ordinary terminal branches on `Word`.
+4. Repeat the same finite-gallery argument for the adjacent branches, using the
+   corrected `(4.12)` initial data and the adjacent chains that produced the
+   two adjacent terminal branches.  The initial agreement seed is supplied by
+   the corrected adjacent proof-local surface: both initial charts agree with
+   the adjacent `B0`, whose Wick normalization came from the `hadj412` transport, not
+   from the downstream deterministic `extendF ∘ permAct` branch.  The local
+   transfer steps again supply only complex-open `step_seed` equalities.
+5. Intersect the two seed balls from the ordinary and adjacent comparisons and
+   shrink once more if necessary.  On the resulting nonempty complex-open
+   `W` inside the two selected terminal balls,
+   `D_left = Adj_left - Ord_left = Adj_right - Ord_right = D_right`.  This is the BHW/OS-I branch
+   law seed.  It is the genuine remaining mathematical gap: the proof is a
+   finite analytic-continuation uniqueness argument over the actual selected
+   chains, not a new public monodromy wrapper, not a source-variety theorem,
+   and not an assumption.
+6. The two selected terminal balls are metric balls, so their intersection is convex, hence
    preconnected; it is open by `IsOpen.inter`.
-4. Apply the ordinary identity theorem for holomorphic functions on the open
-   preconnected set `A.N ∩ B.N`, using the holomorphy fields restricted from
-   `A.N` and `B.N` and equality on `W`, to get
-   `Set.EqOn A.D B.D (A.N ∩ B.N)`.
+7. Apply the ordinary identity theorem for holomorphic functions on the open
+   preconnected intersection, using the holomorphy fields restricted from the
+   two balls and equality on `W`, to get `Set.EqOn D_left D_right` on that
+   intersection.
 
-`OS45Figure24LocalDifferenceFamily.of_OSI45` is then `Classical.choose` around
-these two private theorems: choose a local analytic element for every `q : Kcx`,
-set `N q := A_q.N` and `D q := A_q.D`, and fill the pairwise equality field by
-`OS45Figure24LocalAnalyticElement.eqOn_overlap`.
+Lean-pseudocode for the finite-gallery seed inside step 3/4.  Keep the
+ordinary and adjacent chain witnesses in scope when constructing `A` and `B`.
+For a branch kind `κ`, write the two terminal chains as `CAκ` and `CBκ`.
+After retargeting both terminal charts to the observed point `z0`, prove by
+finite induction over the concatenated gallery
+
+```lean
+G.0, ..., G.aLast, H.bLast, ..., H.0
+```
+
+that consecutive charts agree on a nonempty complex-open seed and therefore
+their representatives agree in a neighborhood of the shared node.  The base
+seed is:
+
+```lean
+W0 := CAκ.N 0 ∩ CBκ.N 0 ∩ Gκ.Ω0
+```
+
+with equality from `CAκ.first_eq`, `CBκ.first_eq`, and the common initial germ
+`Gκ.B0`.  A forward gallery step uses `CAκ.step_seed j`; a backward gallery
+step uses `CBκ.step_seed j` with the equality reversed.  At each step, shrink
+to a nonempty ball contained in the current seed and in the next chart
+intersection, then apply
+`SCV.identity_theorem_product_of_eqOn_open` on that ball intersection to
+propagate equality to the next chart.  The final output of this induction is
+not a named monodromy theorem; it is a proof-local package:
+
+```lean
+∃ Wκ : Set (Fin n -> Fin (d + 1) -> ℂ),
+  IsOpen Wκ ∧ z0 ∈ Wκ ∧ Wκ ⊆ A.N ∩ B.N ∧
+  Set.EqOn Aκ Bκ Wκ
+```
+
+where `Aκ/Bκ` are `A.Ord/B.Ord` for `κ = ordinary41` and `A.Adj/B.Adj` for
+`κ = adjacent412`.  The adjacent induction uses the corrected `(4.12)` initial
+surface for `Gκ.B0`; it must not replace the initial seed by the downstream
+`extendF ∘ permAct` branch.  Since both outputs contain the same retargeted
+point `z0`, apply the checked ball-shrink helper
+`SCV.exists_metric_ball_subset_inter_of_mem_open` to the open sets `Word` and
+`Wadj` at `z0`; the resulting ball `W ⊆ Word ∩ Wadj` is the common seed where
+`A.D = B.D` follows by subtraction.  Only then call
+`SCV.identity_theorem_product_of_eqOn_open` on the two-ball intersection.
+
+The identity-theorem propagation from a nonempty seed to the whole ball
+intersection is now a neutral SCV step:
+`SCV.identity_theorem_product_of_eqOn_open`.  In the overlap proof instantiate
+it with `U` the two-ball intersection, `W` the nonempty complex-open branch-law seed,
+`f := D_left`, and `g := D_right`; the differentiability hypotheses are the
+two local holomorphy facts restricted by `Set.inter_subset_left/right`, and
+the connectedness of the two-ball intersection is the checked neutral topology lemma
+`SCV.isConnected_inter_metric_ball`, after rewriting both domains by their
+metric-ball fields and using the chosen overlap point for nonemptiness.
+The hard remaining content is not this propagation step; it is the
+BHW/OS-I finite-gallery branch-law seed on a nonempty complex-open subball
+while the ordinary and adjacent chain provenance of both local elements is
+still available.
+
+Inside the direct proof of
+`BHW.os45CommonEdge_localFigure24DifferenceGerm_of_OSI45`, choose a local
+analytic element for every `q : Kcx`, set `N q` and `D q` from the chosen
+proof-local tuple, and fill the pairwise equality field by the proof-local
+overlap argument.
+This must stay proof-local; do not land `OS45Figure24LocalDifferenceFamily` as
+a wrapper/checkpoint around the unproved branch-law seed.
+
+The arbitrary-chart Wick and common-edge trace fields are not extra OS-I input.
+They are derived mechanically from the center traces as follows.  For an
+arbitrary chart `q` containing the Wick
+endpoint `w u := fun k => wickRotatePoint (u k)`, take the endpoint chart
+`e := wick_index u hu : Kcx`; by `wick_index_eq`, its center is `w u`, and
+`center_mem e` gives `w u ∈ N e`.  Apply `overlap_eq q e` at `w u`, using the
+assumed membership in `N q` and `center_mem e`, to rewrite
+`D q (w u) = D e (w u)`.  Then apply the chosen element's
+`wick_center_trace` for `e`, after rewriting the center equation by
+`wick_index_eq`.  The common-edge trace is identical with
+`e := common_index u hu`, the endpoint equation `common_index_eq`, and
+`common_center_trace`.  Thus the stronger `wick_trace` and `common_trace`
+fields consumed by `to_germ` are pure overlap transport, not new analytic
+continuation statements.
 
 Now glue the arbitrary atlas directly; no finite-walk subcover is needed.
 The connected core is `Kcx`, each selected ball `N q` is connected and contains
@@ -641,10 +1301,13 @@ the index type is `Kcx`, `hattach q := ⟨q.1, q.2, center_mem q⟩`, and
 `hK_subset z hz` is witnessed by the index `⟨z, hz⟩` together with
 `center_mem ⟨z, hz⟩`.
 
-The gluing reducer is then:
+The gluing step should be implemented directly in the proof of
+`BHW.os45CommonEdge_localFigure24DifferenceGerm_of_OSI45`, using proof-local
+`N`, `D`, `overlap_eq`, `wick_index`, and `common_index` variables.  The
+intended proof-local shape is:
 
 ```lean
-private theorem OS45Figure24LocalDifferenceFamily.to_germ
+-- proof-local block inside BHW.os45CommonEdge_localFigure24DifferenceGerm_of_OSI45
     [NeZero d] (hd : 2 <= d)
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS)
@@ -731,27 +1394,28 @@ private theorem OS45Figure24LocalDifferenceFamily.to_germ
                   (1 : Equiv.Perm (Fin n)) u))
 ```
 
-Proof transcript for `to_germ`: set `Ucx := ⋃ q : Kcx, N q`; prove openness by
+Proof transcript for this block: set `Ucx := ⋃ q : Kcx, N q`; prove openness by
 `isOpen_iUnion N_open`; prove connectedness by
 `SCV.isConnected_iUnion_of_connected_core`, with connectedness of each `N q`
 from its metric-ball field, `hattach q := ⟨q.1, q.2, center_mem q⟩`, and
 `hK_subset z hz := ⟨⟨z, hz⟩, center_mem ⟨z, hz⟩⟩`.  Define `Hdiff z` by
 choosing a chart containing `z` if `z ∈ Ucx`, and `0` otherwise.  Choice
-independence is exactly `overlap_eq`.  Holomorphy is the same local-cover
-gluing argument as the checked
-`BHWSourcePatchContinuationAtlas.glued_differentiableOn` proof, restated in
-this OS45 file or moved to a neutral SCV helper.  Endpoint membership uses
+independence is exactly `overlap_eq`.  Holomorphy is proved by the neutral
+local-cover helper `SCV.differentiableOn_of_locally_eq_differentiableOn`: at
+each point of `Ucx`, choose a selected chart containing that point and use
+`overlap_eq` to identify the glued function with that chart branch on a
+smaller open neighborhood.  Endpoint membership uses
 `wick_index` and `common_index`: rewrite the endpoint by `wick_index_eq` or
 `common_index_eq`, then apply `center_mem` for that index.  Endpoint traces
 then follow from `glued_eq_branch_of_mem` and the stored `wick_trace` /
 `common_trace` fields.
 
 The public theorem
-`BHW.os45CommonEdge_localFigure24DifferenceGerm_of_OSI45` is now the composition
-of `OS45Figure24LocalDifferenceFamily.of_OSI45` with
-`OS45Figure24LocalDifferenceFamily.to_germ`.  Landing only the reducer, or
-landing the local family as a hypothesis, would be wrapper churn and is
-forbidden.
+`BHW.os45CommonEdge_localFigure24DifferenceGerm_of_OSI45` should prove the
+local-family construction and the gluing step in one direct chain.  Splitting
+out the arbitrary-atlas gluing is acceptable only as a small neutral topology
+lemma; landing a carrier that consumes an unproved local family as a public or
+private "checkpoint" is wrapper churn and is forbidden.
 
 Current readiness correction, 2026-05-10, later audit: the connected-overlap
 and single-merged-branch shortcut below is **not** the active Stage-A route.
@@ -887,9 +1551,8 @@ continuation atlases and immediately glue them, using the already checked
 generic atlas API
 `BHW.BHWSourcePatchContinuationAtlas`,
 `BHW.BHWSourcePatchContinuationAtlas.glued`,
-`BHW.BHWSourcePatchContinuationAtlas.glued_differentiableOn`,
-`BHW.BHWSourcePatchContinuationAtlas.glued_eq_B0_of_mem`, and the checked
-pair reducer `BHW.OS45BHWJostHullData.toPairDataOfContinuationAtlases`.
+`BHW.BHWSourcePatchContinuationAtlas.glued_differentiableOn`, and
+`BHW.BHWSourcePatchContinuationAtlas.glued_eq_B0_of_mem`.
 Those APIs remain glue APIs only.  They are not an active substitute for the
 direct `Hdiff` producer.
 
@@ -1029,30 +1692,12 @@ theorem BHW.os45_BHWJost_adjacentBranch_onLocalHull_of_OSI45
             simp [BHW.permAct_realEmbed]
 ```
 
-The pair-data theorem is then fully mechanical:
-
-```lean
-theorem BHW.os45_BHWJostPairData_onLocalHull_of_OSI45
-    [NeZero d] (hd : 2 <= d)
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS)
-    {n : Nat} {i : Fin n} {hi : i.val + 1 < n}
-    {P : BHW.OS45Figure24CanonicalSourcePatchData
-      (d := d) hd n i hi}
-    (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P) :
-    BHW.OS45SourcePatchBHWJostPairData
-      (d := d) hd OS lgc n i hi P.V := by
-  let Aord :=
-    BHW.os45_BHWJostContinuationAtlas_ordinary_onLocalHull_of_OSI45
-      (d := d) hd OS lgc H
-  let Aadj :=
-    BHW.os45_BHWJostContinuationAtlas_adjacent_onLocalHull_of_OSI45
-      (d := d) hd OS lgc H
-  exact
-    H.toPairDataOfContinuationAtlases hd OS lgc Aord Aadj
-      (BHW.os45_BHWJost_adjacentAtlas_ordinaryWickTrace_of_OSI45
-        (d := d) hd OS lgc H Aadj)
-```
+The old pair-data theorem shape that built separate ordinary/adjacent
+continuation atlases and filled traces afterwards is withdrawn.  It was a
+wrapper route around the real Stage-A work.  The active post-`Hdiff` bridge
+waits for the common-boundary CLM and the local `S'_n` branch `S`, then calls
+`H.toPairDataOfBranches` directly with `S.B` in both branch slots, `S.B_holo`,
+and the four endpoint equations from `S.eq_ordinary` and `S.eq_adjacent`.
 
 Active `Hdiff` arbitrary-atlas transcript, replacing the finite-chain plan:
 
@@ -1096,16 +1741,19 @@ The Lean gluing script is then fixed:
 3. For `z ∈ Ucx`, choose `qz : Kcx` with `z ∈ N qz`, and define
    `Hdiff z := D qz z`.
 4. Prove choice-independence with `all_overlap_eq`.
-5. Prove `DifferentiableOn ℂ Hdiff Ucx` by the same local-cover gluing lemma
-   pattern as `BHWSourcePatchContinuationAtlas.glued_differentiableOn`, restated
-   neutrally in the OS45 local file if needed.
+5. Prove `DifferentiableOn ℂ Hdiff Ucx` by the checked neutral local gluing
+   helper `SCV.differentiableOn_of_locally_eq_differentiableOn`, using each
+   endpoint chart as the local holomorphic representative.
 6. Prove `hwick_trace` using the endpoint index whose value is
    `fun k => wickRotatePoint (u k)`: rewrite `Kcx_def`, take the witness
    `(⟨u, subset_closure hu⟩, (0 : unitInterval))`, and close the value equality
-   by `BHW.os45Figure24IdentityPath_zero`.  Then apply `center_mem` and the
-   stored local Wick trace.
+   by `BHW.os45Figure24IdentityPath_zero`.  For an arbitrary chosen chart `q`
+   containing this endpoint, use `all_overlap_eq q (wick_index u hu)` at the
+   endpoint to move from `D q` to the endpoint-centered chart; then apply its
+   `wick_center_trace`.
 7. Prove `hcommon_trace` similarly from the endpoint index for the horizontal
-   common-edge point and the stored local common trace.
+   common-edge point: use `all_overlap_eq q (common_index u hu)` at the endpoint,
+   then apply the endpoint-centered chart's `common_center_trace`.
 
 This is the first production Lean target after the docs are complete.  No
 finite-walk `DifferenceChainData`, two-branch wrapper, local `S'_n` branch,
@@ -1490,13 +2138,17 @@ descent, PET single-valuedness, final locality, or an axiom.  If implementation
 discovers that one of these surfaces needs a different statement, the blueprint
 must be corrected before Lean work continues.
 
-Proof-doc completion status, corrected after the 2026-05-13 Hdiff audit: the
-archived merged-branch route and the old atlas finite-chain route are **not**
-the next Lean implementation pass.  The checked `BHWSourcePatchContinuationAtlas`
-API remains useful glue infrastructure, but it is not the OS I §4.5 producer.
-Stage A is now localized first to
+Proof-doc completion status, corrected after the 2026-05-13 Hdiff audit and the
+2026-05-14 wrapper audit: the archived merged-branch route and the old atlas
+finite-chain route are **not** the next Lean implementation pass.  The checked
+`BHWSourcePatchContinuationAtlas` API remains useful glue infrastructure, but it
+is not the OS I §4.5 producer.  Stage A is now localized first to
 `BHW.os45CommonEdge_localFigure24DifferenceGerm_of_OSI45`.  Its arbitrary-atlas
-proof must return the local branch-difference germ directly.  Only after the
+proof must return the local branch-difference germ directly.  The private
+Hdiff and branch-free carrier files have been removed; the next unproved Lean
+work is the OS I §4.5 proof content that constructs the initial germs, transfer
+neighborhoods, one-branch continuations, terminal branches, overlap equality,
+and family gluing inside the direct producer.  Only after the
 checked horizontal reducer and the common-boundary CLM have been proved does the
 route move to `BHW.os45_BHWJost_localSPrimeEOWSeed_of_OSI45` and
 `BHW.os45_BHWJost_SPrimeBranchData_of_OSI45`.  The seed theorem is still proved
@@ -1509,7 +2161,7 @@ point `BHW.os45Figure24CommonEdgeSPrimeSeed d n P`, not
 
 The old **public atlas** finite-chain packet remains downstream support only.
 This does not forbid the private finite subpath continuations used inside
-`OS45Figure24LocalAnalyticElement.of_OSI45`; those are proof-local witnesses
+the proof-local OS-I local-element construction; those are proof-local witnesses
 for one local analytic element and are consumed immediately to produce the
 ball `N` and branch `D`.  The retired public items
 `BHW.OS45BHWJostFiniteContinuationChainData`,
@@ -2259,7 +2911,14 @@ not record the determinant/proper-component data.
    ```
 
    Proof after `S := BHW.os45_BHWJost_SPrimeBranchData_of_OSI45`: let
-   `H := BHW.os45_BHWJostHullData_of_figure24 ... P`.  The checked
+
+   ```lean
+   let H :=
+     BHW.os45_BHWJostHullData_of_figure24
+       (d := d) (n := n) hd i hi P
+   ```
+
+   The checked
    Figure-2-4 geometry puts `wick u` in `H.ΩJ` and in the selected permuted
    sector, so `S.eq_adjacent` rewrites `S.B (wick u)` to
    `BHW.extendF (bvt_F OS lgc n) (BHW.permAct P.τ (wick u))`.  The same point
@@ -2787,15 +3446,17 @@ special case; the strict route needs the limit version.
 Stage F: keep the `d = 1` proof on the separate Slots D1-1 through D1-4 route.
 It does not use the `2 <= d` OS45 local-hull two-branch carrier.
 
-Verification boundary for this locked route uses existing files only:
+Verification boundary for this locked route uses the strict-route files only:
+`OSToWightmanLocalityOS45BHWJost.lean`,
 `OSToWightmanLocalityOS45BHWJostLocal.lean`,
-`OSToWightmanLocalityOS45BHWJostContinuation.lean`,
 `OSToWightmanLocalityOS45Compact.lean`,
 `OSToWightmanSelectedWitness.lean`,
 `OSToWightmanBoundaryValuesComparison.lean`,
 `OSToWightmanBoundaryValues.lean`, and `OSToWightman.lean`.  There is no file
 named `OSToWightmanLocality.lean`; it must not appear in verification
-checklists.
+checklists.  `OSToWightmanLocalityOS45BHWJostContinuation.lean` is archived
+continuation-atlas support and is not part of the active Stage-A closure unless
+explicitly audited.
 
 Expanded checked-support inventory for Stages A and B, subordinate to the
 locked route above:
@@ -13263,9 +13924,9 @@ common-boundary envelope, or any theorem that already assumes locality.
      hWick, hWickAdj, hReal, hRealAdj⟩
    ```
 
-   Superseded atlas reducer note, 2026-05-10.  The atlas theorem shape below is
-   retained only to explain the checked reducer
-   `H.toPairDataOfContinuationAtlases`.  It is not the active Stage-A public
+   Superseded atlas reducer note, 2026-05-10; Lean surface removed
+   2026-05-14.  The atlas theorem shape below is retained only to explain the
+   old continuation-atlas detour.  It is not the active Stage-A public
    proof surface.  The active public target is the direct two-branch pair
    carrier, followed by `H.toPairDataOfBranches`.
 
@@ -13309,10 +13970,10 @@ common-boundary envelope, or any theorem that already assumes locality.
    ```lean
    rcases BHW.os45_BHWJostContinuationAtlases_onLocalHull_of_OSI45
        (d := d) hd OS lgc H with ⟨Aord, Aadj, hBtau_wick⟩
-   let Pdata := H.toPairDataOfContinuationAtlases hd OS lgc Aord Aadj hBtau_wick
-   exact ⟨Pdata.Bord, Pdata.Btau, Pdata.Bord_holo, Pdata.Btau_holo,
-     Pdata.Bord_wick_trace, Pdata.Btau_wick_trace,
-     Pdata.Bord_real_trace, Pdata.Btau_real_trace⟩
+   -- Former archival shortcut removed from active Lean:
+   -- let Pdata := H.toPairDataOfContinuationAtlases ...
+   -- The current route destructs Aord.glued/Aadj.glued and calls
+   -- H.toPairDataOfBranches after proving all four trace fields directly.
    ```
 
    Historical note: the public pair-data theorem no longer starts by calling
@@ -13494,10 +14155,11 @@ common-boundary envelope, or any theorem that already assumes locality.
       `BHW.os45_BHWJostPairData_onLocalHull_of_OSI45` with `Bord` and `Btau`
       in the two branch slots.  The older route that constructs two
       continuation atlases and then calls
-      `OS45BHWJostHullData.toPairDataOfContinuationAtlases` is archival.
+      the former `OS45BHWJostHullData.toPairDataOfContinuationAtlases` reducer
+      has been removed from the active Lean surface.
 
-   The older atlas reducer already checked in
-   `OSToWightmanLocalityOS45BHWJostLocal.lean` is:
+   The older atlas reducer was removed from the active Lean surface on
+   2026-05-14.  Its former shape was:
 
    ```lean
    noncomputable def BHW.OS45BHWJostHullData.toPairDataOfContinuationAtlases
@@ -13525,14 +14187,15 @@ common-boundary envelope, or any theorem that already assumes locality.
        BHW.OS45SourcePatchBHWJostPairData (d := d) hd OS lgc n i hi P.V
    ```
 
-   This reducer is not the BHW theorem.  It calls the checked atlas gluing
-   fields for holomorphy and initial-domain agreement, proves the ordinary Wick
-   trace by `BHW.extendF_eq_on_forwardTube` and `P.V_ordered`, proves both real
+   This reducer was not the BHW theorem.  It only called the atlas gluing
+   fields for holomorphy and initial-domain agreement, proved the ordinary Wick
+   trace by `BHW.extendF_eq_on_forwardTube` and `P.V_ordered`, proved both real
    traces from `H.realPatch_mem_extendedTube`,
    `H.realPatch_mem_permutedExtendedTubeSector`, and
-   `BHW.permAct_realEmbed`, and copies the supplied adjacent boundary trace.
-   The hard producer still has to construct the two atlases and prove
-   `Btau_wick_trace` by OS I §4.5.
+   `BHW.permAct_realEmbed`, and copied the supplied adjacent boundary trace.
+   Keeping it as an active reducer obscured the current obligation, so any
+   future atlas-based archival experiment must instead call
+   `H.toPairDataOfBranches` directly after proving all four trace fields.
 
    Strict implementation transcript for that hard producer: do not implement
    the archived generic source-oriented hull theorem below as the active
@@ -17758,7 +18421,7 @@ Fourier-Laplace Wightman construction now represented by the repaired
 `bvt_F`/`OSLinearGrowthCondition` route, and `(4.14)` is the infinitesimal
 Lorentz covariance equation feeding complex-Lorentz invariance before the BHW
 continuation.  Therefore the adjacent producer may move to Lean only after
-the proof either inlines, or introduces private carriers for, the three real
+the proof either inlines, or proves small same-pass lemmas for, the three real
 subclaims named in the blueprint:
 `BHW.os45Figure24_adjacentInitialBoundary_of_OSI45_4_1_4_12`,
 `BHW.os45Figure24_adjacentLorentzInvariant_of_OSI45_4_14`, and
@@ -20170,8 +20833,11 @@ This doc is complete only when:
    EOW, generic closed-loop retargeting, generic PET branch independence,
    ambient source-label transport, and the archived adjacent-word source cover
    are not active implementation options;
-7. the active BHW/Jost source-continuation packet is fixed first at the direct
-   OS45 local Figure-2-4 `Hdiff` germ, not at global source-variety descent.
+7. the active BHW/Jost source-continuation packet is fixed first at the
+   direct-coordinate OS I §4.5 local analytic-element construction with the
+   OS-I `(4.12)` adjacent initial germ, then at the direct OS45 local
+   Figure-2-4 `Hdiff` germ, not at global source-variety descent and not at the
+   downstream deterministic `extendF ∘ permAct` branch.
    The complete active producer/support list is:
    `BHW.os45CommonEdge_localFigure24DifferenceGerm_of_OSI45`,
    `BHW.os45FlatCommonChart_commonBoundaryCLM_of_OSI45`,
@@ -20180,10 +20846,16 @@ This doc is complete only when:
    `BHW.os45_BHWJost_initialSectorOverlap_eqOn_of_OSI45`,
    `BHW.os45_BHWJostPairData_onLocalHull_of_OSI45`.  The checked mechanical
    consumer is `BHW.OS45BHWJostHullData.toPairDataOfBranches`, with `S.B`
-   supplied in both branch slots.  The immediate Lean target is now the direct
-   OS I §4.5 construction of `Hdiff` from the Figure-2-4 finite local analytic
-   continuation chain; the later Lean target is the construction of `S.B` from
-   the common-boundary CLM, BHW, EOW, and the Figure-2-4 real Jost edge.
+   supplied in both branch slots.  The immediate Lean target is now the
+   local analytic-element producer for `Hdiff`; any branch-free-transfer
+   support used inside it must expose the OS-I `(4.12)` adjacent seed rather
+   than `BHW.OS45BHWJostInitialBranchData.adjacent`.  The pure SCV helper
+   `SCV.local_continuous_edge_of_the_wedge_eventuallyEq_at_common_edge` is now
+   checked in `OSReconstruction/SCV/LocalEOWDistributionalEnvelope.lean`.  These
+   feed the direct OS I §4.5 construction of `Hdiff` from the Figure-2-4 finite
+   local analytic-continuation chain.  The later Lean target is the construction
+   of `S.B` from the common-boundary CLM, BHW, EOW, and the Figure-2-4 real Jost
+   edge.
    Source-oriented branch-law/descent, oriented local-chain carriers, atlas
    wrappers, arbitrary same-endpoint monodromy, and pure-Gram
    scalar-representative packets are archived or conditional infrastructure
@@ -20210,7 +20882,7 @@ This doc is complete only when:
    equality.
 
 Completion status, updated 2026-05-13 after the Hdiff local analytic-element
-split:
+split and adjacent-seed correction:
 the pure neutral theorem `BHW.localSPrime_twoSectorBranch_of_EOW_BHW` has been
 explicitly authorized and introduced.  The side-test CLM construction is
 checked in Lean, but it is now a normalization check rather than the proof
@@ -20222,25 +20894,54 @@ CLM-valued plus/minus reducers
 and
 `BHW.os45_BHWJost_flatCommonChart_distributionalBoundaryValue_minus_of_zeroHeight_pairingCLM`
 are checked.  The older Schwinger-specialized reducers remain conditional
-specializations only; they are not the active theorem-2 route.  The first
-Lean implementation object is now the private local analytic-element theorem
-`OS45Figure24LocalAnalyticElement.of_OSI45`, followed by
-`OS45Figure24LocalAnalyticElement.eqOn_overlap`, the family wrapper
-`OS45Figure24LocalDifferenceFamily.of_OSI45`, the pure connected-core topology
-helper `SCV.isConnected_iUnion_of_connected_core`, and the arbitrary-atlas
-gluing reducer `OS45Figure24LocalDifferenceFamily.to_germ` inside
-`BHW.os45CommonEdge_localFigure24DifferenceGerm_of_OSI45`.
+specializations only; they are not the active theorem-2 route.  The first Lean
+implementation object is now the direct-coordinate OS I §4.5 local
+analytic-element producer for
+`BHW.os45CommonEdge_localFigure24DifferenceGerm_of_OSI45`.  Its adjacent seed
+must be the `(4.12)` OS-I germ and not the later deterministic
+`extendF ∘ permAct` branch.  The pure SCV helper
+`SCV.local_continuous_edge_of_the_wedge_eventuallyEq_at_common_edge` is checked
+in `OSReconstruction/SCV/LocalEOWDistributionalEnvelope.lean`.  The remaining
+direct OS-I §4.5 content is the ordinary/adjacent finite continuations,
+endpoint trace packet, local analytic-element construction, the BHW branch-law
+seed on nonempty overlaps, and the final direct gluing of the local differences
+to `Hdiff`.
 
-Therefore the first remaining Stage-A Lean focus is the local Figure-2-4
-branch-difference germ itself:
+Wrapper audit, 2026-05-14: the earlier branch-free and Hdiff carrier files were
+deleted from the active Lean surface.  Their useful lessons remain in the
+proof transcript: the compact fold must not force the successor chart into
+`current outgoing ∩ next incoming`, because the old/left endpoint need not lie
+in the next incoming sheet; the correct fold restricts the current certified
+chart to a small open preconnected chart inside the current incoming sheet,
+applies the OS-I transfer,
+combines the restriction equality with the
+returned transition into one old-chart-to-successor transition, and lets the
+next step perform its own local incoming restriction around the next node.
+The old mechanical support package
+`BHW.OS45BHWJostCertifiedIncomingRestrictionData` and helper
+`BHW.OS45BHWJostChartCertified.restrictToIncoming` belonged to the retired
+carrier surface.  The active proof should perform the same operation directly:
+choose a small ball inside `CprevCarrier ∩ incoming` around the left endpoint,
+restrict `CprevBranch` to that ball, and record the restriction equality as a
+proof-local overlap seed.  This introduces no new OS-I analytic input.
+
+However, this checked transfer surface is not the active upstream `Hdiff`
+producer until its adjacent initial seed is split away from
+`BHW.OS45BHWJostInitialBranchData.adjacent`.  That checked datum stores the
+later deterministic branch `extendF ∘ permAct`; the upstream OS I §4.5
+analytic element needs the `(4.12)` adjacent germ with its Wick trace as a
+field.  The first remaining Stage-A Lean focus is therefore the corrected
+local analytic-element producer feeding the public Figure-2-4
+branch-difference germ:
 
 ```lean
 BHW.os45CommonEdge_localFigure24DifferenceGerm_of_OSI45
 ```
 
-This theorem is the OS I §4.5 `(4.1)/(4.12)/(4.14)` analytic step.  Its
+This public theorem is the OS I §4.5 `(4.1)/(4.12)/(4.14)` analytic step.  Its
 `Hdiff` is the adjacent-minus-ordinary analytic element produced along the
-Figure-2-4 corridor.  The Wick trace field is the OS-I normalization
+Figure-2-4 corridor by the direct OS-I finite continuation argument.  The Wick trace field is
+the OS-I normalization
 `bvt_F (wick (u ∘ P.τ)) - bvt_F (wick u)`, and the horizontal trace field is
 the pulled-real-branch difference on the common edge.  It is **not** proved by
 first showing the pointwise statement
@@ -20259,11 +20960,14 @@ the same Wick point, and finishing with `bvt_F_perm`.  It must not be used in
 the proof of `BHW.os45CommonEdge_localFigure24DifferenceGerm_of_OSI45` or in
 the common-boundary CLM packet.
 
-The local germ proof may use the checked facts
-`BHW.os45Figure24_adjacentWick_mem_permutedForwardTube`,
-`BHW.os45Figure24_adjacentWick_mem_extendedTube`,
-`BHW.os45Figure24IdentityPath_mem_initialSectorOverlap`, and
-`BHW.os45Figure24_initialSectorOverlap_chartNeighborhood` as geometry and
+   The local germ proof may use the checked facts
+   `BHW.os45Figure24_adjacentWick_mem_permutedForwardTube`,
+   `BHW.os45Figure24_adjacentWick_mem_extendedTube`,
+   `BHW.os45Figure24_permAct_ordinaryWick_eq_adjacentWick`,
+   `BHW.OS45BHWJostHullData.permAct_ordinaryWick_mem_OS412SeedWindow`,
+   `BHW.os45Figure24_OS412SeedBranch_permAct_ordinaryWick_eq_ordinaryWick`,
+   `BHW.os45Figure24IdentityPath_mem_initialSectorOverlap`, and
+   `BHW.os45Figure24_initialSectorOverlap_chartNeighborhood` as geometry and
 domain checks.  It may not use the later local `S'_n` branch,
 `SelectedAdjacentPermutationEdgeData`, `BHW.AdjacentOSEOWDifferenceEnvelope`,
 PET branch independence, final locality, the common-boundary CLM being
@@ -20305,12 +21009,17 @@ the two local representation fields, the checked generic finite-partition
 reducer `SCV.distribution_representation_of_local_representations_for_test`
 gives the plus/minus zero-height compact pairings into that same `T`; the
 checked `_of_zeroHeight_pairingCLM` reducers then feed
-`SCV.chartDistributionalEOW_local_envelope`; the checked helper
-`SCV.localEOW_envelope_eqOn_small_twoSector_ball` shrinks the returned
-coordinate ball into both flat branch domains and applies the identity
-theorem, and the inverse-quarter-turn image gives
-`BHW.os45_BHWJost_localSPrimeEOWSeed_of_OSI45` centered at
-`BHW.os45Figure24CommonEdgeSPrimeSeed d n P`.  The generalized
+`BHW.os45_BHWJost_flatCommonChart_eqOn_localEOWBall_of_zeroHeight_pairingsCLM`.
+This checked reducer invokes `SCV.chartDistributionalEOW_local_envelope`,
+shrinks the returned coordinate ball into both flat branch domains using
+`SCV.localEOW_envelope_eqOn_small_twoSector_ball`, and applies the identity
+theorem on the smaller coordinate ball.  The checked theorem
+`BHW.os45_BHWJost_localSPrimeEOWSeedAt_commonEdge_of_zeroHeight_pairingsCLM`
+then chooses the cone basis internally and transports the ball by the inverse
+quarter-turn/flattening equivalence to the common-edge seed
+`BHW.os45Figure24CommonEdgeSPrimeSeed d n P`.  Thus the remaining public
+producer `BHW.os45_BHWJost_localSPrimeEOWSeed_of_OSI45` is now only the
+OS-I common-boundary CLM instantiation of these conditional reducers.  The generalized
 `BHW.os45_BHWJost_SPrimeBranchData_of_localSPrimeEOWSeedAt` then feeds that
 seed to `BHW.localSPrime_twoSectorBranch_of_EOW_BHW`.  Further
 theorem-surface changes before Lean implementation remain route changes and

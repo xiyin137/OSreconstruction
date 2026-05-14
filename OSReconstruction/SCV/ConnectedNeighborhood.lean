@@ -1,5 +1,9 @@
 import Mathlib.Topology.Connected.LocallyConnected
 import Mathlib.Topology.Separation.Regular
+import Mathlib.Analysis.Complex.Basic
+import Mathlib.Analysis.Calculus.FDeriv.Basic
+import Mathlib.Analysis.Calculus.FDeriv.Congr
+import Mathlib.Analysis.Normed.Module.Convex
 
 /-!
 # Connected Open Neighborhoods
@@ -107,5 +111,54 @@ theorem isConnected_iUnion_of_connected_core
       rcases Set.mem_iUnion.mp hx with ⟨i, hxi⟩
       exact Set.mem_iUnion.mpr ⟨some i, hxi⟩
   simpa [hEq] using hUnion_conn
+
+/-- A nonempty intersection of two metric balls in a real normed vector space
+is connected. -/
+theorem isConnected_inter_metric_ball
+    {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+    {x y : E} {r s : ℝ}
+    (hne : Set.Nonempty (Metric.ball x r ∩ Metric.ball y s)) :
+    IsConnected (Metric.ball x r ∩ Metric.ball y s) :=
+  ⟨hne, (convex_ball x r).inter (convex_ball y s) |>.isPreconnected⟩
+
+/-- Two open neighborhoods of the same point contain a metric ball around that
+point inside their intersection. -/
+theorem exists_metric_ball_subset_inter_of_mem_open
+    {E : Type*} [PseudoMetricSpace E]
+    {U V : Set E} {z : E}
+    (hU : IsOpen U) (hzU : z ∈ U)
+    (hV : IsOpen V) (hzV : z ∈ V) :
+    ∃ r : ℝ, 0 < r ∧ Metric.ball z r ⊆ U ∩ V := by
+  have hUV : U ∩ V ∈ nhds z :=
+    Filter.inter_mem (hU.mem_nhds hzU) (hV.mem_nhds hzV)
+  rcases Metric.mem_nhds_iff.mp hUV with ⟨r, hr_pos, hball⟩
+  exact ⟨r, hr_pos, hball⟩
+
+/-- Local holomorphic representatives glue to a holomorphic function on the
+covered set.  The representatives are proof-local data; no atlas structure is
+needed. -/
+theorem differentiableOn_of_locally_eq_differentiableOn
+    {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℂ E]
+    [NormedAddCommGroup F] [NormedSpace ℂ F]
+    {U : Set E} {f : E → F}
+    (hlocal :
+      ∀ z, z ∈ U →
+        ∃ V : Set E, IsOpen V ∧ z ∈ V ∧
+          ∃ g : E → F,
+            DifferentiableOn ℂ g V ∧ Set.EqOn f g (U ∩ V)) :
+    DifferentiableOn ℂ f U := by
+  intro z hzU
+  rcases hlocal z hzU with ⟨V, hV_open, hzV, g, hg, hfg⟩
+  have hgd : DifferentiableAt ℂ g z :=
+    (hg z hzV).differentiableAt (hV_open.mem_nhds hzV)
+  have hlocal_eq : f =ᶠ[𝓝[U] z] g := by
+    filter_upwards
+      [self_mem_nhdsWithin,
+        mem_nhdsWithin_of_mem_nhds (hV_open.mem_nhds hzV)]
+      with y hyU hyV
+    exact hfg ⟨hyU, hyV⟩
+  exact
+    hgd.differentiableWithinAt.congr_of_eventuallyEq
+      hlocal_eq (hfg ⟨hzU, hzV⟩)
 
 end SCV

@@ -4,6 +4,7 @@ Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
 import OSReconstruction.SCV.LocalEOWChartAssembly
+import OSReconstruction.SCV.LocalContinuousEOWSideAgreement
 
 /-!
 # Local Distributional EOW Envelope
@@ -792,5 +793,90 @@ theorem localEOW_envelope_eqOn_small_twoSector_ball
   refine ⟨R0, hR0_pos, hball_sub_out, ?_⟩
   intro w hw
   exact (hH_eq_plus hw).symm.trans (hH_eq_minus hw)
+
+/-- Continuous local EOW gives eventual equality of the two side branches at
+the common real edge, provided both side domains are actual neighborhoods of
+the base edge point.
+
+This is the neighborhood-form version used by the OS45 BHW/Jost local-step
+payload: first build the checked continuous local envelope, then shrink by
+`localEOW_envelope_eqOn_small_twoSector_ball`, and finally transport the
+coordinate-ball equality back through the local affine chart inverse. -/
+theorem local_continuous_edge_of_the_wedge_eventuallyEq_at_common_edge {m : ℕ}
+    (hm : 0 < m)
+    (Ωplus Ωminus : Set (Fin m → ℂ))
+    (E C : Set (Fin m → ℝ))
+    (hΩplus_open : IsOpen Ωplus) (hΩminus_open : IsOpen Ωminus)
+    (hE_open : IsOpen E) (hC_open : IsOpen C)
+    (hC_conv : Convex ℝ C) (hC_ne : C.Nonempty)
+    (hlocal_wedge :
+      ∀ K : Set (Fin m → ℝ), IsCompact K → K ⊆ E →
+        ∀ Kη : Set (Fin m → ℝ), IsCompact Kη → Kη ⊆ C →
+          ∃ r : ℝ, 0 < r ∧
+            ∀ x ∈ K, ∀ η ∈ Kη, ∀ ε : ℝ, 0 < ε → ε < r →
+              (fun a => (x a : ℂ) + (ε : ℂ) * (η a : ℂ) * Complex.I) ∈ Ωplus ∧
+              (fun a => (x a : ℂ) - (ε : ℂ) * (η a : ℂ) * Complex.I) ∈ Ωminus)
+    (Fplus Fminus : (Fin m → ℂ) → ℂ)
+    (hFplus_diff : DifferentiableOn ℂ Fplus Ωplus)
+    (hFminus_diff : DifferentiableOn ℂ Fminus Ωminus)
+    (bv : (Fin m → ℝ) → ℂ) (hbv_cont : ContinuousOn bv E)
+    (hFplus_bv :
+      ∀ x ∈ E, Filter.Tendsto Fplus
+        (nhdsWithin (SCV.realEmbed x) Ωplus) (nhds (bv x)))
+    (hFminus_bv :
+      ∀ x ∈ E, Filter.Tendsto Fminus
+        (nhdsWithin (SCV.realEmbed x) Ωminus) (nhds (bv x)))
+    (x0 : Fin m → ℝ) (hx0 : x0 ∈ E)
+    (hplus_nhds : Ωplus ∈ nhds (SCV.realEmbed x0))
+    (hminus_nhds : Ωminus ∈ nhds (SCV.realEmbed x0)) :
+    Fplus =ᶠ[nhds (SCV.realEmbed x0)] Fminus := by
+  classical
+  obtain ⟨ys, _hys_mem, hys_li, ρ, hρ, r, hr, δ, hδ, hδρ, hδsum,
+      _hE_mem, _hplus, _hminus, F0, hF0_diff, hF0_plus, hF0_minus,
+      _hF0_real, _hF0_unique_plus⟩ :=
+    SCV.local_continuous_edge_of_the_wedge_envelope hm Ωplus Ωminus E C
+      hΩplus_open hΩminus_open hE_open hC_open hC_conv hC_ne hlocal_wedge
+      Fplus Fminus hFplus_diff hFminus_diff bv hbv_cont hFplus_bv hFminus_bv
+      x0 hx0
+  have hR : 0 < δ / 2 := by positivity
+  have hzero_plus : SCV.localEOWChart x0 ys 0 ∈ Ωplus := by
+    simpa [SCV.localEOWChart_zero] using mem_of_mem_nhds hplus_nhds
+  have hzero_minus : SCV.localEOWChart x0 ys 0 ∈ Ωminus := by
+    simpa [SCV.localEOWChart_zero] using mem_of_mem_nhds hminus_nhds
+  obtain ⟨R0, hR0, _hR0_sub, hEq⟩ :=
+    SCV.localEOW_envelope_eqOn_small_twoSector_ball
+      (m := m) hm hΩplus_open hΩminus_open
+      (x0 := x0) (ys := ys)
+      (Fplus := Fplus) (Fminus := Fminus) (Hcoord := F0)
+      (R := δ / 2) hR hFplus_diff hFminus_diff hF0_diff
+      (by
+        intro w hw
+        exact (hF0_plus w hw.1 hw.2).2)
+      (by
+        intro w hw
+        exact (hF0_minus w hw.1 hw.2).2)
+      hzero_plus hzero_minus
+  obtain ⟨Φinv, hΦinv_diff, hleft, hright⟩ :=
+    SCV.localEOWChart_equiv x0 ys hys_li
+  have hΦinv_cont : Continuous Φinv := hΦinv_diff.continuous
+  have hΦinv_base : Φinv (SCV.realEmbed x0) = 0 := by
+    rw [← SCV.localEOWChart_zero x0 ys]
+    exact hleft 0
+  have hpre :
+      {z : Fin m → ℂ | Φinv z ∈ Metric.ball (0 : Fin m → ℂ) R0} ∈
+        nhds (SCV.realEmbed x0) := by
+    have hball_nhds :
+        Metric.ball (0 : Fin m → ℂ) R0 ∈
+          nhds (Φinv (SCV.realEmbed x0)) := by
+      simpa [hΦinv_base] using
+        Metric.isOpen_ball.mem_nhds
+          (by simpa [Metric.mem_ball] using hR0)
+    exact hΦinv_cont.continuousAt hball_nhds
+  rw [Filter.eventuallyEq_iff_exists_mem]
+  refine ⟨{z : Fin m → ℂ | Φinv z ∈ Metric.ball (0 : Fin m → ℂ) R0},
+    hpre, ?_⟩
+  intro z hz
+  have hzEq := hEq hz
+  simpa [hright z] using hzEq
 
 end SCV
