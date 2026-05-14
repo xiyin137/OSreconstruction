@@ -244,6 +244,33 @@ that value is precisely the missing OS-I `(4.12)` adjacent seed-to-Wick
 transport, not a consequence of `bvt_F_perm` or
 `BHW.extendF_eq_on_forwardTube`.
 
+ACR-one audit, 2026-05-15: the checked global facts
+`BHW.bvt_F_acrOne_holomorphic` and `BHW.bvt_F_perm` also do not close this
+producer.  The raw ACR difference
+`z ↦ bvt_F OS lgc n (BHW.permAct P.τ z) - bvt_F OS lgc n z` has the right Wick
+normalization where its ACR hypotheses apply, and `bvt_F_perm` makes that raw
+difference vanish pointwise.  But the public `Hdiff` theorem needs the
+horizontal trace in terms of the pulled BHW representatives
+`BHW.os45PulledRealBranch ... (P.τ.symm * 1)` and
+`BHW.os45PulledRealBranch ... 1`.  Replacing the adjacent pulled
+`extendF` value at the common edge by the raw ACR value would require the same
+downstream common-boundary/EOW or local `S'_n` identification that Stage A is
+trying to prove.  Thus `Hdiff := 0`, or an ACR raw-difference germ, is not a
+valid shortcut for `BHW.os45CommonEdge_localFigure24DifferenceGerm_of_OSI45`.
+
+Geometric rotated-lift checkpoint, 2026-05-15: the deterministic part of this
+audit is now checked without adding a wrapper.  Production Lean has
+`BHW.differentiable_figure24RotateAdjacentConfig`,
+`BHW.differentiableOn_extendF_bvt_F_rotatedPermAct_preimageExtendedTube`,
+`BHW.os45Figure24_rotatedLift_chartNeighborhood`,
+`BHW.os45Figure24AdjacentLift_extendF_eq_permActIdentityPath`, and
+`BHW.os45Figure24AdjacentLift_endpoint_extendF_eq_adjacentPulledRealBranch`.
+These facts close the ordinary extended-tube geometry and holomorphy for the
+candidate rotated adjacent branch along the Figure-2-4 corridor.  They do not
+close the upstream Wick trace: the remaining nonmechanical gap is still the
+OS-I `(4.12)` analytic transport from the adjacent Wick seed to the raw
+`bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k)))` trace.
+
 Gemini Deep Research interaction
 `v1_ChdJcFlFYXZtbERMaUJrZFVQOXJ5TGdRbxIXSXBZRWF2bWxETGlCa2RVUDlyeUxnUW8`
 completed on 2026-05-13 and confirms this dependency order.  It judged the
@@ -828,6 +855,13 @@ Proof script for the private initial-germ constructors:
    ordinary seed value
    `Bseed zadj = bvt_F OS lgc n (fun k => wickRotatePoint (x k))`.  This still
    does not prove the terminal trace at `zord`.
+   The false shortcut `zord ∈ Ωseed` is now formally ruled out in Lean:
+   `BHW.OS45Figure24CanonicalSourcePatchData.tau_ne_one` and
+   `BHW.OS45BHWJostHullData.ordinaryWick_not_mem_OS412SeedWindow` show that
+   placing the ordinary Wick endpoint in the raw `(4.12)` preimage-forward-tube
+   seed window would force the selected adjacent transposition to be trivial.
+   Thus the remaining transport is a genuine OS-I analytic-continuation step,
+   not an omitted membership lemma.
    The open and holomorphic seed fields are now checked neutral support:
    `BHW.isOpen_permAct_preimage_forwardTube` gives the forward-tube preimage
    openness, intersect with `H.ΩJ_open` for `Ωseed_open`, and
@@ -943,13 +977,41 @@ Proof script for the proof-local one-branch finite induction:
    ```
 
    The subproof is generic in arbitrary
-   `{Ω0 B0}` and consumes only
-   the local provenance tuple for the incoming chart: a finite list of earlier
-   overlap seeds back to `{Ω0, B0}`, plus the current carrier/branch/open/subset/
-   holomorphic fields.  The one-branch chain instantiates this provenance with
-   the locally destructed `Ω0/B0`; the adjacent seed-to-Wick theorem instantiates
-   it with the displayed `Ωseed/Bseed`.  This avoids circularly requiring an
-   initial datum already based at `gamma 0`.
+   `{Ω0 B0}` and consumes only a proof-local finite-chain certificate for the
+   incoming chart.  Do not leave this certificate as prose.  Its Lean shape is
+   an inline existential, not a structure:
+
+   ```lean
+   hCcert :
+     ∃ (m : Nat)
+       (J : Fin (m + 1) -> Set (Fin n -> Fin (d + 1) -> ℂ))
+       (F : Fin (m + 1) ->
+         (Fin n -> Fin (d + 1) -> ℂ) -> ℂ),
+       (∀ j, IsOpen (J j)) ∧
+       (∀ j, IsPreconnected (J j)) ∧
+       (∀ j, J j ⊆ H.ΩJ) ∧
+       (∀ j, DifferentiableOn ℂ (F j) (J j)) ∧
+       (J 0).Nonempty ∧
+       J 0 ⊆ Ω0 ∧
+       Set.EqOn (F 0) B0 (J 0) ∧
+       J ⟨m, Nat.lt_succ_self m⟩ = CprevCarrier ∧
+       F ⟨m, Nat.lt_succ_self m⟩ = CprevBranch ∧
+       (∀ j : Fin m,
+         ∃ W : Set (Fin n -> Fin (d + 1) -> ℂ),
+           IsOpen W ∧ W.Nonempty ∧
+           W ⊆ J (Fin.castSucc j) ∩ J (Fin.succ j) ∧
+           Set.EqOn (F (Fin.castSucc j)) (F (Fin.succ j)) W)
+   ```
+
+   The current carrier/branch/open/subset/holomorphic fields remain separate
+   hypotheses of the transfer step because they are used to fill the next
+   tuple immediately.  The certificate is inspected only to know that
+   `CprevBranch` is an analytic continuation of the initial germ through
+   complex-open seeds.  It never supplies a side role, a boundary trace, or the
+   downstream deterministic adjacent branch.  The one-branch chain instantiates
+   this certificate with the locally destructed `Ω0/B0`; the adjacent
+   seed-to-Wick theorem instantiates it with the displayed `Ωseed/Bseed`.  This
+   avoids circularly requiring an initial datum already based at `gamma 0`.
 3. The local transfer has exactly three geometric cases:
    `ordinarySector`, `adjacentSector`, and `flatRealJostEOW`.
    In the ordinary case,
@@ -1013,6 +1075,51 @@ Proof script for the proof-local one-branch finite induction:
      overlaps `Oin ⊆ CprevCarrier ∩ NinSide` and
      `Oout ⊆ NoutSide ∩ Nnext`, equality of branches on those overlaps, and
      the same EOW boundary package for `BinSide` and `BoutSide`.
+
+   The "same EOW boundary package" above means the actual arguments of the
+   checked theorem
+   `SCV.local_continuous_edge_of_the_wedge_eventuallyEq_at_common_edge`,
+   written as local variables in the subcase:
+
+   ```lean
+   Ωplus Ωminus : Set (Fin m -> ℂ)
+   E C : Set (Fin m -> ℝ)
+   hΩplus_open : IsOpen Ωplus
+   hΩminus_open : IsOpen Ωminus
+   hE_open : IsOpen E
+   hC_open : IsOpen C
+   hC_conv : Convex ℝ C
+   hC_ne : C.Nonempty
+   hlocal_wedge :
+     ∀ K, IsCompact K -> K ⊆ E ->
+       ∀ Kη, IsCompact Kη -> Kη ⊆ C ->
+         ∃ r : ℝ, 0 < r ∧
+           ∀ x ∈ K, ∀ η ∈ Kη, ∀ ε : ℝ, 0 < ε -> ε < r ->
+             (fun a => (x a : ℂ) + (ε : ℂ) * (η a : ℂ) * Complex.I) ∈ Ωplus ∧
+             (fun a => (x a : ℂ) - (ε : ℂ) * (η a : ℂ) * Complex.I) ∈ Ωminus
+   Fplus Fminus : (Fin m -> ℂ) -> ℂ
+   hFplus_diff : DifferentiableOn ℂ Fplus Ωplus
+   hFminus_diff : DifferentiableOn ℂ Fminus Ωminus
+   bv : (Fin m -> ℝ) -> ℂ
+   hbv_cont : ContinuousOn bv E
+   hFplus_bv :
+     ∀ x ∈ E, Filter.Tendsto Fplus
+       (nhdsWithin (SCV.realEmbed x) Ωplus) (nhds (bv x))
+   hFminus_bv :
+     ∀ x ∈ E, Filter.Tendsto Fminus
+       (nhdsWithin (SCV.realEmbed x) Ωminus) (nhds (bv x))
+   x0 : Fin m -> ℝ
+   hx0 : x0 ∈ E
+   hplus_nhds : Ωplus ∈ nhds (SCV.realEmbed x0)
+   hminus_nhds : Ωminus ∈ nhds (SCV.realEmbed x0)
+   ```
+
+   In the `directRoles` subcase, `Fplus/Fminus` are exactly the flat-coordinate
+   pullbacks of `CprevBranch` and `Bnext`.  In the `comparisonRoles` subcase,
+   they are the pullbacks of `BinSide` and `BoutSide`; the final transition
+   equality is the composition of incoming comparison equality, the EOW
+   eventual equality upgraded by `SCV.identity_theorem_product`, and outgoing
+   comparison equality on a named complex-open `finalOverlap`.
 
    In both alternatives, the EOW package is consumed immediately to produce a
    complex-open `Set.EqOn` between the incoming and outgoing branch actually
@@ -3480,9 +3587,9 @@ Verification boundary for this locked route uses the strict-route files only:
 `OSToWightmanBoundaryValuesComparison.lean`,
 `OSToWightmanBoundaryValues.lean`, and `OSToWightman.lean`.  There is no file
 named `OSToWightmanLocality.lean`; it must not appear in verification
-checklists.  `OSToWightmanLocalityOS45BHWJostContinuation.lean` is archived
-continuation-atlas support and is not part of the active Stage-A closure unless
-explicitly audited.
+checklists.  The former
+`OSToWightmanLocalityOS45BHWJostContinuation.lean` continuation-atlas consumer
+file has been pruned from the active source tree; do not recreate it for Stage A.
 
 Expanded checked-support inventory for Stages A and B, subordinate to the
 locked route above:
@@ -17948,9 +18055,9 @@ common-boundary envelope, or any theorem that already assumes locality.
    `BHW.OS45BHWJostLocalContinuationData` carrier described below directly from
    OS I equations `(4.1)/(4.12)/(4.14)` plus BHW/Jost continuation.
 
-   Archived checked consumer:
+   Pruned archived consumer, retained here only as route-audit history:
    `BHW.OS45SourcePatchBHWJostOrientedContinuationInputs.exists_gluedBranch`
-   in `OSToWightmanLocalityOS45BHWJostContinuation.lean`.  It is a thin
+   formerly lived in `OSToWightmanLocalityOS45BHWJostContinuation.lean`.  It was a thin
    specialization of the already checked
    `BHW.bhw_jost_orientedGluedBranch_of_pathConnected_sourceNormalFormProducer_retargetedComparisons`
    and therefore exposes the honest remaining analytic inputs rather than
@@ -20992,9 +21099,12 @@ the common-boundary CLM packet.
    `BHW.os45Figure24_permAct_ordinaryWick_eq_adjacentWick`,
    `BHW.OS45BHWJostHullData.permAct_ordinaryWick_mem_OS412SeedWindow`,
    `BHW.os45Figure24_OS412SeedBranch_permAct_ordinaryWick_eq_ordinaryWick`,
+   `BHW.OS45Figure24CanonicalSourcePatchData.tau_ne_one`,
+   `BHW.OS45BHWJostHullData.ordinaryWick_not_mem_OS412SeedWindow`,
    `BHW.os45Figure24IdentityPath_mem_initialSectorOverlap`, and
    `BHW.os45Figure24_initialSectorOverlap_chartNeighborhood` as geometry and
-domain checks.  It may not use the later local `S'_n` branch,
+domain checks and as the formal obstruction to placing `gamma 0` in the raw
+`(4.12)` seed window.  It may not use the later local `S'_n` branch,
 `SelectedAdjacentPermutationEdgeData`, `BHW.AdjacentOSEOWDifferenceEnvelope`,
 PET branch independence, final locality, the common-boundary CLM being
 constructed from it, or a claim that the adjacent Wick point is an ordinary

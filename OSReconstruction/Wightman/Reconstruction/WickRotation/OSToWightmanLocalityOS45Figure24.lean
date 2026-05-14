@@ -687,6 +687,53 @@ theorem continuous_figure24RotateAdjacentConfig
               (hcoord (BHW.figure24Axis2 (d := d) hd)))
       · simpa [figure24RotateAdjacentConfig, h0, h1, h2] using hcoord μ
 
+/-- The explicit Figure-2-4 adjacent rotation is complex differentiable. -/
+theorem differentiable_figure24RotateAdjacentConfig
+    (hd : 2 ≤ d) :
+    Differentiable ℂ (BHW.figure24RotateAdjacentConfig (d := d) (n := n) hd) := by
+  refine differentiable_pi.mpr ?_
+  intro k
+  refine differentiable_pi.mpr ?_
+  intro μ
+  have hcoord : ∀ ν : Fin (d + 1), Differentiable ℂ
+      (fun z : Fin n → Fin (d + 1) → ℂ => z k ν) := by
+    intro ν
+    have hk : Differentiable ℂ
+        (fun z : Fin n → Fin (d + 1) → ℂ => z k) :=
+      differentiable_apply k
+    exact (differentiable_apply ν).comp hk
+  by_cases h0 : μ = 0
+  · simpa [figure24RotateAdjacentConfig, h0] using hcoord μ
+  · by_cases h1 : μ = BHW.figure24Axis1 (d := d) hd
+    · have hA : Differentiable ℂ
+          (fun z : Fin n → Fin (d + 1) → ℂ =>
+            ((3 / 5 : ℝ) : ℂ) *
+              z k (BHW.figure24Axis1 (d := d) hd)) := by
+        apply Differentiable.const_mul
+        exact hcoord (BHW.figure24Axis1 (d := d) hd)
+      have hB : Differentiable ℂ
+          (fun z : Fin n → Fin (d + 1) → ℂ =>
+            ((4 / 5 : ℝ) : ℂ) *
+              z k (BHW.figure24Axis2 (d := d) hd)) := by
+        apply Differentiable.const_mul
+        exact hcoord (BHW.figure24Axis2 (d := d) hd)
+      simpa [figure24RotateAdjacentConfig, h1] using hA.sub hB
+    · by_cases h2 : μ = BHW.figure24Axis2 (d := d) hd
+      · have hA : Differentiable ℂ
+            (fun z : Fin n → Fin (d + 1) → ℂ =>
+              ((4 / 5 : ℝ) : ℂ) *
+                z k (BHW.figure24Axis1 (d := d) hd)) := by
+          apply Differentiable.const_mul
+          exact hcoord (BHW.figure24Axis1 (d := d) hd)
+        have hB : Differentiable ℂ
+            (fun z : Fin n → Fin (d + 1) → ℂ =>
+              ((3 / 5 : ℝ) : ℂ) *
+                z k (BHW.figure24Axis2 (d := d) hd)) := by
+          apply Differentiable.const_mul
+          exact hcoord (BHW.figure24Axis2 (d := d) hd)
+        simpa [figure24RotateAdjacentConfig, h1, h2] using hA.add hB
+      · simpa [figure24RotateAdjacentConfig, h0, h1, h2] using hcoord μ
+
 /-- Continuity of the rotated adjacent Figure-2-4 path in the real point and
 path parameter. -/
 theorem continuous_figure24RotatedIdentityPath

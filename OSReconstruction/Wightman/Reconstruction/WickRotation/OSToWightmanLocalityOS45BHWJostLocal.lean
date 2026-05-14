@@ -3174,6 +3174,81 @@ theorem os45Figure24_exists_lorentz_adjLift0_to_adjacentWick
       simp [zadj, Γ, BHW.os45Figure24IdentityPath_zero, BHW.permAct]
     _ = (fun k => wickRotatePoint (x (P.τ k))) := by rfl
 
+/-- The checked rotated adjacent lift has the same ordinary `extendF` value as
+the permuted Figure-2-4 identity path.
+
+This is only a Lorentz-normalization of the deterministic Figure-2-4 lift.  It
+does not identify the `t = 0` specialization with the raw `bvt_F` adjacent
+Wick branch; that is the separate OS I `(4.12)` analytic transport used in the
+upstream `Hdiff` producer. -/
+theorem os45Figure24AdjacentLift_extendF_eq_permActIdentityPath
+    [NeZero d]
+    (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {i : Fin n} {hi : i.val + 1 < n}
+    (P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi)
+    {x : NPointDomain d n} (hx : x ∈ P.V)
+    (t : unitInterval) :
+    BHW.extendF (bvt_F OS lgc n)
+        (BHW.os45Figure24AdjacentLift
+          (d := d) (n := n) hd P.τ x t) =
+      BHW.extendF (bvt_F OS lgc n)
+        (BHW.permAct (d := d) P.τ
+          (BHW.os45Figure24IdentityPath (d := d) (n := n) x t)) := by
+  classical
+  let zlift : Fin n → Fin (d + 1) → ℂ :=
+    BHW.os45Figure24AdjacentLift
+      (d := d) (n := n) hd P.τ x t
+  have hzlift_ET : zlift ∈ BHW.ExtendedTube d n := by
+    simpa [zlift] using
+      P.adjLift_mem_extendedTube x hx t
+  rcases BHW.figure24RotateAdjacentConfig_lorentz_inverse
+      (d := d) (n := n) hd with
+    ⟨Λinv, hΛinv⟩
+  let Γ : Fin n → Fin (d + 1) → ℂ :=
+    BHW.os45Figure24IdentityPath (d := d) (n := n) x t
+  have hact :
+      BHW.complexLorentzAction Λinv zlift =
+        BHW.permAct (d := d) P.τ
+          (BHW.os45Figure24IdentityPath (d := d) (n := n) x t) := by
+    have hraw :
+        BHW.complexLorentzAction Λinv zlift =
+          BHW.permAct (d := d) P.τ Γ := by
+      simpa [zlift, BHW.os45Figure24AdjacentLift, Γ] using
+        hΛinv (BHW.permAct (d := d) P.τ Γ)
+    simpa [Γ] using hraw
+  have hF_cinv :
+      ∀ (Λ : ComplexLorentzGroup d)
+        (z : Fin n → Fin (d + 1) → ℂ),
+        z ∈ BHW.ForwardTube d n →
+        BHW.complexLorentzAction Λ z ∈ BHW.ForwardTube d n →
+        bvt_F OS lgc n (BHW.complexLorentzAction Λ z) =
+          bvt_F OS lgc n z := by
+    intro Λ z hz hΛz
+    exact bvt_F_complexLorentzInvariant_forwardTube
+      (d := d) OS lgc n Λ z
+      ((BHW_forwardTube_eq (d := d) (n := n)) ▸ hz)
+      ((BHW_forwardTube_eq (d := d) (n := n)) ▸ hΛz)
+  have hLor :
+      BHW.extendF (bvt_F OS lgc n)
+          (BHW.complexLorentzAction Λinv zlift) =
+        BHW.extendF (bvt_F OS lgc n) zlift :=
+    BHW.extendF_complexLorentzInvariant_of_cinv
+      (d := d) n (bvt_F OS lgc n) hF_cinv Λinv zlift hzlift_ET
+  calc
+    BHW.extendF (bvt_F OS lgc n)
+        (BHW.os45Figure24AdjacentLift
+          (d := d) (n := n) hd P.τ x t)
+        = BHW.extendF (bvt_F OS lgc n) zlift := by rfl
+    _ = BHW.extendF (bvt_F OS lgc n)
+          (BHW.complexLorentzAction Λinv zlift) := hLor.symm
+    _ = BHW.extendF (bvt_F OS lgc n)
+          (BHW.permAct (d := d) P.τ
+            (BHW.os45Figure24IdentityPath (d := d) (n := n) x t)) := by
+          rw [hact]
+
 /-- The selected adjacent Wick edge is joined to the real source patch inside
 the local BHW/Jost ambient. -/
 theorem os45Figure24_joined_adjacentWick_to_realPatch
@@ -3578,6 +3653,24 @@ theorem os45Figure24_permAct_ordinaryWick_eq_adjacentWick
   ext k μ
   simp [BHW.permAct]
 
+/-- The selected Figure-2-4 adjacent transposition is nontrivial. -/
+theorem OS45Figure24CanonicalSourcePatchData.tau_ne_one
+    [NeZero d]
+    {hd : 2 ≤ d} {i : Fin n} {hi : i.val + 1 < n}
+    (P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi) :
+    P.τ ≠ (1 : Equiv.Perm (Fin n)) := by
+  intro hτ
+  have hswap : P.τ i = ⟨i.val + 1, hi⟩ := by
+    rw [P.τ_eq]
+    simp
+  have hid : P.τ i = i := by
+    rw [hτ]
+    simp
+  have hval : (⟨i.val + 1, hi⟩ : Fin n).val = i.val :=
+    congrArg Fin.val (hswap.symm.trans hid)
+  simp at hval
+
 /-- The adjacent Wick edge lies in the concrete OS I `(4.12)` seed window:
 after applying the selected adjacent swap it is in the ordinary forward tube,
 and the point itself lies in the local BHW/Jost hull. -/
@@ -3620,6 +3713,38 @@ theorem OS45BHWJostHullData.permAct_ordinaryWick_mem_OS412SeedWindow
     BHW.os45Figure24_permAct_ordinaryWick_eq_adjacentWick
       (d := d) (n := n) (hd := hd) (P := P) x
   simpa [hEq] using hseed
+
+/-- The ordinary Wick endpoint cannot itself be the raw OS I `(4.12)` seed
+point.
+
+The `(4.12)` seed window is the preimage of the ordinary forward tube under the
+selected adjacent swap.  If the ordinary Wick endpoint lay in that window, it
+would lie in both the ordinary and the selected permuted forward tubes, forcing
+the adjacent swap to be trivial.  Thus the upstream `Hdiff` proof really needs
+the OS-I seed-to-Wick transport; it cannot take `p0 := gamma 0` inside this
+raw seed window. -/
+theorem OS45BHWJostHullData.ordinaryWick_not_mem_OS412SeedWindow
+    [NeZero d]
+    {hd : 2 ≤ d} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P) :
+    ∀ x, x ∈ P.V →
+      (fun k => wickRotatePoint (x k)) ∉
+        ({z : Fin n → Fin (d + 1) → ℂ |
+          BHW.permAct (d := d) P.τ z ∈ BHW.ForwardTube d n} ∩ H.ΩJ) := by
+  intro x hx hmem
+  have hFT :
+      (fun k => wickRotatePoint (x k)) ∈ BHW.ForwardTube d n :=
+    BHW.os45Figure24_ordinaryWick_mem_forwardTube
+      (d := d) (n := n) (hd := hd) (P := P) hx
+  have hPFT :
+      (fun k => wickRotatePoint (x k)) ∈
+        BHW.PermutedForwardTube d n P.τ := by
+    simpa [BHW.PermutedForwardTube, BHW.permAct] using hmem.1
+  exact P.tau_ne_one
+    (BHW.permutedForwardTube_forces_perm_one
+      (d := d) (n := n) P.τ hFT hPFT)
 
 /-- The concrete OS I `(4.12)` seed window is open. -/
 theorem OS45BHWJostHullData.OS412SeedWindow_open
@@ -3896,6 +4021,108 @@ theorem os45Figure24_initialSectorOverlap_chartNeighborhood
     exact BHW.os45Figure24IdentityPath_mem_initialSectorOverlap
       (d := d) (n := n) (hd := hd) (P := P)
       (subset_closure (hU_closure hp.1)) p.2
+  letI : Module ℝ ℂ := instInnerProductSpaceRealComplex.toModule
+  rcases SCV.exists_open_connected_neighborhood_of_compact_connected_subset_open
+      (E := Fin n → Fin (d + 1) → ℂ)
+      hK_compact hK_connected hΩ_open hKΩ with
+    ⟨Ucx, hUcx_open, hUcx_connected, hK_Ucx, hUcx_Ω⟩
+  refine ⟨Ucx, hUcx_open, hUcx_connected, ?_, ?_, hUcx_Ω⟩
+  · intro u hu
+    have huc : u ∈ closure U := subset_closure hu
+    have hzK : (fun k => wickRotatePoint (u k)) ∈ K := by
+      refine ⟨(u, (0 : unitInterval)), ?_, ?_⟩
+      · exact ⟨huc, trivial⟩
+      · simpa [γ] using
+          BHW.os45Figure24IdentityPath_zero (d := d) (n := n) u
+    exact hK_Ucx hzK
+  · intro u hu
+    have huc : u ∈ closure U := subset_closure hu
+    have hzK :
+        (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+          (BHW.realEmbed
+            (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+              (1 : Equiv.Perm (Fin n)) u)) ∈ K := by
+      refine ⟨(u, (1 : unitInterval)), ?_, ?_⟩
+      · exact ⟨huc, trivial⟩
+      · simp [γ, BHW.os45Figure24IdentityPath_one (d := d) (n := n) u]
+    exact hK_Ucx hzK
+
+/-- A compact connected source window in a checked Figure-2-4 patch has an
+open connected complex chart containing the Wick and horizontal common-edge
+sections, on which both the ordinary identity-path variable and its rotated
+adjacent lift argument lie in the ordinary extended tube. -/
+theorem os45Figure24_rotatedLift_chartNeighborhood
+    [NeZero d]
+    {hd : 2 ≤ d} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    {U : Set (NPointDomain d n)}
+    (hU_compact : IsCompact (closure U))
+    (hU_connected : IsConnected U)
+    (hU_closure : closure U ⊆ P.V) :
+    ∃ Ucx : Set (Fin n → Fin (d + 1) → ℂ),
+      IsOpen Ucx ∧ IsConnected Ucx ∧
+      (∀ u ∈ U, (fun k => wickRotatePoint (u k)) ∈ Ucx) ∧
+      (∀ u ∈ U,
+        (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+          (BHW.realEmbed
+            (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+              (1 : Equiv.Perm (Fin n)) u)) ∈ Ucx) ∧
+      Ucx ⊆
+        BHW.ExtendedTube d n ∩
+          {z : Fin n → Fin (d + 1) → ℂ |
+            BHW.figure24RotateAdjacentConfig (d := d) (n := n) hd
+              (BHW.permAct (d := d) P.τ z) ∈
+                BHW.ExtendedTube d n} := by
+  let Ω : Set (Fin n → Fin (d + 1) → ℂ) :=
+    BHW.ExtendedTube d n ∩
+      {z : Fin n → Fin (d + 1) → ℂ |
+        BHW.figure24RotateAdjacentConfig (d := d) (n := n) hd
+          (BHW.permAct (d := d) P.τ z) ∈ BHW.ExtendedTube d n}
+  let γ : (NPointDomain d n × unitInterval) →
+      Fin n → Fin (d + 1) → ℂ :=
+    fun p => BHW.os45Figure24IdentityPath (d := d) (n := n) p.1 p.2
+  let K : Set (Fin n → Fin (d + 1) → ℂ) :=
+    γ '' ((closure U) ×ˢ (Set.univ : Set unitInterval))
+  have hdomain_compact :
+      IsCompact ((closure U) ×ˢ (Set.univ : Set unitInterval)) :=
+    hU_compact.prod isCompact_univ
+  have hγ_cont : Continuous γ := by
+    simpa [γ] using
+      BHW.continuous_os45Figure24IdentityPath_joint (d := d) (n := n)
+  have hK_compact : IsCompact K :=
+    hdomain_compact.image hγ_cont
+  have hclosure_connected : IsConnected (closure U) :=
+    hU_connected.closure
+  have hdomain_connected :
+      IsConnected ((closure U) ×ˢ (Set.univ : Set unitInterval)) :=
+    hclosure_connected.prod isConnected_univ
+  have hK_connected : IsConnected K :=
+    hdomain_connected.image γ hγ_cont.continuousOn
+  have hperm_cont :
+      Continuous (BHW.permAct (d := d) P.τ :
+        (Fin n → Fin (d + 1) → ℂ) →
+          Fin n → Fin (d + 1) → ℂ) :=
+    (BHW.differentiable_permAct (d := d) (n := n) P.τ).continuous
+  have hrot_cont :
+      Continuous
+        (fun z : Fin n → Fin (d + 1) → ℂ =>
+          BHW.figure24RotateAdjacentConfig (d := d) (n := n) hd
+            (BHW.permAct (d := d) P.τ z)) :=
+    (BHW.continuous_figure24RotateAdjacentConfig
+      (d := d) (n := n) hd).comp hperm_cont
+  have hΩ_open : IsOpen Ω :=
+    BHW.isOpen_extendedTube.inter
+      (BHW.isOpen_extendedTube.preimage hrot_cont)
+  have hKΩ : K ⊆ Ω := by
+    rintro z ⟨p, hp, rfl⟩
+    constructor
+    · exact
+        (BHW.os45Figure24IdentityPath_mem_initialSectorOverlap
+          (d := d) (n := n) (hd := hd) (P := P)
+          (subset_closure (hU_closure hp.1)) p.2).1
+    · simpa [BHW.os45Figure24AdjacentLift] using
+        P.adjLift_mem_extendedTube p.1 (hU_closure hp.1) p.2
   letI : Module ℝ ℂ := instInnerProductSpaceRealComplex.toModule
   rcases SCV.exists_open_connected_neighborhood_of_compact_connected_subset_open
       (E := Fin n → Fin (d + 1) → ℂ)
@@ -4446,6 +4673,65 @@ theorem os45Figure24Path_endpoint_extendF_eq_ordinaryPulledRealBranch
   · simpa [y] using hΓ_one
   · simp [BHW.os45PulledRealBranch, hΓ_one]
 
+/-- At the horizontal Figure-2-4 common edge, the ordinary endpoint is still a
+forward-tube point after undoing the OS45 quarter-turn.  Hence the BHW
+extension agrees there with the raw ACR/OS-II witness `bvt_F`.
+
+This is only the ordinary plus-side normalization for the later local EOW
+transfer.  It does not identify the adjacent pulled `extendF` branch with a raw
+permuted Wick value. -/
+theorem os45Figure24CommonEdge_ordinary_extendF_eq_bvt_F
+    [NeZero d] (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {n : ℕ} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    {u : NPointDomain d n} (hu : u ∈ P.V) :
+    BHW.extendF (bvt_F OS lgc n)
+        ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+          (BHW.realEmbed
+            (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+              (1 : Equiv.Perm (Fin n)) u))) =
+      bvt_F OS lgc n
+        ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+          (BHW.realEmbed
+            (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+              (1 : Equiv.Perm (Fin n)) u))) := by
+  have hF_holo :
+      DifferentiableOn ℂ (bvt_F OS lgc n) (BHW.ForwardTube d n) := by
+    simpa [BHW_forwardTube_eq (d := d) (n := n)] using
+      bvt_F_holomorphic (d := d) OS lgc n
+  have hF_lorentz :
+      ∀ (Λ : RestrictedLorentzGroup d)
+        (z : Fin n → Fin (d + 1) → ℂ), z ∈ BHW.ForwardTube d n →
+        bvt_F OS lgc n
+          (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * z k ν) =
+        bvt_F OS lgc n z := by
+    intro Λ z hz
+    exact bvt_F_restrictedLorentzInvariant_forwardTube
+      (d := d) OS lgc n Λ z
+      ((BHW_forwardTube_eq (d := d) (n := n)) ▸ hz)
+  have hforward :
+      (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+        (BHW.realEmbed
+          (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+            (1 : Equiv.Perm (Fin n)) u)) ∈
+        BHW.ForwardTube d n := by
+    have hmem :=
+      BHW.os45CommonEdge_mem_acrBranchDomain_of_ordered
+        (d := d) (n := n) (1 : Equiv.Perm (Fin n))
+        (P.V_ordered u hu)
+    simpa [BHW.os45ACRBranchDomain] using hmem
+  exact
+    BHW.extendF_eq_on_forwardTube n (bvt_F OS lgc n)
+      hF_holo hF_lorentz
+      ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+        (BHW.realEmbed
+          (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+            (1 : Equiv.Perm (Fin n)) u)))
+      hforward
+
 /-- At the horizontal Figure-2-4 common edge, the adjacent branch obtained by
 precomposing the ordinary BHW extension with the selected source permutation is
 definitionally the adjacent pulled real branch.  This is only endpoint
@@ -4471,6 +4757,34 @@ theorem os45Figure24CommonEdge_permAct_extendF_eq_adjacentPulledRealBranch
           (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
             (1 : Equiv.Perm (Fin n)) u)) := by
   simp [BHW.os45PulledRealBranch]
+
+/-- The endpoint of the deterministic rotated adjacent Figure-2-4 lift has
+the adjacent pulled-real `extendF` trace at the horizontal common edge. -/
+theorem os45Figure24AdjacentLift_endpoint_extendF_eq_adjacentPulledRealBranch
+    [NeZero d] (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {n : ℕ} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    {u : NPointDomain d n} (hu : u ∈ P.V) :
+    BHW.extendF (bvt_F OS lgc n)
+        (BHW.os45Figure24AdjacentLift
+          (d := d) (n := n) hd P.τ u (1 : unitInterval)) =
+      BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+        (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+        (BHW.realEmbed
+          (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+            (1 : Equiv.Perm (Fin n)) u)) := by
+  have hLift :=
+    BHW.os45Figure24AdjacentLift_extendF_eq_permActIdentityPath
+      (d := d) (n := n) hd OS lgc P hu (1 : unitInterval)
+  have hCommon :=
+    BHW.os45Figure24CommonEdge_permAct_extendF_eq_adjacentPulledRealBranch
+      (d := d) (n := n) hd OS lgc (P := P) u
+  exact hLift.trans (by
+    simpa [BHW.os45Figure24IdentityPath_one (d := d) (n := n) u] using
+      hCommon)
 
 /-- The endpoint of the oriented Figure-2-4 adjacent lift represents the same
 `extendF` value as the adjacent pulled real branch at the horizontal common

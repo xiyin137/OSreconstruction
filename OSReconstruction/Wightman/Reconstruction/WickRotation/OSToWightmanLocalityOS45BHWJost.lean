@@ -122,6 +122,45 @@ theorem differentiableOn_extendF_bvt_F_permAct_preimageExtendedTube
   exact (hExtend _ (hmaps hz)).comp z
     ((hperm_diff z).differentiableWithinAt) hmaps
 
+/-- The adjacent branch obtained by the deterministic Figure-2-4 rotated lift
+is holomorphic on the corresponding preimage of the ordinary extended tube. -/
+theorem differentiableOn_extendF_bvt_F_rotatedPermAct_preimageExtendedTube
+    (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (n : ℕ) (σ : Equiv.Perm (Fin n)) :
+    DifferentiableOn ℂ
+      (fun z : Fin n → Fin (d + 1) → ℂ =>
+        BHW.extendF (bvt_F OS lgc n)
+          (BHW.figure24RotateAdjacentConfig (d := d) (n := n) hd
+            (BHW.permAct (d := d) σ z)))
+      {z | BHW.figure24RotateAdjacentConfig (d := d) (n := n) hd
+          (BHW.permAct (d := d) σ z) ∈ BHW.ExtendedTube d n} := by
+  have hExtend :=
+    BHW.differentiableOn_extendF_bvt_F_extendedTube
+      (d := d) OS lgc n
+  have hmap_diff :
+      Differentiable ℂ
+        (fun z : Fin n → Fin (d + 1) → ℂ =>
+          BHW.figure24RotateAdjacentConfig (d := d) (n := n) hd
+            (BHW.permAct (d := d) σ z)) :=
+    (BHW.differentiable_figure24RotateAdjacentConfig
+      (d := d) (n := n) hd).comp
+      (BHW.differentiable_permAct (d := d) (n := n) σ)
+  have hmaps :
+      Set.MapsTo
+        (fun z : Fin n → Fin (d + 1) → ℂ =>
+          BHW.figure24RotateAdjacentConfig (d := d) (n := n) hd
+            (BHW.permAct (d := d) σ z))
+        {z | BHW.figure24RotateAdjacentConfig (d := d) (n := n) hd
+          (BHW.permAct (d := d) σ z) ∈ BHW.ExtendedTube d n}
+        (BHW.ExtendedTube d n) := by
+    intro z hz
+    exact hz
+  intro z hz
+  exact (hExtend _ (hmaps hz)).comp z
+    ((hmap_diff z).differentiableWithinAt) hmaps
+
 /-- The OS-II forward-tube boundary-value witness precomposed with a finite
 source permutation is holomorphic on the corresponding preimage of the ordinary
 forward tube. -/
