@@ -24,6 +24,30 @@ namespace SCV
 
 variable {m : ℕ}
 
+/-- If two side-height integral families converge uniformly on a nonempty compact
+direction set and are eventually equal there, then their zero-height limits are
+the same.
+
+This is a neutral filter lemma used by the OS45 flat `(4.14)` subcase: the
+OS-specific work is proving the eventual side-height equality, while this lemma
+only takes the resulting equality to the zero-height boundary pairings. -/
+theorem eq_zeroHeight_of_eventuallyEq_sideLimits
+    {ι α : Type*} {l : Filter ι} [NeBot l]
+    {K : Set α} (hK_nonempty : K.Nonempty)
+    {F G : ι → α → ℂ} {cF cG : ℂ}
+    (hF : TendstoUniformlyOn F (fun _ : α => cF) l K)
+    (hG : TendstoUniformlyOn G (fun _ : α => cG) l K)
+    (hEq : ∀ᶠ ε in l, ∀ η ∈ K, F ε η = G ε η) :
+    cF = cG := by
+  rcases hK_nonempty with ⟨η, hηK⟩
+  have hFη : Tendsto (fun ε => F ε η) l (𝓝 cF) := by
+    simpa using hF.tendsto_at hηK
+  have hGη : Tendsto (fun ε => G ε η) l (𝓝 cG) := by
+    simpa using hG.tendsto_at hηK
+  have hEqη : (fun ε => F ε η) =ᶠ[l] fun ε => G ε η :=
+    hEq.mono fun _ hε => hε η hηK
+  exact tendsto_nhds_unique_of_eventuallyEq hFη hGη hEqη
+
 /-- A compact-support side integral converges uniformly, over compact direction
 sets, to its zero-height pairing.
 

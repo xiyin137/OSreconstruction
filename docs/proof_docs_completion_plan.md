@@ -198,6 +198,38 @@ equality by finite analytic-continuation uniqueness, glues the arbitrary atlas
 to one holomorphic function on the connected chart `Ucx`, and proves the Wick
 and horizontal common-edge trace fields by endpoint-centered charts.
 
+Stage-A flat-transfer correction, 2026-05-16: the flat real-Jost EOW case
+inside this finite transfer must not obtain its `(4.14)` boundary equality from
+the local `Hdiff` germ or from the source-to-flat common-boundary reducers,
+because those are downstream of the very `Hdiff` producer being built.  The
+proof-local input for that flat step is instead
+`h414_integrals`: a compact-support equality of the current incoming `(4.1)`
+and outgoing genuine `(4.12)` boundary-value fields on the flat Figure-2-4
+edge.  Its Lean proof pulls the flat test through the checked
+`OS45Figure24SourceCutoffData` and `os45CommonEdgeFlatCLE` maps, applies the
+paper's OS-I `(4.14)` Lorentz/BHW covariance identity to the current local
+analytic elements, and pushes the equality back to flat coordinates.  Then
+`SCV.eqOn_open_of_compactSupport_schwartz_integral_eq_of_continuousOn`
+produces `h414_bv_eq` for the checked flat EOW seed.  The reducers
+`BHW.os45CommonEdge_localHorizontalDifference_representsZero_of_germ` and
+`BHW.os45FlatCommonChart_commonBoundaryDifference_integral_zero_of_sourceRepresentsOn`
+remain downstream consumers after `Hdiff` exists, not upstream flat-transfer
+inputs.
+
+Deep Research audit
+`v1_ChdmcDhIYXQyQUM3T3RrZFVQNGVYSC1BVRIXZnA4SGF0MkFDN090a2RVUDRlWEgtQVU`
+completed on 2026-05-16 and agrees with this dependency order: EOW consumes
+distributional boundary equality, so `h414_integrals` must be proved directly
+from the OS-I `(4.1)/(4.12)/(4.14)` compact-test covariance data before
+`Hdiff` is constructed.  Treat the audit only as route sanity feedback; the
+Lean support now checks the source-side compact-test equality as
+`BHW.os45CommonEdge_adjacentWick_sourcePairing_eq_ordinaryWick`, whose proof is
+exactly the ordinary `bvt_euclidean_restriction` normalization composed with
+`BHW.os45CommonEdge_adjacentWick_sourcePairing_eq_schwinger`.  The remaining
+direct `Hdiff` proof must still supply the flat source-cutoff/CLE pullback,
+the side-limit fields into the concrete boundary distributions, and the
+checked SCV upgrade to `h414_bv_eq` explicitly.
+
 Wrapper audit, 2026-05-14: the previously checked private carrier files
 `OSToWightmanLocalityOS45BHWJostBranchFree.lean`,
 `OSToWightmanLocalityOS45BHWJostHdiff.lean`, and the custom
@@ -1018,19 +1050,32 @@ Proof script for the private initial-germ constructors:
        Tendsto sideOutBranch
          (nhdsWithin (SCV.realEmbed x) sideOutDomain)
          (nhds (bvOut x))
+   hbvOut_cont :
+     ContinuousOn bvOut (BHW.os45FlatCommonChartEdgeSet d n P 1)
+   h414_integrals :
+     ∀ φ : SchwartzMap (BHW.OS45FlatCommonChartReal d n) ℂ,
+       HasCompactSupport
+         (φ : BHW.OS45FlatCommonChartReal d n -> ℂ) ->
+       tsupport (φ : BHW.OS45FlatCommonChartReal d n -> ℂ) ⊆
+         BHW.os45FlatCommonChartEdgeSet d n P 1 ->
+       (∫ x : BHW.OS45FlatCommonChartReal d n, bvOut x * φ x) =
+         ∫ x : BHW.OS45FlatCommonChartReal d n, bvIn x * φ x
    h414_bv_eq :
      Set.EqOn bvOut bvIn (BHW.os45FlatCommonChartEdgeSet d n P 1)
    ```
 
-   Set `bv := bvIn`; use `hbvIn_cont` as the continuity input, use
-   `hsideIn_bvIn` for the incoming side, and rewrite the target of
-   `hsideOut_bvOut` pointwise by `h414_bv_eq` to obtain the outgoing side
-   limit to the same `bv`.  Then call the checked flat-chart EOW theorem.  Thus
-   the live flat-step mathematical input is exactly `h414_bv_eq`, the OS-I
-   `(4.14)` boundary-value equality for the current ordinary `(4.1)` and
-   genuine adjacent `(4.12)` local analytic elements.  It is not a downstream
-   common-boundary CLM, and it is not the later deterministic endpoint
-   equality.
+   The primitive paper input is `h414_integrals`, the OS-I `(4.14)`
+   compact-test equality for the current ordinary `(4.1)` and genuine
+   adjacent `(4.12)` local analytic elements.  Derive `h414_bv_eq` inline from
+   `h414_integrals`, `hbvOut_cont`, and `hbvIn_cont` by
+   `SCV.eqOn_open_of_compactSupport_schwartz_integral_eq_of_continuousOn`;
+   do not introduce a public theorem whose only role is to assume this compact
+   equality and return an EOW seed.  Then set `bv := bvIn`; use `hbvIn_cont` as
+   the continuity input, use `hsideIn_bvIn` for the incoming side, and rewrite
+   the target of `hsideOut_bvOut` pointwise by `h414_bv_eq` to obtain the
+   outgoing side limit to the same `bv`.  Finally call the checked flat-chart
+   EOW theorem.  This is not a downstream common-boundary CLM, and it is not
+   the later deterministic endpoint equality.
 
    Non-circular order for this paragraph: the checked flat common-chart EOW
    theorem is a consumer of proof-local `bvIn`/`bvOut` plus `h414_bv_eq` while
@@ -1371,11 +1416,14 @@ Proof script for the proof-local one-branch finite induction:
    ```lean
    hCcert :
      ∃ (m : Nat)
+       (node : Fin (m + 1) -> Fin n -> Fin (d + 1) -> ℂ)
        (J : Fin (m + 1) -> Set (Fin n -> Fin (d + 1) -> ℂ))
        (F : Fin (m + 1) ->
          (Fin n -> Fin (d + 1) -> ℂ) -> ℂ),
        (∀ j, IsOpen (J j)) ∧
        (∀ j, IsPreconnected (J j)) ∧
+       (∀ j, node j ∈ J j) ∧
+       (∀ j, ∃ r : ℝ, 0 < r ∧ J j = Metric.ball (node j) r) ∧
        (∀ j, J j ⊆ H.ΩJ) ∧
        (∀ j, DifferentiableOn ℂ (F j) (J j)) ∧
        (J 0).Nonempty ∧
@@ -1601,6 +1649,55 @@ Proof script for the proof-local one-branch finite induction:
    local Figure-2-4 chart selector must choose exactly one of the following
    cases and produce the listed chart, sheet, and overlap-equality data:
 
+   The transfer is a proof-local `have`, not a named theorem or record.  Its
+   output contract is the following tuple; every case below must fill exactly
+   these fields and no later argument may recover missing sheet data from
+   carrier inclusion alone.  In the displayed pseudocode,
+   `ProofLocalCertified Ω0 B0 CprevCarrier CprevBranch` means the inline
+   existential from item 2 above; in Lean either use a local `let` abbreviation
+   for that proposition or write the existential directly at the binder.
+
+   ```lean
+   have transfer_at :
+       ∀ {p q : Fin n -> Fin (d + 1) -> ℂ},
+         p ∈ Tcenter.N ->
+         q ∈ Tcenter.N ->
+         ∀ {Ω0 : Set (Fin n -> Fin (d + 1) -> ℂ)}
+           {B0 : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ},
+         ∀ {CprevCarrier : Set (Fin n -> Fin (d + 1) -> ℂ)}
+           {CprevBranch : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ},
+           IsOpen CprevCarrier ->
+           IsPreconnected CprevCarrier ->
+           p ∈ CprevCarrier ->
+           CprevCarrier ⊆ incoming ->
+           DifferentiableOn ℂ CprevBranch CprevCarrier ->
+           -- proof-local finite-chain certificate for `CprevBranch`,
+           -- used only to access the current ordinary/adjacent OS-I element
+           -- and its branch-law seeds; it is not exported.
+           ProofLocalCertified Ω0 B0 CprevCarrier CprevBranch ->
+           ∃ (Crestrict Nnext O :
+                Set (Fin n -> Fin (d + 1) -> ℂ))
+             (Bnext :
+                (Fin n -> Fin (d + 1) -> ℂ) -> ℂ),
+             IsOpen Crestrict ∧ IsPreconnected Crestrict ∧
+             p ∈ Crestrict ∧
+             Crestrict ⊆ CprevCarrier ∩ incoming ∧
+             Set.EqOn CprevBranch CprevBranch Crestrict ∧
+             IsOpen Nnext ∧ IsPreconnected Nnext ∧
+             q ∈ Nnext ∧ Nnext ⊆ outgoing ∧
+             DifferentiableOn ℂ Bnext Nnext ∧
+             IsOpen O ∧ IsPreconnected O ∧ p ∈ O ∧
+             O ⊆ Crestrict ∩ Nnext ∧
+             Set.EqOn CprevBranch Bnext O
+   ```
+
+   `Crestrict` is obtained first by a small metric ball inside
+   `CprevCarrier ∩ incoming` around `p`.  The identity equality on
+   `Crestrict` is deliberately trivial; all analytic content is in the
+   subsequent construction of `Nnext`, `Bnext`, and the complex-open overlap
+   `O`.  The right endpoint `q` is required only to lie in `Nnext`, never in
+   `O`.
+
    * Ordinary sector:
      Set `incoming = outgoing = BHW.ExtendedTube d n ∩ H.ΩJ`, prove
      `incoming_eq := rfl`, `outgoing_eq := rfl`, open/subset fields from the
@@ -1786,15 +1883,121 @@ Proof script for the proof-local one-branch finite induction:
          hbvOut_cont hbvIn_cont h414_integrals
    ```
 
-   Thus the remaining paper obligation in the flat case is exactly
-   `h414_integrals`: compact-support test equality on the real edge for the two
-   current local analytic elements.  The passage from `h414_integrals` to
-   pointwise `h414_bv_eq` is already the checked SCV distributional-uniqueness
-   step.  After this, set `bv := bvIn`; `hsideIn_bv` is `hsideIn_bvIn`, and
-   `hsideOut_bv` is obtained from `hsideOut_bvOut` by rewriting the target
-   limit with `h414_bv_eq`.  The EOW theorem consumes these two side limits and
-   yields a complex-open equality seed; only after bridge propagation and
-   endpoint evaluation does the proof obtain `h45_source_eqOn`.
+   Do not expand `h414_integrals` into a finite-height Schwinger side-test
+   theorem.  The checked side-test maps
+   `D.toSideZeroDiagonalCLM_tendsto_zero`,
+   `D.apply_toSideZeroDiagonalCLM_tendstoUniformlyOn_zero`,
+   `D.toSideZeroDiagonalCLM_tsupport_subset_V_eventually`, and
+   `D.sideZeroDiagonal_adjacentPairing_eq_eventually` are retained only as
+   normalization and support audits for the chosen source-test convention.
+   They prove that small signed zero-diagonal side tests are supported in
+   `P.V` and satisfy the same-test adjacent/ordinary E3 rewrite.  They do not
+   compare the two signed side tests, and they are not the active proof of the
+   flat real-edge equality.
+
+   Do not derive `h414_integrals` from the local `Hdiff` germ that this theorem
+   is constructing.  That would feed the output of
+   `BHW.os45CommonEdge_localFigure24DifferenceGerm_of_OSI45` back into the
+   flat transition step used to build it.  The source-to-flat reducers
+   `BHW.os45CommonEdge_localHorizontalDifference_representsZero_of_germ` and
+   `BHW.os45FlatCommonChart_commonBoundaryDifference_integral_zero_of_sourceRepresentsOn`
+   are downstream consumers after the `Hdiff` germ exists; they are not the
+   upstream proof of the `(4.14)` boundary packet inside the finite transfer.
+
+   The Lean-facing expansion of `h414_integrals` must instead stay inside the
+   OS-I §4.5 finite transfer as the paper's `(4.14)` distributional
+   covariance identity for the current two analytic elements.  Use the
+   checked source-cutoff/CLE maps only to express the flat compact test as a
+   source test, then apply the OS-I `(4.14)` covariance/permutation identity
+   to those two local elements, and finally push the equality back to flat
+   coordinates.  The proof-local shape is:
+
+   ```lean
+   -- chosen only inside the current flat transition
+   let e := BHW.os45CommonEdgeFlatCLE d n (1 : Equiv.Perm (Fin n))
+   obtain ⟨Dcut⟩ := BHW.exists_os45Figure24SourceCutoffData (d := d) P
+   let BVInSource : NPointDomain d n -> ℂ :=
+     fun u => bvt_F OS lgc n (fun k => wickRotatePoint (u k))
+   let BVOutSource : NPointDomain d n -> ℂ :=
+     fun u => bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k)))
+   have hφ_source :
+       tsupport
+         ((Dcut.toSchwartzNPointCLM
+             (1 : Equiv.Perm (Fin n)) φ :
+           NPointDomain d n -> ℂ)) ⊆ Ustep := by
+     -- use the current local source window, the edge support hypothesis,
+     -- and `Dcut.toSchwartzNPointCLM_tsupport_subset_image`/support shrink
+   have hflat_pull_in :
+       (∫ x : BHW.OS45FlatCommonChartReal d n, bvIn x * φ x) =
+         ∫ u : NPointDomain d n,
+           BVInSource u *
+             (Dcut.toSchwartzNPointCLM
+               (1 : Equiv.Perm (Fin n)) φ : NPointDomain d n -> ℂ) u := by
+     -- boundary-value definition for the incoming `(4.1)` local element,
+     -- `BHW.os45CommonEdgeFlatCLE_integral_comp`, and the chosen cutoff
+   have hflat_pull_out :
+       (∫ x : BHW.OS45FlatCommonChartReal d n, bvOut x * φ x) =
+         ∫ u : NPointDomain d n,
+           BVOutSource u *
+             (Dcut.toSchwartzNPointCLM
+               (1 : Equiv.Perm (Fin n)) φ : NPointDomain d n -> ℂ) u := by
+     -- same calculation for the outgoing genuine `(4.12)` local element
+   have h414_in_to_S :
+       (∫ u : NPointDomain d n,
+           BVInSource u *
+             (Dcut.toSchwartzNPointCLM
+               (1 : Equiv.Perm (Fin n)) φ : NPointDomain d n -> ℂ) u) =
+         OS.S n (Dcut.toZeroDiagonalCLM
+           (1 : Equiv.Perm (Fin n)) φ) := by
+     -- OS-I `(4.1)` boundary normalization for the concrete incoming
+     -- boundary distribution.  This is `bvt_euclidean_restriction` applied
+     -- to `Dcut.toZeroDiagonalCLM 1 φ` and then symmetrized:
+     -- `simpa [BVInSource] using
+     --   (bvt_euclidean_restriction (d := d) OS lgc n
+     --     (Dcut.toZeroDiagonalCLM (1 : Equiv.Perm (Fin n)) φ)).symm`.
+   have h414_out_to_S :
+       (∫ u : NPointDomain d n,
+           BVOutSource u *
+             (Dcut.toSchwartzNPointCLM
+               (1 : Equiv.Perm (Fin n)) φ : NPointDomain d n -> ℂ) u) =
+         OS.S n (Dcut.toZeroDiagonalCLM
+           (1 : Equiv.Perm (Fin n)) φ) := by
+     -- OS-I `(4.12)` plus `(4.14)` for the concrete outgoing genuine
+     -- adjacent boundary distribution, with exactly one Euclidean
+     -- symmetry/permutation step on the cutoff-pulled zero-diagonal test:
+     -- `simpa [BVOutSource] using
+     --   BHW.os45CommonEdge_adjacentWick_sourcePairing_eq_schwinger
+     --     (d := d) OS lgc Dcut φ hφE`.
+   have h414_source_pairing :
+       (∫ u : NPointDomain d n,
+           BVOutSource u *
+             (Dcut.toSchwartzNPointCLM
+               (1 : Equiv.Perm (Fin n)) φ : NPointDomain d n -> ℂ) u) =
+         ∫ u : NPointDomain d n,
+           BVInSource u *
+             (Dcut.toSchwartzNPointCLM
+               (1 : Equiv.Perm (Fin n)) φ : NPointDomain d n -> ℂ) u := by
+     -- In Lean this composition is now checked directly as:
+     -- `simpa [BVInSource, BVOutSource] using
+     --   BHW.os45CommonEdge_adjacentWick_sourcePairing_eq_ordinaryWick
+     --     (d := d) OS lgc Dcut φ hφE`.
+     exact h414_out_to_S.trans h414_in_to_S.symm
+   exact hflat_pull_out.trans (h414_source_pairing.trans hflat_pull_in.symm)
+   ```
+
+   Here `BVInSource` and `BVOutSource` are the concrete OS-I boundary-value
+   distributions from `(4.1)` and the corrected `(4.12)`.  The finite-chain
+   provenance of the current side branches is used to prove the side-limit
+   hypotheses `hsideIn_bvIn` and `hsideOut_bvOut` into these boundary fields;
+   it is not used to propagate the compact-test pairing equality itself.  They
+   are not terminal deterministic pulled branches, and they are not defined from
+   `Hdiff`.
+   After this compact-test equality is proved, set `bv := bvIn`;
+   `hsideIn_bv` is `hsideIn_bvIn`, and `hsideOut_bv` is obtained from
+   `hsideOut_bvOut` by rewriting the target limit with `h414_bv_eq`.  The EOW
+   theorem consumes these two side limits and yields a complex-open equality
+   seed; only after bridge propagation and endpoint evaluation does the proof
+   obtain `h45_source_eqOn`.
 
    ```lean
    have hEOW_seed : Set.EqOn sideInBranch sideOutBranch Oeow := by
@@ -1879,12 +2082,26 @@ Proof script for the proof-local one-branch finite induction:
      gamma (node j) ∈ Ccarrier
    hCcert :
      ∃ (m0 : Nat)
+       (certNode : Fin (m0 + 1) -> Fin n -> Fin (d + 1) -> ℂ)
        (J : Fin (m0 + 1) -> Set (Fin n -> Fin (d + 1) -> ℂ))
        (F : Fin (m0 + 1) ->
          (Fin n -> Fin (d + 1) -> ℂ) -> ℂ),
-       -- the inline finite provenance certificate displayed above,
-       -- ending at `Ccarrier/Cbranch`
-       True
+       (∀ i, IsOpen (J i)) ∧
+       (∀ i, IsPreconnected (J i)) ∧
+       (∀ i, certNode i ∈ J i) ∧
+       (∀ i, ∃ r : ℝ, 0 < r ∧ J i = Metric.ball (certNode i) r) ∧
+       (∀ i, J i ⊆ H.ΩJ) ∧
+       (∀ i, DifferentiableOn ℂ (F i) (J i)) ∧
+       (J 0).Nonempty ∧
+       J 0 ⊆ Ω0 ∧
+       Set.EqOn (F 0) B0 (J 0) ∧
+       J ⟨m0, Nat.lt_succ_self m0⟩ = Ccarrier ∧
+       F ⟨m0, Nat.lt_succ_self m0⟩ = Cbranch ∧
+       (∀ i : Fin m0,
+         ∃ W : Set (Fin n -> Fin (d + 1) -> ℂ),
+           IsOpen W ∧ W.Nonempty ∧
+           W ⊆ J (Fin.castSucc i) ∩ J (Fin.succ i) ∧
+           Set.EqOn (F (Fin.castSucc i)) (F (Fin.succ i)) W)
    ```
 
    First shrink around `gamma (node j)` inside `Ccarrier ∩ incoming` by
@@ -1966,68 +2183,140 @@ Proof transcript for the proof-local `hall_overlap` field:
    for `q` together with the two ordinary/adjacent one-branch chains that
    produced it, and prove overlap seeds before choosing the proof-local family
    fields.
-3. For the ordinary branches, take the ordinary chain for the two selected
+3. For the ordinary branches, take the ordinary chains for the two selected
    local tuples, retarget both terminal charts to the observed point `z0` by a
-   same-chart terminal step, and compare the resulting finite galleries from
-   the same `(4.1)` initial germ.  The initial charts agree on a small ball
-   around the ordinary initial point because both first charts satisfy
-   `first_eq` with the ordinary `B0` on `N 0 ∩ Ω0`.  Each successor comparison is supplied by the
-   stored `step_seed` complex-open overlap.  The finite-gallery identity
-   argument is the ordinary holomorphic identity theorem propagated across
-   this finite chain of connected metric balls: once two adjacent branch
-   representatives agree on the nonempty complex-open seed recorded in
-   `step_seed`, the equality extends on the next chart component; iterating
-   along both galleries yields a nonempty complex ball
-   `Word` inside the two selected terminal balls around `z0` with equality of
-   the two ordinary terminal branches on `Word`.
-4. Repeat the same finite-gallery argument for the adjacent branches, using the
-   corrected `(4.12)` initial data and the adjacent chains that produced the
-   two adjacent terminal branches.  The initial agreement seed is supplied by
-   the corrected adjacent proof-local surface: both initial charts agree with
-   the adjacent `B0`, whose Wick normalization came from the `hadj412` transport, not
-   from the downstream deterministic `extendF ∘ permAct` branch.  The local
-   transfer steps again supply only complex-open `step_seed` equalities.
-5. Intersect the two seed balls from the ordinary and adjacent comparisons and
-   shrink once more if necessary.  On the resulting nonempty complex-open
-   `W` inside the two selected terminal balls,
-   `D_left = Adj_left - Ord_left = Adj_right - Ord_right = D_right`.  This is the BHW/OS-I branch
-   law seed.  It is the genuine remaining mathematical gap: the proof is a
-   finite analytic-continuation uniqueness argument over the actual selected
-   chains, not a new public monodromy wrapper, not a source-variety theorem,
-   and not an assumption.
-6. The two selected terminal balls are metric balls, so their intersection is convex, hence
-   preconnected; it is open by `IsOpen.inter`.
-7. Apply the ordinary identity theorem for holomorphic functions on the open
-   preconnected intersection, using the holomorphy fields restricted from the
-   two balls and equality on `W`, to get `Set.EqOn D_left D_right` on that
-   intersection.
+   same-chart terminal restriction, and build the concatenated gallery from the
+   left terminal chart back to the shared `(4.1)` initial germ and then out to
+   the right terminal chart.  The induction must maintain equality on every
+   nonempty overlap among charts already inserted in the finite prefix, not
+   merely on consecutive `step_seed` overlaps.  When a new chart is inserted,
+   compare it with each older chart at an observed point of their intersection;
+   the local seed is the ordinary-sector OS-I transfer, which rewrites both
+   branches to the same `BHW.extendF (bvt_F OS lgc n)` branch on the ordinary
+   sheet.  The checked metric-ball identity theorem then promotes each such
+   seed to the whole two-chart overlap.  The finite prefix is glued
+   proof-locally by `SCV.glued_iUnion`, and restricting the glued branch to the
+   two retargeted terminal balls yields the open seed `Word`.
+4. Repeat the same all-overlap gallery construction for the adjacent branches,
+   using the corrected `(4.12)` initial data and the adjacent chains that
+   produced the two adjacent terminal branches.  The initial agreement seed is
+   supplied by the proof-local adjacent surface: both first charts agree with
+   the adjacent `B0`, whose Wick normalization came from the `hadj412`
+   transport, not from the downstream deterministic `extendF ∘ permAct` branch.
+   Whenever an inserted adjacent chart comparison crosses the common real-Jost
+   edge, the local seed is the flat `(4.14)` EOW package above:
+   `h414_integrals`, `h414_bv_eq`, the checked flat EOW seed, and identity
+   propagation through the Figure-2-4 bridge.  The glued adjacent prefix then
+   yields the open seed `Wadj`.
+5. Since `Word` and `Wadj` both contain the same retargeted point `z0`, apply
+   `SCV.identity_theorem_product_inter_metric_ball_sub_of_two_eqOn_open` to the
+   two selected terminal metric balls.  This helper performs the final common
+   ball shrink and proves
+   `Adj_left - Ord_left = Adj_right - Ord_right` on the whole two-ball overlap
+   from the two seeds.  This is the BHW/OS-I branch-law step.  It is the
+   genuine remaining mathematical gap: the proof is a finite
+   analytic-continuation uniqueness argument over the retained selected chains,
+   not a new public monodromy wrapper, not a source-variety theorem, and not an
+   assumption.
 
 Lean-pseudocode for the finite-gallery seed inside step 3/4.  Keep the
 ordinary and adjacent chain witnesses in scope when constructing `A` and `B`.
-For a branch kind `κ`, write the two terminal chains as `CAκ` and `CBκ`.
-After retargeting both terminal charts to the observed point `z0`, prove by
-finite induction over the concatenated gallery
+For a branch kind `kind`, write the two terminal chains as `CA` and `CB`.  The
+chain witness used here is not a public structure, but the local proof should
+carry these fields explicitly rather than a placeholder certificate:
 
 ```lean
-G.0, ..., G.aLast, H.bLast, ..., H.0
+-- proof-local witness for one selected one-branch continuation
+∃ (m : Nat)
+  (node : Fin (m + 1) -> Fin n -> Fin (d + 1) -> ℂ)
+  (N : Fin (m + 1) -> Set (Fin n -> Fin (d + 1) -> ℂ))
+  (B : Fin (m + 1) -> (Fin n -> Fin (d + 1) -> ℂ) -> ℂ),
+  node 0 = p0 ∧
+  node (Fin.last m) = terminalPoint ∧
+  (∀ j, IsOpen (N j)) ∧
+  (∀ j, IsPreconnected (N j)) ∧
+  (∀ j, node j ∈ N j) ∧
+  (∀ j, ∃ r : ℝ, 0 < r ∧ N j = Metric.ball (node j) r) ∧
+  (∀ j, DifferentiableOn ℂ (B j) (N j)) ∧
+  (∀ j, N j ⊆ sheet kind) ∧
+  (∃ W0, IsOpen W0 ∧ W0.Nonempty ∧
+    W0 ⊆ N 0 ∩ Ω0 ∧ Set.EqOn (B 0) B0 W0) ∧
+  (∀ j : Fin m,
+    ∃ Wj, IsOpen Wj ∧ Wj.Nonempty ∧
+      Wj ⊆ N (Fin.castSucc j) ∩ N (Fin.succ j) ∧
+      Set.EqOn (B (Fin.castSucc j)) (B (Fin.succ j)) Wj) ∧
+  terminalCarrier = N (Fin.last m) ∧
+  terminalBranch = B (Fin.last m)
 ```
 
-that consecutive charts agree on a nonempty complex-open seed and therefore
-their representatives agree in a neighborhood of the shared node.  The base
-seed is:
+The overlap comparison must not rely only on consecutive seeds after the chain
+has been forgotten.  Inside the direct proof, build a concatenated finite
+gallery whose first chart is the left terminal chart restricted around `z0`,
+then the left chain read backwards, then the right chain read forwards, and
+whose last chart is the right terminal chart restricted around `z0`.  At every
+prefix stage maintain an all-overlap invariant, not merely an adjacent-edge
+invariant:
 
 ```lean
-W0 := CAκ.N 0 ∩ CBκ.N 0 ∩ Gκ.Ω0
+have prefix_overlap :
+    ∀ i j : Fin (prefixLength + 1),
+      Set.EqOn (Gbranch i) (Gbranch j)
+        (Gcarrier i ∩ Gcarrier j)
 ```
 
-with equality from `CAκ.first_eq`, `CBκ.first_eq`, and the common initial germ
-`Gκ.B0`.  A forward gallery step uses `CAκ.step_seed j`; a backward gallery
-step uses `CBκ.step_seed j` with the equality reversed.  At each step, shrink
-to a nonempty ball contained in the current seed and in the next chart
-intersection, then apply
-`SCV.identity_theorem_product_of_eqOn_open` on that ball intersection to
-propagate equality to the next chart.  The final output of this induction is
-not a named monodromy theorem; it is a proof-local package:
+When inserting a new gallery chart `Cnew`, prove its equality with each older
+chart whose carrier intersects it while the two pieces of branch provenance are
+still available:
+
+```lean
+by_cases hne : (Gold i ∩ Cnew.carrier).Nonempty
+· obtain ⟨y, hy⟩ := hne
+  have hyi : y ∈ Gold i := hy.1
+  have hynew : y ∈ Cnew.carrier := hy.2
+  have hseed_i_new :
+      ∃ W, IsOpen W ∧ y ∈ W ∧
+        W ⊆ Gold i ∩ Cnew.carrier ∧
+        Set.EqOn (GoldBranch i) Cnew.branch W := by
+    -- proof-local local OS-I branch-law comparison at the observed point `y`;
+    -- this is where the ordinary-sector, adjacent-sector, or flat EOW
+    -- transfer case split is used.
+  rcases hseed_i_new with
+    ⟨W, hW_open, hyW, hW_sub, hW_eq⟩
+  exact
+    SCV.identity_theorem_product_inter_metric_ball_of_eqOn_open
+      hW_open ⟨y, hyW⟩ hW_sub
+      (Gold_holo i) Cnew.holo hW_eq
+· intro y hy
+  exact False.elim (hne ⟨y, hy⟩)
+```
+
+The displayed identity-theorem call is made after rewriting `Gold i` and
+`Cnew.carrier` by their stored metric-ball fields; those radius witnesses are
+part of the one-branch chain witness above and of the selected successor
+chart.  If a selected chart is not already stored as a metric ball, first
+shrink to a metric ball around the observed point and replace the chart by its
+restriction before adding it to the prefix family.
+
+This is the part that closes the real mathematical gap: `hseed_i_new` is not a
+wrapper theorem and not an assumption.  It is a local proof at the observed
+complex point `y`, using the retained ordinary `(4.1)` or corrected adjacent
+`(4.12)` provenance, plus the flat real-Jost EOW case when the sheet changes.
+For `kind = ordinary41`, the proof should be short: every selected ordinary
+chart is either the literal restriction of
+`BHW.extendF (bvt_F OS lgc n)` on the ordinary sheet or has already been
+identified with that restriction by the ordinary-sector transfer seed, so
+`hseed_i_new` is obtained by rewriting both sides to this same global ordinary
+branch on a small ball inside the two carriers.  The real hard case is
+`kind = adjacent412`: there is no upstream global formula
+`extendF ∘ permAct`, so the local comparison must use the corrected `(4.12)`
+seed provenance and, when the comparison crosses the common real-Jost edge,
+the flat EOW boundary package.
+After the all-overlap invariant is available for the whole finite gallery,
+define the proof-local glued branch on the finite union by
+`SCV.glued_iUnion`; `SCV.glued_iUnion_eqOn` rewrites it to the first and last
+terminal branches on their carriers.  Since both terminal carriers have been
+retargeted by small metric balls around `z0`, shrinking once inside their
+intersection gives the final proof-local package:
 
 ```lean
 ∃ Wκ : Set (Fin n -> Fin (d + 1) -> ℂ),
@@ -2042,18 +2331,26 @@ surface for `Gκ.B0`; it must not replace the initial seed by the downstream
 point `z0`, apply the checked ball-shrink helper
 `SCV.exists_metric_ball_subset_inter_of_mem_open` to the open sets `Word` and
 `Wadj` at `z0`; the resulting ball `W ⊆ Word ∩ Wadj` is the common seed where
-`A.D = B.D` follows by subtraction.  Only then call
-`SCV.identity_theorem_product_of_eqOn_open` on the two-ball intersection.
+`A.D = B.D` follows by subtraction.  In Lean this final shrink-and-propagate
+step is the checked two-seed difference form
+`SCV.identity_theorem_product_inter_metric_ball_sub_of_two_eqOn_open`.
 
 The identity-theorem propagation from a nonempty seed to the whole ball
-intersection is now a neutral SCV step:
-`SCV.identity_theorem_product_of_eqOn_open`.  In the overlap proof instantiate
-it with `U` the two-ball intersection, `W` the nonempty complex-open branch-law seed,
-`f := D_left`, and `g := D_right`; the differentiability hypotheses are the
-two local holomorphy facts restricted by `Set.inter_subset_left/right`, and
-the connectedness of the two-ball intersection is the checked neutral topology lemma
-`SCV.isConnected_inter_metric_ball`, after rewriting both domains by their
-metric-ball fields and using the chosen overlap point for nonemptiness.
+intersection is now checked as the neutral SCV lemma
+`SCV.identity_theorem_product_inter_metric_ball_of_eqOn_open`
+(`OSReconstruction/SCV/OverlapIdentity.lean`).  In the overlap proof
+instantiate it with `W` the nonempty complex-open branch-law seed,
+`f := D_left`, and `g := D_right`; its proof internally restricts the two
+local holomorphy facts to the overlap and uses
+`SCV.isConnected_inter_metric_ball` for the nonempty two-ball intersection.
+The same file also checks
+`SCV.identity_theorem_product_inter_metric_ball_sub_of_eqOn_open`, the direct
+same-seed `A.Adj - A.Ord = B.Adj - B.Ord` form, and
+`SCV.identity_theorem_product_inter_metric_ball_sub_of_two_eqOn_open`, the
+two-seed form that first shrinks the ordinary and adjacent seeds to a common
+complex-open ball.
+This helper is not a theorem-2 wrapper: it starts only after the hard
+branch-law seed has been produced.
 The hard remaining content is not this propagation step; it is the
 BHW/OS-I finite-gallery branch-law seed on a nonempty complex-open subball
 while the ordinary and adjacent chain provenance of both local elements is
@@ -2541,82 +2838,67 @@ shape for every `q r : Kcx`:
 have hUqr_open : IsOpen (N q ∩ N r) :=
   (N_open q).inter (N_open r)
 by_cases hne : (N q ∩ N r).Nonempty
-· have hUqr_conn : IsConnected (N q ∩ N r) := by
-    rcases N_ball q with ⟨rq, hrq, hqball⟩
-    rcases N_ball r with ⟨rr, hrr, hrball⟩
-    rw [hqball, hrball]
-    exact SCV.isConnected_inter_metric_ball hne
+· rcases N_ball q with ⟨rq, hrq, hqball⟩
+  rcases N_ball r with ⟨rr, hrr, hrball⟩
   obtain ⟨z0, hz0qr⟩ := hne
-  have hfinite_gallery_seed_qr :
-      ∃ W : Set (Fin n -> Fin (d + 1) -> ℂ),
-        IsOpen W ∧ W.Nonempty ∧ W ⊆ N q ∩ N r ∧
-        Set.EqOn (D q) (D r) W := by
-    -- This proof is performed before the selected local elements for `q`
-    -- and `r` forget their one-branch chain provenance.
-    --
-    -- Ordinary comparison.  Let `Cq_ord` and `Cr_ord` be the ordinary
-    -- `(4.1)` chains that produced the terminal branches `Ord_q` and
-    -- `Ord_r`.  Retarget both terminal charts to the observed overlap point
-    -- `z0` by shrinking inside their current metric balls.  Compare the
-    -- concatenated gallery
-    --
-    --   `Cq_ord.last, ..., Cq_ord.0, Cr_ord.0, ..., Cr_ord.last`
-    --
-    -- against the common ordinary initial germ.  The base seed is
-    -- `Cq_ord.N 0 ∩ Cr_ord.N 0 ∩ Ω41`, with equality from the two `first_eq`
-    -- fields and the shared `(4.1)` branch `B41`.  Forward steps use
-    -- `Cq_ord.step_seed`; backward steps use `Cr_ord.step_seed` with equality
-    -- reversed.  Each step shrinks to a nonempty complex ball around the
-    -- current shared node and propagates equality by
-    -- `SCV.identity_theorem_product_of_eqOn_open`.
-    have hord_seed :
-        ∃ Word : Set (Fin n -> Fin (d + 1) -> ℂ),
-          IsOpen Word ∧ z0 ∈ Word ∧ Word ⊆ N q ∩ N r ∧
-          Set.EqOn Ord_q Ord_r Word := by
-      -- finite-gallery induction for the ordinary `(4.1)` chains
-      -- described above; proof-local, not a named theorem.  The recursive
-      -- invariant is the `Wκ` package displayed below this block, specialized
-      -- to `κ = ordinary41`; the last induction state is returned here.
-    -- Adjacent comparison.  Repeat the same finite-gallery induction for the
-    -- adjacent chains `Cq_adj` and `Cr_adj`.  Their common initial germ is the
-    -- corrected OS-I `(4.12)` germ produced by the proof-local `hadj412`
-    -- seed-to-Wick subproof.  The downstream deterministic branch
-    -- `z ↦ BHW.extendF (bvt_F OS lgc n) (BHW.permAct P.τ z)` is not used as
-    -- the initial germ and is not used to prove the adjacent Wick trace.
-    have hadj_seed :
-        ∃ Wadj : Set (Fin n -> Fin (d + 1) -> ℂ),
-          IsOpen Wadj ∧ z0 ∈ Wadj ∧ Wadj ⊆ N q ∩ N r ∧
-          Set.EqOn Adj_q Adj_r Wadj := by
-      -- finite-gallery induction for the adjacent `(4.12)` chains.  The
-      -- recursive invariant is the same `Wκ` package, specialized to
-      -- `κ = adjacent412`; the common initial germ is the proof-local
-      -- `hadj412` germ, not `extendF ∘ permAct`.
-    rcases hord_seed with ⟨Word, hWord_open, hz0Word, hWord_sub, hWord_eq⟩
-    rcases hadj_seed with ⟨Wadj, hWadj_open, hz0Wadj, hWadj_sub, hWadj_eq⟩
-    obtain ⟨ρ, hρ_pos, hρ_sub⟩ :=
-      SCV.exists_metric_ball_subset_inter_of_mem_open
-        hWord_open hz0Word hWadj_open hz0Wadj
-    refine
-      ⟨Metric.ball z0 ρ, Metric.isOpen_ball,
-        ⟨z0, Metric.mem_ball_self hρ_pos⟩, ?_, ?_⟩
-    · intro z hz
-      exact hWord_sub (hρ_sub hz).1
-    · intro z hz
-      have hOrd := hWord_eq (hρ_sub hz).1
-      have hAdj := hWadj_eq (hρ_sub hz).2
-      -- `D q = Adj_q - Ord_q` and `D r = Adj_r - Ord_r` on the selected
-      -- terminal balls, so equality of both branch kinds gives equality of
-      -- the local differences on the common seed.
-      simp [D_eq_sub_q, D_eq_sub_r, hAdj, hOrd]
-  obtain ⟨W, hW_open, hW_ne, hW_sub, hW_eq⟩ :=
-    hfinite_gallery_seed_qr
-  exact
-    SCV.identity_theorem_product_of_eqOn_open
-      (n := n) (m := d + 1)
-      hUqr_open hUqr_conn hW_open hW_ne hW_sub
-      ((D_holo q).mono (fun z hz => hz.1))
-      ((D_holo r).mono (fun z hz => hz.2))
-      hW_eq
+  -- This proof is performed before the selected local elements for `q`
+  -- and `r` forget their one-branch chain provenance.
+  --
+  -- Ordinary comparison.  Let `Cq_ord` and `Cr_ord` be the ordinary
+  -- `(4.1)` chains that produced the terminal branches `Ord_q` and
+  -- `Ord_r`.  Retarget both terminal charts to the observed overlap point
+  -- `z0` by shrinking inside their current metric balls.  Build the
+  -- concatenated finite gallery
+  --
+  --   `Cq_ord.last` down to `Cq_ord.0`, then `Cr_ord.0` up to `Cr_ord.last`
+  --
+  -- and maintain all-overlap equality across the finite prefix.  When a new
+  -- gallery chart meets an older one, compare the two chart branches at an
+  -- observed point by the proof-local ordinary OS-I transfer, then propagate
+  -- that complex-open seed to the two-ball overlap with
+  -- `SCV.identity_theorem_product_inter_metric_ball_of_eqOn_open`.
+  have hord_seed :
+      ∃ Word : Set (Fin n -> Fin (d + 1) -> ℂ),
+        IsOpen Word ∧ z0 ∈ Word ∧ Word ⊆ N q ∩ N r ∧
+        Set.EqOn Ord_q Ord_r Word := by
+    -- finite all-overlap gallery induction for the ordinary `(4.1)` chains
+    -- described above; proof-local, not a named theorem.  The recursive
+    -- invariant is the `Wκ` package displayed below this block, specialized
+    -- to `κ = ordinary41`; the glued last induction state is returned here.
+  -- Adjacent comparison.  Repeat the same finite-gallery induction for the
+  -- adjacent chains `Cq_adj` and `Cr_adj`.  Their common initial germ is the
+  -- corrected OS-I `(4.12)` germ produced by the proof-local `hadj412`
+  -- seed-to-Wick subproof.  The downstream deterministic branch
+  -- `z ↦ BHW.extendF (bvt_F OS lgc n) (BHW.permAct P.τ z)` is not used as
+  -- the initial germ and is not used to prove the adjacent Wick trace.
+  have hadj_seed :
+      ∃ Wadj : Set (Fin n -> Fin (d + 1) -> ℂ),
+        IsOpen Wadj ∧ z0 ∈ Wadj ∧ Wadj ⊆ N q ∩ N r ∧
+        Set.EqOn Adj_q Adj_r Wadj := by
+    -- finite all-overlap gallery induction for the adjacent `(4.12)` chains.
+    -- The recursive invariant is the same `Wκ` package, specialized to
+    -- `κ = adjacent412`; the common initial germ is the proof-local
+    -- `hadj412` germ, not `extendF ∘ permAct`, and flat crossings use the
+    -- non-circular `(4.14)` EOW packet.
+  rcases hord_seed with ⟨Word, hWord_open, hz0Word, hWord_sub, hWord_eq⟩
+  rcases hadj_seed with ⟨Wadj, hWadj_open, hz0Wadj, hWadj_sub, hWadj_eq⟩
+  have hDiff_ball :
+      Set.EqOn
+        (fun z => Adj_q z - Ord_q z)
+        (fun z => Adj_r z - Ord_r z)
+        (Metric.ball q.1 rq ∩ Metric.ball r.1 rr) := by
+    exact
+      SCV.identity_theorem_product_inter_metric_ball_sub_of_two_eqOn_open
+        (c₁ := q.1) (c₂ := r.1) (r₁ := rq) (r₂ := rr)
+        hWadj_open hz0Wadj (by simpa [hqball, hrball] using hWadj_sub)
+        hWord_open hz0Word (by simpa [hqball, hrball] using hWord_sub)
+        Adj_q_holo_on_Nq Ord_q_holo_on_Nq
+        Adj_r_holo_on_Nr Ord_r_holo_on_Nr
+        hWadj_eq hWord_eq
+  intro z hz
+  have hzball : z ∈ Metric.ball q.1 rq ∩ Metric.ball r.1 rr := by
+    simpa [hqball, hrball] using hz
+  simpa [D_eq_sub_q, D_eq_sub_r] using hDiff_ball hzball
 · intro z hz
   exact False.elim (hne ⟨z, hz⟩)
 ```
@@ -2626,9 +2908,10 @@ or hidden oracle.  It is proved in the same local-family construction, before
 the proof discards the ordinary and adjacent one-branch chains for the two
 charts.  The ordinary galleries compare the two terminal branches through the
 common `(4.1)` initial germ; the adjacent galleries compare them through the
-corrected proof-local `(4.12)` initial germ.  Intersecting the two resulting
-open seeds gives equality of `Adj - Ord`, and only then does the product
-identity theorem upgrade that seed equality to the whole ball intersection.
+corrected proof-local `(4.12)` initial germ.  The checked two-seed helper
+`SCV.identity_theorem_product_inter_metric_ball_sub_of_two_eqOn_open` then
+shrinks the two resulting seeds to one complex-open ball and upgrades equality
+of `Adj - Ord` to the whole selected two-ball intersection.
 Empty intersections are discharged immediately.  This replaces the former
 finite-walk nerve step and avoids any public monodromy or local-family
 wrapper.
@@ -3123,7 +3406,14 @@ proof must return the local branch-difference germ directly.  The private
 Hdiff and branch-free carrier files have been removed; the next unproved Lean
 work is the OS I §4.5 proof content that constructs the initial germs, transfer
 neighborhoods, one-branch continuations, terminal branches, overlap equality,
-and family gluing inside the direct producer.  Only after the
+and family gluing inside the direct producer.  The mechanical overlap and
+family-gluing steps are now checked by
+`SCV.identity_theorem_product_inter_metric_ball_sub_of_two_eqOn_open` in
+`OSReconstruction/SCV/OverlapIdentity.lean` and
+`SCV.differentiableOn_glued_iUnion` in
+`OSReconstruction/SCV/ConnectedNeighborhood.lean`; the remaining mathematical
+work is the actual branch-law seed and local transfer that feed those helpers.
+Only after the
 checked horizontal reducer and the common-boundary CLM have been proved does the
 route move to `BHW.os45_BHWJost_localSPrimeEOWSeed_of_OSI45` and
 `BHW.os45_BHWJost_SPrimeBranchData_of_OSI45`.  The seed theorem is still proved
@@ -21777,8 +22067,9 @@ This doc is complete only when:
    the compact Figure-2-4 corridor, the finite local OS-I continuation charts,
    the adjacent-minus-ordinary analytic element on each chart, the initial Wick
    trace from `(4.1)/(4.12)`, the horizontal common-edge trace from `(4.14)`,
-   the BHW/Jost branch-law overlap equalities, and the checked neutral
-   `SCV.glued_iUnion` gluing proof for `Hdiff`.  The local `S'_n` branch theorem
+   the proof-local all-overlap BHW/Jost branch-law seeds producing `Word` and
+   `Wadj`, and the checked neutral `SCV.glued_iUnion` gluing proof for
+   `Hdiff`.  The local `S'_n` branch theorem
    `BHW.os45_BHWJost_SPrimeBranchData_of_OSI45` is downstream of the
    common-boundary CLM proved from this germ.  The archived
    `BHW.OS45BHWJostOverlapPathData`, full-overlap connectedness,
@@ -21863,8 +22154,25 @@ packet are now checked by
 `BHW.continuousOn_os45FlatCommonChartBranch_realEdge` and
 `BHW.tendsto_os45FlatCommonChartBranch_realEdge`, and the source-to-flat
 coordinate conversion is checked by
-`BHW.os45FlatCommonChart_realEdge_branch_eq_of_source_commonEdge_branch_eq`;
-the source pulled-branch equality is equivalently the `extendF` equality at
+`BHW.os45FlatCommonChart_realEdge_branch_eq_of_source_commonEdge_branch_eq`.
+The proof-local local-window forms are now checked as
+`BHW.os45FlatCommonChart_realEdge_branch_eq_of_source_commonEdge_branch_eqOn`
+and
+`BHW.os45_BHWJost_flatCommonChart_eqOn_open_of_continuousBoundaryOn`.  These
+lemmas
+let the flat `(4.14)` EOW crossing consume an open local edge
+`E ⊆ BHW.os45FlatCommonChartEdgeSet d n P 1` rather than global boundary data
+on all of `P.V`.  The ambient pullback of that local flat seed is now checked
+as
+`BHW.os45_BHWJost_initialSectorEqOn_open_of_flatCommonChart_continuousBoundaryOn`:
+it returns the complex-open seed in
+`BHW.ExtendedTube d n ∩ BHW.permutedExtendedTubeSector d n P.τ` around
+`(BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+  (BHW.unflattenCfg n d (SCV.realEmbed x0))`.
+These are local coordinate/EOW consumers only: they still require the upstream
+OS-I source equality or boundary-value packet and do not produce
+`h45_source_eqOn`.
+The source pulled-branch equality is equivalently the `extendF` equality at
 the ordinary and selected permuted horizontal endpoints by
 `BHW.os45_sourceCommonEdge_branch_eq_iff_permAct_extendF_commonEdge_eq`;
 after choosing `bv` as the ordinary real-edge trace, the remaining unproved
@@ -21880,7 +22188,10 @@ does the flat EOW crossing produce a complex-open seed.  This upstream
 compact-test equality is distinct from the downstream compact-test equalities
 derived after a source `Hdiff` zero representation has already been produced.
 Formula `(4.14)` supplies this Lorentz-covariance/permutation ingredient
-inside the §4.5 argument; it is not the later deterministic endpoint equality.
+inside the §4.5 argument; in the source-cutoff/CLE coordinates the compact-test
+source equality is now checked as
+`BHW.os45CommonEdge_adjacentWick_sourcePairing_eq_ordinaryWick`.  It is not the
+later deterministic endpoint equality.
 The older Schwinger-specialized reducers remain conditional specializations
 only; they are not the active theorem-2 route.  The first Lean
 implementation object is now the direct-coordinate OS I §4.5 local
@@ -22045,6 +22356,16 @@ on the actual cutoff-pulled zero-diagonal test, plus
 not require `D` to be permutation-invariant, does not use the deterministic
 `extendF ∘ permAct` adjacent branch, and does not prove the horizontal
 common-edge transfer.
+
+The actual source-side compact-test equality needed by the pre-`Hdiff` flat
+EOW input is now checked as
+`BHW.os45CommonEdge_adjacentWick_sourcePairing_eq_ordinaryWick`.  It states
+that the adjacent `(4.12)` boundary distribution and the ordinary `(4.1)`
+boundary distribution have equal pairings against the same
+`D.toSchwartzNPointCLM 1 φ`.  Its proof is exactly the composition of the
+adjacent Wick source-pairing theorem above with ordinary
+`bvt_euclidean_restriction`; it has no `Hdiff`, common-boundary CLM, local
+`S'_n` branch, or deterministic adjacent branch input.
 
 Only after this local germ is proved does the route move to the OS-specific
 common-boundary distribution
