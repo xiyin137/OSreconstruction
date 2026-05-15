@@ -879,4 +879,66 @@ theorem local_continuous_edge_of_the_wedge_eventuallyEq_at_common_edge {m : ℕ}
   have hzEq := hEq hz
   simpa [hright z] using hzEq
 
+/-- Continuous local EOW gives a concrete complex-open equality seed at the
+common real edge.
+
+This is the form consumed by local OS45 transfer steps: after the two side
+branches have the same continuous boundary value, shrink the eventual equality
+to a metric ball contained in both side domains. -/
+theorem local_continuous_edge_of_the_wedge_eqOn_open_at_common_edge {m : ℕ}
+    (hm : 0 < m)
+    (Ωplus Ωminus : Set (Fin m → ℂ))
+    (E C : Set (Fin m → ℝ))
+    (hΩplus_open : IsOpen Ωplus) (hΩminus_open : IsOpen Ωminus)
+    (hE_open : IsOpen E) (hC_open : IsOpen C)
+    (hC_conv : Convex ℝ C) (hC_ne : C.Nonempty)
+    (hlocal_wedge :
+      ∀ K : Set (Fin m → ℝ), IsCompact K → K ⊆ E →
+        ∀ Kη : Set (Fin m → ℝ), IsCompact Kη → Kη ⊆ C →
+          ∃ r : ℝ, 0 < r ∧
+            ∀ x ∈ K, ∀ η ∈ Kη, ∀ ε : ℝ, 0 < ε → ε < r →
+              (fun a => (x a : ℂ) + (ε : ℂ) * (η a : ℂ) * Complex.I) ∈ Ωplus ∧
+              (fun a => (x a : ℂ) - (ε : ℂ) * (η a : ℂ) * Complex.I) ∈ Ωminus)
+    (Fplus Fminus : (Fin m → ℂ) → ℂ)
+    (hFplus_diff : DifferentiableOn ℂ Fplus Ωplus)
+    (hFminus_diff : DifferentiableOn ℂ Fminus Ωminus)
+    (bv : (Fin m → ℝ) → ℂ) (hbv_cont : ContinuousOn bv E)
+    (hFplus_bv :
+      ∀ x ∈ E, Filter.Tendsto Fplus
+        (nhdsWithin (SCV.realEmbed x) Ωplus) (nhds (bv x)))
+    (hFminus_bv :
+      ∀ x ∈ E, Filter.Tendsto Fminus
+        (nhdsWithin (SCV.realEmbed x) Ωminus) (nhds (bv x)))
+    (x0 : Fin m → ℝ) (hx0 : x0 ∈ E)
+    (hplus_nhds : Ωplus ∈ nhds (SCV.realEmbed x0))
+    (hminus_nhds : Ωminus ∈ nhds (SCV.realEmbed x0)) :
+    ∃ W : Set (Fin m → ℂ),
+      IsOpen W ∧
+      IsPreconnected W ∧
+      SCV.realEmbed x0 ∈ W ∧
+      W ⊆ Ωplus ∩ Ωminus ∧
+      Set.EqOn Fplus Fminus W := by
+  classical
+  have hevent :
+      Fplus =ᶠ[nhds (SCV.realEmbed x0)] Fminus :=
+    SCV.local_continuous_edge_of_the_wedge_eventuallyEq_at_common_edge
+      hm Ωplus Ωminus E C hΩplus_open hΩminus_open hE_open hC_open
+      hC_conv hC_ne hlocal_wedge Fplus Fminus hFplus_diff hFminus_diff
+      bv hbv_cont hFplus_bv hFminus_bv x0 hx0 hplus_nhds hminus_nhds
+  rw [Filter.eventuallyEq_iff_exists_mem] at hevent
+  rcases hevent with ⟨V, hV_nhds, hV_eq⟩
+  have hcommon_nhds :
+      V ∩ Ωplus ∩ Ωminus ∈ nhds (SCV.realEmbed x0) :=
+    Filter.inter_mem (Filter.inter_mem hV_nhds hplus_nhds) hminus_nhds
+  rcases Metric.mem_nhds_iff.mp hcommon_nhds with
+    ⟨r, hr_pos, hball_sub⟩
+  refine
+    ⟨Metric.ball (SCV.realEmbed x0) r, Metric.isOpen_ball,
+      (convex_ball (SCV.realEmbed x0) r).isPreconnected,
+      Metric.mem_ball_self hr_pos, ?_, ?_⟩
+  · intro z hz
+    exact ⟨(hball_sub hz).1.2, (hball_sub hz).2⟩
+  · intro z hz
+    exact hV_eq (hball_sub hz).1.1
+
 end SCV

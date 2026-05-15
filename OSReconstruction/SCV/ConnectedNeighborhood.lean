@@ -161,4 +161,55 @@ theorem differentiableOn_of_locally_eq_differentiableOn
     hgd.differentiableWithinAt.congr_of_eventuallyEq
       hlocal_eq (hfg ⟨hzU, hzV⟩)
 
+/-- Glue a family of local representatives by choosing any representative
+whose carrier contains the point, and using `0` off the union.  Pairwise
+agreement on overlaps makes the choice immaterial on the covered region. -/
+noncomputable def glued_iUnion
+    {E F ι : Type*} [Zero F]
+    (N : ι → Set E) (D : ι → E → F) : E → F :=
+  by
+    classical
+    exact fun z =>
+      if h : ∃ i, z ∈ N i then
+        D (Classical.choose h) z
+      else
+        0
+
+/-- On each carrier, the indexed glued function agrees with that carrier's
+representative, provided the representatives agree pairwise on overlaps. -/
+theorem glued_iUnion_eqOn
+    {E F ι : Type*} [Zero F]
+    {N : ι → Set E} {D : ι → E → F}
+    (hEq : ∀ i j, Set.EqOn (D i) (D j) (N i ∩ N j))
+    (i : ι) :
+    Set.EqOn (SCV.glued_iUnion N D) (D i) (N i) := by
+  classical
+  intro z hz
+  have hmem : ∃ j, z ∈ N j := ⟨i, hz⟩
+  have hchosen : z ∈ N (Classical.choose hmem) :=
+    Classical.choose_spec hmem
+  rw [SCV.glued_iUnion]
+  simp [hmem, hEq (Classical.choose hmem) i ⟨hchosen, hz⟩]
+
+/-- Pairwise-equal holomorphic representatives glue to a holomorphic function
+on any set covered by their carriers. -/
+theorem differentiableOn_glued_iUnion
+    {E F ι : Type*} [NormedAddCommGroup E] [NormedSpace ℂ E]
+    [NormedAddCommGroup F] [NormedSpace ℂ F]
+    {U : Set E} {N : ι → Set E} {D : ι → E → F}
+    (hcover : U ⊆ ⋃ i, N i)
+    (hN_open : ∀ i, IsOpen (N i))
+    (hD : ∀ i, DifferentiableOn ℂ (D i) (N i))
+    (hEq : ∀ i j, Set.EqOn (D i) (D j) (N i ∩ N j)) :
+    DifferentiableOn ℂ (SCV.glued_iUnion N D) U := by
+  classical
+  refine
+    SCV.differentiableOn_of_locally_eq_differentiableOn
+      (U := U) (f := SCV.glued_iUnion N D) ?_
+  intro z hzU
+  rcases Set.mem_iUnion.mp (hcover hzU) with ⟨i, hzi⟩
+  refine ⟨N i, hN_open i, hzi, D i, hD i, ?_⟩
+  intro y hy
+  exact SCV.glued_iUnion_eqOn (N := N) (D := D) hEq i hy.2
+
 end SCV
