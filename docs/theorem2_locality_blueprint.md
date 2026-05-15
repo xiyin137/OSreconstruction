@@ -77378,8 +77378,9 @@ obtain ⟨Wflat, hWflat_open, hWflat_pre, hx0Wflat,
       x0 hx0_edge hSideIn_nhds hSideOut_nhds
 ```
 
-For the actual OS45 flattened common chart, the displayed SCV call is now the
-checked Lean theorem
+For the downstream deterministic OS45 flattened common chart, after the local
+OS-I transfer has already produced `h45_source_eqOn`, the displayed SCV call
+is now the checked Lean theorem
 `BHW.os45_BHWJost_flatCommonChart_eqOn_open_of_continuousBoundary`: set
 `sideInDomain = BHW.os45FlatCommonChartOmega d n 1`,
 `sideOutDomain =
@@ -77402,10 +77403,150 @@ The source common-edge equality is equivalently the equality of
 selected permuted endpoint, by
 `BHW.os45_sourceCommonEdge_branch_eq_iff_permAct_extendF_commonEdge_eq`.
 The pointwise §4.5 Jost-overlap equality is now the remaining local OS-I
-content for the flat crossing; formula `(4.14)` supplies its
-Lorentz-covariance ingredient.  The flat wedge, openness, holomorphy, continuity, side-limit,
-coordinate transport, and neighborhood hypotheses are discharged by checked
-Lean support.
+content for this downstream deterministic specialization; formula `(4.14)`
+supplies its Lorentz-covariance ingredient.  The finite transfer that proves
+`h45_source_eqOn` must instead use the proof-local `bvIn`/`bvOut` and
+`h414_bv_eq` fields below.  The flat wedge, openness, holomorphy, continuity,
+side-limit, coordinate transport, and neighborhood hypotheses are discharged
+by checked Lean support.
+
+When this flat EOW packet is used inside the finite transfer from the genuine
+`(4.12)` seed to the horizontal endpoint, do not feed the later endpoint
+statement `h45_source_eqOn` back into the flat step.  Keep the proof-local
+data in three layers:
+
+```lean
+-- certified incoming chart
+CprevCarrier : Set (Fin n -> Fin (d + 1) -> ℂ)
+CprevBranch  : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ
+hCprev_open  : IsOpen CprevCarrier
+hCprev_holo  : DifferentiableOn ℂ CprevBranch CprevCarrier
+hCprev_sheet : Set.EqOn CprevBranch sideInBranch CprevCarrier
+
+-- successor chart selected by the local OS-I case at `q`
+CnextCarrier : Set (Fin n -> Fin (d + 1) -> ℂ)
+CnextBranch  : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ
+hCnext_open  : IsOpen CnextCarrier
+hCnext_holo  : DifferentiableOn ℂ CnextBranch CnextCarrier
+hCnext_sheet : Set.EqOn CnextBranch sideOutBranch CnextCarrier
+
+-- the OS-I §4.5 boundary value for this flat real edge
+bv : BHW.OS45FlatCommonChartReal d n -> ℂ
+hbv_cont :
+  ContinuousOn bv (BHW.os45FlatCommonChartEdgeSet d n P 1)
+hsideIn_bv :
+  ∀ x ∈ BHW.os45FlatCommonChartEdgeSet d n P 1,
+    Tendsto sideInBranch
+      (nhdsWithin (SCV.realEmbed x) sideInDomain) (nhds (bv x))
+hsideOut_bv :
+  ∀ x ∈ BHW.os45FlatCommonChartEdgeSet d n P 1,
+    Tendsto sideOutBranch
+      (nhdsWithin (SCV.realEmbed x) sideOutDomain) (nhds (bv x))
+```
+
+The two `*_bv` fields come from the current OS-I `(4.1)`/`(4.12)` local
+analytic elements plus `(4.14)` Lorentz covariance; they are not the
+deterministic endpoint equality
+`extendF (permAct P.τ pord) = extendF pord`.  After
+`SCV.local_continuous_edge_of_the_wedge_eqOn_open_at_common_edge` returns the
+complex-open side equality, compose it with `hCprev_sheet` and
+`hCnext_sheet`, pull it back through the flat chart, and propagate it on the
+connected bridge:
+
+The proof-local `(4.14)` payload in this paragraph is exactly the equality of
+the two boundary-value fields on the real Jost edge.  Write it inline, before
+the EOW call, with this shape:
+
+```lean
+bvIn bvOut : BHW.OS45FlatCommonChartReal d n -> ℂ
+hsideIn_bvIn :
+  ∀ x ∈ BHW.os45FlatCommonChartEdgeSet d n P 1,
+    Tendsto sideInBranch
+      (nhdsWithin (SCV.realEmbed x) sideInDomain)
+      (nhds (bvIn x))
+hsideOut_bvOut :
+  ∀ x ∈ BHW.os45FlatCommonChartEdgeSet d n P 1,
+    Tendsto sideOutBranch
+      (nhdsWithin (SCV.realEmbed x) sideOutDomain)
+      (nhds (bvOut x))
+hbvIn_cont :
+  ContinuousOn bvIn (BHW.os45FlatCommonChartEdgeSet d n P 1)
+hbvOut_cont :
+  ContinuousOn bvOut (BHW.os45FlatCommonChartEdgeSet d n P 1)
+have h414_integrals :
+    ∀ φ : SchwartzMap (BHW.OS45FlatCommonChartReal d n) ℂ,
+      HasCompactSupport
+        (φ : BHW.OS45FlatCommonChartReal d n -> ℂ) ->
+      tsupport
+        (φ : BHW.OS45FlatCommonChartReal d n -> ℂ) ⊆
+        BHW.os45FlatCommonChartEdgeSet d n P 1 ->
+      (∫ x : BHW.OS45FlatCommonChartReal d n,
+          bvOut x * φ x) =
+        ∫ x : BHW.OS45FlatCommonChartReal d n,
+          bvIn x * φ x := by
+  -- OS-I `(4.14)` for the current local elements, proved before any
+  -- pointwise trace identification: pull the flat edge test back through the
+  -- checked Figure-2-4 cutoff/CLE maps, apply Euclidean
+  -- covariance/permutation to the incoming `(4.1)` element and the outgoing
+  -- genuine `(4.12)` element, then push the pairing equality back to this
+  -- flat edge window.  This is not `h45_source_eqOn`, and it is not imported
+  -- from the downstream local `S'_n` branch or common-boundary CLM.
+have h414_bv_eq :
+    Set.EqOn bvOut bvIn (BHW.os45FlatCommonChartEdgeSet d n P 1) := by
+  exact
+    SCV.eqOn_open_of_compactSupport_schwartz_integral_eq_of_continuousOn
+      (U := BHW.os45FlatCommonChartEdgeSet d n P 1)
+      (BHW.isOpen_os45FlatCommonChartEdgeSet d n P 1)
+      hbvOut_cont hbvIn_cont h414_integrals
+```
+
+The hard flat-case paper step is therefore exactly `h414_integrals`, a
+compact-support test equality for the current local `(4.1)` and genuine
+`(4.12)` analytic elements.  The upgrade from test-integral equality to
+pointwise `h414_bv_eq` is the already checked SCV distributional-uniqueness
+step.  Then set `bv := bvIn`, take `hsideIn_bv := hsideIn_bvIn`, and convert
+`hsideOut_bvOut` to `hsideOut_bv` pointwise using `h414_bv_eq`.  This is the
+boundary input to EOW.  The later endpoint equality `h45_source_eqOn` is the
+result of applying EOW and identity-theorem propagation to these proof-local
+objects; it is not available inside `h414_bv_eq`.
+
+```lean
+have hseed_prev_next :
+    Set.EqOn CprevBranch CnextBranch Oeow' := by
+  intro z hz
+  calc
+    CprevBranch z = sideInBranch z := hCprev_sheet hz.prev
+    _ = sideOutBranch z := hEOW_seed hz.eow
+    _ = CnextBranch z := (hCnext_sheet hz.next).symm
+
+have hbridge_eq :
+    Set.EqOn CprevBranch CnextBranch Bridge := by
+  exact SCV.identity_theorem_product_of_eqOn_open
+    hBridge_open hBridge_connected hSeed_open hSeed_nonempty
+    hSeed_sub_bridge hCprev_holo_on_bridge hCnext_holo_on_bridge
+    hseed_prev_next
+```
+
+Only a nonempty open restriction of `hbridge_eq` around the left subdivision
+node becomes the transition overlap.  The endpoint equality
+`h45_source_eqOn` is obtained later by evaluating the glued terminal branch in
+the endpoint-centered charts; it is not a premise of the flat transfer.
+
+Order matters here.  The checked OS45 flat common-chart theorem with the
+deterministic ordinary/selected-adjacent branch functions,
+`BHW.os45_BHWJost_flatCommonChart_eqOn_open_of_continuousBoundary`, does not
+prove `h45_source_eqOn`; it consumes that proof-local equality after the OS-I
+§4.5 analytic-continuation argument has produced it.  That downstream flat
+call is made only after the ordinary real-edge trace has been chosen as `bv`
+and the adjacent side-limit has been rewritten to the same `bv` by
+`h45_source_eqOn`.  Inside the finite transfer that produces
+`h45_source_eqOn`, use the proof-local side-branch/boundary-value fields above
+instead of this deterministic-branch consumer.
+Do not replace this step by the general
+`BHWExtension.analytic_extended_local_commutativity`/`AdjacencyDistributional`
+path: for the OS-reconstructed boundary distribution that path requires
+`IsAdjacentLocallyCommutativeWeak d (bvt_W OS lgc)`, which is theorem 2's
+locality conclusion.
 
 ```lean
 obtain ⟨Wflat, hWflat_open, hWflat_pre, hx0Wflat,
@@ -78827,12 +78968,12 @@ Implementation transcript for
 
    | Subclaim | Lean-facing name | Status and proof source |
    | --- | --- | --- |
-   | Special Wick-section anchor in the common chart | `BHW.os45FlatCommonChart_wickSection_plus_eq` and `BHW.os45FlatCommonChart_wickSection_minus_eq` | Mechanical from the checked formulas `BHW.os45QuarterTurn_perm_wickRotate_eq_common_plus`, `BHW.os45QuarterTurn_perm_realEmbed_eq_common_minus`, `BHW.os45CommonEdgeRealPoint_adjacent_swap_eq`, and flatten/unflatten simp lemmas.  This is only the anchor curve `commonEdge(u) ± i halfTimeDirection(u)`, not the general side direction `η`. |
-   | Wick-section pairing normalization | `BHW.os45FlatCommonChart_wickSection_pairing_eq_schwinger` | Change variables by `BHW.os45CommonEdgeFlatCLE d n 1`, include `BHW.os45CommonEdgeFlatJacobianAbs n`, then apply `bvt_euclidean_restriction` to `D.toZeroDiagonalCLM 1 φ`.  This proves the value of the anchored Fourier-Laplace branch against the flat test. |
-   | Adjacent Wick-section pairing normalization | `BHW.os45FlatCommonChart_adjacentWickSection_pairing_eq_schwinger` | Same source-test convention, but use the checked reindexed common-point identity and exactly one `OS.E3_symmetric` call on the compact zero-diagonal test selected by the OS-I adjacent branch.  Do not require the cutoff to commute with `P.τ`. |
+   | Special anchor sections in the common chart | `BHW.os45FlatCommonChart_wickSection_plus_eq`, `BHW.os45FlatCommonChart_wickSection_plus_eq_bvt_F`, and `BHW.os45FlatCommonChart_realSection_minus_eq` | Checked in `OSToWightmanLocalityOS45BHWJostLocal.lean`.  The first and third are mechanical from `BHW.os45QuarterTurn_perm_wickRotate_eq_common_plus`, `BHW.os45QuarterTurn_perm_realEmbed_eq_common_minus`, `BHW.os45PulledRealBranch_apply_realBranch`, and flatten/unflatten simp lemmas; the `..._bvt_F` specialization additionally uses `BHW.extendF_eq_on_forwardTube` on the identity ordered Wick sector.  This is only the anchor curve `commonEdge(u) ± i halfTimeDirection(u)`, not the general side direction `η`, not a finite-height identity, and not a common-boundary equality. |
+   | Wick-section source-coordinate pairing normalization | `BHW.os45FlatCommonChart_wickSection_sourcePairing_eq_schwinger` | Checked in `OSToWightmanLocalityOS45BHWJostLocal.lean`.  For an explicit Figure-2-4 cutoff `D` and a flat test whose support lies in `BHW.os45FlatCommonChartEdgeSet d n P 1`, the source-coordinate integral of the positive anchor branch against `D.toSchwartzNPointCLM 1 φ` is `OS.S n (D.toZeroDiagonalCLM 1 φ)`.  The proof uses `bvt_euclidean_restriction`, `D.toSchwartzNPointCLM_tsupport_subset_V`, and the checked anchor specialization `BHW.os45FlatCommonChart_wickSection_plus_eq_bvt_F`.  This is deliberately the unnormalized source-variable statement: it does not insert `BHW.os45CommonEdgeFlatJacobianAbs n`, does not choose `D`, and does not identify the flat common-boundary CLM with the Schwinger CLM. |
+   | Adjacent Wick-section source-coordinate pairing normalization | `BHW.os45CommonEdge_adjacentWick_sourcePairing_eq_schwinger` | Checked in `OSToWightmanLocalityOS45BHWJostLocal.lean`.  For the same explicit cutoff `D`, the source-coordinate integral of the adjacent Wick value `bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k)))` against `D.toSchwartzNPointCLM 1 φ` is also `OS.S n (D.toZeroDiagonalCLM 1 φ)`.  The proof applies the checked Euclidean edge theorem `BHW.os45_adjacent_euclideanEdge_pairing_eq_on_timeSector` to the actual cutoff-pulled zero-diagonal test, using `D.toSchwartzNPointCLM_tsupport_subset_V` and `P.V_swap_ordered`; it does not assert that the cutoff commutes with `P.τ` and does not use the downstream deterministic adjacent branch. |
    | OS-I §4.5 common-boundary distribution | `BHW.os45CommonEdge_localFigure24DifferenceGerm_of_OSI45`, then checked reducers `BHW.os45CommonEdge_localHorizontalDifference_representsZero_of_germ`, `BHW.OS45Figure24SourceCutoffData.toSchwartzNPointCLM_tsupport_subset_image`, `BHW.os45FlatCommonChart_commonBoundaryDifference_integral_zero_of_sourceRepresentsOn`, and `BHW.os45FlatCommonChart_zeroHeight_pairings_eq_ordinaryEdgeCLM_of_sourceRepresentsOn` | The remaining genuine paper step is now the production of the proof-local `Hdiff` germ and its local zero representation.  Once `SCV.RepresentsDistributionOn 0 Ghoriz U` is supplied for a local source neighborhood `U ⊆ P.V`, Lean checks the source-to-flat change of variables for flat tests supported in `BHW.os45CommonEdgeFlatCLE d n 1 '' U` and produces one common CLM, namely `BHW.os45FlatCommonChart_ordinaryEdgeCLM hd OS lgc P`, with both zero-height pairing identities.  The global `..._of_sourceRepresents` reducers remain available for `P.V`, but the active route now uses the local variants to avoid a fake globalization step.  This is not a finite-height equality, does not quantify over side directions, and does not identify `T` with the Schwinger CLM. |
    | Pure compact-support side convergence from zero-height pairing | `SCV.tendstoUniformlyOn_sideIntegral_of_zeroHeight_pairing` | Checked in `OSReconstruction/SCV/LocalEOWSideContinuity.lean`.  The theorem says: if `F` is continuous on an open side domain `Ω`, compact `K := tsupport φ` lies in the real edge `E`, and `hlocal_wedge` puts `x + sgn * iεη` in `Ω` uniformly for `x ∈ K`, `η ∈ Kη`, small positive `ε`, then `∫ F (x + sgn * iεη) φ x` tends uniformly on compact `Kη` to the supplied zero-height pairing.  The proof is pure SCV/measure infrastructure: it proves continuity of the compact-support integral on a symmetric closed height ball using the auxiliary height `max ε 0`, obtains uniform continuity on `closedBall 0 (r/2) × Kη`, then restricts by eventual equality on the positive-side filter.  No OS/QFT content and no finite-height Schwinger identification. |
-   | Distributional boundary-value theorem surfaces | `BHW.os45_BHWJost_flatCommonChart_distributionalBoundaryValue_plus_of_zeroHeight_pairingCLM` and `BHW.os45_BHWJost_flatCommonChart_distributionalBoundaryValue_minus_of_zeroHeight_pairingCLM` | Combine the previous two rows: pure side convergence gives the limit as the zero-height pairing, and the OS-I §4.5 common-boundary step identifies both zero-height pairings with the same CLM `T`.  The direction set may remain any compact `Kη ⊆ BHW.os45FlatCommonChartCone d n`, because the dependence on `η` is handled only by the checked local-wedge/continuity lemma, not by an OS-I finite-height identity.  The older Schwinger-specialized wrappers are conditional specializations and are not the active theorem-2 route. |
+   | Distributional boundary-value theorem surfaces | `BHW.os45_BHWJost_flatCommonChart_distributionalBoundaryValue_plus_of_zeroHeight_pairingCLM` and `BHW.os45_BHWJost_flatCommonChart_distributionalBoundaryValue_minus_of_zeroHeight_pairingCLM` | Combine the previous two rows: pure side convergence gives the limit as the zero-height pairing, and the OS-I §4.5 common-boundary step identifies both zero-height pairings with the same CLM `T`.  The direction set may remain any compact `Kη ⊆ BHW.os45FlatCommonChartCone d n`, because the dependence on `η` is handled only by the checked local-wedge/continuity lemma, not by an OS-I finite-height identity.  The older Schwinger-specialized theorem wrappers have been removed from the active Lean surface. |
    | Local EOW seed extraction | Checked reducers `BHW.os45_BHWJost_flatCommonChart_eqOn_localEOWBall_of_zeroHeight_pairingsCLM`, `BHW.os45_BHWJost_flatCommonChart_eqOn_localEOWBall_of_localZeroHeight_pairingsCLM`, `BHW.os45_BHWJost_flatCommonChart_eqOn_localEOWBall_of_sourceRepresentsOn`, and `BHW.os45_BHWJost_localSPrimeEOWSeedAt_commonEdge_of_zeroHeight_pairingsCLM`; public producer still `BHW.os45_BHWJost_localSPrimeEOWSeed_of_OSI45` after the common-boundary CLM exists. | The checked reducers instantiate `SCV.chartDistributionalEOW_local_envelope` with `Ωplus := BHW.os45FlatCommonChartOmega d n 1`, `Ωminus := BHW.os45FlatCommonChartOmega d n (P.τ.symm * 1)`, `C := BHW.os45FlatCommonChartCone d n`, and `Fplus/Fminus := BHW.os45FlatCommonChartBranch ...`.  The new local form allows `E` to be any open subset of the flattened Figure-2-4 edge and the direct source-representation form uses `E := BHW.os45CommonEdgeFlatCLE d n 1 '' U`.  It then shrinks the returned coordinate ball into both flat branch domains and propagates equality by the identity theorem.  The seed is `BHW.os45Figure24CommonEdgeSPrimeSeed d n P`, not `BHW.realEmbed P.xseed`; the generalized reducer `BHW.os45_BHWJost_SPrimeBranchData_of_localSPrimeEOWSeedAt` feeds this seed to `BHW.localSPrime_twoSectorBranch_of_EOW_BHW`.  These reducers assume or consume the upstream OS-I local zero representation; they do not construct the proof-local `Hdiff` transfer. |
 
    Binding transcript for the remaining OS-I §4.5 common-boundary CLM.
@@ -80480,7 +80621,12 @@ Implementation transcript for
 		             The outgoing branch is
 		             `Bnext := BHW.extendF (bvt_F OS lgc n)`, with holomorphy
 		             from `BHW.differentiableOn_extendF_bvt_F_extendedTube`
-		             restricted to `Nnext`.  The overlap seed `O` is a
+		             restricted to `Nnext`.  The starting ordinary Wick chart is
+		             now checked as
+		             `BHW.OS45BHWJostHullData.ordinaryWick_localChartInWindow`;
+		             it shrinks inside any prescribed open hull window and gets
+		             its Wick trace from `BHW.extendF_eq_on_forwardTube`.  The
+		             overlap seed `O` is a
 		             nonempty ball inside `CprevCarrier ∩ Nnext ∩ Σout`,
 		             centered at the shared path point.  The equality
 		             `Set.EqOn CprevBranch Bnext O` is proved by the ordinary
@@ -80543,8 +80689,9 @@ Implementation transcript for
 		             proves the real-edge trace is continuous once the edge is
 		             known to lie in the branch domain, and
 		             `BHW.tendsto_os45FlatCommonChartBranch_realEdge` proves
-		             the `nhdsWithin` side limit to the branch value.  Thus in
-		             the implementation set
+		             the `nhdsWithin` side limit to the branch value.  In the
+		             downstream deterministic specialization, after
+		             `h45_source_eqOn` exists, set
 		             `bv x := BHW.os45FlatCommonChartBranch d n OS lgc 1
 		               (SCV.realEmbed x)`.  Then `hbv_cont` and `hplus_bv`
 		             are discharged by these checked lemmas and
@@ -80556,14 +80703,25 @@ Implementation transcript for
 		             The pulled-branch statement itself is equivalent to equality
 		             of `BHW.extendF (bvt_F OS lgc n)` at the ordinary
 		             horizontal endpoint and its selected permuted endpoint by
-		             `BHW.os45_sourceCommonEdge_branch_eq_iff_permAct_extendF_commonEdge_eq`.
-		             The pointwise §4.5 Jost-overlap equality is the
-		             remaining mathematical content, not a downstream CLM
-		             substitution; formula `(4.14)` supplies the Lorentz
-		             covariance ingredient inside that §4.5 step.
-		             It also cannot be obtained by the forward-tube shortcut
-		             `BHW.extendF_eq_on_forwardTube` plus the global
-		             `bvt_F_perm` symmetry.  For
+			             `BHW.os45_sourceCommonEdge_branch_eq_iff_permAct_extendF_commonEdge_eq`.
+			             The pointwise §4.5 Jost-overlap equality is the
+			             remaining mathematical content, not a downstream CLM
+			             substitution; formula `(4.14)` supplies the Lorentz
+			             covariance ingredient inside that §4.5 step.
+			             The checked flat common-chart EOW theorem is then a
+			             consumer of this equality, not its proof.  Inside the
+			             finite transfer that proves `h45_source_eqOn`, replace this
+			             deterministic specialization by the proof-local
+			             `bvIn`/`bvOut` and `h414_bv_eq` boundary packet described
+			             above.  The tempting
+			             general local-commutativity theorem from
+			             `BHWExtension.lean` is also unavailable upstream because
+			             its `hLC` input would be
+			             `IsAdjacentLocallyCommutativeWeak d (bvt_W OS lgc)`,
+			             namely theorem 2 itself.
+			             It also cannot be obtained by the forward-tube shortcut
+			             `BHW.extendF_eq_on_forwardTube` plus the global
+			             `bvt_F_perm` symmetry.  For
 		             `pord :=
 		               (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
 		                 (BHW.realEmbed
@@ -80628,24 +80786,31 @@ Implementation transcript for
 			             integral congruence if a downstream distributional consumer
 			             needs it.  A public theorem that assumes `h45_source`,
 			             `h414_source`, or equality of the flat traces is just a
-			             wrapper around the same blocker.  The continuity fields
-			             `hGadj_cont` and `hGord_cont` come from checked branch
-			             holomorphy on the selected adjacent/ordinary side domains
-			             and continuity of the common-edge source map.  They are
-			             regularity inputs, not the proof of equality.  Once
+				             wrapper around the same blocker.  The continuity fields
+				             are now checked as
+				             `BHW.continuousOn_os45CommonEdge_adjacent_extendF_trace`
+				             and
+				             `BHW.continuousOn_os45CommonEdge_ordinary_extendF_trace`.
+				             They are regularity inputs, not the proof of equality.  Once
 			             `h45_source` is derived, the checked source/flat coordinate
 			             lemmas turn it into `hminus_bv`.
 		             Lean-facing proof of these fields is proof-local:
 		             `Gord` lands in the ordinary side by `U ⊆ P.V`,
 		             `P.V_ordered`, and
 		             `BHW.os45CommonEdge_mem_acrBranchDomain_of_ordered`;
-		             `Gadj` lands in the selected adjacent side by
-		             `P.V_pulled_tau`, after rewriting `P.τ.symm = P.τ` from
-		             `P.τ_eq`, or equivalently by the endpoint membership
-		             `BHW.os45Figure24_permActCommonEdge_mem_initialSectorOverlap`.
-		             The continuity fields are the checked ordinary/adjacent
-			             branch holomorphy theorems composed with the continuous
-			             common-edge source map.  For `h45_source_eqOn`, do not claim
+			             `Gadj` lands in the selected adjacent side by
+			             `P.V_pulled_tau`, after rewriting `P.τ.symm = P.τ` from
+			             `P.τ_eq`, or equivalently by the endpoint membership
+			             `BHW.os45Figure24_permActCommonEdge_mem_initialSectorOverlap`.
+			             The checked guardrail
+			             `BHW.os45Figure24_permActCommonEdge_not_mem_forwardTube`
+			             shows that this adjacent endpoint is not an ordinary
+			             forward-tube point; consequently `BHW.extendF_eq_on_forwardTube`
+			             is available only for the ordinary endpoint, never for the
+			             selected adjacent horizontal endpoint.
+				             The named continuity lemmas compose the checked ordinary/adjacent
+					             branch holomorphy theorems with the continuous
+					             common-edge source map.  For `h45_source_eqOn`, do not claim
 		             that branch values are constant along the Figure-2-4 paths:
 		             analytic continuation transports germs and overlap
 		             equalities, not endpoint values.  Also do not read OS-I
@@ -80677,21 +80842,24 @@ Implementation transcript for
 			             `GwickAdj u := bvt_F OS lgc n
 			               (fun k => wickRotatePoint (u (P.τ k)))` and
 			             `GwickOrd u := bvt_F OS lgc n
-			               (fun k => wickRotatePoint (u k))`.  Their continuity on
-			             `U` is the composition of
-			             `BHW.continuous_wickRotateRealConfig`, the finite label
-			             permutation, and `(bvt_F_holomorphic OS lgc n).continuousOn`,
-			             with forward-tube membership supplied by `P.V_ordered` and
-			             `U ⊆ P.V`.  Their compact-test equality is the checked
+			               (fun k => wickRotatePoint (u k))`.  This extraction is
+			             now checked as `BHW.os45CommonEdge_wickTraces_eqOn_of_E3`.
+			             Its proof gets continuity of `GwickOrd` from
+			             `BHW.continuous_wickRotateRealConfig` and
+			             `(bvt_F_holomorphic OS lgc n).continuousOn`, transfers
+			             continuity to `GwickAdj` using `bvt_F_perm`, and uses the
+			             checked compact-test equality
 			             `BHW.os45CommonEdge_wickDifference_integral_zero_of_E3`
-			             restricted to tests with `tsupport φ ⊆ U`; applying
+			             restricted to tests with `tsupport φ ⊆ U`.  Applying
 			             `SCV.eqOn_open_of_compactSupport_schwartz_integral_eq_of_continuousOn`
 			             gives `hwick_eqOn : Set.EqOn GwickAdj GwickOrd U`.  The
-			             product/totally-real identity theorem upgrades only this
-			             Wick-slice equality to the first complex-open seed between
-			             the ordinary `(4.1)` germ and the genuine adjacent `(4.12)`
-			             germ.  It does not assert the horizontal common-edge
-			             equality.
+			             product/totally-real identity theorem upgrade is now
+			             checked as `BHW.os45CommonEdge_complexWickSeed_eqOn_of_E3`:
+			             given local ordinary and genuine adjacent analytic germs on
+			             a connected complex chart with these Wick traces, it
+			             produces the first complex-open seed between the ordinary
+			             `(4.1)` germ and the adjacent `(4.12)` germ.  It does not
+			             assert the horizontal common-edge equality.
 
 		             This proof may create local expressions such as
 		             `Γord u t := BHW.os45Figure24IdentityPath ... u t` and
@@ -80712,7 +80880,34 @@ Implementation transcript for
 		             `BHW.os45Figure24OrientedPath_endpoint_extendF_eq_adjacentPulledRealBranch`
 		             only identify `Gord` and `Gadj` with the OS-I side pairings
 			             at `t = 1`; they do not move the Wick value to the
-			             horizontal endpoint by themselves.  This is the first
+			             horizontal endpoint by themselves.  The ordinary
+			             endpoint-centered chart is now checked as
+			             `BHW.OS45BHWJostHullData.ordinaryCommonEdge_localChartInWindow`;
+			             it shrinks inside `BHW.ExtendedTube d n ∩ H.ΩJ` and reads
+			             the endpoint trace from the checked ordinary pulled-real
+			             converter.  The selected-adjacent endpoint-centered chart
+			             is now checked as
+			             `BHW.OS45BHWJostHullData.adjacentCommonEdge_localChartInWindow`;
+			             it shrinks inside
+			             `BHW.permutedExtendedTubeSector d n P.τ ∩ H.ΩJ` and reads
+			             the endpoint trace from
+			             `BHW.os45Figure24CommonEdge_permAct_extendF_eq_adjacentPulledRealBranch`.
+			             This is still only real-Jost endpoint bookkeeping, not the
+			             upstream `(4.12)` Wick seed and not the comparison of the
+			             two endpoint branches.  The terminal local difference chart
+			             itself is now checked as
+			             `BHW.OS45BHWJostHullData.commonEdgeDifference_localChartInWindow`:
+			             around the horizontal common-edge endpoint it shrinks inside
+			             `(BHW.ExtendedTube d n ∩
+			               BHW.permutedExtendedTubeSector d n P.τ) ∩ H.ΩJ`,
+			             uses the literal branch
+			             `z ↦ BHW.extendF (bvt_F OS lgc n)
+			               (BHW.permAct (d := d) P.τ z) -
+			               BHW.extendF (bvt_F OS lgc n) z`, and proves the
+			             pulled-real adjacent-minus-ordinary trace.  This lemma
+			             supplies only the endpoint trace chart for the local
+			             `Hdiff` family; it does not assume or prove
+			             `h45_source_eqOn`.  This is the first
 			             pointwise sheet-changing equality in the proof; it is not
 			             assumed beforehand.
 		             The theorem
@@ -82888,7 +83083,7 @@ sections is subordinate to this table.
 
 | Stage | Lean-readiness status | Transcript source |
 | --- | --- | --- |
-| Stage A: OS45 local Figure-2-4 `Hdiff` germ, common-boundary CLM, local S-prime branch, and pair carrier | The first unproved producer remains `BHW.os45CommonEdge_localFigure24DifferenceGerm_of_OSI45`. The wrapper audit removed the branch-free and Hdiff carrier files from the active Lean surface, so Stage A must now close the genuine OS-I content directly: the corrected `(4.12)` adjacent seed-to-Wick transport, the three-case local transfer along the Figure-2-4 path, endpoint-centered ordinary and adjacent traces used proof-locally, the local §4.5 pointwise Jost-overlap equality `h45_source_eqOn` whose `(4.14)` ingredient is Lorentz covariance rather than a standalone real-edge equality, the exported Wick-side compact-test zero pairing for `Hdiff`, and finite-gallery branch-law seeds on nonempty local overlaps. The final arbitrary-atlas gluing to `Ucx` and `Hdiff` is now mechanical through checked neutral support `SCV.glued_iUnion`, `SCV.glued_iUnion_eqOn`, and `SCV.differentiableOn_glued_iUnion`; it is no longer a mathematical gap. The adjacent initial germ is the OS-I `(4.12)` germ with Wick normalization `bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k)))`, not the later deterministic branch `z ↦ BHW.extendF (bvt_F OS lgc n) (BHW.permAct P.τ z)`. No source-oriented quotient/normal route, final theorem-2 wrapper, global monodromy wrapper, or finite-walk `DifferenceChainData` scaffold may be used here. | Section 8.1 Stage-A direct-coordinate Figure-2-4 transcript for `BHW.os45CommonEdge_localFigure24DifferenceGerm_of_OSI45`; then the common-boundary CLM transcript, the authorized neutral `BHW.localSPrime_twoSectorBranch_of_EOW_BHW`, the local S-prime branch transcript, and the checked pair-data reducer with `S.B` in both branch slots. |
+| Stage A: OS45 local Figure-2-4 `Hdiff` germ, common-boundary CLM, local S-prime branch, and pair carrier | The first unproved producer remains `BHW.os45CommonEdge_localFigure24DifferenceGerm_of_OSI45`. The wrapper audit removed the branch-free and Hdiff carrier files from the active Lean surface, so Stage A must now close the genuine OS-I content directly: the corrected `(4.12)` adjacent seed-to-Wick transport, the three-case local transfer along the Figure-2-4 path, endpoint-centered ordinary and adjacent traces used proof-locally, the local §4.5 pointwise Jost-overlap equality `h45_source_eqOn`, and finite-gallery branch-law seeds on nonempty local overlaps. Inside the flat `(4.14)` transfer, the precise remaining paper obligation is `h414_integrals`: compact-support test equality on the real flat edge for the incoming `(4.1)` boundary value and outgoing genuine `(4.12)` boundary value, obtained from OS Euclidean covariance/permutation before `SCV.eqOn_open_of_compactSupport_schwartz_integral_eq_of_continuousOn` upgrades it to `h414_bv_eq`. This is not the later source common-edge zero representation, not the exported Wick-side compact-test zero pairing for `Hdiff`, and not a standalone deterministic real-edge equality. The final arbitrary-atlas gluing to `Ucx` and `Hdiff` is now mechanical through checked neutral support `SCV.glued_iUnion`, `SCV.glued_iUnion_eqOn`, and `SCV.differentiableOn_glued_iUnion`; it is no longer a mathematical gap. The adjacent initial germ is the OS-I `(4.12)` germ with Wick normalization `bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k)))`, not the later deterministic branch `z ↦ BHW.extendF (bvt_F OS lgc n) (BHW.permAct P.τ z)`. No source-oriented quotient/normal route, final theorem-2 wrapper, global monodromy wrapper, or finite-walk `DifferenceChainData` scaffold may be used here. | Section 8.1 Stage-A direct-coordinate Figure-2-4 transcript for `BHW.os45CommonEdge_localFigure24DifferenceGerm_of_OSI45`; then the common-boundary CLM transcript, the authorized neutral `BHW.localSPrime_twoSectorBranch_of_EOW_BHW`, the local S-prime branch transcript, and the checked pair-data reducer with `S.B` in both branch slots. |
 | Stage B: exact source-patch compact Wick pairing and Jost anchor | Ready after Stage A returns `BHW.OS45SourcePatchBHWJostPairData` on the local hull.  Stage B itself is mechanical: instantiate the canonical Figure-2-4 source patch, restrict/rewrite the pair carrier onto `BHW.os45Figure24SourcePatch`, and consume the checked exact-source-patch compact/source-anchor constructors.  There is no independent compact analytic producer after Stage A. | Section 8.2 and the compact-source-patch ledger naming `BHW.os45_BHWJostPairData_on_figure24SourcePatch_of_OSI45`, `BHW.os45_BHWJostPairData_family_on_figure24SourcePatch_of_OSI45`, `BHW.os45CompactFigure24WickPairingEq_family_of_pairData_on_figure24SourcePatch`, and `BHW.bvt_F_distributionalJostAnchor_of_pairData_on_figure24SourcePatch`. |
 | Stage C: Hall-Wightman source/PET single-valuedness | Ready after Stage B supplies the source/Jost anchor.  The active route is the direct Hall-Wightman scalar-product continuation theorem on `S''_n`; it forbids source-oriented imports, QFT axioms, hF-perm-only shortcuts, quotient germs, normal/Riemann extension, and unsupplied full-component pure-Gram representative calls. | Slot-6 source/PET transcript for `BHW.HallWightmanPETSourceData`, `BHW.hallWightman_sourceScalarRepresentative_perm_invariant`, `BHW.hallWightman_petSourceData_of_distributionalAnchor`, `BHW.hallWightman_source_permutedBranch_compatibility_of_distributionalAnchor`, and the PET assembly/equality corollaries. |
 | Stage D: Jost boundary limit | Ready after Stage C.  The theorem surface is the OS I §4.5/Jost boundary-value limit for compactly supported tests, not finite-height canonical equality.  The compact-support Jost cover, partition of unity, boundary-approach trace lemmas, and single-valued branch assembly are now named explicitly. | Slot 10 transcript for `bvt_F_jostBoundary_pairing_compact_tendsto_zero_of_spacelike_of_two_le` and its sub-obligations. |
@@ -82921,6 +83116,11 @@ together with the checked obstruction
 `BHW.OS45Figure24CanonicalSourcePatchData.tau_ne_one` /
 `BHW.OS45BHWJostHullData.ordinaryWick_not_mem_OS412SeedWindow` showing that the
 ordinary Wick endpoint is not itself in the raw `(4.12)` seed window.
+At the horizontal endpoint, the analogous forward-tube shortcut is also
+formally blocked by `BHW.os45Figure24CommonEdge_mem_forwardTube` together with
+`BHW.os45Figure24_permActCommonEdge_not_mem_forwardTube`: only the ordinary
+horizontal endpoint is in `BHW.ForwardTube d n`; the selected permuted endpoint
+is merely on the adjacent pulled branch / selected sector.
 The deterministic rotated-lift geometry needed by the direct `Hdiff` producer
 is also checked as of 2026-05-15:
 `BHW.differentiable_figure24RotateAdjacentConfig`,
@@ -82933,16 +83133,19 @@ is also checked as of 2026-05-15:
 `BHW.os45Figure24_joined_adjLift0_to_adjLift1_initialSectorOverlap`,
 `BHW.os45Figure24_joined_permActOrdinaryWick_to_permActCommonEdge_initialSectorOverlap`,
 `BHW.os45Figure24_permActCommonEdge_mem_initialSectorOverlap`,
-`BHW.os45Figure24_permActInitialSectorOverlap_chartNeighborhood`,
-`BHW.os45Figure24_joined_ordinaryWick_to_commonEdge_initialSectorOverlap`,
-`BHW.os45Figure24AdjacentLift_extendF_eq_permActIdentityPath`, and
-`BHW.os45Figure24AdjacentLift_endpoint_extendF_eq_adjacentPulledRealBranch`.
-These lemmas prove the connected local corridor, two-sheet membership,
-two-sheet path fragments, the Lorentz connector from the rotated adjacent lift
-to `permAct P.τ` of the ordinary identity path, holomorphy, and horizontal
-endpoint trace for the rotated adjacent `extendF` branch; they deliberately do
-not replace the missing OS-I `(4.12)` adjacent seed-to-raw-Wick trace or the
-flat real-Jost/EOW branch comparison at the common edge.
+	`BHW.os45Figure24_permActInitialSectorOverlap_chartNeighborhood`,
+	`BHW.os45Figure24_joined_ordinaryWick_to_commonEdge_initialSectorOverlap`,
+	`BHW.os45Figure24AdjacentLift_extendF_eq_permActIdentityPath`, and
+	`BHW.os45Figure24AdjacentLift_endpoint_extendF_eq_adjacentPulledRealBranch`.
+	The terminal endpoint difference chart is checked as
+	`BHW.OS45BHWJostHullData.commonEdgeDifference_localChartInWindow`.
+	These lemmas prove the connected local corridor, two-sheet membership,
+	two-sheet path fragments, the Lorentz connector from the rotated adjacent lift
+	to `permAct P.τ` of the ordinary identity path, holomorphy, the horizontal
+	endpoint trace for the rotated adjacent `extendF` branch, and the literal
+	adjacent-minus-ordinary endpoint chart; they deliberately do not replace the
+	missing OS-I `(4.12)` adjacent seed-to-raw-Wick trace or the flat
+	real-Jost/EOW branch comparison at the common edge.
 The same warning applies to the raw ACR-one branch:
 `BHW.bvt_F_acrOne_holomorphic` and `BHW.bvt_F_perm` make
 `z ↦ bvt_F OS lgc n (BHW.permAct P.τ z) - bvt_F OS lgc n z` a tempting

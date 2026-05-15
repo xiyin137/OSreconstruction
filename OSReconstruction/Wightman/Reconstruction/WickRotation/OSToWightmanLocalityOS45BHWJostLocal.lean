@@ -335,6 +335,125 @@ theorem differentiableOn_os45FlatCommonChartBranch
       (differentiable_unflattenCfg_local n d).differentiableOn
       (by intro w hw; exact hw)
 
+/-- The positive Wick-section point in the flattened common chart evaluates to
+the ordinary Wick branch after undoing the OS45 quarter-turn and branch label.
+
+This is only the special anchor curve `commonEdge + i * halfTimeDirection`; it
+does not identify a general side-height integral or any common-boundary CLM. -/
+theorem os45FlatCommonChart_wickSection_plus_eq
+    [NeZero d]
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (σ : Equiv.Perm (Fin n))
+    (x : NPointDomain d n) :
+    BHW.os45FlatCommonChartBranch d n OS lgc σ
+      (BHW.flattenCfg n d
+        (fun k μ =>
+          BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n) σ x) k μ +
+            (BHW.os45HalfTimeDirection (d := d) (n := n) σ x k μ : ℂ) *
+              Complex.I)) =
+      BHW.extendF (bvt_F OS lgc n)
+        (fun k => wickRotatePoint (x k)) := by
+  have hanchor :
+      BHW.os45FlatCommonChartBranch d n OS lgc σ
+        (BHW.flattenCfg n d
+          (BHW.os45QuarterTurnConfig
+            (fun k => wickRotatePoint (x (σ k))))) =
+        BHW.extendF (bvt_F OS lgc n)
+          (fun k => wickRotatePoint (x k)) := by
+    have hQ :
+        BHW.os45QuarterTurnConfig (fun k => wickRotatePoint (x (σ k))) =
+          (BHW.os45QuarterTurnCLE (d := d) (n := n))
+            (fun k => wickRotatePoint (x (σ k))) := by
+      exact
+        (BHW.os45QuarterTurnCLE_apply (d := d) (n := n)
+          (fun k => wickRotatePoint (x (σ k)))).symm
+    rw [BHW.os45FlatCommonChartBranch, BHW.os45PulledRealBranch,
+      BHW.unflatten_flatten_cfg]
+    rw [hQ, ContinuousLinearEquiv.symm_apply_apply]
+    congr 1
+    ext k μ
+    simp [BHW.permAct]
+  rw [← BHW.os45QuarterTurn_perm_wickRotate_eq_common_plus
+    (d := d) (n := n) σ x]
+  exact hanchor
+
+/-- On the identity ordered Euclidean sector, the positive common-chart Wick
+anchor evaluates to the reconstructed Fourier-Laplace branch `bvt_F`.
+
+This is the Wick-anchor normalization used before the OS I common-boundary
+argument.  It does not assert equality with the adjacent branch. -/
+theorem os45FlatCommonChart_wickSection_plus_eq_bvt_F
+    [NeZero d]
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {x : NPointDomain d n}
+    (hx : x ∈ EuclideanOrderedPositiveTimeSector (d := d) (n := n)
+      (1 : Equiv.Perm (Fin n))) :
+    BHW.os45FlatCommonChartBranch d n OS lgc (1 : Equiv.Perm (Fin n))
+      (BHW.flattenCfg n d
+        (fun k μ =>
+          BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) x) k μ +
+            (BHW.os45HalfTimeDirection (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) x k μ : ℂ) *
+              Complex.I)) =
+      bvt_F OS lgc n (fun k => wickRotatePoint (x k)) := by
+  have hbase :=
+    BHW.os45FlatCommonChart_wickSection_plus_eq
+      (d := d) (n := n) OS lgc (1 : Equiv.Perm (Fin n)) x
+  rw [hbase]
+  have hF_holo :
+      DifferentiableOn ℂ (bvt_F OS lgc n) (BHW.ForwardTube d n) := by
+    simpa [BHW_forwardTube_eq (d := d) (n := n)] using
+      bvt_F_holomorphic (d := d) OS lgc n
+  have hF_lorentz :
+      ∀ (Λ : RestrictedLorentzGroup d)
+        (z : Fin n → Fin (d + 1) → ℂ), z ∈ BHW.ForwardTube d n →
+        bvt_F OS lgc n
+          (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * z k ν) =
+        bvt_F OS lgc n z := by
+    intro Λ z hz
+    exact bvt_F_restrictedLorentzInvariant_forwardTube
+      (d := d) OS lgc n Λ z
+      ((BHW_forwardTube_eq (d := d) (n := n)) ▸ hz)
+  have hroot :
+      (fun k => wickRotatePoint (x ((1 : Equiv.Perm (Fin n)) k))) ∈
+        _root_.ForwardTube d n :=
+    wickRotate_mem_forwardTube_of_mem_orderedPositiveTimeSector
+      (d := d) (n := n) (1 : Equiv.Perm (Fin n)) hx
+  have hforward : (fun k => wickRotatePoint (x k)) ∈ BHW.ForwardTube d n := by
+    simpa [BHW_forwardTube_eq (d := d) (n := n)] using hroot
+  exact BHW.extendF_eq_on_forwardTube n (bvt_F OS lgc n)
+    hF_holo hF_lorentz (fun k => wickRotatePoint (x k)) hforward
+
+/-- The negative real-section point in the flattened common chart evaluates to
+the ordinary real branch after undoing the OS45 quarter-turn and branch label.
+
+This is a special anchor calculation, not a boundary-value equality between
+the ordinary and adjacent flat branches. -/
+theorem os45FlatCommonChart_realSection_minus_eq
+    [NeZero d]
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (σ : Equiv.Perm (Fin n))
+    (x : NPointDomain d n) :
+    BHW.os45FlatCommonChartBranch d n OS lgc σ
+      (BHW.flattenCfg n d
+        (fun k μ =>
+          BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n) σ x) k μ -
+            (BHW.os45HalfTimeDirection (d := d) (n := n) σ x k μ : ℂ) *
+              Complex.I)) =
+      BHW.extendF (bvt_F OS lgc n) (BHW.realEmbed x) := by
+  rw [← BHW.os45QuarterTurn_perm_realEmbed_eq_common_minus
+    (d := d) (n := n) σ x]
+  simpa [BHW.os45FlatCommonChartBranch, BHW.unflatten_flatten_cfg] using
+    BHW.os45PulledRealBranch_apply_realBranch
+      (d := d) (n := n) OS lgc σ x
+
 /-- The linear coordinate equivalence from source variables to flattened
 common-edge coordinates. -/
 def os45CommonEdgeFlatCLE
@@ -2393,6 +2512,140 @@ noncomputable def os45_BHWJost_flatCommonChart_schwingerCLM
     ((OsterwalderSchraderAxioms.schwingerCLM (d := d) OS n).comp
       (D.toZeroDiagonalCLM ρperm))
 
+/-- Source-coordinate Wick-anchor normalization for an explicit Figure-2-4
+cutoff.  This is the unnormalized source-variable calculation behind the flat
+Schwinger anchor: no flat Jacobian or chosen cutoff is hidden in the statement.
+-/
+theorem os45FlatCommonChart_wickSection_sourcePairing_eq_schwinger
+    [NeZero d] {hd : 2 ≤ d} {n : ℕ}
+    {i : Fin n} {hi : i.val + 1 < n}
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (D : BHW.OS45Figure24SourceCutoffData P)
+    (φ : SchwartzMap (BHW.OS45FlatCommonChartReal d n) ℂ)
+    (hφE :
+      tsupport (φ : BHW.OS45FlatCommonChartReal d n → ℂ) ⊆
+        BHW.os45FlatCommonChartEdgeSet d n P
+          (1 : Equiv.Perm (Fin n))) :
+    (∫ u : NPointDomain d n,
+      BHW.os45FlatCommonChartBranch d n OS lgc
+        (1 : Equiv.Perm (Fin n))
+        (BHW.flattenCfg n d
+          (fun k μ =>
+            BHW.realEmbed
+                (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                  (1 : Equiv.Perm (Fin n)) u) k μ +
+              (BHW.os45HalfTimeDirection (d := d) (n := n)
+                  (1 : Equiv.Perm (Fin n)) u k μ : ℂ) * Complex.I)) *
+        (D.toSchwartzNPointCLM (1 : Equiv.Perm (Fin n)) φ :
+          NPointDomain d n → ℂ) u) =
+      OS.S n (D.toZeroDiagonalCLM (1 : Equiv.Perm (Fin n)) φ) := by
+  rw [bvt_euclidean_restriction (d := d) OS lgc n
+    (D.toZeroDiagonalCLM (1 : Equiv.Perm (Fin n)) φ)]
+  apply integral_congr_ae
+  filter_upwards with u
+  by_cases hu : u ∈ tsupport
+      (D.toSchwartzNPointCLM (1 : Equiv.Perm (Fin n)) φ :
+        NPointDomain d n → ℂ)
+  · have huV : u ∈ P.V :=
+      D.toSchwartzNPointCLM_tsupport_subset_V
+        (1 : Equiv.Perm (Fin n)) φ hφE hu
+    rw [BHW.os45FlatCommonChart_wickSection_plus_eq_bvt_F
+      (d := d) (n := n) OS lgc (P.V_ordered u huV)]
+    rfl
+  · have hzero :
+        (D.toSchwartzNPointCLM (1 : Equiv.Perm (Fin n)) φ :
+          NPointDomain d n → ℂ) u = 0 :=
+      image_eq_zero_of_notMem_tsupport hu
+    have hzero_zero :
+        (((D.toZeroDiagonalCLM (1 : Equiv.Perm (Fin n)) φ).1 :
+          SchwartzNPoint d n) : NPointDomain d n → ℂ) u = 0 := by
+      change
+        (D.toSchwartzNPointCLM (1 : Equiv.Perm (Fin n)) φ :
+          NPointDomain d n → ℂ) u = 0
+      exact hzero
+    simp [hzero, hzero_zero]
+
+/-- Source-coordinate adjacent Wick normalization for the same explicit
+Figure-2-4 cutoff.  The proof is the OS Euclidean symmetry step applied to the
+cutoff-pulled zero-diagonal test; it does not require the cutoff to commute
+with the adjacent transposition. -/
+theorem os45CommonEdge_adjacentWick_sourcePairing_eq_schwinger
+    [NeZero d] {hd : 2 ≤ d} {n : ℕ}
+    {i : Fin n} {hi : i.val + 1 < n}
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (D : BHW.OS45Figure24SourceCutoffData P)
+    (φ : SchwartzMap (BHW.OS45FlatCommonChartReal d n) ℂ)
+    (hφE :
+      tsupport (φ : BHW.OS45FlatCommonChartReal d n → ℂ) ⊆
+        BHW.os45FlatCommonChartEdgeSet d n P
+          (1 : Equiv.Perm (Fin n))) :
+    (∫ u : NPointDomain d n,
+      bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k))) *
+        (D.toSchwartzNPointCLM (1 : Equiv.Perm (Fin n)) φ :
+          NPointDomain d n → ℂ) u) =
+      OS.S n (D.toZeroDiagonalCLM (1 : Equiv.Perm (Fin n)) φ) := by
+  rw [bvt_euclidean_restriction (d := d) OS lgc n
+    (D.toZeroDiagonalCLM (1 : Equiv.Perm (Fin n)) φ)]
+  have hψP :
+      tsupport
+          (D.toSchwartzNPointCLM (1 : Equiv.Perm (Fin n)) φ :
+            NPointDomain d n → ℂ) ⊆ P.V :=
+    D.toSchwartzNPointCLM_tsupport_subset_V
+      (1 : Equiv.Perm (Fin n)) φ hφE
+  have hV_swap_ordered :
+      ∀ x ∈ P.V,
+        (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+          EuclideanOrderedPositiveTimeSector (d := d) (n := n)
+            ((Equiv.swap i ⟨i.val + 1, hi⟩).symm *
+              (1 : Equiv.Perm (Fin n))) := by
+    intro x hx
+    simpa [P.τ_eq] using P.V_swap_ordered x hx
+  have hpair_swap :=
+    BHW.os45_adjacent_euclideanEdge_pairing_eq_on_timeSector
+      (d := d) OS lgc n i hi P.V P.V_jost
+      (1 : Equiv.Perm (Fin n)) P.V_ordered hV_swap_ordered
+      (D.toSchwartzNPointCLM (1 : Equiv.Perm (Fin n)) φ) hψP
+  have hpair :
+      ∫ u : NPointDomain d n,
+          bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k))) *
+            (D.toSchwartzNPointCLM (1 : Equiv.Perm (Fin n)) φ :
+              NPointDomain d n → ℂ) u =
+        ∫ u : NPointDomain d n,
+          bvt_F OS lgc n (fun k => wickRotatePoint (u k)) *
+            (D.toSchwartzNPointCLM (1 : Equiv.Perm (Fin n)) φ :
+              NPointDomain d n → ℂ) u := by
+    simpa [P.τ_eq] using hpair_swap
+  calc
+    ∫ u : NPointDomain d n,
+        bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k))) *
+          (D.toSchwartzNPointCLM (1 : Equiv.Perm (Fin n)) φ :
+            NPointDomain d n → ℂ) u =
+      ∫ u : NPointDomain d n,
+        bvt_F OS lgc n (fun k => wickRotatePoint (u k)) *
+          (D.toSchwartzNPointCLM (1 : Equiv.Perm (Fin n)) φ :
+            NPointDomain d n → ℂ) u := hpair
+    _ =
+      ∫ u : NPointDomain d n,
+        bvt_F OS lgc n (fun k => wickRotatePoint (u k)) *
+          (((D.toZeroDiagonalCLM (1 : Equiv.Perm (Fin n)) φ).1 :
+            SchwartzNPoint d n) : NPointDomain d n → ℂ) u := by
+        apply integral_congr_ae
+        filter_upwards with u
+        change
+          bvt_F OS lgc n (fun k => wickRotatePoint (u k)) *
+              (D.toSchwartzNPointCLM (1 : Equiv.Perm (Fin n)) φ :
+                NPointDomain d n → ℂ) u =
+            bvt_F OS lgc n (fun k => wickRotatePoint (u k)) *
+              (D.toSchwartzNPointCLM (1 : Equiv.Perm (Fin n)) φ :
+                NPointDomain d n → ℂ) u
+        rfl
+
 /-- Local representations of the ordinary flat branch assemble to the global
 zero-height pairing against an arbitrary supplied common-boundary CLM. -/
 theorem os45FlatCommonChart_plus_zeroHeight_pairing_eq_CLM_of_localRepresents
@@ -2447,69 +2700,6 @@ theorem os45FlatCommonChart_plus_zeroHeight_pairing_eq_CLM_of_localRepresents
           simpa [H] using hlocal x (hφE hx))
   simpa [H] using hrep.symm
 
-/-- Local OS I §4.5 representations of the ordinary flat branch assemble to
-the global zero-height common-chart pairing for the Schwinger CLM.
-
-This is a conditional specialization of
-`os45FlatCommonChart_plus_zeroHeight_pairing_eq_CLM_of_localRepresents`; the
-strict OS-II route uses the generic CLM form unless the stronger Schwinger
-identification has been proved separately. -/
-theorem os45FlatCommonChart_plus_zeroHeight_pairing_eq_schwinger_of_localRepresents
-    [NeZero d] (hd : 2 ≤ d)
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS)
-    {n : ℕ} {i : Fin n} {hi : i.val + 1 < n}
-    {P : BHW.OS45Figure24CanonicalSourcePatchData
-      (d := d) hd n i hi}
-    (hlocal :
-      ∀ x0 ∈ BHW.os45FlatCommonChartEdgeSet d n P
-          (1 : Equiv.Perm (Fin n)),
-        ∃ U : Set (BHW.OS45FlatCommonChartReal d n),
-          IsOpen U ∧ x0 ∈ U ∧
-            ContinuousOn
-              (fun x : BHW.OS45FlatCommonChartReal d n =>
-                BHW.os45FlatCommonChartBranch d n OS lgc
-                  (1 : Equiv.Perm (Fin n))
-                  (fun a => (x a : ℂ))) U ∧
-            SCV.RepresentsDistributionOn
-              (BHW.os45_BHWJost_flatCommonChart_schwingerCLM
-                hd OS lgc P (1 : Equiv.Perm (Fin n)))
-              (fun x : BHW.OS45FlatCommonChartReal d n =>
-                BHW.os45FlatCommonChartBranch d n OS lgc
-                  (1 : Equiv.Perm (Fin n))
-                  (fun a => (x a : ℂ)))
-              U)
-    (φ : SchwartzMap (BHW.OS45FlatCommonChartReal d n) ℂ)
-    (hφ_compact :
-      HasCompactSupport
-        (φ : BHW.OS45FlatCommonChartReal d n → ℂ))
-    (hφE :
-      tsupport (φ : BHW.OS45FlatCommonChartReal d n → ℂ) ⊆
-        BHW.os45FlatCommonChartEdgeSet d n P
-          (1 : Equiv.Perm (Fin n))) :
-    (∫ x : BHW.OS45FlatCommonChartReal d n,
-      BHW.os45FlatCommonChartBranch d n OS lgc
-        (1 : Equiv.Perm (Fin n))
-        (fun a => (x a : ℂ)) * φ x)
-      =
-      BHW.os45_BHWJost_flatCommonChart_schwingerCLM
-        hd OS lgc P (1 : Equiv.Perm (Fin n)) φ := by
-  let T : SchwartzMap (BHW.OS45FlatCommonChartReal d n) ℂ →L[ℂ] ℂ :=
-    BHW.os45_BHWJost_flatCommonChart_schwingerCLM
-      hd OS lgc P (1 : Equiv.Perm (Fin n))
-  let H : BHW.OS45FlatCommonChartReal d n → ℂ := fun x =>
-    BHW.os45FlatCommonChartBranch d n OS lgc
-      (1 : Equiv.Perm (Fin n)) (fun a => (x a : ℂ))
-  have hrep :
-      T φ = ∫ x : BHW.OS45FlatCommonChartReal d n, H x * φ x := by
-    exact
-      SCV.distribution_representation_of_local_representations_for_test
-        T H φ hφ_compact
-        (by
-          intro x hx
-          simpa [H, T] using hlocal x (hφE hx))
-  simpa [H, T] using hrep.symm
-
 /-- Local representations of the adjacent flat branch assemble to the global
 zero-height pairing against an arbitrary supplied common-boundary CLM. -/
 theorem os45FlatCommonChart_minus_zeroHeight_pairing_eq_CLM_of_localRepresents
@@ -2563,69 +2753,6 @@ theorem os45FlatCommonChart_minus_zeroHeight_pairing_eq_CLM_of_localRepresents
           intro x hx
           simpa [H] using hlocal x (hφE hx))
   simpa [H] using hrep.symm
-
-/-- Local OS I §4.5 representations of the adjacent flat branch assemble to
-the global zero-height common-chart pairing for the Schwinger CLM.
-
-This is a conditional specialization of
-`os45FlatCommonChart_minus_zeroHeight_pairing_eq_CLM_of_localRepresents`; the
-strict OS-II route uses the generic CLM form unless the stronger Schwinger
-identification has been proved separately. -/
-theorem os45FlatCommonChart_minus_zeroHeight_pairing_eq_schwinger_of_localRepresents
-    [NeZero d] (hd : 2 ≤ d)
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS)
-    {n : ℕ} {i : Fin n} {hi : i.val + 1 < n}
-    {P : BHW.OS45Figure24CanonicalSourcePatchData
-      (d := d) hd n i hi}
-    (hlocal :
-      ∀ x0 ∈ BHW.os45FlatCommonChartEdgeSet d n P
-          (1 : Equiv.Perm (Fin n)),
-        ∃ U : Set (BHW.OS45FlatCommonChartReal d n),
-          IsOpen U ∧ x0 ∈ U ∧
-            ContinuousOn
-              (fun x : BHW.OS45FlatCommonChartReal d n =>
-                BHW.os45FlatCommonChartBranch d n OS lgc
-                  (P.τ.symm * (1 : Equiv.Perm (Fin n)))
-                  (fun a => (x a : ℂ))) U ∧
-            SCV.RepresentsDistributionOn
-              (BHW.os45_BHWJost_flatCommonChart_schwingerCLM
-                hd OS lgc P (1 : Equiv.Perm (Fin n)))
-              (fun x : BHW.OS45FlatCommonChartReal d n =>
-                BHW.os45FlatCommonChartBranch d n OS lgc
-                  (P.τ.symm * (1 : Equiv.Perm (Fin n)))
-                  (fun a => (x a : ℂ)))
-              U)
-    (φ : SchwartzMap (BHW.OS45FlatCommonChartReal d n) ℂ)
-    (hφ_compact :
-      HasCompactSupport
-        (φ : BHW.OS45FlatCommonChartReal d n → ℂ))
-    (hφE :
-      tsupport (φ : BHW.OS45FlatCommonChartReal d n → ℂ) ⊆
-        BHW.os45FlatCommonChartEdgeSet d n P
-          (1 : Equiv.Perm (Fin n))) :
-    (∫ x : BHW.OS45FlatCommonChartReal d n,
-      BHW.os45FlatCommonChartBranch d n OS lgc
-        (P.τ.symm * (1 : Equiv.Perm (Fin n)))
-        (fun a => (x a : ℂ)) * φ x)
-      =
-      BHW.os45_BHWJost_flatCommonChart_schwingerCLM
-        hd OS lgc P (1 : Equiv.Perm (Fin n)) φ := by
-  let T : SchwartzMap (BHW.OS45FlatCommonChartReal d n) ℂ →L[ℂ] ℂ :=
-    BHW.os45_BHWJost_flatCommonChart_schwingerCLM
-      hd OS lgc P (1 : Equiv.Perm (Fin n))
-  let H : BHW.OS45FlatCommonChartReal d n → ℂ := fun x =>
-    BHW.os45FlatCommonChartBranch d n OS lgc
-      (P.τ.symm * (1 : Equiv.Perm (Fin n))) (fun a => (x a : ℂ))
-  have hrep :
-      T φ = ∫ x : BHW.OS45FlatCommonChartReal d n, H x * φ x := by
-    exact
-      SCV.distribution_representation_of_local_representations_for_test
-        T H φ hφ_compact
-        (by
-          intro x hx
-          simpa [H, T] using hlocal x (hφE hx))
-  simpa [H, T] using hrep.symm
 
 /-- A zero source common-edge distributional difference supplies a genuine
 common zero-height CLM for the two flat common-chart boundary branches.
@@ -3046,56 +3173,6 @@ theorem os45_BHWJost_flatCommonChart_distributionalBoundaryValue_plus_of_zeroHei
       (T φ)
       hzero)
 
-/-- Distributional one-sided boundary value in the ordinary flat branch,
-assuming the OS I §4.5 zero-height pairing has been identified with the
-canonical Schwinger CLM.  This is a specialization of the generic CLM reducer;
-it should be used only after that stronger zero-height identification has been
-proved separately. -/
-theorem os45_BHWJost_flatCommonChart_distributionalBoundaryValue_plus_of_zeroHeight_pairing
-    [NeZero d] (hd : 2 ≤ d)
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS)
-    {n : ℕ} {i : Fin n} {hi : i.val + 1 < n}
-    {P : BHW.OS45Figure24CanonicalSourcePatchData
-      (d := d) hd n i hi}
-    (Kη : Set (BHW.OS45FlatCommonChartReal d n))
-    (hKη : IsCompact Kη)
-    (hKηC : Kη ⊆ BHW.os45FlatCommonChartCone d n)
-    (φ : SchwartzMap (BHW.OS45FlatCommonChartReal d n) ℂ)
-    (hφ_compact :
-      HasCompactSupport
-        (φ : BHW.OS45FlatCommonChartReal d n → ℂ))
-    (hφE :
-      tsupport (φ : BHW.OS45FlatCommonChartReal d n → ℂ) ⊆
-        BHW.os45FlatCommonChartEdgeSet d n P
-          (1 : Equiv.Perm (Fin n)))
-    (hzero :
-      (∫ x : BHW.OS45FlatCommonChartReal d n,
-        BHW.os45FlatCommonChartBranch d n OS lgc
-          (1 : Equiv.Perm (Fin n))
-          (fun a => (x a : ℂ)) * φ x)
-      =
-      BHW.os45_BHWJost_flatCommonChart_schwingerCLM
-        hd OS lgc P (1 : Equiv.Perm (Fin n)) φ) :
-    TendstoUniformlyOn
-      (fun (ε : ℝ) η =>
-        ∫ x : BHW.OS45FlatCommonChartReal d n,
-          BHW.os45FlatCommonChartBranch d n OS lgc
-            (1 : Equiv.Perm (Fin n))
-            (fun a => (x a : ℂ) +
-              (ε : ℂ) * (η a : ℂ) * Complex.I) * φ x)
-      (fun _ : BHW.OS45FlatCommonChartReal d n =>
-        BHW.os45_BHWJost_flatCommonChart_schwingerCLM
-          hd OS lgc P (1 : Equiv.Perm (Fin n)) φ)
-      (𝓝[Set.Ioi 0] (0 : ℝ))
-      Kη := by
-  exact
-    BHW.os45_BHWJost_flatCommonChart_distributionalBoundaryValue_plus_of_zeroHeight_pairingCLM
-      (d := d) hd OS lgc
-      (BHW.os45_BHWJost_flatCommonChart_schwingerCLM
-        hd OS lgc P (1 : Equiv.Perm (Fin n)))
-      Kη hKη hKηC φ hφ_compact hφE hzero
-
 /-- Distributional one-sided boundary value in the adjacent flat branch,
 assuming a supplied zero-height common-chart boundary distribution. -/
 theorem os45_BHWJost_flatCommonChart_distributionalBoundaryValue_minus_of_zeroHeight_pairingCLM
@@ -3182,56 +3259,6 @@ theorem os45_BHWJost_flatCommonChart_distributionalBoundaryValue_minus_of_zeroHe
       Kη hKη hKηC φ hφ_compact hφE
       (T φ)
       hzero)
-
-/-- Distributional one-sided boundary value in the adjacent flat branch,
-assuming the OS I §4.5 zero-height pairing has been identified with the
-canonical Schwinger CLM.  This is a specialization of the generic CLM reducer;
-it should be used only after that stronger zero-height identification has been
-proved separately. -/
-theorem os45_BHWJost_flatCommonChart_distributionalBoundaryValue_minus_of_zeroHeight_pairing
-    [NeZero d] (hd : 2 ≤ d)
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS)
-    {n : ℕ} {i : Fin n} {hi : i.val + 1 < n}
-    {P : BHW.OS45Figure24CanonicalSourcePatchData
-      (d := d) hd n i hi}
-    (Kη : Set (BHW.OS45FlatCommonChartReal d n))
-    (hKη : IsCompact Kη)
-    (hKηC : Kη ⊆ BHW.os45FlatCommonChartCone d n)
-    (φ : SchwartzMap (BHW.OS45FlatCommonChartReal d n) ℂ)
-    (hφ_compact :
-      HasCompactSupport
-        (φ : BHW.OS45FlatCommonChartReal d n → ℂ))
-    (hφE :
-      tsupport (φ : BHW.OS45FlatCommonChartReal d n → ℂ) ⊆
-        BHW.os45FlatCommonChartEdgeSet d n P
-          (1 : Equiv.Perm (Fin n)))
-    (hzero :
-      (∫ x : BHW.OS45FlatCommonChartReal d n,
-        BHW.os45FlatCommonChartBranch d n OS lgc
-          (P.τ.symm * (1 : Equiv.Perm (Fin n)))
-          (fun a => (x a : ℂ)) * φ x)
-      =
-      BHW.os45_BHWJost_flatCommonChart_schwingerCLM
-        hd OS lgc P (1 : Equiv.Perm (Fin n)) φ) :
-    TendstoUniformlyOn
-      (fun (ε : ℝ) η =>
-        ∫ x : BHW.OS45FlatCommonChartReal d n,
-          BHW.os45FlatCommonChartBranch d n OS lgc
-            (P.τ.symm * (1 : Equiv.Perm (Fin n)))
-            (fun a => (x a : ℂ) -
-              (ε : ℂ) * (η a : ℂ) * Complex.I) * φ x)
-      (fun _ : BHW.OS45FlatCommonChartReal d n =>
-        BHW.os45_BHWJost_flatCommonChart_schwingerCLM
-          hd OS lgc P (1 : Equiv.Perm (Fin n)) φ)
-      (𝓝[Set.Ioi 0] (0 : ℝ))
-      Kη := by
-  exact
-    BHW.os45_BHWJost_flatCommonChart_distributionalBoundaryValue_minus_of_zeroHeight_pairingCLM
-      (d := d) hd OS lgc
-      (BHW.os45_BHWJost_flatCommonChart_schwingerCLM
-        hd OS lgc P (1 : Equiv.Perm (Fin n)))
-      Kη hKη hKηC φ hφ_compact hφE hzero
 
 /-- Local flat common-chart EOW equality from the two zero-height boundary
 pairings against the same CLM.
@@ -3831,7 +3858,7 @@ theorem os45_sourceCommonEdge_branch_eq_iff_permAct_extendF_commonEdge_eq
         ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
           (BHW.realEmbed
             (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
-              (1 : Equiv.Perm (Fin n)) u)))) := by
+            (1 : Equiv.Perm (Fin n)) u)))) := by
   simp [BHW.os45PulledRealBranch]
 
 /-- The restriction of any flat common-chart branch to a real common-edge
@@ -4799,6 +4826,94 @@ theorem OS45BHWJostHullData.ordinaryWick_mem_extendedTube
     (BHW.os45Figure24_ordinaryWick_mem_forwardTube
       (d := d) (n := n) (hd := hd) (P := P) hx)
 
+/-- Around an ordinary Wick endpoint there is a connected open chart inside any
+prescribed open hull window on which the ordinary `(4.1)` branch
+`extendF (bvt_F OS lgc n)` is available.
+
+This is the ordinary counterpart of
+`OS45BHWJostHullData.OS412SeedWindow_localChartInWindow`.  It supplies an
+actual local analytic element and its Wick trace; it does not compare it with
+the adjacent `(4.12)` element. -/
+theorem OS45BHWJostHullData.ordinaryWick_localChartInWindow
+    [NeZero d]
+    {hd : 2 ≤ d} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {x : NPointDomain d n} (hx : x ∈ P.V)
+    {W : Set (Fin n → Fin (d + 1) → ℂ)}
+    (hW_open : IsOpen W)
+    (hwickW : (fun k => wickRotatePoint (x k)) ∈ W) :
+    ∃ (C0 : Set (Fin n → Fin (d + 1) → ℂ))
+      (C0branch : (Fin n → Fin (d + 1) → ℂ) → ℂ),
+      (fun k => wickRotatePoint (x k)) ∈ C0 ∧
+      IsOpen C0 ∧
+      IsPreconnected C0 ∧
+      C0 ⊆ (BHW.ExtendedTube d n ∩ H.ΩJ) ∩ W ∧
+      DifferentiableOn ℂ C0branch C0 ∧
+      Set.EqOn C0branch (BHW.extendF (bvt_F OS lgc n)) C0 ∧
+      C0branch (fun k => wickRotatePoint (x k)) =
+        bvt_F OS lgc n (fun k => wickRotatePoint (x k)) := by
+  classical
+  let p0 : Fin n → Fin (d + 1) → ℂ :=
+    fun k => wickRotatePoint (x k)
+  let Ω0 : Set (Fin n → Fin (d + 1) → ℂ) :=
+    BHW.ExtendedTube d n ∩ H.ΩJ
+  let B0 : (Fin n → Fin (d + 1) → ℂ) → ℂ :=
+    BHW.extendF (bvt_F OS lgc n)
+  have hp0Ω : p0 ∈ Ω0 := by
+    exact ⟨H.ordinaryWick_mem_extendedTube x hx, H.ordinaryWick_mem x hx⟩
+  have hΩ0_open : IsOpen Ω0 := by
+    simpa [Ω0] using BHW.isOpen_extendedTube.inter H.ΩJ_open
+  have hΩ0W_open : IsOpen (Ω0 ∩ W) := hΩ0_open.inter hW_open
+  have hp0ΩW : p0 ∈ Ω0 ∩ W := ⟨hp0Ω, by simpa [p0] using hwickW⟩
+  let K : Set (Fin n → Fin (d + 1) → ℂ) := {p0}
+  have hK_compact : IsCompact K := by
+    simp [K]
+  have hK_connected : IsConnected K := by
+    simpa [K] using isConnected_singleton
+  have hK_sub : K ⊆ Ω0 ∩ W := by
+    intro z hz
+    simpa [K] using hz ▸ hp0ΩW
+  letI : Module ℝ ℂ := instInnerProductSpaceRealComplex.toModule
+  rcases SCV.exists_open_connected_neighborhood_of_compact_connected_subset_open
+      (E := Fin n → Fin (d + 1) → ℂ)
+      hK_compact hK_connected hΩ0W_open hK_sub with
+    ⟨C0, hC0_open, hC0_connected, hK_C0, hC0_sub⟩
+  refine ⟨C0, B0, ?_, hC0_open, hC0_connected.isPreconnected, ?_, ?_, ?_, ?_⟩
+  · change p0 ∈ C0
+    exact hK_C0 (by simp [K])
+  · simpa [Ω0] using hC0_sub
+  · exact (BHW.differentiableOn_extendF_bvt_F_extendedTube
+      (d := d) OS lgc n).mono (by
+        intro z hz
+        exact (hC0_sub hz).1.1)
+  · intro z hz
+    rfl
+  · have hF_holo :
+        DifferentiableOn ℂ (bvt_F OS lgc n) (BHW.ForwardTube d n) := by
+      simpa [BHW_forwardTube_eq (d := d) (n := n)] using
+        bvt_F_holomorphic (d := d) OS lgc n
+    have hF_lorentz :
+        ∀ (Λ : RestrictedLorentzGroup d)
+          (z : Fin n → Fin (d + 1) → ℂ), z ∈ BHW.ForwardTube d n →
+          bvt_F OS lgc n
+            (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * z k ν) =
+          bvt_F OS lgc n z := by
+      intro Λ z hz
+      exact bvt_F_restrictedLorentzInvariant_forwardTube
+        (d := d) OS lgc n Λ z
+        ((BHW_forwardTube_eq (d := d) (n := n)) ▸ hz)
+    have hp0_forward : p0 ∈ BHW.ForwardTube d n := by
+      simpa [p0] using
+        BHW.os45Figure24_ordinaryWick_mem_forwardTube
+          (d := d) (n := n) (hd := hd) (P := P) hx
+    exact
+      BHW.extendF_eq_on_forwardTube n (bvt_F OS lgc n)
+        hF_holo hF_lorentz p0 hp0_forward
+
 /-- The selected adjacent swap sends the adjacent Wick edge back to the
 ordinary Wick edge.  This is seed geometry for the OS I `(4.12)` transport; it
 does not identify the adjacent branch value. -/
@@ -5577,6 +5692,96 @@ theorem os45Figure24_commonEdge_mem_initialSectorOverlap
   simpa [BHW.os45Figure24IdentityPath_one (d := d) (n := n) x] using
     BHW.os45Figure24IdentityPath_mem_initialSectorOverlap
       (d := d) (n := n) (hd := hd) (P := P) hx (1 : unitInterval)
+
+/-- The ordinary common-edge `extendF` trace is continuous on any source window
+inside the checked Figure-2-4 patch.
+
+This is a regularity input for the proof-local `h45_source_eqOn` comparison; it
+does not assert equality with the adjacent trace. -/
+theorem continuousOn_os45CommonEdge_ordinary_extendF_trace
+    [NeZero d] (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {n : ℕ} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    {U : Set (NPointDomain d n)}
+    (hU_sub : U ⊆ P.V) :
+    ContinuousOn
+      (fun u : NPointDomain d n =>
+        BHW.extendF (bvt_F OS lgc n)
+          ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u)))) U := by
+  have hbranch_cont :
+      ContinuousOn (BHW.extendF (bvt_F OS lgc n))
+        (BHW.ExtendedTube d n) :=
+    (BHW.differentiableOn_extendF_bvt_F_extendedTube
+      (d := d) OS lgc n).continuousOn
+  have hmap_cont :
+      Continuous
+        (fun u : NPointDomain d n =>
+          (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u))) :=
+    (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm.continuous.comp
+      (BHW.continuous_realEmbed_os45CommonEdgeRealPoint
+        (d := d) (n := n) (1 : Equiv.Perm (Fin n)))
+  refine hbranch_cont.comp hmap_cont.continuousOn ?_
+  intro u hu
+  exact
+    (BHW.os45Figure24_commonEdge_mem_initialSectorOverlap
+      (d := d) (n := n) (hd := hd) (P := P)
+      (subset_closure (hU_sub hu))).1
+
+/-- The selected adjacent common-edge `extendF ∘ permAct` trace is continuous
+on any source window inside the checked Figure-2-4 patch.
+
+This supplies the adjacent-side regularity for the proof-local
+`h45_source_eqOn` comparison; it does not prove that comparison. -/
+theorem continuousOn_os45CommonEdge_adjacent_extendF_trace
+    [NeZero d] (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {n : ℕ} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    {U : Set (NPointDomain d n)}
+    (hU_sub : U ⊆ P.V) :
+    ContinuousOn
+      (fun u : NPointDomain d n =>
+        BHW.extendF (bvt_F OS lgc n)
+          (BHW.permAct (d := d) P.τ
+            ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+              (BHW.realEmbed
+                (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                  (1 : Equiv.Perm (Fin n)) u))))) U := by
+  have hbranch_cont :
+      ContinuousOn
+        (fun z : Fin n → Fin (d + 1) → ℂ =>
+          BHW.extendF (bvt_F OS lgc n)
+            (BHW.permAct (d := d) P.τ z))
+        {z | BHW.permAct (d := d) P.τ z ∈ BHW.ExtendedTube d n} :=
+    (BHW.differentiableOn_extendF_bvt_F_permAct_preimageExtendedTube
+      (d := d) OS lgc n P.τ).continuousOn
+  have hmap_cont :
+      Continuous
+        (fun u : NPointDomain d n =>
+          (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u))) :=
+    (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm.continuous.comp
+      (BHW.continuous_realEmbed_os45CommonEdgeRealPoint
+        (d := d) (n := n) (1 : Equiv.Perm (Fin n)))
+  refine hbranch_cont.comp hmap_cont.continuousOn ?_
+  intro u hu
+  exact
+    (BHW.os45Figure24_permActCommonEdge_mem_initialSectorOverlap
+      (d := d) (n := n) (hd := hd) (P := P)
+      (subset_closure (hU_sub hu))).1
 
 /-- The ordinary Figure-2-4 Wick-to-common-edge path lies in the concrete
 ordinary/adjacent initial-sector overlap. -/
@@ -6429,6 +6634,113 @@ theorem os45Figure24Path_endpoint_extendF_eq_ordinaryPulledRealBranch
   · simpa [y] using hΓ_one
   · simp [BHW.os45PulledRealBranch, hΓ_one]
 
+/-- Around the ordinary horizontal common-edge endpoint there is a connected
+open chart inside any prescribed open hull window on which the ordinary
+`(4.1)` branch is `extendF (bvt_F OS lgc n)`.
+
+The endpoint trace is the checked Figure-2-4 ordinary pulled-real branch value.
+This supplies the endpoint-centered ordinary chart for the local §4.5 gallery;
+it does not compare with the adjacent endpoint branch. -/
+theorem OS45BHWJostHullData.ordinaryCommonEdge_localChartInWindow
+    [NeZero d] (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {n : ℕ} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P)
+    {u : NPointDomain d n} (hu : u ∈ P.V)
+    {W : Set (Fin n → Fin (d + 1) → ℂ)}
+    (hW_open : IsOpen W)
+    (hcommonW :
+      (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+        (BHW.realEmbed
+          (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+            (1 : Equiv.Perm (Fin n)) u)) ∈ W) :
+    ∃ (C0 : Set (Fin n → Fin (d + 1) → ℂ))
+      (C0branch : (Fin n → Fin (d + 1) → ℂ) → ℂ),
+      (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+        (BHW.realEmbed
+          (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+            (1 : Equiv.Perm (Fin n)) u)) ∈ C0 ∧
+      IsOpen C0 ∧
+      IsPreconnected C0 ∧
+      C0 ⊆ (BHW.ExtendedTube d n ∩ H.ΩJ) ∩ W ∧
+      DifferentiableOn ℂ C0branch C0 ∧
+      Set.EqOn C0branch (BHW.extendF (bvt_F OS lgc n)) C0 ∧
+      C0branch
+          ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u))) =
+        BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+          (1 : Equiv.Perm (Fin n))
+          (BHW.realEmbed
+            (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+              (1 : Equiv.Perm (Fin n)) u)) := by
+  classical
+  let p0 : Fin n → Fin (d + 1) → ℂ :=
+    (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+      (BHW.realEmbed
+        (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+          (1 : Equiv.Perm (Fin n)) u))
+  let Ω0 : Set (Fin n → Fin (d + 1) → ℂ) :=
+    BHW.ExtendedTube d n ∩ H.ΩJ
+  let B0 : (Fin n → Fin (d + 1) → ℂ) → ℂ :=
+    BHW.extendF (bvt_F OS lgc n)
+  have hp0_ext : p0 ∈ BHW.ExtendedTube d n := by
+    have hmem :=
+      BHW.os45Figure24_commonEdge_mem_initialSectorOverlap
+        (d := d) (n := n) (hd := hd) (P := P) (subset_closure hu)
+    simpa [p0] using hmem.1
+  have hp0Ω : p0 ∈ Ω0 := by
+    exact ⟨hp0_ext, H.extendedTube_subset_ΩJ hp0_ext⟩
+  have hΩ0_open : IsOpen Ω0 := by
+    simpa [Ω0] using BHW.isOpen_extendedTube.inter H.ΩJ_open
+  have hΩ0W_open : IsOpen (Ω0 ∩ W) := hΩ0_open.inter hW_open
+  have hp0ΩW : p0 ∈ Ω0 ∩ W := ⟨hp0Ω, by simpa [p0] using hcommonW⟩
+  let K : Set (Fin n → Fin (d + 1) → ℂ) := {p0}
+  have hK_compact : IsCompact K := by
+    simp [K]
+  have hK_connected : IsConnected K := by
+    simpa [K] using isConnected_singleton
+  have hK_sub : K ⊆ Ω0 ∩ W := by
+    intro z hz
+    simpa [K] using hz ▸ hp0ΩW
+  letI : Module ℝ ℂ := instInnerProductSpaceRealComplex.toModule
+  rcases SCV.exists_open_connected_neighborhood_of_compact_connected_subset_open
+      (E := Fin n → Fin (d + 1) → ℂ)
+      hK_compact hK_connected hΩ0W_open hK_sub with
+    ⟨C0, hC0_open, hC0_connected, hK_C0, hC0_sub⟩
+  refine ⟨C0, B0, ?_, hC0_open, hC0_connected.isPreconnected, ?_, ?_, ?_, ?_⟩
+  · change p0 ∈ C0
+    exact hK_C0 (by simp [K])
+  · simpa [Ω0] using hC0_sub
+  · exact (BHW.differentiableOn_extendF_bvt_F_extendedTube
+      (d := d) OS lgc n).mono (by
+        intro z hz
+        exact (hC0_sub hz).1.1)
+  · intro z hz
+    rfl
+  · rcases
+      BHW.os45Figure24Path_endpoint_extendF_eq_ordinaryPulledRealBranch
+        (d := d) (n := n) hd OS lgc (P := P)
+        (u := u) (subset_closure hu) with
+      ⟨Γ, _hΓ_cont, _hΓ_zero, hΓ_one, _hΓ_ET, hΓ_trace⟩
+    change
+      BHW.extendF (bvt_F OS lgc n)
+          ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u))) =
+        BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+          (1 : Equiv.Perm (Fin n))
+          (BHW.realEmbed
+            (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+              (1 : Equiv.Perm (Fin n)) u))
+    rw [← hΓ_one]
+    exact hΓ_trace
+
 /-- At the horizontal Figure-2-4 common edge, the ordinary endpoint is still a
 forward-tube point after undoing the OS45 quarter-turn.  Hence the BHW
 extension agrees there with the raw ACR/OS-II witness `bvt_F`.
@@ -6488,6 +6800,65 @@ theorem os45Figure24CommonEdge_ordinary_extendF_eq_bvt_F
             (1 : Equiv.Perm (Fin n)) u)))
       hforward
 
+/-- The ordinary horizontal Figure-2-4 common-edge endpoint is an ordinary
+forward-tube point after undoing the OS45 quarter-turn. -/
+theorem os45Figure24CommonEdge_mem_forwardTube
+    [NeZero d] (hd : 2 ≤ d)
+    {n : ℕ} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    {u : NPointDomain d n} (hu : u ∈ P.V) :
+    (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+        (BHW.realEmbed
+          (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+            (1 : Equiv.Perm (Fin n)) u)) ∈
+      BHW.ForwardTube d n := by
+  have hmem :=
+    BHW.os45CommonEdge_mem_acrBranchDomain_of_ordered
+      (d := d) (n := n) (1 : Equiv.Perm (Fin n))
+      (P.V_ordered u hu)
+  simpa [BHW.os45ACRBranchDomain] using hmem
+
+/-- The selected permuted horizontal common-edge endpoint is not an ordinary
+forward-tube point.
+
+This is the formal obstruction to the false shortcut that would try to
+normalize the adjacent horizontal branch by `extendF_eq_on_forwardTube`. -/
+theorem os45Figure24_permActCommonEdge_not_mem_forwardTube
+    [NeZero d] (hd : 2 ≤ d)
+    {n : ℕ} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    {u : NPointDomain d n} (hu : u ∈ P.V) :
+    BHW.permAct (d := d) P.τ
+        ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+          (BHW.realEmbed
+            (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+              (1 : Equiv.Perm (Fin n)) u))) ∉
+      BHW.ForwardTube d n := by
+  intro hperm_forward
+  have hcommon_forward :
+      (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+          (BHW.realEmbed
+            (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+              (1 : Equiv.Perm (Fin n)) u)) ∈
+        BHW.ForwardTube d n :=
+    BHW.os45Figure24CommonEdge_mem_forwardTube
+      (d := d) (n := n) hd (P := P) hu
+  have hcommon_permuted :
+      (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+          (BHW.realEmbed
+            (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+              (1 : Equiv.Perm (Fin n)) u)) ∈
+        BHW.PermutedForwardTube d n P.τ := by
+    simpa [BHW.PermutedForwardTube, BHW.permAct] using hperm_forward
+  have hτ_one :
+      P.τ = (1 : Equiv.Perm (Fin n)) :=
+    BHW.permutedForwardTube_forces_perm_one
+      (d := d) (n := n) P.τ hcommon_forward hcommon_permuted
+  exact (BHW.OS45Figure24CanonicalSourcePatchData.tau_ne_one
+    (d := d) (n := n) P) hτ_one
+
 /-- At the horizontal Figure-2-4 common edge, the adjacent branch obtained by
 precomposing the ordinary BHW extension with the selected source permutation is
 definitionally the adjacent pulled real branch.  This is only endpoint
@@ -6513,6 +6884,276 @@ theorem os45Figure24CommonEdge_permAct_extendF_eq_adjacentPulledRealBranch
           (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
             (1 : Equiv.Perm (Fin n)) u)) := by
   simp [BHW.os45PulledRealBranch]
+
+/-- Around the horizontal common-edge endpoint there is a connected open chart
+on which the selected adjacent endpoint branch is
+`z ↦ extendF (bvt_F OS lgc n) (permAct P.τ z)`.
+
+This is endpoint bookkeeping for the real-Jost side of the local §4.5 gallery.
+It is not the upstream `(4.12)` Wick seed and does not identify the adjacent
+and ordinary endpoint branches. -/
+theorem OS45BHWJostHullData.adjacentCommonEdge_localChartInWindow
+    [NeZero d] (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {n : ℕ} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P)
+    {u : NPointDomain d n} (hu : u ∈ P.V)
+    {W : Set (Fin n → Fin (d + 1) → ℂ)}
+    (hW_open : IsOpen W)
+    (hcommonW :
+      (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+        (BHW.realEmbed
+          (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+            (1 : Equiv.Perm (Fin n)) u)) ∈ W) :
+    ∃ (C0 : Set (Fin n → Fin (d + 1) → ℂ))
+      (C0branch : (Fin n → Fin (d + 1) → ℂ) → ℂ),
+      (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+        (BHW.realEmbed
+          (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+            (1 : Equiv.Perm (Fin n)) u)) ∈ C0 ∧
+      IsOpen C0 ∧
+      IsPreconnected C0 ∧
+      C0 ⊆ (BHW.permutedExtendedTubeSector d n P.τ ∩ H.ΩJ) ∩ W ∧
+      DifferentiableOn ℂ C0branch C0 ∧
+      Set.EqOn C0branch
+        (fun z : Fin n → Fin (d + 1) → ℂ =>
+          BHW.extendF (bvt_F OS lgc n)
+            (BHW.permAct (d := d) P.τ z)) C0 ∧
+      C0branch
+          ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u))) =
+        BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+          (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+          (BHW.realEmbed
+            (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+              (1 : Equiv.Perm (Fin n)) u)) := by
+  classical
+  let p0 : Fin n → Fin (d + 1) → ℂ :=
+    (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+      (BHW.realEmbed
+        (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+          (1 : Equiv.Perm (Fin n)) u))
+  let Ω0 : Set (Fin n → Fin (d + 1) → ℂ) :=
+    BHW.permutedExtendedTubeSector d n P.τ ∩ H.ΩJ
+  let B0 : (Fin n → Fin (d + 1) → ℂ) → ℂ :=
+    fun z =>
+      BHW.extendF (bvt_F OS lgc n)
+        (BHW.permAct (d := d) P.τ z)
+  have hp0_sector : p0 ∈ BHW.permutedExtendedTubeSector d n P.τ := by
+    exact
+      (BHW.os45Figure24_commonEdge_mem_initialSectorOverlap
+        (d := d) (n := n) (hd := hd) (P := P)
+        (subset_closure hu)).2
+  have hp0Ω : p0 ∈ Ω0 := by
+    exact ⟨hp0_sector, H.permutedExtendedTubeSector_subset_ΩJ hp0_sector⟩
+  have hΩ0_open : IsOpen Ω0 := by
+    simpa [Ω0] using
+      (BHW.isOpen_permutedExtendedTubeSector (d := d) (n := n) P.τ).inter
+        H.ΩJ_open
+  have hΩ0W_open : IsOpen (Ω0 ∩ W) := hΩ0_open.inter hW_open
+  have hp0ΩW : p0 ∈ Ω0 ∩ W := ⟨hp0Ω, by simpa [p0] using hcommonW⟩
+  let K : Set (Fin n → Fin (d + 1) → ℂ) := {p0}
+  have hK_compact : IsCompact K := by
+    simp [K]
+  have hK_connected : IsConnected K := by
+    simpa [K] using isConnected_singleton
+  have hK_sub : K ⊆ Ω0 ∩ W := by
+    intro z hz
+    simpa [K] using hz ▸ hp0ΩW
+  letI : Module ℝ ℂ := instInnerProductSpaceRealComplex.toModule
+  rcases SCV.exists_open_connected_neighborhood_of_compact_connected_subset_open
+      (E := Fin n → Fin (d + 1) → ℂ)
+      hK_compact hK_connected hΩ0W_open hK_sub with
+    ⟨C0, hC0_open, hC0_connected, hK_C0, hC0_sub⟩
+  refine ⟨C0, B0, ?_, hC0_open, hC0_connected.isPreconnected, ?_, ?_, ?_, ?_⟩
+  · change p0 ∈ C0
+    exact hK_C0 (by simp [K])
+  · simpa [Ω0] using hC0_sub
+  · exact
+      (BHW.differentiableOn_extendF_bvt_F_permAct_preimageExtendedTube
+        (d := d) OS lgc n P.τ).mono (by
+          intro z hz
+          exact (hC0_sub hz).1.1)
+  · intro z hz
+    rfl
+  · change
+      BHW.extendF (bvt_F OS lgc n)
+          (BHW.permAct (d := d) P.τ
+            ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+              (BHW.realEmbed
+                (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                  (1 : Equiv.Perm (Fin n)) u)))) =
+        BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+          (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+          (BHW.realEmbed
+            (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+              (1 : Equiv.Perm (Fin n)) u))
+    exact
+      BHW.os45Figure24CommonEdge_permAct_extendF_eq_adjacentPulledRealBranch
+        (d := d) (n := n) hd OS lgc (P := P) u
+
+/-- Around the horizontal common-edge endpoint there is a connected open chart
+on which the terminal adjacent-minus-ordinary difference is the literal
+difference of the selected adjacent endpoint branch and the ordinary endpoint
+branch.
+
+This is endpoint trace data for the local `Hdiff` producer.  It does not prove
+or assume the missing `h45_source_eqOn` comparison; it only supplies the
+holomorphic local difference and its pulled-real endpoint formula. -/
+theorem OS45BHWJostHullData.commonEdgeDifference_localChartInWindow
+    [NeZero d] (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {n : ℕ} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P)
+    {u : NPointDomain d n} (hu : u ∈ P.V)
+    {W : Set (Fin n → Fin (d + 1) → ℂ)}
+    (hW_open : IsOpen W)
+    (hcommonW :
+      (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+        (BHW.realEmbed
+          (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+            (1 : Equiv.Perm (Fin n)) u)) ∈ W) :
+    ∃ (C0 : Set (Fin n → Fin (d + 1) → ℂ))
+      (D0 : (Fin n → Fin (d + 1) → ℂ) → ℂ),
+      (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+        (BHW.realEmbed
+          (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+            (1 : Equiv.Perm (Fin n)) u)) ∈ C0 ∧
+      IsOpen C0 ∧
+      IsPreconnected C0 ∧
+      C0 ⊆
+        ((BHW.ExtendedTube d n ∩
+            BHW.permutedExtendedTubeSector d n P.τ) ∩ H.ΩJ) ∩ W ∧
+      DifferentiableOn ℂ D0 C0 ∧
+      Set.EqOn D0
+        (fun z : Fin n → Fin (d + 1) → ℂ =>
+          BHW.extendF (bvt_F OS lgc n)
+              (BHW.permAct (d := d) P.τ z) -
+            BHW.extendF (bvt_F OS lgc n) z) C0 ∧
+      D0
+          ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u))) =
+        BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+            (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u)) -
+          BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+            (1 : Equiv.Perm (Fin n))
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u)) := by
+  classical
+  let p0 : Fin n → Fin (d + 1) → ℂ :=
+    (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+      (BHW.realEmbed
+        (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+          (1 : Equiv.Perm (Fin n)) u))
+  let Ω0 : Set (Fin n → Fin (d + 1) → ℂ) :=
+    (BHW.ExtendedTube d n ∩
+      BHW.permutedExtendedTubeSector d n P.τ) ∩ H.ΩJ
+  let D0 : (Fin n → Fin (d + 1) → ℂ) → ℂ :=
+    fun z =>
+      BHW.extendF (bvt_F OS lgc n)
+          (BHW.permAct (d := d) P.τ z) -
+        BHW.extendF (bvt_F OS lgc n) z
+  have hp0_overlap :
+      p0 ∈ BHW.ExtendedTube d n ∩
+        BHW.permutedExtendedTubeSector d n P.τ := by
+    simpa [p0] using
+      BHW.os45Figure24_commonEdge_mem_initialSectorOverlap
+        (d := d) (n := n) (hd := hd) (P := P)
+        (subset_closure hu)
+  have hp0Ω : p0 ∈ Ω0 := by
+    exact ⟨hp0_overlap, H.extendedTube_subset_ΩJ hp0_overlap.1⟩
+  have hΩ0_open : IsOpen Ω0 := by
+    simpa [Ω0] using
+      (BHW.isOpen_extendedTube.inter
+        (BHW.isOpen_permutedExtendedTubeSector (d := d) (n := n) P.τ)).inter
+        H.ΩJ_open
+  have hΩ0W_open : IsOpen (Ω0 ∩ W) := hΩ0_open.inter hW_open
+  have hp0ΩW : p0 ∈ Ω0 ∩ W := ⟨hp0Ω, by simpa [p0] using hcommonW⟩
+  let K : Set (Fin n → Fin (d + 1) → ℂ) := {p0}
+  have hK_compact : IsCompact K := by
+    simp [K]
+  have hK_connected : IsConnected K := by
+    simpa [K] using isConnected_singleton
+  have hK_sub : K ⊆ Ω0 ∩ W := by
+    intro z hz
+    simpa [K] using hz ▸ hp0ΩW
+  letI : Module ℝ ℂ := instInnerProductSpaceRealComplex.toModule
+  rcases SCV.exists_open_connected_neighborhood_of_compact_connected_subset_open
+      (E := Fin n → Fin (d + 1) → ℂ)
+      hK_compact hK_connected hΩ0W_open hK_sub with
+    ⟨C0, hC0_open, hC0_connected, hK_C0, hC0_sub⟩
+  refine ⟨C0, D0, ?_, hC0_open, hC0_connected.isPreconnected,
+    ?_, ?_, ?_, ?_⟩
+  · change p0 ∈ C0
+    exact hK_C0 (by simp [K])
+  · simpa [Ω0] using hC0_sub
+  · have hAdj :
+        DifferentiableOn ℂ
+          (fun z : Fin n → Fin (d + 1) → ℂ =>
+            BHW.extendF (bvt_F OS lgc n)
+              (BHW.permAct (d := d) P.τ z)) C0 :=
+      (BHW.differentiableOn_extendF_bvt_F_permAct_preimageExtendedTube
+        (d := d) OS lgc n P.τ).mono (by
+          intro z hz
+          exact (hC0_sub hz).1.1.2)
+    have hOrd :
+        DifferentiableOn ℂ
+          (BHW.extendF (bvt_F OS lgc n)) C0 :=
+      (BHW.differentiableOn_extendF_bvt_F_extendedTube
+        (d := d) OS lgc n).mono (by
+          intro z hz
+          exact (hC0_sub hz).1.1.1)
+    simpa [D0] using hAdj.sub hOrd
+  · intro z hz
+    rfl
+  · have hAdj :
+        BHW.extendF (bvt_F OS lgc n)
+            (BHW.permAct (d := d) P.τ p0) =
+          BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+            (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u)) := by
+      simpa [p0] using
+        BHW.os45Figure24CommonEdge_permAct_extendF_eq_adjacentPulledRealBranch
+          (d := d) (n := n) hd OS lgc (P := P) u
+    have hOrd :
+        BHW.extendF (bvt_F OS lgc n) p0 =
+          BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+            (1 : Equiv.Perm (Fin n))
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u)) := by
+      simp [BHW.os45PulledRealBranch, p0]
+    change
+      BHW.extendF (bvt_F OS lgc n)
+          (BHW.permAct (d := d) P.τ p0) -
+        BHW.extendF (bvt_F OS lgc n) p0 =
+          BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+            (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u)) -
+            BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+              (1 : Equiv.Perm (Fin n))
+              (BHW.realEmbed
+                (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                  (1 : Equiv.Perm (Fin n)) u))
+    rw [hAdj, hOrd]
 
 /-- The endpoint of the deterministic rotated adjacent Figure-2-4 lift has
 the adjacent pulled-real `extendF` trace at the horizontal common edge. -/
@@ -6716,6 +7357,154 @@ theorem os45CommonEdge_wickDifference_integral_zero_of_E3
         simpa [sub_mul] using
           (MeasureTheory.integral_sub hint_adj hint_ord)
     _ = 0 := sub_eq_zero.mpr hpair
+
+/-- The Wick-side ordinary and adjacent traces agree pointwise on any local
+source window inside the canonical Figure-2-4 patch.
+
+This is the Lean extraction of the Wick seed used before the finite
+Figure-2-4 analytic-continuation gallery.  It is deliberately only a Wick
+edge statement; it does not identify the horizontal common-edge branches. -/
+theorem os45CommonEdge_wickTraces_eqOn_of_E3
+    [NeZero d] (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {n : ℕ} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    {U : Set (NPointDomain d n)}
+    (hU_open : IsOpen U)
+    (hU_sub : U ⊆ P.V) :
+    Set.EqOn
+      (fun u : NPointDomain d n =>
+        bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k))))
+      (fun u : NPointDomain d n =>
+        bvt_F OS lgc n (fun k => wickRotatePoint (u k))) U := by
+  classical
+  let Gadj : NPointDomain d n → ℂ :=
+    fun u => bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k)))
+  let Gord : NPointDomain d n → ℂ :=
+    fun u => bvt_F OS lgc n (fun k => wickRotatePoint (u k))
+  have hF_cont :
+      ContinuousOn (bvt_F OS lgc n) (_root_.ForwardTube d n) :=
+    (bvt_F_holomorphic OS lgc n).continuousOn
+  have hGord_cont : ContinuousOn Gord U := by
+    refine hF_cont.comp
+      (BHW.continuous_wickRotateRealConfig (d := d) (n := n)).continuousOn ?_
+    intro x hx
+    exact
+      wickRotate_mem_forwardTube_of_mem_orderedPositiveTimeSector
+        (d := d) (n := n) (1 : Equiv.Perm (Fin n))
+        (P.V_ordered x (hU_sub hx))
+  have hGadj_eq_Gord : Set.EqOn Gadj Gord U := by
+    intro u _hu
+    simpa [Gadj, Gord, BHW.permAct] using
+      bvt_F_perm (d := d) OS lgc n P.τ
+        (fun k => wickRotatePoint (u k))
+  have hGadj_cont : ContinuousOn Gadj U :=
+    hGord_cont.congr fun u hu => hGadj_eq_Gord hu
+  have hint :
+      ∀ φ : SchwartzNPoint d n,
+        HasCompactSupport (φ : NPointDomain d n → ℂ) →
+        tsupport (φ : NPointDomain d n → ℂ) ⊆ U →
+        ∫ u : NPointDomain d n, Gadj u * φ u =
+          ∫ u : NPointDomain d n, Gord u * φ u := by
+    intro φ hφ_compact hφU
+    have hφP : tsupport (φ : NPointDomain d n → ℂ) ⊆ P.V :=
+      fun u hu => hU_sub (hφU hu)
+    have hint_adj :
+        Integrable (fun u : NPointDomain d n => Gadj u * φ u) := by
+      simpa [Gadj] using
+        BHW.integrable_wickEdge_bvt_F_mul_schwartz_of_orderedSector
+          (d := d) OS lgc n P.V P.V_open P.V_ordered P.τ
+          φ hφ_compact hφP
+    have hint_ord :
+        Integrable (fun u : NPointDomain d n => Gord u * φ u) := by
+      simpa [Gord] using
+        BHW.integrable_bvt_F_wickRotate_mul_schwartz_of_orderedSector
+          (d := d) OS lgc n P.V P.V_open P.V_ordered
+          φ hφ_compact hφP
+    have hzero :=
+      BHW.os45CommonEdge_wickDifference_integral_zero_of_E3
+        (d := d) hd OS lgc (P := P) φ hφ_compact hφP
+    have hsub :
+        ∫ u : NPointDomain d n, (Gadj u - Gord u) * φ u =
+          (∫ u : NPointDomain d n, Gadj u * φ u) -
+            ∫ u : NPointDomain d n, Gord u * φ u := by
+      simpa [Gadj, Gord, sub_mul] using
+        (MeasureTheory.integral_sub hint_adj hint_ord)
+    exact sub_eq_zero.mp (hsub ▸ hzero)
+  simpa [Gadj, Gord] using
+    SCV.eqOn_open_of_compactSupport_schwartz_integral_eq_of_continuousOn
+      (U := U) hU_open hGadj_cont hGord_cont hint
+
+/-- A Wick-side E3 seed promotes to equality on any connected complex chart
+once the two local analytic germs have the ordinary `(4.1)` and genuine
+adjacent `(4.12)` Wick traces.
+
+This is the first complex-open seed used in the Figure-2-4 gallery.  It does
+not identify the horizontal common-edge endpoint branches; that still requires
+the local OS I §4.5 continuation through the checked Figure-2-4 corridor. -/
+theorem os45CommonEdge_complexWickSeed_eqOn_of_E3
+    [NeZero d] (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {n : ℕ} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    {U : Set (NPointDomain d n)}
+    (hU_open : IsOpen U)
+    (hU_nonempty : U.Nonempty)
+    (hU_sub : U ⊆ P.V)
+    {Ucx : Set (Fin n → Fin (d + 1) → ℂ)}
+    (hUcx_open : IsOpen Ucx)
+    (hUcx_connected : IsConnected Ucx)
+    (hwick_mem :
+      ∀ u ∈ U, (fun k => wickRotatePoint (u k)) ∈ Ucx)
+    (Ford Fadj : (Fin n → Fin (d + 1) → ℂ) → ℂ)
+    (hFord_holo : DifferentiableOn ℂ Ford Ucx)
+    (hFadj_holo : DifferentiableOn ℂ Fadj Ucx)
+    (hFord_wick :
+      ∀ u ∈ U,
+        Ford (fun k => wickRotatePoint (u k)) =
+          bvt_F OS lgc n (fun k => wickRotatePoint (u k)))
+    (hFadj_wick :
+      ∀ u ∈ U,
+        Fadj (fun k => wickRotatePoint (u k)) =
+          bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k)))) :
+    Set.EqOn Fadj Ford Ucx := by
+  classical
+  have hwick_eq :
+      Set.EqOn
+        (fun u : NPointDomain d n =>
+          bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k))))
+        (fun u : NPointDomain d n =>
+          bvt_F OS lgc n (fun k => wickRotatePoint (u k))) U :=
+    BHW.os45CommonEdge_wickTraces_eqOn_of_E3
+      (d := d) hd OS lgc (P := P) hU_open hU_sub
+  refine
+    eqOn_openConnected_of_distributional_wickSection_eq_on_realOpen
+      (d := d) (n := n)
+      Ucx U hUcx_open hUcx_connected hU_open hU_nonempty
+      hwick_mem Fadj Ford hFadj_holo hFord_holo ?_
+  intro φ _hφ_compact hφU
+  refine MeasureTheory.integral_congr_ae (Filter.Eventually.of_forall ?_)
+  intro u
+  by_cases hu : u ∈ U
+  · calc
+      Fadj (fun k => wickRotatePoint (u k)) * φ u
+          =
+        bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k))) * φ u := by
+          rw [hFadj_wick u hu]
+      _ =
+        bvt_F OS lgc n (fun k => wickRotatePoint (u k)) * φ u := by
+          exact congrArg (fun c : ℂ => c * φ u) (hwick_eq hu)
+      _ =
+        Ford (fun k => wickRotatePoint (u k)) * φ u := by
+          exact congrArg (fun c : ℂ => c * φ u) (hFord_wick u hu).symm
+  · have hφ_zero : φ u = 0 :=
+      image_eq_zero_of_notMem_tsupport
+        (fun hφ_supp => hu (hφU hφ_supp))
+    simp [hφ_zero]
 
 /-- A local Figure-2-4 holomorphic difference germ whose Wick trace has zero
 distributional pairing represents the zero distribution on the horizontal
