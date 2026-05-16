@@ -1678,6 +1678,29 @@ theorem OS45Figure24SourceCutoffData.toSchwartzNPointCLM_tsupport_subset_image
   have hx_eq : x = u := e.injective hu_eq.symm
   simpa [hx_eq] using huU
 
+/-- Shifted flat tests supported in the image of a local source neighborhood
+pull back to source tests supported in that same neighborhood. -/
+theorem OS45Figure24SourceCutoffData.toShiftedSchwartzNPointCLM_tsupport_subset_image
+    [NeZero d] {hd : 2 ≤ d} {n : ℕ}
+    {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (D : BHW.OS45Figure24SourceCutoffData P)
+    (ρperm : Equiv.Perm (Fin n))
+    (a : BHW.OS45FlatCommonChartReal d n)
+    {U : Set (NPointDomain d n)}
+    (φ : SchwartzMap (BHW.OS45FlatCommonChartReal d n) ℂ)
+    (hφU :
+      tsupport (SCV.translateSchwartz a φ :
+        BHW.OS45FlatCommonChartReal d n → ℂ) ⊆
+        BHW.os45CommonEdgeFlatCLE d n ρperm '' U) :
+    tsupport (D.toShiftedSchwartzNPointCLM ρperm a φ :
+      NPointDomain d n → ℂ) ⊆ U := by
+  simpa [BHW.OS45Figure24SourceCutoffData.toShiftedSchwartzNPointCLM,
+    ContinuousLinearMap.comp_apply, SCV.translateSchwartzCLM_apply] using
+    D.toSchwartzNPointCLM_tsupport_subset_image ρperm
+      (SCV.translateSchwartzCLM a φ) hφU
+
 /-- On flat tests whose topological support is contained in the flattened common
 edge, the source cutoff is invisible after pullback. -/
 theorem OS45Figure24SourceCutoffData.toSchwartzNPointCLM_eq_plain_of_tsupport_subset_edge
@@ -1754,6 +1777,397 @@ theorem os45FlatCommonChart_commonBoundaryDifference_sourceIntegrand_eq
   rw [BHW.OS45Figure24SourceCutoffData.toSchwartzNPointCLM_eq_plain_of_tsupport_subset_edge D
     (1 : Equiv.Perm (Fin n)) φ hφE u]
   simp
+
+/-- Pointwise integrand identity for the ordinary horizontal common-edge
+branch alone, after the source cutoff has been removed by the flat support
+hypothesis. -/
+theorem os45FlatCommonChart_ordinaryCommonBoundary_sourceIntegrand_eq
+    [NeZero d] (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {n : ℕ} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (D : BHW.OS45Figure24SourceCutoffData P)
+    (φ : SchwartzMap (BHW.OS45FlatCommonChartReal d n) ℂ)
+    (hφE :
+      tsupport (φ : BHW.OS45FlatCommonChartReal d n → ℂ) ⊆
+        BHW.os45FlatCommonChartEdgeSet d n P
+          (1 : Equiv.Perm (Fin n)))
+    (u : NPointDomain d n) :
+    BHW.os45FlatCommonChartBranch d n OS lgc
+        (1 : Equiv.Perm (Fin n))
+        (fun a =>
+          (BHW.os45CommonEdgeFlatCLE d n
+            (1 : Equiv.Perm (Fin n)) u a : ℂ)) *
+      φ (BHW.os45CommonEdgeFlatCLE d n
+        (1 : Equiv.Perm (Fin n)) u) =
+    BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+        (1 : Equiv.Perm (Fin n))
+        (BHW.realEmbed
+          (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+            (1 : Equiv.Perm (Fin n)) u)) *
+      (D.toSchwartzNPointCLM
+        (1 : Equiv.Perm (Fin n)) φ : NPointDomain d n → ℂ) u := by
+  rw [BHW.OS45Figure24SourceCutoffData.toSchwartzNPointCLM_eq_plain_of_tsupport_subset_edge D
+    (1 : Equiv.Perm (Fin n)) φ hφE u]
+  simp
+
+/-- Common-edge change of variables for the ordinary flat boundary branch
+alone.  The right-hand side is in source common-edge variables, with the
+Figure-2-4 cutoff removed by the flat support hypothesis. -/
+theorem os45FlatCommonChart_ordinaryCommonBoundary_integral_eq_sourcePullback
+    [NeZero d] (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {n : ℕ} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (D : BHW.OS45Figure24SourceCutoffData P)
+    (φ : SchwartzMap (BHW.OS45FlatCommonChartReal d n) ℂ)
+    (hφ_compact :
+      HasCompactSupport
+        (φ : BHW.OS45FlatCommonChartReal d n → ℂ))
+    (hφE :
+      tsupport (φ : BHW.OS45FlatCommonChartReal d n → ℂ) ⊆
+        BHW.os45FlatCommonChartEdgeSet d n P
+          (1 : Equiv.Perm (Fin n))) :
+    ∫ x : BHW.OS45FlatCommonChartReal d n,
+      BHW.os45FlatCommonChartBranch d n OS lgc
+        (1 : Equiv.Perm (Fin n))
+        (fun a => (x a : ℂ)) * φ x =
+      (BHW.os45CommonEdgeFlatJacobianAbs n : ℂ) *
+        ∫ u : NPointDomain d n,
+          BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+            (1 : Equiv.Perm (Fin n))
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u)) *
+            (D.toSchwartzNPointCLM
+              (1 : Equiv.Perm (Fin n)) φ : NPointDomain d n → ℂ) u := by
+  classical
+  let E : Set (BHW.OS45FlatCommonChartReal d n) :=
+    BHW.os45FlatCommonChartEdgeSet d n P
+      (1 : Equiv.Perm (Fin n))
+  let H : BHW.OS45FlatCommonChartReal d n → ℂ := fun x =>
+    BHW.os45FlatCommonChartBranch d n OS lgc
+      (1 : Equiv.Perm (Fin n))
+      (fun a => (x a : ℂ))
+  have hreal :
+      Continuous
+        (fun x : BHW.OS45FlatCommonChartReal d n =>
+          fun a => (x a : ℂ)) :=
+    continuous_pi fun a => Complex.continuous_ofReal.comp (continuous_apply a)
+  have hH_cont : ContinuousOn H E := by
+    exact
+      (BHW.differentiableOn_os45FlatCommonChartBranch
+        d n OS lgc (1 : Equiv.Perm (Fin n))).continuousOn.comp
+        hreal.continuousOn
+        (by
+          simpa [E] using
+            (BHW.os45FlatCommonChart_real_mem_omega_id
+              (d := d) hd (P := P)))
+  have hg_cont :
+      Continuous
+        (fun x : BHW.OS45FlatCommonChartReal d n => H x * φ x) := by
+    have hφH :
+        Continuous
+          (fun x : BHW.OS45FlatCommonChartReal d n => φ x * H x) :=
+      SCV.continuous_mul_of_continuousOn_of_tsupport_subset_open
+        (by
+          simpa [E] using
+            (BHW.isOpen_os45FlatCommonChartEdgeSet d n P
+              (1 : Equiv.Perm (Fin n))))
+        φ.continuous
+        (by
+          simpa [E] using hφE)
+        hH_cont
+    simpa [mul_comm] using hφH
+  have hg_compact :
+      HasCompactSupport
+        (fun x : BHW.OS45FlatCommonChartReal d n => H x * φ x) := by
+    refine hφ_compact.mono' ?_
+    intro x hx
+    by_contra hxφ
+    have hφx : φ x = 0 := image_eq_zero_of_notMem_tsupport hxφ
+    exact hx (by simp [hφx])
+  have hg_int :
+      Integrable
+        (fun x : BHW.OS45FlatCommonChartReal d n => H x * φ x) :=
+    hg_cont.integrable_of_hasCompactSupport hg_compact
+  have hcov :=
+    BHW.os45CommonEdgeFlatCLE_integral_comp d n
+      (1 : Equiv.Perm (Fin n))
+      (fun x : BHW.OS45FlatCommonChartReal d n => H x * φ x)
+      hg_int
+  simpa [H] using
+    hcov.trans
+      (congrArg
+        (fun I : ℂ => (BHW.os45CommonEdgeFlatJacobianAbs n : ℂ) * I)
+        (integral_congr_ae
+          (Eventually.of_forall fun u =>
+            BHW.os45FlatCommonChart_ordinaryCommonBoundary_sourceIntegrand_eq
+              (d := d) hd OS lgc D φ hφE u)))
+
+/-- Pointwise integrand identity for the selected adjacent horizontal
+common-edge branch alone, after the source cutoff has been removed by the flat
+support hypothesis. -/
+theorem os45FlatCommonChart_adjacentCommonBoundary_sourceIntegrand_eq
+    [NeZero d] (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {n : ℕ} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (D : BHW.OS45Figure24SourceCutoffData P)
+    (φ : SchwartzMap (BHW.OS45FlatCommonChartReal d n) ℂ)
+    (hφE :
+      tsupport (φ : BHW.OS45FlatCommonChartReal d n → ℂ) ⊆
+        BHW.os45FlatCommonChartEdgeSet d n P
+          (1 : Equiv.Perm (Fin n)))
+    (u : NPointDomain d n) :
+    BHW.os45FlatCommonChartBranch d n OS lgc
+        (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+        (fun a =>
+          (BHW.os45CommonEdgeFlatCLE d n
+            (1 : Equiv.Perm (Fin n)) u a : ℂ)) *
+      φ (BHW.os45CommonEdgeFlatCLE d n
+        (1 : Equiv.Perm (Fin n)) u) =
+    BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+        (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+        (BHW.realEmbed
+          (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+            (1 : Equiv.Perm (Fin n)) u)) *
+      (D.toSchwartzNPointCLM
+        (1 : Equiv.Perm (Fin n)) φ : NPointDomain d n → ℂ) u := by
+  rw [BHW.OS45Figure24SourceCutoffData.toSchwartzNPointCLM_eq_plain_of_tsupport_subset_edge D
+    (1 : Equiv.Perm (Fin n)) φ hφE u]
+  simp
+
+/-- Common-edge change of variables for the selected adjacent flat boundary
+branch alone.  The right-hand side is in source common-edge variables, with the
+Figure-2-4 cutoff removed by the flat support hypothesis. -/
+theorem os45FlatCommonChart_adjacentCommonBoundary_integral_eq_sourcePullback
+    [NeZero d] (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {n : ℕ} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (D : BHW.OS45Figure24SourceCutoffData P)
+    (φ : SchwartzMap (BHW.OS45FlatCommonChartReal d n) ℂ)
+    (hφ_compact :
+      HasCompactSupport
+        (φ : BHW.OS45FlatCommonChartReal d n → ℂ))
+    (hφE :
+      tsupport (φ : BHW.OS45FlatCommonChartReal d n → ℂ) ⊆
+        BHW.os45FlatCommonChartEdgeSet d n P
+          (1 : Equiv.Perm (Fin n))) :
+    ∫ x : BHW.OS45FlatCommonChartReal d n,
+      BHW.os45FlatCommonChartBranch d n OS lgc
+        (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+        (fun a => (x a : ℂ)) * φ x =
+      (BHW.os45CommonEdgeFlatJacobianAbs n : ℂ) *
+        ∫ u : NPointDomain d n,
+          BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+            (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u)) *
+            (D.toSchwartzNPointCLM
+              (1 : Equiv.Perm (Fin n)) φ : NPointDomain d n → ℂ) u := by
+  classical
+  let E : Set (BHW.OS45FlatCommonChartReal d n) :=
+    BHW.os45FlatCommonChartEdgeSet d n P
+      (1 : Equiv.Perm (Fin n))
+  let H : BHW.OS45FlatCommonChartReal d n → ℂ := fun x =>
+    BHW.os45FlatCommonChartBranch d n OS lgc
+      (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+      (fun a => (x a : ℂ))
+  have hreal :
+      Continuous
+        (fun x : BHW.OS45FlatCommonChartReal d n =>
+          fun a => (x a : ℂ)) :=
+    continuous_pi fun a => Complex.continuous_ofReal.comp (continuous_apply a)
+  have hH_cont : ContinuousOn H E := by
+    exact
+      (BHW.differentiableOn_os45FlatCommonChartBranch
+        d n OS lgc
+          (P.τ.symm * (1 : Equiv.Perm (Fin n)))).continuousOn.comp
+        hreal.continuousOn
+        (by
+          simpa [E] using
+            (BHW.os45FlatCommonChart_real_mem_omega_adjacent
+              (d := d) hd (P := P)))
+  have hg_cont :
+      Continuous
+        (fun x : BHW.OS45FlatCommonChartReal d n => H x * φ x) := by
+    have hφH :
+        Continuous
+          (fun x : BHW.OS45FlatCommonChartReal d n => φ x * H x) :=
+      SCV.continuous_mul_of_continuousOn_of_tsupport_subset_open
+        (by
+          simpa [E] using
+            (BHW.isOpen_os45FlatCommonChartEdgeSet d n P
+              (1 : Equiv.Perm (Fin n))))
+        φ.continuous
+        (by
+          simpa [E] using hφE)
+        hH_cont
+    simpa [mul_comm] using hφH
+  have hg_compact :
+      HasCompactSupport
+        (fun x : BHW.OS45FlatCommonChartReal d n => H x * φ x) := by
+    refine hφ_compact.mono' ?_
+    intro x hx
+    by_contra hxφ
+    have hφx : φ x = 0 := image_eq_zero_of_notMem_tsupport hxφ
+    exact hx (by simp [hφx])
+  have hg_int :
+      Integrable
+        (fun x : BHW.OS45FlatCommonChartReal d n => H x * φ x) :=
+    hg_cont.integrable_of_hasCompactSupport hg_compact
+  have hcov :=
+    BHW.os45CommonEdgeFlatCLE_integral_comp d n
+      (1 : Equiv.Perm (Fin n))
+      (fun x : BHW.OS45FlatCommonChartReal d n => H x * φ x)
+      hg_int
+  simpa [H] using
+    hcov.trans
+      (congrArg
+        (fun I : ℂ => (BHW.os45CommonEdgeFlatJacobianAbs n : ℂ) * I)
+        (integral_congr_ae
+          (Eventually.of_forall fun u =>
+            BHW.os45FlatCommonChart_adjacentCommonBoundary_sourceIntegrand_eq
+              (d := d) hd OS lgc D φ hφE u)))
+
+/-- A pointwise source common-edge equality on a local Figure-2-4 source
+window gives the corresponding zero-height flat compact-test equality on the
+flattened image of that window.
+
+This is the non-circular source-to-flat consumer for the eventual OS I
+`h45_source_eqOn` step: it does not assume a common-boundary CLM, `Hdiff`, or a
+local `S'_n` branch. -/
+theorem os45FlatCommonChart_zeroHeight_pairings_eq_of_sourceCommonEdge_eqOn
+    [NeZero d] (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {n : ℕ} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (D : BHW.OS45Figure24SourceCutoffData P)
+    {U : Set (NPointDomain d n)}
+    (hU_sub : U ⊆ P.V)
+    (hsource_eq :
+      ∀ u ∈ U,
+        BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+            (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u)) =
+          BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+            (1 : Equiv.Perm (Fin n))
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u)))
+    (φ : SchwartzMap (BHW.OS45FlatCommonChartReal d n) ℂ)
+    (hφ_compact :
+      HasCompactSupport
+        (φ : BHW.OS45FlatCommonChartReal d n → ℂ))
+    (hφU :
+      tsupport (φ : BHW.OS45FlatCommonChartReal d n → ℂ) ⊆
+        BHW.os45CommonEdgeFlatCLE d n
+          (1 : Equiv.Perm (Fin n)) '' U) :
+    (∫ x : BHW.OS45FlatCommonChartReal d n,
+      BHW.os45FlatCommonChartBranch d n OS lgc
+        (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+        (fun a => (x a : ℂ)) * φ x) =
+      ∫ x : BHW.OS45FlatCommonChartReal d n,
+        BHW.os45FlatCommonChartBranch d n OS lgc
+          (1 : Equiv.Perm (Fin n))
+          (fun a => (x a : ℂ)) * φ x := by
+  classical
+  have hφE :
+      tsupport (φ : BHW.OS45FlatCommonChartReal d n → ℂ) ⊆
+        BHW.os45FlatCommonChartEdgeSet d n P
+          (1 : Equiv.Perm (Fin n)) := by
+    intro x hx
+    rcases hφU hx with ⟨u, huU, rfl⟩
+    exact
+      (BHW.os45CommonEdgeFlatCLE_mem_edgeSet_iff d n P
+        (1 : Equiv.Perm (Fin n)) u).mpr (hU_sub huU)
+  have hsource_support :
+      tsupport
+          (D.toSchwartzNPointCLM
+            (1 : Equiv.Perm (Fin n)) φ : NPointDomain d n → ℂ) ⊆ U :=
+    D.toSchwartzNPointCLM_tsupport_subset_image
+      (1 : Equiv.Perm (Fin n)) φ hφU
+  have hAdj :=
+    BHW.os45FlatCommonChart_adjacentCommonBoundary_integral_eq_sourcePullback
+      (d := d) hd OS lgc D φ hφ_compact hφE
+  have hOrd :=
+    BHW.os45FlatCommonChart_ordinaryCommonBoundary_integral_eq_sourcePullback
+      (d := d) hd OS lgc D φ hφ_compact hφE
+  have hsource_integrals :
+      (∫ u : NPointDomain d n,
+        BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+            (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u)) *
+          (D.toSchwartzNPointCLM
+            (1 : Equiv.Perm (Fin n)) φ : NPointDomain d n → ℂ) u) =
+        ∫ u : NPointDomain d n,
+          BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+              (1 : Equiv.Perm (Fin n))
+              (BHW.realEmbed
+                (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                  (1 : Equiv.Perm (Fin n)) u)) *
+            (D.toSchwartzNPointCLM
+              (1 : Equiv.Perm (Fin n)) φ : NPointDomain d n → ℂ) u := by
+    apply integral_congr_ae
+    filter_upwards with u
+    by_cases hu :
+        u ∈ tsupport
+          (D.toSchwartzNPointCLM
+            (1 : Equiv.Perm (Fin n)) φ : NPointDomain d n → ℂ)
+    · rw [hsource_eq u (hsource_support hu)]
+    · have hzero :
+          (D.toSchwartzNPointCLM
+            (1 : Equiv.Perm (Fin n)) φ : NPointDomain d n → ℂ) u = 0 :=
+        image_eq_zero_of_notMem_tsupport hu
+      simp [hzero]
+  calc
+    ∫ x : BHW.OS45FlatCommonChartReal d n,
+        BHW.os45FlatCommonChartBranch d n OS lgc
+          (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+          (fun a => (x a : ℂ)) * φ x
+        =
+      (BHW.os45CommonEdgeFlatJacobianAbs n : ℂ) *
+        ∫ u : NPointDomain d n,
+          BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+              (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+              (BHW.realEmbed
+                (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                  (1 : Equiv.Perm (Fin n)) u)) *
+            (D.toSchwartzNPointCLM
+              (1 : Equiv.Perm (Fin n)) φ : NPointDomain d n → ℂ) u := hAdj
+    _ =
+      (BHW.os45CommonEdgeFlatJacobianAbs n : ℂ) *
+        ∫ u : NPointDomain d n,
+          BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+              (1 : Equiv.Perm (Fin n))
+              (BHW.realEmbed
+                (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                  (1 : Equiv.Perm (Fin n)) u)) *
+            (D.toSchwartzNPointCLM
+              (1 : Equiv.Perm (Fin n)) φ : NPointDomain d n → ℂ) u := by
+        rw [hsource_integrals]
+    _ =
+      ∫ x : BHW.OS45FlatCommonChartReal d n,
+        BHW.os45FlatCommonChartBranch d n OS lgc
+          (1 : Equiv.Perm (Fin n))
+          (fun a => (x a : ℂ)) * φ x := hOrd.symm
 
 /-- Common-edge change of variables for the ordinary-minus-adjacent flat
 boundary difference.  The right-hand side is now entirely in the source
@@ -2212,6 +2626,99 @@ theorem os45FlatCommonChart_sideSupport_radius
       simp
     simpa [E, hcancel] using hEplus
 
+/-- Local source-window version of the side-support radius.  If a flat test is
+supported in the flattened image of an open source window, then sufficiently
+small positive and negative side shifts remain supported in that same image. -/
+theorem os45FlatCommonChart_sideSupport_radius_sourceImage
+    [NeZero d] {n : ℕ}
+    (ρperm : Equiv.Perm (Fin n))
+    {U : Set (NPointDomain d n)}
+    (hU_open : IsOpen U)
+    (Kη : Set (BHW.OS45FlatCommonChartReal d n))
+    (hKη : IsCompact Kη)
+    (φ : SchwartzMap (BHW.OS45FlatCommonChartReal d n) ℂ)
+    (hφ_compact : HasCompactSupport
+      (φ : BHW.OS45FlatCommonChartReal d n → ℂ))
+    (hφU :
+      tsupport (φ : BHW.OS45FlatCommonChartReal d n → ℂ) ⊆
+        BHW.os45CommonEdgeFlatCLE d n ρperm '' U) :
+    ∃ r : ℝ, 0 < r ∧
+      ∀ ε : ℝ, 0 < ε → ε < r →
+      ∀ η ∈ Kη,
+        tsupport
+          (SCV.translateSchwartz ((ε : ℝ) • η) φ :
+            BHW.OS45FlatCommonChartReal d n → ℂ) ⊆
+            BHW.os45CommonEdgeFlatCLE d n ρperm '' U ∧
+        tsupport
+          (SCV.translateSchwartz ((-ε : ℝ) • η) φ :
+            BHW.OS45FlatCommonChartReal d n → ℂ) ⊆
+            BHW.os45CommonEdgeFlatCLE d n ρperm '' U := by
+  let R := BHW.OS45FlatCommonChartReal d n
+  let S : Set R := tsupport (φ : R → ℂ)
+  let E : Set R := BHW.os45CommonEdgeFlatCLE d n ρperm '' U
+  let zeroEdge : Set ((R × R) × ℝ) := (S ×ˢ Kη) ×ˢ ({0} : Set ℝ)
+  let sideWindow : Set ((R × R) × ℝ) :=
+    {p | p.1.1 - p.2 • p.1.2 ∈ E ∧ p.1.1 + p.2 • p.1.2 ∈ E}
+  have hE_open : IsOpen E := by
+    simpa [E] using
+      (BHW.os45CommonEdgeFlatCLE d n ρperm).toHomeomorph.isOpenMap
+        U hU_open
+  have hminus_cont :
+      Continuous (fun p : (R × R) × ℝ => p.1.1 - p.2 • p.1.2) := by
+    fun_prop
+  have hplus_cont :
+      Continuous (fun p : (R × R) × ℝ => p.1.1 + p.2 • p.1.2) := by
+    fun_prop
+  have hside_open : IsOpen sideWindow := by
+    exact (hE_open.preimage hminus_cont).inter
+      (hE_open.preimage hplus_cont)
+  have hS_compact : IsCompact S := by
+    simpa [S] using hφ_compact.isCompact
+  have hzero_compact : IsCompact zeroEdge :=
+    (hS_compact.prod hKη).prod isCompact_singleton
+  have hzero_sub : zeroEdge ⊆ sideWindow := by
+    rintro ⟨⟨x, _η⟩, ε⟩ ⟨⟨hxS, _hη⟩, hε0⟩
+    have hε : ε = 0 := by simpa using hε0
+    subst ε
+    constructor <;> simpa [sideWindow, E] using hφU hxS
+  obtain ⟨r, hr_pos, hr_sub⟩ :=
+    hzero_compact.exists_thickening_subset_open hside_open hzero_sub
+  refine ⟨r, hr_pos, ?_⟩
+  intro ε hε_pos hε_lt η hη
+  have hside :
+      ∀ x ∈ S, x - ε • η ∈ E ∧ x + ε • η ∈ E := by
+    intro x hxS
+    have hmem : (((x, η), ε) : (R × R) × ℝ) ∈
+        Metric.thickening r zeroEdge := by
+      rw [Metric.mem_thickening_iff]
+      refine ⟨((x, η), (0 : ℝ)), ?_, ?_⟩
+      · exact ⟨⟨hxS, hη⟩, by simp⟩
+      · simpa [Prod.dist_eq, Real.dist_eq, abs_of_nonneg hε_pos.le] using
+          ⟨hr_pos, hε_lt⟩
+    exact hr_sub hmem
+  constructor
+  · intro y hy
+    have hyS :
+        y + ε • η ∈ S :=
+      BHW.tsupport_translateSchwartz_subset_preimage
+        ((ε : ℝ) • η) φ hy
+    have hEminus : y + ε • η - ε • η ∈ E :=
+      (hside (y + ε • η) hyS).1
+    have hcancel : y + ε • η - ε • η = y := by
+      simp
+    simpa [E, hcancel] using hEminus
+  · intro y hy
+    have hyS :
+        y + (-ε : ℝ) • η ∈ S :=
+      BHW.tsupport_translateSchwartz_subset_preimage
+        ((-ε : ℝ) • η) φ hy
+    have hEplus : y + (-ε : ℝ) • η + ε • η ∈ E :=
+      (hside (y + (-ε : ℝ) • η) hyS).2
+    have hcancel : y + (-ε : ℝ) • η + ε • η = y := by
+      rw [add_assoc, ← add_smul]
+      simp
+    simpa [E, hcancel] using hEplus
+
 /-- Shifted cutoff-pulled common-chart tests still lie in the zero-diagonal OS
 test space; the fixed source cutoff keeps their support inside the Figure-2-4
 Jost neighborhood. -/
@@ -2262,6 +2769,32 @@ noncomputable def OS45Figure24SourceCutoffData.toSideZeroDiagonalCLM
     SchwartzMap (BHW.OS45FlatCommonChartReal d n) ℂ →L[ℂ]
       ZeroDiagonalSchwartz d n :=
   D.toShiftedZeroDiagonalCLM ρperm ((sgn * ε) • η)
+
+/-- Pointwise formula for the signed one-sided source-test family. -/
+@[simp] theorem OS45Figure24SourceCutoffData.toSideZeroDiagonalCLM_apply
+    [NeZero d] {hd : 2 ≤ d} {n : ℕ}
+    {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (D : BHW.OS45Figure24SourceCutoffData P)
+    (ρperm : Equiv.Perm (Fin n))
+    (sgn ε : ℝ)
+    (η : BHW.OS45FlatCommonChartReal d n)
+    (φ : SchwartzMap (BHW.OS45FlatCommonChartReal d n) ℂ)
+    (x : NPointDomain d n) :
+    ((((D.toSideZeroDiagonalCLM ρperm sgn ε η φ).1 :
+      SchwartzNPoint d n) : NPointDomain d n → ℂ) x) =
+      D.χ x *
+        φ (BHW.os45CommonEdgeFlatCLE d n ρperm x + (sgn * ε) • η) := by
+  change
+    (D.toShiftedSchwartzNPointCLM ρperm ((sgn * ε) • η) φ :
+      NPointDomain d n → ℂ) x =
+      D.χ x *
+        φ (BHW.os45CommonEdgeFlatCLE d n ρperm x + (sgn * ε) • η)
+  rw [BHW.OS45Figure24SourceCutoffData.toShiftedSchwartzNPointCLM,
+    ContinuousLinearMap.comp_apply,
+    BHW.OS45Figure24SourceCutoffData.toSchwartzNPointCLM_apply]
+  congr 1
 
 /-- After shrinking to the one-sided height window supplied by the flat
 support-radius lemma, both signed side-test families are supported in the
@@ -2319,6 +2852,62 @@ theorem OS45Figure24SourceCutoffData.toSideZeroDiagonalCLM_tsupport_subset_V_eve
             NPointDomain d n → ℂ) ⊆ P.V
     simpa using
       D.toShiftedSchwartzNPointCLM_tsupport_subset_V
+        (1 : Equiv.Perm (Fin n)) (((-1 : ℝ) * ε) • η) φ
+        (by simpa [neg_smul] using hsideε.2)
+
+/-- For sufficiently small positive side height, the signed cutoff-pulled
+source tests are supported in a prescribed open source window, provided the
+unshifted flat test is supported in the flattened image of that window. -/
+theorem OS45Figure24SourceCutoffData.toSideZeroDiagonalCLM_tsupport_subset_image_eventually
+    [NeZero d] {hd : 2 ≤ d} {n : ℕ}
+    {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (D : BHW.OS45Figure24SourceCutoffData P)
+    {U : Set (NPointDomain d n)}
+    (hU_open : IsOpen U)
+    (Kη : Set (BHW.OS45FlatCommonChartReal d n))
+    (hKη : IsCompact Kη)
+    (φ : SchwartzMap (BHW.OS45FlatCommonChartReal d n) ℂ)
+    (hφ_compact : HasCompactSupport
+      (φ : BHW.OS45FlatCommonChartReal d n → ℂ))
+    (hφU :
+      tsupport (φ : BHW.OS45FlatCommonChartReal d n → ℂ) ⊆
+        BHW.os45CommonEdgeFlatCLE d n
+          (1 : Equiv.Perm (Fin n)) '' U) :
+    ∀ᶠ ε in 𝓝[Set.Ioi 0] (0 : ℝ), ∀ η ∈ Kη,
+      tsupport (((D.toSideZeroDiagonalCLM
+        (1 : Equiv.Perm (Fin n)) (1 : ℝ) ε η φ).1 :
+          SchwartzNPoint d n) : NPointDomain d n → ℂ) ⊆ U ∧
+      tsupport (((D.toSideZeroDiagonalCLM
+        (1 : Equiv.Perm (Fin n)) (-1 : ℝ) ε η φ).1 :
+          SchwartzNPoint d n) : NPointDomain d n → ℂ) ⊆ U := by
+  rcases
+    BHW.os45FlatCommonChart_sideSupport_radius_sourceImage
+      (d := d) (n := n) (1 : Equiv.Perm (Fin n)) hU_open
+      Kη hKη φ hφ_compact hφU with
+    ⟨r, hr, hside⟩
+  filter_upwards
+    [self_mem_nhdsWithin, nhdsWithin_le_nhds (Iio_mem_nhds hr)]
+    with ε hε_pos hε_lt η hη
+  have hsideε := hside ε hε_pos hε_lt η hη
+  constructor
+  · change
+      tsupport
+        (D.toShiftedSchwartzNPointCLM
+          (1 : Equiv.Perm (Fin n)) (((1 : ℝ) * ε) • η) φ :
+            NPointDomain d n → ℂ) ⊆ U
+    simpa using
+      D.toShiftedSchwartzNPointCLM_tsupport_subset_image
+        (1 : Equiv.Perm (Fin n)) (((1 : ℝ) * ε) • η) φ
+        (by simpa using hsideε.1)
+  · change
+      tsupport
+        (D.toShiftedSchwartzNPointCLM
+          (1 : Equiv.Perm (Fin n)) (((-1 : ℝ) * ε) • η) φ :
+            NPointDomain d n → ℂ) ⊆ U
+    simpa [neg_smul] using
+      D.toShiftedSchwartzNPointCLM_tsupport_subset_image
         (1 : Equiv.Perm (Fin n)) (((-1 : ℝ) * ε) • η) φ
         (by simpa [neg_smul] using hsideε.2)
 
@@ -2611,6 +3200,168 @@ theorem OS45Figure24SourceCutoffData.apply_toSideZeroDiagonalCLM_tendstoUniforml
         (𝓝[Set.Ioi 0] (0 : ℝ)) Kη := by
     simpa [hF0] using hTU'
   simpa [F] using hTU''
+
+/-- The signed source-side tests used in the OS I §4.14 flat transition have a
+common Schwinger limit, uniformly over compact sets of side directions.
+
+This is only the source-variable limit package.  It deliberately does not
+identify arbitrary finite side-height flat integrals with Schwinger values; the
+flat zero-height conclusion still has to pass through the local boundary-value
+and EOW arguments. -/
+theorem OS45Figure24SourceCutoffData.sideZeroDiagonal_sourcePairings_tendstoUniformlyOn_schwinger
+    [NeZero d] {hd : 2 ≤ d} {n : ℕ}
+    {i : Fin n} {hi : i.val + 1 < n}
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (D : BHW.OS45Figure24SourceCutoffData P)
+    (Kη : Set (BHW.OS45FlatCommonChartReal d n))
+    (hKη : IsCompact Kη)
+    (hKηC : Kη ⊆ BHW.os45FlatCommonChartCone d n)
+    (φ : SchwartzMap (BHW.OS45FlatCommonChartReal d n) ℂ)
+    (hφ_compact : HasCompactSupport
+      (φ : BHW.OS45FlatCommonChartReal d n → ℂ))
+    (hφE :
+      tsupport (φ : BHW.OS45FlatCommonChartReal d n → ℂ) ⊆
+        BHW.os45FlatCommonChartEdgeSet d n P
+          (1 : Equiv.Perm (Fin n))) :
+    TendstoUniformlyOn
+      (fun ε η =>
+        ∫ u : NPointDomain d n,
+          bvt_F OS lgc n (fun k => wickRotatePoint (u k)) *
+            ((((D.toSideZeroDiagonalCLM
+              (1 : Equiv.Perm (Fin n)) (1 : ℝ) ε η φ).1 :
+                SchwartzNPoint d n) : NPointDomain d n → ℂ) u))
+      (fun _ : BHW.OS45FlatCommonChartReal d n =>
+        OS.S n (D.toZeroDiagonalCLM (1 : Equiv.Perm (Fin n)) φ))
+      (𝓝[Set.Ioi 0] (0 : ℝ)) Kη ∧
+    TendstoUniformlyOn
+      (fun ε η =>
+        ∫ u : NPointDomain d n,
+          bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k))) *
+            ((((D.toSideZeroDiagonalCLM
+              (1 : Equiv.Perm (Fin n)) (1 : ℝ) ε η φ).1 :
+                SchwartzNPoint d n) : NPointDomain d n → ℂ) u))
+      (fun _ : BHW.OS45FlatCommonChartReal d n =>
+        OS.S n (D.toZeroDiagonalCLM (1 : Equiv.Perm (Fin n)) φ))
+      (𝓝[Set.Ioi 0] (0 : ℝ)) Kη ∧
+    TendstoUniformlyOn
+      (fun ε η =>
+        ∫ u : NPointDomain d n,
+          bvt_F OS lgc n (fun k => wickRotatePoint (u k)) *
+            ((((D.toSideZeroDiagonalCLM
+              (1 : Equiv.Perm (Fin n)) (-1 : ℝ) ε η φ).1 :
+                SchwartzNPoint d n) : NPointDomain d n → ℂ) u))
+      (fun _ : BHW.OS45FlatCommonChartReal d n =>
+        OS.S n (D.toZeroDiagonalCLM (1 : Equiv.Perm (Fin n)) φ))
+      (𝓝[Set.Ioi 0] (0 : ℝ)) Kη ∧
+    TendstoUniformlyOn
+      (fun ε η =>
+        ∫ u : NPointDomain d n,
+          bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k))) *
+            ((((D.toSideZeroDiagonalCLM
+              (1 : Equiv.Perm (Fin n)) (-1 : ℝ) ε η φ).1 :
+                SchwartzNPoint d n) : NPointDomain d n → ℂ) u))
+      (fun _ : BHW.OS45FlatCommonChartReal d n =>
+        OS.S n (D.toZeroDiagonalCLM (1 : Equiv.Perm (Fin n)) φ))
+      (𝓝[Set.Ioi 0] (0 : ℝ)) Kη := by
+  have hS_plus :
+      TendstoUniformlyOn
+        (fun ε η =>
+          OS.S n
+            (D.toSideZeroDiagonalCLM
+              (1 : Equiv.Perm (Fin n)) (1 : ℝ) ε η φ))
+        (fun _ : BHW.OS45FlatCommonChartReal d n =>
+          OS.S n (D.toZeroDiagonalCLM (1 : Equiv.Perm (Fin n)) φ))
+        (𝓝[Set.Ioi 0] (0 : ℝ)) Kη :=
+    D.apply_toSideZeroDiagonalCLM_tendstoUniformlyOn_zero
+      (1 : Equiv.Perm (Fin n)) (1 : ℝ)
+      (OsterwalderSchraderAxioms.schwingerCLM (d := d) OS n)
+      Kη hKη φ hφ_compact
+  have hS_minus :
+      TendstoUniformlyOn
+        (fun ε η =>
+          OS.S n
+            (D.toSideZeroDiagonalCLM
+              (1 : Equiv.Perm (Fin n)) (-1 : ℝ) ε η φ))
+        (fun _ : BHW.OS45FlatCommonChartReal d n =>
+          OS.S n (D.toZeroDiagonalCLM (1 : Equiv.Perm (Fin n)) φ))
+        (𝓝[Set.Ioi 0] (0 : ℝ)) Kη :=
+    D.apply_toSideZeroDiagonalCLM_tendstoUniformlyOn_zero
+      (1 : Equiv.Perm (Fin n)) (-1 : ℝ)
+      (OsterwalderSchraderAxioms.schwingerCLM (d := d) OS n)
+      Kη hKη φ hφ_compact
+  have hord_plus :
+      TendstoUniformlyOn
+        (fun ε η =>
+          ∫ u : NPointDomain d n,
+            bvt_F OS lgc n (fun k => wickRotatePoint (u k)) *
+              ((((D.toSideZeroDiagonalCLM
+                (1 : Equiv.Perm (Fin n)) (1 : ℝ) ε η φ).1 :
+                  SchwartzNPoint d n) : NPointDomain d n → ℂ) u))
+        (fun _ : BHW.OS45FlatCommonChartReal d n =>
+          OS.S n (D.toZeroDiagonalCLM (1 : Equiv.Perm (Fin n)) φ))
+        (𝓝[Set.Ioi 0] (0 : ℝ)) Kη := by
+    refine hS_plus.congr ?_
+    filter_upwards with ε
+    intro η _hη
+    exact
+      bvt_euclidean_restriction (d := d) OS lgc n
+        (D.toSideZeroDiagonalCLM
+          (1 : Equiv.Perm (Fin n)) (1 : ℝ) ε η φ)
+  have hord_minus :
+      TendstoUniformlyOn
+        (fun ε η =>
+          ∫ u : NPointDomain d n,
+            bvt_F OS lgc n (fun k => wickRotatePoint (u k)) *
+              ((((D.toSideZeroDiagonalCLM
+                (1 : Equiv.Perm (Fin n)) (-1 : ℝ) ε η φ).1 :
+                  SchwartzNPoint d n) : NPointDomain d n → ℂ) u))
+        (fun _ : BHW.OS45FlatCommonChartReal d n =>
+          OS.S n (D.toZeroDiagonalCLM (1 : Equiv.Perm (Fin n)) φ))
+        (𝓝[Set.Ioi 0] (0 : ℝ)) Kη := by
+    refine hS_minus.congr ?_
+    filter_upwards with ε
+    intro η _hη
+    exact
+      bvt_euclidean_restriction (d := d) OS lgc n
+        (D.toSideZeroDiagonalCLM
+          (1 : Equiv.Perm (Fin n)) (-1 : ℝ) ε η φ)
+  have hadj_event :=
+    D.sideZeroDiagonal_adjacentPairing_eq_eventually
+      OS lgc Kη hKη hKηC φ hφ_compact hφE
+  have hadj_plus :
+      TendstoUniformlyOn
+        (fun ε η =>
+          ∫ u : NPointDomain d n,
+            bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k))) *
+              ((((D.toSideZeroDiagonalCLM
+                (1 : Equiv.Perm (Fin n)) (1 : ℝ) ε η φ).1 :
+                  SchwartzNPoint d n) : NPointDomain d n → ℂ) u))
+        (fun _ : BHW.OS45FlatCommonChartReal d n =>
+          OS.S n (D.toZeroDiagonalCLM (1 : Equiv.Perm (Fin n)) φ))
+        (𝓝[Set.Ioi 0] (0 : ℝ)) Kη := by
+    refine hord_plus.congr ?_
+    filter_upwards [hadj_event] with ε hε
+    intro η hη
+    exact (hε η hη).1.symm
+  have hadj_minus :
+      TendstoUniformlyOn
+        (fun ε η =>
+          ∫ u : NPointDomain d n,
+            bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k))) *
+              ((((D.toSideZeroDiagonalCLM
+                (1 : Equiv.Perm (Fin n)) (-1 : ℝ) ε η φ).1 :
+                  SchwartzNPoint d n) : NPointDomain d n → ℂ) u))
+        (fun _ : BHW.OS45FlatCommonChartReal d n =>
+          OS.S n (D.toZeroDiagonalCLM (1 : Equiv.Perm (Fin n)) φ))
+        (𝓝[Set.Ioi 0] (0 : ℝ)) Kη := by
+    refine hord_minus.congr ?_
+    filter_upwards [hadj_event] with ε hε
+    intro η hη
+    exact (hε η hη).2.symm
+  exact ⟨hord_plus, hadj_plus, hord_minus, hadj_minus⟩
 
 /-- Canonical chosen source-test family for a Figure-2-4 patch.  The
 noncomputable choice is exactly the same cutoff choice used by
@@ -4471,6 +5222,292 @@ theorem os45_BHWJost_initialSectorEqOn_open_of_flatCommonChart_continuousBoundar
     simpa [BHW.permAct, P.τ_eq] using heq_pull
   exact ⟨W, hW_open, hW_pre, hseed_mem, hW_sub, hEqOn⟩
 
+/-- Local zero-height flat common-chart pairings give an ambient
+ordinary/selected-adjacent initial-sector equality seed at the chosen flat
+edge point.
+
+This is the distributional counterpart of
+`os45_BHWJost_initialSectorEqOn_open_of_flatCommonChart_continuousBoundaryOn`.
+It consumes only the proof-local zero-height pairings on an open flat edge
+window and transports the resulting local EOW ball through the OS45
+quarter-turn and flattening coordinates. -/
+theorem os45_BHWJost_initialSectorEqOn_open_of_flatCommonChart_localZeroHeight_pairingsCLM
+    [NeZero d] (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {n : ℕ} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    {E : Set (BHW.OS45FlatCommonChartReal d n)}
+    (hE_open : IsOpen E)
+    (hE_sub :
+      E ⊆ BHW.os45FlatCommonChartEdgeSet d n P
+        (1 : Equiv.Perm (Fin n)))
+    (ys : Fin (BHW.os45FlatCommonChartDim d n) →
+      Fin (BHW.os45FlatCommonChartDim d n) → ℝ)
+    (hys_mem : ∀ j, ys j ∈ BHW.os45FlatCommonChartCone d n)
+    (hys_li : LinearIndependent ℝ ys)
+    (x0 : BHW.OS45FlatCommonChartReal d n)
+    (hx0 : x0 ∈ E)
+    (T : SchwartzMap (BHW.OS45FlatCommonChartReal d n) ℂ →L[ℂ] ℂ)
+    (hzero_plus :
+      ∀ φ : SchwartzMap (BHW.OS45FlatCommonChartReal d n) ℂ,
+        HasCompactSupport
+          (φ : BHW.OS45FlatCommonChartReal d n → ℂ) →
+        tsupport (φ : BHW.OS45FlatCommonChartReal d n → ℂ) ⊆ E →
+        (∫ x : BHW.OS45FlatCommonChartReal d n,
+          BHW.os45FlatCommonChartBranch d n OS lgc
+            (1 : Equiv.Perm (Fin n))
+            (fun a => (x a : ℂ)) * φ x)
+        = T φ)
+    (hzero_minus :
+      ∀ φ : SchwartzMap (BHW.OS45FlatCommonChartReal d n) ℂ,
+        HasCompactSupport
+          (φ : BHW.OS45FlatCommonChartReal d n → ℂ) →
+        tsupport (φ : BHW.OS45FlatCommonChartReal d n → ℂ) ⊆ E →
+        (∫ x : BHW.OS45FlatCommonChartReal d n,
+          BHW.os45FlatCommonChartBranch d n OS lgc
+            (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+            (fun a => (x a : ℂ)) * φ x)
+        = T φ) :
+    ∃ W : Set (Fin n → Fin (d + 1) → ℂ),
+      IsOpen W ∧
+      IsPreconnected W ∧
+      (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+        (BHW.unflattenCfg n d (SCV.realEmbed x0)) ∈ W ∧
+      W ⊆
+        BHW.ExtendedTube d n ∩
+          BHW.permutedExtendedTubeSector d n P.τ ∧
+      Set.EqOn
+        (BHW.extendF (bvt_F OS lgc n))
+        (fun z =>
+          BHW.extendF (bvt_F OS lgc n)
+            (BHW.permAct (d := d) P.τ z))
+        W := by
+  classical
+  obtain ⟨R0, hR0, hball_sub, heq⟩ :=
+    BHW.os45_BHWJost_flatCommonChart_eqOn_localEOWBall_of_localZeroHeight_pairingsCLM
+      (d := d) hd OS lgc (P := P) E hE_open hE_sub
+      ys hys_mem hys_li x0 hx0 T hzero_plus hzero_minus
+  let U : Set (BHW.OS45FlatCommonChartSpace d n) :=
+    Metric.ball (0 : BHW.OS45FlatCommonChartSpace d n) R0
+  let Q : (Fin n → Fin (d + 1) → ℂ) ≃L[ℂ]
+      (Fin n → Fin (d + 1) → ℂ) :=
+    BHW.os45QuarterTurnCLE (d := d) (n := n)
+  let Ψ : BHW.SPrimeConfig d n ≃L[ℂ]
+      BHW.OS45FlatCommonChartSpace d n :=
+    Q.trans (flattenCLEquiv n (d + 1))
+  let A : BHW.OS45FlatCommonChartSpace d n ≃ₜ
+      BHW.OS45FlatCommonChartSpace d n :=
+    SCV.localEOWComplexAffineEquiv x0 ys hys_li
+  let Φ : BHW.OS45FlatCommonChartSpace d n ≃ₜ BHW.SPrimeConfig d n :=
+    A.trans Ψ.symm.toHomeomorph
+  let W : Set (Fin n → Fin (d + 1) → ℂ) := Φ '' U
+  have hU_open : IsOpen U := Metric.isOpen_ball
+  have hW_open : IsOpen W := by
+    simpa [W] using Φ.isOpenMap U hU_open
+  have hU_pre : IsPreconnected U :=
+    (convex_ball (0 : BHW.OS45FlatCommonChartSpace d n) R0).isPreconnected
+  have hW_pre : IsPreconnected W := by
+    simpa [W] using hU_pre.image Φ Φ.continuous.continuousOn
+  have hΦ_flat :
+      ∀ w : BHW.OS45FlatCommonChartSpace d n,
+        BHW.unflattenCfg n d (SCV.localEOWChart x0 ys w) =
+          Q (Φ w) := by
+    intro w
+    have hΨΦ_A : Ψ (Φ w) = A w := by
+      change Ψ (Ψ.symm (A w)) = A w
+      exact Ψ.apply_symm_apply (A w)
+    have hA_apply : A w = SCV.localEOWChart x0 ys w := by
+      simp [A]
+    rw [← hA_apply, ← hΨΦ_A]
+    ext k μ
+    simp [Ψ, Q, BHW.unflattenCfg]
+  have hseed_eq :
+      Φ (0 : BHW.OS45FlatCommonChartSpace d n) =
+        Q.symm (BHW.unflattenCfg n d (SCV.realEmbed x0)) := by
+    have hflat0 := hΦ_flat (0 : BHW.OS45FlatCommonChartSpace d n)
+    have hchart0 :
+        SCV.localEOWChart x0 ys
+            (0 : BHW.OS45FlatCommonChartSpace d n) =
+          SCV.realEmbed x0 := by
+      simpa using SCV.localEOWChart_zero x0 ys
+    rw [hchart0] at hflat0
+    have hseed_eq' :
+        Q.symm (BHW.unflattenCfg n d (SCV.realEmbed x0)) =
+          Φ (0 : BHW.OS45FlatCommonChartSpace d n) := by
+      rw [hflat0, Q.symm_apply_apply]
+    exact hseed_eq'.symm
+  have hseed_mem :
+      (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+        (BHW.unflattenCfg n d (SCV.realEmbed x0)) ∈ W := by
+    refine ⟨0, ?_, ?_⟩
+    · simpa [U, Metric.mem_ball] using hR0
+    · exact hseed_eq
+  have hW_sub :
+      W ⊆
+        BHW.ExtendedTube d n ∩
+          BHW.permutedExtendedTubeSector d n P.τ := by
+    rintro z ⟨w, hw, rfl⟩
+    have hdomains := hball_sub hw
+    have hplus := hdomains.1
+    have hminus := hdomains.2
+    have hflat := hΦ_flat w
+    change BHW.unflattenCfg n d (SCV.localEOWChart x0 ys w) ∈
+      BHW.os45PulledRealBranchDomain (d := d) (n := n)
+        (1 : Equiv.Perm (Fin n)) at hplus
+    rw [hflat] at hplus
+    have hz_ET : Φ w ∈ BHW.ExtendedTube d n := by
+      change
+        BHW.permAct (d := d) (1 : Equiv.Perm (Fin n)).symm
+          (Q.symm (Q (Φ w))) ∈ BHW.ExtendedTube d n at hplus
+      simpa [BHW.permAct] using hplus
+    change BHW.unflattenCfg n d (SCV.localEOWChart x0 ys w) ∈
+      BHW.os45PulledRealBranchDomain (d := d) (n := n)
+        (P.τ.symm * (1 : Equiv.Perm (Fin n))) at hminus
+    rw [hflat] at hminus
+    have hz_perm :
+        Φ w ∈ BHW.permutedExtendedTubeSector d n P.τ := by
+      change
+        BHW.permAct (d := d)
+          (P.τ.symm * (1 : Equiv.Perm (Fin n))).symm
+          (Q.symm (Q (Φ w))) ∈ BHW.ExtendedTube d n at hminus
+      simpa [BHW.permutedExtendedTubeSector, BHW.permAct, P.τ_eq]
+        using hminus
+    exact ⟨hz_ET, hz_perm⟩
+  have hEqOn :
+      Set.EqOn
+        (BHW.extendF (bvt_F OS lgc n))
+        (fun z =>
+          BHW.extendF (bvt_F OS lgc n)
+            (BHW.permAct (d := d) P.τ z))
+        W := by
+    rintro z ⟨w, hw, rfl⟩
+    have hflat := hΦ_flat w
+    have heq_flat := heq (x := w) hw
+    have heq_pull :
+        BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+            (1 : Equiv.Perm (Fin n)) (Q (Φ w)) =
+          BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+            (P.τ.symm * (1 : Equiv.Perm (Fin n))) (Q (Φ w)) := by
+      simpa [BHW.os45FlatCommonChartBranch, hflat] using heq_flat
+    change
+      BHW.extendF (bvt_F OS lgc n)
+          (BHW.permAct (d := d) (1 : Equiv.Perm (Fin n)).symm
+            (Q.symm (Q (Φ w)))) =
+        BHW.extendF (bvt_F OS lgc n)
+          (BHW.permAct (d := d)
+            (P.τ.symm * (1 : Equiv.Perm (Fin n))).symm
+            (Q.symm (Q (Φ w)))) at heq_pull
+    simpa [BHW.permAct, P.τ_eq] using heq_pull
+  exact ⟨W, hW_open, hW_pre, hseed_mem, hW_sub, hEqOn⟩
+
+/-- A pointwise source common-edge equality on a local source window gives the
+ambient flat EOW equality seed at any point of that window.
+
+This is the non-circular flat crossing used after the OS I `h45_source_eqOn`
+step: it feeds the checked local EOW bridge with zero-height pairings obtained
+directly from pointwise source equality, not from `Hdiff`, a common-boundary
+CLM, or a local `S'_n` branch. -/
+theorem os45_BHWJost_initialSectorEqOn_open_of_flatCommonChart_sourceCommonEdge_eqOn
+    [NeZero d] (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {n : ℕ} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    {U : Set (NPointDomain d n)}
+    (hU_open : IsOpen U)
+    (hU_sub : U ⊆ P.V)
+    (hsource_eq :
+      ∀ u ∈ U,
+        BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+            (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u)) =
+          BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+            (1 : Equiv.Perm (Fin n))
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u)))
+    (ys : Fin (BHW.os45FlatCommonChartDim d n) →
+      Fin (BHW.os45FlatCommonChartDim d n) → ℝ)
+    (hys_mem : ∀ j, ys j ∈ BHW.os45FlatCommonChartCone d n)
+    (hys_li : LinearIndependent ℝ ys)
+    (u0 : NPointDomain d n)
+    (hu0 : u0 ∈ U) :
+    ∃ W : Set (Fin n → Fin (d + 1) → ℂ),
+      IsOpen W ∧
+      IsPreconnected W ∧
+      (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+        (BHW.unflattenCfg n d
+          (SCV.realEmbed
+            (BHW.os45CommonEdgeFlatCLE d n
+              (1 : Equiv.Perm (Fin n)) u0))) ∈ W ∧
+      W ⊆
+        BHW.ExtendedTube d n ∩
+          BHW.permutedExtendedTubeSector d n P.τ ∧
+      Set.EqOn
+        (BHW.extendF (bvt_F OS lgc n))
+        (fun z =>
+          BHW.extendF (bvt_F OS lgc n)
+            (BHW.permAct (d := d) P.τ z))
+        W := by
+  classical
+  let e := BHW.os45CommonEdgeFlatCLE d n (1 : Equiv.Perm (Fin n))
+  let E : Set (BHW.OS45FlatCommonChartReal d n) := e '' U
+  let D : BHW.OS45Figure24SourceCutoffData P :=
+    Classical.choice (BHW.exists_os45Figure24SourceCutoffData (d := d) P)
+  let Tlocal : SchwartzMap (BHW.OS45FlatCommonChartReal d n) ℂ →L[ℂ] ℂ :=
+    BHW.os45FlatCommonChart_ordinaryEdgeCLM hd OS lgc P
+  have hE_open : IsOpen E := by
+    simpa [E, e] using e.toHomeomorph.isOpenMap U hU_open
+  have hE_sub :
+      E ⊆ BHW.os45FlatCommonChartEdgeSet d n P
+        (1 : Equiv.Perm (Fin n)) := by
+    rintro x ⟨u, huU, rfl⟩
+    exact
+      (BHW.os45CommonEdgeFlatCLE_mem_edgeSet_iff d n P
+        (1 : Equiv.Perm (Fin n)) u).mpr (hU_sub huU)
+  have hx0 : e u0 ∈ E := ⟨u0, hu0, rfl⟩
+  have hzero_plus :
+      ∀ φ : SchwartzMap (BHW.OS45FlatCommonChartReal d n) ℂ,
+        HasCompactSupport
+          (φ : BHW.OS45FlatCommonChartReal d n → ℂ) →
+        tsupport (φ : BHW.OS45FlatCommonChartReal d n → ℂ) ⊆ E →
+        (∫ x : BHW.OS45FlatCommonChartReal d n,
+          BHW.os45FlatCommonChartBranch d n OS lgc
+            (1 : Equiv.Perm (Fin n))
+            (fun a => (x a : ℂ)) * φ x)
+        = Tlocal φ := by
+    intro φ hφ_compact hφE
+    exact
+      BHW.os45FlatCommonChart_plus_zeroHeight_pairing_eq_CLM_of_localRepresents
+        (d := d) hd OS lgc (P := P) Tlocal
+        (BHW.os45FlatCommonChart_ordinaryEdgeCLM_represents hd OS lgc)
+        φ hφ_compact (hφE.trans hE_sub)
+  have hzero_minus :
+      ∀ φ : SchwartzMap (BHW.OS45FlatCommonChartReal d n) ℂ,
+        HasCompactSupport
+          (φ : BHW.OS45FlatCommonChartReal d n → ℂ) →
+        tsupport (φ : BHW.OS45FlatCommonChartReal d n → ℂ) ⊆ E →
+        (∫ x : BHW.OS45FlatCommonChartReal d n,
+          BHW.os45FlatCommonChartBranch d n OS lgc
+            (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+            (fun a => (x a : ℂ)) * φ x)
+        = Tlocal φ := by
+    intro φ hφ_compact hφE
+    exact
+      (BHW.os45FlatCommonChart_zeroHeight_pairings_eq_of_sourceCommonEdge_eqOn
+        (d := d) hd OS lgc D hU_sub hsource_eq φ hφ_compact hφE).trans
+        (hzero_plus φ hφ_compact hφE)
+  exact
+    BHW.os45_BHWJost_initialSectorEqOn_open_of_flatCommonChart_localZeroHeight_pairingsCLM
+      (d := d) hd OS lgc (P := P)
+      hE_open hE_sub ys hys_mem hys_li (e u0) hx0
+      Tlocal hzero_plus hzero_minus
+
 /-- Continuous OS I §4.5 boundary values give a concrete flat common-chart
 complex-open equality seed.
 
@@ -5470,6 +6507,85 @@ theorem OS45BHWJostHullData.ordinaryWick_localChartInWindow
       BHW.extendF_eq_on_forwardTube n (bvt_F OS lgc n)
         hF_holo hF_lorentz p0 hp0_forward
 
+/-- Metric-ball version of `ordinaryWick_localChartInWindow`.
+
+The all-overlap branch-law proof needs the initial ordinary chart to carry a
+stored metric-ball radius for the checked SCV overlap identity lemmas. -/
+theorem OS45BHWJostHullData.ordinaryWick_metricBallChartInWindow
+    [NeZero d]
+    {hd : 2 ≤ d} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {x : NPointDomain d n} (hx : x ∈ P.V)
+    {W : Set (Fin n → Fin (d + 1) → ℂ)}
+    (hW_open : IsOpen W)
+    (hwickW : (fun k => wickRotatePoint (x k)) ∈ W) :
+    ∃ (C0 : Set (Fin n → Fin (d + 1) → ℂ))
+      (C0branch : (Fin n → Fin (d + 1) → ℂ) → ℂ)
+      (r : ℝ),
+      0 < r ∧
+      C0 = Metric.ball (fun k => wickRotatePoint (x k)) r ∧
+      (fun k => wickRotatePoint (x k)) ∈ C0 ∧
+      IsOpen C0 ∧
+      IsPreconnected C0 ∧
+      C0 ⊆ (BHW.ExtendedTube d n ∩ H.ΩJ) ∩ W ∧
+      DifferentiableOn ℂ C0branch C0 ∧
+      Set.EqOn C0branch (BHW.extendF (bvt_F OS lgc n)) C0 ∧
+      C0branch (fun k => wickRotatePoint (x k)) =
+        bvt_F OS lgc n (fun k => wickRotatePoint (x k)) := by
+  classical
+  let p0 : Fin n → Fin (d + 1) → ℂ :=
+    fun k => wickRotatePoint (x k)
+  let Ω0 : Set (Fin n → Fin (d + 1) → ℂ) :=
+    BHW.ExtendedTube d n ∩ H.ΩJ
+  let B0 : (Fin n → Fin (d + 1) → ℂ) → ℂ :=
+    BHW.extendF (bvt_F OS lgc n)
+  have hp0Ω : p0 ∈ Ω0 := by
+    exact ⟨H.ordinaryWick_mem_extendedTube x hx, H.ordinaryWick_mem x hx⟩
+  have hΩ0_open : IsOpen Ω0 := by
+    simpa [Ω0] using BHW.isOpen_extendedTube.inter H.ΩJ_open
+  have hΩ0W_open : IsOpen (Ω0 ∩ W) := hΩ0_open.inter hW_open
+  have hp0ΩW : p0 ∈ Ω0 ∩ W := ⟨hp0Ω, by simpa [p0] using hwickW⟩
+  rcases Metric.mem_nhds_iff.mp (hΩ0W_open.mem_nhds hp0ΩW) with
+    ⟨r, hr_pos, hball_sub⟩
+  refine
+    ⟨Metric.ball p0 r, B0, r, hr_pos, ?_, ?_, Metric.isOpen_ball, ?_,
+      ?_, ?_, ?_, ?_⟩
+  · simp [p0]
+  · exact Metric.mem_ball_self hr_pos
+  · exact (convex_ball p0 r).isPreconnected
+  · simpa [p0, Ω0] using hball_sub
+  · exact (BHW.differentiableOn_extendF_bvt_F_extendedTube
+      (d := d) OS lgc n).mono (by
+        intro z hz
+        exact (hball_sub hz).1.1)
+  · intro z hz
+    rfl
+  · have hF_holo :
+        DifferentiableOn ℂ (bvt_F OS lgc n) (BHW.ForwardTube d n) := by
+      simpa [BHW_forwardTube_eq (d := d) (n := n)] using
+        bvt_F_holomorphic (d := d) OS lgc n
+    have hF_lorentz :
+        ∀ (Λ : RestrictedLorentzGroup d)
+          (z : Fin n → Fin (d + 1) → ℂ), z ∈ BHW.ForwardTube d n →
+          bvt_F OS lgc n
+            (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * z k ν) =
+          bvt_F OS lgc n z := by
+      intro Λ z hz
+      exact bvt_F_restrictedLorentzInvariant_forwardTube
+        (d := d) OS lgc n Λ z
+        ((BHW_forwardTube_eq (d := d) (n := n)) ▸ hz)
+    have hp0_forward : p0 ∈ BHW.ForwardTube d n := by
+      simpa [p0] using
+        BHW.os45Figure24_ordinaryWick_mem_forwardTube
+          (d := d) (n := n) (hd := hd) (P := P) hx
+    exact
+      BHW.extendF_eq_on_forwardTube n (bvt_F OS lgc n)
+        hF_holo hF_lorentz p0 hp0_forward
+
 /-- The selected adjacent swap sends the adjacent Wick edge back to the
 ordinary Wick edge.  This is seed geometry for the OS I `(4.12)` transport; it
 does not identify the adjacent branch value. -/
@@ -5748,6 +6864,86 @@ theorem OS45BHWJostHullData.OS412SeedWindow_localChartInWindow
   · exact (H.differentiableOn_OS412SeedBranch OS lgc).mono (by
       intro z hz
       exact (hC0_sub hz).1)
+  · intro z hz
+    rfl
+  · have hseed_ord :
+        B0 p0 =
+          bvt_F OS lgc n (fun k => wickRotatePoint (x k)) := by
+      simpa [B0, p0] using
+        BHW.os45Figure24_OS412SeedBranch_permAct_ordinaryWick_eq_ordinaryWick
+          (d := d) (n := n) (hd := hd) (P := P) OS lgc x
+    have hperm :
+        bvt_F OS lgc n (fun k => wickRotatePoint (x (P.τ k))) =
+          bvt_F OS lgc n (fun k => wickRotatePoint (x k)) := by
+      simpa [BHW.permAct] using
+        bvt_F_perm (d := d) OS lgc n P.τ
+          (fun k => wickRotatePoint (x k))
+    exact hseed_ord.trans hperm.symm
+
+/-- Metric-ball version of `OS412SeedWindow_localChartInWindow`.
+
+The adjacent all-overlap gallery needs the corrected `(4.12)` initial chart to
+retain the exact ball carrier used by the checked SCV identity theorem. -/
+theorem OS45BHWJostHullData.OS412SeedWindow_metricBallChartInWindow
+    [NeZero d]
+    {hd : 2 ≤ d} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {x : NPointDomain d n} (hx : x ∈ P.V)
+    {W : Set (Fin n → Fin (d + 1) → ℂ)}
+    (hW_open : IsOpen W)
+    (hseedW :
+      BHW.permAct (d := d) P.τ (fun k => wickRotatePoint (x k)) ∈ W) :
+    ∃ (C0 : Set (Fin n → Fin (d + 1) → ℂ))
+      (C0branch : (Fin n → Fin (d + 1) → ℂ) → ℂ)
+      (r : ℝ),
+      0 < r ∧
+      C0 =
+        Metric.ball
+          (BHW.permAct (d := d) P.τ
+            (fun k => wickRotatePoint (x k))) r ∧
+      BHW.permAct (d := d) P.τ (fun k => wickRotatePoint (x k)) ∈ C0 ∧
+      IsOpen C0 ∧
+      IsPreconnected C0 ∧
+      C0 ⊆
+        ({z : Fin n → Fin (d + 1) → ℂ |
+            BHW.permAct (d := d) P.τ z ∈ BHW.ForwardTube d n} ∩ H.ΩJ) ∩ W ∧
+      DifferentiableOn ℂ C0branch C0 ∧
+      Set.EqOn C0branch
+        (fun z : Fin n → Fin (d + 1) → ℂ =>
+          bvt_F OS lgc n (BHW.permAct (d := d) P.τ z)) C0 ∧
+      C0branch (BHW.permAct (d := d) P.τ
+          (fun k => wickRotatePoint (x k))) =
+        bvt_F OS lgc n (fun k => wickRotatePoint (x (P.τ k))) := by
+  classical
+  let p0 : Fin n → Fin (d + 1) → ℂ :=
+    BHW.permAct (d := d) P.τ (fun k => wickRotatePoint (x k))
+  let Ω0 : Set (Fin n → Fin (d + 1) → ℂ) :=
+    {z : Fin n → Fin (d + 1) → ℂ |
+      BHW.permAct (d := d) P.τ z ∈ BHW.ForwardTube d n} ∩ H.ΩJ
+  let B0 : (Fin n → Fin (d + 1) → ℂ) → ℂ :=
+    fun z => bvt_F OS lgc n (BHW.permAct (d := d) P.τ z)
+  have hp0Ω : p0 ∈ Ω0 := by
+    simpa [p0, Ω0] using H.permAct_ordinaryWick_mem_OS412SeedWindow x hx
+  have hΩ0_open : IsOpen Ω0 := by
+    simpa [Ω0] using H.OS412SeedWindow_open
+  have hΩ0W_open : IsOpen (Ω0 ∩ W) := hΩ0_open.inter hW_open
+  have hp0ΩW : p0 ∈ Ω0 ∩ W := ⟨hp0Ω, by simpa [p0] using hseedW⟩
+  rcases Metric.mem_nhds_iff.mp (hΩ0W_open.mem_nhds hp0ΩW) with
+    ⟨r, hr_pos, hball_sub⟩
+  refine
+    ⟨Metric.ball p0 r, B0, r, hr_pos, ?_, ?_, Metric.isOpen_ball, ?_,
+      ?_, ?_, ?_, ?_⟩
+  · simp [p0]
+  · exact Metric.mem_ball_self hr_pos
+  · exact (convex_ball p0 r).isPreconnected
+  · simpa [p0, Ω0] using hball_sub
+  · exact (H.differentiableOn_OS412SeedBranch OS lgc).mono (by
+      intro z hz
+      exact (hball_sub hz).1)
   · intro z hz
     rfl
   · have hseed_ord :
@@ -7297,6 +8493,110 @@ theorem OS45BHWJostHullData.ordinaryCommonEdge_localChartInWindow
     rw [← hΓ_one]
     exact hΓ_trace
 
+/-- Metric-ball version of `ordinaryCommonEdge_localChartInWindow`.
+
+This supplies the endpoint-centered ordinary horizontal chart in the exact
+carrier shape needed by the local `Hdiff` overlap proof. -/
+theorem OS45BHWJostHullData.ordinaryCommonEdge_metricBallChartInWindow
+    [NeZero d] (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {n : ℕ} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P)
+    {u : NPointDomain d n} (hu : u ∈ P.V)
+    {W : Set (Fin n → Fin (d + 1) → ℂ)}
+    (hW_open : IsOpen W)
+    (hcommonW :
+      (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+        (BHW.realEmbed
+          (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+            (1 : Equiv.Perm (Fin n)) u)) ∈ W) :
+    ∃ (C0 : Set (Fin n → Fin (d + 1) → ℂ))
+      (C0branch : (Fin n → Fin (d + 1) → ℂ) → ℂ)
+      (r : ℝ),
+      0 < r ∧
+      C0 =
+        Metric.ball
+          ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u))) r ∧
+      (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+        (BHW.realEmbed
+          (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+            (1 : Equiv.Perm (Fin n)) u)) ∈ C0 ∧
+      IsOpen C0 ∧
+      IsPreconnected C0 ∧
+      C0 ⊆ (BHW.ExtendedTube d n ∩ H.ΩJ) ∩ W ∧
+      DifferentiableOn ℂ C0branch C0 ∧
+      Set.EqOn C0branch (BHW.extendF (bvt_F OS lgc n)) C0 ∧
+      C0branch
+          ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u))) =
+        BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+          (1 : Equiv.Perm (Fin n))
+          (BHW.realEmbed
+            (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+              (1 : Equiv.Perm (Fin n)) u)) := by
+  classical
+  let p0 : Fin n → Fin (d + 1) → ℂ :=
+    (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+      (BHW.realEmbed
+        (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+          (1 : Equiv.Perm (Fin n)) u))
+  let Ω0 : Set (Fin n → Fin (d + 1) → ℂ) :=
+    BHW.ExtendedTube d n ∩ H.ΩJ
+  let B0 : (Fin n → Fin (d + 1) → ℂ) → ℂ :=
+    BHW.extendF (bvt_F OS lgc n)
+  have hp0_ext : p0 ∈ BHW.ExtendedTube d n := by
+    have hmem :=
+      BHW.os45Figure24_commonEdge_mem_initialSectorOverlap
+        (d := d) (n := n) (hd := hd) (P := P) (subset_closure hu)
+    simpa [p0] using hmem.1
+  have hp0Ω : p0 ∈ Ω0 := by
+    exact ⟨hp0_ext, H.extendedTube_subset_ΩJ hp0_ext⟩
+  have hΩ0_open : IsOpen Ω0 := by
+    simpa [Ω0] using BHW.isOpen_extendedTube.inter H.ΩJ_open
+  have hΩ0W_open : IsOpen (Ω0 ∩ W) := hΩ0_open.inter hW_open
+  have hp0ΩW : p0 ∈ Ω0 ∩ W := ⟨hp0Ω, by simpa [p0] using hcommonW⟩
+  rcases Metric.mem_nhds_iff.mp (hΩ0W_open.mem_nhds hp0ΩW) with
+    ⟨r, hr_pos, hball_sub⟩
+  refine
+    ⟨Metric.ball p0 r, B0, r, hr_pos, ?_, ?_, Metric.isOpen_ball, ?_,
+      ?_, ?_, ?_, ?_⟩
+  · simp [p0]
+  · exact Metric.mem_ball_self hr_pos
+  · exact (convex_ball p0 r).isPreconnected
+  · simpa [p0, Ω0] using hball_sub
+  · exact (BHW.differentiableOn_extendF_bvt_F_extendedTube
+      (d := d) OS lgc n).mono (by
+        intro z hz
+        exact (hball_sub hz).1.1)
+  · intro z hz
+    rfl
+  · rcases
+      BHW.os45Figure24Path_endpoint_extendF_eq_ordinaryPulledRealBranch
+        (d := d) (n := n) hd OS lgc (P := P)
+        (u := u) (subset_closure hu) with
+      ⟨Γ, _hΓ_cont, _hΓ_zero, hΓ_one, _hΓ_ET, hΓ_trace⟩
+    change
+      BHW.extendF (bvt_F OS lgc n)
+          ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u))) =
+        BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+          (1 : Equiv.Perm (Fin n))
+          (BHW.realEmbed
+            (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+              (1 : Equiv.Perm (Fin n)) u))
+    rw [← hΓ_one]
+    exact hΓ_trace
+
 /-- At the horizontal Figure-2-4 common edge, the ordinary endpoint is still a
 forward-tube point after undoing the OS45 quarter-turn.  Hence the BHW
 extension agrees there with the raw ACR/OS-II witness `bvt_F`.
@@ -7553,6 +8853,115 @@ theorem OS45BHWJostHullData.adjacentCommonEdge_localChartInWindow
       BHW.os45Figure24CommonEdge_permAct_extendF_eq_adjacentPulledRealBranch
         (d := d) (n := n) hd OS lgc (P := P) u
 
+/-- Metric-ball version of `adjacentCommonEdge_localChartInWindow`.
+
+This supplies the endpoint-centered adjacent horizontal chart in the exact
+carrier shape needed by the local `Hdiff` overlap proof. -/
+theorem OS45BHWJostHullData.adjacentCommonEdge_metricBallChartInWindow
+    [NeZero d] (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {n : ℕ} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P)
+    {u : NPointDomain d n} (hu : u ∈ P.V)
+    {W : Set (Fin n → Fin (d + 1) → ℂ)}
+    (hW_open : IsOpen W)
+    (hcommonW :
+      (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+        (BHW.realEmbed
+          (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+            (1 : Equiv.Perm (Fin n)) u)) ∈ W) :
+    ∃ (C0 : Set (Fin n → Fin (d + 1) → ℂ))
+      (C0branch : (Fin n → Fin (d + 1) → ℂ) → ℂ)
+      (r : ℝ),
+      0 < r ∧
+      C0 =
+        Metric.ball
+          ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u))) r ∧
+      (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+        (BHW.realEmbed
+          (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+            (1 : Equiv.Perm (Fin n)) u)) ∈ C0 ∧
+      IsOpen C0 ∧
+      IsPreconnected C0 ∧
+      C0 ⊆ (BHW.permutedExtendedTubeSector d n P.τ ∩ H.ΩJ) ∩ W ∧
+      DifferentiableOn ℂ C0branch C0 ∧
+      Set.EqOn C0branch
+        (fun z : Fin n → Fin (d + 1) → ℂ =>
+          BHW.extendF (bvt_F OS lgc n)
+            (BHW.permAct (d := d) P.τ z)) C0 ∧
+      C0branch
+          ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u))) =
+        BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+          (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+          (BHW.realEmbed
+            (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+              (1 : Equiv.Perm (Fin n)) u)) := by
+  classical
+  let p0 : Fin n → Fin (d + 1) → ℂ :=
+    (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+      (BHW.realEmbed
+        (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+          (1 : Equiv.Perm (Fin n)) u))
+  let Ω0 : Set (Fin n → Fin (d + 1) → ℂ) :=
+    BHW.permutedExtendedTubeSector d n P.τ ∩ H.ΩJ
+  let B0 : (Fin n → Fin (d + 1) → ℂ) → ℂ :=
+    fun z =>
+      BHW.extendF (bvt_F OS lgc n)
+        (BHW.permAct (d := d) P.τ z)
+  have hp0_sector : p0 ∈ BHW.permutedExtendedTubeSector d n P.τ := by
+    exact
+      (BHW.os45Figure24_commonEdge_mem_initialSectorOverlap
+        (d := d) (n := n) (hd := hd) (P := P)
+        (subset_closure hu)).2
+  have hp0Ω : p0 ∈ Ω0 := by
+    exact ⟨hp0_sector, H.permutedExtendedTubeSector_subset_ΩJ hp0_sector⟩
+  have hΩ0_open : IsOpen Ω0 := by
+    simpa [Ω0] using
+      (BHW.isOpen_permutedExtendedTubeSector (d := d) (n := n) P.τ).inter
+        H.ΩJ_open
+  have hΩ0W_open : IsOpen (Ω0 ∩ W) := hΩ0_open.inter hW_open
+  have hp0ΩW : p0 ∈ Ω0 ∩ W := ⟨hp0Ω, by simpa [p0] using hcommonW⟩
+  rcases Metric.mem_nhds_iff.mp (hΩ0W_open.mem_nhds hp0ΩW) with
+    ⟨r, hr_pos, hball_sub⟩
+  refine
+    ⟨Metric.ball p0 r, B0, r, hr_pos, ?_, ?_, Metric.isOpen_ball, ?_,
+      ?_, ?_, ?_, ?_⟩
+  · simp [p0]
+  · exact Metric.mem_ball_self hr_pos
+  · exact (convex_ball p0 r).isPreconnected
+  · simpa [p0, Ω0] using hball_sub
+  · exact
+      (BHW.differentiableOn_extendF_bvt_F_permAct_preimageExtendedTube
+        (d := d) OS lgc n P.τ).mono (by
+          intro z hz
+          exact (hball_sub hz).1.1)
+  · intro z hz
+    rfl
+  · change
+      BHW.extendF (bvt_F OS lgc n)
+          (BHW.permAct (d := d) P.τ
+            ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+              (BHW.realEmbed
+                (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                  (1 : Equiv.Perm (Fin n)) u)))) =
+        BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+          (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+          (BHW.realEmbed
+            (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+              (1 : Equiv.Perm (Fin n)) u))
+    exact
+      BHW.os45Figure24CommonEdge_permAct_extendF_eq_adjacentPulledRealBranch
+        (d := d) (n := n) hd OS lgc (P := P) u
+
 /-- Around the horizontal common-edge endpoint there is a connected open chart
 on which the terminal adjacent-minus-ordinary difference is the literal
 difference of the selected adjacent endpoint branch and the ordinary endpoint
@@ -7673,6 +9082,159 @@ theorem OS45BHWJostHullData.commonEdgeDifference_localChartInWindow
         (d := d) OS lgc n).mono (by
           intro z hz
           exact (hC0_sub hz).1.1.1)
+    simpa [D0] using hAdj.sub hOrd
+  · intro z hz
+    rfl
+  · have hAdj :
+        BHW.extendF (bvt_F OS lgc n)
+            (BHW.permAct (d := d) P.τ p0) =
+          BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+            (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u)) := by
+      simpa [p0] using
+        BHW.os45Figure24CommonEdge_permAct_extendF_eq_adjacentPulledRealBranch
+          (d := d) (n := n) hd OS lgc (P := P) u
+    have hOrd :
+        BHW.extendF (bvt_F OS lgc n) p0 =
+          BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+            (1 : Equiv.Perm (Fin n))
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u)) := by
+      simp [BHW.os45PulledRealBranch, p0]
+    change
+      BHW.extendF (bvt_F OS lgc n)
+          (BHW.permAct (d := d) P.τ p0) -
+        BHW.extendF (bvt_F OS lgc n) p0 =
+          BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+            (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u)) -
+            BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+              (1 : Equiv.Perm (Fin n))
+              (BHW.realEmbed
+                (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                  (1 : Equiv.Perm (Fin n)) u))
+    rw [hAdj, hOrd]
+
+/-- Metric-ball version of `commonEdgeDifference_localChartInWindow`.
+
+This supplies the endpoint-centered horizontal difference chart in the exact
+carrier shape needed by the local `Hdiff` gluing proof. -/
+theorem OS45BHWJostHullData.commonEdgeDifference_metricBallChartInWindow
+    [NeZero d] (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {n : ℕ} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P)
+    {u : NPointDomain d n} (hu : u ∈ P.V)
+    {W : Set (Fin n → Fin (d + 1) → ℂ)}
+    (hW_open : IsOpen W)
+    (hcommonW :
+      (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+        (BHW.realEmbed
+          (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+            (1 : Equiv.Perm (Fin n)) u)) ∈ W) :
+    ∃ (C0 : Set (Fin n → Fin (d + 1) → ℂ))
+      (D0 : (Fin n → Fin (d + 1) → ℂ) → ℂ)
+      (r : ℝ),
+      0 < r ∧
+      C0 =
+        Metric.ball
+          ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u))) r ∧
+      (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+        (BHW.realEmbed
+          (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+            (1 : Equiv.Perm (Fin n)) u)) ∈ C0 ∧
+      IsOpen C0 ∧
+      IsPreconnected C0 ∧
+      C0 ⊆
+        ((BHW.ExtendedTube d n ∩
+            BHW.permutedExtendedTubeSector d n P.τ) ∩ H.ΩJ) ∩ W ∧
+      DifferentiableOn ℂ D0 C0 ∧
+      Set.EqOn D0
+        (fun z : Fin n → Fin (d + 1) → ℂ =>
+          BHW.extendF (bvt_F OS lgc n)
+              (BHW.permAct (d := d) P.τ z) -
+            BHW.extendF (bvt_F OS lgc n) z) C0 ∧
+      D0
+          ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u))) =
+        BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+            (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u)) -
+          BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+            (1 : Equiv.Perm (Fin n))
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u)) := by
+  classical
+  let p0 : Fin n → Fin (d + 1) → ℂ :=
+    (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+      (BHW.realEmbed
+        (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+          (1 : Equiv.Perm (Fin n)) u))
+  let Ω0 : Set (Fin n → Fin (d + 1) → ℂ) :=
+    (BHW.ExtendedTube d n ∩
+      BHW.permutedExtendedTubeSector d n P.τ) ∩ H.ΩJ
+  let D0 : (Fin n → Fin (d + 1) → ℂ) → ℂ :=
+    fun z =>
+      BHW.extendF (bvt_F OS lgc n)
+          (BHW.permAct (d := d) P.τ z) -
+        BHW.extendF (bvt_F OS lgc n) z
+  have hp0_overlap :
+      p0 ∈ BHW.ExtendedTube d n ∩
+        BHW.permutedExtendedTubeSector d n P.τ := by
+    simpa [p0] using
+      BHW.os45Figure24_commonEdge_mem_initialSectorOverlap
+        (d := d) (n := n) (hd := hd) (P := P)
+        (subset_closure hu)
+  have hp0Ω : p0 ∈ Ω0 := by
+    exact ⟨hp0_overlap, H.extendedTube_subset_ΩJ hp0_overlap.1⟩
+  have hΩ0_open : IsOpen Ω0 := by
+    simpa [Ω0] using
+      (BHW.isOpen_extendedTube.inter
+        (BHW.isOpen_permutedExtendedTubeSector (d := d) (n := n) P.τ)).inter
+        H.ΩJ_open
+  have hΩ0W_open : IsOpen (Ω0 ∩ W) := hΩ0_open.inter hW_open
+  have hp0ΩW : p0 ∈ Ω0 ∩ W := ⟨hp0Ω, by simpa [p0] using hcommonW⟩
+  rcases Metric.mem_nhds_iff.mp (hΩ0W_open.mem_nhds hp0ΩW) with
+    ⟨r, hr_pos, hball_sub⟩
+  refine
+    ⟨Metric.ball p0 r, D0, r, hr_pos, ?_, ?_, Metric.isOpen_ball, ?_,
+      ?_, ?_, ?_, ?_⟩
+  · simp [p0]
+  · exact Metric.mem_ball_self hr_pos
+  · exact (convex_ball p0 r).isPreconnected
+  · simpa [p0, Ω0] using hball_sub
+  · have hAdj :
+        DifferentiableOn ℂ
+          (fun z : Fin n → Fin (d + 1) → ℂ =>
+            BHW.extendF (bvt_F OS lgc n)
+              (BHW.permAct (d := d) P.τ z)) (Metric.ball p0 r) :=
+      (BHW.differentiableOn_extendF_bvt_F_permAct_preimageExtendedTube
+        (d := d) OS lgc n P.τ).mono (by
+          intro z hz
+          exact (hball_sub hz).1.1.2)
+    have hOrd :
+        DifferentiableOn ℂ
+          (BHW.extendF (bvt_F OS lgc n)) (Metric.ball p0 r) :=
+      (BHW.differentiableOn_extendF_bvt_F_extendedTube
+        (d := d) OS lgc n).mono (by
+          intro z hz
+          exact (hball_sub hz).1.1.1)
     simpa [D0] using hAdj.sub hOrd
   · intro z hz
     rfl

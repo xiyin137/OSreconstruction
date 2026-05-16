@@ -48,6 +48,59 @@ theorem eq_zeroHeight_of_eventuallyEq_sideLimits
     hEq.mono fun _ hε => hε η hηK
   exact tendsto_nhds_unique_of_eventuallyEq hFη hGη hEqη
 
+/-- If two side-height integral families converge to their respective
+zero-height pairings and also converge to the same comparison value on a
+nonempty compact direction set, then the two zero-height pairings are equal.
+
+This is the neutral filter form needed by the OS45 flat `(4.14)` transcript
+after both signed side families have been rewritten to the same Schwinger
+limit. -/
+theorem eq_zeroHeight_of_common_sideLimit
+    {ι α : Type*} {l : Filter ι} [NeBot l]
+    {K : Set α} (hK_nonempty : K.Nonempty)
+    {F G : ι → α → ℂ} {cF cG c : ℂ}
+    (hF_zero : TendstoUniformlyOn F (fun _ : α => cF) l K)
+    (hG_zero : TendstoUniformlyOn G (fun _ : α => cG) l K)
+    (hF_common : TendstoUniformlyOn F (fun _ : α => c) l K)
+    (hG_common : TendstoUniformlyOn G (fun _ : α => c) l K) :
+    cF = cG := by
+  rcases hK_nonempty with ⟨η, hηK⟩
+  have hFη_zero : Tendsto (fun ε => F ε η) l (𝓝 cF) := by
+    simpa using hF_zero.tendsto_at hηK
+  have hFη_common : Tendsto (fun ε => F ε η) l (𝓝 c) := by
+    simpa using hF_common.tendsto_at hηK
+  have hGη_zero : Tendsto (fun ε => G ε η) l (𝓝 cG) := by
+    simpa using hG_zero.tendsto_at hηK
+  have hGη_common : Tendsto (fun ε => G ε η) l (𝓝 c) := by
+    simpa using hG_common.tendsto_at hηK
+  have hcF : cF = c := tendsto_nhds_unique hFη_zero hFη_common
+  have hcG : cG = c := tendsto_nhds_unique hGη_zero hGη_common
+  exact hcF.trans hcG.symm
+
+/-- If a family is uniformly asymptotic to another family, and the second
+family has a uniform limit, then the first family has the same uniform limit.
+
+This is the neutral filter algebra used in the OS45 flat `(4.14)` transcript
+after a branch-side side trace has been compared asymptotically with its
+source-side test family. -/
+theorem tendstoUniformlyOn_of_sub_tendstoUniformlyOn_zero
+    {ι α : Type*} {l : Filter ι} {K : Set α}
+    {F G : ι → α → ℂ} {c : ℂ}
+    (hsub :
+      TendstoUniformlyOn
+        (fun eps eta => F eps eta - G eps eta)
+        (fun _ : α => 0) l K)
+    (hG : TendstoUniformlyOn G (fun _ : α => c) l K) :
+    TendstoUniformlyOn F (fun _ : α => c) l K := by
+  have hsum := hsub.add hG
+  have hsumF :
+      TendstoUniformlyOn F ((fun _ : α => 0) + fun _ : α => c) l K := by
+    refine hsum.congr ?_
+    filter_upwards with eps
+    intro eta _heta
+    simp
+  exact hsumF.congr_right (by intro eta _heta; simp)
+
 /-- A compact-support side integral converges uniformly, over compact direction
 sets, to its zero-height pairing.
 

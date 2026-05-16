@@ -114,4 +114,52 @@ theorem identity_theorem_product_inter_metric_ball_sub_of_two_eqOn_open {n m : �
     SCV.identity_theorem_product_inter_metric_ball_sub_of_eqOn_open
       hW_open hW_ne hW_sub hf₁ hg₁ hf₂ hg₂ hfW hgW
 
+/-- All-overlap propagation for metric-ball local analytic galleries.
+
+If each carrier is a metric ball, the representatives are holomorphic on their
+carriers, and every nonempty overlap contains a complex-open seed where the two
+representatives agree, then the representatives agree on every full overlap.
+This is the neutral SCV step used after the branch-law construction has
+produced the local seeds. -/
+theorem pairwise_eqOn_metric_ball_carriers_of_local_overlap_seeds {n m : ℕ}
+    {ι : Type*}
+    {N : ι → Set (Fin n → Fin m → ℂ)}
+    {center : ι → Fin n → Fin m → ℂ} {radius : ι → ℝ}
+    (hN_ball : ∀ i, N i = Metric.ball (center i) (radius i))
+    {D : ι → (Fin n → Fin m → ℂ) → ℂ}
+    (hD : ∀ i, DifferentiableOn ℂ (D i) (N i))
+    (hseed :
+      ∀ i j, (N i ∩ N j).Nonempty →
+        ∃ W : Set (Fin n → Fin m → ℂ),
+          IsOpen W ∧
+          W.Nonempty ∧
+          W ⊆ N i ∩ N j ∧
+          Set.EqOn (D i) (D j) W) :
+    ∀ i j, Set.EqOn (D i) (D j) (N i ∩ N j) := by
+  intro i j z hz
+  by_cases hne : (N i ∩ N j).Nonempty
+  · rcases hseed i j hne with
+      ⟨W, hW_open, hW_ne, hW_sub, hW_eq⟩
+    have hDi :
+        DifferentiableOn ℂ (D i)
+          (Metric.ball (center i) (radius i)) := by
+      simpa [hN_ball i] using hD i
+    have hDj :
+        DifferentiableOn ℂ (D j)
+          (Metric.ball (center j) (radius j)) := by
+      simpa [hN_ball j] using hD j
+    have hW_sub_ball :
+        W ⊆
+          Metric.ball (center i) (radius i) ∩
+            Metric.ball (center j) (radius j) := by
+      simpa [hN_ball i, hN_ball j] using hW_sub
+    have hfull :
+        Set.EqOn (D i) (D j)
+          (Metric.ball (center i) (radius i) ∩
+            Metric.ball (center j) (radius j)) :=
+      SCV.identity_theorem_product_inter_metric_ball_of_eqOn_open
+        hW_open hW_ne hW_sub_ball hDi hDj hW_eq
+    exact hfull (by simpa [hN_ball i, hN_ball j] using hz)
+  · exact False.elim (hne ⟨z, hz⟩)
+
 end SCV
