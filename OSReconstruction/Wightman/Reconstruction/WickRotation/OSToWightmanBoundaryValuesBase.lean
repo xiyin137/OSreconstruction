@@ -381,6 +381,89 @@ theorem bvt_boundary_values (OS : OsterwalderSchraderAxioms d)
         (nhds (bvt_W OS lgc n f)) :=
   (full_analytic_continuation_boundaryValueData (d := d) OS lgc n).choose_spec
 
+/-- Moving-test form of `bvt_boundary_values` for the selected OS
+boundary-value witness.
+
+This is the concrete OS-facing specialization of
+`SCV.tube_boundaryValueData_moving_of_fixed`: the boundary functional is the
+already selected `bvt_W OS lgc n`, so the theorem introduces no new boundary
+distribution.  It only upgrades fixed-test ray limits to convergent
+Schwartz-test families at the same forward-cone edge. -/
+theorem bvt_boundary_values_moving (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS) (n : ℕ)
+    (η : Fin n → Fin (d + 1) → ℝ)
+    (hη : InForwardCone d n η)
+    {α : Type*} {l : Filter α} [l.IsCountablyGenerated]
+    (εseq : α → ℝ)
+    (hεseq : Filter.Tendsto εseq l (nhdsWithin 0 (Set.Ioi 0)))
+    {fseq : α → SchwartzNPoint d n}
+    {f0 : SchwartzNPoint d n}
+    (hfseq : Filter.Tendsto fseq l (nhds f0)) :
+    Filter.Tendsto
+      (fun a : α => ∫ x : NPointDomain d n,
+        bvt_F OS lgc n
+          (fun k μ => ↑(x k μ) + (εseq a : ℂ) * ↑(η k μ) * Complex.I) *
+        fseq a x)
+      l
+      (nhds (bvt_W OS lgc n f0)) := by
+  classical
+  let Wcl : SchwartzNPoint d n →L[ℂ] ℂ :=
+    { toLinearMap :=
+        { toFun := bvt_W OS lgc n
+          map_add' := (bvt_W_linear (d := d) OS lgc n).map_add
+          map_smul' := (bvt_W_linear (d := d) OS lgc n).map_smul }
+      cont := bvt_W_continuous (d := d) OS lgc n }
+  have hC_cone : IsCone (ForwardConeAbs d n) := by
+    intro y hy t ht
+    exact forwardConeAbs_smul d n t ht y hy
+  have hF_holo :
+      DifferentiableOn ℂ (bvt_F OS lgc n)
+        (TubeDomainSetPi (ForwardConeAbs d n)) := by
+    simpa [forwardTube_eq_imPreimage] using
+      bvt_F_holomorphic (d := d) OS lgc n
+  obtain ⟨C_bd, N, hC_pos, hbound⟩ :
+      ∃ (C_bd : ℝ) (N : ℕ),
+        0 < C_bd ∧
+        ∀ z ∈ ForwardTube d n,
+          ‖bvt_F OS lgc n z‖ ≤ C_bd * (1 + ‖z‖) ^ N := by
+    rcases (full_analytic_continuation_with_acr_symmetry_growth OS lgc n).choose_spec with
+      ⟨_hACR, _hFT, _hF_euclid, _hF_perm, _hF_trans, _hNegCanonical, hGrowth⟩
+    exact hGrowth
+  have hF_growth :
+      ∀ z, z ∈ TubeDomainSetPi (ForwardConeAbs d n) →
+        ‖bvt_F OS lgc n z‖ ≤ C_bd * (1 + ‖z‖) ^ N := by
+    intro z hz
+    exact hbound z (by simpa [forwardTube_eq_imPreimage] using hz)
+  have hW_fixed :
+      ∀ (φ : SchwartzNPoint d n)
+        (η' : Fin n → Fin (d + 1) → ℝ),
+        η' ∈ ForwardConeAbs d n →
+        Filter.Tendsto
+          (fun ε : ℝ => ∫ x : NPointDomain d n,
+            bvt_F OS lgc n
+              (fun k μ => ↑(x k μ) + (ε : ℂ) * ↑(η' k μ) * Complex.I) *
+            φ x)
+          (nhdsWithin 0 (Set.Ioi 0))
+          (nhds (Wcl φ)) := by
+    intro φ η' hη'
+    change Filter.Tendsto
+      (fun ε : ℝ => ∫ x : NPointDomain d n,
+        bvt_F OS lgc n
+          (fun k μ => ↑(x k μ) + (ε : ℂ) * ↑(η' k μ) * Complex.I) *
+        φ x)
+      (nhdsWithin 0 (Set.Ioi 0))
+      (nhds (bvt_W OS lgc n φ))
+    exact bvt_boundary_values (d := d) OS lgc n φ η'
+      ((inForwardCone_iff_mem_forwardConeAbs (d := d) (n := n) η').2 hη')
+  have hη_abs : η ∈ ForwardConeAbs d n :=
+    (inForwardCone_iff_mem_forwardConeAbs (d := d) (n := n) η).1 hη
+  have hmoving :=
+    SCV.tube_boundaryValueData_moving_of_fixed
+      (C := ForwardConeAbs d n) hC_cone hF_holo
+      C_bd N hC_pos hF_growth Wcl hW_fixed η hη_abs
+      εseq hεseq hfseq
+  simpa [Wcl] using hmoving
+
 theorem bvt_euclidean_restriction (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) (n : ℕ) :
     ∀ (f : ZeroDiagonalSchwartz d n),
