@@ -333,6 +333,94 @@ transported `(4.12)` branch-side side-height pairings are asymptotic to their
 source-side Fourier-Laplace pairings, uses the checked signed source-test
 common Schwinger limit, and concludes the zero-height equality with
 `SCV.eq_zeroHeight_of_common_sideLimit`.
+The local source-test pullback is no longer schematic: for each `chi` supported
+in the source window `V`, the transcript defines
+`phiChi := (SchwartzMap.compCLMOfContinuousLinearEquiv Complex
+  (BHW.os45CommonEdgeFlatCLE d n (1 : Equiv.Perm (Fin n))).symm) chi`,
+proves `tsupport phiChi` lies in the flattened image `e '' V` and hence in the
+local flattened image `e '' Ulocal` and the checked edge set, removes the
+Figure-2-4 cutoff by
+`D.toSchwartzNPointCLM_eq_plain_of_tsupport_subset_edge`, applies the
+side-height transfer to `phiChi`, and divides by the positive flat Jacobian
+using `BHW.os45FlatCommonChart_commonBoundaryDifference_integral_eq_sourcePullback`
+plus `BHW.os45CommonEdgeFlatJacobianAbs_pos`.
+
+Fixed-test refinement, 2026-05-16: do not replace the OS45 `sourceSide` path by
+a fabricated ordinary forward-cone direction.  The ordinary fixed-test leaf is
+the OS-I `(4.1)/(4.14)` boundary selection for the checked
+`BHW.os45FlatCommonChartSourceSide` normal form, with incoming sheet
+`BHW.ExtendedTube d n` and outgoing flat sheet
+`BHW.os45FlatCommonChartOmega d n 1`.  The raw-adjacent fixed-test leaf starts
+from the retained `OmegaSeed412/BSeed412` window
+`{z | BHW.permAct (d := d) P.τ z ∈ BHW.ForwardTube d n} ∩ H.ΩJ` and reaches
+`BHW.os45FlatCommonChartOmega d n (P.τ.symm * 1)` only through the adjacent
+one-branch chain.  Endpoint `extendF o permAct` remains terminal bookkeeping,
+not upstream seed data.
+
+Critical-path refinement, 2026-05-16: the fixed-test `sourceSide` leaves now
+have the corrected compact-specialization Lean proof shape.  The raw tube
+boundary-value theorem may still quantify over all Schwartz tests, but after
+the local OS45 `sourceSide` pullback the proof only needs
+`psi0 = D.toZeroDiagonalCLM 1 phi`; do not claim compact support or cutoff
+inversion for an arbitrary `SchwartzNPoint`.  Pull the `sourceSide` integral
+into the flat common chart by
+`BHW.os45FlatCommonChart_branch_integral_eq_sourceSide_extendF_translatedTest`;
+the real side displacement is cancelled by the moving flat test
+`SCV.translateSchwartz (-(eps • eta0)) psi0Flat` on the ordinary side and
+`SCV.translateSchwartz (-((-eps) • eta0)) psi0Flat` on the raw-adjacent side,
+where
+`psi0Flat := (SchwartzMap.compCLMOfContinuousLinearEquiv Complex e.symm)
+  ((psi0).1 : SchwartzNPoint d n)`.
+Define the plain CLE pullback
+`pullFlatToSource := SchwartzMap.compCLMOfContinuousLinearEquiv Complex e`
+and the proof-local flat boundary functionals
+`WordFlat := J • (Word.comp pullFlatToSource)` and
+`WadjFlat := J • (Wadj.comp pullFlatToSource)`.  The identities
+`WordFlat psi0Flat = J * Word psi0` and
+`WadjFlat psi0Flat = J * Wadj psi0` now require the explicit CLE inverse
+calculation `pullFlatToSource psi0Flat = psi0`; they are not consequences of
+`D.toZeroDiagonalCLM` inverting arbitrary source tests.  The translated-test
+pullback integrability input is rebuilt for `psi0Flat`: transport compact
+support from the checked `D.toSchwartzNPointCLM_hasCompactSupport`, prove
+`tsupport psi0Flat ⊆ BHW.os45FlatCommonChartEdgeSet d n P 1` from the
+source-window support of `psi0` using the now checked support-only lemmas
+`BHW.hasCompactSupport_comp_os45CommonEdgeFlatCLE_symm` and
+`BHW.tsupport_comp_os45CommonEdgeFlatCLE_symm_subset_edgeSet`, bundled for
+the concrete zero-diagonal test as
+`BHW.OS45Figure24SourceCutoffData.toZeroDiagonalCLM_flatPullback_support`, and call
+`BHW.os45FlatCommonChart_branch_side_shifted_mul_integrable_eventually`
+with `psi0Flat` to get the ordinary `.1` and raw-adjacent `.2` side
+integrability hypotheses.  The source-side moving test estimate from fixed
+`psi0` to the Figure-2-4 tests is checked as
+`BHW.tendsto_integral_comp_os45FlatCommonChartSourceSide_mul_sub_of_commonCompactSupport`.
+The checked Jacobian relation
+`BHW.os45CommonEdgeFlatJacobianAbs_pos` then cancels the common scalar.  This
+is a genuine local proof body, not a public wrapper and not a straight
+forward-cone replacement.
+
+Lean-entry update, 2026-05-16: after the source-test pullback correction, the
+fixed-test `sourceSide` boundary/covariance selection, compact-collar endpoint
+DCT, and endpoint carrier-pairing normalization are now spelled out as proof
+bodies in the active Wadj transcript.  Coordinate/Jacobian algebra remains
+checked, and the last proof-doc gate is resolved by the explicit compact-support
+moving-test perturbation described above.  Lean implementation may resume only
+after that transcript remains clean under route scans, and then only against
+these proof-local ingredients, without
+introducing public wrappers for the side transfer, `AdjEdge = OrdEdge`, `Wadj`,
+`Hdiff`, or the common-boundary CLM.
+
+Follow-up tightening, 2026-05-16: the fixed-test leaves are now pinned as local
+scalar-cancellation scripts.  First use the checked translated-test pullback to
+obtain `Flat*(eps) = J * Source*(eps)` with
+`J := BHW.os45CommonEdgeFlatJacobianAbs n`.  Then combine the one-branch
+fixed-test OS-I boundary datum with the checked compact-support moving-test
+perturbation to prove the flat limit, rewrite
+`WordFlat psi0Flat = J * Word psi0` or
+`WadjFlat psi0Flat = J * Wadj psi0`, and
+cancel `J` using `BHW.os45CommonEdgeFlatJacobianAbs_pos`.  In the adjacent
+case, `OmegaSeed412/BSeed412` remains the upstream analytic element; the
+deterministic `extendF o permAct` formula is only an endpoint rewrite after
+raw-chain transport.
 
 The two live mathematical blocks are the proof-local `(4.14)` asymptotic trace
 transfers:
@@ -348,8 +436,172 @@ their conclusion from `Hdiff`, the flat EOW bridge, `Wadj`, a finite-height
 Wick-test transform, or any theorem already assuming `hsource_zero_rep`.
 The companion Wadj transcript now gives the exact Lean-pseudocode bodies under
 “Exact `(4.14)` Transfer Leaves”: fixed-test OS-I boundary values, moving-test
-upgrade by `SchwartzMap.tempered_apply_tendsto_of_tendsto_filter`, and final
-side-family identification using the checked Figure-2-4 cutoff formulas.
+compact-support perturbation estimates, and final side-family identification
+using the checked Figure-2-4 cutoff formulas.
+
+Active refinement, 2026-05-16: the exact side-height transcript now separates
+the boundary-functional selection from the endpoint/source computation.  The
+two local leaves `hOrd_boundary_to_source` and `hAdj_boundary_to_source` are
+proved by uniqueness of limits: the compact source-side specializations
+`hOrd_fixed_psi0`/`hAdj_fixed_psi0` select the CLM limit for
+`psi0 = D.toZeroDiagonalCLM 1 phi`, while an independent
+endpoint-continuity/dominated-convergence limit
+computes the same side-height integral at `eps = 0`.  The ordinary endpoint
+then rewrites by the terminal ordinary branch equality and
+`BHW.os45FlatCommonChart_wickSection_plus_eq_bvt_F`; the raw-adjacent endpoint
+rewrites only after the retained `(4.12)` chain trace reaches the terminal
+chart.  The final Schwinger normalizations are checked separately by
+`bvt_euclidean_restriction` and
+`BHW.os45CommonEdge_adjacentWick_sourcePairing_eq_schwinger`.
+
+Correction, 2026-05-16: the endpoint rewrite is not a raw coordinate equality
+from the quarter-turned common-edge carrier to the Wick point.  The zero-height
+carrier is
+`BHW.os45QuarterTurnConfig (fun k => wickRotatePoint (u k))`, and after the
+raw-adjacent terminal `(4.12)` trace plus `permAct` it is
+`BHW.os45QuarterTurnConfig (fun k => wickRotatePoint (u (P.τ k)))`.  The
+docs must therefore split the endpoint normal form into a coordinate carrier
+identity and a local OS-I `(4.14)` pairing identity for `bvt_F`; the latter is
+the mathematical normalization step and must not be replaced by pointwise
+`simp` or a pointwise `bvt_F` equality.
+
+Lean-entry contract, 2026-05-16: the endpoint support leaves are now exactly
+`hOrd_endpoint_DCT`, `hAdj_endpoint_DCT`, `hOrd_carrier_pairing`, and
+`hAdj_carrier_pairing` in the compact E-to-R blueprint and Wadj transcript.
+The DCT leaves are analytic estimates from terminal-branch continuity, compact
+support, the checked compact-collar SourceSide bound, the checked
+zero-extension measurability helper, and dominated convergence.  The
+carrier-pairing leaves
+are the local OS-I `(4.14)` pairing-normalization statements on the
+quarter-turned ordinary and raw-adjacent carriers against the current compact
+test.  They must be proved before Lean enters the public `Hdiff` producer; they
+must not assume `AdjEdge = OrdEdge`, `Wadj`, `Hdiff`, the downstream
+deterministic adjacent branch, or a common-boundary CLM.
+
+Follow-up refinement, 2026-05-16: the DCT endpoint-continuity half is now
+expanded into Lean-pseudocode sub-haves in the Wadj transcript.  Each side
+builds support containment in `P.V`, endpoint membership, eventual terminal
+carrier collar, pointwise convergence, an integrable compact-collar
+majorant, and eventual AEStronglyMeasurability before calling
+`MeasureTheory.tendsto_integral_filter_of_dominated_convergence`.  The
+remaining support facts are local analytic estimates plus the carrier/value
+normal forms above; they are not wrapper theorem surfaces and must not assume
+the asymptotic transfers, downstream deterministic adjacent branch, or the flat
+common-boundary conclusion.
+
+Endpoint DCT tightening, 2026-05-16: the majorant is now the compact-collar
+one.  For each terminal branch, compactness of `tsupport psi0`, continuity of
+`sourceSide`, and openness of the terminal carrier give a uniform small
+side-height collar inside the carrier.  Continuity of the terminal branch on
+that compact collar gives a finite bound `M`, so the DCT majorant is simply
+`M * ‖psi0 u‖`, integrable by compact support/Schwartz regularity.  This is
+more Lean-facing than invoking an unspecified global growth estimate and keeps
+the DCT support proof local.
+
+Deep Research check
+`v1_ChZwSjBJYXRhMkNKT0V4TjhQbUx2MkVBEhZwSjBJYXRhMkNKT0V4TjhQbUx2MkVB`
+completed on 2026-05-16 using `deep-research-max-preview-04-2026`.  It
+validated the theorem shape: the OS45 `sourceSide` path must remain the genuine
+BHW/OS-I covariance path, and replacing it by a fabricated plain forward-cone
+direction would be circular.  It also flagged two implementation guardrails
+already reflected above: keep the support/domain membership attached to the
+actual `sourceSide` sheet, and make the moving-test/DCT step carry explicit
+uniform bounds before passing to distributional conclusions.  Its suggestion
+to introduce subtype-style covariance wrappers is interpreted only as a
+proof-local invariant/documentation guard here; the active route still forbids
+new wrapper surfaces.
+
+Lean support checkpoint, 2026-05-16: added
+`OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanLocalityOS45SourceSide.lean`
+with the no-cutoff coordinate identities
+`BHW.os45FlatCommonChart_branch_integral_eq_sourceSide_extendF_shift` and
+`BHW.os45FlatCommonChart_branch_integral_eq_sourceSide_extendF_translatedTest`.
+These are direct pullback/Jacobian theorems for the genuine OS45 `sourceSide`
+path; they assert no boundary-value limit and introduce no theorem-2 wrapper.
+They are the first Lean support for the flat-chart fixed-test proof body above.
+The same file now also checks the zero-height endpoint carrier identities
+`BHW.os45FlatCommonChartSourceSide_zero` and
+`BHW.permAct_os45FlatCommonChartSourceSide_zero`, plus the coordinate continuity
+lemma `BHW.continuous_os45FlatCommonChartSourceSide`.  These discharge the
+endpoint coordinate normal form and the source-side continuity input for the
+compact-collar DCT leaf; they still assert no OS-I transfer or pairing
+normalization.
+
+Additional SourceSide checkpoint, 2026-05-16: the compact-collar topology and
+finite branch-bound support are now checked as
+`BHW.eventually_forall_os45FlatCommonChartSourceSide_mem_of_compact` and
+`BHW.exists_bound_eventually_forall_norm_comp_os45FlatCommonChartSourceSide`.
+They prove, for the genuine `sourceSide` path only, uniform small-positive
+side-height membership in an open carrier over a compact source support and a
+finite bound for any branch continuous on that carrier.  These discharge the
+collar and `M * ‖psi0 u‖` majorant inputs for the endpoint DCT leaf.  The same
+file now also checks
+`BHW.tendsto_comp_os45FlatCommonChartSourceSide_nhdsWithin`, the pointwise
+terminal-branch convergence along `sourceSide` from carrier continuity.  These
+facts do not select a boundary functional, identify a source pairing, or
+package any common-boundary conclusion.
+
+Proof-doc gate tightening, 2026-05-16: after the SourceSide support Lean, the
+live docs were completed before any further Lean entry.  The Wadj transcript
+now gives Lean-shaped scripts for endpoint membership, compact-collar DCT,
+zero-extension AEStronglyMeasurability, integrable majorants, and both
+ordinary/raw-adjacent flat-boundary pairing cancellations.  The compact E-to-R
+blueprint records those as proof-local projections and private support
+helpers, not public theorem-2 wrappers.  The zero-extension measurability
+helper is now checked in
+`OSToWightmanLocalityOS45SourceSide.lean` as
+`BHW.aestronglyMeasurable_zeroExtension_mul_of_compactSupport`.  The next Lean
+step is direct implementation of the remaining local proof bodies in the
+strict OS45 file; do not add wrappers for side transfer, `AdjEdge = OrdEdge`,
+`Wadj`, `Hdiff`, or a common-boundary CLM.
+
+SourceSide DCT checkpoint, 2026-05-16: the endpoint dominated-convergence
+assembly itself now checks as
+`BHW.tendsto_integral_comp_os45FlatCommonChartSourceSide_mul_of_hasCompactSupport`,
+with fixed-height continuity supplied by
+`BHW.continuous_os45FlatCommonChartSourceSide_fixed_eps`.  This closes the
+neutral analytic endpoint support leaf for an arbitrary terminal branch
+continuous on an open carrier and an arbitrary compactly supported continuous
+source test.  It still does not select `Word`/`Wadj`, prove an OS-I side-height
+transfer, or identify either zero-height carrier pairing; those remain the
+genuine E-to-R mathematical leaves.
+
+Moving-test perturbation checkpoint, 2026-05-16: the compact-support error
+estimate from the fixed-test source-side leaf to the moving cutoff tests is now
+checked as
+`BHW.tendsto_integral_comp_os45FlatCommonChartSourceSide_mul_sub_of_commonCompactSupport`.
+It proves that, along the genuine `sourceSide` path, eventual common compact
+support and zeroth Schwartz-seminorm convergence force the difference integral
+to tend to zero, using the checked compact-collar branch bound and the
+`M * volume(K) * supNorm` estimate.  It is only analytic perturbation support:
+it does not select the ordinary or raw-adjacent boundary functional and does
+not introduce a side-transfer wrapper.
+
+Integral-split support checkpoint, 2026-05-16: the product integrability needed
+to split the moving source-side integral into fixed plus difference terms is
+now checked as
+`BHW.integrable_comp_os45FlatCommonChartSourceSide_mul_of_commonCompactSupport`,
+with fixed-test eventual form
+`BHW.eventually_integrable_comp_os45FlatCommonChartSourceSide_mul_of_commonCompactSupport`.
+Use the fixed-height lemma inside the local `filter_upwards` block when the
+difference test depends on the side height.  This discharges only the
+`MeasureTheory.integral_add` integrability side condition; it does not identify
+the selected boundary functional or assert a side-transfer theorem.
+
+Concrete side-test perturbation inputs, 2026-05-16: the two hypotheses of that
+estimate are now checked for the actual Figure-2-4 side tests.
+`BHW.OS45Figure24SourceCutoffData.toSideZeroDiagonalCLM_sub_toZeroDiagonalCLM_eq_zero_off_eventually`
+turns the source-window support packet into eventual common compact support for
+the plus and minus moving tests relative to the fixed pulled source test.  In
+the active transcript this theorem is invoked with the original flat test
+`phi`, the proof-local source packet `Usource ⊆ Ksource`, and
+`hphiUsource : tsupport phi ⊆
+  (BHW.os45CommonEdgeFlatCLE d n 1) '' Usource`; the auxiliary scalar-cancellation
+test `psi0Flat` is not its input.
+`BHW.OS45Figure24SourceCutoffData.toSideZeroDiagonalCLM_sub_toZeroDiagonalCLM_seminorm_tendsto_zero`
+specializes the existing Schwartz convergence of `toSideZeroDiagonalCLM` to the
+zeroth seminorm used in the estimate.  These are support/seminorm leaves, not a
+new public side-transfer theorem.
 
 Deep Research theorem-shape check
 `v1_Chc5VmdJYXEtV01JeUx4TjhQcXBmbndBURIXOVZnSWFxLVdNSXlMeE44UHFwZm53QVE`
@@ -389,10 +641,11 @@ from the OS-I `(4.1)/(4.12)/(4.14)` compact-test covariance data before
 Lean support now checks the source-side compact-test equality as
 `BHW.os45CommonEdge_adjacentWick_sourcePairing_eq_ordinaryWick`, whose proof is
 exactly the ordinary `bvt_euclidean_restriction` normalization composed with
-`BHW.os45CommonEdge_adjacentWick_sourcePairing_eq_schwinger`.  The remaining
-direct `Hdiff` proof must still supply the flat source-cutoff/CLE pullback,
-the side-limit fields into the concrete boundary distributions, and the
-checked SCV upgrade to `h414_bv_eq` explicitly.
+`BHW.os45CommonEdge_adjacentWick_sourcePairing_eq_schwinger`.  The active Wadj
+transcript now supplies the missing direct `Hdiff` proof plan explicitly:
+the flat source-cutoff/CLE pullback, the side-limit fields into the concrete
+boundary distributions, and the checked SCV upgrade to `h414_bv_eq` all appear
+as local haves in the `hsource_zero_rep` body rather than as a wrapper theorem.
 
 Wrapper audit, 2026-05-14: the previously checked private carrier files
 `OSToWightmanLocalityOS45BHWJostBranchFree.lean`,

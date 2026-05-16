@@ -27,6 +27,7 @@ import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanLocalit
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanLocalityOS45Compact
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanLocalityOS45BHWJost
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanLocalityOS45BHWJostLocal
+import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanLocalityOS45SourceSide
 import OSReconstruction.Wightman.Reconstruction.WickRotation.WickRotationBridge
 
 /-!

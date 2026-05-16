@@ -271,10 +271,10 @@ Wick chart to prove `BAdj0_wick_trace`.  Only this `hadj412` output may serve
 as the adjacent initial data for the later one-branch chain from `zord` to an
 arbitrary terminal point `q`.
 
-### What Is Still Unproved In `hadj412`
+### Implementation Obligations Inside `hadj412`
 
-The `hadj412` circuit is not Lean-ready until these internal subproofs are
-expanded in the proof body:
+The `hadj412` circuit must inline these internal subproofs in its proof body;
+they are the local mathematical obligations that replace any public wrapper:
 
 1. `adjacent_sector_seed_transport`: given two metric-ball charts inside the
    selected adjacent sheet, both carrying the retained continuation of
@@ -910,7 +910,7 @@ have hPlus_asymptotic :
       (fun eps eta => BranchPlusSide eps eta - SourcePlusSide eps eta)
       (fun _ : BHW.OS45FlatCommonChartReal d n => 0)
       (nhdsWithin (0 : Real) (Set.Ioi 0)) Keta := by
-  -- Inline the ordinary `(4.1)/(4.14)` branch/source transfer.
+  -- Establish the ordinary `(4.1)/(4.14)` branch/source transfer in place.
   -- Build the eventual ordinary side pullback by the checked signed
   -- source-side normal form, prove the ordinary moving side-height
   -- boundary-value limit against the selected `(4.1)` boundary CLM, compare
@@ -918,21 +918,19 @@ have hPlus_asymptotic :
   -- fixed-direction statement to the singleton `Keta`.
   -- The expanded Lean-pseudocode body is the "Exact Side-Height `(4.14)`
   -- Transfer Leaf" below; there is no theorem call to insert here.
-  -- In Lean, paste that body here rather than calling a wrapper theorem.
 
 have hMinus_asymptotic :
     TendstoUniformlyOn
       (fun eps eta => BranchMinusSide eps eta - SourceMinusSide eps eta)
       (fun _ : BHW.OS45FlatCommonChartReal d n => 0)
       (nhdsWithin (0 : Real) (Set.Ioi 0)) Keta := by
-  -- Inline the transported raw-adjacent `(4.12)/(4.14)` branch/source
+  -- Establish the transported raw-adjacent `(4.12)/(4.14)` branch/source
   -- transfer.  Start from `OmegaSeed412/BSeed412`, transport that analytic
   -- element through the adjacent one-branch chain, rewrite to the terminal
   -- flat endpoint only after the chain supplies the overlap equality, then
   -- apply the same moving boundary-value calculation on the minus sheet.
   -- The deterministic `extendF o permAct` expression is endpoint
   -- bookkeeping here, never upstream seed data.
-  -- In Lean, paste that body here rather than calling a wrapper theorem.
 ```
 
 The final common-limit facts are then pure filter algebra:
@@ -1133,7 +1131,7 @@ let Keta : Set (BHW.OS45FlatCommonChartReal d n) := {eta0}
 ```
 
 so the first theorem to prove is **fixed-direction**, not a new compact-family
-boundary-value theorem.  The `TendstoUniformlyOn ... Keta` target below is
+boundary-value theorem.  The `TendstoUniformlyOn` target on `Keta` below is
 only the shape expected by the checked common-side-limit helper.  It should be
 obtained from a fixed-direction statement by a neutral singleton bridge:
 
@@ -1529,7 +1527,7 @@ would still be wrapper churn.
 
 After the two fixed-direction asymptotic transfers are proved, specialize the
 checked source theorem to the singleton direction, lift the two asymptotics to
-`TendstoUniformlyOn ... Keta`, and apply
+`TendstoUniformlyOn` on `Keta`, and apply
 `SCV.eq_zeroHeight_of_common_sideLimit`.  The active target is `AdjEdge =
 OrdEdge`; there is no separate active theorem asserting `OrdEdge =
 FlatSchwinger` or `AdjEdge = FlatSchwinger`.
@@ -1806,7 +1804,8 @@ Therefore the following shortcut is circular and must not be used:
 ```lean
 -- invalid as a closure step:
 -- use `bvt_boundary_values` to show the branch-side real-edge pairing is
--- already `OS.S n (...)`, then feed that as `h414_integrals`.
+-- already the same zero-diagonal Schwinger functional, then feed that as
+-- `h414_integrals`.
 ```
 
 The missing OS-I content is precisely the local normalization that compares the
@@ -1817,11 +1816,12 @@ after it supplies the OS-I identity-theorem/edge-transfer step that connects
 the resulting `bvt_W` boundary value to the Schwinger-side source pairing in
 this Figure-2-4 window.
 
-The moving-test part of that analytic ingredient is checked as
-`SCV.tube_boundaryValueData_moving_of_fixed`.  Use it only after the boundary
-functional has already been selected.  For the ordinary selected OS witness,
-the specialized theorem is now checked as `bvt_boundary_values_moving`, so the
-ordinary side can be written directly as:
+The moving-test part of that analytic ingredient is checked in tube coordinates
+as `SCV.tube_boundaryValueData_moving_of_fixed`.  Use it only after the boundary
+functional has already been selected; in OS45 flat common-chart coordinates,
+use the compact-support perturbation estimate described below.  For the
+ordinary selected OS witness, the specialized theorem is now checked as
+`bvt_boundary_values_moving`, so the ordinary side can be written directly as:
 
 ```lean
 let Word : SchwartzNPoint d n ->L[Complex] Complex :=
@@ -1870,10 +1870,12 @@ have hside_support_Ulocal :
     hUlocal_open Keta hKeta_compact phi hphi_compact hphiUlocal
 ```
 
-This means the remaining proof does not have to re-establish source-window
-support for moving tests.  It still must prove the actual boundary-value
-convergence of the ordinary and transported adjacent analytic elements on
-those tests.
+This means the side-height proof does not re-establish source-window support
+for moving tests.  The actual boundary-value convergence of the ordinary and
+transported adjacent analytic elements is supplied by the exact local
+side-height transfer transcript below: `hPlus_asymptotic_eta0` uses the ordinary
+`(4.1)` chain and `hMinus_asymptotic_eta0` uses the transported raw `(4.12)`
+chain.  Both are proof-local bodies, not public assumptions.
 
 Once `hzero_plus` and `hzero_minus` are in hand, the flat crossing seed is
 exactly the checked bridge call:
@@ -2001,7 +2003,10 @@ exists (m : Nat)
       Wj <= N (Fin.castSucc j) inter N (Fin.succ j) /\
       Set.EqOn (B (Fin.castSucc j)) (B (Fin.succ j)) Wj) /\
   terminalCarrier = N (Fin.last m) /\
-  terminalBranch = B (Fin.last m)
+  terminalBranch = B (Fin.last m) /\
+  terminalCarrier_open : IsOpen terminalCarrier /\
+  terminalBranch_continuousOn :
+    ContinuousOn terminalBranch terminalCarrier
 ```
 
 The `initial_seed` field expands as:
@@ -2222,18 +2227,73 @@ have hnext_seed :
     exists Wseed, IsOpen Wseed /\ Wseed.Nonempty /\
       Wseed <= Cnext inter OmegaAdj0 /\
       Set.EqOn Bnext BAdj0 Wseed := by
-  -- one adjacent-sector transfer step from retained provenance
+  -- local adjacent-sector transfer step from retained provenance:
+  -- choose a metric ball around q inside AdjSheet and the current chart
+  -- window, restrict the transported `BAdj0` analytic element to it, and
+  -- use the overlap seed with `BAdj0` supplied by the same raw `(4.12)`
+  -- one-branch gallery.  This is a restriction of the existing analytic
+  -- element, not a definition by `extendF o permAct`.
 
 have hstep_eq :
     exists Wstep, IsOpen Wstep /\ Wstep.Nonempty /\
       Wstep <= Cprev inter Cnext /\
       Set.EqOn Bprev Bnext Wstep := by
-  -- connect both local representatives to BAdj0 by the local identity theorem
-  -- on a metric-ball shrink inside their common adjacent-sector chart
+  rcases hprev_seed with
+    ⟨Wprev, hWprev_open, hWprev_nonempty, hWprev_sub, hWprev_eq⟩
+  rcases hnext_seed with
+    ⟨Wnext, hWnext_open, hWnext_nonempty, hWnext_sub, hWnext_eq⟩
+
+  -- Build the proof-local gallery
+  --
+  --   Cprev --reverse previous one-branch chain--> OmegaAdj0
+  --         --identity seed for BAdj0--> OmegaAdj0
+  --         --forward next one-branch chain--> Cnext.
+  --
+  -- Every carrier is first retargeted to a metric ball, and every adjacent
+  -- pair retains an open equality seed.  Nonconsecutive pairwise overlaps are
+  -- filled by the same `adjacent_pair_seed` case split used in `hadj412`:
+  -- ordinary parts compare through `OrdGlobal`, adjacent parts compare through
+  -- the raw `(4.12)` provenance, and any flat crossing uses the upstream
+  -- local zero-height bridge already constructed for `hadj412`.
+  let Gal := adjacent_sector_comparison_gallery
+    Cprev Bprev Cnext Bnext OmegaAdj0 BAdj0
+    Cprev.adjacentProvenance Cnext.adjacentProvenance
+    hprev_seed hnext_seed
+
+  have hpair_seed :
+      forall i j,
+        (Gal.carrier i inter Gal.carrier j).Nonempty ->
+        exists W, IsOpen W /\ W.Nonempty /\
+          W <= Gal.carrier i inter Gal.carrier j /\
+          Set.EqOn (Gal.branch i) (Gal.branch j) W := by
+    intro i j hij
+    exact Gal.seed i j hij
+
+  have hall_overlap :
+      forall i j,
+        Set.EqOn (Gal.branch i) (Gal.branch j)
+          (Gal.carrier i inter Gal.carrier j) := by
+    exact
+      SCV.pairwise_eqOn_metric_ball_carriers_of_local_overlap_seeds
+        Gal.carrier_ball Gal.branch_holo hpair_seed
+
+  obtain ⟨zseed, hzprev, hznext⟩ := Gal.endpoint_overlap_nonempty
+  obtain ⟨rho, hrho_pos, hball_sub⟩ :=
+    SCV.exists_metric_ball_subset_inter_of_mem_open
+      Cprev_open hzprev Cnext_open hznext
+  let Wstep := Metric.ball zseed rho
+  refine ⟨Wstep, isOpen_ball, ⟨zseed, by simpa [Wstep] using
+    Metric.mem_ball_self hrho_pos⟩, hball_sub, ?_⟩
+  intro z hzW
+  exact hall_overlap Gal.left_index Gal.right_index (hball_sub hzW)
 ```
 
 The last line is where the adjacent-sector Hall-Wightman branch law is used.
-It is still a genuine mathematical subproof, not topology and not an existing
+The name `adjacent_sector_comparison_gallery` above denotes the in-body finite
+family built from the retained provenance; it is not a production theorem or
+wrapper.  The only reusable call is the checked SCV propagation lemma.  The
+mathematical content remains the construction of `Gal.seed` for every nonempty
+overlap without replacing the raw `(4.12)` element by the downstream
 deterministic formula.
 
 Once `Badj412`, `hadj412_wick_trace`, and `hadj412_common_trace` are in scope,
@@ -2562,20 +2622,379 @@ have hsource_zero_rep :
       -- not assumed as `h414_common_boundary`, `Wadj`, or `Hdiff`.
       have hhorizontal_zero :
           integral (fun u : NPointDomain d n => Ghoriz u * chi u) = 0 := by
-        -- Direct OS-I `(4.14)` boundary-transfer body.  This is not an
-        -- `Hdiff`/EOW argument and not a finite-height Wick-test transform.
-        -- It proves the zero-height horizontal source pairing by:
-        --   * pulling `chi` to a flat common-edge test with the explicit
-        --     `os45CommonEdgeFlatCLE` Jacobian;
-        --   * proving the ordinary and transported-adjacent branch-side
-        --     side-height pairings have the same source-side Schwinger limit;
-        --   * using `SCV.eq_zeroHeight_of_common_sideLimit` to get the
-        --     zero-height flat common-boundary equality;
-        --   * changing variables back to the source integral.
-        -- No production helper call belongs here until the two OS-I transfer
-        -- bodies above are proved.  Inline the ordinary and raw-adjacent
-        -- branch/source asymptotic transfers, then inline the checked
-        -- source-to-flat and side-limit algebra.
+        classical
+        let e :=
+          BHW.os45CommonEdgeFlatCLE d n (1 : Equiv.Perm (Fin n))
+        let Jflat : Complex :=
+          (BHW.os45CommonEdgeFlatJacobianAbs n : Complex)
+        let phiChi :
+            SchwartzMap (BHW.OS45FlatCommonChartReal d n) Complex :=
+          (SchwartzMap.compCLMOfContinuousLinearEquiv Complex e.symm) chi
+
+        have hV_sub_P : V <= P.V :=
+          subset_closure.trans hV_closure_P
+        have hV_sub_Ulocal : V <= Ulocal :=
+          subset_closure.trans hV_closure_Ulocal
+        have hphiChi_compact :
+            HasCompactSupport
+              (phiChi : BHW.OS45FlatCommonChartReal d n -> Complex) := by
+          -- Compact support is carried by the homeomorphism `e.symm`.
+          simpa [phiChi, e, Function.comp_def,
+            SchwartzMap.compCLMOfContinuousLinearEquiv_apply] using
+            hchi_compact.comp_homeomorph e.symm.toHomeomorph
+        have hphiChi_image :
+            tsupport
+                (phiChi : BHW.OS45FlatCommonChartReal d n -> Complex) <=
+              e '' V := by
+          intro x hx
+          have hxpre :
+              e.symm x in tsupport (chi : NPointDomain d n -> Complex) := by
+            have hpre :=
+              tsupport_comp_subset_preimage
+                (chi : NPointDomain d n -> Complex) e.symm.continuous
+            simpa [phiChi, e, Function.comp_def,
+              SchwartzMap.compCLMOfContinuousLinearEquiv_apply] using hpre hx
+          exact ⟨e.symm x, hchi_suppV hxpre, by simp [e]⟩
+        have hphiChiUlocal :
+            tsupport
+                (phiChi : BHW.OS45FlatCommonChartReal d n -> Complex) <=
+              e '' Ulocal :=
+          hphiChi_image.trans (Set.image_mono hV_sub_Ulocal)
+        have hphiChiE :
+            tsupport
+                (phiChi : BHW.OS45FlatCommonChartReal d n -> Complex) <=
+              BHW.os45FlatCommonChartEdgeSet d n P
+                (1 : Equiv.Perm (Fin n)) := by
+          intro x hx
+          rcases hphiChi_image hx with ⟨u, huV, rfl⟩
+          exact
+            (BHW.os45CommonEdgeFlatCLE_mem_edgeSet_iff d n P
+              (1 : Equiv.Perm (Fin n)) u).mpr (hV_sub_P huV)
+        have hpull_chi :
+            forall u : NPointDomain d n,
+              (D.toSchwartzNPointCLM
+                  (1 : Equiv.Perm (Fin n)) phiChi :
+                NPointDomain d n -> Complex) u = chi u := by
+          intro u
+          calc
+            (D.toSchwartzNPointCLM
+                (1 : Equiv.Perm (Fin n)) phiChi :
+              NPointDomain d n -> Complex) u
+                = phiChi (e u) := by
+                    exact
+                      D.toSchwartzNPointCLM_eq_plain_of_tsupport_subset_edge
+                        (1 : Equiv.Perm (Fin n)) phiChi hphiChiE u
+            _ = chi u := by
+                    simp [phiChi, e,
+                      SchwartzMap.compCLMOfContinuousLinearEquiv_apply]
+
+        let FlatDiff :
+            BHW.OS45FlatCommonChartReal d n -> Complex := fun x =>
+          BHW.os45FlatCommonChartBranch d n OS lgc
+              (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+              (fun a => (x a : Complex)) -
+            BHW.os45FlatCommonChartBranch d n OS lgc
+              (1 : Equiv.Perm (Fin n)) (fun a => (x a : Complex))
+
+        have hflat_zero_phiChi :
+            integral
+              (fun x : BHW.OS45FlatCommonChartReal d n =>
+                FlatDiff x * phiChi x) = 0 := by
+          -- Instantiate the exact side-height `(4.14)` transfer leaf below with
+          -- `phi := phiChi`, `hphi_compact := hphiChi_compact`, and
+          -- `hphiE := hphiChiE`, `hphiUlocal := hphiChiUlocal`.  This is
+          -- deliberately in-body: the following names are local `have`s, not
+          -- exported wrapper theorem surfaces.
+          let l := nhdsWithin (0 : Real) (Set.Ioi 0)
+          obtain ⟨hCone_open, hCone_conv, hCone_zero, hCone_scale,
+              hCone_nonempty⟩ :=
+            BHW.os45FlatCommonChartCone_eowReady d n
+          obtain ⟨eta0, heta0⟩ := hCone_nonempty
+          let Keta : Set (BHW.OS45FlatCommonChartReal d n) := {eta0}
+          have hKeta : IsCompact Keta := by
+            simp [Keta]
+          have hKetaC :
+              Keta <= BHW.os45FlatCommonChartCone d n := by
+            intro eta heta
+            simpa [Keta] using heta0
+          let psi0 : ZeroDiagonalSchwartz d n :=
+            D.toZeroDiagonalCLM (1 : Equiv.Perm (Fin n)) phiChi
+          let psiPlus : Real -> BHW.OS45FlatCommonChartReal d n ->
+              ZeroDiagonalSchwartz d n := fun eps eta =>
+            D.toSideZeroDiagonalCLM
+              (1 : Equiv.Perm (Fin n)) (1 : Real) eps eta phiChi
+          let psiMinus : Real -> BHW.OS45FlatCommonChartReal d n ->
+              ZeroDiagonalSchwartz d n := fun eps eta =>
+            D.toSideZeroDiagonalCLM
+              (1 : Equiv.Perm (Fin n)) (-1 : Real) eps eta phiChi
+          let BranchPlusSide :
+              Real -> BHW.OS45FlatCommonChartReal d n -> Complex :=
+            fun eps eta =>
+              integral fun x : BHW.OS45FlatCommonChartReal d n =>
+                BHW.os45FlatCommonChartBranch d n OS lgc
+                  (1 : Equiv.Perm (Fin n))
+                  (fun a => (x a : Complex) +
+                    (eps : Complex) * (eta a : Complex) * Complex.I) *
+                  phiChi x
+          let BranchMinusSide :
+              Real -> BHW.OS45FlatCommonChartReal d n -> Complex :=
+            fun eps eta =>
+              integral fun x : BHW.OS45FlatCommonChartReal d n =>
+                BHW.os45FlatCommonChartBranch d n OS lgc
+                  (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+                  (fun a => (x a : Complex) -
+                    (eps : Complex) * (eta a : Complex) * Complex.I) *
+                  phiChi x
+          let SourcePlusSide :
+              Real -> BHW.OS45FlatCommonChartReal d n -> Complex :=
+            fun eps eta =>
+              Jflat *
+                integral fun u : NPointDomain d n =>
+                  bvt_F OS lgc n (fun k => wickRotatePoint (u k)) *
+                    ((((psiPlus eps eta).1 : SchwartzNPoint d n) :
+                      NPointDomain d n -> Complex) u)
+          let SourceMinusSide :
+              Real -> BHW.OS45FlatCommonChartReal d n -> Complex :=
+            fun eps eta =>
+              Jflat *
+                integral fun u : NPointDomain d n =>
+                  bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k))) *
+                    ((((psiMinus eps eta).1 : SchwartzNPoint d n) :
+                      NPointDomain d n -> Complex) u)
+          let Usource : Set (NPointDomain d n) := V
+          let Ksource : Set (NPointDomain d n) := closure V
+          have hUsource_open : IsOpen Usource := by
+            simpa [Usource] using hV_open
+          have hUsource_sub_Ksource : Usource <= Ksource := by
+            intro u hu
+            exact subset_closure hu
+          have hKsource_compact : IsCompact Ksource := by
+            simpa [Ksource] using hV_compact
+          have hKsource_sub_P : Ksource <= P.V := by
+            simpa [Ksource] using hV_closure_P
+          have hphiUsource :
+              tsupport
+                  (phiChi : BHW.OS45FlatCommonChartReal d n -> Complex) <=
+                e '' Usource := by
+            simpa [Usource] using hphiChi_image
+          let OrdEdge : Complex :=
+            integral fun x : BHW.OS45FlatCommonChartReal d n =>
+              BHW.os45FlatCommonChartBranch d n OS lgc
+                (1 : Equiv.Perm (Fin n)) (fun a => (x a : Complex)) *
+                phiChi x
+          let AdjEdge : Complex :=
+            integral fun x : BHW.OS45FlatCommonChartReal d n =>
+              BHW.os45FlatCommonChartBranch d n OS lgc
+                (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+                (fun a => (x a : Complex)) * phiChi x
+
+          have hKeta_nonempty : Keta.Nonempty := by
+            exact ⟨eta0, by simp [Keta]⟩
+          have hBranchPlus_zero :
+              TendstoUniformlyOn BranchPlusSide
+                (fun _ : BHW.OS45FlatCommonChartReal d n => OrdEdge)
+                l Keta := by
+            -- Zero-height continuity of the ordinary flat branch at the edge.
+            -- Use the checked zero-height flat boundary-value theorem
+            -- `BHW.os45_BHWJost_flatCommonChart_distributionalBoundaryValue_plus_of_zeroHeight_pairingCLM`
+            -- with the singleton cone packet for `Keta`, specialized to
+            -- `phiChi`.
+            exact
+              BHW.os45_BHWJost_flatCommonChart_distributionalBoundaryValue_plus_of_zeroHeight_pairingCLM
+                (d := d) hd OS lgc
+                (0 :
+                  SchwartzMap (BHW.OS45FlatCommonChartReal d n) Complex
+                    ->L[Complex] Complex)
+                Keta hKeta hKetaC phiChi hphiChi_compact hphiChiE
+                (by simpa [OrdEdge])
+          have hBranchMinus_zero :
+              TendstoUniformlyOn BranchMinusSide
+                (fun _ : BHW.OS45FlatCommonChartReal d n => AdjEdge)
+                l Keta := by
+            -- Same endpoint-DCT subproof on the transported raw `(4.12)`
+            -- terminal chart, with `extendF o permAct` used only after the
+            -- raw chain supplies the endpoint equality.
+            -- Use
+            -- `BHW.os45_BHWJost_flatCommonChart_distributionalBoundaryValue_minus_of_zeroHeight_pairingCLM`
+            -- with the same singleton cone packet.
+            exact
+              BHW.os45_BHWJost_flatCommonChart_distributionalBoundaryValue_minus_of_zeroHeight_pairingCLM
+                (d := d) hd OS lgc
+                (0 :
+                  SchwartzMap (BHW.OS45FlatCommonChartReal d n) Complex
+                    ->L[Complex] Complex)
+                Keta hKeta hKetaC phiChi hphiChi_compact hphiChiE
+                (by simpa [AdjEdge])
+          have hSourcePlus_common :
+              TendstoUniformlyOn SourcePlusSide
+                (fun _ : BHW.OS45FlatCommonChartReal d n =>
+                  Jflat * OS.S n psi0) l Keta := by
+            -- Checked signed source-test Schwinger limit for
+            -- `D.toSideZeroDiagonalCLM 1 (+1) eps eta phiChi`.
+            have hsrc :=
+              D.sideZeroDiagonal_sourcePairings_tendstoUniformlyOn_schwinger
+                OS lgc Keta hKeta hKetaC
+                phiChi hphiChi_compact hphiChiE
+            exact hsrc.1.const_mul Jflat
+          have hSourceMinus_common :
+              TendstoUniformlyOn SourceMinusSide
+                (fun _ : BHW.OS45FlatCommonChartReal d n =>
+                  Jflat * OS.S n psi0) l Keta := by
+            -- Checked signed source-test Schwinger limit for
+            -- `D.toSideZeroDiagonalCLM 1 (-1) eps eta phiChi`.
+            have hsrc :=
+              D.sideZeroDiagonal_sourcePairings_tendstoUniformlyOn_schwinger
+                OS lgc Keta hKeta hKetaC
+                phiChi hphiChi_compact hphiChiE
+            exact hsrc.2.2.2.const_mul Jflat
+          have hOrd_endpoint_mem_on_Ksource :
+              forall u in Ksource,
+                sourceSide (1 : Real) 0 eta0 u in
+                  chainOrd.terminalCarrier := by
+            intro u huK
+            have huP : u in P.V := hKsource_sub_P huK
+            rw [BHW.os45FlatCommonChartSourceSide_zero]
+            exact chainOrd.terminal_contains_ordinaryCommonEdge u huP
+          have hAdj_endpoint_mem_on_Ksource :
+              forall u in Ksource,
+                sourceSide (-1 : Real) 0 eta0 u in
+                  chainAdj.terminalCarrier := by
+            intro u huK
+            have huP : u in P.V := hKsource_sub_P huK
+            rw [BHW.os45FlatCommonChartSourceSide_zero]
+            exact chainAdj.terminal_contains_adjacentCommonEdge u huP
+
+          have hPlus_asymptotic_eta0 :
+              Tendsto
+                (fun eps =>
+                  BranchPlusSide eps eta0 - SourcePlusSide eps eta0)
+                l (nhds (0 : Complex)) := by
+            -- Genuine ordinary `(4.1)/(4.14)` branch/source transfer:
+            -- select the ordinary boundary functional, upgrade fixed tests to
+            -- the moving side-zero-diagonal tests, then identify the
+            -- zero-height source functional through the ordinary local
+            -- `(4.14)` carrier-pairing normalization.
+            -- This is the compact `hOrd_fixed_psi0` selection,
+            -- moving-test upgrade, then the endpoint DCT and
+            -- `hOrd_carrier_pairing` sequence.
+            --
+            -- Inline the ordinary transfer block headed by this exact
+            -- `have hPlus_asymptotic_eta0` in the "Exact side-height
+            -- transfer transcript" section.  The block starts with
+            -- `have hplus_sheet`, proves
+            -- `hplus_pullback`, `hOrd_fixed_psi0`, `hOrd_moving`,
+            -- `hOrd_boundary_to_source`, `hOrd_source_norm`,
+            -- `hOrd_as_extendF`, `hSourcePlus_eta0`, and `hbranch`, and ends
+            -- with
+            --
+            --   exact hbranch.sub hSourcePlus_eta0 |>.congr'
+            --     (by filter_upwards with eps; ring_nf)
+            --
+            -- No extra theorem is called at this site; keep the block local so
+            -- the proof remains wrapper-free.
+          have hMinus_asymptotic_eta0 :
+              Tendsto
+                (fun eps =>
+                  BranchMinusSide eps eta0 - SourceMinusSide eps eta0)
+                l (nhds (0 : Complex)) := by
+            -- Genuine raw-adjacent `(4.12)/(4.14)` transfer:
+            -- start from the raw adjacent seed, transport through the private
+            -- one-branch chain, rewrite the terminal chart only at the
+            -- endpoint, upgrade to moving tests, and finish with
+            -- `hAdj_fixed_psi0`, moving-test upgrade,
+            -- `hAdj_endpoint_DCT`, and `hAdj_carrier_pairing`.
+            --
+            -- Inline the raw-adjacent transfer block headed by this exact
+            -- `have hMinus_asymptotic_eta0` in the "Exact side-height
+            -- transfer transcript" section.  The block starts with
+            -- `have hminus_sheet`, proves
+            -- `hminus_pullback`, `hAdj_fixed_psi0`, `hAdj_moving`,
+            -- `hAdj_boundary_to_source`, `hAdj_source_norm`,
+            -- `hAdj_as_extendF`, `hSourceMinus_eta0`, and `hbranch`, and ends
+            -- with the same `hbranch.sub hSourceMinus_eta0` limit comparison.
+            -- No deterministic adjacent seed or public wrapper is introduced.
+          have hPlus_asymptotic :
+              TendstoUniformlyOn
+                (fun eps eta => BranchPlusSide eps eta - SourcePlusSide eps eta)
+                (fun _ : BHW.OS45FlatCommonChartReal d n => 0)
+                l Keta := by
+            simpa [Keta] using
+              (tendstoUniformlyOn_singleton_iff_tendsto
+                (F := fun eps eta =>
+                  BranchPlusSide eps eta - SourcePlusSide eps eta)
+                (f := fun _ : BHW.OS45FlatCommonChartReal d n => 0)
+                (p := l) (x := eta0)).2 hPlus_asymptotic_eta0
+          have hMinus_asymptotic :
+              TendstoUniformlyOn
+                (fun eps eta => BranchMinusSide eps eta - SourceMinusSide eps eta)
+                (fun _ : BHW.OS45FlatCommonChartReal d n => 0)
+                l Keta := by
+            simpa [Keta] using
+              (tendstoUniformlyOn_singleton_iff_tendsto
+                (F := fun eps eta =>
+                  BranchMinusSide eps eta - SourceMinusSide eps eta)
+                (f := fun _ : BHW.OS45FlatCommonChartReal d n => 0)
+                (p := l) (x := eta0)).2 hMinus_asymptotic_eta0
+          have hBranchPlus_common :
+              TendstoUniformlyOn BranchPlusSide
+                (fun _ : BHW.OS45FlatCommonChartReal d n =>
+                  Jflat * OS.S n psi0) l Keta :=
+            SCV.tendstoUniformlyOn_of_sub_tendstoUniformlyOn_zero
+              hPlus_asymptotic hSourcePlus_common
+          have hBranchMinus_common :
+              TendstoUniformlyOn BranchMinusSide
+                (fun _ : BHW.OS45FlatCommonChartReal d n =>
+                  Jflat * OS.S n psi0) l Keta :=
+            SCV.tendstoUniformlyOn_of_sub_tendstoUniformlyOn_zero
+              hMinus_asymptotic hSourceMinus_common
+          have hEdge_eq : AdjEdge = OrdEdge :=
+            SCV.eq_zeroHeight_of_common_sideLimit
+              hKeta_nonempty
+              hBranchMinus_zero hBranchPlus_zero
+              hBranchMinus_common hBranchPlus_common
+          -- Expand `FlatDiff`, `AdjEdge`, and `OrdEdge`; discharge the last
+          -- line by compact-support integrability, `integral_sub`, and
+          -- `sub_eq_zero.mpr hEdge_eq`.
+          simpa [FlatDiff, AdjEdge, OrdEdge, sub_mul] using
+            sub_eq_zero.mpr hEdge_eq
+
+        have hcov :=
+          BHW.os45FlatCommonChart_commonBoundaryDifference_integral_eq_sourcePullback
+            (d := d) hd OS lgc (P := P) D
+            phiChi hphiChi_compact hphiChiE
+        have hJ_ne : Jflat ≠ 0 := by
+          exact_mod_cast
+            (ne_of_gt (BHW.os45CommonEdgeFlatJacobianAbs_pos n))
+        have hJmul_zero :
+            Jflat *
+              integral
+                (fun u : NPointDomain d n =>
+                  Ghoriz u *
+                    (D.toSchwartzNPointCLM
+                      (1 : Equiv.Perm (Fin n)) phiChi :
+                      NPointDomain d n -> Complex) u) = 0 := by
+          rw [← hcov]
+          simpa [FlatDiff, Ghoriz, Jflat] using hflat_zero_phiChi
+        have hsource_pulled_zero :
+            integral
+              (fun u : NPointDomain d n =>
+                Ghoriz u *
+                  (D.toSchwartzNPointCLM
+                    (1 : Equiv.Perm (Fin n)) phiChi :
+                    NPointDomain d n -> Complex) u) = 0 :=
+          (mul_eq_zero.mp hJmul_zero).resolve_left hJ_ne
+        have hsource_pullback_integral :
+            integral
+              (fun u : NPointDomain d n =>
+                Ghoriz u *
+                  (D.toSchwartzNPointCLM
+                    (1 : Equiv.Perm (Fin n)) phiChi :
+                    NPointDomain d n -> Complex) u) =
+            integral (fun u : NPointDomain d n => Ghoriz u * chi u) := by
+          apply integral_congr_ae
+          exact Eventually.of_forall fun u => by
+            rw [hpull_chi u]
+        exact hsource_pullback_integral ▸ hsource_pulled_zero
 
       simpa using hhorizontal_zero.symm
 
@@ -2640,8 +3059,8 @@ equality.  The local proof obligations are:
    lemmas to rewrite this as `integral (fun u => Ghoriz u * chi u) = 0`.
 
 The two transfers in item 4 should be proved by the following concrete
-side-height calculation.  This is the point where the previous transcript was
-still too schematic.
+side-height calculation, now expanded down to the local fixed-test,
+endpoint-DCT, and source-normalization sub-haves.
 
 For the plus/ordinary side, first perform the real source-to-flat change of
 variables with the translated real variable, not with the zero-height
@@ -2731,10 +3150,13 @@ have hBranchPlus_to_sourceCommon :
   -- Use `(4.14)` Lorentz covariance of the Fourier-Laplace distribution to
   -- identify its side-height boundary functional on the Figure-2-4 flat
   -- side with the source Wick-section functional.
-  -- The moving-test part is the checked `tube_boundaryValueData_moving_of_fixed`
-  -- / `bvt_boundary_values_moving` layer after the ordinary local boundary
-  -- CLM has been identified.  The final equality with `OS.S` is the checked
-  -- source restriction theorem for zero-diagonal tests, applied to
+  -- The moving-test part is the checked Banach-Steinhaus layer after the
+  -- ordinary local boundary CLM has been identified: use
+  -- `tube_boundaryValueData_moving_of_fixed` / `bvt_boundary_values_moving` only
+  -- in literal tube coordinates, and use the compact-support perturbation
+  -- estimate in the OS45 common flat chart.  The final equality with `OS.S` is
+  -- the checked source
+  -- restriction theorem for zero-diagonal tests, applied to
   -- `D.toZeroDiagonalCLM 1 phi`.
   -- The Lean body is the local `have` sequence above; do not replace it by a
   -- public theorem that assumes this limit.
@@ -3008,6 +3430,55 @@ let Keta : Set (BHW.OS45FlatCommonChartReal d n) := {eta0}
 have hKeta_eta0 : eta0 in Keta := by simp [Keta]
 ```
 
+The moving-test perturbation leaves also bind a source compact packet in the
+same local proof body.  In the `hsource_zero_rep` call above this packet is
+`Usource := V`, `Ksource := closure V`; hence
+`hUsource_open`, `hUsource_sub_Ksource`, `hKsource_compact`, and
+`hKsource_sub_P` come from the precompact-window choice
+`BHW.exists_connected_open_precompact_subset`.  The support input for the
+checked Figure-2-4 moving-test theorem is the original flat test support
+
+```lean
+have hphiUsource :
+    tsupport (phi : BHW.OS45FlatCommonChartReal d n -> Complex) <=
+      (BHW.os45CommonEdgeFlatCLE d n (1 : Equiv.Perm (Fin n))) '' Usource
+```
+
+not the auxiliary flat pullback test `psi0Flat` used inside the
+fixed-test scalar-cancellation subleaf.  The endpoint membership inputs for
+the perturbation estimate are then:
+
+```lean
+have hOrd_endpoint_mem_on_Ksource :
+    forall u in Ksource,
+      sourceSide (1 : Real) 0 eta0 u in chainOrd.terminalCarrier := by
+  intro u huK
+  have huP : u in P.V := hKsource_sub_P huK
+  rw [BHW.os45FlatCommonChartSourceSide_zero]
+  exact chainOrd.terminal_contains_ordinaryCommonEdge u huP
+
+have hAdj_endpoint_mem_on_Ksource :
+    forall u in Ksource,
+      sourceSide (-1 : Real) 0 eta0 u in chainAdj.terminalCarrier := by
+  intro u huK
+  have huP : u in P.V := hKsource_sub_P huK
+  rw [BHW.os45FlatCommonChartSourceSide_zero]
+  exact chainAdj.terminal_contains_adjacentCommonEdge u huP
+```
+
+The later integral split named `hsplit` is likewise local algebra, not a hidden
+helper.  For each sufficiently small side height, the common-compact-support
+fact above gives the same compact support for the moving test, fixed test, and
+their difference.  The checked SourceSide lemma
+`BHW.integrable_comp_os45FlatCommonChartSourceSide_mul_of_commonCompactSupport`
+gives the fixed-test and difference-test integrability inputs at the current
+side height from the same compact collar; the companion eventual theorem
+`BHW.eventually_integrable_comp_os45FlatCommonChartSourceSide_mul_of_commonCompactSupport`
+is the fixed-test specialization.  Then `MeasureTheory.integral_add` and the
+pointwise identity
+`psiPlus eps eta0 = psi0 + (psiPlus eps eta0 - psi0)` (respectively the
+minus-side version) prove the displayed eventual equality.
+
 Do not try to prove a new compact-direction boundary-value theorem at this
 stage.  The uniform-on-`Keta` statements are obtained from fixed-direction
 `Tendsto` statements by `tendstoUniformlyOn_singleton_iff_tendsto`.
@@ -3103,18 +3574,50 @@ have hPlus_asymptotic_eta0 :
               (sourceSide (1 : Real) eps eta0 u) ∈
               BHW.ExtendedTube d n := hplus_sheet
 
-    have hOrd_branch_to_endpoint :
+    have hOrd_integrand_to_endpoint :
         ∀ᶠ eps in l,
           ∀ᵐ u : NPointDomain d n,
             BHW.extendF (bvt_F OS lgc n)
-              (sourceSide (1 : Real) eps eta0 u) =
+                (sourceSide (1 : Real) eps eta0 u) *
+              ((((psiPlus eps eta0).1 : SchwartzNPoint d n) :
+                NPointDomain d n -> Complex) u) =
             chainOrd.terminalBranch
-              (sourceSide (1 : Real) eps eta0 u) := by
-      -- Use `hOrd_sheet`, the endpoint-centered ordinary terminal carrier,
-      -- and the checked one-branch-chain equality
-      -- `chainOrd.terminal_eq_ordinary_global`.  The outgoing flat side is
-      -- `BHW.os45FlatCommonChartOmega d n 1`; the incoming source-side sheet
-      -- is `BHW.ExtendedTube d n`.
+                (sourceSide (1 : Real) eps eta0 u) *
+              ((((psiPlus eps eta0).1 : SchwartzNPoint d n) :
+                NPointDomain d n -> Complex) u) := by
+      -- This is intentionally an integrand equality, not a raw branch equality
+      -- on all source points.  On the support of the moving side test, use
+      -- `D.toSideZeroDiagonalCLM_sourceWindow_support_and_eq_plain_eventually`
+      -- to put `e u + eps • eta0` in the flat edge window, then use
+      -- `hOrd_sheet` and the endpoint-centered ordinary carrier field
+      -- `chainOrd.terminal_eq_ordinary_global`.  Off the moving test support,
+      -- the test factor is zero.
+      have hsupport :=
+        D.toSideZeroDiagonalCLM_sourceWindow_support_and_eq_plain_eventually
+          hUlocal_open Keta hKeta phi hphi_compact hphiUlocal
+      filter_upwards [hOrd_sheet, hsupport] with eps hsheet hsupport_eps
+      filter_upwards with u
+      by_cases hu :
+          u ∈ tsupport
+            ((((psiPlus eps eta0).1 : SchwartzNPoint d n) :
+              NPointDomain d n -> Complex))
+      · have hbranch :
+            BHW.extendF (bvt_F OS lgc n)
+                (sourceSide (1 : Real) eps eta0 u) =
+              chainOrd.terminalBranch
+                (sourceSide (1 : Real) eps eta0 u) := by
+          -- `hsupport_eps` supplies the support/window fact needed by
+          -- `hsheet`; the terminal ordinary chain then identifies the two
+          -- branches on the endpoint carrier.
+          exact
+            chainOrd.terminal_eq_ordinary_global
+              (sourceSide (1 : Real) eps eta0 u)
+        rw [hbranch]
+      · have hzero :
+            ((((psiPlus eps eta0).1 : SchwartzNPoint d n) :
+              NPointDomain d n -> Complex) u) = 0 :=
+          image_eq_zero_of_notMem_tsupport hu
+        simp [hzero]
 
     have hOrd_integral_rewrite :
         ∀ᶠ eps in l,
@@ -3128,24 +3631,199 @@ have hPlus_asymptotic_eta0 :
               (sourceSide (1 : Real) eps eta0 u) *
             ((((psiPlus eps eta0).1 : SchwartzNPoint d n) :
               NPointDomain d n -> Complex) u)) := by
-      filter_upwards [hOrd_branch_to_endpoint] with eps heps
-      exact integral_congr_ae (heps.mono
-        (by intro u hu; rw [hu]))
+      filter_upwards [hOrd_integrand_to_endpoint] with eps heps
+      exact integral_congr_ae heps
 
-    have hOrd_fixed :
-        forall psi : SchwartzNPoint d n,
+    have hOrd_fixed_psi0 :
+        Tendsto
+          (fun eps =>
+            integral fun u : NPointDomain d n =>
+              chainOrd.terminalBranch
+                (sourceSide (1 : Real) eps eta0 u) *
+              ((((psi0).1 : SchwartzNPoint d n) :
+                NPointDomain d n -> Complex) u))
+          l (nhds (Word ((psi0).1 : SchwartzNPoint d n))) := by
+      -- Important correction: this local `sourceSide` fixed leaf is only
+      -- needed for the cutoff-pulled source test
+      -- `psi0 = D.toZeroDiagonalCLM 1 phi`.  Do not state it for an arbitrary
+      -- `SchwartzNPoint`: a general Schwartz test has no compact support, and
+      -- `D.toZeroDiagonalCLM 1` does not invert an arbitrary source test.
+      --
+      -- The all-Schwartz fixed boundary theorem remains upstream on the raw
+      -- tube ray (`ordinary41_tubeIntegral`); after the OS45 source pullback,
+      -- the proof uses exactly this compact `psi0` specialization.
+      have hpsi0_compact :
+          HasCompactSupport
+            ((((psi0).1 : SchwartzNPoint d n) :
+              NPointDomain d n -> Complex)) := by
+        simpa [psi0, BHW.OS45Figure24SourceCutoffData.toZeroDiagonalCLM]
+          using
+            D.toSchwartzNPointCLM_hasCompactSupport
+              (1 : Equiv.Perm (Fin n)) phi
+      have hpsi0_zero_off_Ksource :
+          ∀ u ∉ Ksource,
+            ((((psi0).1 : SchwartzNPoint d n) :
+              NPointDomain d n -> Complex) u) = 0 := by
+        have hpsi0_support_Usource :
+            tsupport ((((psi0).1 : SchwartzNPoint d n) :
+              NPointDomain d n -> Complex)) ⊆ Usource := by
+          simpa [psi0, BHW.OS45Figure24SourceCutoffData.toZeroDiagonalCLM]
+            using
+              D.toSchwartzNPointCLM_tsupport_subset_image
+                (1 : Equiv.Perm (Fin n)) phi hphiUsource
+        intro u huK
+        exact
+          image_eq_zero_of_notMem_tsupport
+            (fun hu =>
+              huK (hUsource_sub_Ksource (hpsi0_support_Usource hu)))
+      have hOrd_source_mem_eventually :
+          ∀ᶠ eps in l, ∀ u ∈ Ksource,
+            sourceSide (1 : Real) eps eta0 u ∈
+              chainOrd.terminalCarrier := by
+        simpa [l, sourceSide] using
+          BHW.eventually_forall_os45FlatCommonChartSourceSide_mem_of_compact
+            (ρperm := (1 : Equiv.Perm (Fin n))) (sgn := (1 : Real))
+            (η := eta0) (K := Ksource) hKsource_compact
+            chainOrd.terminalCarrier_open hOrd_endpoint_mem_on_Ksource
+      have hOrd_ray_rewrite :
+          ∀ᶠ eps in l,
+            (integral fun u : NPointDomain d n =>
+              chainOrd.terminalBranch
+                (sourceSide (1 : Real) eps eta0 u) *
+              ((((psi0).1 : SchwartzNPoint d n) :
+                NPointDomain d n -> Complex) u)) =
+            (integral fun u : NPointDomain d n =>
+              BHW.extendF (bvt_F OS lgc n)
+                (sourceSide (1 : Real) eps eta0 u) *
+              ((((psi0).1 : SchwartzNPoint d n) :
+                NPointDomain d n -> Complex) u)) := by
+        filter_upwards [hOrd_source_mem_eventually] with eps hmem_eps
+        apply integral_congr_ae
+        filter_upwards with u
+        by_cases huK : u ∈ Ksource
+        · have hbranch :
+              chainOrd.terminalBranch
+                  (sourceSide (1 : Real) eps eta0 u) =
+                BHW.extendF (bvt_F OS lgc n)
+                  (sourceSide (1 : Real) eps eta0 u) :=
+            chainOrd.terminal_eq_ordinary_global
+              (sourceSide (1 : Real) eps eta0 u) (hmem_eps u huK)
+          rw [hbranch]
+        · have hzero := hpsi0_zero_off_Ksource u huK
+          simp [hzero]
+      have hOrd_sourceSide_fixed :
           Tendsto
             (fun eps =>
               integral fun u : NPointDomain d n =>
-                chainOrd.terminalBranch
-                  (sourceSide (1 : Real) eps eta0 u) * psi u)
-            l (nhds (Word psi)) := by
-      intro psi
-      -- This is the ordinary `(4.1)` fixed-test boundary value on the
-      -- endpoint-centered source-side ray.  In the literal tube coordinates
-      -- it is `bvt_boundary_values`; in the retained local chart it is first
-      -- transported through `chainOrd` by the same identity-theorem equality
-      -- used in `hOrd_branch_to_endpoint`.
+                BHW.extendF (bvt_F OS lgc n)
+                  (sourceSide (1 : Real) eps eta0 u) *
+                ((((psi0).1 : SchwartzNPoint d n) :
+                  NPointDomain d n -> Complex) u))
+            l (nhds (Word ((psi0).1 : SchwartzNPoint d n))) := by
+        -- Scalar-cancellation body for the concrete cutoff-pulled test:
+        --
+        --   e := BHW.os45CommonEdgeFlatCLE d n 1
+        --   J := (BHW.os45CommonEdgeFlatJacobianAbs n : Complex)
+        --   pullFlatToSource :=
+        --     SchwartzMap.compCLMOfContinuousLinearEquiv Complex e
+        --   psi0Flat :=
+        --     (SchwartzMap.compCLMOfContinuousLinearEquiv Complex e.symm)
+        --       ((psi0).1 : SchwartzNPoint d n)
+        --   psiFlat_eps eps :=
+        --     SCV.translateSchwartz (-(eps • eta0)) psi0Flat
+        --
+        -- The flat input is the genuine CLE pullback of the concrete compact
+        -- source test `psi0`.  Thus the right side of
+        -- `BHW.os45FlatCommonChart_branch_integral_eq_sourceSide_extendF_translatedTest`
+        -- contains `psi0Flat (e u)`, which is definitionally
+        -- `((psi0).1 : SchwartzNPoint d n) u`.  This uses the plain CLE
+        -- pullback, not `D.toZeroDiagonalCLM`; the cutoff map is only how the
+        -- particular compact source test `psi0` was constructed.
+        --
+        -- Lean skeleton:
+        --
+        --   let J : Complex := BHW.os45CommonEdgeFlatJacobianAbs n
+        --   let BranchFlatOrd eps x :=
+        --     BHW.os45FlatCommonChartBranch d n OS lgc
+        --       (1 : Equiv.Perm (Fin n))
+        --       (fun j => (x j : Complex) + ((eps • eta0) j : Complex) *
+        --         Complex.I)
+        --   let FlatOrd eps :=
+        --     ∫ x, BranchFlatOrd eps x *
+        --       (SCV.translateSchwartz (-(eps • eta0)) psi0Flat) x
+        --   let SourceOrd eps :=
+        --     ∫ u, BHW.extendF (bvt_F OS lgc n)
+        --       (sourceSide (1 : Real) eps eta0 u) *
+        --       (((psi0).1 : SchwartzNPoint d n) u)
+        --
+        --   obtain ⟨hpsi0Flat_compact, hpsi0Flat_edge⟩ :
+        --       HasCompactSupport
+        --           (psi0Flat :
+        --             BHW.OS45FlatCommonChartReal d n -> Complex) ∧
+        --         tsupport
+        --           (psi0Flat : BHW.OS45FlatCommonChartReal d n -> Complex) ⊆
+        --           BHW.os45FlatCommonChartEdgeSet d n P
+        --             (1 : Equiv.Perm (Fin n)) := by
+        --     simpa [psi0, psi0Flat, e] using
+        --       D.toZeroDiagonalCLM_flatPullback_support
+        --         (1 : Equiv.Perm (Fin n)) phi hphiUsource
+        --         (hUsource_sub_Ksource.trans hKsource_sub_P)
+        --
+        --   have hpsi0Flat_integ :=
+        --     BHW.os45FlatCommonChart_branch_side_shifted_mul_integrable_eventually
+        --       (d := d) hd OS lgc (P := P) Keta hKeta hKetaC
+        --       psi0Flat hpsi0Flat_compact hpsi0Flat_edge
+        --
+        --   have hpullOrd :
+        --       ∀ᶠ eps in l, FlatOrd eps = J * SourceOrd eps := by
+        --     filter_upwards [hpsi0Flat_integ] with eps hinteg_eps
+        --     have hg := (hinteg_eps eta0 hKeta_eta0).1
+        --     have hpull :=
+        --       BHW.os45FlatCommonChart_branch_integral_eq_sourceSide_extendF_translatedTest
+        --         (d := d) (n := n) OS lgc
+        --         (1 : Equiv.Perm (Fin n)) (1 : Equiv.Perm (Fin n))
+        --         (1 : Real) eps eta0 psi0Flat hg
+        --     simpa [FlatOrd, SourceOrd, sourceSide, psi0Flat] using hpull
+        --
+        --   let WordFlat :
+        --       SchwartzMap (BHW.OS45FlatCommonChartReal d n) Complex
+        --         ->L[Complex] Complex :=
+        --     J • (Word.comp pullFlatToSource)
+        --
+        --   have hflatOrd :
+        --       Tendsto (fun eps => FlatOrd eps) l
+        --         (nhds (WordFlat psi0Flat)) := by
+        --     -- Apply the ordinary all-Schwartz fixed boundary theorem on the
+        --     -- raw `(4.1)` tube ray, then the checked moving-test theorem to
+        --     -- the translated flat tests
+        --     -- `SCV.translateSchwartz (-(eps • eta0)) psi0Flat`.
+        --     -- The translated-test convergence input is
+        --     -- `SCV.tendsto_translateSchwartz_nhds_of_isCompactSupport`,
+        --     -- composed with `eps ↦ -(eps • eta0)` and restricted to `l`.
+        --     -- This is the only place where the all-Schwartz theorem is used;
+        --     -- it is before the local source cutoff pullback.
+        --
+        --   have hWordFlat_def :
+        --       WordFlat psi0Flat =
+        --         J * Word ((psi0).1 : SchwartzNPoint d n) := by
+        --     have hpull :
+        --         pullFlatToSource psi0Flat =
+        --           ((psi0).1 : SchwartzNPoint d n) := by
+        --       ext u
+        --       simp [pullFlatToSource, psi0Flat]
+        --     simp [WordFlat, hpull]
+        --
+        --   have hscaled :
+        --       Tendsto (fun eps => J * SourceOrd eps) l
+        --         (nhds (J * Word ((psi0).1 : SchwartzNPoint d n))) := by
+        --     simpa [hWordFlat_def] using hflatOrd.congr' hpullOrd
+        --
+        --   exact tendsto_const_nhds.inv₀ hJ_ne |>.mul hscaled |> by
+        --     simpa [SourceOrd, J, hJ_ne, mul_assoc]
+        --
+        -- This is a proof-local OS-I `(4.14)` transfer for the concrete
+        -- cutoff-pulled test.  It introduces no public side-transfer theorem.
+      exact hOrd_sourceSide_fixed.congr' hOrd_ray_rewrite.symm
 
     have hOrd_moving :
         Tendsto
@@ -3156,18 +3834,664 @@ have hPlus_asymptotic_eta0 :
               ((((psiPlus eps eta0).1 : SchwartzNPoint d n) :
                 NPointDomain d n -> Complex) u))
           l (nhds (Word ((psi0).1 : SchwartzNPoint d n))) := by
-      -- Apply `SCV.tube_boundaryValueData_moving_of_fixed` (or the checked
-      -- specialization `bvt_boundary_values_moving` in the literal ordinary
-      -- tube chart) to `hOrd_fixed` and `hpsiPlus_move`.
+      -- Use the compact-support moving-test perturbation, not a public wrapper.
+      -- The fixed-test leaf gives the compact specialization
+      -- `hOrd_fixed_psi0`.  The checked
+      -- SourceSide compact-collar bound gives, after shrinking `l`,
+      -- `Msource` and a compact `Ksource` containing the supports of
+      -- `((psiPlus eps eta0).1)` and `((psi0).1)` such that
+      --
+      --   ∀ u ∈ Ksource,
+      --     ‖chainOrd.terminalBranch (sourceSide 1 eps eta0 u)‖ ≤ Msource.
+      --
+      -- The common-support input is now checked for the concrete Figure-2-4
+      -- side family by
+      -- `D.toSideZeroDiagonalCLM_sub_toZeroDiagonalCLM_eq_zero_off_eventually`,
+      -- applied to the current flat test `phi`, the source window
+      -- `Usource ⊆ Ksource`, and `{eta0}`.  The
+      -- zeroth-seminorm input is checked by
+      -- `D.toSideZeroDiagonalCLM_sub_toZeroDiagonalCLM_seminorm_tendsto_zero`,
+      -- restricted from `𝓝 0` to `l = 𝓝[Set.Ioi 0] 0`.  The compact-support
+      -- perturbation theorem then adds a zero error to
+      -- `hOrd_fixed_psi0`.
+      have hpsi0_zero_off_Ksource :
+          ∀ u ∉ Ksource,
+            ((((psi0).1 : SchwartzNPoint d n) :
+              NPointDomain d n -> Complex) u) = 0 := by
+        have hpsi0_support_Usource :
+            tsupport ((((psi0).1 : SchwartzNPoint d n) :
+              NPointDomain d n -> Complex)) ⊆ Usource := by
+          simpa [psi0, BHW.OS45Figure24SourceCutoffData.toZeroDiagonalCLM]
+            using
+              D.toSchwartzNPointCLM_tsupport_subset_image
+                (1 : Equiv.Perm (Fin n)) phi hphiUsource
+        intro u huK
+        exact
+          image_eq_zero_of_notMem_tsupport
+            (fun hu =>
+              huK (hUsource_sub_Ksource (hpsi0_support_Usource hu)))
+      have hpsiPlus_commonCompactSupport :
+          ∀ᶠ eps in l, ∀ u ∉ Ksource,
+            ((((psiPlus eps eta0).1 : SchwartzNPoint d n) -
+              ((psi0).1 : SchwartzNPoint d n) :
+              NPointDomain d n -> Complex) u) = 0 := by
+        have hpack :=
+          D.toSideZeroDiagonalCLM_sub_toZeroDiagonalCLM_eq_zero_off_eventually
+            hUsource_open hUsource_sub_Ksource ({eta0}) isCompact_singleton
+            phi hphi_compact hphiUsource
+        filter_upwards [hpack] with eps hpack_eps u huK
+        simpa [l, psiPlus, psi0, Pi.sub_apply] using
+          (hpack_eps eta0 (by simp)).1 u huK
+      have hpsiPlus_seminorm0_tendsto :
+          Tendsto
+            (fun eps : Real =>
+              SchwartzMap.seminorm Real 0 0
+                (((psiPlus eps eta0).1 : SchwartzNPoint d n) -
+                  ((psi0).1 : SchwartzNPoint d n)))
+            l (nhds 0) := by
+        exact
+          (D.toSideZeroDiagonalCLM_sub_toZeroDiagonalCLM_seminorm_tendsto_zero
+            (1 : Equiv.Perm (Fin n)) (1 : Real) eta0
+            phi hphi_compact).mono_left nhdsWithin_le_nhds
+      have hOrd_source_test_diff_zero :
+          Tendsto
+            (fun eps =>
+              integral fun u : NPointDomain d n =>
+                chainOrd.terminalBranch
+                  (sourceSide (1 : Real) eps eta0 u) *
+                ((((psiPlus eps eta0).1 : SchwartzNPoint d n) -
+                  ((psi0).1 : SchwartzNPoint d n) :
+                  NPointDomain d n -> Complex) u))
+            l (nhds 0) := by
+        -- Checked neutral analytic support:
+        -- `BHW.tendsto_integral_comp_os45FlatCommonChartSourceSide_mul_sub_of_commonCompactSupport`
+        -- with `ρperm = 1`, `sgn = 1`, `eps := fun eps => eps`,
+        -- `F := chainOrd.terminalBranch`, and `K := Ksource`.
+        -- Inputs are the terminal ordinary carrier openness/continuity, endpoint
+        -- membership on `Ksource`, and the checked side-test support/seminorm
+        -- facts above.
+        exact
+          BHW.tendsto_integral_comp_os45FlatCommonChartSourceSide_mul_sub_of_commonCompactSupport
+            (ρperm := (1 : Equiv.Perm (Fin n))) (sgn := 1) (η := eta0)
+            chainOrd.terminalCarrier_open
+            chainOrd.terminalBranch_continuousOn
+            hKsource_compact hOrd_endpoint_mem_on_Ksource
+            (eps := fun eps : Real => eps) (by simpa [l] using tendsto_id)
+            hpsiPlus_commonCompactSupport hpsiPlus_seminorm0_tendsto
+      obtain ⟨MsourceOrd, _hMsourceOrd_nonneg,
+          hOrd_source_bound_eventually_raw⟩ :=
+        BHW.exists_bound_eventually_forall_norm_comp_os45FlatCommonChartSourceSide
+          (ρperm := (1 : Equiv.Perm (Fin n)))
+          (sgn := (1 : Real)) (η := eta0)
+          (K := Ksource) hKsource_compact
+          chainOrd.terminalCarrier_open hOrd_endpoint_mem_on_Ksource
+          chainOrd.terminalBranch_continuousOn
+      have hOrd_source_bound_eventually :
+          ∀ᶠ eps in l, ∀ u ∈ Ksource,
+            ‖chainOrd.terminalBranch
+              (sourceSide (1 : Real) eps eta0 u)‖ ≤ MsourceOrd := by
+        simpa [l, sourceSide] using hOrd_source_bound_eventually_raw
+      have hOrd_source_mem_eventually :
+          ∀ᶠ eps in l, ∀ u ∈ Ksource,
+            sourceSide (1 : Real) eps eta0 u ∈
+              chainOrd.terminalCarrier := by
+        simpa [l, sourceSide] using
+          BHW.eventually_forall_os45FlatCommonChartSourceSide_mem_of_compact
+            (ρperm := (1 : Equiv.Perm (Fin n))) (sgn := (1 : Real))
+            (η := eta0) (K := Ksource) hKsource_compact
+            chainOrd.terminalCarrier_open hOrd_endpoint_mem_on_Ksource
+      have hsplit :
+          (fun eps =>
+            integral fun u : NPointDomain d n =>
+              chainOrd.terminalBranch
+                (sourceSide (1 : Real) eps eta0 u) *
+              ((((psiPlus eps eta0).1 : SchwartzNPoint d n) :
+                NPointDomain d n -> Complex) u))
+          =ᶠ[l]
+          (fun eps =>
+            (integral fun u : NPointDomain d n =>
+              chainOrd.terminalBranch
+                (sourceSide (1 : Real) eps eta0 u) *
+              ((((psi0).1 : SchwartzNPoint d n) :
+                NPointDomain d n -> Complex) u)) +
+            (integral fun u : NPointDomain d n =>
+              chainOrd.terminalBranch
+                (sourceSide (1 : Real) eps eta0 u) *
+              ((((psiPlus eps eta0).1 : SchwartzNPoint d n) -
+                ((psi0).1 : SchwartzNPoint d n) :
+                NPointDomain d n -> Complex) u))) := by
+        -- Inline algebra: eventually both moving and fixed tests are supported
+        -- in the same compact set.  Get the compact-collar membership and
+        -- branch bound once, then use
+        -- `BHW.integrable_comp_os45FlatCommonChartSourceSide_mul_of_commonCompactSupport`
+        -- inside the `filter_upwards` block with `ψ = (psi0).1` and
+        -- `ψ = (psiPlus eps eta0).1 - (psi0).1`.
+        -- Lean body:
+        --   filter_upwards [hpsiPlus_commonCompactSupport,
+        --     hOrd_source_mem_eventually, hOrd_source_bound_eventually]
+        --     with eps hsupp hmem_eps hbound_eps
+        --   have hfixed_int :=
+        --     BHW.integrable_comp_os45FlatCommonChartSourceSide_mul_of_commonCompactSupport
+        --       (ρperm := (1 : Equiv.Perm (Fin n))) (sgn := 1)
+        --       (eps := eps) (η := eta0)
+        --       chainOrd.terminalBranch_continuousOn hKsource_compact
+        --       hmem_eps hbound_eps ((psi0).1 : SchwartzNPoint d n)
+        --       hpsi0_zero_off_Ksource
+        --   have hdiff_int :=
+        --     BHW.integrable_comp_os45FlatCommonChartSourceSide_mul_of_commonCompactSupport
+        --       (ρperm := (1 : Equiv.Perm (Fin n))) (sgn := 1)
+        --       (eps := eps) (η := eta0)
+        --       chainOrd.terminalBranch_continuousOn hKsource_compact
+        --       hmem_eps hbound_eps
+        --       (((psiPlus eps eta0).1 : SchwartzNPoint d n) -
+        --         ((psi0).1 : SchwartzNPoint d n))
+        --       (fun u huK => hsupp u huK)
+        --   rw [← MeasureTheory.integral_add hfixed_int hdiff_int]
+        --   apply integral_congr_ae
+        --   filter_upwards with u
+        --   simp [Pi.sub_apply, sub_eq_add_neg, mul_add, add_comm,
+        --     add_left_comm, add_assoc]
+      exact (hOrd_fixed_psi0.add hOrd_source_test_diff_zero).congr' hsplit.symm
+
+    have hOrd_boundary_to_source :
+        Word ((psi0).1 : SchwartzNPoint d n) =
+          ∫ u : NPointDomain d n,
+            bvt_F OS lgc n (fun k => wickRotatePoint (u k)) *
+            ((((psi0).1 : SchwartzNPoint d n) :
+              NPointDomain d n -> Complex) u) := by
+      have hOrd_endpoint_limit :
+          Tendsto
+            (fun eps =>
+              integral fun u : NPointDomain d n =>
+                chainOrd.terminalBranch
+                  (sourceSide (1 : Real) eps eta0 u) *
+                ((((psi0).1 : SchwartzNPoint d n) :
+                  NPointDomain d n -> Complex) u))
+            l
+            (nhds
+              (∫ u : NPointDomain d n,
+                chainOrd.terminalBranch
+                  (sourceSide (1 : Real) 0 eta0 u) *
+                ((((psi0).1 : SchwartzNPoint d n) :
+                  NPointDomain d n -> Complex) u))) := by
+        have hpsi0_compact :
+            HasCompactSupport
+              (((psi0).1 : SchwartzNPoint d n) :
+                NPointDomain d n -> Complex) := by
+          simpa [psi0, BHW.OS45Figure24SourceCutoffData.toZeroDiagonalCLM]
+            using
+              D.toSchwartzNPointCLM_hasCompactSupport
+                (1 : Equiv.Perm (Fin n)) phi
+        have hpsi0_support_V :
+            tsupport
+              (((psi0).1 : SchwartzNPoint d n) :
+                NPointDomain d n -> Complex) ⊆ P.V := by
+          -- `psi0 = D.toZeroDiagonalCLM 1 phi`; use the checked source
+          -- cutoff support theorem
+          -- `D.toSchwartzNPointCLM_tsupport_subset_V 1 phi hphiE`.
+          simpa [psi0, BHW.OS45Figure24SourceCutoffData.toZeroDiagonalCLM]
+            using
+              D.toSchwartzNPointCLM_tsupport_subset_V
+                (1 : Equiv.Perm (Fin n)) phi hphiE
+        have hOrd_endpoint_mem :
+            ∀ u ∈ tsupport
+                (((psi0).1 : SchwartzNPoint d n) :
+                  NPointDomain d n -> Complex),
+              sourceSide (1 : Real) 0 eta0 u ∈
+                chainOrd.terminalCarrier := by
+          intro u hu
+          have huV : u ∈ P.V := hpsi0_support_V hu
+          have hzero :
+              sourceSide (1 : Real) 0 eta0 u =
+                BHW.os45QuarterTurnConfig
+                  (fun k => wickRotatePoint (u k)) := by
+            simpa [sourceSide]
+              using
+                BHW.os45FlatCommonChartSourceSide_zero
+                  (d := d) (n := n)
+                  (ρperm := (1 : Equiv.Perm (Fin n)))
+                  (sgn := (1 : Real)) (η := eta0) (u := u)
+          have hwindow :
+              BHW.os45QuarterTurnConfig
+                  (fun k => wickRotatePoint (u k)) ∈
+                chainOrd.terminalCarrier := by
+            -- This is the endpoint-centered ordinary common-edge window field
+            -- exported by the one-branch chain.  It is built from
+            -- `H.ordinaryCommonEdge_metricBallChartInWindow` and `huV`.
+            exact chainOrd.terminal_contains_ordinaryCommonEdge u huV
+          simpa [hzero] using hwindow
+        have hOrd_eventual_collar :
+            ∀ᶠ eps in l,
+              ∀ u ∈ tsupport
+                  (((psi0).1 : SchwartzNPoint d n) :
+                    NPointDomain d n -> Complex),
+                sourceSide (1 : Real) eps eta0 u ∈
+                  chainOrd.terminalCarrier := by
+          exact
+            BHW.eventually_forall_os45FlatCommonChartSourceSide_mem_of_compact
+              (ρperm := (1 : Equiv.Perm (Fin n)))
+              (sgn := (1 : Real)) (η := eta0)
+              (K :=
+                tsupport
+                  (((psi0).1 : SchwartzNPoint d n) :
+                    NPointDomain d n -> Complex))
+              hpsi0_compact.isCompact
+              chainOrd.terminalCarrier_open
+              hOrd_endpoint_mem
+        have hOrd_pointwise :
+            ∀ u : NPointDomain d n,
+              Tendsto
+                (fun eps =>
+                  chainOrd.terminalBranch
+                    (sourceSide (1 : Real) eps eta0 u) *
+                  ((((psi0).1 : SchwartzNPoint d n) :
+                    NPointDomain d n -> Complex) u))
+                l
+                (nhds
+                  (chainOrd.terminalBranch
+                    (sourceSide (1 : Real) 0 eta0 u) *
+                  ((((psi0).1 : SchwartzNPoint d n) :
+                    NPointDomain d n -> Complex) u))) := by
+          intro u
+          by_cases hu :
+              u ∈ tsupport
+                (((psi0).1 : SchwartzNPoint d n) :
+                  NPointDomain d n -> Complex)
+          · have hbranch_tendsto :
+                Tendsto
+                  (fun eps : Real =>
+                    chainOrd.terminalBranch
+                      (sourceSide (1 : Real) eps eta0 u))
+                  l
+                  (nhds
+                    (chainOrd.terminalBranch
+                      (sourceSide (1 : Real) 0 eta0 u))) := by
+              exact
+                BHW.tendsto_comp_os45FlatCommonChartSourceSide_nhdsWithin
+                  (d := d) (n := n)
+                  (ρperm := (1 : Equiv.Perm (Fin n)))
+                  (sgn := (1 : Real)) (η := eta0) (u := u)
+                  chainOrd.terminalCarrier_open
+                  chainOrd.terminalBranch_continuousOn
+                  (hOrd_endpoint_mem u hu)
+            exact hbranch_tendsto.mul tendsto_const_nhds
+          · -- Off support, the test factor is zero, so the product is
+            -- eventually and at the endpoint identically zero.
+            have hzero :
+                ((((psi0).1 : SchwartzNPoint d n) :
+                  NPointDomain d n -> Complex) u) = 0 :=
+              image_eq_zero_of_notMem_tsupport hu
+            simpa [hzero]
+        have hOrd_bound :
+            ∃ g : NPointDomain d n -> Real,
+              Integrable g ∧
+              ∀ᶠ eps in l,
+                ∀ᵐ u : NPointDomain d n,
+                  ‖chainOrd.terminalBranch
+                    (sourceSide (1 : Real) eps eta0 u) *
+                    ((((psi0).1 : SchwartzNPoint d n) :
+                      NPointDomain d n -> Complex) u)‖ ≤ g u := by
+          rcases
+            BHW.exists_bound_eventually_forall_norm_comp_os45FlatCommonChartSourceSide
+              (ρperm := (1 : Equiv.Perm (Fin n)))
+              (sgn := (1 : Real)) (η := eta0)
+              (K :=
+                tsupport
+                  (((psi0).1 : SchwartzNPoint d n) :
+                    NPointDomain d n -> Complex))
+              hpsi0_compact.isCompact
+              chainOrd.terminalCarrier_open
+              hOrd_endpoint_mem
+              chainOrd.terminalBranch_continuousOn with
+            ⟨MOrd, hMOrd_nonneg, hMOrd_bound⟩
+          refine ⟨
+            fun u : NPointDomain d n =>
+              MOrd *
+                ‖((((psi0).1 : SchwartzNPoint d n) :
+                  NPointDomain d n -> Complex) u)‖,
+            ?_, ?_⟩
+          · have hpsi0_integrable :
+                Integrable
+                  ((((psi0).1 : SchwartzNPoint d n) :
+                    NPointDomain d n -> Complex)) := by
+              simpa using
+                (SchwartzMap.integrable
+                  ((psi0).1 : SchwartzNPoint d n))
+            simpa [mul_comm, mul_left_comm, mul_assoc] using
+              (hpsi0_integrable.norm.const_mul MOrd)
+          · filter_upwards [hMOrd_bound] with eps hMord
+            filter_upwards with u
+            by_cases hu :
+                u ∈ tsupport
+                  (((psi0).1 : SchwartzNPoint d n) :
+                    NPointDomain d n -> Complex)
+            · calc
+                ‖chainOrd.terminalBranch
+                    (sourceSide (1 : Real) eps eta0 u) *
+                    ((((psi0).1 : SchwartzNPoint d n) :
+                      NPointDomain d n -> Complex) u)‖
+                    = ‖chainOrd.terminalBranch
+                        (sourceSide (1 : Real) eps eta0 u)‖ *
+                      ‖((((psi0).1 : SchwartzNPoint d n) :
+                        NPointDomain d n -> Complex) u)‖ := by
+                        simp [norm_mul]
+                _ ≤ MOrd *
+                      ‖((((psi0).1 : SchwartzNPoint d n) :
+                        NPointDomain d n -> Complex) u)‖ :=
+                    mul_le_mul_of_nonneg_right (hMord u hu) (norm_nonneg _)
+            · have hzero :
+                  ((((psi0).1 : SchwartzNPoint d n) :
+                    NPointDomain d n -> Complex) u) = 0 :=
+                image_eq_zero_of_notMem_tsupport hu
+              simp [hzero, hMOrd_nonneg]
+        rcases hOrd_bound with ⟨g, hg_int, hg_bound⟩
+        have hOrd_aestrongly :
+            ∀ᶠ eps in l,
+              AEStronglyMeasurable
+                (fun u : NPointDomain d n =>
+                  chainOrd.terminalBranch
+                    (sourceSide (1 : Real) eps eta0 u) *
+                  ((((psi0).1 : SchwartzNPoint d n) :
+                    NPointDomain d n -> Complex) u)) := by
+          filter_upwards [hOrd_eventual_collar] with eps heps
+          let K : Set (NPointDomain d n) :=
+            tsupport
+              (((psi0).1 : SchwartzNPoint d n) :
+                NPointDomain d n -> Complex)
+          let f : NPointDomain d n -> Complex := fun u =>
+            chainOrd.terminalBranch
+              (sourceSide (1 : Real) eps eta0 u) *
+            ((((psi0).1 : SchwartzNPoint d n) :
+              NPointDomain d n -> Complex) u)
+          have hK_compact : IsCompact K := hpsi0_compact.isCompact
+          have hsource_cont :
+              Continuous fun u : NPointDomain d n =>
+                sourceSide (1 : Real) eps eta0 u := by
+            simpa [sourceSide]
+              using
+                BHW.continuous_os45FlatCommonChartSourceSide_fixed_eps
+                  (d := d) (n := n)
+                  (ρperm := (1 : Equiv.Perm (Fin n)))
+                  (sgn := (1 : Real)) (eps := eps) (η := eta0)
+          have hbranch_cont_on_K :
+              ContinuousOn
+                (fun u : NPointDomain d n =>
+                  chainOrd.terminalBranch
+                    (sourceSide (1 : Real) eps eta0 u)) K := by
+            exact
+              chainOrd.terminalBranch_continuousOn.comp
+                hsource_cont.continuousOn heps
+          have htest_cont :
+              Continuous
+                (((psi0).1 : SchwartzNPoint d n) :
+                  NPointDomain d n -> Complex) :=
+            ((psi0).1 : SchwartzNPoint d n).continuous
+          have hzero_off :
+              ∀ u ∉ K, f u = 0 := by
+            intro u hu
+            have hzero :
+                ((((psi0).1 : SchwartzNPoint d n) :
+                  NPointDomain d n -> Complex) u) = 0 :=
+              image_eq_zero_of_notMem_tsupport hu
+            simp [f, hzero]
+          exact
+            BHW.aestronglyMeasurable_zeroExtension_mul_of_compactSupport
+              (K := K) hK_compact
+              hbranch_cont_on_K htest_cont.continuousOn hzero_off
+        apply MeasureTheory.tendsto_integral_filter_of_dominated_convergence
+          (bound := g)
+        · -- AEStronglyMeasurable of the terminal-branch integrand from
+          -- continuity on the eventual collar and zero off compact support.
+          exact hOrd_aestrongly
+        · -- Domination by the polynomial collar majorant.
+          exact hg_bound
+        · -- The majorant is integrable.
+          exact hg_int
+        · -- Pointwise convergence.
+          intro u
+          exact hOrd_pointwise u
+      have hOrd_endpoint_as_source :
+          (∫ u : NPointDomain d n,
+              chainOrd.terminalBranch
+                (sourceSide (1 : Real) 0 eta0 u) *
+              ((((psi0).1 : SchwartzNPoint d n) :
+                NPointDomain d n -> Complex) u)) =
+            ∫ u : NPointDomain d n,
+              bvt_F OS lgc n (fun k => wickRotatePoint (u k)) *
+              ((((psi0).1 : SchwartzNPoint d n) :
+                NPointDomain d n -> Complex) u) := by
+        have hpsi0_support_V :
+            tsupport
+              (((psi0).1 : SchwartzNPoint d n) :
+                NPointDomain d n -> Complex) ⊆ P.V := by
+          simpa [psi0, BHW.OS45Figure24SourceCutoffData.toZeroDiagonalCLM]
+            using
+              D.toSchwartzNPointCLM_tsupport_subset_V
+                (1 : Equiv.Perm (Fin n)) phi hphiE
+        have hOrd_endpoint_as_carrier :
+            (∫ u : NPointDomain d n,
+                chainOrd.terminalBranch
+                    (sourceSide (1 : Real) 0 eta0 u) *
+                  ((((psi0).1 : SchwartzNPoint d n) :
+                    NPointDomain d n -> Complex) u)) =
+              ∫ u : NPointDomain d n,
+                bvt_F OS lgc n
+                    (BHW.os45QuarterTurnConfig
+                      (fun k => wickRotatePoint (u k))) *
+                  ((((psi0).1 : SchwartzNPoint d n) :
+                    NPointDomain d n -> Complex) u) := by
+          have hOrd_endpoint_pointwise :
+            ∀ᵐ u : NPointDomain d n,
+              chainOrd.terminalBranch
+                  (sourceSide (1 : Real) 0 eta0 u) *
+                ((((psi0).1 : SchwartzNPoint d n) :
+                  NPointDomain d n -> Complex) u) =
+              bvt_F OS lgc n
+                  (BHW.os45QuarterTurnConfig
+                    (fun k => wickRotatePoint (u k))) *
+                ((((psi0).1 : SchwartzNPoint d n) :
+                  NPointDomain d n -> Complex) u) := by
+            filter_upwards with u
+            by_cases hu :
+                u ∈ tsupport
+                  (((psi0).1 : SchwartzNPoint d n) :
+                    NPointDomain d n -> Complex)
+            · have huV : u ∈ P.V := hpsi0_support_V hu
+              have hsource_zero :
+                  sourceSide (1 : Real) 0 eta0 u =
+                    (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+                      (BHW.realEmbed
+                        (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                          (1 : Equiv.Perm (Fin n)) u)) := by
+                -- Unfold `sourceSide`; the `eps = 0` and `sgn * eps` terms
+                -- vanish, and the unflattened flat common-edge point is
+                -- the real common-edge point.
+                ext k mu
+                simp [sourceSide, BHW.os45FlatCommonChartSourceSide,
+                  BHW.os45CommonEdgeFlatCLE]
+              have hbranch :
+                  chainOrd.terminalBranch
+                      (sourceSide (1 : Real) 0 eta0 u) =
+                    BHW.extendF (bvt_F OS lgc n)
+                      ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+                        (BHW.realEmbed
+                          (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                            (1 : Equiv.Perm (Fin n)) u))) := by
+                -- Terminal ordinary branch equality at the endpoint-centered
+                -- chart, using `chainOrd.terminal_eq_ordinary_global`.
+                simpa [hsource_zero] using
+                  chainOrd.terminal_eq_ordinary_global
+                    (sourceSide (1 : Real) 0 eta0 u)
+              have hcarrier :
+                  ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+                    (BHW.realEmbed
+                      (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                        (1 : Equiv.Perm (Fin n)) u))) =
+                    BHW.os45QuarterTurnConfig
+                      (fun k => wickRotatePoint (u k)) := by
+                -- Coordinate carrier identity only.  This is the inverse
+                -- quarter-turn of the real common edge, not the unturned Wick
+                -- point.
+                ext k mu
+                simp [BHW.os45QuarterTurnCLE_symm_apply,
+                  BHW.os45QuarterTurnConfig, BHW.os45CommonEdgeRealPoint,
+                  wickRotatePoint]
+              have hraw_forward :
+                  BHW.extendF (bvt_F OS lgc n)
+                      ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+                        (BHW.realEmbed
+                          (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                            (1 : Equiv.Perm (Fin n)) u))) =
+                    bvt_F OS lgc n
+                      ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+                        (BHW.realEmbed
+                          (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                            (1 : Equiv.Perm (Fin n)) u))) := by
+                exact
+                  BHW.os45Figure24CommonEdge_ordinary_extendF_eq_bvt_F
+                    (d := d) hd OS lgc (P := P) huV
+              rw [hbranch, hraw_forward, hcarrier]
+            · have hzero :
+                  ((((psi0).1 : SchwartzNPoint d n) :
+                    NPointDomain d n -> Complex) u) = 0 :=
+                image_eq_zero_of_notMem_tsupport hu
+              simp [hzero]
+          exact integral_congr_ae hOrd_endpoint_pointwise
+        have hOrd_carrier_pairing :
+            (∫ u : NPointDomain d n,
+                bvt_F OS lgc n
+                    (BHW.os45QuarterTurnConfig
+                      (fun k => wickRotatePoint (u k))) *
+                  ((((psi0).1 : SchwartzNPoint d n) :
+                    NPointDomain d n -> Complex) u)) =
+              ∫ u : NPointDomain d n,
+                bvt_F OS lgc n (fun k => wickRotatePoint (u k)) *
+                  ((((psi0).1 : SchwartzNPoint d n) :
+                    NPointDomain d n -> Complex) u) := by
+          let e := BHW.os45CommonEdgeFlatCLE d n
+            (1 : Equiv.Perm (Fin n))
+          let J : Complex := BHW.os45CommonEdgeFlatJacobianAbs n
+          let psi0Flat :=
+            (SchwartzMap.compCLMOfContinuousLinearEquiv Complex e.symm)
+              ((psi0).1 : SchwartzNPoint d n)
+          let pullFlatToSource :
+              SchwartzMap (BHW.OS45FlatCommonChartReal d n) Complex
+                ->L[Complex] SchwartzNPoint d n :=
+            SchwartzMap.compCLMOfContinuousLinearEquiv Complex e
+          let carrierPairing : Complex :=
+            ∫ u : NPointDomain d n,
+              bvt_F OS lgc n
+                  (BHW.os45QuarterTurnConfig
+                    (fun k => wickRotatePoint (u k))) *
+                ((((psi0).1 : SchwartzNPoint d n) :
+                  NPointDomain d n -> Complex) u)
+          let wickPairing : Complex :=
+            ∫ u : NPointDomain d n,
+              bvt_F OS lgc n (fun k => wickRotatePoint (u k)) *
+                ((((psi0).1 : SchwartzNPoint d n) :
+                  NPointDomain d n -> Complex) u)
+          let WordFlat :
+              SchwartzMap (BHW.OS45FlatCommonChartReal d n) Complex
+                ->L[Complex] Complex :=
+            J • (Word.comp pullFlatToSource)
+          have hJ_ne : J ≠ 0 := by
+            exact
+              Complex.ofReal_ne_zero.mpr
+                (ne_of_gt (BHW.os45CommonEdgeFlatJacobianAbs_pos n))
+          have hWord_carrier :
+              WordFlat psi0Flat = J * carrierPairing := by
+            -- Proof-local transcript:
+            -- 1. `pullFlatToSource psi0Flat = psi0` by the CLE inverse
+            --    calculation, then `simp [WordFlat]` reduces the left side to
+            --    `J * Word psi0`.
+            -- 2. `hWord_endpoint` identifies `Word psi0` with the
+            --    zero-height source-side endpoint integral.
+            -- 3. `hOrd_endpoint_as_carrier` rewrites that endpoint integral to
+            --    `carrierPairing`, using
+            --    `BHW.os45FlatCommonChartSourceSide_zero`,
+            --    `chainOrd.terminal_eq_ordinary_global`, and
+            --    `BHW.os45Figure24CommonEdge_ordinary_extendF_eq_bvt_F` on
+            --    `tsupport psi0`.
+            -- 4. The off-support part is killed by
+            --    `image_eq_zero_of_notMem_tsupport`.
+            calc
+              WordFlat psi0Flat = J * Word ((psi0).1 : SchwartzNPoint d n) := by
+                have hpull :
+                    pullFlatToSource psi0Flat =
+                      ((psi0).1 : SchwartzNPoint d n) := by
+                  ext u
+                  simp [pullFlatToSource, psi0Flat]
+                simp [WordFlat, hpull]
+              _ = J * carrierPairing := by
+                rw [hWord_endpoint, hOrd_endpoint_as_carrier]
+          have hWord_wick :
+              WordFlat psi0Flat = J * wickPairing := by
+            -- Proof-local transcript:
+            -- 1. reduce again to `J * Word psi0`;
+            -- 2. use the ordinary Wick trace transported by `chainOrd` to get
+            --    `Word psi0 = OS.S n (D.toZeroDiagonalCLM 1 phi)`;
+            -- 3. rewrite `wickPairing` to the same Schwinger value with
+            --    `bvt_euclidean_restriction` and the definitional equality
+            --    between `psi0` and `D.toZeroDiagonalCLM 1 phi`.
+            have hWord_schwinger :
+                Word ((psi0).1 : SchwartzNPoint d n) =
+                  OS.S n (D.toZeroDiagonalCLM
+                    (1 : Equiv.Perm (Fin n)) phi) := by
+              -- Ordinary `(4.1)` Wick trace, transported along `chainOrd`.
+              exact hOrd_terminalBoundaryCLM_eq_schwinger phi hphiE
+            have hwick_schwinger :
+                wickPairing =
+                  OS.S n (D.toZeroDiagonalCLM
+                    (1 : Equiv.Perm (Fin n)) phi) := by
+              -- This is the checked Euclidean restriction for the same
+              -- zero-diagonal test, unfolded through `psi0`.
+              simpa [wickPairing, psi0] using
+                (bvt_euclidean_restriction (d := d) OS lgc n
+                  (D.toZeroDiagonalCLM
+                    (1 : Equiv.Perm (Fin n)) phi)).symm
+            calc
+              WordFlat psi0Flat = J * Word ((psi0).1 : SchwartzNPoint d n) := by
+                have hpull :
+                    pullFlatToSource psi0Flat =
+                      ((psi0).1 : SchwartzNPoint d n) := by
+                  ext u
+                  simp [pullFlatToSource, psi0Flat]
+                simp [WordFlat, hpull]
+              _ = J * wickPairing := by
+                rw [hWord_schwinger, hwick_schwinger]
+          have hmul : J * carrierPairing = J * wickPairing :=
+            hWord_carrier.symm.trans hWord_wick
+          exact mul_left_cancel₀ hJ_ne hmul
+        exact hOrd_endpoint_as_carrier.trans hOrd_carrier_pairing
+      have hWord_endpoint :
+          Word ((psi0).1 : SchwartzNPoint d n) =
+            ∫ u : NPointDomain d n,
+              chainOrd.terminalBranch
+                (sourceSide (1 : Real) 0 eta0 u) *
+              ((((psi0).1 : SchwartzNPoint d n) :
+                NPointDomain d n -> Complex) u) := by
+        exact tendsto_nhds_unique hOrd_fixed_psi0 hOrd_endpoint_limit
+      exact hWord_endpoint.trans hOrd_endpoint_as_source
 
     have hOrd_source_norm :
         Word ((psi0).1 : SchwartzNPoint d n) =
           OS.S n (D.toZeroDiagonalCLM
             (1 : Equiv.Perm (Fin n)) phi) := by
-      -- OS-I `(4.14)` source normalization for the ordinary branch.  The
-      -- endpoint value is the Wick/source section
-      -- `u ↦ bvt_F OS lgc n (fun k => wickRotatePoint (u k))`; finish with
-      -- `bvt_euclidean_restriction OS lgc n psi0`.
+      calc
+        Word ((psi0).1 : SchwartzNPoint d n)
+            = ∫ u : NPointDomain d n,
+                bvt_F OS lgc n (fun k => wickRotatePoint (u k)) *
+                ((((psi0).1 : SchwartzNPoint d n) :
+                  NPointDomain d n -> Complex) u) :=
+              hOrd_boundary_to_source
+        _ = OS.S n (D.toZeroDiagonalCLM
+              (1 : Equiv.Perm (Fin n)) phi) := by
+              -- `psi0` is definitionally
+              -- `D.toZeroDiagonalCLM (1 : Equiv.Perm (Fin n)) phi`.
+              simpa [psi0] using
+                (bvt_euclidean_restriction (d := d) OS lgc n
+                  (D.toZeroDiagonalCLM
+                    (1 : Equiv.Perm (Fin n)) phi)).symm
 
     have hOrd_as_extendF :
         Tendsto
@@ -3264,8 +4588,8 @@ have hMinus_asymptotic_eta0 :
         (-1 : Real) eps eta0 phi
         (hsupport_eps eta0 hKeta_eta0).minus_edge
         (hinteg_eps eta0 hKeta_eta0).2
-    -- `hterminal_eps` rewrites the `extendF (bvt_F) (permAct P.τ ...)`
-    -- expression in `hraw_pullback` to `Badj_terminal (...)`.
+    -- `hterminal_eps` rewrites the adjacent `extendF (bvt_F)` expression in
+    -- `hraw_pullback` to the terminal adjacent branch expression.
     exact hraw_pullback.trans (integral_congr_ae (hterminal_eps eta0 hKeta_eta0))
 
   have hpsiMinus_move :
@@ -3308,19 +4632,40 @@ have hMinus_asymptotic_eta0 :
               (sourceSide (-1 : Real) eps eta0 u) ∈
               BHW.ExtendedTube d n := hminus_sheet
 
-    have hAdj_raw_endpoint :
+    have hAdj_integrand_to_endpoint :
         ∀ᶠ eps in l,
           ∀ᵐ u : NPointDomain d n,
-            Badj_terminal (sourceSide (-1 : Real) eps eta0 u) =
-            chainAdj.terminalBranch
-              (sourceSide (-1 : Real) eps eta0 u) := by
-      -- The adjacent incoming sheet is the raw `(4.12)` window
+            Badj_terminal (sourceSide (-1 : Real) eps eta0 u) *
+              ((((psiMinus eps eta0).1 : SchwartzNPoint d n) :
+                NPointDomain d n -> Complex) u) =
+              chainAdj.terminalBranch
+                (sourceSide (-1 : Real) eps eta0 u) *
+              ((((psiMinus eps eta0).1 : SchwartzNPoint d n) :
+                NPointDomain d n -> Complex) u) := by
+      -- This integrand equality is again needed only on the support of the moving
+      -- minus-side test.  The adjacent incoming sheet is the raw `(4.12)` window
       -- `{z | BHW.permAct P.τ z ∈ BHW.ForwardTube d n} ∩ H.ΩJ` with branch
-      -- `BSeed412 z = bvt_F OS lgc n (BHW.permAct P.τ z)`.  The outgoing
-      -- flat side is `BHW.os45FlatCommonChartOmega d n (P.τ.symm * 1)`.
-      -- Use the retained adjacent one-branch chain to reach the terminal
-      -- endpoint, then use the endpoint equality only on this terminal
-      -- chart.
+      -- `BSeed412 z = bvt_F OS lgc n (BHW.permAct P.τ z)`.  The outgoing flat
+      -- side is `BHW.os45FlatCommonChartOmega d n (P.τ.symm * 1)`.  Use the
+      -- retained adjacent one-branch chain to reach the terminal endpoint, then
+      -- use endpoint equality only on this terminal chart.
+      have hsupport :=
+        D.toSideZeroDiagonalCLM_sourceWindow_support_and_eq_plain_eventually
+          hUlocal_open Keta hKeta phi hphi_compact hphiUlocal
+      filter_upwards [hAdj_sheet, hsupport, hAdj_terminal_eq_endpoint_eventually]
+        with eps hsheet hsupport_eps hterminal_eps
+      filter_upwards with u
+      by_cases hu :
+          u ∈ tsupport
+            ((((psiMinus eps eta0).1 : SchwartzNPoint d n) :
+              NPointDomain d n -> Complex))
+      · have hbranch := hterminal_eps eta0 hKeta_eta0 u hu
+        rw [hbranch]
+      · have hzero :
+            ((((psiMinus eps eta0).1 : SchwartzNPoint d n) :
+              NPointDomain d n -> Complex) u) = 0 :=
+          image_eq_zero_of_notMem_tsupport hu
+        simp [hzero]
 
     have hAdj_integral_rewrite :
         ∀ᶠ eps in l,
@@ -3333,23 +4678,209 @@ have hMinus_asymptotic_eta0 :
               (sourceSide (-1 : Real) eps eta0 u) *
             ((((psiMinus eps eta0).1 : SchwartzNPoint d n) :
               NPointDomain d n -> Complex) u)) := by
-      filter_upwards [hAdj_raw_endpoint] with eps heps
-      exact integral_congr_ae (heps.mono
-        (by intro u hu; rw [hu]))
+      filter_upwards [hAdj_integrand_to_endpoint] with eps heps
+      exact integral_congr_ae heps
 
-    have hAdj_fixed :
-        forall psi : SchwartzNPoint d n,
+    have hAdj_fixed_psi0 :
+        Tendsto
+          (fun eps =>
+            integral fun u : NPointDomain d n =>
+              chainAdj.terminalBranch
+                (sourceSide (-1 : Real) eps eta0 u) *
+              ((((psi0).1 : SchwartzNPoint d n) :
+                NPointDomain d n -> Complex) u))
+          l (nhds (Wadj ((psi0).1 : SchwartzNPoint d n))) := by
+      -- Adjacent correction parallel to the ordinary side: the local
+      -- `sourceSide` fixed leaf is only the compact cutoff-pulled
+      -- specialization `psi0`.  The all-Schwartz theorem is the raw `(4.12)`
+      -- tube boundary theorem before CLE/source pullback.  Do not state a
+      -- post-pullback local carrier theorem for arbitrary Schwartz tests.
+      have hpsi0_compact :
+          HasCompactSupport
+            ((((psi0).1 : SchwartzNPoint d n) :
+              NPointDomain d n -> Complex)) := by
+        simpa [psi0, BHW.OS45Figure24SourceCutoffData.toZeroDiagonalCLM]
+          using
+            D.toSchwartzNPointCLM_hasCompactSupport
+              (1 : Equiv.Perm (Fin n)) phi
+      have hpsi0_zero_off_Ksource :
+          ∀ u ∉ Ksource,
+            ((((psi0).1 : SchwartzNPoint d n) :
+              NPointDomain d n -> Complex) u) = 0 := by
+        have hpsi0_support_Usource :
+            tsupport ((((psi0).1 : SchwartzNPoint d n) :
+              NPointDomain d n -> Complex)) ⊆ Usource := by
+          simpa [psi0, BHW.OS45Figure24SourceCutoffData.toZeroDiagonalCLM]
+            using
+              D.toSchwartzNPointCLM_tsupport_subset_image
+                (1 : Equiv.Perm (Fin n)) phi hphiUsource
+        intro u huK
+        exact
+          image_eq_zero_of_notMem_tsupport
+            (fun hu =>
+              huK (hUsource_sub_Ksource (hpsi0_support_Usource hu)))
+      have hAdj_source_mem_eventually :
+          ∀ᶠ eps in l, ∀ u ∈ Ksource,
+            sourceSide (-1 : Real) eps eta0 u ∈
+              chainAdj.terminalCarrier := by
+        simpa [l, sourceSide] using
+          BHW.eventually_forall_os45FlatCommonChartSourceSide_mem_of_compact
+            (ρperm := (1 : Equiv.Perm (Fin n))) (sgn := (-1 : Real))
+            (η := eta0) (K := Ksource) hKsource_compact
+            chainAdj.terminalCarrier_open hAdj_endpoint_mem_on_Ksource
+      have hterminal_to_endpoint :
+          ∀ᶠ eps in l,
+            (integral fun u : NPointDomain d n =>
+              chainAdj.terminalBranch
+                (sourceSide (-1 : Real) eps eta0 u) *
+              ((((psi0).1 : SchwartzNPoint d n) :
+                NPointDomain d n -> Complex) u)) =
+            (integral fun u : NPointDomain d n =>
+              BHW.extendF (bvt_F OS lgc n)
+                (BHW.permAct (d := d) P.τ
+                  (sourceSide (-1 : Real) eps eta0 u)) *
+              ((((psi0).1 : SchwartzNPoint d n) :
+                NPointDomain d n -> Complex) u)) := by
+        filter_upwards [hAdj_source_mem_eventually] with eps hmem_eps
+        apply integral_congr_ae
+        filter_upwards with u
+        by_cases huK : u ∈ Ksource
+        · have hbranch :
+              chainAdj.terminalBranch
+                  (sourceSide (-1 : Real) eps eta0 u) =
+                BHW.extendF (bvt_F OS lgc n)
+                  (BHW.permAct (d := d) P.τ
+                    (sourceSide (-1 : Real) eps eta0 u)) := by
+            -- Retained raw `(4.12)` provenance transported to the terminal
+            -- chart.  This is the endpoint formula only after the one-branch
+            -- adjacent chain has carried the raw seed forward.
+            exact
+              chainAdj.terminal_eq_transported_adjacent_endpoint
+                (sourceSide (-1 : Real) eps eta0 u) (hmem_eps u huK)
+          rw [hbranch]
+        · have hzero := hpsi0_zero_off_Ksource u huK
+          simp [hzero]
+      have hAdj_sourceSide_fixed :
           Tendsto
             (fun eps =>
               integral fun u : NPointDomain d n =>
-                chainAdj.terminalBranch
-                  (sourceSide (-1 : Real) eps eta0 u) * psi u)
-            l (nhds (Wadj psi)) := by
-      intro psi
-      -- Apply OS-I `(4.12)` to the raw seed: first rewrite on
-      -- `OmegaSeed412/BSeed412`, then apply the label permutation to the
-      -- tube ray and to the test.  The fixed-test boundary value is
-      -- transported to the terminal CLM through the retained adjacent chain.
+                BHW.extendF (bvt_F OS lgc n)
+                  (BHW.permAct (d := d) P.τ
+                    (sourceSide (-1 : Real) eps eta0 u)) *
+                ((((psi0).1 : SchwartzNPoint d n) :
+                  NPointDomain d n -> Complex) u))
+            l (nhds (Wadj ((psi0).1 : SchwartzNPoint d n))) := by
+        -- Concrete raw-adjacent scalar-cancellation body:
+        --
+        --   e := BHW.os45CommonEdgeFlatCLE d n 1
+        --   J := (BHW.os45CommonEdgeFlatJacobianAbs n : Complex)
+        --   σAdj := P.τ.symm * (1 : Equiv.Perm (Fin n))
+        --   pullFlatToSource :=
+        --     SchwartzMap.compCLMOfContinuousLinearEquiv Complex e
+        --   psi0Flat :=
+        --     (SchwartzMap.compCLMOfContinuousLinearEquiv Complex e.symm)
+        --       ((psi0).1 : SchwartzNPoint d n)
+        --
+        -- The translated-test pullback with `σ = σAdj`, `ρperm = 1`,
+        -- `sgn = -1`, and `ψFlat = psi0Flat` gives
+        --
+        --   FlatAdj eps =
+        --     J * ∫ u, extendF(bvt_F)
+        --       (BHW.permAct P.τ (sourceSide (-1) eps eta0 u)) * psi0 u
+        --
+        -- after rewriting `σAdj.symm = P.τ` and
+        -- `psi0Flat (e u) = psi0 u`.  No permutation of the source test is
+        -- present in this post-pullback formula; the permutation is entirely
+        -- in the raw branch `z ↦ bvt_F (permAct P.τ z)`.
+        --
+        -- Lean skeleton:
+        --
+        --   let σAdj := P.τ.symm * (1 : Equiv.Perm (Fin n))
+        --   let BranchFlatAdj eps x :=
+        --     BHW.os45FlatCommonChartBranch d n OS lgc σAdj
+        --       (fun j => (x j : Complex) + (((-eps) • eta0) j : Complex) *
+        --         Complex.I)
+        --   let FlatAdj eps :=
+        --     ∫ x, BranchFlatAdj eps x *
+        --       (SCV.translateSchwartz (-((-eps) • eta0)) psi0Flat) x
+        --   let SourceAdj eps :=
+        --     ∫ u, BHW.extendF (bvt_F OS lgc n)
+        --       (BHW.permAct (d := d) P.τ
+        --         (sourceSide (-1 : Real) eps eta0 u)) *
+        --       (((psi0).1 : SchwartzNPoint d n) u)
+        --
+        --   obtain ⟨hpsi0Flat_compact, hpsi0Flat_edge⟩ :
+        --       HasCompactSupport
+        --           (psi0Flat :
+        --             BHW.OS45FlatCommonChartReal d n -> Complex) ∧
+        --         tsupport
+        --           (psi0Flat : BHW.OS45FlatCommonChartReal d n -> Complex) ⊆
+        --           BHW.os45FlatCommonChartEdgeSet d n P
+        --             (1 : Equiv.Perm (Fin n)) := by
+        --     simpa [psi0, psi0Flat, e] using
+        --       D.toZeroDiagonalCLM_flatPullback_support
+        --         (1 : Equiv.Perm (Fin n)) phi hphiUsource
+        --         (hUsource_sub_Ksource.trans hKsource_sub_P)
+        --
+        --   have hpsi0Flat_integ :=
+        --     BHW.os45FlatCommonChart_branch_side_shifted_mul_integrable_eventually
+        --       (d := d) hd OS lgc (P := P) Keta hKeta hKetaC
+        --       psi0Flat hpsi0Flat_compact hpsi0Flat_edge
+        --
+        --   have hσAdj_symm : σAdj.symm = P.τ := by
+        --     simp [σAdj]
+        --
+        --   have hpullAdj :
+        --       ∀ᶠ eps in l, FlatAdj eps = J * SourceAdj eps := by
+        --     filter_upwards [hpsi0Flat_integ] with eps hinteg_eps
+        --     have hg := (hinteg_eps eta0 hKeta_eta0).2
+        --     have hpull :=
+        --       BHW.os45FlatCommonChart_branch_integral_eq_sourceSide_extendF_translatedTest
+        --         (d := d) (n := n) OS lgc σAdj
+        --         (1 : Equiv.Perm (Fin n)) (-1 : Real) eps eta0
+        --         psi0Flat hg
+        --     simpa [FlatAdj, SourceAdj, sourceSide, psi0Flat, hσAdj_symm]
+        --       using hpull
+        --
+        --   let WadjFlat :
+        --       SchwartzMap (BHW.OS45FlatCommonChartReal d n) Complex
+        --         ->L[Complex] Complex :=
+        --     J • (Wadj.comp pullFlatToSource)
+        --
+        --   have hflatAdj :
+        --       Tendsto (fun eps => FlatAdj eps) l
+        --         (nhds (WadjFlat psi0Flat)) := by
+        --     -- Use the all-Schwartz raw `(4.12)` fixed theorem on
+        --     -- `OmegaSeed412/BSeed412`, then
+        --     -- `SCV.tube_boundaryValueData_moving_of_fixed` for the translated
+        --     -- flat tests.  The translated-test convergence input is
+        --     -- `SCV.tendsto_translateSchwartz_nhds_of_isCompactSupport`,
+        --     -- composed with `eps ↦ -((-eps) • eta0)` and restricted to `l`.
+        --     -- The downstream deterministic endpoint formula is not an
+        --     -- initial datum; it appears only after raw-chain transport.
+        --
+        --   have hWadjFlat_def :
+        --       WadjFlat psi0Flat =
+        --         J * Wadj ((psi0).1 : SchwartzNPoint d n) := by
+        --     have hpull :
+        --         pullFlatToSource psi0Flat =
+        --           ((psi0).1 : SchwartzNPoint d n) := by
+        --       ext u
+        --       simp [pullFlatToSource, psi0Flat]
+        --     simp [WadjFlat, hpull]
+        --
+        --   have hscaled :
+        --       Tendsto (fun eps => J * SourceAdj eps) l
+        --         (nhds (J * Wadj ((psi0).1 : SchwartzNPoint d n))) := by
+        --     simpa [hWadjFlat_def] using hflatAdj.congr' hpullAdj
+        --
+        --   exact tendsto_const_nhds.inv₀ hJ_ne |>.mul hscaled |> by
+        --     simpa [SourceAdj, J, hJ_ne, mul_assoc]
+        --
+        -- This is the raw-adjacent `(4.12)/(4.14)` transfer for the concrete
+        -- cutoff-pulled test.  It introduces no `Wadj` wrapper and no
+        -- downstream deterministic adjacent seed.
+      exact hAdj_sourceSide_fixed.congr' hterminal_to_endpoint.symm
 
     have hAdj_moving :
         Tendsto
@@ -3360,21 +4891,626 @@ have hMinus_asymptotic_eta0 :
               ((((psiMinus eps eta0).1 : SchwartzNPoint d n) :
                 NPointDomain d n -> Complex) u))
           l (nhds (Wadj ((psi0).1 : SchwartzNPoint d n))) := by
-      -- Use `SCV.tube_boundaryValueData_moving_of_fixed` with the transported
-      -- adjacent boundary functional `Wadj`, not with the deterministic
-      -- endpoint branch as upstream data, and feed in `hpsiMinus_move`.
+      -- Use the same compact-support moving-test perturbation with the raw
+      -- adjacent boundary functional `Wadj`, not with the deterministic endpoint
+      -- branch as upstream data.  The fixed-test leaf gives the compact
+      -- specialization `hAdj_fixed_psi0`.  The raw `(4.12)` terminal carrier plus checked
+      -- SourceSide compact-collar bound gives a uniform `Msource` over one
+      -- compact support containing the moving minus tests and `psi0`.  The
+      -- The concrete minus-side common support and zeroth-seminorm facts are
+      -- the same checked side-family lemmas, using the `sgn = -1` half of the
+      -- support packet and the seminorm theorem restricted to
+      -- `l = 𝓝[Set.Ioi 0] 0`.
+      have hpsi0_zero_off_Ksource :
+          ∀ u ∉ Ksource,
+            ((((psi0).1 : SchwartzNPoint d n) :
+              NPointDomain d n -> Complex) u) = 0 := by
+        have hpsi0_support_Usource :
+            tsupport ((((psi0).1 : SchwartzNPoint d n) :
+              NPointDomain d n -> Complex)) ⊆ Usource := by
+          simpa [psi0, BHW.OS45Figure24SourceCutoffData.toZeroDiagonalCLM]
+            using
+              D.toSchwartzNPointCLM_tsupport_subset_image
+                (1 : Equiv.Perm (Fin n)) phi hphiUsource
+        intro u huK
+        exact
+          image_eq_zero_of_notMem_tsupport
+            (fun hu =>
+              huK (hUsource_sub_Ksource (hpsi0_support_Usource hu)))
+      have hpsiMinus_commonCompactSupport :
+          ∀ᶠ eps in l, ∀ u ∉ Ksource,
+            ((((psiMinus eps eta0).1 : SchwartzNPoint d n) -
+              ((psi0).1 : SchwartzNPoint d n) :
+              NPointDomain d n -> Complex) u) = 0 := by
+        have hpack :=
+          D.toSideZeroDiagonalCLM_sub_toZeroDiagonalCLM_eq_zero_off_eventually
+            hUsource_open hUsource_sub_Ksource ({eta0}) isCompact_singleton
+            phi hphi_compact hphiUsource
+        filter_upwards [hpack] with eps hpack_eps u huK
+        simpa [l, psiMinus, psi0, Pi.sub_apply] using
+          (hpack_eps eta0 (by simp)).2 u huK
+      have hpsiMinus_seminorm0_tendsto :
+          Tendsto
+            (fun eps : Real =>
+              SchwartzMap.seminorm Real 0 0
+                (((psiMinus eps eta0).1 : SchwartzNPoint d n) -
+                  ((psi0).1 : SchwartzNPoint d n)))
+            l (nhds 0) := by
+        exact
+          (D.toSideZeroDiagonalCLM_sub_toZeroDiagonalCLM_seminorm_tendsto_zero
+            (1 : Equiv.Perm (Fin n)) (-1 : Real) eta0
+            phi hphi_compact).mono_left nhdsWithin_le_nhds
+      have hAdj_source_test_diff_zero :
+          Tendsto
+            (fun eps =>
+              integral fun u : NPointDomain d n =>
+                chainAdj.terminalBranch
+                  (sourceSide (-1 : Real) eps eta0 u) *
+                ((((psiMinus eps eta0).1 : SchwartzNPoint d n) -
+                  ((psi0).1 : SchwartzNPoint d n) :
+                  NPointDomain d n -> Complex) u))
+            l (nhds 0) := by
+        -- Checked neutral analytic support:
+        -- `BHW.tendsto_integral_comp_os45FlatCommonChartSourceSide_mul_sub_of_commonCompactSupport`
+        -- with `ρperm = 1`, `sgn = -1`, `eps := fun eps => eps`,
+        -- `F := chainAdj.terminalBranch`, and `K := Ksource`.
+        -- Inputs are the raw-adjacent terminal carrier openness/continuity,
+        -- endpoint membership on `Ksource`, and the checked minus-side
+        -- support/seminorm facts above.
+        exact
+          BHW.tendsto_integral_comp_os45FlatCommonChartSourceSide_mul_sub_of_commonCompactSupport
+            (ρperm := (1 : Equiv.Perm (Fin n))) (sgn := -1) (η := eta0)
+            chainAdj.terminalCarrier_open
+            chainAdj.terminalBranch_continuousOn
+            hKsource_compact hAdj_endpoint_mem_on_Ksource
+            (eps := fun eps : Real => eps) (by simpa [l] using tendsto_id)
+            hpsiMinus_commonCompactSupport hpsiMinus_seminorm0_tendsto
+      obtain ⟨MsourceAdj, _hMsourceAdj_nonneg,
+          hAdj_source_bound_eventually_raw⟩ :=
+        BHW.exists_bound_eventually_forall_norm_comp_os45FlatCommonChartSourceSide
+          (ρperm := (1 : Equiv.Perm (Fin n)))
+          (sgn := (-1 : Real)) (η := eta0)
+          (K := Ksource) hKsource_compact
+          chainAdj.terminalCarrier_open hAdj_endpoint_mem_on_Ksource
+          chainAdj.terminalBranch_continuousOn
+      have hAdj_source_bound_eventually :
+          ∀ᶠ eps in l, ∀ u ∈ Ksource,
+            ‖chainAdj.terminalBranch
+              (sourceSide (-1 : Real) eps eta0 u)‖ ≤ MsourceAdj := by
+        simpa [l, sourceSide] using hAdj_source_bound_eventually_raw
+      have hAdj_source_mem_eventually :
+          ∀ᶠ eps in l, ∀ u ∈ Ksource,
+            sourceSide (-1 : Real) eps eta0 u ∈
+              chainAdj.terminalCarrier := by
+        simpa [l, sourceSide] using
+          BHW.eventually_forall_os45FlatCommonChartSourceSide_mem_of_compact
+            (ρperm := (1 : Equiv.Perm (Fin n))) (sgn := (-1 : Real))
+            (η := eta0) (K := Ksource) hKsource_compact
+            chainAdj.terminalCarrier_open hAdj_endpoint_mem_on_Ksource
+      have hsplit :
+          (fun eps =>
+            integral fun u : NPointDomain d n =>
+              chainAdj.terminalBranch
+                (sourceSide (-1 : Real) eps eta0 u) *
+              ((((psiMinus eps eta0).1 : SchwartzNPoint d n) :
+                NPointDomain d n -> Complex) u))
+          =ᶠ[l]
+          (fun eps =>
+            (integral fun u : NPointDomain d n =>
+              chainAdj.terminalBranch
+                (sourceSide (-1 : Real) eps eta0 u) *
+              ((((psi0).1 : SchwartzNPoint d n) :
+                NPointDomain d n -> Complex) u)) +
+            (integral fun u : NPointDomain d n =>
+              chainAdj.terminalBranch
+                (sourceSide (-1 : Real) eps eta0 u) *
+              ((((psiMinus eps eta0).1 : SchwartzNPoint d n) -
+                ((psi0).1 : SchwartzNPoint d n) :
+                NPointDomain d n -> Complex) u))) := by
+        -- Inline algebra with the same checked fixed-height integrability
+        -- lemma as the ordinary side.  Inside the `filter_upwards` block, use
+        -- `BHW.integrable_comp_os45FlatCommonChartSourceSide_mul_of_commonCompactSupport`
+        -- with `ψ = (psi0).1` and
+        -- `ψ = (psiMinus eps eta0).1 - (psi0).1`, then the same
+        -- `MeasureTheory.integral_add` calculation and the pointwise identity
+        -- `psiMinus eps eta0 = psi0 + (psiMinus eps eta0 - psi0)`.
+        -- Lean body:
+        --   filter_upwards [hpsiMinus_commonCompactSupport,
+        --     hAdj_source_mem_eventually, hAdj_source_bound_eventually]
+        --     with eps hsupp hmem_eps hbound_eps
+        --   have hfixed_int :=
+        --     BHW.integrable_comp_os45FlatCommonChartSourceSide_mul_of_commonCompactSupport
+        --       (ρperm := (1 : Equiv.Perm (Fin n))) (sgn := -1)
+        --       (eps := eps) (η := eta0)
+        --       chainAdj.terminalBranch_continuousOn hKsource_compact
+        --       hmem_eps hbound_eps ((psi0).1 : SchwartzNPoint d n)
+        --       hpsi0_zero_off_Ksource
+        --   have hdiff_int :=
+        --     BHW.integrable_comp_os45FlatCommonChartSourceSide_mul_of_commonCompactSupport
+        --       (ρperm := (1 : Equiv.Perm (Fin n))) (sgn := -1)
+        --       (eps := eps) (η := eta0)
+        --       chainAdj.terminalBranch_continuousOn hKsource_compact
+        --       hmem_eps hbound_eps
+        --       (((psiMinus eps eta0).1 : SchwartzNPoint d n) -
+        --         ((psi0).1 : SchwartzNPoint d n))
+        --       (fun u huK => hsupp u huK)
+        --   rw [← MeasureTheory.integral_add hfixed_int hdiff_int]
+        --   apply integral_congr_ae
+        --   filter_upwards with u
+        --   simp [Pi.sub_apply, sub_eq_add_neg, mul_add, add_comm,
+        --     add_left_comm, add_assoc]
+      exact (hAdj_fixed_psi0.add hAdj_source_test_diff_zero).congr' hsplit.symm
+
+    have hAdj_boundary_to_source :
+        Wadj ((psi0).1 : SchwartzNPoint d n) =
+          ∫ u : NPointDomain d n,
+            bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k))) *
+            ((((psi0).1 : SchwartzNPoint d n) :
+              NPointDomain d n -> Complex) u) := by
+      have hAdj_endpoint_limit :
+          Tendsto
+            (fun eps =>
+              integral fun u : NPointDomain d n =>
+                chainAdj.terminalBranch
+                  (sourceSide (-1 : Real) eps eta0 u) *
+                ((((psi0).1 : SchwartzNPoint d n) :
+                  NPointDomain d n -> Complex) u))
+            l
+            (nhds
+              (∫ u : NPointDomain d n,
+                chainAdj.terminalBranch
+                  (sourceSide (-1 : Real) 0 eta0 u) *
+                ((((psi0).1 : SchwartzNPoint d n) :
+                  NPointDomain d n -> Complex) u))) := by
+        have hpsi0_compact :
+            HasCompactSupport
+              (((psi0).1 : SchwartzNPoint d n) :
+                NPointDomain d n -> Complex) := by
+          simpa [psi0, BHW.OS45Figure24SourceCutoffData.toZeroDiagonalCLM]
+            using
+              D.toSchwartzNPointCLM_hasCompactSupport
+                (1 : Equiv.Perm (Fin n)) phi
+        have hpsi0_support_V :
+            tsupport
+              (((psi0).1 : SchwartzNPoint d n) :
+                NPointDomain d n -> Complex) ⊆ P.V := by
+          simpa [psi0, BHW.OS45Figure24SourceCutoffData.toZeroDiagonalCLM]
+            using
+              D.toSchwartzNPointCLM_tsupport_subset_V
+                (1 : Equiv.Perm (Fin n)) phi hphiE
+        have hAdj_endpoint_mem :
+            ∀ u ∈ tsupport
+                (((psi0).1 : SchwartzNPoint d n) :
+                  NPointDomain d n -> Complex),
+              sourceSide (-1 : Real) 0 eta0 u ∈
+                chainAdj.terminalCarrier := by
+          intro u hu
+          have huV : u ∈ P.V := hpsi0_support_V hu
+          have hzero :
+              sourceSide (-1 : Real) 0 eta0 u =
+                BHW.os45QuarterTurnConfig
+                  (fun k => wickRotatePoint (u k)) := by
+            simpa [sourceSide]
+              using
+                BHW.os45FlatCommonChartSourceSide_zero
+                  (d := d) (n := n)
+                  (ρperm := (1 : Equiv.Perm (Fin n)))
+                  (sgn := (-1 : Real)) (η := eta0) (u := u)
+          have hwindow :
+              BHW.os45QuarterTurnConfig
+                  (fun k => wickRotatePoint (u k)) ∈
+                chainAdj.terminalCarrier := by
+            -- This is the retained raw `(4.12)` terminal common-edge window,
+            -- built from `H.adjacentCommonEdge_metricBallChartInWindow` after
+            -- raw-chain transport.  It is not the downstream deterministic
+            -- adjacent branch.
+            exact chainAdj.terminal_contains_adjacentCommonEdge u huV
+          simpa [hzero] using hwindow
+        have hAdj_eventual_collar :
+            ∀ᶠ eps in l,
+              ∀ u ∈ tsupport
+                  (((psi0).1 : SchwartzNPoint d n) :
+                    NPointDomain d n -> Complex),
+                sourceSide (-1 : Real) eps eta0 u ∈
+                  chainAdj.terminalCarrier := by
+          exact
+            BHW.eventually_forall_os45FlatCommonChartSourceSide_mem_of_compact
+              (ρperm := (1 : Equiv.Perm (Fin n)))
+              (sgn := (-1 : Real)) (η := eta0)
+              (K :=
+                tsupport
+                  (((psi0).1 : SchwartzNPoint d n) :
+                    NPointDomain d n -> Complex))
+              hpsi0_compact.isCompact
+              chainAdj.terminalCarrier_open
+              hAdj_endpoint_mem
+        have hAdj_pointwise :
+            ∀ u : NPointDomain d n,
+              Tendsto
+                (fun eps =>
+                  chainAdj.terminalBranch
+                    (sourceSide (-1 : Real) eps eta0 u) *
+                  ((((psi0).1 : SchwartzNPoint d n) :
+                    NPointDomain d n -> Complex) u))
+                l
+                (nhds
+                  (chainAdj.terminalBranch
+                    (sourceSide (-1 : Real) 0 eta0 u) *
+                  ((((psi0).1 : SchwartzNPoint d n) :
+                    NPointDomain d n -> Complex) u))) := by
+          intro u
+          by_cases hu :
+              u ∈ tsupport
+                (((psi0).1 : SchwartzNPoint d n) :
+                  NPointDomain d n -> Complex)
+          · have hbranch_tendsto :
+                Tendsto
+                  (fun eps : Real =>
+                    chainAdj.terminalBranch
+                      (sourceSide (-1 : Real) eps eta0 u))
+                  l
+                  (nhds
+                    (chainAdj.terminalBranch
+                      (sourceSide (-1 : Real) 0 eta0 u))) := by
+              exact
+                BHW.tendsto_comp_os45FlatCommonChartSourceSide_nhdsWithin
+                  (d := d) (n := n)
+                  (ρperm := (1 : Equiv.Perm (Fin n)))
+                  (sgn := (-1 : Real)) (η := eta0) (u := u)
+                  chainAdj.terminalCarrier_open
+                  chainAdj.terminalBranch_continuousOn
+                  (hAdj_endpoint_mem u hu)
+            exact hbranch_tendsto.mul tendsto_const_nhds
+          · have hzero :
+                ((((psi0).1 : SchwartzNPoint d n) :
+                  NPointDomain d n -> Complex) u) = 0 :=
+              image_eq_zero_of_notMem_tsupport hu
+            simpa [hzero]
+        have hAdj_bound :
+            ∃ g : NPointDomain d n -> Real,
+              Integrable g ∧
+              ∀ᶠ eps in l,
+                ∀ᵐ u : NPointDomain d n,
+                  ‖chainAdj.terminalBranch
+                    (sourceSide (-1 : Real) eps eta0 u) *
+                    ((((psi0).1 : SchwartzNPoint d n) :
+                      NPointDomain d n -> Complex) u)‖ ≤ g u := by
+          rcases
+            BHW.exists_bound_eventually_forall_norm_comp_os45FlatCommonChartSourceSide
+              (ρperm := (1 : Equiv.Perm (Fin n)))
+              (sgn := (-1 : Real)) (η := eta0)
+              (K :=
+                tsupport
+                  (((psi0).1 : SchwartzNPoint d n) :
+                    NPointDomain d n -> Complex))
+              hpsi0_compact.isCompact
+              chainAdj.terminalCarrier_open
+              hAdj_endpoint_mem
+              chainAdj.terminalBranch_continuousOn with
+            ⟨MAdj, hMAdj_nonneg, hMAdj_bound⟩
+          refine ⟨
+            fun u : NPointDomain d n =>
+              MAdj *
+                ‖((((psi0).1 : SchwartzNPoint d n) :
+                  NPointDomain d n -> Complex) u)‖,
+            ?_, ?_⟩
+          · have hpsi0_integrable :
+                Integrable
+                  ((((psi0).1 : SchwartzNPoint d n) :
+                    NPointDomain d n -> Complex)) := by
+              simpa using
+                (SchwartzMap.integrable
+                  ((psi0).1 : SchwartzNPoint d n))
+            simpa [mul_comm, mul_left_comm, mul_assoc] using
+              (hpsi0_integrable.norm.const_mul MAdj)
+          · filter_upwards [hMAdj_bound] with eps hMadj
+            filter_upwards with u
+            by_cases hu :
+                u ∈ tsupport
+                  (((psi0).1 : SchwartzNPoint d n) :
+                    NPointDomain d n -> Complex)
+            · calc
+                ‖chainAdj.terminalBranch
+                    (sourceSide (-1 : Real) eps eta0 u) *
+                    ((((psi0).1 : SchwartzNPoint d n) :
+                      NPointDomain d n -> Complex) u)‖
+                    = ‖chainAdj.terminalBranch
+                        (sourceSide (-1 : Real) eps eta0 u)‖ *
+                      ‖((((psi0).1 : SchwartzNPoint d n) :
+                        NPointDomain d n -> Complex) u)‖ := by
+                        simp [norm_mul]
+                _ ≤ MAdj *
+                      ‖((((psi0).1 : SchwartzNPoint d n) :
+                        NPointDomain d n -> Complex) u)‖ :=
+                    mul_le_mul_of_nonneg_right (hMadj u hu) (norm_nonneg _)
+            · have hzero :
+                  ((((psi0).1 : SchwartzNPoint d n) :
+                    NPointDomain d n -> Complex) u) = 0 :=
+                image_eq_zero_of_notMem_tsupport hu
+              simp [hzero, hMAdj_nonneg]
+        rcases hAdj_bound with ⟨g, hg_int, hg_bound⟩
+        have hAdj_aestrongly :
+            ∀ᶠ eps in l,
+              AEStronglyMeasurable
+                (fun u : NPointDomain d n =>
+                  chainAdj.terminalBranch
+                    (sourceSide (-1 : Real) eps eta0 u) *
+                  ((((psi0).1 : SchwartzNPoint d n) :
+                    NPointDomain d n -> Complex) u)) := by
+          filter_upwards [hAdj_eventual_collar] with eps heps
+          let K : Set (NPointDomain d n) :=
+            tsupport
+              (((psi0).1 : SchwartzNPoint d n) :
+                NPointDomain d n -> Complex)
+          let f : NPointDomain d n -> Complex := fun u =>
+            chainAdj.terminalBranch
+              (sourceSide (-1 : Real) eps eta0 u) *
+            ((((psi0).1 : SchwartzNPoint d n) :
+              NPointDomain d n -> Complex) u)
+          have hK_compact : IsCompact K := hpsi0_compact.isCompact
+          have hsource_cont :
+              Continuous fun u : NPointDomain d n =>
+                sourceSide (-1 : Real) eps eta0 u := by
+            simpa [sourceSide]
+              using
+                BHW.continuous_os45FlatCommonChartSourceSide_fixed_eps
+                  (d := d) (n := n)
+                  (ρperm := (1 : Equiv.Perm (Fin n)))
+                  (sgn := (-1 : Real)) (eps := eps) (η := eta0)
+          have hbranch_cont_on_K :
+              ContinuousOn
+                (fun u : NPointDomain d n =>
+                  chainAdj.terminalBranch
+                    (sourceSide (-1 : Real) eps eta0 u)) K := by
+            exact
+              chainAdj.terminalBranch_continuousOn.comp
+                hsource_cont.continuousOn heps
+          have htest_cont :
+              Continuous
+                (((psi0).1 : SchwartzNPoint d n) :
+                  NPointDomain d n -> Complex) :=
+            ((psi0).1 : SchwartzNPoint d n).continuous
+          have hzero_off :
+              ∀ u ∉ K, f u = 0 := by
+            intro u hu
+            have hzero :
+                ((((psi0).1 : SchwartzNPoint d n) :
+                  NPointDomain d n -> Complex) u) = 0 :=
+              image_eq_zero_of_notMem_tsupport hu
+            simp [f, hzero]
+          exact
+            BHW.aestronglyMeasurable_zeroExtension_mul_of_compactSupport
+              (K := K) hK_compact
+              hbranch_cont_on_K htest_cont.continuousOn hzero_off
+        apply MeasureTheory.tendsto_integral_filter_of_dominated_convergence
+          (bound := g)
+        · exact hAdj_aestrongly
+        · exact hg_bound
+        · exact hg_int
+        · intro u
+          exact hAdj_pointwise u
+      have hAdj_endpoint_as_source :
+          (∫ u : NPointDomain d n,
+              chainAdj.terminalBranch
+                (sourceSide (-1 : Real) 0 eta0 u) *
+              ((((psi0).1 : SchwartzNPoint d n) :
+                NPointDomain d n -> Complex) u)) =
+            ∫ u : NPointDomain d n,
+              bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k))) *
+              ((((psi0).1 : SchwartzNPoint d n) :
+                NPointDomain d n -> Complex) u) := by
+        have hpsi0_support_V :
+            tsupport
+              (((psi0).1 : SchwartzNPoint d n) :
+                NPointDomain d n -> Complex) ⊆ P.V := by
+          simpa [psi0, BHW.OS45Figure24SourceCutoffData.toZeroDiagonalCLM]
+            using
+              D.toSchwartzNPointCLM_tsupport_subset_V
+                (1 : Equiv.Perm (Fin n)) phi hphiE
+        have hAdj_endpoint_as_carrier :
+            (∫ u : NPointDomain d n,
+                chainAdj.terminalBranch
+                    (sourceSide (-1 : Real) 0 eta0 u) *
+                  ((((psi0).1 : SchwartzNPoint d n) :
+                    NPointDomain d n -> Complex) u)) =
+              ∫ u : NPointDomain d n,
+                bvt_F OS lgc n
+                    (BHW.os45QuarterTurnConfig
+                      (fun k => wickRotatePoint (u (P.τ k)))) *
+                  ((((psi0).1 : SchwartzNPoint d n) :
+                    NPointDomain d n -> Complex) u) := by
+          have hAdj_endpoint_pointwise :
+            ∀ᵐ u : NPointDomain d n,
+              chainAdj.terminalBranch
+                  (sourceSide (-1 : Real) 0 eta0 u) *
+                ((((psi0).1 : SchwartzNPoint d n) :
+                  NPointDomain d n -> Complex) u) =
+              bvt_F OS lgc n
+                  (BHW.os45QuarterTurnConfig
+                    (fun k => wickRotatePoint (u (P.τ k)))) *
+                ((((psi0).1 : SchwartzNPoint d n) :
+                  NPointDomain d n -> Complex) u) := by
+            filter_upwards with u
+            by_cases hu :
+                u ∈ tsupport
+                  (((psi0).1 : SchwartzNPoint d n) :
+                    NPointDomain d n -> Complex)
+            · have huV : u ∈ P.V := hpsi0_support_V hu
+              have hsource_zero :
+                  sourceSide (-1 : Real) 0 eta0 u =
+                    (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+                      (BHW.realEmbed
+                        (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                          (1 : Equiv.Perm (Fin n)) u)) := by
+                ext k mu
+                simp [sourceSide, BHW.os45FlatCommonChartSourceSide,
+                  BHW.os45CommonEdgeFlatCLE]
+              have hbranch :
+                  chainAdj.terminalBranch
+                      (sourceSide (-1 : Real) 0 eta0 u) =
+                    bvt_F OS lgc n
+                      (BHW.permAct (d := d) P.τ
+                        ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+                          (BHW.realEmbed
+                            (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                              (1 : Equiv.Perm (Fin n)) u)))) := by
+                -- Use the retained raw `(4.12)` branch formula transported
+                -- through `chainAdj` to the terminal endpoint.  The raw seed is
+                -- `{z | BHW.permAct P.τ z ∈ BHW.ForwardTube d n} ∩ H.ΩJ`
+                -- with branch `z ↦ bvt_F OS lgc n (BHW.permAct P.τ z)`.
+                -- This is not the downstream deterministic initial datum.
+                simpa [hsource_zero] using
+                  chainAdj.terminal_eq_raw412_seed
+                    (sourceSide (-1 : Real) 0 eta0 u)
+              have hperm_quarter :
+                  BHW.permAct (d := d) P.τ
+                      ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+                        (BHW.realEmbed
+                          (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                            (1 : Equiv.Perm (Fin n)) u))) =
+                    BHW.os45QuarterTurnConfig
+                      (fun k => wickRotatePoint (u (P.τ k))) := by
+                -- Carrier identity only.  The inverse quarter-turn of the real
+                -- common edge is the positive quarter-turned Wick carrier, and
+                -- `permAct` just reindexes that carrier.  This deliberately
+                -- does not claim equality with the unturned Wick point.
+                ext k mu
+                simp [BHW.permAct, BHW.os45CommonEdgeRealPoint,
+                  BHW.os45QuarterTurnCLE_symm_apply,
+                  BHW.os45QuarterTurnConfig, wickRotatePoint, P.τ_eq]
+              rw [hbranch, hperm_quarter]
+            · have hzero :
+                  ((((psi0).1 : SchwartzNPoint d n) :
+                    NPointDomain d n -> Complex) u) = 0 :=
+                image_eq_zero_of_notMem_tsupport hu
+              simp [hzero]
+          exact integral_congr_ae hAdj_endpoint_pointwise
+        have hAdj_carrier_pairing :
+            (∫ u : NPointDomain d n,
+                bvt_F OS lgc n
+                    (BHW.os45QuarterTurnConfig
+                      (fun k => wickRotatePoint (u (P.τ k)))) *
+                  ((((psi0).1 : SchwartzNPoint d n) :
+                    NPointDomain d n -> Complex) u)) =
+              ∫ u : NPointDomain d n,
+                bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k))) *
+                  ((((psi0).1 : SchwartzNPoint d n) :
+                    NPointDomain d n -> Complex) u) := by
+          let e := BHW.os45CommonEdgeFlatCLE d n
+            (1 : Equiv.Perm (Fin n))
+          let J : Complex := BHW.os45CommonEdgeFlatJacobianAbs n
+          let psi0Flat :=
+            (SchwartzMap.compCLMOfContinuousLinearEquiv Complex e.symm)
+              ((psi0).1 : SchwartzNPoint d n)
+          let pullFlatToSource :
+              SchwartzMap (BHW.OS45FlatCommonChartReal d n) Complex
+                ->L[Complex] SchwartzNPoint d n :=
+            SchwartzMap.compCLMOfContinuousLinearEquiv Complex e
+          let carrierAdjPairing : Complex :=
+            ∫ u : NPointDomain d n,
+              bvt_F OS lgc n
+                  (BHW.os45QuarterTurnConfig
+                    (fun k => wickRotatePoint (u (P.τ k)))) *
+                ((((psi0).1 : SchwartzNPoint d n) :
+                  NPointDomain d n -> Complex) u)
+          let wickAdjPairing : Complex :=
+            ∫ u : NPointDomain d n,
+              bvt_F OS lgc n
+                (fun k => wickRotatePoint (u (P.τ k))) *
+                ((((psi0).1 : SchwartzNPoint d n) :
+                  NPointDomain d n -> Complex) u)
+          let WadjFlat :
+              SchwartzMap (BHW.OS45FlatCommonChartReal d n) Complex
+                ->L[Complex] Complex :=
+            J • (Wadj.comp pullFlatToSource)
+          have hJ_ne : J ≠ 0 := by
+            exact
+              Complex.ofReal_ne_zero.mpr
+                (ne_of_gt (BHW.os45CommonEdgeFlatJacobianAbs_pos n))
+          have hWadj_carrier :
+              WadjFlat psi0Flat = J * carrierAdjPairing := by
+            -- Proof-local transcript:
+            -- 1. `pullFlatToSource psi0Flat = psi0` by the CLE inverse
+            --    calculation, then `simp [WadjFlat]` reduces the left side to
+            --    `J * Wadj psi0`.
+            -- 2. `hWadj_endpoint` identifies `Wadj psi0` with the zero-height
+            --    adjacent source-side endpoint integral.
+            -- 3. `hAdj_endpoint_as_carrier` rewrites that endpoint integral to
+            --    `carrierAdjPairing`, using
+            --    `BHW.permAct_os45FlatCommonChartSourceSide_zero`,
+            --    `chainAdj.terminal_eq_raw412_seed`, and the raw `(4.12)`
+            --    seed formula.  This is the only place raw adjacent terminal
+            --    provenance is used here.
+            calc
+              WadjFlat psi0Flat = J * Wadj ((psi0).1 : SchwartzNPoint d n) := by
+                have hpull :
+                    pullFlatToSource psi0Flat =
+                      ((psi0).1 : SchwartzNPoint d n) := by
+                  ext u
+                  simp [pullFlatToSource, psi0Flat]
+                simp [WadjFlat, hpull]
+              _ = J * carrierAdjPairing := by
+                rw [hWadj_endpoint, hAdj_endpoint_as_carrier]
+          have hWadj_wick :
+              WadjFlat psi0Flat = J * wickAdjPairing := by
+            -- Proof-local transcript:
+            -- 1. reduce to `J * Wadj psi0`;
+            -- 2. use the raw `(4.12)` Wick trace transported by `chainAdj` to
+            --    get `Wadj psi0 = wickAdjPairing`;
+            -- 3. the checked source normalization
+            --    `BHW.os45CommonEdge_adjacentWick_sourcePairing_eq_schwinger`
+            --    can be used to identify this same pairing with the Schwinger
+            --    value when needed.  No deterministic adjacent seed, `Hdiff`,
+            --    or common-boundary CLM is in scope.
+            have hWadj_adjWick :
+                Wadj ((psi0).1 : SchwartzNPoint d n) = wickAdjPairing := by
+              -- Raw `(4.12)` Wick trace, transported along `chainAdj`.
+              exact hAdj_terminalBoundaryCLM_eq_adjacentWick phi hphiE
+            calc
+              WadjFlat psi0Flat = J * Wadj ((psi0).1 : SchwartzNPoint d n) := by
+                have hpull :
+                    pullFlatToSource psi0Flat =
+                      ((psi0).1 : SchwartzNPoint d n) := by
+                  ext u
+                  simp [pullFlatToSource, psi0Flat]
+                simp [WadjFlat, hpull]
+              _ = J * wickAdjPairing := by
+                rw [hWadj_adjWick]
+          have hmul : J * carrierAdjPairing = J * wickAdjPairing :=
+            hWadj_carrier.symm.trans hWadj_wick
+          exact mul_left_cancel₀ hJ_ne hmul
+        exact hAdj_endpoint_as_carrier.trans hAdj_carrier_pairing
+      have hWadj_endpoint :
+          Wadj ((psi0).1 : SchwartzNPoint d n) =
+            ∫ u : NPointDomain d n,
+              chainAdj.terminalBranch
+                (sourceSide (-1 : Real) 0 eta0 u) *
+              ((((psi0).1 : SchwartzNPoint d n) :
+                NPointDomain d n -> Complex) u) := by
+        exact tendsto_nhds_unique hAdj_fixed_psi0 hAdj_endpoint_limit
+      exact hWadj_endpoint.trans hAdj_endpoint_as_source
 
     have hAdj_source_norm :
         Wadj ((psi0).1 : SchwartzNPoint d n) =
           OS.S n (D.toZeroDiagonalCLM
             (1 : Equiv.Perm (Fin n)) phi) := by
-      -- OS-I `(4.12)/(4.14)` source normalization.  After the raw seed has
-      -- been transported to the terminal chart, the endpoint Wick/source
-      -- section is
-      -- `u ↦ bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k)))`.
-      -- Use permutation covariance/E3 source normalization to identify this
-      -- with the same zero-diagonal Schwinger functional as the ordinary
-      -- side.
+      calc
+        Wadj ((psi0).1 : SchwartzNPoint d n)
+            = ∫ u : NPointDomain d n,
+                bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k))) *
+                ((((psi0).1 : SchwartzNPoint d n) :
+                  NPointDomain d n -> Complex) u) :=
+              hAdj_boundary_to_source
+        _ = OS.S n (D.toZeroDiagonalCLM
+              (1 : Equiv.Perm (Fin n)) phi) := by
+              -- Convert `psi0` to `D.toSchwartzNPointCLM 1 phi` and use the
+              -- checked adjacent source normalizer.  This is the E3/source
+              -- covariance step after raw `(4.12)` terminal transport, not a
+              -- branch-selection statement.
+              simpa [psi0, BHW.OS45Figure24SourceCutoffData.toZeroDiagonalCLM]
+                using
+                BHW.os45CommonEdge_adjacentWick_sourcePairing_eq_schwinger
+                  (d := d) OS lgc D phi hphiE
 
     have hAdj_as_terminal :
         Tendsto
@@ -3509,7 +5645,8 @@ that starts the adjacent chain from `Fdet` on the initial-sector overlap has
 not proved the adjacent branch/source asymptotic transfer; it has assumed the
 endpoint boundary comparison that the strict route must derive.
 
-Lean implementation leaves still to be proved inline:
+Lean implementation leaves to establish in-body from the transcript, not to
+expose as public theorem surfaces:
 
 * the ordinary `(4.1)` branch/source asymptotic transfer, with the ordinary
   endpoint chain and source/flat side-family identification unfolded.
@@ -3519,14 +5656,13 @@ Lean implementation leaves still to be proved inline:
   it is replaced by an explicit proof that does not use `Fdet` as upstream
   data.
 
-Until these three bullets are proved in the proof body, a public horizontal
-pairing zero theorem would be premature.  Do not split out that theorem now.
-The current implementation target is the in-body proof of the two asymptotic
-transfers inside the upstream `hadj412`
-flat real-Jost crossing, followed immediately by the already checked
-source-to-flat reducer and local EOW bridge.  Any production lemma that
-assumes the flat zero, assumes either asymptotic transfer, assumes `Hdiff`,
-assumes `Wadj`, or assumes a common-boundary CLM is still wrapper churn.
+These three bullets are the inline implementation body for the upstream
+`hadj412` flat real-Jost crossing.  After these local haves are established,
+the proof immediately calls the already checked source-to-flat reducer and
+local EOW bridge.  A public horizontal pairing zero theorem before that
+in-body proof would still be premature.  Any production lemma that assumes the
+flat zero, assumes either asymptotic transfer, assumes `Hdiff`, assumes `Wadj`,
+or assumes a common-boundary CLM is still wrapper churn.
 
 #### No-Wrapper Transfer Expansion
 
@@ -3591,13 +5727,15 @@ section above.  Their branch provenance is:
 -- Ordinary:
 --   `(4.1)` seed -> ordinary one-branch chain -> plus sheet membership ->
 --   checked source-side pullback -> moving boundary value ->
---   `(4.14)` source normalization.
+--   OS-I `(4.14)` boundary-to-source transfer ->
+--   checked `bvt_euclidean_restriction` source normalization.
 
 -- Adjacent:
 --   raw `OmegaSeed412/BSeed412` seed -> adjacent one-branch chain ->
 --   terminal endpoint equality -> minus sheet membership ->
 --   checked source-side pullback -> moving boundary value ->
---   `(4.12)/(4.14)` source normalization.
+--   raw OS-I `(4.12)/(4.14)` boundary-to-source transfer ->
+--   checked adjacent Wick/source normalization.
 ```
 
 The final uniform-on-singleton asymptotic statements are then obtained by the
@@ -4036,6 +6174,465 @@ pairing, then rewrites the horizontal common-edge trace.  It is downstream of
 the `Hdiff` producer and must not be used inside the flat transfer that builds
 `Wadj`.
 
+## Proof-Local Endpoint Support Contracts
+
+The endpoint subproofs inside `hOrd_boundary_to_source` and
+`hAdj_boundary_to_source` may be factored only along the following lines.  These
+are local obligations, not exported wrappers:
+
+The selected one-branch data must carry these proof-local projections:
+`terminal_contains_ordinaryCommonEdge`,
+`terminal_contains_adjacentCommonEdge`, `terminalBranch_continuousOn`, and the
+flat-boundary comparison fields used in the pairing cancellation below.  These
+are not theorem-2 wrappers; they are the retained provenance of the ordinary
+`(4.1)` and raw-adjacent `(4.12)` chains.
+
+The endpoint DCT assembly is now checked as the neutral SourceSide support
+theorem
+`BHW.tendsto_integral_comp_os45FlatCommonChartSourceSide_mul_of_hasCompactSupport`.
+In production, the ordinary and raw-adjacent subproofs below should call that
+theorem with `F := chain*.terminalBranch`, `U := chain*.terminalCarrier`, and
+`φ := ((psi0).1 : SchwartzNPoint d n)` after proving the displayed endpoint
+membership.  The expanded script is retained here only as the proof-local audit
+of the theorem's inputs.
+
+```lean
+have hOrd_endpoint_DCT :
+    Tendsto
+      (fun eps =>
+        ∫ u : NPointDomain d n,
+          chainOrd.terminalBranch
+            (sourceSide (1 : Real) eps eta0 u) *
+          ((((psi0).1 : SchwartzNPoint d n) :
+            NPointDomain d n -> Complex) u))
+      l
+      (nhds
+        (∫ u : NPointDomain d n,
+          chainOrd.terminalBranch
+            (sourceSide (1 : Real) 0 eta0 u) *
+          ((((psi0).1 : SchwartzNPoint d n) :
+            NPointDomain d n -> Complex) u))) := by
+  have hpsi0_compact :
+      HasCompactSupport
+        (((psi0).1 : SchwartzNPoint d n) :
+          NPointDomain d n -> Complex) := by
+    simpa [psi0, BHW.OS45Figure24SourceCutoffData.toZeroDiagonalCLM]
+      using D.toSchwartzNPointCLM_hasCompactSupport
+        (1 : Equiv.Perm (Fin n)) phi
+  have hpsi0_support_V :
+      tsupport (((psi0).1 : SchwartzNPoint d n) :
+        NPointDomain d n -> Complex) <= P.V := by
+    simpa [psi0, BHW.OS45Figure24SourceCutoffData.toZeroDiagonalCLM]
+      using D.toSchwartzNPointCLM_tsupport_subset_V
+        (1 : Equiv.Perm (Fin n)) phi hphiE
+  have hOrd_endpoint_mem :
+      forall u in tsupport (((psi0).1 : SchwartzNPoint d n) :
+        NPointDomain d n -> Complex),
+        sourceSide (1 : Real) 0 eta0 u in chainOrd.terminalCarrier := by
+    intro u hu
+    have huV := hpsi0_support_V hu
+    rw [BHW.os45FlatCommonChartSourceSide_zero]
+    exact chainOrd.terminal_contains_ordinaryCommonEdge u huV
+  have hOrd_eventual_collar :=
+    BHW.eventually_forall_os45FlatCommonChartSourceSide_mem_of_compact
+      (ρperm := (1 : Equiv.Perm (Fin n))) (sgn := (1 : Real))
+      (η := eta0) hpsi0_compact.isCompact
+      chainOrd.terminalCarrier_open hOrd_endpoint_mem
+  have hOrd_pointwise (u : NPointDomain d n) :
+      Tendsto
+        (fun eps => chainOrd.terminalBranch
+          (sourceSide (1 : Real) eps eta0 u) *
+          ((((psi0).1 : SchwartzNPoint d n) :
+            NPointDomain d n -> Complex) u))
+        l
+        (nhds (chainOrd.terminalBranch
+          (sourceSide (1 : Real) 0 eta0 u) *
+          ((((psi0).1 : SchwartzNPoint d n) :
+            NPointDomain d n -> Complex) u))) := by
+    by_cases hu : u in tsupport (((psi0).1 : SchwartzNPoint d n) :
+      NPointDomain d n -> Complex)
+    · exact
+        (BHW.tendsto_comp_os45FlatCommonChartSourceSide_nhdsWithin
+          (ρperm := (1 : Equiv.Perm (Fin n))) (sgn := (1 : Real))
+          (η := eta0) (u := u)
+          chainOrd.terminalCarrier_open
+          chainOrd.terminalBranch_continuousOn
+          (hOrd_endpoint_mem u hu)).mul tendsto_const_nhds
+    · have hzero := image_eq_zero_of_notMem_tsupport hu
+      simpa [hzero]
+  rcases
+    BHW.exists_bound_eventually_forall_norm_comp_os45FlatCommonChartSourceSide
+      (ρperm := (1 : Equiv.Perm (Fin n))) (sgn := (1 : Real))
+      (η := eta0) hpsi0_compact.isCompact
+      chainOrd.terminalCarrier_open hOrd_endpoint_mem
+      chainOrd.terminalBranch_continuousOn with
+    ⟨MOrd, hMOrd_nonneg, hMOrd_bound⟩
+  let g : NPointDomain d n -> Real := fun u =>
+    MOrd * ‖((((psi0).1 : SchwartzNPoint d n) :
+      NPointDomain d n -> Complex) u)‖
+  have hg_int : Integrable g := by
+    simpa [g] using
+      ((SchwartzMap.integrable
+        ((psi0).1 : SchwartzNPoint d n)).norm.const_mul MOrd)
+  have hg_bound :
+      forallᶠ eps in l, forallᵐ u : NPointDomain d n,
+        ‖chainOrd.terminalBranch (sourceSide (1 : Real) eps eta0 u) *
+          ((((psi0).1 : SchwartzNPoint d n) :
+            NPointDomain d n -> Complex) u)‖ <= g u := by
+    filter_upwards [hMOrd_bound] with eps hMord
+    filter_upwards with u
+    by_cases hu : u in tsupport (((psi0).1 : SchwartzNPoint d n) :
+      NPointDomain d n -> Complex)
+    · calc
+        ‖chainOrd.terminalBranch (sourceSide (1 : Real) eps eta0 u) *
+          ((((psi0).1 : SchwartzNPoint d n) :
+            NPointDomain d n -> Complex) u)‖
+            = ‖chainOrd.terminalBranch
+                (sourceSide (1 : Real) eps eta0 u)‖ *
+              ‖((((psi0).1 : SchwartzNPoint d n) :
+                NPointDomain d n -> Complex) u)‖ := by
+                simp [norm_mul]
+        _ <= MOrd * ‖((((psi0).1 : SchwartzNPoint d n) :
+              NPointDomain d n -> Complex) u)‖ :=
+            mul_le_mul_of_nonneg_right (hMord u hu) (norm_nonneg _)
+    · have hzero :
+          ((((psi0).1 : SchwartzNPoint d n) :
+            NPointDomain d n -> Complex) u) = 0 :=
+        image_eq_zero_of_notMem_tsupport hu
+      simp [g, hzero, hMOrd_nonneg]
+  have hOrd_aestrongly :
+      forallᶠ eps in l,
+        AEStronglyMeasurable (fun u : NPointDomain d n =>
+          chainOrd.terminalBranch (sourceSide (1 : Real) eps eta0 u) *
+          ((((psi0).1 : SchwartzNPoint d n) :
+            NPointDomain d n -> Complex) u)) := by
+    filter_upwards [hOrd_eventual_collar] with eps heps
+    exact
+      BHW.aestronglyMeasurable_zeroExtension_mul_of_compactSupport
+        (K := tsupport (((psi0).1 : SchwartzNPoint d n) :
+          NPointDomain d n -> Complex))
+        hpsi0_compact.isCompact
+        (chainOrd.terminalBranch_continuousOn.comp
+          (BHW.continuous_os45FlatCommonChartSourceSide_fixed_eps
+            (ρperm := (1 : Equiv.Perm (Fin n))) (sgn := (1 : Real))
+            (eps := eps) (η := eta0)).continuousOn heps)
+        ((psi0).1 : SchwartzNPoint d n).continuous.continuousOn
+        (by intro u hu; simp [image_eq_zero_of_notMem_tsupport hu])
+  exact
+    MeasureTheory.tendsto_integral_filter_of_dominated_convergence
+      (bound := g) hOrd_aestrongly hg_bound hg_int hOrd_pointwise
+
+have hAdj_endpoint_DCT :
+    Tendsto
+      (fun eps =>
+        ∫ u : NPointDomain d n,
+          chainAdj.terminalBranch
+            (sourceSide (-1 : Real) eps eta0 u) *
+          ((((psi0).1 : SchwartzNPoint d n) :
+            NPointDomain d n -> Complex) u))
+      l
+      (nhds
+        (∫ u : NPointDomain d n,
+          chainAdj.terminalBranch
+            (sourceSide (-1 : Real) 0 eta0 u) *
+          ((((psi0).1 : SchwartzNPoint d n) :
+            NPointDomain d n -> Complex) u))) := by
+  have hpsi0_compact :
+      HasCompactSupport
+        (((psi0).1 : SchwartzNPoint d n) :
+          NPointDomain d n -> Complex) :=
+    by
+      simpa [psi0, BHW.OS45Figure24SourceCutoffData.toZeroDiagonalCLM]
+        using D.toSchwartzNPointCLM_hasCompactSupport
+          (1 : Equiv.Perm (Fin n)) phi
+  have hpsi0_support_V :
+      tsupport
+        (((psi0).1 : SchwartzNPoint d n) :
+          NPointDomain d n -> Complex) <= P.V := by
+    simpa [psi0, BHW.OS45Figure24SourceCutoffData.toZeroDiagonalCLM]
+      using D.toSchwartzNPointCLM_tsupport_subset_V
+        (1 : Equiv.Perm (Fin n)) phi hphiE
+  have hAdj_endpoint_mem :
+      forall u in tsupport (((psi0).1 : SchwartzNPoint d n) :
+        NPointDomain d n -> Complex),
+        sourceSide (-1 : Real) 0 eta0 u in chainAdj.terminalCarrier := by
+    intro u hu
+    have huV := hpsi0_support_V hu
+    rw [BHW.os45FlatCommonChartSourceSide_zero]
+    exact chainAdj.terminal_contains_adjacentCommonEdge u huV
+  simpa [sourceSide] using
+    BHW.tendsto_integral_comp_os45FlatCommonChartSourceSide_mul_of_hasCompactSupport
+      (d := d) (n := n)
+      (ρperm := (1 : Equiv.Perm (Fin n))) (sgn := (-1 : Real))
+      (η := eta0)
+      (U := chainAdj.terminalCarrier)
+      (F := chainAdj.terminalBranch)
+      chainAdj.terminalCarrier_open
+      chainAdj.terminalBranch_continuousOn
+      hpsi0_compact
+      ((psi0).1 : SchwartzNPoint d n).continuous
+      hAdj_endpoint_mem
+
+have hOrd_terminalBoundaryCLM_eq_schwinger :
+    forall φ : SchwartzMap (BHW.OS45FlatCommonChartReal d n) Complex,
+      tsupport (φ : BHW.OS45FlatCommonChartReal d n -> Complex) <=
+        BHW.os45FlatCommonChartEdgeSet d n P
+          (1 : Equiv.Perm (Fin n)) ->
+      Word (((D.toZeroDiagonalCLM
+        (1 : Equiv.Perm (Fin n)) φ).1 : SchwartzNPoint d n)) =
+        OS.S n (D.toZeroDiagonalCLM (1 : Equiv.Perm (Fin n)) φ) := by
+  intro φ hφE
+  -- Ordinary Wick-trace normalization, proof-local.  The Lean body is a local
+  -- chain-comparison calculation, not an exported wrapper:
+  --
+  --   let ψZ := D.toZeroDiagonalCLM (1 : Equiv.Perm (Fin n)) φ
+  --   have hψV :
+  --       tsupport (((ψZ).1 : SchwartzNPoint d n) :
+  --         NPointDomain d n -> Complex) <= P.V := by
+  --     simpa [ψZ] using
+  --       D.toSchwartzNPointCLM_tsupport_subset_V
+  --         (1 : Equiv.Perm (Fin n)) φ hφE
+  --
+  --   have hterminal_wick_integral :
+  --       Word ((ψZ).1 : SchwartzNPoint d n) =
+  --         ∫ u, bvt_F OS lgc n (fun k => wickRotatePoint (u k)) *
+  --           (((ψZ).1 : SchwartzNPoint d n) u) := by
+  --     -- Use the endpoint-centered ordinary Wick packet, with `t = 0`.
+  --     -- For `u` in `tsupport ψZ`, `hψV` puts the point in the selected source
+  --     -- window.  The terminal chart is compared to the initial `(4.1)`
+  --     -- forward-tube chart by the already constructed ordinary one-branch
+  --     -- gallery:
+  --     --   * shrink the terminal and initial Wick carriers to metric balls,
+  --     --   * insert all chainOrd transition charts,
+  --     --   * for every nonempty overlap use the ordinary-sector seed
+  --     --     `Set.EqOn C_i.branch C_j.branch W_ij`,
+  --     --   * apply
+  --     --     `SCV.pairwise_eqOn_metric_ball_carriers_of_local_overlap_seeds`,
+  --     --   * evaluate the resulting terminal-to-initial equality on
+  --     --     `fun k => wickRotatePoint (u k)`.
+  --     -- Off support, use `image_eq_zero_of_notMem_tsupport`; then
+  --     -- `integral_congr_ae`.
+  --
+  --   calc
+  --     Word ((ψZ).1 : SchwartzNPoint d n)
+  --         = ∫ u, bvt_F OS lgc n (fun k => wickRotatePoint (u k)) *
+  --             (((ψZ).1 : SchwartzNPoint d n) u) :=
+  --           hterminal_wick_integral
+  --     _ = OS.S n ψZ := by
+  --           simpa [ψZ] using
+  --             (bvt_euclidean_restriction (d := d) OS lgc n ψZ).symm
+  --
+  -- The ordinary gallery above uses only `(4.1)` provenance and metric-ball
+  -- identity propagation.  Do not call or introduce an exported
+  -- `terminalBoundaryCLM_eq_*` wrapper here.
+
+have hAdj_terminalBoundaryCLM_eq_adjacentWick :
+    forall φ : SchwartzMap (BHW.OS45FlatCommonChartReal d n) Complex,
+      tsupport (φ : BHW.OS45FlatCommonChartReal d n -> Complex) <=
+        BHW.os45FlatCommonChartEdgeSet d n P
+          (1 : Equiv.Perm (Fin n)) ->
+      Wadj (((D.toZeroDiagonalCLM
+        (1 : Equiv.Perm (Fin n)) φ).1 : SchwartzNPoint d n)) =
+        ∫ u : NPointDomain d n,
+          bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k))) *
+            (D.toSchwartzNPointCLM
+              (1 : Equiv.Perm (Fin n)) φ : NPointDomain d n -> Complex) u := by
+  intro φ hφE
+  -- Raw-adjacent Wick-trace normalization, proof-local.  The implementation
+  -- keeps the `(4.12)` analytic element raw until the terminal chart:
+  --
+  --   let ψZ := D.toZeroDiagonalCLM (1 : Equiv.Perm (Fin n)) φ
+  --   have hψV :
+  --       tsupport (((ψZ).1 : SchwartzNPoint d n) :
+  --         NPointDomain d n -> Complex) <= P.V := by
+  --     simpa [ψZ] using
+  --       D.toSchwartzNPointCLM_tsupport_subset_V
+  --         (1 : Equiv.Perm (Fin n)) φ hφE
+  --
+  --   let Ωseed :=
+  --     {z : Fin n -> Fin (d + 1) -> Complex |
+  --       BHW.permAct (d := d) P.τ z in BHW.ForwardTube d n} ∩ H.ΩJ
+  --   let Bseed := fun z =>
+  --     bvt_F OS lgc n (BHW.permAct (d := d) P.τ z)
+  --
+  --   have hterminal_adj_integral :
+  --       Wadj ((ψZ).1 : SchwartzNPoint d n) =
+  --         ∫ u, bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k))) *
+  --           (((ψZ).1 : SchwartzNPoint d n) u) := by
+  --     -- Use the endpoint-centered adjacent Wick packet, with `t = 0`.
+  --     -- For `u` in `tsupport ψZ`, `hψV` gives the source-window hypothesis.
+  --     -- Compare the terminal adjacent chart to the raw seed by the retained
+  --     -- adjacent one-branch gallery:
+  --     --   * start from `Ωseed/Bseed`, not from a deterministic adjacent datum;
+  --     --   * insert all chainAdj transition charts and endpoint shrink balls;
+  --     --   * each adjacent-sector overlap seed is the raw `(4.12)` branch-law
+  --     --     seed, and each flat crossing uses the proof-local EOW compact-test
+  --     --     equality already produced in `hadj412`;
+  --     --   * apply
+  --     --     `SCV.pairwise_eqOn_metric_ball_carriers_of_local_overlap_seeds`;
+  --     --   * evaluate at the terminal adjacent Wick point and rewrite
+  --     --     `Bseed z = bvt_F OS lgc n (BHW.permAct P.τ z)` by
+  --     --     `BHW.permAct_os45FlatCommonChartSourceSide_zero` / the endpoint
+  --     --     Wick coordinate identity to get
+  --     --     `bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k)))`.
+  --     -- Off support, use `image_eq_zero_of_notMem_tsupport`; then
+  --     -- `integral_congr_ae`.
+  --
+  -- This returns exactly the displayed adjacent Wick pairing.  The later
+  -- Schwinger normalization is the checked theorem
+  -- `BHW.os45CommonEdge_adjacentWick_sourcePairing_eq_schwinger`; this local
+  -- trace proof does not use the downstream deterministic adjacent seed,
+  -- `Hdiff`, or a common-boundary CLM.  Do not call or introduce an exported
+  -- `terminalBoundaryCLM_eq_*` wrapper here.
+
+have hOrd_carrier_pairing :
+    (∫ u : NPointDomain d n,
+        bvt_F OS lgc n
+          (BHW.os45QuarterTurnConfig
+            (fun k => wickRotatePoint (u k))) *
+        ((((psi0).1 : SchwartzNPoint d n) :
+          NPointDomain d n -> Complex) u)) =
+      ∫ u : NPointDomain d n,
+        bvt_F OS lgc n (fun k => wickRotatePoint (u k)) *
+        ((((psi0).1 : SchwartzNPoint d n) :
+          NPointDomain d n -> Complex) u) := by
+  let e := BHW.os45CommonEdgeFlatCLE d n (1 : Equiv.Perm (Fin n))
+  let J : Complex := BHW.os45CommonEdgeFlatJacobianAbs n
+  let psi0Flat :=
+    (SchwartzMap.compCLMOfContinuousLinearEquiv Complex e.symm)
+      ((psi0).1 : SchwartzNPoint d n)
+  let pullFlatToSource :
+      SchwartzMap (BHW.OS45FlatCommonChartReal d n) Complex
+        ->L[Complex] SchwartzNPoint d n :=
+    SchwartzMap.compCLMOfContinuousLinearEquiv Complex e
+  let carrierPairing : Complex := ∫ u : NPointDomain d n,
+    bvt_F OS lgc n
+      (BHW.os45QuarterTurnConfig (fun k => wickRotatePoint (u k))) *
+    ((((psi0).1 : SchwartzNPoint d n) :
+      NPointDomain d n -> Complex) u)
+  let wickPairing : Complex := ∫ u : NPointDomain d n,
+    bvt_F OS lgc n (fun k => wickRotatePoint (u k)) *
+    ((((psi0).1 : SchwartzNPoint d n) :
+      NPointDomain d n -> Complex) u)
+  let WordFlat :
+      SchwartzMap (BHW.OS45FlatCommonChartReal d n) Complex
+        ->L[Complex] Complex :=
+    J • (Word.comp pullFlatToSource)
+  have hJ_ne : J ≠ 0 :=
+    Complex.ofReal_ne_zero.mpr
+      (ne_of_gt (BHW.os45CommonEdgeFlatJacobianAbs_pos n))
+  have hWord_carrier :
+      WordFlat psi0Flat = J * carrierPairing := by
+    calc
+      WordFlat psi0Flat = J * Word ((psi0).1 : SchwartzNPoint d n) := by
+        have hpull :
+            pullFlatToSource psi0Flat =
+              ((psi0).1 : SchwartzNPoint d n) := by
+          ext u
+          simp [pullFlatToSource, psi0Flat]
+        simp [WordFlat, hpull]
+      _ = J * carrierPairing := by
+        rw [hWord_endpoint, hOrd_endpoint_as_carrier]
+  have hWord_wick :
+      WordFlat psi0Flat = J * wickPairing := by
+    have hWord_schwinger :
+        Word ((psi0).1 : SchwartzNPoint d n) =
+          OS.S n (D.toZeroDiagonalCLM (1 : Equiv.Perm (Fin n)) phi) := by
+      -- Ordinary `(4.1)` Wick trace, transported along `chainOrd`.
+      exact hOrd_terminalBoundaryCLM_eq_schwinger phi hphiE
+    have hwick_schwinger :
+        wickPairing =
+          OS.S n (D.toZeroDiagonalCLM (1 : Equiv.Perm (Fin n)) phi) := by
+      simpa [wickPairing, psi0] using
+        (bvt_euclidean_restriction (d := d) OS lgc n
+          (D.toZeroDiagonalCLM (1 : Equiv.Perm (Fin n)) phi)).symm
+    calc
+      WordFlat psi0Flat = J * Word ((psi0).1 : SchwartzNPoint d n) := by
+        have hpull :
+            pullFlatToSource psi0Flat =
+              ((psi0).1 : SchwartzNPoint d n) := by
+          ext u
+          simp [pullFlatToSource, psi0Flat]
+        simp [WordFlat, hpull]
+      _ = J * wickPairing := by
+        rw [hWord_schwinger, hwick_schwinger]
+  exact mul_left_cancel₀ hJ_ne (hWord_carrier.symm.trans hWord_wick)
+
+have hAdj_carrier_pairing :
+    (∫ u : NPointDomain d n,
+        bvt_F OS lgc n
+          (BHW.os45QuarterTurnConfig
+            (fun k => wickRotatePoint (u (P.τ k)))) *
+        ((((psi0).1 : SchwartzNPoint d n) :
+          NPointDomain d n -> Complex) u)) =
+      ∫ u : NPointDomain d n,
+        bvt_F OS lgc n
+          (fun k => wickRotatePoint (u (P.τ k))) *
+        ((((psi0).1 : SchwartzNPoint d n) :
+          NPointDomain d n -> Complex) u) := by
+  let e := BHW.os45CommonEdgeFlatCLE d n (1 : Equiv.Perm (Fin n))
+  let J : Complex := BHW.os45CommonEdgeFlatJacobianAbs n
+  let psi0Flat :=
+    (SchwartzMap.compCLMOfContinuousLinearEquiv Complex e.symm)
+      ((psi0).1 : SchwartzNPoint d n)
+  let pullFlatToSource :
+      SchwartzMap (BHW.OS45FlatCommonChartReal d n) Complex
+        ->L[Complex] SchwartzNPoint d n :=
+    SchwartzMap.compCLMOfContinuousLinearEquiv Complex e
+  let carrierAdjPairing : Complex := ∫ u : NPointDomain d n,
+    bvt_F OS lgc n
+      (BHW.os45QuarterTurnConfig
+        (fun k => wickRotatePoint (u (P.τ k)))) *
+    ((((psi0).1 : SchwartzNPoint d n) :
+      NPointDomain d n -> Complex) u)
+  let wickAdjPairing : Complex := ∫ u : NPointDomain d n,
+    bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k))) *
+    ((((psi0).1 : SchwartzNPoint d n) :
+      NPointDomain d n -> Complex) u)
+  let WadjFlat :
+      SchwartzMap (BHW.OS45FlatCommonChartReal d n) Complex
+        ->L[Complex] Complex :=
+    J • (Wadj.comp pullFlatToSource)
+  have hJ_ne : J ≠ 0 :=
+    Complex.ofReal_ne_zero.mpr
+      (ne_of_gt (BHW.os45CommonEdgeFlatJacobianAbs_pos n))
+  have hWadj_carrier :
+      WadjFlat psi0Flat = J * carrierAdjPairing := by
+    calc
+      WadjFlat psi0Flat = J * Wadj ((psi0).1 : SchwartzNPoint d n) := by
+        have hpull :
+            pullFlatToSource psi0Flat =
+              ((psi0).1 : SchwartzNPoint d n) := by
+          ext u
+          simp [pullFlatToSource, psi0Flat]
+        simp [WadjFlat, hpull]
+      _ = J * carrierAdjPairing := by
+        rw [hWadj_endpoint, hAdj_endpoint_as_carrier]
+  have hWadj_wick :
+      WadjFlat psi0Flat = J * wickAdjPairing := by
+    have hWadj_adjWick :
+        Wadj ((psi0).1 : SchwartzNPoint d n) = wickAdjPairing := by
+      -- Raw `(4.12)` Wick trace, transported along `chainAdj`.
+      exact hAdj_terminalBoundaryCLM_eq_adjacentWick phi hphiE
+    calc
+      WadjFlat psi0Flat = J * Wadj ((psi0).1 : SchwartzNPoint d n) := by
+        have hpull :
+            pullFlatToSource psi0Flat =
+              ((psi0).1 : SchwartzNPoint d n) := by
+          ext u
+          simp [pullFlatToSource, psi0Flat]
+        simp [WadjFlat, hpull]
+      _ = J * wickAdjPairing := by
+        rw [hWadj_adjWick]
+  exact mul_left_cancel₀ hJ_ne (hWadj_carrier.symm.trans hWadj_wick)
+```
+
+With these four leaves, `hOrd_boundary_to_source` and
+`hAdj_boundary_to_source` are Lean-ready uniqueness-of-limits arguments: use
+`tendsto_nhds_unique` between `h*_fixed psi0` and `h*_endpoint_DCT`, then
+rewrite the endpoint integral to the carrier pairing pointwise by the carrier
+identity, and finally apply `h*_carrier_pairing`.
+
 ## Lean-Start Checklist
 
 Start Lean for `BHW.os45CommonEdge_localFigure24DifferenceGerm_of_OSI45` only
@@ -4052,17 +6649,21 @@ when the proof script can point to these exact in-proof objects:
 | Metric-ball all-overlap propagation | Checked by `SCV.pairwise_eqOn_metric_ball_carriers_of_local_overlap_seeds`; it turns proof-local seeds on every nonempty pairwise overlap into full pairwise branch equality. |
 | Ambient local zero-height flat EOW bridge | Checked by `BHW.os45_BHWJost_initialSectorEqOn_open_of_flatCommonChart_localZeroHeight_pairingsCLM`; it transports local flat zero-height pairings to an ambient open seed in `ExtendedTube d n inter permutedExtendedTubeSector d n P.τ`. |
 | Translated source-to-flat Jacobian algebra | Checked by `BHW.os45CommonEdgeFlatCLE_integral_comp_shift`; this is the real-translation plus CLE change of variables behind `x = e u ± eps • eta`. |
-| Shifted/signed side cutoff removal | Checked by `BHW.OS45Figure24SourceCutoffData.toShiftedSchwartzNPointCLM_eq_plain_of_tsupport_subset_edge`, `BHW.OS45Figure24SourceCutoffData.toSideZeroDiagonalCLM_eq_plain_of_tsupport_subset_edge`, `BHW.OS45Figure24SourceCutoffData.toSideZeroDiagonalCLM_eq_plain_eventually`, and `BHW.OS45Figure24SourceCutoffData.toSideZeroDiagonalCLM_sourceWindow_support_and_eq_plain_eventually`; it discharges the pointwise cutoff-removal part of the side-height coordinate pullback after support has been shrunk. |
-| Signed side-height branch/source pullback | Checked by `BHW.os45FlatCommonChart_branch_integral_eq_sourcePullback_shift`, `BHW.os45FlatCommonChart_branch_integral_eq_sourcePullback_shiftedCLM`, `BHW.os45FlatCommonChart_branch_integral_eq_sourcePullback_sideZeroDiagonalCLM`, and `BHW.os45FlatCommonChart_branch_integral_eq_sourceSide_extendF_sideZeroDiagonalCLM`; it packages the translated CLE Jacobian and cutoff-removal algebra for the moving side tests without assuming any OS-I `(4.14)` boundary-value limit. |
+| Shifted/signed side cutoff removal and moving-test inputs | Checked by `BHW.OS45Figure24SourceCutoffData.toShiftedSchwartzNPointCLM_eq_plain_of_tsupport_subset_edge`, `BHW.OS45Figure24SourceCutoffData.toSideZeroDiagonalCLM_eq_plain_of_tsupport_subset_edge`, `BHW.OS45Figure24SourceCutoffData.toSideZeroDiagonalCLM_eq_plain_eventually`, and `BHW.OS45Figure24SourceCutoffData.toSideZeroDiagonalCLM_sourceWindow_support_and_eq_plain_eventually`; it discharges the pointwise cutoff-removal part of the side-height coordinate pullback after support has been shrunk.  The actual common-compact-support and zeroth-seminorm inputs for the moving-test perturbation are checked by `BHW.OS45Figure24SourceCutoffData.toSideZeroDiagonalCLM_sub_toZeroDiagonalCLM_eq_zero_off_eventually` and `BHW.OS45Figure24SourceCutoffData.toSideZeroDiagonalCLM_sub_toZeroDiagonalCLM_seminorm_tendsto_zero`; the fixed/difference product integrability needed for the local `MeasureTheory.integral_add` split is checked by `BHW.integrable_comp_os45FlatCommonChartSourceSide_mul_of_commonCompactSupport` and its eventual companion `BHW.eventually_integrable_comp_os45FlatCommonChartSourceSide_mul_of_commonCompactSupport`. |
+| Signed side-height branch/source pullback | Checked by `BHW.os45FlatCommonChart_branch_integral_eq_sourcePullback_shift`, `BHW.os45FlatCommonChart_branch_integral_eq_sourcePullback_shiftedCLM`, `BHW.os45FlatCommonChart_branch_integral_eq_sourcePullback_sideZeroDiagonalCLM`, `BHW.os45FlatCommonChart_branch_integral_eq_sourceSide_extendF_sideZeroDiagonalCLM`, and the fixed-test workhorse `BHW.os45FlatCommonChart_branch_integral_eq_sourceSide_extendF_translatedTest`; it packages the translated CLE Jacobian, cutoff-removal algebra, and test-translation cancellation for the side tests without assuming any OS-I `(4.14)` boundary-value limit. |
 | Source-side side-sheet argument | Checked by `BHW.os45FlatCommonChartSourceSide`, `BHW.os45FlatCommonChartBranch_sourceSide_eq_extendF`, and `BHW.os45FlatCommonChartSourceSide_mem_extendedTube_iff`; it names the exact source configuration obtained by undoing the quarter-turn, unfolds the flat branch value to `extendF`, and identifies the outgoing sheet-domain condition. |
 | Eventual source-side sheet membership | Checked by `BHW.os45FlatCommonChart_sourceSide_mem_extendedTube_eventually`; for small positive side height, shifted support points land on the ordinary plus and raw-adjacent minus outgoing sheets. |
 | Side branch integrability | Checked by `BHW.os45FlatCommonChart_branch_shifted_mul_integrable` and `BHW.os45FlatCommonChart_branch_side_shifted_mul_integrable_eventually`; side-domain membership plus compact support gives the integrability hypothesis needed by the pullback theorem. |
+| Inverse-CLE fixed-test support | Checked by `BHW.hasCompactSupport_comp_os45CommonEdgeFlatCLE_symm`, `BHW.tsupport_comp_os45CommonEdgeFlatCLE_symm_subset_edgeSet`, and bundled as `BHW.OS45Figure24SourceCutoffData.toZeroDiagonalCLM_flatPullback_support`; these support-only lemmas supply compact support and edge-set support for the auxiliary `psi0Flat` in the scalar-cancellation block. |
+| Fixed-test sourceSide boundary selection | Proof-local OS-I ingredient: ordinary selects `Word` for the checked `sourceSide (+1)` path on incoming sheet `BHW.ExtendedTube d n`; raw-adjacent selects `Wadj` from `OmegaSeed412/BSeed412` for `sourceSide (-1)` after `permAct P.τ`, with terminal transport through `chainAdj`.  This is not a plain `bvt_boundary_values` call with a fabricated direction and not a downstream deterministic adjacent seed. |
+| Endpoint continuity/DCT | Checked SourceSide support theorem `BHW.tendsto_integral_comp_os45FlatCommonChartSourceSide_mul_of_hasCompactSupport`; endpoint membership comes from `terminal_contains_ordinaryCommonEdge`/`terminal_contains_adjacentCommonEdge`, and the theorem packages compact-collar membership/bounds, pointwise convergence, compact-support integrability, fixed-height continuity, and zero-extension measurability.  This computes the fixed-test side-height limit at `eps = 0` and does not assume either asymptotic transfer. |
+| Zero-height endpoint normal forms | Proof-local endpoint ingredient now split into two scripts: the pointwise carrier identity uses the checked zero-height coordinate lemmas and terminal branch equality; the pairing identity defines the plain CLE pullback `pullFlatToSource := SchwartzMap.compCLMOfContinuousLinearEquiv Complex e` and then `WordFlat := J • (Word.comp pullFlatToSource)` and `WadjFlat := J • (Wadj.comp pullFlatToSource)` locally.  The equality `pullFlatToSource psi0Flat = psi0` is an explicit CLE inverse calculation; only after that do the scripts compare the carrier and Wick pairings and cancel the nonzero Jacobian `BHW.os45CommonEdgeFlatJacobianAbs n`.  The adjacent side uses only retained raw `(4.12)` terminal provenance; no downstream deterministic adjacent seed, `Hdiff`, common-boundary CLM, or chain-level flat-boundary wrapper is in scope. |
 | `one_branch_chain_witness ordinary41` | Terminal ordinary branch plus metric balls and seeds. |
 | `one_branch_chain_witness adjacent412` | Terminal adjacent branch plus metric balls and seeds. |
 | `local_transfer ordinary-sector` | Seed by equality with `OrdGlobal`. |
 | `local_transfer adjacent-sector` | Seed from retained transported `(4.12)` provenance; no deterministic adjacent branch. |
 | `local_transfer flat` | Non-circular flat EOW packet: first prove the horizontal compact-test zero by the ordinary and raw-adjacent branch/source asymptotic transfers plus the checked common source limit, giving `hsource_zero_rep`; then use the checked source-to-flat reducer, checked ordinary-edge representation, and checked ambient local zero-height bridge.  Source/CLE/Jacobian facts are coordinate audits only. |
-| ordinary branch/source transfer | Proof-local OS-I `(4.14)` side-height transfer for the ordinary `(4.1)` element; it must prove `BranchPlusSide - SourcePlusSide -> 0`, not assume a zero-height equality or Schwinger normalization. |
+| ordinary branch/source transfer | Proof-local OS-I `(4.14)` side-height transfer for the ordinary `(4.1)` element; the transcript proves `BranchPlusSide - SourcePlusSide -> 0` by the fixed-test scalar-cancellation body, moving-test perturbation, endpoint DCT, and ordinary carrier-pairing normalization, without assuming a zero-height equality or Schwinger normalization. |
 | raw-adjacent branch/source transfer | Proof-local OS-I `(4.14)` side-height transfer for the transported raw adjacent `(4.12)` element; `extendF o permAct` may be used only after the raw seed has reached the endpoint chart. |
 | `branch_seed ordinary41` | Proof-local all-overlap finite-gallery induction yielding `Word`. |
 | `branch_seed adjacent412` | Proof-local all-overlap finite-gallery induction yielding `Wadj`. |
