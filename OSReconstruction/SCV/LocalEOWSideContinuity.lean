@@ -101,6 +101,29 @@ theorem tendstoUniformlyOn_of_sub_tendstoUniformlyOn_zero
     simp
   exact hsumF.congr_right (by intro eta _heta; simp)
 
+/-- Uniform convergence on a singleton is exactly ordinary convergence at that
+point.
+
+This is the neutral bridge used after the OS45 proof has selected a fixed side
+direction `eta0`: it turns the fixed-direction side-height limit into the
+`TendstoUniformlyOn` form consumed by `eq_zeroHeight_of_common_sideLimit`. -/
+theorem tendstoUniformlyOn_singleton_iff_tendsto
+    {ι α β : Type*} [UniformSpace β]
+    {F : ι → α → β} {f : α → β} {l : Filter ι} {x0 : α} :
+    TendstoUniformlyOn F f l ({x0} : Set α) ↔
+      Tendsto (fun i => F i x0) l (𝓝 (f x0)) := by
+  constructor
+  · intro h
+    exact h.tendsto_at (by simp)
+  · intro h u hu
+    have hnhds : {y : β | (f x0, y) ∈ u} ∈ 𝓝 (f x0) := by
+      rw [nhds_eq_comap_uniformity]
+      exact preimage_mem_comap hu
+    filter_upwards [h hnhds] with i hi x hx
+    simp at hx
+    subst hx
+    exact hi
+
 /-- A compact-support side integral converges uniformly, over compact direction
 sets, to its zero-height pairing.
 

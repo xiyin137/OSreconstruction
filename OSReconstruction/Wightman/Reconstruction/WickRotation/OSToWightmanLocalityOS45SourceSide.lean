@@ -252,6 +252,48 @@ quarter-turned Wick carrier over the selected common-edge ordering. -/
       BHW.os45QuarterTurnCLE_symm_apply, wickRotatePoint,
       flattenCLEquivReal_apply, BHW.unflattenCfg, hdiv, hmod, hμ]
 
+omit [NeZero d] in
+/-- Applying the inverse OS45 quarter-turn to the horizontal common-edge real
+point gives the zero-height Wick carrier.
+
+This is a coordinate identity used at the terminal endpoint of the strict
+Figure-2-4 proof; it carries no boundary-value or branch-selection content. -/
+theorem os45QuarterTurnCLE_symm_realEmbed_commonEdge_eq_wick
+    (ρperm : Equiv.Perm (Fin n))
+    (u : NPointDomain d n) :
+    (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+        (BHW.realEmbed
+          (BHW.os45CommonEdgeRealPoint (d := d) (n := n) ρperm u)) =
+      BHW.os45QuarterTurnConfig (d := d) (n := n)
+        (fun k => wickRotatePoint (u (ρperm k))) := by
+  ext k μ
+  by_cases hμ : μ = 0
+  · subst μ
+    simp [BHW.os45QuarterTurnCLE_symm_apply, BHW.os45QuarterTurnConfig,
+      BHW.os45CommonEdgeRealPoint, BHW.realEmbed, wickRotatePoint]
+    let a : ℂ := u (ρperm k) 0
+    change (1 + Complex.I) * (a / 2) =
+      Complex.I * a / 2 - Complex.I * a / 2 * Complex.I
+    ring_nf
+    rw [Complex.I_sq]
+    ring
+  · simp [BHW.os45QuarterTurnCLE_symm_apply, BHW.os45QuarterTurnConfig,
+      BHW.os45CommonEdgeRealPoint, BHW.realEmbed, wickRotatePoint, hμ]
+
+/-- The zero-height source-side endpoint is the inverse quarter-turn of the
+horizontal common-edge real point. -/
+theorem os45FlatCommonChartSourceSide_zero_eq_commonEdge
+    (ρperm : Equiv.Perm (Fin n))
+    (sgn : ℝ)
+    (η : BHW.OS45FlatCommonChartReal d n)
+    (u : NPointDomain d n) :
+    BHW.os45FlatCommonChartSourceSide d n ρperm sgn 0 η u =
+      (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+        (BHW.realEmbed
+          (BHW.os45CommonEdgeRealPoint (d := d) (n := n) ρperm u)) := by
+  rw [BHW.os45FlatCommonChartSourceSide_zero,
+    BHW.os45QuarterTurnCLE_symm_realEmbed_commonEdge_eq_wick]
+
 /-- Zero-height source-side endpoint after applying an additional branch
 permutation.  This is the adjacent endpoint carrier coordinate identity used
 before the pairing-level OS-I normalization. -/
@@ -265,6 +307,22 @@ before the pairing-level OS-I normalization. -/
       BHW.os45QuarterTurnConfig (d := d) (n := n)
         (fun k => wickRotatePoint (u (ρperm (τ k)))) := by
   rw [BHW.os45FlatCommonChartSourceSide_zero]
+  ext k μ
+  simp [BHW.permAct, BHW.os45QuarterTurnConfig]
+
+omit [NeZero d] in
+/-- Applying a branch permutation to the inverse-quarter-turned horizontal
+common edge gives the corresponding permuted Wick carrier. -/
+theorem permAct_os45QuarterTurnCLE_symm_realEmbed_commonEdge_eq_wick
+    (τ ρperm : Equiv.Perm (Fin n))
+    (u : NPointDomain d n) :
+    BHW.permAct (d := d) τ
+        ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+          (BHW.realEmbed
+            (BHW.os45CommonEdgeRealPoint (d := d) (n := n) ρperm u))) =
+      BHW.os45QuarterTurnConfig (d := d) (n := n)
+        (fun k => wickRotatePoint (u (ρperm (τ k)))) := by
+  rw [BHW.os45QuarterTurnCLE_symm_realEmbed_commonEdge_eq_wick]
   ext k μ
   simp [BHW.permAct, BHW.os45QuarterTurnConfig]
 

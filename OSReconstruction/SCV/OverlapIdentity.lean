@@ -13,6 +13,42 @@ open Topology
 
 namespace SCV
 
+/-- If two local representatives both agree with the same model on open
+carriers, then a nonempty carrier overlap is already an open equality seed.
+
+This is the neutral seed used for continuation-gallery sectors where the
+branch provenance is literally equality with one fixed model branch. -/
+theorem local_overlap_seed_of_common_model
+    {E F : Type*} [TopologicalSpace E]
+    {N₁ N₂ : Set E} {f₁ f₂ model : E → F}
+    (hN₁_open : IsOpen N₁) (hN₂_open : IsOpen N₂)
+    (hne : (N₁ ∩ N₂).Nonempty)
+    (h₁ : Set.EqOn f₁ model N₁)
+    (h₂ : Set.EqOn f₂ model N₂) :
+    ∃ W : Set E,
+      IsOpen W ∧ W.Nonempty ∧ W ⊆ N₁ ∩ N₂ ∧ Set.EqOn f₁ f₂ W := by
+  refine ⟨N₁ ∩ N₂, hN₁_open.inter hN₂_open, hne, subset_rfl, ?_⟩
+  intro z hz
+  exact (h₁ hz.1).trans (h₂ hz.2).symm
+
+/-- Pointed form of `local_overlap_seed_of_common_model`.
+
+This is useful when a continuation-gallery overlap proof has already selected
+the overlap point that must belong to the seed fed to a later identity-theorem
+shrink. -/
+theorem local_overlap_seed_at_of_common_model
+    {E F : Type*} [TopologicalSpace E]
+    {N₁ N₂ : Set E} {f₁ f₂ model : E → F}
+    (hN₁_open : IsOpen N₁) (hN₂_open : IsOpen N₂)
+    {z₀ : E} (hz₀ : z₀ ∈ N₁ ∩ N₂)
+    (h₁ : Set.EqOn f₁ model N₁)
+    (h₂ : Set.EqOn f₂ model N₂) :
+    ∃ W : Set E,
+      IsOpen W ∧ z₀ ∈ W ∧ W ⊆ N₁ ∩ N₂ ∧ Set.EqOn f₁ f₂ W := by
+  refine ⟨N₁ ∩ N₂, hN₁_open.inter hN₂_open, hz₀, subset_rfl, ?_⟩
+  intro z hz
+  exact (h₁ hz.1).trans (h₂ hz.2).symm
+
 /-- If two product-holomorphic functions agree on a nonempty complex-open seed
 inside the intersection of two metric balls, then they agree on the whole
 two-ball overlap.

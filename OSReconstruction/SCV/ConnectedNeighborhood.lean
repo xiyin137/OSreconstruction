@@ -54,6 +54,59 @@ theorem exists_open_connected_neighborhood_of_compact_connected_subset_open
     (connectedComponentIn_subset V x0).trans hVΩ
   exact ⟨U, hU_open, hU_connected, hK_U, hUΩ⟩
 
+/-- A path inside an open set has an open connected neighborhood, still inside
+that open set, containing both endpoints. -/
+theorem exists_open_connected_neighborhood_of_joinedIn_subset_open
+    {E : Type*} [TopologicalSpace E] [LocallyCompactSpace E] [RegularSpace E]
+    [LocallyConnectedSpace E]
+    {Ω : Set E} {a b : E}
+    (hΩ_open : IsOpen Ω) (hjoin : JoinedIn Ω a b) :
+    ∃ U : Set E, IsOpen U ∧ IsConnected U ∧ a ∈ U ∧ b ∈ U ∧ U ⊆ Ω := by
+  let γ := hjoin.somePath
+  let K : Set E := Set.range γ
+  have hK_compact : IsCompact K := by
+    simpa [K] using (isCompact_univ.image γ.continuous_toFun)
+  have hK_connected : IsConnected K := by
+    simpa [K] using (isConnected_univ.image γ γ.continuous_toFun.continuousOn)
+  have hKΩ : K ⊆ Ω := by
+    rintro z ⟨t, rfl⟩
+    exact hjoin.somePath_mem t
+  rcases SCV.exists_open_connected_neighborhood_of_compact_connected_subset_open
+      hK_compact hK_connected hΩ_open hKΩ with ⟨U, hU_open, hU_connected, hKU, hUΩ⟩
+  refine ⟨U, hU_open, hU_connected, ?_, ?_, hUΩ⟩
+  · exact hKU ⟨0, hjoin.somePath.source⟩
+  · exact hKU ⟨1, hjoin.somePath.target⟩
+
+/-- If membership in a set can be propagated between any two points in a
+small open neighborhood of each point, then a nonempty reachable set in a
+preconnected space is all of the space.
+
+This is the neutral topology core used by the OS45 one-branch chain assembly:
+the hard OS/BHW content is the local propagation hypothesis. -/
+theorem reachable_eq_univ_of_local_symmetric_extension
+    {E : Type*} [TopologicalSpace E] [PreconnectedSpace E]
+    {Reach : Set E}
+    (hReach_nonempty : Reach.Nonempty)
+    (hlocal :
+      ∀ x : E, ∃ U : Set E, IsOpen U ∧ x ∈ U ∧
+        ∀ ⦃y z : E⦄, y ∈ U → z ∈ U → y ∈ Reach → z ∈ Reach) :
+    Reach = Set.univ := by
+  have hReach_open : IsOpen Reach := by
+    rw [isOpen_iff_mem_nhds]
+    intro x hx
+    rcases hlocal x with ⟨U, hU_open, hxU, hprop⟩
+    exact Filter.mem_of_superset (hU_open.mem_nhds hxU)
+      (fun y hyU => hprop hxU hyU hx)
+  have hReach_compl_open : IsOpen Reachᶜ := by
+    rw [isOpen_iff_mem_nhds]
+    intro x hx
+    rcases hlocal x with ⟨U, hU_open, hxU, hprop⟩
+    exact Filter.mem_of_superset (hU_open.mem_nhds hxU)
+      (fun y hyU hyReach => hx (hprop hyU hxU hyReach))
+  have hReach_closed : IsClosed Reach := by
+    simpa using (isClosed_compl_iff.mpr hReach_compl_open)
+  exact IsClopen.eq_univ ⟨hReach_closed, hReach_open⟩ hReach_nonempty
+
 /-- A connected core with connected attached sets has connected union, provided
 the core is covered by the union and every attached set meets the core. -/
 theorem isConnected_iUnion_of_connected_core
@@ -120,6 +173,27 @@ theorem isConnected_inter_metric_ball
     (hne : Set.Nonempty (Metric.ball x r ∩ Metric.ball y s)) :
     IsConnected (Metric.ball x r ∩ Metric.ball y s) :=
   ⟨hne, (convex_ball x r).inter (convex_ball y s) |>.isPreconnected⟩
+
+/-- Two open neighborhoods of the same point contain a metric ball around that
+point inside their intersection. -/
+theorem exists_metric_ball_subset_of_mem_open
+    {E : Type*} [PseudoMetricSpace E]
+    {U : Set E} {z : E}
+    (hU : IsOpen U) (hz : z ∈ U) :
+    ∃ r : ℝ, 0 < r ∧ Metric.ball z r ⊆ U := by
+  exact Metric.mem_nhds_iff.mp (hU.mem_nhds hz)
+
+/-- A holomorphic chart on an open carrier can be restricted to an
+endpoint-centered metric ball inside that carrier. -/
+theorem exists_metric_ball_differentiableOn_subset_of_mem_open
+    {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℂ E]
+    [NormedAddCommGroup F] [NormedSpace ℂ F]
+    {U : Set E} {z : E} {f : E → F}
+    (hU : IsOpen U) (hz : z ∈ U) (hf : DifferentiableOn ℂ f U) :
+    ∃ r : ℝ, 0 < r ∧ Metric.ball z r ⊆ U ∧
+      DifferentiableOn ℂ f (Metric.ball z r) := by
+  rcases SCV.exists_metric_ball_subset_of_mem_open hU hz with ⟨r, hr_pos, hball_sub⟩
+  exact ⟨r, hr_pos, hball_sub, hf.mono hball_sub⟩
 
 /-- Two open neighborhoods of the same point contain a metric ball around that
 point inside their intersection. -/

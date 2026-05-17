@@ -69,10 +69,11 @@ surface outside this chain without first updating this ledger and the
 theorem-2 blueprint.
 
 Strict OS-II correction (2026-05-09, after Claude's route audit): the
-normal/Riemann and quotient-germ packets are **off-route** for theorem 2.
+source-oriented normal-extension and quotient-style packets are **off-route**
+for theorem 2.
 They are not active producers, not prerequisites, and not permitted
 substitutes for OS-II / OS I §4.5.  In particular,
-`BHW.sourceOrientedVariety_normal_riemannExtension`,
+the old source-oriented normal-extension theorem,
 `BHW.sourceOrientedQuotientValue_germHolomorphic_of_OSI45`,
 `BHW.sourceOrientedQuotientValue_rankDeficient_germHolomorphic_of_OSI45`,
 `BHW.osi45_initialSector_sourceOrientedQuotientGerm_ordinary`, and
@@ -119,7 +120,7 @@ The downstream sequence is:
 This is **not** the source-oriented local-chart carrier
 `BHW.BHWJostLocalOrientedContinuationChart`, because that carrier contains
 `SourceOrientedVarietyGermHolomorphicOn` fields and would reintroduce the
-off-route quotient-germ/normal-variety problem.  It is also not a new public
+off-route source-oriented quotient/normal-variety problem.  It is also not a new public
 atlas wrapper.  Any local charts or certified chains are downstream comparison
 devices against `S.B`, not the producer of `S.B`.
 
@@ -165,8 +166,8 @@ It is not enough to say that OS I equations `(4.1)`, `(4.12)`, and `(4.14)`
 OS I local analytic-element theorem whose **adjacent initial germ is the
 `(4.12)` germ**, not the deterministic downstream branch
 `z ↦ BHW.extendF (bvt_F OS lgc n) (BHW.permAct P.τ z)`.  This distinction is a
-completion gate.  The checked carrier
-`BHW.OS45BHWJostInitialBranchData.adjacent` intentionally stores the later
+completion gate.  The checked deterministic adjacent initial-branch
+constructor intentionally stores the later
 deterministic adjacent initial-sector branch used by
 `BHW.localSPrime_twoSectorBranch_of_EOW_BHW`; it is therefore not, by itself,
 the upstream `Hdiff` adjacent Wick seed.  Reusing it here would reintroduce the
@@ -198,61 +199,56 @@ equality by finite analytic-continuation uniqueness, glues the arbitrary atlas
 to one holomorphic function on the connected chart `Ucx`, and proves the Wick
 and horizontal common-edge trace fields by endpoint-centered charts.
 
-Stage-A flat-transfer correction, 2026-05-16: the flat real-Jost EOW case
+Stage-A flat-transfer correction, 2026-05-17: the flat real-Jost EOW case
 inside this finite transfer must not obtain its `(4.14)` boundary equality by
 assuming an already-built local `Hdiff`, a free-standing flat common-boundary
-packet, or a downstream EOW/source-common-edge theorem.  The proof-local input
-for that flat step is instead `hsource_zero_rep`: the source-side zero
-representation of the horizontal pulled-branch difference for the current
-incoming `(4.1)` and outgoing genuine `(4.12)` analytic elements.  Its Lean
-proof is the paper's OS-I `(4.14)` local common-boundary argument in source
-coordinates, assembled from local OS-I §4.5 source boundary leaves by
-`SCV.distribution_representation_of_local_representations_for_test`.  Once
-this source representation is proved, the checked reducer
-`BHW.os45FlatCommonChart_zeroHeight_pairings_eq_ordinaryEdgeCLM_of_sourceRepresentsOn`
-converts it to the two flat zero-height pairings needed by the checked local
-EOW seed.  The reducers
-`BHW.os45CommonEdge_localHorizontalDifference_representsZero_of_germ` and
-`BHW.os45FlatCommonChart_commonBoundaryDifference_integral_zero_of_sourceRepresentsOn`
-remain downstream consumers after a complete `Hdiff` producer exists; they are
-not substitutes for the proof-local `hsource_zero_rep`.
-
-Stage-A flat-transfer correction, 2026-05-16: the old
-side-limit-to-Schwinger shortcut is retired only as a public theorem surface
-or as an individual zero-height normalization.  Boundary limits themselves are
-the active proof method.  The strict OS-I route must prove the source zero
-representation for the horizontal pulled-branch difference of the current
-ordinary `(4.1)` analytic element and the transported genuine adjacent
-`(4.12)` analytic element:
+packet, a source-representation wrapper, or a downstream EOW/source-common-edge
+theorem.  The active proof-local input is now the direct local zero-height
+pairing pair:
 
 ```lean
-SCV.RepresentsDistributionOn
-  (0 : SchwartzMap (NPointDomain d n) ℂ →L[ℂ] ℂ)
-  Ghoriz Ulocal
+hzero_plus :
+  ∀ phi, HasCompactSupport (phi : BHW.OS45FlatCommonChartReal d n -> ℂ) ->
+    tsupport (phi : BHW.OS45FlatCommonChartReal d n -> ℂ) <= E ->
+    (∫ x, Fplus0 x * phi x) = Tlocal phi
+
+hzero_minus :
+  ∀ phi, HasCompactSupport (phi : BHW.OS45FlatCommonChartReal d n -> ℂ) ->
+    tsupport (phi : BHW.OS45FlatCommonChartReal d n -> ℂ) <= E ->
+    (∫ x, Fminus0 x * phi x) = Tlocal phi
 ```
 
-Any theorem whose main hypothesis is a fixed-direction asymptotic,
-`SCV.eq_zeroHeight_of_common_sideLimit`, or a side-limit-to-Schwinger
-conclusion is therefore a wrapper for Stage A.  The active implementation
-boundary is the local OS-I `(4.14)` common-boundary/EOW argument itself:
-prove the ordinary and raw transported adjacent branch-side/source-side
-asymptotic transfers, combine them with the checked source-side common limit
-and checked zero-height side-continuity, and only then obtain the source
-pairing zero.  This work remains inside the proof of
-`BHW.os45CommonEdge_localFigure24DifferenceGerm_of_OSI45`.
+Here
+`Tlocal := BHW.os45FlatCommonChart_ordinaryEdgeCLM hd OS lgc P`.
+The plus field is the checked ordinary edge formula
+`BHW.os45FlatCommonChart_ordinaryEdgeCLM_apply`.  The minus field is obtained by
+first proving, for the current compact flat test,
 
-Stage-A side-height correction, 2026-05-16: the proposed individual
-identities
+```lean
+h414_integrals phi hphi_compact hphiE :
+  (∫ x, Fminus0 x * phi x) = (∫ x, Fplus0 x * phi x)
+```
+
+and then composing with `hzero_plus`.  The proof of `h414_integrals` is the
+genuine OS-I `(4.14)` content: ordinary `(4.1)` plus-side and retained
+raw-adjacent `(4.12)` minus-side branch/source side-height transfers, the
+checked source-side common Schwinger limit, checked zero-height side-continuity,
+and `SCV.eq_zeroHeight_of_common_sideLimit`.
+
+The old source-representation route is retired for the upstream flat crossing.
+`BHW.os45FlatCommonChart_zeroHeight_pairings_eq_ordinaryEdgeCLM_of_sourceRepresentsOn`,
+`BHW.os45CommonEdge_localHorizontalDifference_representsZero_of_germ`, and
+`BHW.os45FlatCommonChart_commonBoundaryDifference_integral_zero_of_sourceRepresentsOn`
+remain downstream conveniences after a complete producer exists; they are not
+the Stage-A proof target and must not be inserted between `h414_integrals` and
+the flat EOW bridge.
+
+Stage-A side-height correction, 2026-05-17: the proposed individual identities
 `OrdEdge = (BHW.os45CommonEdgeFlatJacobianAbs n : ℂ) *
-OS.S n (D.toZeroDiagonalCLM 1 phi)` and the analogous adjacent identity are
-not the active route.  They are the rejected Schwinger-CLM shortcut in
-zero-height flat-edge form.  The correct local target is
-`AdjEdge = OrdEdge` for the current compactly supported flat test.  The
-intermediate formulation by two individual zero-height pullbacks to the
-ordinary and adjacent Wick/source pairings is also retired: it still identifies
-a flat real common-boundary pairing with a Wick-section anchor and so has the
-same category/circularity problem as the explicit Schwinger-CLM shortcut.  The
-checked source-side equality
+OS.S n (D.toZeroDiagonalCLM 1 phi)` and the analogous adjacent identity are not
+the active route.  They are the rejected Schwinger-CLM shortcut in zero-height
+flat-edge form.  The correct local target is `AdjEdge = OrdEdge` for the
+current compactly supported flat test.  The checked source-side equality
 `BHW.os45CommonEdge_adjacentWick_sourcePairing_eq_ordinaryWick` remains a Wick
 seed equality for the source analytic elements; it is not a zero-height flat
 real-edge normalization theorem.
@@ -261,89 +257,57 @@ The primitive Stage-A proof target is therefore the pair of branch/source
 side-height asymptotic transfers for the ordinary `(4.1)` element and the
 transported raw adjacent `(4.12)` element.  These transfers are the OS-I
 `(4.14)` mathematical content; `AdjEdge = OrdEdge` follows from them, the
-checked source common limit, and the checked common side-limit algebra.
+checked source common limit, and the checked common side-limit algebra, and the
+flat EOW seed consumes only the direct `hzero_plus`/`hzero_minus` pair.
 
-The exact live mathematical content is the OS-I section 4.5 source
-zero-representation behind the common-boundary distribution:
-
-```lean
-let Ghoriz : NPointDomain d n -> ℂ := fun u =>
-  BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
-      (P.τ.symm * (1 : Equiv.Perm (Fin n)))
-      (BHW.realEmbed
-        (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
-          (1 : Equiv.Perm (Fin n)) u)) -
-    BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
-      (1 : Equiv.Perm (Fin n))
-      (BHW.realEmbed
-        (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
-          (1 : Equiv.Perm (Fin n)) u))
-
-SCV.RepresentsDistributionOn
-  (0 : SchwartzMap (NPointDomain d n) ℂ →L[ℂ] ℂ)
-  Ghoriz Ulocal
-```
-
-Lean-facing decomposition: first prove this source-side zero representation
-for the current source window.  Its proof is the genuine OS-I `(4.14)` local
-work: build local representations of the horizontal pulled-branch difference
-from the OS-I §4.5 source boundary leaf, then assemble the
-result for each source test supported in `Ulocal` by
-`SCV.distribution_representation_of_local_representations_for_test`.
-After that, the checked source-to-flat reducer gives the flat pairings:
-
-```lean
-BHW.os45FlatCommonChart_zeroHeight_pairings_eq_ordinaryEdgeCLM_of_sourceRepresentsOn
-  (d := d) hd OS lgc (P := P) hUlocal_sub hsource_zero_rep
-```
-
-This reducer identifies both zero-height flat pairings with
-`Tlocal := BHW.os45FlatCommonChart_ordinaryEdgeCLM hd OS lgc P` for flat tests
-supported in `E = BHW.os45CommonEdgeFlatCLE d n 1 '' Ulocal`; packaging those
-two fields as a common-boundary `T414 := Tlocal` is proof-local bookkeeping.
-Do not export a theorem that assumes the common-boundary distribution, either
-zero-height equality, an adjacent `Tlocal` representation, or a
-side-limit-to-Schwinger conclusion.
-
-Active transcript refinement, 2026-05-16: the companion Wadj transcript now
-spells out the proof body expected for `hsource_zero_rep`.  It introduces
-`Ghoriz`, proves `SCV.RepresentsDistributionOn 0 Ghoriz Ulocal` by taking an
-arbitrary source test, covering its support by local precompact windows,
-calling `SCV.distribution_representation_of_local_representations_for_test`,
-and isolating the only remaining leaf as the OS-I §4.5 source boundary
-transfer from the ordinary and raw transported adjacent analytic branches to
-the horizontal common-edge pulled-branch difference.  The transfer keeps the
-test on the real/flat boundary and moves the analytic branches by side heights
-tending to zero; it is not a finite-height Wick compact-test transform.  That
-leaf must use the ordinary `(4.1)` endpoint, the retained raw `(4.12)`
-adjacent chain, and the `(4.14)` Lorentz-covariance input as the paper does;
-it must not call the later `Hdiff` reducer, the flat EOW bridge, `Wadj`, or a
-public `h414_common_boundary` wrapper.
+Active transcript refinement, 2026-05-17: the companion Wadj transcript now
+spells out the direct compact-test proof body for `h414_integrals`,
+`hzero_plus`, and `hzero_minus`.  The transfer keeps the test on the real/flat
+boundary and moves the analytic branches by side heights tending to zero; it is
+not a finite-height Wick compact-test transform.  That body must use the
+ordinary `(4.1)` endpoint, the retained raw `(4.12)` adjacent chain, and the
+`(4.14)` Lorentz-covariance input as the paper does; it must not call the later
+`Hdiff` reducer, the flat EOW bridge, `Wadj`, or a public local common-boundary
+wrapper to prove the transfer itself.
 Deep Research theorem-shape check
 `v1_ChdtVklJYXN1V0E2S1AyOG9QbjdlaTZBYxIXbVZJSWFzdVdBNktQMjhvUG43ZWk2QWM`
-completed on 2026-05-16 and confirms the source-window representation leaf is
-genuinely non-circular only when its local line `hhorizontal_zero` is proved
-directly by an OS-I Fourier-Laplace/Jost boundary transfer.  Under the
-current no-wrapper discipline this is not a public theorem surface: it is the
-proof-local boundary-limit zero block inside the upstream `hadj412` flat
-crossing, replacing the earlier finite-height `chiWick` test-transform draft.
+completed on 2026-05-16 and remains a route sanity check: the flat crossing is
+genuinely non-circular only when its local compact-test zero is proved directly
+by an OS-I Fourier-Laplace/Jost boundary transfer.  Under the current
+no-wrapper discipline this is not a public theorem surface and not a
+source-representation packet: it is the proof-local boundary-limit zero block
+inside the upstream `hadj412` flat crossing, replacing the earlier finite-height
+`chiWick` test-transform draft.
 The proof pulls the source test to flat common-edge coordinates with the explicit
 `BHW.os45CommonEdgeFlatCLE` Jacobian, proves the ordinary `(4.1)` and raw
 transported `(4.12)` branch-side side-height pairings are asymptotic to their
 source-side Fourier-Laplace pairings, uses the checked signed source-test
 common Schwinger limit, and concludes the zero-height equality with
 `SCV.eq_zeroHeight_of_common_sideLimit`.
-The local source-test pullback is no longer schematic: for each `chi` supported
-in the source window `V`, the transcript defines
-`phiChi := (SchwartzMap.compCLMOfContinuousLinearEquiv Complex
-  (BHW.os45CommonEdgeFlatCLE d n (1 : Equiv.Perm (Fin n))).symm) chi`,
-proves `tsupport phiChi` lies in the flattened image `e '' V` and hence in the
-local flattened image `e '' Ulocal` and the checked edge set, removes the
-Figure-2-4 cutoff by
-`D.toSchwartzNPointCLM_eq_plain_of_tsupport_subset_edge`, applies the
-side-height transfer to `phiChi`, and divides by the positive flat Jacobian
-using `BHW.os45FlatCommonChart_commonBoundaryDifference_integral_eq_sourcePullback`
-plus `BHW.os45CommonEdgeFlatJacobianAbs_pos`.
+
+Proof-doc status, updated 2026-05-17: the active compact blueprint and Wadj
+transcript now agree on the direct flat compact-test proof body and no longer
+contain the avoidable local flat-CLM/common-boundary packet in the active
+skeleton.  The checked local zero-height EOW bridge consumes direct
+`hzero_plus`/`hzero_minus` fields; `AdjEdge = OrdEdge` is obtained first from
+the side-height branch/source transfer, not from a source-representation
+reducer.  The compact route scans for stale adjacent seeds, finite-chain
+wrapper names, forbidden detour language, and placeholder markers returned no
+matches.  This was documentation discipline rather than an implementation
+authorization at the time; it should not be read as a closure declaration.  The
+next Lean edits must target the direct producer or its genuine in-body leaves in
+the downstream narrow companion only.
+Theorem surfaces assuming the side transfers, `AdjEdge = OrdEdge`, `Wadj`,
+`Hdiff`, or the common-boundary CLM remain disallowed.
+The fixed sourceSide scalar-cancellation pullback is no longer schematic: for
+the current compact flat test `phi`, the transcript sets
+`psi0 := D.toZeroDiagonalCLM 1 phi`, pulls this concrete compact source test to
+`psi0Flat := (SchwartzMap.compCLMOfContinuousLinearEquiv Complex e.symm)
+((psi0).1 : SchwartzNPoint d n)`, proves the checked
+`D.toZeroDiagonalCLM_flatPullback_support` packet, applies the translated-test
+pullback/cancellation theorem
+`BHW.tendsto_integral_comp_os45FlatCommonChartSourceSide_fixed_of_flatTranslatedTest`,
+and keeps the positive flat Jacobian explicit until cancellation.
 
 Fixed-test refinement, 2026-05-16: do not replace the OS45 `sourceSide` path by
 a fabricated ordinary forward-cone direction.  The ordinary fixed-test leaf is
@@ -390,54 +354,155 @@ the concrete zero-diagonal test as
 `BHW.OS45Figure24SourceCutoffData.toZeroDiagonalCLM_flatPullback_support`, and call
 `BHW.os45FlatCommonChart_branch_side_shifted_mul_integrable_eventually`
 with `psi0Flat` to get the ordinary `.1` and raw-adjacent `.2` side
-integrability hypotheses.  The source-side moving test estimate from fixed
-`psi0` to the Figure-2-4 tests is checked as
+integrability hypotheses.  The source-side moving test step from fixed `psi0`
+to the Figure-2-4 tests is checked as the assembled theorem
+`BHW.tendsto_integral_comp_os45FlatCommonChartSourceSide_mul_moving_of_commonCompactSupport`,
+whose proof expands through the lower-level difference estimate
 `BHW.tendsto_integral_comp_os45FlatCommonChartSourceSide_mul_sub_of_commonCompactSupport`.
-The checked Jacobian relation
-`BHW.os45CommonEdgeFlatJacobianAbs_pos` then cancels the common scalar.  This
-is a genuine local proof body, not a public wrapper and not a straight
-forward-cone replacement.
+The fixed source-side scalar cancellation after the selected flat translated
+limit is now checked as
+`BHW.tendsto_integral_comp_os45FlatCommonChartSourceSide_fixed_of_flatTranslatedTest`;
+it consumes the signed source-side integrability packet and the rewritten flat
+limit, then cancels the common scalar using
+`BHW.os45CommonEdgeFlatJacobianAbs_pos`.  This is genuine local support, not a
+public wrapper and not a straight forward-cone replacement.
 
-Lean-entry update, 2026-05-16: after the source-test pullback correction, the
-fixed-test `sourceSide` boundary/covariance selection, compact-collar endpoint
-DCT, and endpoint carrier-pairing normalization are now spelled out as proof
-bodies in the active Wadj transcript.  Coordinate/Jacobian algebra remains
-checked, and the last proof-doc gate is resolved by the explicit compact-support
-moving-test perturbation described above.  Lean implementation may resume only
-after that transcript remains clean under route scans, and then only against
-these proof-local ingredients, without
-introducing public wrappers for the side transfer, `AdjEdge = OrdEdge`, `Wadj`,
-`Hdiff`, or the common-boundary CLM.
+Fixed-test correction, 2026-05-17: the previous side-direction note that set
+`etaOrdRaw := BHW.unflattenCfgReal n d eta0` and
+`etaAdjRaw := -etaOrdRaw` is retired.  That shape would force an ordinary raw
+forward direction and a signed/permuted adjacent raw forward direction from the
+same flattened EOW side vector; in particular it would ask for a future vector
+and its negative-permuted version to satisfy forward-cone conditions.  The
+flat side-height vector `eta0 : BHW.OS45FlatCommonChartReal d n` must therefore
+remain a flat EOW direction only.  It is not an input to the raw OS-I moving
+leaves by unflattening or negating.
 
-Follow-up tightening, 2026-05-16: the fixed-test leaves are now pinned as local
-scalar-cancellation scripts.  First use the checked translated-test pullback to
-obtain `Flat*(eps) = J * Source*(eps)` with
-`J := BHW.os45CommonEdgeFlatJacobianAbs n`.  Then combine the one-branch
-fixed-test OS-I boundary datum with the checked compact-support moving-test
-perturbation to prove the flat limit, rewrite
-`WordFlat psi0Flat = J * Word psi0` or
-`WadjFlat psi0Flat = J * Wadj psi0`, and
-cancel `J` using `BHW.os45CommonEdgeFlatJacobianAbs_pos`.  In the adjacent
-case, `OmegaSeed412/BSeed412` remains the upstream analytic element; the
-deterministic `extendF o permAct` formula is only an endpoint rewrite after
-raw-chain transport.
+The checked Hdiff leaves
+`ordinary41_moving_boundaryValue_extendF` and
+`raw412_moving_boundaryValue` still matter, but only in their honest raw-tube
+role: after a source-side/quarter-turn calculation has produced a raw tube ray
+with an explicit OS45 half-time direction.  Ordinary raw rays use
+`BHW.os45HalfTimeDirection_mem_forwardCone_of_ordered` with `σ = 1`; adjacent
+raw rays use the retained raw `(4.12)` seed together with the adjacent ordering
+and `BHW.os45HalfTimeDirection_adjacent_swap_eq`.  There is no permitted
+`simpa` from `eta0 ∈ BHW.os45FlatCommonChartCone d n` to either raw cone
+hypothesis.
 
-The two live mathematical blocks are the proof-local `(4.14)` asymptotic trace
-transfers:
+The active fixed-test transfer is the source-side quarter-turn leaf obtained in
+non-circular order: first select the flat translated-test boundary value from
+the ordinary or raw-adjacent one-branch OS-I trace, then apply the checked
+source-side translated-test/Jacobian cancellation theorem.  It is not a direct
+raw moving-leaf call.  Its proof-local contract is:
 
 ```lean
-have hPlus_asymptotic  : TendstoUniformlyOn ...
-have hMinus_asymptotic : TendstoUniformlyOn ...
+let l := nhdsWithin (0 : Real) (Set.Ioi 0)
+let eta0 : BHW.OS45FlatCommonChartReal d n := etaFlat
+let FOrd : (Fin n -> Fin (d + 1) -> Complex) -> Complex :=
+  BHW.extendF (bvt_F OS lgc n)
+let FAdj : (Fin n -> Fin (d + 1) -> Complex) -> Complex := fun z =>
+  BHW.extendF (bvt_F OS lgc n) (BHW.permAct (d := d) P.τ z)
+
+have hOrd_sourceSide_fixed :
+    Tendsto
+      (fun eps : Real =>
+        ∫ u : NPointDomain d n,
+          FOrd (BHW.os45FlatCommonChartSourceSide
+            d n (1 : Equiv.Perm (Fin n)) (1 : Real) eps eta0 u) *
+          ((psi0).1 : SchwartzNPoint d n) u)
+      l
+      (nhds (Word ((psi0).1 : SchwartzNPoint d n))) := by
+  -- Use `BHW.os45FlatCommonChartSourceSide_mem_extendedTube_iff` for sheet
+  -- membership.  The selected flat boundary value comes from the ordinary
+  -- one-branch terminal trace; then
+  -- `BHW.tendsto_integral_comp_os45FlatCommonChartSourceSide_fixed_of_flatTranslatedTest`
+  -- cancels the translated-test pullback and lands in `Word psi0`.  This leaf
+  -- does not identify `Word psi0` with the Schwinger value.  If a raw OS-I
+  -- leaf is invoked inside this proof, first prove the exact
+  -- quarter-turn/half-time ray identity and its cone hypothesis; do not
+  -- unflatten `eta0`.
+
+have hAdj_sourceSide_fixed :
+    Tendsto
+      (fun eps : Real =>
+        ∫ u : NPointDomain d n,
+          FAdj (BHW.os45FlatCommonChartSourceSide
+            d n (1 : Equiv.Perm (Fin n)) (-1 : Real) eps eta0 u) *
+          ((psi0).1 : SchwartzNPoint d n) u)
+      l
+      (nhds (Wadj ((psi0).1 : SchwartzNPoint d n))) := by
+  -- Same source-side sheet and scalar-cancellation calculation with `FAdj`,
+  -- but the retained raw `(4.12)` analytic element must first be transported
+  -- through `chainAdj` to select the flat minus boundary value.  Only then
+  -- does the checked scalar-cancellation theorem land in `Wadj psi0`.  The
+  -- endpoint `extendF o permAct` formula is downstream bookkeeping, not the
+  -- upstream adjacent seed.
+
+have hOrd_boundary_to_source :
+    Word ((psi0).1 : SchwartzNPoint d n) =
+      ∫ u : NPointDomain d n,
+        bvt_F OS lgc n (fun k => wickRotatePoint (u k)) *
+        ((psi0).1 : SchwartzNPoint d n) u := by
+  -- Combine `hOrd_sourceSide_fixed` with an independent zero-height endpoint
+  -- DCT through `BHW.os45FlatCommonChartSourceSide_zero_eq_commonEdge`, then
+  -- normalize the carrier pairing by the ordinary `(4.14)` source-pairing
+  -- equality.
+
+have hAdj_boundary_to_source :
+    Wadj ((psi0).1 : SchwartzNPoint d n) =
+      ∫ u : NPointDomain d n,
+        bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k))) *
+        ((psi0).1 : SchwartzNPoint d n) u := by
+  -- Combine `hAdj_sourceSide_fixed` with the independent zero-height endpoint
+  -- DCT, use the retained raw `(4.12)` terminal trace after `chainAdj`
+  -- transport, and only then call
+  -- `BHW.os45CommonEdge_adjacentWick_sourcePairing_eq_schwinger`.
 ```
 
-They must be proved from the ordinary `(4.1)` endpoint, retained raw `(4.12)`
-adjacent chain, and `(4.14)` complex-Lorentz covariance.  They must not get
-their conclusion from `Hdiff`, the flat EOW bridge, `Wadj`, a finite-height
-Wick-test transform, or any theorem already assuming `hsource_zero_rep`.
-The companion Wadj transcript now gives the exact Lean-pseudocode bodies under
-“Exact `(4.14)` Transfer Leaves”: fixed-test OS-I boundary values, moving-test
-compact-support perturbation estimates, and final side-family identification
-using the checked Figure-2-4 cutoff formulas.
+The flat translated-test selectors are now expanded in the Wadj transcript
+under “Flat Boundary Selector Induction”.  They are finite inductions over
+`chainOrd` and `chainAdj`: base OS-I boundary datum, edge-by-edge pointed
+overlap equality at the single lifted side point, compact-support collar
+control for that side point, uniqueness of limits to transport the boundary
+CLM, and terminal identification with `WordFlat` or `WadjFlat`.  If Lean needs
+a helper, it may only be this neutral compact-collar or finite-induction
+statement over explicit pointed seed edges; it must not mention `Hdiff`,
+zero-height equality, common-boundary CLMs, or theorem-2 locality.
+The detailed transcript now expands the collar proof itself: use compactness of
+`tsupport psi0Flat`, continuity of
+`eps, y ↦ sideLift sgn eps eta0 (y + (sgn * eps) • eta0)`, then
+`SCV.mem_support_translateSchwartz_iff` to move a point in the translated test
+support back to `tsupport psi0Flat`.
+It also records the terminal normal-form rewrite: after the finite induction,
+the terminal chain integral is converted to `FlatOrd` or `FlatAdj` by the
+terminal model field and the same side-lift collar, before scalar cancellation
+is invoked.
+
+The fixed CLE/Jacobian rewrite remains proof-local and is not a wrapper:
+`BHW.os45FlatCommonChart_branch_integral_eq_sourceSide_extendF_translatedTest`
+identifies each signed flat side-height pairing with `J` times the corresponding
+`sourceSide` integral against the fixed pulled-back source test.  The side
+domain is checked through
+`BHW.os45FlatCommonChartSourceSide_mem_extendedTube_iff`; the zero-height
+endpoint is checked through
+`BHW.os45FlatCommonChartSourceSide_zero_eq_commonEdge` and
+`BHW.permAct_os45FlatCommonChartSourceSide_zero`.  The ordinary and adjacent
+endpoint pairings are then identified by the one-branch OS-I endpoint traces
+and the checked `(4.14)` source-pairing equality.  Any exported theorem that
+assumes these source-side limits, assumes the flat zero-height equality, or
+packages `Word`/`Wadj` without proving this local transfer is wrapper churn.
+
+The two live mathematical blocks are the proof-local `(4.14)` asymptotic trace
+transfers `hPlus_asymptotic` and `hMinus_asymptotic`, whose full
+`TendstoUniformlyOn` statements are recorded in the companion Wadj transcript
+under “Exact `(4.14)` Transfer Leaves”.  They must be proved from the ordinary
+`(4.1)` endpoint, retained raw `(4.12)` adjacent chain, and `(4.14)`
+complex-Lorentz covariance.  They must not get their conclusion from `Hdiff`,
+the flat EOW bridge, `Wadj`, a finite-height Wick-test transform, or any
+theorem already assuming `h414_integrals`, `hzero_plus`, or `hzero_minus`.
+The companion Wadj transcript now
+gives the exact Lean-pseudocode bodies: fixed-test OS-I boundary values,
+moving-test compact-support perturbation estimates, and final side-family
+identification using the checked Figure-2-4 cutoff formulas.
 
 Active refinement, 2026-05-16: the exact side-height transcript now separates
 the boundary-functional selection from the endpoint/source computation.  The
@@ -474,8 +539,9 @@ zero-extension measurability helper, and dominated convergence.  The
 carrier-pairing leaves
 are the local OS-I `(4.14)` pairing-normalization statements on the
 quarter-turned ordinary and raw-adjacent carriers against the current compact
-test.  They must be proved before Lean enters the public `Hdiff` producer; they
-must not assume `AdjEdge = OrdEdge`, `Wadj`, `Hdiff`, the downstream
+test.  They must be proved inside the public `Hdiff` producer before their
+conclusions are used; they must not assume `AdjEdge = OrdEdge`, `Wadj`,
+`Hdiff`, the downstream
 deterministic adjacent branch, or a common-boundary CLM.
 
 Follow-up refinement, 2026-05-16: the DCT endpoint-continuity half is now
@@ -521,11 +587,15 @@ path; they assert no boundary-value limit and introduce no theorem-2 wrapper.
 They are the first Lean support for the flat-chart fixed-test proof body above.
 The same file now also checks the zero-height endpoint carrier identities
 `BHW.os45FlatCommonChartSourceSide_zero` and
-`BHW.permAct_os45FlatCommonChartSourceSide_zero`, plus the coordinate continuity
-lemma `BHW.continuous_os45FlatCommonChartSourceSide`.  These discharge the
-endpoint coordinate normal form and the source-side continuity input for the
-compact-collar DCT leaf; they still assert no OS-I transfer or pairing
-normalization.
+`BHW.permAct_os45FlatCommonChartSourceSide_zero`, the common-edge inverse
+quarter-turn identities
+`BHW.os45QuarterTurnCLE_symm_realEmbed_commonEdge_eq_wick`,
+`BHW.os45FlatCommonChartSourceSide_zero_eq_commonEdge`, and
+`BHW.permAct_os45QuarterTurnCLE_symm_realEmbed_commonEdge_eq_wick`, plus the
+coordinate continuity lemma `BHW.continuous_os45FlatCommonChartSourceSide`.
+These discharge the endpoint coordinate normal form and the source-side
+continuity input for the compact-collar DCT leaf; they still assert no OS-I
+transfer or pairing normalization.
 
 Additional SourceSide checkpoint, 2026-05-16: the compact-collar topology and
 finite branch-bound support are now checked as
@@ -577,6 +647,26 @@ to tend to zero, using the checked compact-collar branch bound and the
 it does not select the ordinary or raw-adjacent boundary functional and does
 not introduce a side-transfer wrapper.
 
+Moving-test assembly checkpoint, 2026-05-16: the fixed-endpoint DCT,
+compact-support perturbation estimate, and integral split are now assembled in
+`BHW.tendsto_integral_comp_os45FlatCommonChartSourceSide_mul_moving_of_commonCompactSupport`
+in
+`OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanLocalityOS45SourceSideMoving.lean`.
+Use it in the ordinary and raw-adjacent side-height leaves after the
+proof-local fixed endpoint limit has selected `Word` or `Wadj`.  It is not a
+boundary-selection theorem and does not identify a zero-height carrier pairing,
+`Hdiff`, or a common-boundary CLM.
+
+Scalar-cancellation checkpoint, 2026-05-16: the fixed-test source-side
+Jacobian cancellation is now checked in the same moving support file as
+`BHW.tendsto_integral_comp_os45FlatCommonChartSourceSide_fixed_of_flatTranslatedTest`.
+Use it after the ordinary or raw-adjacent flat translated-test limit has already
+been selected from the genuine OS-I fixed data and rewritten to
+`J * Word psi0` or `J * Wadj psi0`.  The theorem packages only the checked
+translated-test pullback and positive-Jacobian cancellation; it does not select
+`Word`/`Wadj`, prove a side-transfer wrapper, or move from fixed `psi0` to the
+Figure-2-4 side tests.
+
 Integral-split support checkpoint, 2026-05-16: the product integrability needed
 to split the moving source-side integral into fixed plus difference terms is
 now checked as
@@ -602,6 +692,60 @@ test `psi0Flat` is not its input.
 specializes the existing Schwartz convergence of `toSideZeroDiagonalCLM` to the
 zeroth seminorm used in the estimate.  These are support/seminorm leaves, not a
 new public side-transfer theorem.
+
+Proof-doc closure status, corrected 2026-05-17: the compact E-to-R blueprint
+and active Wadj transcript are the current Stage-A direct-producer control
+plane, not a closed-gate certificate.  The critical-path task is
+implementation, inside the direct
+`BHW.os45CommonEdge_localFigure24DifferenceGerm_of_OSI45` producer, of the
+ordinary and raw-adjacent fixed-test boundary selections, endpoint
+DCT/carrier-pairing cancellations, moving-test perturbations, and
+overlap-centered branch seeds transcribed there.  The live mathematical gap is
+still the in-body construction of the two side-height branch/source transfers
+feeding `hzero_plus` and `hzero_minus`.  If Lean exposes a missing support
+theorem, add only the narrow neutral support lemma whose statement is present
+in those docs; do not add public side-transfer, `AdjEdge = OrdEdge`, `Wadj`,
+`Hdiff`, common-boundary, or theorem-2 wrapper surfaces.
+
+Proof-doc correction, later 2026-05-17: the pinned Deep Research audit
+`v1_ChZEZ1FKYW9pWEFjYTV4TjhQd2QtWU9BEhZEZ1FKYW9pWEFjYTV4TjhQd2QtWU9B`
+validated the overlap-centered adjacent seed strategy but rejected the naked
+"same raw `(4.12)` seed plus same endpoint" uniqueness shortcut.  The active
+Wadj transcript now supplies the Lean-facing restricted-gallery `hgrid`
+contract consumed by the checked private
+`pointed_metric_seed_of_restricted_gallery_pair`: for arbitrary
+endpoint-centered restrictions of two retained adjacent terminal charts, build
+a `PointedCommonCenterGalleryPair` whose two starts are those restrictions.
+Every gallery edge is a checked `PointedSeedEdge` from retained raw `(4.12)`
+provenance, ordinary common-model overlap, or the upstream flat real-Jost EOW
+open seed.  This is an implementation transcript, not a closed-gate claim; the
+next work is direct implementation in the public Hdiff producer, not a public
+monodromy wrapper, source-variety route, quotient-style detour, `Wadj` wrapper,
+or `Hdiff` wrapper.
+
+Finite-chain assembly correction, later 2026-05-17: the companion Wadj
+transcript now replaces the vague compact-subdivision phrase by an in-body
+reachability proof along `gamma`.  For each branch kind, `Reach kind t` means
+a finite one-branch chain from the actual initial germ to `gamma t` has been
+constructed.  The three local OS-I transfer cases make `Reach kind` open and
+make its complement open; since `unitInterval` is preconnected and the initial
+time is reachable, `IsClopen.eq_univ` gives the terminal chain.  This produces
+`chainOrd` and `chainAdj` proof-locally and does not authorize a public chain
+packet, side-transfer theorem, `Wadj`, common-boundary, or `Hdiff` wrapper.
+
+Lean support update, later 2026-05-17: the clopen reachability core is now
+checked as the neutral theorem
+`SCV.reachable_eq_univ_of_local_symmetric_extension` in
+`OSReconstruction/SCV/ConnectedNeighborhood.lean`.  The OS45 proof still has
+to supply the hard `hlocal` propagation input from the ordinary-sector,
+adjacent-sector, and flat real-Jost transfer cases; the theorem only converts
+that local propagation into a terminal finite chain.
+
+Lean support update, 2026-05-17: the endpoint-centered chart restriction used
+by the branch-law transcript is now checked as the neutral SCV theorem
+`SCV.exists_metric_ball_differentiableOn_subset_of_mem_open`.  It combines the
+open-carrier metric-ball shrink with `DifferentiableOn.mono`; it does not
+select an OS branch, assert a side transfer, or expose a public Hdiff wrapper.
 
 Deep Research theorem-shape check
 `v1_Chc5VmdJYXEtV01JeUx4TjhQcXBmbndBURIXOVZnSWFxLVdNSXlMeE44UHFwZm53QVE`
@@ -644,13 +788,14 @@ exactly the ordinary `bvt_euclidean_restriction` normalization composed with
 `BHW.os45CommonEdge_adjacentWick_sourcePairing_eq_schwinger`.  The active Wadj
 transcript now supplies the missing direct `Hdiff` proof plan explicitly:
 the flat source-cutoff/CLE pullback, the side-limit fields into the concrete
-boundary distributions, and the checked SCV upgrade to `h414_bv_eq` all appear
-as local haves in the `hsource_zero_rep` body rather than as a wrapper theorem.
+boundary distributions, and the checked SCV upgrade to `h414_integrals` all
+appear as local haves in the direct flat-crossing body rather than as a wrapper
+theorem.
 
 Wrapper audit, 2026-05-14: the previously checked private carrier files
 `OSToWightmanLocalityOS45BHWJostBranchFree.lean`,
 `OSToWightmanLocalityOS45BHWJostHdiff.lean`, and the custom
-`Topology/UnitIntervalSubdivision.lean` package were removed from the active
+interval-subdivision topology package were removed from the active
 Lean surface.  They organized already-supplied chains, balls, overlap seeds,
 and local families, but they did not prove the genuine mathematical gap: the
 OS-I local transfer theorem, the adjacent `(4.12)` seed-to-Wick transport, or
@@ -660,11 +805,50 @@ must target the public producer
 subdivision, chart, or endpoint data kept as proof-local witnesses unless it
 discharges one of those analytic statements.  Production Lean must not add
 another consumer wrapper around `Hdiff`, must not start the final theorem-2
-wrapper, and must not replace this producer by source-oriented normal/Riemann
-machinery, quotient germs, the direct `extendF ∘ permAct` formula as the
+wrapper, and must not replace this producer by source-oriented normal-extension
+machinery, source-oriented quotient germs, the direct `extendF ∘ permAct` formula as the
 upstream source of the adjacent Wick trace, a finite-walk
 `DifferenceChainData` package, or the downstream pointwise adjacent Wick trace
 theorem.
+
+File-placement correction, 2026-05-16: after the checked SourceSide support
+split, the direct producer should not be implemented inside
+`OSToWightmanLocalityOS45BHWJostLocal.lean` if it consumes
+`OSToWightmanLocalityOS45SourceSideMoving.lean`; that would create an import
+cycle because SourceSide support already imports the BHW/Jost local geometry.
+Implement
+`BHW.os45CommonEdge_localFigure24DifferenceGerm_of_OSI45` in a downstream narrow
+companion, provisionally
+`OSToWightmanLocalityOS45Figure24Hdiff.lean`, importing both the checked
+BHW/Jost local file and the checked SourceSide support.  This is a placement
+rule only: it does not permit a new wrapper surface, and the theorem body must
+still construct the direct local `Hdiff` germ and its horizontal zero
+representation.
+
+Proof-doc gate tightening, updated 2026-05-17: the adjacent-sector branch seed
+in the live Wadj transcript is no longer allowed to be the vague claim that two
+terminal charts came from the same retained adjacent chain.  For a nonempty
+overlap point `z0`, the checked private consumer first retargets both retained
+terminal charts to endpoint-centered restrictions.  The proof must then supply
+the local `hgrid` contract by constructing a `PointedCommonCenterGalleryPair`
+for those restrictions.  The resulting open seed contains `z0` and is the
+genuine mathematical seed used by the checked SCV pairwise-overlap lemma.  This
+is still not a public wrapper and it is not the downstream deterministic
+`extendF o permAct` branch.
+
+Pointed-gallery local-case correction, updated 2026-05-17: the Wadj transcript
+now eliminates the abstract plan-list placeholder.  Inside `hgrid`,
+Lean should split at the observed overlap point `z0` into ordinary-sector,
+adjacent-sector, and flat real-Jost cases.  The ordinary case builds two
+one-step galleries to a local ordinary model chart; the adjacent case builds
+two one-step galleries to the same retained raw `(4.12)` local chart; the flat
+cases build a one-step/two-step gallery through the plus ordinary flat chart,
+using a private symmetric `PointedSeedEdge` helper and the checked flat
+real-Jost edge only after the proof-local zero-height plus/minus pairings.
+These are
+structure literals inside the producer body, not wrapper theorem surfaces.
+The symmetric pointed-edge helper is now checked privately as
+`PointedSeedEdge.symm` in the Hdiff companion.
 
 Source-oriented import audit, 2026-05-14: the checked finite-overlap and
 closed-loop monodromy surfaces in
@@ -767,10 +951,13 @@ because that would assume Wightman locality before theorem 2 proves it, and it
 classifies the direct pointwise deterministic Wick normalization as the hard
 OS I Figure-2-4 geometric step rather than a prerequisite for the E3 reducer.
 
-Fast Gemini sanity check on 2026-05-13 for the corrected `Hdiff` packet:
-the local branch-difference atlas is mathematically faithful to OS I §4.5 and
-avoids the circular `extendF (permAct τ (wick u))` normalization trap,
-provided three guardrails are explicit in Lean:
+Archived fast Gemini sanity check on 2026-05-13 for the corrected `Hdiff`
+packet, kept only as a non-certifying precursor to the later pinned Deep
+Research Max checks:
+the local branch-difference atlas was judged mathematically faithful to
+OS I §4.5 and avoids the circular
+`extendF (permAct τ (wick u))` normalization trap, provided three guardrails
+are explicit in Lean:
 
 1. **Strict Jost/source window.**  The real source window must stay inside the
    checked Figure-2-4 Jost patch.  In Lean this is not a new hypothesis: every
@@ -809,7 +996,7 @@ geometry that the warning assumes absent:
 These lemmas put the actual Figure-2-4 identity path, the horizontal common
 edge, and the compact source-window chart inside a connected complex open
 subset of the selected initial-sector overlap.  Therefore no new
-QFT-specific axiom, no Malgrange-Zerner axiom, and no quotient-germ detour is
+QFT-specific axiom, no Malgrange-Zerner axiom, and no source-oriented quotient detour is
 authorized for this stage.  The remaining Lean implementation object is
 narrower and exactly the one recorded below: construct the local OS I analytic
 branch-difference charts and their transition equalities on those checked
@@ -1071,8 +1258,9 @@ Private lowering of the compact subpath continuation.  Inside the pointwise
 local-element proof, the local continuation cover must be built from the
 corrected direct-coordinate OS-I transfer transcript on the Figure-2-4 subpath.
 The proof may reuse the checked compact-cover fold pattern, but it must not
-call the checked fold with `BHW.OS45BHWJostInitialBranchData.adjacent`: that
-constructor stores the later deterministic `extendF ∘ permAct` branch.
+call the checked fold with the deterministic adjacent initial-branch
+constructor: that constructor stores the later deterministic
+`extendF ∘ permAct` branch.
 
 Do not land `OS45Figure24InitialGermKind`,
 `OS45Figure24InitialGermData`, or constructor theorems for the ordinary and
@@ -1166,7 +1354,7 @@ Proof script for the private initial-germ constructors:
    p0 := gamma 0
    ```
 
-   is **not Lean-ready** when `gamma 0` is the ordinary Wick endpoint.  A direct
+   is **not admissible** when `gamma 0` is the ordinary Wick endpoint.  A direct
    Lean probe shows that the checked Figure-2-4 patch fields give
    `fun k => wickRotatePoint (x k) ∈ BHW.ForwardTube d n` and the adjacent
    OS45 seed-domain/sector membership, but they do not prove
@@ -1192,12 +1380,30 @@ Proof script for the private initial-germ constructors:
    `z ↦ bvt_F OS lgc n (BHW.permAct P.τ z)`.  The endpoint overlap
    memberships are also checked as
    `BHW.OS45BHWJostHullData.ordinaryWick_mem_initialSectorOverlap` and
-   `BHW.OS45BHWJostHullData.OS412Seed_mem_initialSectorOverlap`.  The
-   remaining mathematical
-   step is the complex-overlap transport from that checked seed chart to the
-   ordinary Wick endpoint.  The deterministic downstream branch
+   `BHW.OS45BHWJostHullData.OS412Seed_mem_initialSectorOverlap`.  The exact
+   metric-ball shrink of the raw `(4.12)` chart into the two-sheet initial
+   overlap is now checked as
+   `BHW.OS45BHWJostHullData.OS412SeedWindow_initialSectorOverlap_metricBallChart`;
+   this is the `Cseed/Bseed` packet that enters the adjacent one-branch
+   gallery.  The remaining mathematical step is the complex-overlap transport
+   from that checked seed chart to the ordinary Wick endpoint.  The
+   deterministic downstream branch
    `z ↦ BHW.extendF (bvt_F OS lgc n) (BHW.permAct P.τ z)` remains forbidden as
    the upstream source of the adjacent Wick trace.
+
+   Proof-doc completion update, 2026-05-17: the compact companion transcript
+   now supplies the Lean-entry private data contract for this transport:
+   `BranchKind`, `Chart := PointedMetricBranchChart Z Complex`, local
+   `Chain kind` tuples, `Adj412CircuitOutput`, and the exact
+   overlap-centered `hgrid`/`branch_seed adjacent412` script using checked
+   `PointedSeedEdge` and `PointedCommonCenterGalleryPair`.  The permitted
+   pre-Hdiff support splits are now checked: the neutral
+   `SCV.exists_open_connected_neighborhood_of_joinedIn_subset_open`, plus the
+   Figure-2-4 carrier shims
+   `BHW.initialSectorOverlap_connectedNeighborhood_of_joinedIn` and
+   `BHW.initialSectorOverlap_endpointMetricBall_of_joinedIn`.  Implementation
+   should now proceed directly inside the
+   `BHW.os45CommonEdge_localFigure24DifferenceGerm_of_OSI45` companion body.
 
    Existing checked continuation reducers confirm the gap rather than closing
    it.  The current active Lean surface does not contain a production theorem
@@ -1317,12 +1523,14 @@ Proof script for the private initial-germ constructors:
       horizontal common edge.  In flat coordinates, the adjacent side is the
       pulled branch with permutation `P.τ.symm * 1`, the ordinary side is the
       pulled branch with permutation `1`, and the common boundary value is
-      obtained from the OS-I `(4.14)` source zero representation.  The active
+      obtained from the OS-I `(4.14)` local zero-height pairing calculation.
+      The active
       transcript in `docs/theorem2_wadj_branch_law_transcript.md` now spells
       this out as a proof-local flat zero-height pairing block: the ordinary
       side is represented by the checked ordinary edge CLM, while the adjacent
-      side is identified with the same zero-height compact-test pairing by
-      `hsource_zero_rep` and the checked source-to-flat reducer.  The checked
+      side is identified with the same zero-height compact-test pairing
+      directly from the ordinary/raw-adjacent side-height transfers and the
+      checked source-side common limit.  The checked
       pre-`Hdiff` source-pairing equality is retained only as a later
       Wick-seed equality, and the source cutoff/CLE facts are coordinate
       support audits; neither is the upstream flat-transfer producer.  The
@@ -1550,8 +1758,9 @@ Proof script for the private initial-germ constructors:
    equality is nevertheless the right downstream output of the local OS-I
    §4.5 analytic-overlap proof.  It must be proved, not assumed, but Lean
    should not target this pointwise `Set.EqOn` before the upstream flat
-   crossing has built the transported adjacent branch and its common-edge
-   trace from `hsource_zero_rep` and the checked source-to-flat reducer:
+   crossing has built the transported adjacent branch and its common-edge trace
+   from the direct `h414_integrals`/`hzero_plus`/`hzero_minus` flat-crossing
+   body:
 
    ```lean
    let Gadj : NPointDomain d n -> ℂ := fun u =>
@@ -1589,9 +1798,10 @@ Proof script for the private initial-germ constructors:
    ```
 
    Thus the nonmechanical sheet-changing target has two ordered pieces:
-   first the upstream source zero representation `hsource_zero_rep`
-   inside the `hadj412` flat crossing, and only then the downstream pointwise
-   local §4.5 Jost-overlap equality `h45_source_eqOn`.  A compact-test
+   first the upstream direct local zero-height flat crossing inside `hadj412`,
+   producing `h414_integrals`, `hzero_plus`, and `hzero_minus`, and only then
+   the downstream pointwise local §4.5 Jost-overlap equality `h45_source_eqOn`.
+   A compact-test
    equality on `U` derived from `h45_source_eqOn` is a downstream consequence,
    obtained afterward by support restriction and integral congruence if a
    downstream distributional consumer wants it.
@@ -1607,8 +1817,8 @@ Proof script for the private initial-germ constructors:
    transports it to flat coordinates with
    `BHW.os45FlatCommonChart_realEdge_branch_eq_of_source_commonEdge_branch_eq`,
    discharges the downstream source-common-edge bridge hypotheses, and invokes
-   the checked flat EOW seed theorem.  Without the proof-local
-   `hsource_zero_rep` and subsequent `h45_source_eqOn` derivation,
+   the checked flat EOW seed theorem.  Without the proof-local direct
+   flat-crossing body and subsequent `h45_source_eqOn` derivation,
    any theorem that merely assumes equality of the flat traces is a wrapper
    around the same blocker.
 
@@ -3447,7 +3657,7 @@ The Lean gluing script is then fixed:
 
 This is the first production Lean target after the docs are complete.  No
 finite-walk `DifferenceChainData`, two-branch wrapper, local `S'_n` branch,
-common-boundary CLM, source-oriented quotient-germ statement, or final theorem-2
+common-boundary CLM, source-oriented quotient statement, or final theorem-2
 wrapper may be implemented before this `Hdiff` arbitrary-atlas packet is fully
 transcribed.
 
@@ -3826,7 +4036,7 @@ sector-membership rewrite `permAct P.τ` sends the ordinary Wick edge into
    shortcut.
 
 No item in this packet may be replaced by branch-free complex-anchor EOW,
-source-oriented quotient germs, normal/Riemann extension, global source
+source-oriented quotient germs, normal-extension machinery, global source
 descent, PET single-valuedness, final locality, or an axiom.  If implementation
 discovers that one of these surfaces needs a different statement, the blueprint
 must be corrected before Lean work continues.
@@ -3975,7 +4185,7 @@ name:
 
 It may not call `BHW.os45_BHWJost_sameEndpointChainComparison_of_OSI45`,
 `BHW.os45_BHWJost_initialOverlapCircuit_of_OSI45`, PET single-valuedness,
-final locality, source-oriented quotient/descent, normal/Riemann extension, an
+final locality, source-oriented quotient/descent, normal-extension machinery, an
 arbitrary simply-connectedness theorem for `H.ΩJ`, or the archived connected
 ordinary/adjacent overlap theorem.  It also may not call
 `Wightman.Reconstruction.AnalyticContinuation.bargmann_hall_wightman`,
@@ -5196,7 +5406,7 @@ locked route above:
    `BHW.OS45BHWJostHullData.adjacentBase_mem_initial`,
    `BHW.OS45BHWJostHullData.permutedExtendedTubeSector_subset_ΩJ`,
    `BHW.OS45BHWJostHullData.permutedExtendedTubeSector_inter_ΩJ_eq`,
-   `BHW.OS45BHWJostHullData.adjacentBase_joinedIn`, and
+   the checked adjacent-base joinedness lemma, and
    `BHW.OS45BHWJostHullData.toPairDataOfBranches`, together with the
    production carrier `BHW.OS45SourcePatchBHWJostPairData`,
    `BHW.continuous_wickRotateRealConfig`,
@@ -7188,7 +7398,7 @@ componentwise regular/removable transcript rather than a single amorphous
 the residual-chart compact-parameter continuity and boundedness lemmas,
 `BHW.sourceOrientedExceptionalRank_isAnalyticSubvariety`,
 `BHW.sourceOrientedMaxRank_dense_in_domain`,
-`BHW.sourceOrientedVariety_normal_riemannExtension`, and the invariant-ring
+the old source-oriented normal-extension theorem, and the invariant-ring
 normality chain
 `BHW.sourceOrientedInvariantRing_generated_by_gram_det`,
 `BHW.sourceOrientedInvariantRing_relations_kernel`,
@@ -7204,7 +7414,7 @@ Lean target.
 
 Quarantined descent reducer target, 2026-05-09: before the strict-route reset,
 the next variety-descent Lean step was the mechanical reducer from the exact
-normal/Riemann input to the oriented descent theorem, not the public theorem-2
+normal-extension input to the oriented descent theorem, not the public theorem-2
 wrapper.  Under the active user directive this is no longer a permitted
 theorem-2 implementation target.  The hard input remains recorded only as the
 explicit side-infrastructure proposition
@@ -7227,7 +7437,7 @@ source-oriented branch law
 `extendedTube_same_sourceOrientedInvariant_extendF_eq`, calls the reducer, and
 feeds `sourceOrientedExtendedTubeDomain_relOpen_connected` plus the descended
 `Phi` to `sourceOrientedScalarRepresentativeData_of_branchLaw`.  This
-checkpoint deliberately leaves the true hard theorem at the normal/Riemann
+checkpoint deliberately leaves the true hard theorem at the normal-extension
 input; it introduces no new axiom, no sorry, and no QFT-specific trust
 boundary.  Do not resume this reducer on the theorem-2 critical path unless the
 strict OS-II route is explicitly reopened after a documented OS-paper error.
@@ -8438,13 +8648,15 @@ wedge is also now checked in
 `BHW.os45BranchHorizontal_localWedge_of_edgeDomain`.  These are pure
 quarter-turn/topology facts and do not supply the OS-I source theorem.  The
 Figure-2-4 selector and the source-patch shrink now have transcript-level
-proof plans.  The next work is still proof-document completion, not Lean
-implementation, until the analytic source statements have full proof
-transcripts.  The theorem-2 blueprint now fixes those transcripts for
+proof plans.  This older note is superseded by the compact Stage-A E-to-R
+transcript above, which now fixes the analytic source statements down to
+Lean-facing local proof bodies.  The theorem-2 blueprint also records the
+historical theorem surfaces for
 `BHW.OS45BranchHorizontalSourceGermAt`,
 `BHW.os45BranchHorizontalCommonGerm`, and the boundary-CLM consumer
-`BHW.os45BranchHorizontalBoundaryValue`; the next implementation work must
-follow those named theorem surfaces in that order.
+`BHW.os45BranchHorizontalBoundaryValue`, but the current implementation work
+must follow the direct E-to-R/Hdiff producer route rather than reviving this
+older proof-doc gate.
 
 The source-patch selector is now checked in Lean.  The implemented theorem is
 the combined anchored selector
@@ -10360,7 +10572,7 @@ implementation contract is:
    `sourceOrientedQuotientValue_wellDefined` is proved by the oriented branch
    law, max-rank holomorphy is obtained from an actual ambient holomorphic
    local section, and exceptional rank is handled by
-   `sourceOrientedVariety_normal_riemannExtension`.  A local holomorphic
+   the old source-oriented normal-extension theorem.  A local holomorphic
    section at every singular oriented quotient point is not a valid theorem
    surface.  This prevents the Lean implementation from inventing an unrelated
    ambient `Phi` and asserting branch equality only afterward.
@@ -15348,7 +15560,7 @@ common-boundary envelope, or any theorem that already assumes locality.
    ```
 
    Archived Lean proof skeleton for the rejected merged branch, with no private
-   atlas or quotient-germ packet:
+   atlas or source-oriented quotient packet:
 
    ```lean
    theorem BHW.os45BHWJostAmbient_eq_initialSector_union
@@ -15737,7 +15949,7 @@ common-boundary envelope, or any theorem that already assumes locality.
       branch constructions.  The local invariance lemmas from
       `SourceOrientedBHWInvariance.lean` may be reused only for their
       proper-complex Lorentz analytic content; the active route may not use
-      source-oriented quotient/descent, normal/Riemann, or scalar-representative
+      source-oriented quotient/descent, normal-extension machinery, or scalar-representative
       outputs.  The active route is now the two-branch local-hull transcript
       recorded at the top of the Stage-A ledger.
 
@@ -15923,8 +16135,7 @@ common-boundary envelope, or any theorem that already assumes locality.
    `H.adjacentBase_mem_ΩJ` give the component fields; the paired facts
    `H.ordinaryBase_mem_initial` and `H.adjacentBase_mem_initial` supply the
    exact `base_mem : p0 ∈ Ω0 ∩ H.ΩJ` field for the chain-atlas constructor.
-   The checked path facts `H.ordinaryBase_joinedIn` and
-   `H.adjacentBase_joinedIn` are consumed by the side-specific selected-chain
+   The checked ordinary-base and adjacent-base joinedness facts are consumed by the side-specific selected-chain
    producers below; they do not justify a universal transfer cover.  Because
    the checked sector-in-hull lemmas give `Ω0 ⊆ H.ΩJ`, the initial chart carrier
    is the full initial sector `Ω0`, not a smaller neighborhood.  Its
@@ -15957,7 +16168,7 @@ common-boundary envelope, or any theorem that already assumes locality.
    producers
    from `SourceOrientedScalarRepresentativeData.toExtendedTubeInitialChart`,
    `SourceOrientedScalarRepresentativeData.toPermutedExtendedTubeInitialChart`,
-   or the normal/Riemann source-oriented descent theorem.  In this archived
+   or the source-oriented normal-extension descent theorem.  In this archived
    fork the hard analytic input was the local initial-sector BHW/Jost oriented
    germ:
 
@@ -16017,7 +16228,7 @@ common-boundary envelope, or any theorem that already assumes locality.
    `branch_same_sourceOrientedInvariant` / `branch_complexLorentzInvariant`
    are the local proper-complex BHW invariance statements on the carrier.  None
    of these fields may be filled from
-   `sourceOrientedScalarRepresentativeData_bvt_F`, normal/Riemann descent, PET
+   `sourceOrientedScalarRepresentativeData_bvt_F`, normal-extension descent, PET
    independence, or final locality.
 
    Once either local-chart theorem is available, the initial-chart data record
@@ -22487,7 +22698,7 @@ This doc is complete only when:
    Hall-Wightman source/PET compatibility, and final OS-II boundary transfer to
    `bvt_W`; no alternate route is permitted unless an actual error in the OS
    papers is identified and documented locally first;
-2. source-oriented quotient germs, normal/Riemann extension, invariant-ring
+2. source-oriented quotient germs, normal-extension machinery, invariant-ring
    normality, global source-variety descent, oriented local-chain carriers,
    public atlas wrappers, pure-Gram scalar representatives, and theorem-2
    wrappers conditional on missing producers are all archived or conditional side
@@ -22535,7 +22746,7 @@ This doc is complete only when:
    supplied in both branch slots.  The immediate Lean target is now the
    local analytic-element producer for `Hdiff`; any proof-local transfer
    support used inside it must expose the OS-I `(4.12)` adjacent seed rather
-   than `BHW.OS45BHWJostInitialBranchData.adjacent`.  The pure SCV helpers
+   than the checked deterministic adjacent initial-branch constructor.  The pure SCV helpers
    `SCV.local_continuous_edge_of_the_wedge_eventuallyEq_at_common_edge` and
    `SCV.local_continuous_edge_of_the_wedge_eqOn_open_at_common_edge` are now
    checked in `OSReconstruction/SCV/LocalEOWDistributionalEnvelope.lean`.
@@ -22695,8 +22906,8 @@ restrict `CprevBranch` to that ball, and record the restriction equality as a
 proof-local overlap seed.  This introduces no new OS-I analytic input.
 
 However, this checked transfer surface is not the active upstream `Hdiff`
-producer until its adjacent initial seed is split away from
-`BHW.OS45BHWJostInitialBranchData.adjacent`.  That checked datum stores the
+producer until its adjacent initial seed is split away from the deterministic
+adjacent initial-branch constructor.  That checked datum stores the
 later deterministic branch `extendF ∘ permAct`; the upstream OS I §4.5
 analytic element needs the `(4.12)` adjacent germ with its Wick trace as a
 field.  The first remaining Stage-A Lean focus is therefore the corrected
@@ -22810,10 +23021,10 @@ substitute for the common-edge test.
    coordinates must keep the source-to-flat Jacobian
    `(BHW.os45CommonEdgeFlatJacobianAbs n : ℂ)` explicit.  The checked signed
    source-test limit is now only a coordinate audit; it is not the producer of
-   `hsource_zero_rep`, and it must not be used to normalize a flat
-   zero-height pairing to the Wick or Schwinger anchor.  Omitting this factor
-   would still make any auxiliary flat/source comparison false, but the active
-   proof target is the source zero representation itself.
+   `h414_integrals`, and it must not be used to normalize a flat zero-height
+   pairing to the Wick or Schwinger anchor.  Omitting this factor would still
+   make any auxiliary flat/source comparison false, but the active proof target
+   is the direct local zero-height flat crossing.
 
 The special flat-chart anchor sections needed for that Wick normalization are
 now checked in `OSToWightmanLocalityOS45BHWJostLocal.lean`:
