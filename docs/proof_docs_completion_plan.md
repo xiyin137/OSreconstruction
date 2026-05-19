@@ -707,6 +707,53 @@ theorem, add only the narrow neutral support lemma whose statement is present
 in those docs; do not add public side-transfer, `AdjEdge = OrdEdge`, `Wadj`,
 `Hdiff`, common-boundary, or theorem-2 wrapper surfaces.
 
+Focused source-current transcript, 2026-05-18: the two live
+`hOrd_side_current`/`hAdj_side_current` holes now have a short companion
+control note at `docs/theorem2_source_current_selector_transcript.md`.  It
+spells the exact local objects, the retained raw `(4.12)` seed
+`OmegaSeed412/BSeed412`, the inverse-CLE fixed test `psi0Flat`, finite edge
+induction by `PointedMetricBranchChart.eqOn_inter_of_seed`, and the
+terminal-only rewrite to the displayed `sourceSide` integrals.  The earlier
+`etaBaseOrd/hEtaBaseOrd` and `etaBaseAdj/hEtaBaseAdj` gate is retired as the
+wrong API for these holes: it would manufacture a fixed raw tube direction
+from the terminal flat side vector.  A second correction is now active: the
+chart induction does not transport the moving current limits themselves.
+Instead it proves the fixed flat translated-boundary selectors
+`hflatOrd_selected` and `hflatAdj_selected`; fixed endpoint DCT then identifies
+their zero-height endpoints with `Lcur`, and the already present moving
+endpoint DCTs replace the fixed test by the live
+`D.toSideZeroDiagonalCLM` tests.  `D.sideZeroDiagonal_sourcePairings_tendstoUniformlyOn_schwinger`
+remains a checked Wick-current normalization/support package, not the
+chart-transport engine.  The remaining proof-doc item is the fixed
+chart-local selector body itself, especially the exact approach-family and
+compact-collar obligations for each edge.  This is not a new wrapper route and
+not a Lean-entry certificate; it is the current checklist for finishing the
+proof docs before re-entering the hard Hdiff body.
+
+Source-support correction in that focused transcript, 2026-05-18: the
+one-branch fixed selector is an integral statement over a compact translated
+test, not a pointwise statement at a single center.  The later moving endpoint
+DCT is a separate step.  The Lean body must first use the existing source packet
+`Ssrc := e.symm '' tsupport phi`, `exists_compact_between`,
+`Usrc := interior Ksrc`, and
+`BHW.OS45Figure24SourceCutoffData.toSideZeroDiagonalCLM_tsupport_subset_image_eventually`
+to align the fixed selector support and the later moving tests in
+`Usrc ⊆ Ksrc`.  Every chart-edge collar then reduces the integration variable
+to the compact support by `subset_tsupport`.  A chain centered at one source
+point is allowed only after the test has been localized to a source window
+contained in that chain's carriers; it must not be applied directly to an
+unlocalized compact integral.
+
+Follow-up correction in the same focused transcript: the current selector has
+only two upstream local-transfer cases before the zero-height pairings are
+proved.  Ordinary-sector edges use metric-ball charts in
+`BHW.ExtendedTube d n ∩ H.ΩJ` with common model
+`BHW.extendF (bvt_F OS lgc n)`.  Raw-adjacent-sector edges use
+`OmegaSeed412 ∩ (BHW.ExtendedTube d n ∩ BHW.permutedExtendedTubeSector d n P.τ)`
+with common model `BSeed412`.  A flat real-Jost EOW edge is explicitly
+downstream and remains forbidden inside `hOrd_side_current` /
+`hAdj_side_current`.
+
 Proof-doc correction, later 2026-05-17: the pinned Deep Research audit
 `v1_ChZEZ1FKYW9pWEFjYTV4TjhQd2QtWU9BEhZEZ1FKYW9pWEFjYTV4TjhQd2QtWU9B`
 validated the overlap-centered adjacent seed strategy but rejected the naked

@@ -459,9 +459,9 @@ terminal_eq_raw412_seed :
 ```
 
 The ordinary chain carries the analogous `terminal_contains_ordinaryWick`,
-`terminal_contains_ordinaryCommonEdge`, and
-`terminal_boundaryCLM_eq_bvt_W` fields.  These names may be private structure
-fields or local `have`s; they must not be exported as theorem surfaces.
+`terminal_contains_ordinaryCommonEdge`, and `terminal_eq_ordinary_global`
+local facts.  Boundary-value selection is not a chain field: it is proved later
+by the fixed-test finite induction from `ordinary41_fixed_test_boundaryValue_extendF`.
 
 The neutral path support now available in the import closure is this checked
 pure topology statement in `OSReconstruction/SCV/ConnectedNeighborhood.lean`:
@@ -2457,17 +2457,39 @@ The terminal chart should also be retargetable to any observed overlap point
 terminal carrier, restrict the branch to that ball, and append that restricted
 chart as the first or last chart of the comparison gallery.
 
-## Finite Chain Assembly Along `gamma`
+## Finite Chain Assembly Along The Active Path
 
 The one-branch producer is a reachability proof along the chosen Figure-2-4
-path, not a precomputed chain packet.  For each branch kind, define the
-reachable times inside the proof body:
+path, not a precomputed chain packet.  Do not overload the ordinary path and
+the raw adjacent seed path.  In the direct source-current producer there are
+two active paths:
+
+```lean
+let gammaOrd : unitInterval -> Fin n -> Fin (d + 1) -> Complex :=
+  BHW.os45Figure24IdentityPath (d := d) (n := n) x
+
+let gammaAdjSeed : unitInterval -> Fin n -> Fin (d + 1) -> Complex :=
+  fun t => BHW.permAct (d := d) P.τ (gammaOrd t)
+
+let gammaOf : BranchKind -> unitInterval -> Fin n -> Fin (d + 1) -> Complex
+  | BranchKind.ordinary41 => gammaOrd
+  | BranchKind.adjacent412Source => gammaAdjSeed
+```
+
+This disambiguation is load-bearing.  The raw `(4.12)` seed window contains
+`gammaAdjSeed 0`, not `gammaOrd 0`; the checked obstruction
+`H.ordinaryWick_not_mem_OS412SeedWindow` forbids putting `gammaOrd 0` directly
+in that raw seed window.  The later `hadj412`/Wick-trace circuit is the
+separate return-to-`gammaOrd 0` construction.  It must not be used as an input
+to the source-current selector.
+
+For each branch kind, define the reachable times inside the proof body:
 
 ```lean
 let Reach (kind : BranchKind) : Set unitInterval := fun t =>
-  exists (C : ChainWitness kind (gamma t)),
+  exists (C : ChainWitness kind (gammaOf kind t)),
     C.starts_from_initial_germ /\
-    C.terminalPoint = gamma t
+    C.terminalPoint = gammaOf kind t
 ```
 
 `ChainWitness` may be a private local structure in the downstream Hdiff file,
@@ -2477,18 +2499,21 @@ below:
 
 1. At `t = 0`, build the initial pointed chart directly:
    ordinary uses `H.ordinaryWick_pointedChartInWindow` with
-   `OmegaOrd0/BOrd0`; adjacent first builds the proof-local `hadj412` circuit
-   from `OmegaSeed412/BSeed412`, then uses the resulting
-   `OmegaAdj0/BAdj0` pointed chart at `zord`.
+   `OmegaOrd0/BOrd0`; the source-current adjacent chain starts directly from
+   the raw `OmegaSeed412/BSeed412` pointed chart at
+   `gammaAdjSeed 0 = BHW.permAct P.τ (gammaOrd 0)`.
+   The proof-local `hadj412` circuit is downstream of the source-current
+   leaves and must not be required for this initial source-selector chart.
 2. For an arbitrary time `t`, use the OS-I local Figure-2-4 chart data at
-   `gamma t` to choose an open interval-neighborhood `It` in `unitInterval`
+   `gammaOf kind t` to choose an open interval-neighborhood `It` in `unitInterval`
    such that any two parameters in `It` lie in one of the three local transfer
-   cases below.  This is obtained by continuity of `gamma`, openness of the
-   selected sheet/window, and
+   cases below.  This is obtained by continuity of `gammaOf kind`, openness of
+   the selected sheet/window, and
    `SCV.exists_metric_ball_subset_inter_of_mem_open` after choosing the local
    chart window.
 3. If `s in Reach kind` and `s, u in It`, append one local transfer step from
-   the terminal chart at `gamma s` to a chart centered at `gamma u`.  The step
+   the terminal chart at `gammaOf kind s` to a chart centered at
+   `gammaOf kind u`.  The step
    returns a new `Chart`, a `KindProv kind` for it, and an open nonempty seed
    between the old and new branches.  Appending this data gives
    `u in Reach kind`.
@@ -2508,10 +2533,12 @@ have hReach0_ord : (0 : unitInterval) in Reach BranchKind.ordinary41 := by
   -- `OS45BHWJostHullData.ordinaryWick_pointedChartInWindow`;
   -- all initial-seed fields are `rfl` against `BOrd0`.
 
-have hReach0_adj : (0 : unitInterval) in Reach BranchKind.adjacent412 := by
-  -- first construct `hadj412` from `OmegaSeed412/BSeed412`;
-  -- then build the initial adjacent pointed chart from its
-  -- `pointedChartInWindow` field.  No deterministic endpoint branch is used.
+have hReach0_adj_src :
+    (0 : unitInterval) in Reach BranchKind.adjacent412Source := by
+  -- build the raw `(4.12)` pointed chart directly from
+  -- `OS45BHWJostHullData.OS412SeedWindow_pointedChart` at
+  -- `gammaAdjSeed 0 = BHW.permAct P.τ (gammaOrd 0)`;
+  -- no `hadj412`, no `OmegaAdj0/BAdj0`, and no deterministic endpoint branch.
 
 have hlocal_extend :
     forall kind t,
@@ -2521,8 +2548,8 @@ have hlocal_extend :
           s in It -> u in It ->
           s in Reach kind -> u in Reach kind := by
   intro kind t
-  -- Choose the OS-I local Figure-2-4 case at `gamma t`, shrink to a metric
-  -- chart window, and call the matching local transfer case below.
+  -- Choose the OS-I local Figure-2-4 case at `gammaOf kind t`, shrink to a
+  -- metric chart window, and call the matching local transfer case below.
   -- The transfer is symmetric inside the selected window because both
   -- directions are restrictions of the same local analytic element or of the
   -- same flat EOW seed.
@@ -2554,9 +2581,11 @@ have hReach_univ_of_initial
 ```
 
 The only branch-specific input to this skeleton is `hReach0`, instantiated as
-`hReach0_ord` or `hReach0_adj`.  The proof of `hlocal_extend` is precisely the
-three-case local transfer block below.  Thus the finite chain exists because
-the local OS-I analytic-element transfer covers the path, not because Lean is
+`hReach0_ord` or the raw source-current `hReach0_adj_src`.  The proof of
+`hlocal_extend` for these source-current selectors uses only the ordinary and
+retained raw-adjacent corridors; the flat plus/minus EOW transfer is not part
+of this selector skeleton.  Thus the finite chain exists because the local
+OS-I analytic-element transfer covers the chosen corridor, not because Lean is
 handed `chainOrd`, `chainAdj`, `Word`, or `Wadj` as assumptions.
 
 Lean support, 2026-05-17: the clopen reachability step above is now checked as
@@ -2564,8 +2593,8 @@ the neutral theorem
 `SCV.reachable_eq_univ_of_local_symmetric_extension` in
 `OSReconstruction/SCV/ConnectedNeighborhood.lean`.  In the direct Hdiff proof,
 instantiate it with `Reach := Reach kind`, `hReach_nonempty` from
-`hReach0_ord` or `hReach0_adj`, and `hlocal` supplied by the three transfer
-cases below:
+`hReach0_ord` or `hReach0_adj_src`, and `hlocal` supplied by the corresponding
+ordinary/raw source-current transfer cases below:
 
 ```lean
 have hlocal_extend_kind :
@@ -2585,59 +2614,79 @@ have hReach_univ :
 
 The `hlocal_extend` case split is the same split used later for pointed
 overlap seeds, but with source and target both restricted inside one local
-window around `gamma t`:
+window around `gammaOf kind t`:
 
-* Ordinary-sector window: `gamma '' It <= BHW.ExtendedTube d n inter H.OmegaJ`.
+* Ordinary-sector window:
+  `gammaOrd '' It <= BHW.ExtendedTube d n inter H.OmegaJ`.
   Both the old terminal chart and the new chart are compared to `BOrd0` on a
   metric subball, then the returned seed is the checked
   `pointed_seed_edge_of_common_model` specialized to `OrdGlobal`.
-* Adjacent-sector window: `gamma '' It <= OmegaAdj0` for the post-`hadj412`
-  adjacent chain, with `OmegaAdj0/BAdj0` carrying the retained raw
-  `OmegaSeed412/BSeed412` provenance.  For the internal `hadj412` circuit
-  itself, the first adjacent corridor uses `OmegaSeed412/BSeed412` until the
-  circuit glue has produced `OmegaAdj0/BAdj0`.  No window is allowed to use
-  `extendF o permAct P.τ` as incoming data.
-* Flat real-Jost window: the two local sides are the checked
+* Adjacent-sector source window:
+  `gammaAdjSeed '' It <= OmegaSeed412`, or a retained raw restriction of that
+  window.  The branch is always `BSeed412`; the endpoint
+  `extendF o permAct P.τ` expression is exposed only on terminal
+  positive-height support after the appropriate forward-tube membership has
+  been proved.  This source-current corridor does not first transport the raw
+  seed back to `gammaOrd 0`.
+* Flat real-Jost window: this is downstream of the source-current selector.
+  The two local sides are the checked
   `BHW.os45FlatCommonChartOmega d n 1` and
   `BHW.os45FlatCommonChartOmega d n (P.τ.symm * 1)` with common real edge
-  `BHW.os45CommonEdgeFlatCLE d n 1 '' Ulocal`.  After the side-height proof
-  has produced the local zero-height pairings `hzero_plus` and `hzero_minus`,
-  the transfer seed is exactly
-  `flat_realJost_EOW_pointed_seed_of_localZeroHeight_pairingsCLM`.  The
-  equality seed is symmetric as an `EqOn` statement, so it extends either
-  direction inside `It` without changing the OS-I orientation of the
-  boundary-value argument.
+  `BHW.os45CommonEdgeFlatCLE d n 1 '' Ulocal`.  It may be used only after the
+  side-height proof has produced `hzero_plus` and `hzero_minus`; then the
+  transfer seed is exactly
+  `flat_realJost_EOW_pointed_seed_of_localZeroHeight_pairingsCLM`.
 
 ## Local Transfer Cases
 
-The finite chain is built from a proof-local transfer theorem along the
-Figure-2-4 path.  For a step from `p = gamma s0` to `q = gamma s1`, first
-restrict the current chart to a metric ball inside the incoming sheet and the
-selected chart window.  Then produce the successor chart and a nonempty
-complex-open transition seed.
+The finite chain is built from a proof-local transfer theorem along the active
+Figure-2-4 path.  For a step from
+`p = gammaOf kind s0` to `q = gammaOf kind s1`, first restrict the current
+chart to a metric ball inside the incoming sheet and the selected chart
+window.  Then produce the successor chart and a nonempty complex-open
+transition seed.
 
-The transfer has exactly three cases.
+For the source-current selector, the transfer has exactly two cases: ordinary
+and retained raw-adjacent.  The flat rows below are downstream consumers after
+the source-current pairings are already proved.
+
+The local window `It` is always shrunk so that, for `s u ∈ It`, the successor
+chart centered at `gammaOf kind u` still contains the previous endpoint
+`gammaOf kind s`.  This is the `hpCnext` input in the skeletons below; without
+it the seed ball around the previous point would not be available.
 
 The checked carrier fields used by these cases are now fixed:
 
 | Case | Incoming/outgoing domain | Checked data already available | Still mathematical |
 | --- | --- | --- | --- |
-| Ordinary sector | `BHW.ExtendedTube d n` | `H.ordinaryWick_metricBallChartInWindow`, `H.ordinaryCommonEdge_metricBallChartInWindow`, `BHW.os45Figure24Path_endpoint_extendF_eq_ordinaryPulledRealBranch`, ordinary `extendF` holomorphy and invariance | only metric-ball shrinking and identity-theorem propagation |
-| Adjacent sector | `BHW.permutedExtendedTubeSector d n P.τ` | raw `(4.12)` seed window `H.OS412SeedWindow_metricBallChartInWindow`, seed obstruction `H.ordinaryWick_not_mem_OS412SeedWindow`, corridor geometry `BHW.os45Figure24_joined_adjacentWick_to_adjLift0_initialSectorOverlap`, `BHW.os45Figure24_joined_adjLift0_to_adjLift1_initialSectorOverlap`, `BHW.os45Figure24_joined_adjLift_to_permActIdentityPath_initialSectorOverlap`, `BHW.os45Figure24_joined_permActOrdinaryWick_to_permActCommonEdge_initialSectorOverlap`, and endpoint bookkeeping `H.adjacentCommonEdge_metricBallChartInWindow` | the branch-law equality that transports the genuine `(4.12)` analytic element; this is not `extendF o permAct` as an initial seed |
-| Flat real-Jost, upstream inside `hadj412` | plus side `BHW.os45FlatCommonChartOmega d n 1`, minus side `BHW.os45FlatCommonChartOmega d n (P.τ.symm * 1)`, edge `os45CommonEdgeFlatCLE d n 1 '' Ulocal` | edge-window support, checked ordinary-edge representation, endpoint chart bookkeeping, and `BHW.os45_BHWJost_initialSectorEqOn_open_of_flatCommonChart_localZeroHeight_pairingsCLM` after the two zero-height pairings are proved | `hzero_plus`/`hzero_minus`: the OS-I `(4.14)` local zero-height pairings for the current ordinary `(4.1)` and transported adjacent `(4.12)` elements |
+| Ordinary source-current sector | `BHW.ExtendedTube d n ∩ H.ΩJ` along `gammaOrd` | `H.ordinaryWick_metricBallChartInWindow`, `H.ordinaryCommonEdge_metricBallChartInWindow`, `BHW.os45Figure24Path_endpoint_extendF_eq_ordinaryPulledRealBranch`, ordinary `extendF` holomorphy and invariance | metric-ball shrinking, common-model seed, and identity-theorem propagation |
+| Raw-adjacent source-current sector | `OmegaSeed412 = {z | BHW.permAct P.τ z ∈ BHW.ForwardTube d n} ∩ H.ΩJ` along `gammaAdjSeed` | raw `(4.12)` seed window `H.OS412SeedWindow_metricBallChartInWindow`, seed obstruction `H.ordinaryWick_not_mem_OS412SeedWindow`, raw seed holomorphy `H.differentiableOn_OS412SeedBranch`, and the checked `gammaAdjSeed` membership data | common-model propagation against `BSeed412`; `extendF o permAct` is only terminal support-local bookkeeping, not the initial seed |
+| Flat real-Jost, downstream after source-current pairings | plus side `BHW.os45FlatCommonChartOmega d n 1`, minus side `BHW.os45FlatCommonChartOmega d n (P.τ.symm * 1)`, edge `os45CommonEdgeFlatCLE d n 1 '' Ulocal` | edge-window support, checked ordinary-edge representation, endpoint chart bookkeeping, and `BHW.os45_BHWJost_initialSectorEqOn_open_of_flatCommonChart_localZeroHeight_pairingsCLM` after the two zero-height pairings are proved | `hzero_plus`/`hzero_minus`: the OS-I `(4.14)` local zero-height pairings for the current ordinary `(4.1)` and transported adjacent `(4.12)` elements |
 | Flat real-Jost, downstream after `h45_source_eqOn` | same flat chart domains | `BHW.os45FlatCommonChart_zeroHeight_pairings_eq_of_sourceCommonEdge_eqOn` and `BHW.os45_BHWJost_initialSectorEqOn_open_of_flatCommonChart_sourceCommonEdge_eqOn` | the proof-local source common-edge equality `h45_source_eqOn`, produced only after `Badj412` has Wick and common-edge traces |
 
-Thus the flat case has two layers.  The upstream layer is the only place where
-the genuine adjacent `(4.12)` analytic element crosses the horizontal
-common-edge side while `hadj412` is still being built.  The downstream checked
+Thus the flat case has two layers.  The first layer starts only after the
+ordinary/raw source-current corridors have proved the two compact-test
+zero-height pairings; it is not used inside those corridors.  The downstream checked
 bridge consumes `h45_source_eqOn` and returns an ambient EOW seed after the
 Wick-seed identity theorem has already produced that equality.  The upstream
 transfer cannot call the downstream bridge with `h45_source_eqOn` as a
 hypothesis and then claim the transfer is done.
 
-Each case must instantiate the same proof-local return shape:
+Each source-current case must instantiate the same proof-local return shape:
 
 ```lean
+inductive KindProv : BranchKind -> Chart -> Prop
+  | ordinary41
+      (A : Chart)
+      (hsub : A.carrier <= BHW.ExtendedTube d n ∩ H.ΩJ)
+      (hmodel : Set.EqOn A.branch BOrd0 A.carrier) :
+      KindProv BranchKind.ordinary41 A
+  | adjacent412Source
+      (A : Chart)
+      (hsub : A.carrier <= OmegaSeed412)
+      (hmodel : Set.EqOn A.branch BSeed412 A.carrier) :
+      KindProv BranchKind.adjacent412Source A
+
 have local_transfer_step :
     forall
       (kind : BranchKind)
@@ -2654,13 +2703,13 @@ have local_transfer_step :
           Wstep.Nonempty /\
           Wstep <= Aprev.carrier inter Anext.carrier /\
           Set.EqOn Aprev.branch Anext.branch Wstep := by
-  -- implemented inline by the three cases below
+  -- implemented inline by the two source-current cases below
 ```
 
-The `KindProv` input and output are the proof-local provenance.  They remember whether the
-branch came from the ordinary `(4.1)` seed or from the transported adjacent
-`(4.12)` seed, and they carry the open seed back to that initial element.  No
-separate provenance alias remains in the implementation surface.
+The `KindProv` input and output are proof-local provenance.  They remember
+whether the branch is a restriction of `BOrd0` or of the retained raw
+`BSeed412`.  They do not contain `Word`, `Wadj`, `Hdiff`, a zero-height
+pairing, or a downstream transported `OmegaAdj0/BAdj0` chart.
 
 ### Ordinary-Sector Transfer
 
@@ -2699,7 +2748,7 @@ have hnext_global :
 
 obtain ⟨rho, hrho, hrho_sub⟩ :=
   SCV.exists_metric_ball_subset_inter_of_mem_open
-    Cprev_open hpCprev Cnext_open hqCnext
+    Cprev_open hpCprev Cnext_open hpCnext
 
 let Wstep := Metric.ball p rho
 have hstep_eq : Set.EqOn Bprev Bnext Wstep := by
@@ -2713,18 +2762,26 @@ have hstep_eq : Set.EqOn Bprev Bnext Wstep := by
 Incoming and outgoing sheet:
 
 ```text
-AdjSheet = BHW.permutedExtendedTubeSector d n P.τ
+AdjSourceSheet =
+  OmegaSeed412 =
+    {z | BHW.permAct (d := d) P.τ z ∈ BHW.ForwardTube d n} ∩ H.ΩJ
 ```
 
-The initial chart is the genuine `OmegaAdj0` / `BAdj0` chart above.  A transfer
-step in this sector propagates that corrected section 4.12 element.  It must
-not replace the initial chart by the deterministic downstream branch using
-`extendF` after the permutation action.
+For the source-current selector, the initial chart is the raw
+`OmegaSeed412/BSeed412` chart at `gammaAdjSeed 0`; a transfer step propagates
+that retained section 4.12 element along `gammaAdjSeed`.  It must not replace
+the raw seed by the deterministic downstream branch using `extendF` after the
+permutation action.
 
-The critical non-shortcut is now explicit.  The checked theorem
-`BHW.os45CommonEdge_complexWickSeed_eqOn_of_E3` is the right identity-theorem
-engine, but in the upstream proof its adjacent input must be the transported
-genuine `(4.12)` analytic element:
+For the later Wick-trace/`hadj412` circuit, a different object
+`OmegaAdj0/BAdj0` is built by transporting the same raw seed through the
+seed-to-Wick return circuit and proving `gammaOrd 0 ∈ OmegaAdj0`.  That later
+object is not an input to `hAdj_side_current`.
+
+The critical non-shortcut for the later `hadj412` Wick-trace circuit is now
+explicit.  The checked theorem `BHW.os45CommonEdge_complexWickSeed_eqOn_of_E3`
+is the right identity-theorem engine there, but its adjacent input must be the
+transported genuine `(4.12)` analytic element:
 
 ```lean
 -- proof-local, inside BHW.os45CommonEdge_localFigure24DifferenceGerm_of_OSI45
@@ -2784,59 +2841,42 @@ but its proof uses the retained section 4.12 chain provenance.
 Lean skeleton:
 
 ```lean
-have hprev_seed :
-    exists Wseed, IsOpen Wseed /\ Wseed.Nonempty /\
-      Wseed <= Cprev inter OmegaAdj0 /\
-      Set.EqOn Bprev BAdj0 Wseed := by
-  -- from adjacent412 provenance
+have hprev_raw :
+    Set.EqOn Bprev BSeed412 Cprev := by
+  -- from `KindProv.adjacent412Source`; `Cprev <= OmegaSeed412`.
 
--- Build Cnext by the local BHW/OS-I chart around q inside AdjSheet.
--- Its branch Bnext is the same analytic element continued from BAdj0,
--- not the deterministic `extendF o permAct` branch.
+-- Build Cnext by the local BHW/OS-I chart around
+-- `q = gammaAdjSeed u` inside `OmegaSeed412`.
+let Cnext := Metric.ball q rq
+let Bnext := BSeed412
 
-have hnext_seed :
-    exists Wseed, IsOpen Wseed /\ Wseed.Nonempty /\
-      Wseed <= Cnext inter OmegaAdj0 /\
-      Set.EqOn Bnext BAdj0 Wseed := by
-  -- local adjacent-sector transfer step from retained provenance:
-  -- choose a metric ball around q inside AdjSheet and the current chart
-  -- window, restrict the transported `BAdj0` analytic element to it, and
-  -- use the overlap seed with `BAdj0` supplied by the same raw `(4.12)`
-  -- one-branch gallery.  This is a restriction of the existing analytic
-  -- element, not a definition by `extendF o permAct`.
+have hnext_raw :
+    Set.EqOn Bnext BSeed412 Cnext := by
+  intro z hz
+  rfl
 
 have hstep_eq :
     exists Wstep, IsOpen Wstep /\ Wstep.Nonempty /\
       Wstep <= Cprev inter Cnext /\
       Set.EqOn Bprev Bnext Wstep := by
-  -- Choose an overlap point for the two metric-ball carriers.  For a
-  -- consecutive transfer this is normally the shared endpoint; for a
-  -- retargeted overlap it is the witness supplied by `(Cprev ∩ Cnext).Nonempty`.
-  rcases hprev_next_nonempty with ⟨z0, hzprev, hznext⟩
-
-  -- Consume the overlap-centered checked private consumer.  Its `hgrid`
-  -- argument expands to the finite `PointedCommonCenterGalleryPair` block
-  -- above, and both returned seeds contain this same `z0`.
-  let Prev : Chart := chainPrev.terminalChart
-  let Next : Chart := chainNext.terminalChart
-  have hPrev_raw : Adj412RawProvenance Prev :=
-    chainPrev.terminal_adj412_raw
-  have hNext_raw : Adj412RawProvenance Next :=
-    chainNext.terminal_adj412_raw
-  obtain ⟨Wstep, hWstep_open, hzWstep, hWstep_sub, hWstep_eq⟩ :=
-    adjacent_sector_seed_transport Prev Next
-      (by simpa [Prev] using hzprev)
-      (by simpa [Next] using hznext)
-      hPrev_raw hNext_raw
-  exact ⟨Wstep, hWstep_open, ⟨z0, hzWstep⟩, hWstep_sub, hWstep_eq⟩
+  obtain ⟨rho, hrho, hrho_sub⟩ :=
+    SCV.exists_metric_ball_subset_inter_of_mem_open
+      Cprev_open hpCprev Cnext_open hpCnext
+  let Wstep := Metric.ball p rho
+  refine ⟨Wstep, Metric.isOpen_ball, ⟨p, Metric.mem_ball_self hrho⟩, ?_, ?_⟩
+  · exact hrho_sub
+  · intro z hz
+    exact (hprev_raw (hrho_sub hz).1).trans
+      (hnext_raw (hrho_sub hz).2).symm
 ```
 
-The local `hgrid` argument is expanded in the `branch_seed adjacent412` case
-below.  It is not a production theorem or wrapper.  It constructs the finite
-pointed common-center gallery pair from retained raw `(4.12)` provenance at the
-actual overlap point.  A nonempty seed somewhere in the chart is not enough;
-the seed consumed by `pointed_metric_seed_of_restricted_gallery_pair` must
-contain `z0`.
+The overlap-centered `hgrid` argument appears later in the downstream
+`branch_seed adjacent412`/`hadj412` case, not in this source-current raw
+corridor.  It is not a production theorem or wrapper.  When it is eventually
+used, it constructs the finite pointed common-center gallery pair from retained
+raw `(4.12)` provenance at the actual overlap point.  A nonempty seed somewhere
+in the chart is not enough; the seed consumed by
+`pointed_metric_seed_of_restricted_gallery_pair` must contain `z0`.
 
 Once `Badj412`, `hadj412_wick_trace`, and `hadj412_common_trace` are in scope,
 the local source common-edge equality is produced by the checked Wick seed
@@ -4582,7 +4622,7 @@ have hPlus_asymptotic_eta0 :
             --    `BHW.os45FlatCommonChart_sourceSide_mem_extendedTube_eventually`
             --    rewritten by
             --    `BHW.os45FlatCommonChartSourceSide_mem_extendedTube_iff`.
-            -- 2. Apply the proof-local current-test boundary CLM carried by
+            -- 2. Apply the proof-local finite selector induction for
             --    `chainOrd` to the flat test family
             --    `SCV.translateSchwartz (-(eps • eta0)) psi0Flat`, whose
             --    Schwartz limit is `psi0Flat`.
@@ -4615,8 +4655,8 @@ have hPlus_asymptotic_eta0 :
               -- Proof-local finite-chain boundary transport.
               -- Base: the ordinary `(4.1)` seed has the OS-I fixed/moving
               -- boundary value for every compact flat test after pulling the
-              -- real edge through `pullFlatToSource`; the boundary CLM is
-              -- `WordFlat`.
+              -- real edge through `pullFlatToSource`; the selected fixed
+              -- value is `WordFlat`.
               -- Step: for each adjacent pair of metric-ball charts in
               -- `chainOrd`, the checked local seed edge gives equality of the
               -- two holomorphic branches at one lifted side point in the
@@ -4629,13 +4669,11 @@ have hPlus_asymptotic_eta0 :
               -- `BHW.os45FlatCommonChartOmega d n 1`; the finite induction
               -- gives the displayed terminal flat boundary value.  This is an
               -- in-body induction over `chainOrd`, not a public wrapper.
-              exact
-                chainOrd.terminal_flatBoundaryValue_translatedTest_of_chain
-                  (σ := (1 : Equiv.Perm (Fin n)))
-                  (ρperm := (1 : Equiv.Perm (Fin n)))
-                  (sgn := (1 : Real))
-                  eta0 psi0Flat hpsi0Flat_compact hpsi0Flat_edge
-                  htranslateOrd
+              -- Inline the `hOrd_base_selected` / `hOrd_chain_step` /
+              -- `hOrd_chain_selected` block from "Flat Boundary Selector
+              -- Induction" below.  Do not call or add a
+              -- `terminal_flatBoundaryValue_translatedTest_of_chain` field.
+              exact hOrd_flatBoundary_from_inline_chain
             exact hflatOrd_chain_transport
           simpa [hWordFlat_def] using hflatOrd_boundary
         have hintegOrd_for_cancel :
@@ -4727,13 +4765,14 @@ have hPlus_asymptotic_eta0 :
       -- restricted from `𝓝 0` to `l = 𝓝[Set.Ioi 0] 0`.  The compact-support
       -- perturbation theorem then adds a zero error to
       -- `hOrd_fixed_psi0`.
-      -- Lean update: the implementation should now call
-      -- `BHW.tendsto_integral_comp_os45FlatCommonChartSourceSide_mul_moving_of_commonCompactSupport`
-      -- with `φseq := fun eps => ((psiPlus eps eta0).1 : SchwartzNPoint d n)`
-      -- and `φ0 := ((psi0).1 : SchwartzNPoint d n)`, then rewrite its target
-      -- by `hOrd_fixed_psi0`.  The older expanded
-      -- `hOrd_source_test_diff_zero`/`hsplit` block below is the checked
-      -- theorem body, retained only as an audit expansion.
+      -- Lean update: the current Hdiff holes should not call the moving-test
+      -- support theorem as though it selected the Schwinger value.  First prove
+      -- the fixed-test selected limit by the flat one-branch selector, prove the
+      -- fixed-test endpoint DCT, and identify that endpoint with the selected
+      -- value by `tendsto_nhds_unique`; then rewrite the already-present moving
+      -- endpoint DCT.  If this chain-terminal audit expansion is used instead,
+      -- the `hOrd_source_test_diff_zero`/`hsplit` block below is the checked
+      -- theorem body for moving the test after `hOrd_fixed_psi0`.
       have hpsi0_zero_off_Ksource :
           ∀ u ∉ Ksource,
             ((((psi0).1 : SchwartzNPoint d n) :
@@ -5794,7 +5833,7 @@ have hMinus_asymptotic_eta0 :
             --    Pairwise overlap equality is propagated by the checked
             --    metric-ball gallery identity theorem, with endpoint-centered
             --    restrictions at the common edge.
-            -- 3. Apply the proof-local current-test boundary CLM carried by
+            -- 3. Apply the proof-local finite selector induction for
             --    `chainAdj` to
             --    `SCV.translateSchwartz (-((-eps) • eta0)) psi0Flat`, whose
             --    Schwartz limit is `psi0Flat`.
@@ -5825,7 +5864,7 @@ have hMinus_asymptotic_eta0 :
               -- Base: the raw seed is
               -- `{z | BHW.permAct P.τ z ∈ BHW.ForwardTube d n} ∩ H.ΩJ`
               -- with branch `z ↦ bvt_F OS lgc n (BHW.permAct P.τ z)`;
-              -- the selected boundary CLM is transported, not replaced by
+              -- the selected fixed value is transported, not replaced by
               -- deterministic `extendF o permAct`.
               -- Step: each edge of `chainAdj` supplies a pointed overlap
               -- seed.  On the compact-support collar of the single lifted
@@ -5838,13 +5877,12 @@ have hMinus_asymptotic_eta0 :
               -- `BHW.os45FlatCommonChartOmega d n σAdj`, and the transported
               -- CLM is `WadjFlat`.  This is in-body chain induction, not a
               -- deterministic adjacent-seed shortcut.
-              exact
-                chainAdj.terminal_flatBoundaryValue_translatedTest_of_chain
-                  (σ := σAdj)
-                  (ρperm := (1 : Equiv.Perm (Fin n)))
-                  (sgn := (-1 : Real))
-                  eta0 psi0Flat hpsi0Flat_compact hpsi0Flat_edge
-                  htranslateAdj
+              -- Inline the raw-adjacent `hAdj_base_selected` /
+              -- `hAdj_chain_step` / `hAdj_chain_selected` block from "Flat
+              -- Boundary Selector Induction" below.  The base is the retained
+              -- raw `(4.12)` seed; there is no deterministic adjacent seed and
+              -- no `terminal_flatBoundaryValue_translatedTest_of_chain` field.
+              exact hAdj_flatBoundary_from_inline_chain
             exact hflatAdj_chain_transport
           simpa [hWadjFlat_def] using hflatAdj_boundary
         have hintegAdj_for_cancel :
@@ -5922,13 +5960,15 @@ have hMinus_asymptotic_eta0 :
       -- the same checked side-family lemmas, using the `sgn = -1` half of the
       -- support packet and the seminorm theorem restricted to
       -- `l = 𝓝[Set.Ioi 0] 0`.
-      -- Lean update: the implementation should now call
-      -- `BHW.tendsto_integral_comp_os45FlatCommonChartSourceSide_mul_moving_of_commonCompactSupport`
-      -- with `φseq := fun eps => ((psiMinus eps eta0).1 : SchwartzNPoint d n)`
-      -- and `φ0 := ((psi0).1 : SchwartzNPoint d n)`, then rewrite its target
-      -- by `hAdj_fixed_psi0`.  The older expanded
-      -- `hAdj_source_test_diff_zero`/`hsplit` block below is the checked
-      -- theorem body, retained only as an audit expansion.
+      -- Lean update: as on the ordinary side, the moving-test support theorem
+      -- is endpoint continuity, not raw-adjacent branch selection.  First prove
+      -- the fixed-test selected limit from the retained raw `(4.12)` flat
+      -- one-branch selector, prove the fixed-test endpoint DCT, and identify the
+      -- endpoint with the selected value by `tendsto_nhds_unique`; then rewrite
+      -- the already-present moving endpoint DCT.  If this chain-terminal audit
+      -- expansion is used instead, the `hAdj_source_test_diff_zero`/`hsplit`
+      -- block below is the checked theorem body for moving the test after
+      -- `hAdj_fixed_psi0`.
       have hpsi0_zero_off_Ksource :
           ∀ u ∉ Ksource,
             ((((psi0).1 : SchwartzNPoint d n) :
@@ -6647,7 +6687,9 @@ Checked and usable:
   `D.toSideZeroDiagonalCLM_tendsto_zero` give the exact source-test formula,
   eventual source-window support, and ambient Schwartz convergence.
 * `D.sideZeroDiagonal_sourcePairings_tendstoUniformlyOn_schwinger` gives the
-  source-side Schwinger limit for the signed cutoff families.
+  checked source-side Schwinger normalization/support package for the signed
+  cutoff families.  It is consumed at the endpoint/moving-test stage; it is
+  not the finite chart-transport selector.
 * `SCV.tube_boundaryValueData_moving_of_fixed` and
   `bvt_boundary_values_moving` upgrade fixed-test boundary values to moving
   tests after a boundary CLM has already been selected.
@@ -6736,21 +6778,36 @@ the endpoint equality has been proved.  This distinction is load-bearing:
 using the deterministic endpoint branch as the adjacent incoming seed assumes
 the OS-I transfer that this block is meant to prove.
 
-The chain construction has three local edge cases and no fourth route:
+There are two different chain regimes, and the implementation must not blur
+them.
 
-* Ordinary-sector step.  Both charts are restrictions of the ordinary
-  `BHW.ExtendedTube d n ∩ H.ΩJ` analytic element.  Produce the edge by comparing
-  both chart branches to `BOrd0` on a common metric subball, then use the
-  checked pointed common-model edge consumer.
-* Raw-adjacent-sector step.  Both charts are restrictions of
-  `OmegaSeed412/BSeed412`.  Produce the edge from the retained raw `(4.12)`
-  chart equality and retarget it with `pointed_seed_edge_retarget_both` after
-  the endpoint-centered restrictions are chosen.
-* Flat real-Jost crossing.  First prove the local zero-height pairings
-  `hzero_plus` and `hzero_minus`; then call
-  `flat_realJost_EOW_pointed_seed_of_localZeroHeight_pairingsCLM`.  This is the
-  only place where ordinary and adjacent branch models are compared before the
-  final all-overlap identity propagation.
+For the upstream fixed-test source-current selector, construct two independent
+one-branch corridors:
+
+* Ordinary source selector.  Every chart in `chainOrd` is a restriction of the
+  ordinary analytic element `BOrd0 = BHW.extendF (bvt_F OS lgc n)`.  Each edge is
+  produced by comparing both chart branches to `BOrd0` on a common metric
+  subball, then using the checked pointed common-model edge consumer.  The
+  terminal chart is the flat plus chart, still with model `BOrd0`.
+* Raw-adjacent source selector.  Every chart in `chainAdj` is retained raw
+  `(4.12)` provenance.  Interior raw charts compare to
+  `OmegaSeed412/BSeed412` along
+  `gammaAdjSeed t = BHW.permAct P.τ (gammaOrd t)`; the terminal flat-minus
+  chart may be rewritten to the
+  deterministic endpoint model `extendF o permAct P.τ` only after the raw
+  terminal edge has been constructed from the same retained seed and the
+  positive-height support has been shown to lie where
+  `permAct P.τ z ∈ BHW.ForwardTube d n`.  That terminal rewrite uses
+  `BHW.extendF_eq_on_forwardTube` as local bookkeeping; it is not the incoming
+  seed.
+
+For downstream all-overlap identity propagation, after the source selector has
+already produced `hzero_plus` and `hzero_minus`, the flat plus/minus EOW edge is
+available by
+`flat_realJost_EOW_pointed_seed_of_localZeroHeight_pairingsCLM`.  That edge is
+not in scope while proving the source-current selector itself.  In particular,
+the selector chain must not be built through the `LocalOverlapAtZ0.flat_*`
+constructors or any data structure carrying the current `hzero_minus`.
 
 The output needed by the side-height block is proof-local and current-test
 specialized.  It is not a list of assumptions; each item is constructed by the
@@ -6775,90 +6832,154 @@ topological/analytic fact used immediately by this block.
 
 #### Flat Boundary Selector Induction
 
-The two calls named
+The older local script names
 `chainOrd.terminal_flatBoundaryValue_translatedTest_of_chain` and
-`chainAdj.terminal_flatBoundaryValue_translatedTest_of_chain` in the local
-script are not exported theorem surfaces.  In Lean they should be expanded as
-finite inductions over the already constructed one-branch chain.
+`chainAdj.terminal_flatBoundaryValue_translatedTest_of_chain` are retired.
+In Lean these points must be expanded as finite inductions over the already
+constructed one-branch chain.
 
 For the ordinary chain, the local induction has this shape.  The term
 `sideLift` is the common lifted side point defined in the single-edge block
-below.
+below.  The induction transports one concrete limit value all the way to the
+terminal chart; it does not store or assume a family of `boundaryCLM` fields.
+
+Important implementation correction: the displayed `sideLift` specialization
+below is the terminal flat/source-side approach.  It is not automatically the
+initial OS-I `(4.1)` or raw `(4.12)` approach.  In Lean the finite induction
+must therefore carry a proof-local approach family for each chart,
 
 ```lean
-let ψepsOrd : Real -> SchwartzMap (BHW.OS45FlatCommonChartReal d n) Complex :=
-  fun eps => SCV.translateSchwartz (-(eps • eta0)) psi0Flat
+chartApproach :
+  (j : Fin (chain.len + 1)) ->
+    Real -> BHW.OS45FlatCommonChartReal d n ->
+      (Fin n -> Fin (d + 1) -> Complex)
 
-have hψepsOrd_tendsto :
-    Tendsto ψepsOrd l (nhds psi0Flat) := htranslateOrd
+testFamily :
+  (j : Fin (chain.len + 1)) ->
+    Real -> SchwartzMap (BHW.OS45FlatCommonChartReal d n) Complex
+```
 
-have hOrd_chain_step :
-    ∀ j < chainOrd.len,
+with these exact endpoint contracts:
+
+* `chartApproach 0` is the genuine incoming OS-I ray after the checked CLE/test
+  pullback needed to put the base integral in flat variables; its limit is
+  supplied by `ordinary41_fixed_test_boundaryValue_extendF` or
+  `raw412_fixed_test_boundaryValue`.
+* `chartApproach (Fin.last chain.len)` is the terminal `sideLift` above and
+  `testFamily (Fin.last chain.len) eps` is the translated flat test used by
+  `BHW.tendsto_integral_comp_os45FlatCommonChartSourceSide_fixed_of_flatTranslatedTest`.
+* every successor step proves eventual integral equality between the two
+  adjacent chart-local approach families on the compact support, after
+  promoting the stored seed to carrier-intersection equality by
+  `PointedMetricBranchChart.eqOn_inter_of_seed`.
+
+Thus the base is a genuine OS-I boundary-value theorem, not a sourceSide limit
+assumed at chart `0`.  If the implementation instead evaluates every chart at
+the terminal `sideLift`, then `hOrd_base_selected`/`hAdj_base_selected` becomes
+circular and must be rejected.
+
+Lean-facing current-test specialization:
+
+```lean
+let Lcur : Complex :=
+  OS.S n (D.toZeroDiagonalCLM (1 : Equiv.Perm (Fin n)) phi)
+
+-- For each branch kind, use the path chosen in the finite-chain assembly:
+--   ordinary: gammaOrd
+--   raw adjacent source-current: gammaAdjSeed
+-- The chain stores charts and pointed seed edges; the approach data below is
+-- local notation inside the proof, not a public structure.
+
+let chartApproach
+    (kind : BranchKind) (j : Fin (chain kind).len.succ)
+    (eps : Real) (x : BHW.OS45FlatCommonChartReal d n) :
+    Fin n -> Fin (d + 1) -> Complex := by
+  -- chart-local positive-side family based at `gammaOf kind t_j`.
+  -- At `j = 0`, ordinary is the Wick-anchor/current Schwinger family;
+  -- adjacent is the raw `(4.12)` seed family based at `gammaAdjSeed 0`.
+  -- At `j = last`, this is the terminal flat side family that rewrites to
+  -- `BHW.os45FlatCommonChartBranch ...`.
+
+let chartTest
+    (kind : BranchKind) (j : Fin (chain kind).len.succ)
+    (eps : Real) :
+    SchwartzMap (BHW.OS45FlatCommonChartReal d n) Complex := by
+  -- same compact test transported through the local chart/CLE bookkeeping.
+  -- Terminal ordinary is `SCV.translateSchwartz (-(eps • eta0)) psi0Flat`;
+  -- terminal adjacent is
+  -- `SCV.translateSchwartz (-((-eps) • eta0)) psi0Flat`.
+
+let I (kind : BranchKind) (j : Fin (chain kind).len.succ) (eps : Real) :=
+  ∫ x : BHW.OS45FlatCommonChartReal d n,
+    ((chain kind).chart j).branch (chartApproach kind j eps x) *
+      chartTest kind j eps x
+
+have hbase_current :
+    Tendsto (fun eps => I kind 0 eps) l (nhds (J * Lcur)) := by
+  cases kind
+  · -- ordinary base: rewrite chart `0` to the Wick-anchor current pairing.
+    -- Use the support-local `extendF = bvt_F` on the ordinary Wick/forward
+    -- tube, then `bvt_euclidean_restriction` for
+    -- `D.toZeroDiagonalCLM 1 phi`.
+  · -- raw adjacent base: chart `0` is at
+    -- `gammaAdjSeed 0 = BHW.permAct P.τ (gammaOrd 0)` with branch
+    -- `BSeed412`.  Rewrite the current compact pairing to
+    -- `bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k)))`, then use
+    -- `BHW.os45CommonEdge_adjacentWick_sourcePairing_eq_schwinger`.
+    -- Do not evaluate `BSeed412` at `gammaOrd 0`.
+
+have hstep_current :
+    ∀ j : Fin (chain kind).len,
       ∀ᶠ eps in l,
-        ∫ x : BHW.OS45FlatCommonChartReal d n,
-          chainOrd.branch j (sideLift (1 : Real) eps eta0 x) *
-            ψepsOrd eps x =
-        ∫ x : BHW.OS45FlatCommonChartReal d n,
-          chainOrd.branch (j + 1)
-            (sideLift (1 : Real) eps eta0 x) *
-            ψepsOrd eps x := by
-  -- For each edge, use its pointed overlap seed at the single side point,
-  -- compact support of `ψepsOrd eps`, and the uniform side-collar membership
-  -- obtained from the local chart window.  Off the support the test is zero.
+        I kind (Fin.castSucc j) eps = I kind (Fin.succ j) eps := by
+  intro j
+  -- First promote the stored pointed seed to equality on the full carrier
+  -- intersection by `PointedMetricBranchChart.eqOn_inter_of_seed`.
+  -- Then prove the chart-local approach family for this edge eventually lies
+  -- in that intersection on the compact transported support.  Any coordinate
+  -- change between `chartApproach kind (Fin.castSucc j)` and
+  -- `chartApproach kind (Fin.succ j)` must be discharged here by the checked
+  -- CLE/test pullback for this local chart.  There is no terminal `sideLift`
+  -- shortcut at intermediate charts.
 
-have hOrd_chain_boundary :
-    ∀ j ≤ chainOrd.len,
+have hchain_current :
+    ∀ (j : Nat) (hj : j ≤ (chain kind).len),
       Tendsto
-        (fun eps =>
-          ∫ x : BHW.OS45FlatCommonChartReal d n,
-            chainOrd.branch j (sideLift (1 : Real) eps eta0 x) *
-              ψepsOrd eps x)
-        l
-        (nhds (chainOrd.boundaryCLM j psi0Flat)) := by
-  -- Base `j = 0`: the ordinary `(4.1)` OS-I boundary-value datum.
-  -- Successor: rewrite by `hOrd_chain_step j`, then use uniqueness of limits.
-  -- Limit-step is only the finite `Nat` induction endpoint.
+        (fun eps => I kind ⟨j, Nat.lt_succ_of_le hj⟩ eps)
+        l (nhds (J * Lcur)) := by
+  -- finite `Nat` induction from `hbase_current`; successor uses
+  -- `(hstep_current ⟨j, hj⟩).symm` and `Tendsto.congr'`.
 
-have hflatOrd_boundary :
-    Tendsto (fun eps => FlatOrd eps) l (nhds (WordFlat psi0Flat)) := by
-  -- `FlatOrd` is the terminal chart integral at `j = chainOrd.len`; the
-  -- terminal boundary CLM is definitionally `WordFlat`.
-  simpa [FlatOrd, WordFlat] using hOrd_chain_boundary chainOrd.len le_rfl
+have hflatOrd_boundary_current :
+    Tendsto (fun eps => FlatOrd eps) l (nhds (J * Lcur)) := by
+  -- instantiate `hchain_current` with `kind = ordinary41` at the last chart;
+  -- terminal rewrite only here uses the ordinary flat plus branch
+  -- `BHW.os45FlatCommonChartBranch d n OS lgc 1`.
+
+have hflatAdj_boundary_current :
+    Tendsto (fun eps => FlatAdj eps) l (nhds (J * Lcur)) := by
+  -- instantiate `hchain_current` with `kind = adjacent412Source` at the last
+  -- chart; terminal rewrite only here uses the raw adjacent terminal flat
+  -- branch with `σAdj = P.τ.symm * 1`.  Any `extendF o permAct` expression is
+      -- support-local terminal normal form, not seed data.
 ```
 
-The raw-adjacent induction is identical except for the base and terminal
-labels:
-
-```lean
-let ψepsAdj : Real -> SchwartzMap (BHW.OS45FlatCommonChartReal d n) Complex :=
-  fun eps => SCV.translateSchwartz (-((-eps) • eta0)) psi0Flat
-
-have hAdj_chain_boundary :
-    ∀ j ≤ chainAdj.len,
-      Tendsto
-        (fun eps =>
-          ∫ x : BHW.OS45FlatCommonChartReal d n,
-            chainAdj.branch j (sideLift (-1 : Real) eps eta0 x) *
-              ψepsAdj eps x)
-        l
-        (nhds (chainAdj.boundaryCLM j psi0Flat)) := by
-  -- Base `j = 0`: the retained raw `(4.12)` OS-I datum on
-  -- `OmegaSeed412/BSeed412`; no deterministic adjacent branch is used.
-  -- Successor: propagate across pointed overlap seeds exactly as above.
-  -- Terminal chart: `BHW.os45FlatCommonChartOmega d n (P.τ.symm * 1)`.
-
-have hflatAdj_boundary :
-    Tendsto (fun eps => FlatAdj eps) l (nhds (WadjFlat psi0Flat)) := by
-  simpa [FlatAdj, WadjFlat] using hAdj_chain_boundary chainAdj.len le_rfl
-```
+The focused current implementation transcript has been split to
+`docs/theorem2_source_current_selector_transcript.md`.  Use it for the exact
+two-hole recipe in the current Hdiff body.  The section here remains the
+mathematical explanation of why the selector must be a one-branch,
+chart-local induction rather than a terminal `sideLift` shortcut.
 
 ##### Single Edge Integral Equality
 
 The successor step in both finite inductions must be implemented at the level
-of one pointed overlap edge.  A `PointedSeedEdge.eqOn` compares two branches at
-one ambient configuration, so the side argument cannot be duplicated as two
-unrelated `flatPoint` terms.  The proof first normalizes the side argument to a
-single lifted Figure-2-4 point and then applies the edge equality there.
+of one adjacent pair of metric-ball charts.  A raw `PointedSeedEdge.eqOn`
+compares the branches only on its seed neighborhood; that neighborhood is not
+large enough for the moving side collar.  The proof must first promote the seed
+with `PointedMetricBranchChart.eqOn_inter_of_seed`, obtaining equality on the
+full intersection of the two metric-ball carriers.  Only then does compactness
+of the translated support show that the single lifted side argument lies in
+both carriers.
 
 For a signed branch label `sgn` and a chain edge
 `edge : PointedSeedEdge zBase Nprev Nnext Fprev Fnext`, define the common
@@ -6884,6 +7005,8 @@ shape on both sides:
 ```lean
 have hedge_integral_eq
     (j : Nat) (hj : j < chain.len)
+    (A := chain.chart ⟨j, Nat.lt_succ_of_lt hj⟩)
+    (B := chain.chart ⟨j + 1, Nat.succ_lt_succ hj⟩)
     (edge := chain.edge j hj)
     (hψeps_def :
       ∀ eps,
@@ -6896,18 +7019,30 @@ have hedge_integral_eq
       ∫ x : BHW.OS45FlatCommonChartReal d n,
         chain.branch (j + 1) (sideLift sgn eps eta0 x) *
           ψeps eps x := by
-  have hedge_zero :
+  have hEq_inter :
+      Set.EqOn A.branch B.branch (A.carrier ∩ B.carrier) :=
+    PointedMetricBranchChart.eqOn_inter_of_seed A B
+      ⟨edge.W, edge.W_open, edge.z0_mem, edge.W_sub, edge.eqOn⟩
+
+  have hA_zero :
       ∀ y ∈ tsupport (psi0Flat :
           BHW.OS45FlatCommonChartReal d n -> Complex),
-        sideLift sgn 0 eta0 y ∈ edge.W := by
+        sideLift sgn 0 eta0 y ∈ A.carrier := by
     intro y hy
-    exact chain.edge_zero_tsupport_mem j hj y hy
+    exact chain.chart_zero_tsupport_mem j hj y hy |>.1
+
+  have hB_zero :
+      ∀ y ∈ tsupport (psi0Flat :
+          BHW.OS45FlatCommonChartReal d n -> Complex),
+        sideLift sgn 0 eta0 y ∈ B.carrier := by
+    intro y hy
+    exact chain.chart_zero_tsupport_mem j hj y hy |>.2
 
   have hedge_collar :
       ∀ᶠ eps in l, ∀ x,
         x ∈ Function.support
             (ψeps eps : BHW.OS45FlatCommonChartReal d n -> Complex) ->
-          sideLift sgn eps eta0 x ∈ edge.W := by
+          sideLift sgn eps eta0 x ∈ A.carrier ∩ B.carrier := by
     let K0 : Set (BHW.OS45FlatCommonChartReal d n) :=
       tsupport (psi0Flat :
         BHW.OS45FlatCommonChartReal d n -> Complex)
@@ -6916,11 +7051,11 @@ have hedge_integral_eq
     have hlocal :
         ∀ y : K0,
           ∀ᶠ eps in nhds (0 : Real),
-            sideLift sgn eps eta0
-              (y.1 + (sgn * eps) • eta0) ∈ edge.W := by
+            sideLift sgn eps eta0 (y.1 + (sgn * eps) • eta0) ∈
+              A.carrier ∩ B.carrier := by
       intro y
-      have hyW : sideLift sgn 0 eta0 y.1 ∈ edge.W := by
-        exact hedge_zero y.1 y.2
+      have hyA : sideLift sgn 0 eta0 y.1 ∈ A.carrier := hA_zero y.1 y.2
+      have hyB : sideLift sgn 0 eta0 y.1 ∈ B.carrier := hB_zero y.1 y.2
       have hcont :
           ContinuousAt
             (fun p : Real × BHW.OS45FlatCommonChartReal d n =>
@@ -6935,19 +7070,19 @@ have hedge_integral_eq
             (nhds (0 : Real)) (nhds ((0 : Real), y.1)) := by
         simpa using tendsto_id.prod_mk tendsto_const_nhds
       exact (hcont.tendsto.comp hpath).eventually
-        (edge.W_open.mem_nhds hyW)
+        ((A.carrier_open.inter B.carrier_open).mem_nhds ⟨hyA, hyB⟩)
     have hnhds :
         ∀ᶠ eps in nhds (0 : Real),
-          ∀ y ∈ K0,
-            sideLift sgn eps eta0
-              (y + (sgn * eps) • eta0) ∈ edge.W := by
+        ∀ y ∈ K0,
+          sideLift sgn eps eta0
+            (y + (sgn * eps) • eta0) ∈ A.carrier ∩ B.carrier := by
       simpa [K0] using
         hK0_compact.eventually_forall_of_forall_eventually hlocal
     have hwithin :
         ∀ᶠ eps in l,
           ∀ y ∈ K0,
             sideLift sgn eps eta0
-              (y + (sgn * eps) • eta0) ∈ edge.W :=
+              (y + (sgn * eps) • eta0) ∈ A.carrier ∩ B.carrier :=
       hnhds.filter_mono nhdsWithin_le_nhds
     filter_upwards [hwithin] with eps heps x hx
     let y : BHW.OS45FlatCommonChartReal d n :=
@@ -6974,11 +7109,11 @@ have hedge_integral_eq
   by_cases hx :
       x ∈ Function.support
         (ψeps eps : BHW.OS45FlatCommonChartReal d n -> Complex)
-  · have hzW : sideLift sgn eps eta0 x ∈ edge.W := hmem x hx
+  · have hzW : sideLift sgn eps eta0 x ∈ A.carrier ∩ B.carrier := hmem x hx
     have hbranch :
-        chain.branch j (sideLift sgn eps eta0 x) =
-          chain.branch (j + 1) (sideLift sgn eps eta0 x) := by
-      exact edge.eqOn hzW
+      chain.branch j (sideLift sgn eps eta0 x) =
+        chain.branch (j + 1) (sideLift sgn eps eta0 x) := by
+      exact hEq_inter hzW
     simpa [hbranch]
   · have hψzero :
         ψeps eps x = 0 := by
@@ -6992,7 +7127,7 @@ explicit `PointedSeedEdge`, the concrete continuous `sideLift`, and the compact
 support of `psi0Flat`; it must not mention `Word`, `Wadj`, `Hdiff`,
 zero-height equality, or theorem-2 locality.
 
-The three geometric edge sources are handled inside the construction of
+The source-selector edge sources are handled inside the construction of
 `chain.edge` before this induction runs:
 
 ```lean
@@ -7005,12 +7140,24 @@ The three geometric edge sources are handled inside the construction of
 --   `{z | BHW.permAct (d := d) P.τ z ∈ BHW.ForwardTube d n} ∩ H.ΩJ`;
 --   its branch is `fun z => bvt_F OS lgc n (BHW.permAct (d := d) P.τ z)`.
 
--- Flat real-Jost edge:
---   the plus/minus edge is produced from the already proved zero-height
---   compact-test pairings on the flat common edge.  The edge equality is an
---   equality of branch values on the pointed overlap; the side integral
---   equality still follows only by the compact-collar argument above.
+-- Raw terminal-minus edge:
+--   the terminal chart of `chainAdj` is the flat minus chart.  The edge into it
+--   is still raw `(4.12)` provenance: first compare the terminal chart with
+--   `BSeed412` on the retained source window, then use
+--   `extendF_eq_on_forwardTube` only on the eventual positive-height support
+--   where `permAct P.τ (sourceSide -1 eps eta0 u)` lies in the forward tube.
+--   This produces the terminal normal form needed for scalar cancellation
+--   without installing `extendF o permAct` as the incoming seed.
 ```
+
+Non-circularity gate for the current Hdiff producer: the finite selector used
+to prove `hOrd_side_current`/`hAdj_side_current` is upstream of
+`hzero_minus`.  It may use ordinary-sector common-model edges, retained
+raw-adjacent `(4.12)` edges, and the raw terminal-minus edge just described.
+It may not use
+`flat_realJost_EOW_pointed_seed_of_localZeroHeight_pairingsCLM` instantiated
+with `hzero_minus`, because that is the downstream EOW seed produced only after
+the source-current proof closes.
 
 ##### Terminal Flat Normal Forms
 
@@ -7120,15 +7267,19 @@ carrier is open, and the lifted side path is continuous.  If this becomes a
 helper, it must be the same neutral compact-collar lemma specialized to an open
 carrier; do not create a boundary-value selector for it.
 
-The symbols `chain*.branch`, `chain*.edge`,
-`chain*.edge_zero_tsupport_mem`, and `chain*.boundaryCLM` are
-implementation-local projections of the private one-branch chain data.  The
-side point used by the induction is the single `sideLift` above, not a pair of
-chart-dependent points.  If Lean needs support outside the main proof, the only
-permitted split is a neutral finite-induction lemma that consumes an explicit
-list of pointed seed edges and produces the displayed `h*_chain_boundary`; it
-must not mention `Hdiff`, zero-height equality, common-boundary CLMs, or
-theorem-2 locality.
+The symbols `chain*.chart`, `chain*.edge`, and
+`chain*.chart_zero_tsupport_mem` are implementation-local projections of the
+private one-branch chain data.  The displayed `sideLift` is only the terminal
+flat/source-side normal form used after the current chain reaches its terminal
+flat chart.  The induction itself must use the active path
+`gammaOf kind` and the chart-local/edge-local approach families described
+above; using the terminal `sideLift` at every chart would make the base case
+circular.  If Lean needs support outside the main proof, the only permitted
+split is a neutral
+finite-induction lemma that consumes an explicit list of charts, pointed seed
+edges, zero-height support-in-carrier proofs, and the already proved base
+`Tendsto`; it must not mention `Hdiff`, zero-height equality,
+common-boundary CLMs, `Word`, `Wadj`, or theorem-2 locality.
 
 #### No-Wrapper Transfer Expansion
 
@@ -7869,12 +8020,11 @@ have hOrd_currentTest_schwinger :
   have hWord_bvt :
       Word ((ψZ).1 : SchwartzNPoint d n) =
         bvt_W OS lgc n ((ψZ).1 : SchwartzNPoint d n) := by
-    -- Retained ordinary `(4.1)` one-branch provenance.  Internally this is the
-    -- metric-ball comparison from the terminal endpoint chart back to the
-    -- ordinary forward-tube seed, propagated by
-    -- `SCV.pairwise_eqOn_metric_ball_carriers_of_local_overlap_seeds`.
-    exact chainOrd.terminal_boundaryCLM_eq_bvt_W
-      ((ψZ).1 : SchwartzNPoint d n)
+    -- Retained ordinary `(4.1)` one-branch provenance.  This is proved in the
+    -- current proof body by the fixed-test finite induction with base
+    -- `ordinary41_fixed_test_boundaryValue_extendF`; do not store it as a
+    -- `terminal_boundaryCLM_eq_bvt_W` field on the chain.
+    exact hWord_bvt_from_ordinary41_inline ((ψZ).1 : SchwartzNPoint d n)
   have hbvt_schwinger :
       bvt_W OS lgc n ((ψZ).1 : SchwartzNPoint d n) = OS.S n ψZ := by
     -- The ordinary Euclidean restriction is the only Schwinger normalization
@@ -8224,7 +8374,7 @@ inserted between them:
 OmegaOrd0 / BOrd0
 OmegaSeed412 / BSeed412
 
--- 2. One-branch chains and their current-test boundary CLMs.
+-- 2. One-branch chains and their fixed translated-boundary selector data.
 chainOrd, Word
 chainAdj, Wadj
 
@@ -8266,7 +8416,8 @@ the theorem should be implemented in a downstream narrow companion such as
 | --- | --- |
 | `OmegaOrd0`, `BOrd0` | Ordinary initial chart and trace to `OrdGlobal`. |
 | `OmegaSeed412`, `BSeed412` | Checked raw `(4.12)` seed window at `zadj`, not at `zord`. |
-| `hadj412`, producing `OmegaAdj0`, `BAdj0` | The genuine OS-I seed-to-Wick circuit from `zadj` through the common-edge flat EOW crossover and back to `zord`; this supplies the adjacent Wick trace and usable adjacent initial chart. |
+| Raw source-current adjacent chart | Checked directly from `OmegaSeed412/BSeed412` at `gammaAdjSeed 0 = BHW.permAct P.τ (gammaOrd 0)` by `BHW.OS45BHWJostHullData.OS412SeedWindow_pointedChart`; this is the input for `hAdj_fixed_selected` and does not require `hadj412`, `OmegaAdj0`, or `BAdj0`.  Do not read this as `gammaOrd 0 ∈ OmegaSeed412`; that is formally false. |
+| Downstream `hadj412`, producing `OmegaAdj0`, `BAdj0` | Built only after the source-current leaves have produced `hzero_plus`/`hzero_minus` and the flat EOW seed is available; this later circuit supplies the adjacent Wick trace and usable adjacent branch object for the overlap-grid stage, not for proving the current `hzero_minus` leaf. |
 | Initial metric-ball chart constructors | Checked for the ordinary Wick chart, corrected `(4.12)` seed chart, and raw-seed two-sheet shrink by `BHW.OS45BHWJostHullData.ordinaryWick_metricBallChartInWindow`, `BHW.OS45BHWJostHullData.OS412SeedWindow_metricBallChartInWindow`, and `BHW.OS45BHWJostHullData.OS412SeedWindow_initialSectorOverlap_metricBallChart`. |
 | Endpoint metric-ball chart constructors | Checked for the ordinary and adjacent horizontal common-edge endpoint charts by `BHW.OS45BHWJostHullData.ordinaryCommonEdge_metricBallChartInWindow` and `BHW.OS45BHWJostHullData.adjacentCommonEdge_metricBallChartInWindow`; private pointed adapters for both endpoint chart shapes are checked in `OSToWightmanLocalityOS45Figure24Hdiff.lean`. |
 | Endpoint difference metric-ball chart | Checked by `BHW.OS45BHWJostHullData.commonEdgeDifference_metricBallChartInWindow`; it gives the final horizontal `Adj - Ord` trace on an exact metric-ball carrier, and the private pointed adapter for the eventual Hdiff chart is checked in `OSToWightmanLocalityOS45Figure24Hdiff.lean`. |
@@ -8279,19 +8430,19 @@ the theorem should be implemented in a downstream narrow companion such as
 | Eventual source-side sheet membership | Checked by `BHW.os45FlatCommonChart_sourceSide_mem_extendedTube_eventually`; for small positive side height, shifted support points land on the ordinary plus and raw-adjacent minus outgoing sheets. |
 | Side branch integrability | Checked by `BHW.os45FlatCommonChart_branch_shifted_mul_integrable` and `BHW.os45FlatCommonChart_branch_side_shifted_mul_integrable_eventually`; side-domain membership plus compact support gives the integrability hypothesis needed by the pullback theorem. |
 | Inverse-CLE fixed-test support | Checked by `BHW.hasCompactSupport_comp_os45CommonEdgeFlatCLE_symm`, `BHW.tsupport_comp_os45CommonEdgeFlatCLE_symm_subset_edgeSet`, and bundled as `BHW.OS45Figure24SourceCutoffData.toZeroDiagonalCLM_flatPullback_support`; these support-only lemmas supply compact support and edge-set support for the auxiliary `psi0Flat` in the scalar-cancellation block. |
-| Fixed source-side scalar cancellation | Checked by `BHW.tendsto_integral_comp_os45FlatCommonChartSourceSide_fixed_of_flatTranslatedTest`; after the ordinary or raw-adjacent flat translated-test limit is selected from the genuine one-branch OS-I flat trace, this support theorem applies the checked translated-test pullback, cancels the positive flat Jacobian, and yields the source-side fixed limit landing in `Word psi0` or `Wadj psi0`.  It does not select the flat boundary trace, create a side-transfer wrapper, or move to the Figure-2-4 side tests. |
-| Fixed-test sourceSide boundary selection | Proof-local OS-I ingredient with non-circular order: first construct `chainOrd.terminal_flatBoundaryValue_translatedTest_of_chain` or `chainAdj.terminal_flatBoundaryValue_translatedTest_of_chain` by finite induction from the one-branch chain, sheet membership, translated-test convergence, and overlap identity propagation at one common lifted side point per edge; then apply the checked scalar-cancellation theorem above.  Ordinary starts on incoming sheet `BHW.ExtendedTube d n` and flat outgoing sheet `BHW.os45FlatCommonChartOmega d n 1`; raw-adjacent starts from `OmegaSeed412/BSeed412` and reaches `BHW.os45FlatCommonChartOmega d n (P.τ.symm * 1)` only through `chainAdj`.  This is not a plain `bvt_boundary_values` call with a fabricated direction and not a downstream deterministic adjacent seed. |
+| Fixed source-side scalar cancellation | Checked support theorem retained as fallback only: `BHW.tendsto_integral_comp_os45FlatCommonChartSourceSide_fixed_of_flatTranslatedTest` applies after a genuine fixed flat translated-test limit has already been selected.  It is not the active base for the live `hOrd_side_current`/`hAdj_side_current` holes and must not be used to resurrect a fabricated `eta0` fixed-ray route. |
+| Direct source-current selection | Active proof-local OS-I ingredient for the two live holes, corrected 2026-05-18.  The finite chart induction does **not** propagate the moving current limits themselves through the ordinary `gammaOrd` and raw `gammaAdjSeed` chains.  It first proves the fixed flat translated-boundary selectors `hflatOrd_selected` and `hflatAdj_selected` for `psi0 := (D.toZeroDiagonalCLM 1 phi).1`, using `psi0Flat`, the checked inverse-CLE support packet, and chart-local fixed approach families.  Ordinary starts from the genuine `(4.1)` incoming fixed OS-I ray; raw adjacent starts from `OmegaSeed412/BSeed412` at `gammaAdjSeed 0 = BHW.permAct P.τ (gammaOrd 0)`, not from the downstream `hadj412` branch and not from `gammaOrd 0 ∈ OmegaSeed412`.  Each edge promotes a `PointedSeedEdge` to carrier-intersection equality by `PointedMetricBranchChart.eqOn_inter_of_seed`, then uses compact collar control for that edge's fixed approach and `integral_congr_ae`.  The terminal `sideLift`/flat-source rewrite and scalar cancellation by `BHW.tendsto_integral_comp_os45FlatCommonChartSourceSide_fixed_of_flatTranslatedTest` occur only after the terminal chart has been reached.  The live moving current tests enter later through the already present endpoint DCTs, after the fixed endpoint value has been identified with `Lcur`. |
 | Endpoint continuity/DCT | Checked SourceSide support theorem `BHW.tendsto_integral_comp_os45FlatCommonChartSourceSide_mul_of_hasCompactSupport`; endpoint membership comes from `terminal_contains_ordinaryCommonEdge`/`terminal_contains_adjacentCommonEdge`, and the theorem packages compact-collar membership/bounds, pointwise convergence, compact-support integrability, fixed-height continuity, and zero-extension measurability.  This computes the fixed-test side-height limit at `eps = 0` and does not assume either asymptotic transfer. |
 | Zero-height endpoint normal forms | Checked coordinate identities now include `BHW.os45FlatCommonChartSourceSide_zero`, `BHW.permAct_os45FlatCommonChartSourceSide_zero`, `BHW.os45QuarterTurnCLE_symm_realEmbed_commonEdge_eq_wick`, `BHW.os45FlatCommonChartSourceSide_zero_eq_commonEdge`, and `BHW.permAct_os45QuarterTurnCLE_symm_realEmbed_commonEdge_eq_wick`.  These identify the zero-height endpoint with the quarter-turned carrier over the horizontal common edge; they do not identify that carrier with the unturned Wick point.  The pairing identity defines the plain CLE pullback `pullFlatToSource := SchwartzMap.compCLMOfContinuousLinearEquiv Complex e` and then `WordFlat := J • (Word.comp pullFlatToSource)` and `WadjFlat := J • (Wadj.comp pullFlatToSource)` locally.  The equality `pullFlatToSource psi0Flat = psi0` is an explicit CLE inverse calculation; only after the carrier and Wick endpoint traces are separately selected do the scripts cancel the nonzero Jacobian `BHW.os45CommonEdgeFlatJacobianAbs n`.  The adjacent side uses only retained raw `(4.12)` terminal provenance; no downstream deterministic adjacent seed, `Hdiff`, common-boundary CLM, or chain-level flat-boundary wrapper is in scope. |
 | `Chain ordinary41` | Terminal ordinary branch plus metric balls and seeds, with terminal chart typed as `Chart`. |
 | `Chain adjacent412` | Terminal adjacent branch plus metric balls and retained raw `(4.12)` provenance, with terminal chart typed as `Chart`. |
-| finite chain assembly along `gamma` | Proof-local reachability argument on `unitInterval`: build the initial chain, use the three local transfer cases as the `hlocal` input to the checked neutral theorem `SCV.reachable_eq_univ_of_local_symmetric_extension`, and obtain the terminal chain.  This replaces a compact-subdivision oracle and does not add a public chain theorem. |
-| `hgrid` restricted-gallery contract | Proof-local finite pointed common-center gallery pair comparing two adjacent retained charts after endpoint retargeting.  The transcript carries raw adjacent provenance explicitly; every edge seed is a checked `PointedSeedEdge` from retained raw provenance, ordinary common-model overlap, or the upstream flat real-Jost EOW seed, and the needed flat-edge orientation reversal is checked privately as `PointedSeedEdge.symm`. |
+| finite chain assembly along `gamma` | Proof-local reachability argument on `unitInterval`: for source-current selectors, build the initial raw/ordinary chain and use only ordinary or retained raw-adjacent local transfers as the `hlocal` input to `SCV.reachable_eq_univ_of_local_symmetric_extension`; the flat plus/minus EOW transfer is downstream after zero-height pairings. |
+| `hgrid` restricted-gallery contract | Proof-local finite pointed common-center gallery pair comparing two adjacent retained charts after endpoint retargeting.  The transcript carries raw adjacent provenance explicitly; after the source-current leaves close, every edge seed is a checked `PointedSeedEdge` from retained raw provenance, ordinary common-model overlap, or the post-source-current flat real-Jost EOW seed, and the needed flat-edge orientation reversal is checked privately as `PointedSeedEdge.symm`. |
 | `local_transfer ordinary-sector` | Seed by equality with `OrdGlobal`. |
 | `local_transfer adjacent-sector` | Seed from retained transported `(4.12)` provenance; no deterministic adjacent branch. |
 | `local_transfer flat` | Non-circular flat EOW packet: first prove the local zero-height pairings `hzero_plus` and `hzero_minus` by the ordinary and raw-adjacent branch/source asymptotic transfers plus the checked common source limit; then use the checked ambient local zero-height bridge directly.  Source/CLE/Jacobian facts are coordinate audits only. |
-| ordinary branch/source transfer | Proof-local OS-I `(4.14)` side-height transfer for the ordinary `(4.1)` element; the transcript proves `BranchPlusSide - SourcePlusSide -> 0` by the fixed-test scalar-cancellation body, moving-test perturbation, endpoint DCT, and ordinary carrier-pairing normalization, without assuming a zero-height equality or Schwinger normalization. |
-| raw-adjacent branch/source transfer | Proof-local OS-I `(4.14)` side-height transfer for the transported raw adjacent `(4.12)` element; `extendF o permAct` may be used only after the raw seed has reached the endpoint chart. |
+| ordinary branch/source transfer | Proof-local OS-I `(4.14)` current transfer for the ordinary `(4.1)` element; implement the direct `OrdBase`/`OrdTerminal` proof in `docs/theorem2_source_current_selector_transcript.md`, with no public side-transfer wrapper. |
+| raw-adjacent branch/source transfer | Proof-local OS-I `(4.14)` current transfer for the retained raw adjacent `(4.12)` element; implement the direct `AdjBase`/`AdjTerminal` proof through `gammaAdjSeed` and `OmegaSeed412/BSeed412`.  `extendF o permAct` may be used only after the raw seed has reached the terminal chart and the current support is on the raw forward-tube sheet. |
 | `branch_seed ordinary41` | Proof-local all-overlap finite-gallery induction yielding `Word`. |
 | `branch_seed adjacent412` | Proof-local all-overlap finite-gallery induction yielding `Wadj`. |
 | `overlap_eq` | Difference equality on `A.N inter B.N` using the checked two-seed SCV helper. |
