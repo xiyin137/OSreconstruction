@@ -11,6 +11,50 @@ not mention `Hdiff`, `Word`, `Wadj`, zero-height equality, or theorem 2.
 
 ## Latest Delta
 
+Lean now checks the endpoint-limit side of the remaining ordinary path-chart
+comparison explicitly.  With the common moving support collar in context, the
+source path chart has only its zero-height endpoint limit:
+
+```lean
+have hSourcePathMoving_endpoint :
+    Tendsto SourcePathMoving (nhdsWithin 0 (Set.Ioi 0))
+      (nhds
+        (∫ u, (OrdPathChart cm.1).branch (OrdSourceApproach 0 u) *
+          (piece : NPointDomain d n -> Complex) u))
+```
+
+The Wick path chart has the selected Schwinger limit:
+
+```lean
+have hWickPathMoving_selected :
+    Tendsto WickPathMoving (nhdsWithin 0 (Set.Ioi 0))
+      (nhds (OS.S n pieceZD))
+```
+
+Therefore Lean also checks the honest endpoint-gap limit:
+
+```lean
+have hpath_moving_endpoint_gap :
+    Tendsto (fun eps => SourcePathMoving eps - WickPathMoving eps)
+      (nhdsWithin 0 (Set.Ioi 0))
+      (nhds
+        ((∫ u, (OrdPathChart cm.1).branch (OrdSourceApproach 0 u) *
+          (piece : NPointDomain d n -> Complex) u) - OS.S n pieceZD))
+```
+
+This packet deliberately does not close the selector by asserting the endpoint
+gap is zero.  It shows in Lean that the remaining `nhds 0` path-comparison is
+exactly the missing OS-I/current transport through the Figure-2-4 corridor.
+
+Fresh exact check:
+`lake env lean -DmaxHeartbeats=1200000 OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanLocalityOS45Figure24Hdiff.lean`
+logged to `/tmp/osr_hdiff_path_endpoint_gap_1779266994.log` exits `1`.
+The ordinary unsolved goal is still the displayed
+`SourcePathMoving - WickPathMoving` comparison; downstream deterministic
+timeout diagnostics remain while this ordinary local leaf is open.
+
+## Previous Delta
+
 The ordinary localized comparison has been sharpened again.  After the checked
 fixed-test/moving-test source packet, terminal `extendF` normalization, and
 flat side-height/Jacobian pullback, the flat side-height selector is now carried

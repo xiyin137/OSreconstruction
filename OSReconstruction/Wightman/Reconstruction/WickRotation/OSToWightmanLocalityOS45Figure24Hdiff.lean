@@ -7925,6 +7925,78 @@ theorem os45CommonEdge_localFigure24DifferenceGerm_of_OSI45
                               exact
                                 ⟨hsource_carrier, hwick_mem.2,
                                   hUsrc_P (hKpiece_Usrc huK)⟩
+                            have hSourcePathMoving_endpoint :
+                                Tendsto SourcePathMoving
+                                  (𝓝[Set.Ioi 0] (0 : ℝ))
+                                  (𝓝
+                                    (∫ u : NPointDomain d n,
+                                      (OrdPathChart cm.1).branch
+                                        (OrdSourceApproach 0 u) *
+                                      (piece :
+                                        NPointDomain d n → ℂ) u)) := by
+                              have hsource0_Kpiece_path :
+                                  ∀ u ∈ Kpiece,
+                                    OrdSourceApproach 0 u ∈
+                                      (OrdPathChart cm.1).carrier := by
+                                intro u hu
+                                have hmem :
+                                    OrdSourceApproach 0 u ∈
+                                      (OrdPathChart cm.1).carrier ∩
+                                        A1ext.carrier := by
+                                  simpa [UOrdSourcePath] using
+                                    hKpiece_source hu
+                                exact hmem.1
+                              have hmove :=
+                                BHW.tendsto_integral_comp_os45FlatCommonChartSourceSide_mul_moving_of_commonCompactSupport
+                                  (d := d) (n := n)
+                                  (1 : Equiv.Perm (Fin n)) (1 : ℝ)
+                                  η0
+                                  (U := (OrdPathChart cm.1).carrier)
+                                  (OrdPathChart cm.1).carrier_open
+                                  (OrdPathChart cm.1).holo.continuousOn
+                                  (K := Kpiece) hKpiece_compact
+                                  hsource0_Kpiece_path
+                                  (εseq := fun ε : ℝ => ε)
+                                  (φseq := fun ε : ℝ =>
+                                    ((D.toSideZeroDiagonalCLM
+                                      (1 : Equiv.Perm (Fin n)) (1 : ℝ)
+                                      ε η0 pieceFlat).1 :
+                                      SchwartzNPoint d n))
+                                  (φ0 :=
+                                    ((D.toZeroDiagonalCLM
+                                      (1 : Equiv.Perm (Fin n))
+                                      pieceFlat).1 :
+                                      SchwartzNPoint d n))
+                                  tendsto_id hφ0K hcommon_piece_support
+                                  hseminorm_piece
+                              simpa [SourcePathMoving, OrdSourceApproach,
+                                hD_piece_zero_plain] using hmove
+                            have hWickPathMoving_selected :
+                                Tendsto WickPathMoving
+                                  (𝓝[Set.Ioi 0] (0 : ℝ))
+                                  (𝓝 (OS.S n pieceZD)) := by
+                              have hwick :
+                                  Tendsto WickMovingSide
+                                    (𝓝[Set.Ioi 0] (0 : ℝ))
+                                    (𝓝 (OS.S n pieceZD)) := by
+                                simpa [WickMovingSide] using
+                                  hpiece_sideWick_selected
+                              exact hwick.congr' hWickMoving_to_path
+                            have hpath_moving_endpoint_gap :
+                                Tendsto
+                                  (fun ε : ℝ =>
+                                    SourcePathMoving ε -
+                                      WickPathMoving ε)
+                                  (𝓝[Set.Ioi 0] (0 : ℝ))
+                                  (𝓝
+                                    ((∫ u : NPointDomain d n,
+                                      (OrdPathChart cm.1).branch
+                                        (OrdSourceApproach 0 u) *
+                                      (piece :
+                                        NPointDomain d n → ℂ) u) -
+                                      OS.S n pieceZD)) :=
+                              hSourcePathMoving_endpoint.sub
+                                hWickPathMoving_selected
                             suffices hsource_moving_to_wick :
                                 Tendsto
                                   (fun ε : ℝ =>
