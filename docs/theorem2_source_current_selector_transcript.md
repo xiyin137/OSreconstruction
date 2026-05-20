@@ -11,6 +11,64 @@ not mention `Hdiff`, `Word`, `Wadj`, zero-height equality, or theorem 2.
 
 ## Latest Delta
 
+Lean now checks the ordinary path-to-`Aext` retargeting packet.  The moving
+source path chart and moving Wick path chart have both been transported to the
+same source-side weight against the explicit endpoint extension charts:
+
+```lean
+let WickA0extMoving : Real -> Complex := ...
+
+have hSourcePath_to_A1ext_moving :
+    SourcePathMoving =ᶠ[nhdsWithin 0 (Set.Ioi 0)] SourceMovingSide
+
+have hWickPath_to_A0ext_moving :
+    WickPathMoving =ᶠ[nhdsWithin 0 (Set.Ioi 0)] WickA0extMoving
+```
+
+This gives the checked equivalence:
+
+```lean
+have hpath_Aext_transport_equiv :
+    Tendsto (fun eps => SourcePathMoving eps - WickPathMoving eps)
+      (nhdsWithin 0 (Set.Ioi 0)) (nhds 0) <->
+    Tendsto (fun eps => SourceMovingSide eps - WickA0extMoving eps)
+      (nhdsWithin 0 (Set.Ioi 0)) (nhds 0)
+```
+
+The endpoint packet was also retargeted:
+
+```lean
+have hWickA0extMoving_selected :
+    Tendsto WickA0extMoving (nhdsWithin 0 (Set.Ioi 0))
+      (nhds (OS.S n pieceZD))
+
+have hAext_moving_endpoint_gap :
+    Tendsto (fun eps => SourceMovingSide eps - WickA0extMoving eps)
+      (nhdsWithin 0 (Set.Ioi 0))
+      (nhds
+        ((∫ u, A1ext.branch (OrdSourceApproach 0 u) * piece u) -
+          OS.S n pieceZD))
+```
+
+The remaining ordinary leaf is therefore no longer a bare finite-chain chart
+comparison.  It is the direct local boundary-value/current transport between
+the A1 endpoint branch and the A0 Wick branch with the same moving side-zero
+test:
+
+```lean
+Tendsto (fun eps => SourceMovingSide eps - WickA0extMoving eps)
+  (nhdsWithin 0 (Set.Ioi 0)) (nhds 0)
+```
+
+Fresh exact check:
+`lake env lean -DmaxHeartbeats=1200000 OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanLocalityOS45Figure24Hdiff.lean`
+logged to `/tmp/osr_hdiff_aext_endpoint_gap_1779267976.log` exits `1`.
+The ordinary unsolved goal is the displayed A1ext/A0ext moving-current
+comparison; downstream deterministic timeout diagnostics remain while this
+ordinary local leaf is open.  No `sorry`, `admit`, or `axiom` occurs in Hdiff.
+
+## Previous Delta
+
 Lean now checks the endpoint-limit side of the remaining ordinary path-chart
 comparison explicitly.  With the common moving support collar in context, the
 source path chart has only its zero-height endpoint limit:
@@ -53,7 +111,7 @@ The ordinary unsolved goal is still the displayed
 `SourcePathMoving - WickPathMoving` comparison; downstream deterministic
 timeout diagnostics remain while this ordinary local leaf is open.
 
-## Previous Delta
+## Earlier Delta
 
 The ordinary localized comparison has been sharpened again.  After the checked
 fixed-test/moving-test source packet, terminal `extendF` normalization, and
