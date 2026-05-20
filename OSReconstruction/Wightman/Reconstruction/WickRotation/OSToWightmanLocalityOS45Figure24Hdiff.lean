@@ -1190,6 +1190,1182 @@ private theorem pointed_chart_integral_eventually_eq_of_seed
       exact hx (by simpa [Function.mem_support] using hne)
     simp [hzero]
 
+private theorem integral_mul_eq_sum_integral_mul_of_finite_sum
+    {ι X : Type*} [Fintype ι] [MeasurableSpace X] [MeasureSpace X]
+    (F w : X → ℂ) (piece : ι → X → ℂ)
+    (hsum : ∀ x, w x = ∑ i, piece i x)
+    (hint : ∀ i ∈ (Finset.univ : Finset ι),
+      Integrable (fun x : X => F x * piece i x) (μ := volume)) :
+    (∫ x : X, F x * w x) =
+      ∑ i, ∫ x : X, F x * piece i x := by
+  calc
+    (∫ x : X, F x * w x)
+        = ∫ x : X, F x * (∑ i, piece i x) := by
+          apply integral_congr_ae
+          filter_upwards with x
+          rw [hsum x]
+    _ = ∫ x : X, ∑ i, F x * piece i x := by
+          apply integral_congr_ae
+          filter_upwards with x
+          simp [Finset.mul_sum]
+    _ = ∑ i, ∫ x : X, F x * piece i x := by
+          simpa using
+            (MeasureTheory.integral_finset_sum
+              (μ := volume)
+              (s := (Finset.univ : Finset ι))
+              (f := fun i => fun x : X => F x * piece i x)
+              hint)
+
+private theorem eventually_integrable_two_pointed_sourceSide_pieces
+    {d n : ℕ} [NeZero d]
+    (ρperm : Equiv.Perm (Fin n)) (sgn : ℝ)
+    (η : BHW.OS45FlatCommonChartReal d n)
+    (A B : PointedMetricBranchChart (Fin n → Fin (d + 1) → ℂ) ℂ)
+    (w : SchwartzNPoint d n)
+    (hw_comp : HasCompactSupport (w : NPointDomain d n → ℂ))
+    (h0 :
+      ∀ u ∈ tsupport (w : NPointDomain d n → ℂ),
+        BHW.os45FlatCommonChartSourceSide d n ρperm sgn 0 η u ∈
+          A.carrier ∩ B.carrier) :
+    ∀ᶠ ε in 𝓝[Set.Ioi 0] (0 : ℝ),
+      Integrable
+        (fun u : NPointDomain d n =>
+          A.branch
+            (BHW.os45FlatCommonChartSourceSide
+              d n ρperm sgn ε η u) *
+          (w : NPointDomain d n → ℂ) u) ∧
+      Integrable
+        (fun u : NPointDomain d n =>
+          B.branch
+            (BHW.os45FlatCommonChartSourceSide
+              d n ρperm sgn ε η u) *
+          (w : NPointDomain d n → ℂ) u) := by
+  have hA_cont : ContinuousOn A.branch A.carrier :=
+    A.holo.continuousOn
+  have hB_cont : ContinuousOn B.branch B.carrier :=
+    B.holo.continuousOn
+  have hzero_A :
+      ∀ u ∈ tsupport (w : NPointDomain d n → ℂ),
+        BHW.os45FlatCommonChartSourceSide d n ρperm sgn 0 η u ∈
+          A.carrier := by
+    intro u hu
+    exact (h0 u hu).1
+  have hzero_B :
+      ∀ u ∈ tsupport (w : NPointDomain d n → ℂ),
+        BHW.os45FlatCommonChartSourceSide d n ρperm sgn 0 η u ∈
+          B.carrier := by
+    intro u hu
+    exact (h0 u hu).2
+  have hzero_off :
+      ∀ u ∉ tsupport (w : NPointDomain d n → ℂ),
+        (w : NPointDomain d n → ℂ) u = 0 := by
+    intro u hu
+    exact image_eq_zero_of_notMem_tsupport hu
+  have hA_int :
+      ∀ᶠ ε in 𝓝[Set.Ioi 0] (0 : ℝ),
+        Integrable
+          (fun u : NPointDomain d n =>
+            A.branch
+              (BHW.os45FlatCommonChartSourceSide
+                d n ρperm sgn ε η u) *
+            (w : NPointDomain d n → ℂ) u) :=
+    BHW.eventually_integrable_comp_os45FlatCommonChartSourceSide_mul_of_commonCompactSupport
+      (d := d) (n := n) ρperm sgn η
+      A.carrier_open hA_cont hw_comp.isCompact hzero_A w hzero_off
+  have hB_int :
+      ∀ᶠ ε in 𝓝[Set.Ioi 0] (0 : ℝ),
+        Integrable
+          (fun u : NPointDomain d n =>
+            B.branch
+              (BHW.os45FlatCommonChartSourceSide
+                d n ρperm sgn ε η u) *
+            (w : NPointDomain d n → ℂ) u) :=
+    BHW.eventually_integrable_comp_os45FlatCommonChartSourceSide_mul_of_commonCompactSupport
+      (d := d) (n := n) ρperm sgn η
+      B.carrier_open hB_cont hw_comp.isCompact hzero_B w hzero_off
+  filter_upwards [hA_int, hB_int] with ε hAε hBε
+  exact ⟨hAε, hBε⟩
+
+private theorem exists_finite_schwartz_partitionOfUnity_on_compact_openCover
+    {α E : Type*} [Fintype α]
+    [NormedAddCommGroup E] [NormedSpace ℝ E]
+    [FiniteDimensional ℝ E]
+    {K : Set E} (hK : IsCompact K)
+    {U : α → Set E}
+    (hU_open : ∀ i, IsOpen (U i))
+    (hcover : K ⊆ ⋃ i, U i) :
+    ∃ χ : α → SchwartzMap E ℂ,
+      (∀ i, HasCompactSupport (χ i : E → ℂ)) ∧
+      (∀ i, tsupport (χ i : E → ℂ) ⊆ U i) ∧
+      (∀ x ∈ K, ∑ i, χ i x = 1) := by
+  rcases hK.isBounded.subset_closedBall (0 : E) with ⟨R, hR⟩
+  let V : α → Set E := fun i => U i ∩ Metric.ball (0 : E) (R + 1)
+  have hV_open : ∀ i, IsOpen (V i) := by
+    intro i
+    exact (hU_open i).inter Metric.isOpen_ball
+  have hV_relcompact : ∀ i, ∃ c r, V i ⊆ Metric.closedBall c r := by
+    intro i
+    refine ⟨(0 : E), R + 1, ?_⟩
+    intro x hx
+    exact Metric.ball_subset_closedBall hx.2
+  have hV_cover : K ⊆ ⋃ i, V i := by
+    intro x hx
+    rcases Set.mem_iUnion.mp (hcover hx) with ⟨i, hxi⟩
+    have hxR : dist x (0 : E) ≤ R := by
+      simpa [dist_comm] using Metric.mem_closedBall.mp (hR hx)
+    have hxball : x ∈ Metric.ball (0 : E) (R + 1) := by
+      rw [Metric.mem_ball]
+      linarith
+    exact Set.mem_iUnion.mpr ⟨i, ⟨hxi, hxball⟩⟩
+  obtain ⟨χ, hχ_compact, hχ_sub, hχ_sum⟩ :=
+    SCV.exists_finite_schwartz_partitionOfUnity_on_compact
+      (E := E) hK hV_open hV_relcompact hV_cover
+  refine ⟨χ, hχ_compact, ?_, hχ_sum⟩
+  intro i
+  exact (hχ_sub i).trans Set.inter_subset_left
+
+private theorem exists_finite_schwartz_smul_partition_on_tsupport
+    {α E : Type*} [Fintype α]
+    [NormedAddCommGroup E] [NormedSpace ℝ E]
+    [FiniteDimensional ℝ E]
+    (w : SchwartzMap E ℂ)
+    (hw_comp : HasCompactSupport (w : E → ℂ))
+    {U : α → Set E}
+    (hU_open : ∀ i, IsOpen (U i))
+    (hcover : tsupport (w : E → ℂ) ⊆ ⋃ i, U i) :
+    ∃ piece : α → SchwartzMap E ℂ,
+      (∀ i, ∃ χ : SchwartzMap E ℂ,
+        piece i = SchwartzMap.smulLeftCLM ℂ (χ : E → ℂ) w) ∧
+      (∀ i, HasCompactSupport (piece i : E → ℂ)) ∧
+      (∀ i, tsupport (piece i : E → ℂ) ⊆
+        tsupport (w : E → ℂ)) ∧
+      (∀ i, tsupport (piece i : E → ℂ) ⊆ U i) ∧
+      w = ∑ i, piece i := by
+  obtain ⟨χ, _hχ_compact, hχ_sub, hχ_sum⟩ :=
+    exists_finite_schwartz_partitionOfUnity_on_compact_openCover
+      (E := E) hw_comp.isCompact hU_open hcover
+  let piece : α → SchwartzMap E ℂ := fun i =>
+    SchwartzMap.smulLeftCLM ℂ (χ i : E → ℂ) w
+  have hpiece_factor :
+      ∀ i, ∃ χi : SchwartzMap E ℂ,
+        piece i = SchwartzMap.smulLeftCLM ℂ (χi : E → ℂ) w := by
+    intro i
+    exact ⟨χ i, rfl⟩
+  have hpiece_compact :
+      ∀ i, HasCompactSupport (piece i : E → ℂ) := by
+    intro i
+    refine hw_comp.mono' ?_
+    intro x hx
+    have hx_ts : x ∈ tsupport (piece i : E → ℂ) :=
+      subset_closure hx
+    exact
+      ((SchwartzMap.tsupport_smulLeftCLM_subset
+        (F := ℂ)
+        (g := (χ i : E → ℂ))
+        (f := w)) hx_ts).1
+  have hpiece_base :
+      ∀ i, tsupport (piece i : E → ℂ) ⊆
+        tsupport (w : E → ℂ) := by
+    intro i x hx
+    exact
+      ((SchwartzMap.tsupport_smulLeftCLM_subset
+        (F := ℂ)
+        (g := (χ i : E → ℂ))
+        (f := w)) hx).1
+  have hpiece_sub :
+      ∀ i, tsupport (piece i : E → ℂ) ⊆ U i := by
+    intro i x hx
+    exact
+      hχ_sub i
+        ((SchwartzMap.tsupport_smulLeftCLM_subset
+          (F := ℂ)
+          (g := (χ i : E → ℂ))
+          (f := w)) hx).2
+  have hsum :
+      w = ∑ i, piece i := by
+    simpa [piece] using
+      SCV.schwartzMap_eq_finset_sum_smulLeftCLM_of_sum_eq_one_on_tsupport
+        (Finset.univ : Finset α) χ w
+        (by
+          intro x hx
+          simpa using hχ_sum x hx)
+  exact
+    ⟨piece, hpiece_factor, hpiece_compact, hpiece_base, hpiece_sub, hsum⟩
+
+private theorem sourceSide_integral_eventually_eq_sum_chart_partition
+    {d n : ℕ} [NeZero d] {α : Type*} [Fintype α]
+    (ρperm : Equiv.Perm (Fin n)) (sgn : ℝ)
+    (η : BHW.OS45FlatCommonChartReal d n)
+    (A : PointedMetricBranchChart (Fin n → Fin (d + 1) → ℂ) ℂ)
+    (B : α → PointedMetricBranchChart (Fin n → Fin (d + 1) → ℂ) ℂ)
+    (w : SchwartzNPoint d n)
+    (hw_comp : HasCompactSupport (w : NPointDomain d n → ℂ))
+    (U : α → Set (NPointDomain d n))
+    (hU_open : ∀ c, IsOpen (U c))
+    (hcover : tsupport (w : NPointDomain d n → ℂ) ⊆ ⋃ c, U c)
+    (hzero :
+      ∀ c, ∀ u ∈ U c,
+        BHW.os45FlatCommonChartSourceSide d n ρperm sgn 0 η u ∈
+          A.carrier ∩ (B c).carrier)
+    (hEqOn :
+      ∀ c, Set.EqOn A.branch (B c).branch
+        (A.carrier ∩ (B c).carrier)) :
+    ∃ piece : α → SchwartzNPoint d n,
+      (∀ c, HasCompactSupport (piece c : NPointDomain d n → ℂ)) ∧
+      (∀ c, tsupport (piece c : NPointDomain d n → ℂ) ⊆ U c) ∧
+      (w = ∑ c, piece c) ∧
+      ((fun ε : ℝ =>
+        ∫ u : NPointDomain d n,
+          A.branch
+            (BHW.os45FlatCommonChartSourceSide d n ρperm sgn ε η u) *
+          (w : NPointDomain d n → ℂ) u)
+        =ᶠ[𝓝[Set.Ioi 0] (0 : ℝ)]
+      fun ε : ℝ =>
+        ∑ c : α,
+          ∫ u : NPointDomain d n,
+            (B c).branch
+              (BHW.os45FlatCommonChartSourceSide d n ρperm sgn ε η u) *
+            (piece c : NPointDomain d n → ℂ) u) := by
+  obtain
+      ⟨piece, _hpiece_factor, hpiece_compact, _hpiece_base,
+        hpiece_sub, hpiece_sum⟩ :=
+    exists_finite_schwartz_smul_partition_on_tsupport
+      (w := w) hw_comp hU_open hcover
+  refine ⟨piece, hpiece_compact, hpiece_sub, hpiece_sum, ?_⟩
+  have hsum_fun :
+      ∀ u,
+        (w : NPointDomain d n → ℂ) u =
+          ∑ c : α, (piece c : NPointDomain d n → ℂ) u := by
+    intro u
+    have happly :=
+      congrArg
+        (fun f : SchwartzNPoint d n =>
+          (f : NPointDomain d n → ℂ) u)
+        hpiece_sum
+    simpa using happly
+  have hint :
+      ∀ᶠ ε in 𝓝[Set.Ioi 0] (0 : ℝ),
+        ∀ c : α,
+          Integrable
+            (fun u : NPointDomain d n =>
+              A.branch
+                (BHW.os45FlatCommonChartSourceSide d n ρperm sgn ε η u) *
+              (piece c : NPointDomain d n → ℂ) u) ∧
+          Integrable
+            (fun u : NPointDomain d n =>
+              (B c).branch
+                (BHW.os45FlatCommonChartSourceSide d n ρperm sgn ε η u) *
+              (piece c : NPointDomain d n → ℂ) u) := by
+    refine Filter.eventually_all.mpr ?_
+    intro c
+    have h0 :
+        ∀ u ∈ tsupport (piece c : NPointDomain d n → ℂ),
+          BHW.os45FlatCommonChartSourceSide d n ρperm sgn 0 η u ∈
+            A.carrier ∩ (B c).carrier := by
+      intro u hu
+      exact hzero c u (hpiece_sub c hu)
+    exact
+      eventually_integrable_two_pointed_sourceSide_pieces
+        (d := d) (n := n) ρperm sgn η A (B c)
+        (piece c) (hpiece_compact c) h0
+  have hsplit :
+      (fun ε : ℝ =>
+        ∫ u : NPointDomain d n,
+          A.branch
+            (BHW.os45FlatCommonChartSourceSide d n ρperm sgn ε η u) *
+          (w : NPointDomain d n → ℂ) u)
+        =ᶠ[𝓝[Set.Ioi 0] (0 : ℝ)]
+      fun ε : ℝ =>
+        ∑ c : α,
+          ∫ u : NPointDomain d n,
+            A.branch
+              (BHW.os45FlatCommonChartSourceSide d n ρperm sgn ε η u) *
+            (piece c : NPointDomain d n → ℂ) u := by
+    filter_upwards [hint] with ε hε
+    exact
+      integral_mul_eq_sum_integral_mul_of_finite_sum
+        (X := NPointDomain d n)
+        (F := fun u : NPointDomain d n =>
+          A.branch
+            (BHW.os45FlatCommonChartSourceSide d n ρperm sgn ε η u))
+        (w := fun u : NPointDomain d n =>
+          (w : NPointDomain d n → ℂ) u)
+        (piece := fun c u => (piece c : NPointDomain d n → ℂ) u)
+        hsum_fun
+        (by
+          intro c _hc
+          exact (hε c).1)
+  have hto_chart :
+      (fun ε : ℝ =>
+        ∑ c : α,
+          ∫ u : NPointDomain d n,
+            A.branch
+              (BHW.os45FlatCommonChartSourceSide d n ρperm sgn ε η u) *
+            (piece c : NPointDomain d n → ℂ) u)
+        =ᶠ[𝓝[Set.Ioi 0] (0 : ℝ)]
+      fun ε : ℝ =>
+        ∑ c : α,
+          ∫ u : NPointDomain d n,
+            (B c).branch
+              (BHW.os45FlatCommonChartSourceSide d n ρperm sgn ε η u) *
+            (piece c : NPointDomain d n → ℂ) u := by
+    have hpieces :
+        ∀ᶠ ε in 𝓝[Set.Ioi 0] (0 : ℝ),
+          ∀ c : α,
+            (∫ u : NPointDomain d n,
+              A.branch
+                (BHW.os45FlatCommonChartSourceSide d n ρperm sgn ε η u) *
+              (piece c : NPointDomain d n → ℂ) u) =
+            ∫ u : NPointDomain d n,
+              (B c).branch
+                (BHW.os45FlatCommonChartSourceSide d n ρperm sgn ε η u) *
+              (piece c : NPointDomain d n → ℂ) u := by
+      refine Filter.eventually_all.mpr ?_
+      intro c
+      have hmem :
+          ∀ᶠ ε in 𝓝[Set.Ioi 0] (0 : ℝ),
+            ∀ u,
+              u ∈ Function.support
+                  (piece c : NPointDomain d n → ℂ) →
+                BHW.os45FlatCommonChartSourceSide d n ρperm sgn ε η u ∈
+                  A.carrier ∩ (B c).carrier := by
+        have hmem_tsupport :
+            ∀ᶠ ε in 𝓝[Set.Ioi 0] (0 : ℝ),
+              ∀ u ∈ tsupport (piece c : NPointDomain d n → ℂ),
+                BHW.os45FlatCommonChartSourceSide d n ρperm sgn ε η u ∈
+                  A.carrier ∩ (B c).carrier :=
+          BHW.eventually_forall_os45FlatCommonChartSourceSide_mem_of_compact
+            (d := d) (n := n) ρperm sgn η
+            (hpiece_compact c).isCompact
+            (A.carrier_open.inter (B c).carrier_open)
+            (by
+              intro u hu
+              exact hzero c u (hpiece_sub c hu))
+        filter_upwards [hmem_tsupport] with ε hε u hu
+        exact hε u (subset_tsupport _ hu)
+      filter_upwards [hmem] with ε hε
+      apply integral_congr_ae
+      refine Filter.Eventually.of_forall ?_
+      intro u
+      by_cases hu :
+          u ∈ Function.support (piece c : NPointDomain d n → ℂ)
+      · have hbranch := hEqOn c (hε u hu)
+        change
+          A.branch
+              (BHW.os45FlatCommonChartSourceSide d n ρperm sgn ε η u) *
+            (piece c : NPointDomain d n → ℂ) u =
+          (B c).branch
+              (BHW.os45FlatCommonChartSourceSide d n ρperm sgn ε η u) *
+            (piece c : NPointDomain d n → ℂ) u
+        rw [hbranch]
+      · have hzero_piece :
+            (piece c : NPointDomain d n → ℂ) u = 0 := by
+          by_contra hne
+          exact hu (by simpa [Function.mem_support] using hne)
+        simp [hzero_piece]
+    filter_upwards [hpieces] with ε hε
+    exact Finset.sum_congr rfl
+      (by
+        intro c _hc
+        exact hε c)
+  exact hsplit.trans hto_chart
+
+private theorem integrable_pointed_fixedApproach_mul_of_compactSupport
+    {d n : ℕ} [NeZero d]
+    (A : PointedMetricBranchChart (Fin n → Fin (d + 1) → ℂ) ℂ)
+    (approach : NPointDomain d n → Fin n → Fin (d + 1) → ℂ)
+    (happroach_cont : Continuous approach)
+    (w : SchwartzNPoint d n)
+    (hw_comp : HasCompactSupport (w : NPointDomain d n → ℂ))
+    (hmem :
+      ∀ u ∈ tsupport (w : NPointDomain d n → ℂ),
+        approach u ∈ A.carrier) :
+    Integrable
+      (fun u : NPointDomain d n =>
+        A.branch (approach u) *
+        (w : NPointDomain d n → ℂ) u) := by
+  let U : Set (NPointDomain d n) := approach ⁻¹' A.carrier
+  have hU_open : IsOpen U := by
+    simpa [U] using A.carrier_open.preimage happroach_cont
+  have hH_cont :
+      ContinuousOn (fun u : NPointDomain d n =>
+        A.branch (approach u)) U := by
+    exact A.holo.continuousOn.comp happroach_cont.continuousOn
+      (by intro u hu; simpa [U] using hu)
+  have hw_sub : tsupport (w : NPointDomain d n → ℂ) ⊆ U := by
+    intro u hu
+    simpa [U] using hmem u hu
+  have hprod_cont :
+      Continuous
+        (fun u : NPointDomain d n =>
+          (w : NPointDomain d n → ℂ) u *
+            A.branch (approach u)) :=
+    SCV.continuous_mul_of_continuousOn_of_tsupport_subset_open
+      hU_open w.continuous hw_sub hH_cont
+  have hprod_cont' :
+      Continuous
+        (fun u : NPointDomain d n =>
+          A.branch (approach u) *
+            (w : NPointDomain d n → ℂ) u) := by
+    simpa [mul_comm] using hprod_cont
+  have hprod_comp :
+      HasCompactSupport
+        (fun u : NPointDomain d n =>
+          A.branch (approach u) *
+            (w : NPointDomain d n → ℂ) u) := by
+    refine hw_comp.mono' ?_
+    intro u hu
+    by_contra huw
+    have hw_zero :
+        (w : NPointDomain d n → ℂ) u = 0 :=
+      image_eq_zero_of_notMem_tsupport huw
+    exact hu (by simp [hw_zero])
+  exact hprod_cont'.integrable_of_hasCompactSupport hprod_comp
+
+private theorem fixedApproach_integral_eq_sum_chart_partition
+    {d n : ℕ} [NeZero d] {α : Type*} [Fintype α]
+    (A : PointedMetricBranchChart (Fin n → Fin (d + 1) → ℂ) ℂ)
+    (B : α → PointedMetricBranchChart (Fin n → Fin (d + 1) → ℂ) ℂ)
+    (approach : NPointDomain d n → Fin n → Fin (d + 1) → ℂ)
+    (happroach_cont : Continuous approach)
+    (w : SchwartzNPoint d n)
+    (hw_comp : HasCompactSupport (w : NPointDomain d n → ℂ))
+    (U : α → Set (NPointDomain d n))
+    (hU_open : ∀ c, IsOpen (U c))
+    (hcover : tsupport (w : NPointDomain d n → ℂ) ⊆ ⋃ c, U c)
+    (hzero :
+      ∀ c, ∀ u ∈ U c,
+        approach u ∈ A.carrier ∩ (B c).carrier)
+    (hEqOn :
+      ∀ c, Set.EqOn A.branch (B c).branch
+        (A.carrier ∩ (B c).carrier)) :
+    ∃ piece : α → SchwartzNPoint d n,
+      (∀ c, HasCompactSupport (piece c : NPointDomain d n → ℂ)) ∧
+      (∀ c, tsupport (piece c : NPointDomain d n → ℂ) ⊆ U c) ∧
+      (w = ∑ c, piece c) ∧
+      ((∫ u : NPointDomain d n,
+        A.branch (approach u) *
+        (w : NPointDomain d n → ℂ) u) =
+      ∑ c : α,
+        ∫ u : NPointDomain d n,
+          (B c).branch (approach u) *
+          (piece c : NPointDomain d n → ℂ) u) := by
+  obtain
+      ⟨piece, _hpiece_factor, hpiece_compact, _hpiece_base,
+        hpiece_sub, hpiece_sum⟩ :=
+    exists_finite_schwartz_smul_partition_on_tsupport
+      (w := w) hw_comp hU_open hcover
+  refine ⟨piece, hpiece_compact, hpiece_sub, hpiece_sum, ?_⟩
+  have hsum_fun :
+      ∀ u,
+        (w : NPointDomain d n → ℂ) u =
+          ∑ c : α, (piece c : NPointDomain d n → ℂ) u := by
+    intro u
+    have happly :=
+      congrArg
+        (fun f : SchwartzNPoint d n =>
+          (f : NPointDomain d n → ℂ) u)
+        hpiece_sum
+    simpa using happly
+  have hsplit :
+      (∫ u : NPointDomain d n,
+        A.branch (approach u) *
+        (w : NPointDomain d n → ℂ) u) =
+      ∑ c : α,
+        ∫ u : NPointDomain d n,
+          A.branch (approach u) *
+          (piece c : NPointDomain d n → ℂ) u := by
+    exact
+      integral_mul_eq_sum_integral_mul_of_finite_sum
+        (X := NPointDomain d n)
+        (F := fun u : NPointDomain d n =>
+          A.branch (approach u))
+        (w := fun u : NPointDomain d n =>
+          (w : NPointDomain d n → ℂ) u)
+        (piece := fun c u => (piece c : NPointDomain d n → ℂ) u)
+        hsum_fun
+        (by
+          intro c _hc
+          exact
+            integrable_pointed_fixedApproach_mul_of_compactSupport
+              (d := d) (n := n) A approach happroach_cont
+              (piece c) (hpiece_compact c)
+              (by
+                intro u hu
+                exact (hzero c u (hpiece_sub c hu)).1))
+  have hto_chart :
+      (∑ c : α,
+        ∫ u : NPointDomain d n,
+          A.branch (approach u) *
+          (piece c : NPointDomain d n → ℂ) u) =
+      ∑ c : α,
+        ∫ u : NPointDomain d n,
+          (B c).branch (approach u) *
+          (piece c : NPointDomain d n → ℂ) u := by
+    apply Finset.sum_congr rfl
+    intro c _hc
+    apply integral_congr_ae
+    refine Filter.Eventually.of_forall ?_
+    intro u
+    by_cases hu :
+        u ∈ Function.support (piece c : NPointDomain d n → ℂ)
+    · have hmem :
+          approach u ∈ A.carrier ∩ (B c).carrier :=
+        hzero c u (hpiece_sub c (subset_tsupport _ hu))
+      have hbranch := hEqOn c hmem
+      change
+        A.branch (approach u) *
+          (piece c : NPointDomain d n → ℂ) u =
+        (B c).branch (approach u) *
+          (piece c : NPointDomain d n → ℂ) u
+      rw [hbranch]
+    · have hzero_piece :
+          (piece c : NPointDomain d n → ℂ) u = 0 := by
+        by_contra hne
+        exact hu (by simpa [Function.mem_support] using hne)
+      simp [hzero_piece]
+  exact hsplit.trans hto_chart
+
+private theorem fixed_sourceSide_integral_common_chart_partition
+    {d n : ℕ} [NeZero d] {α : Type*} [Fintype α]
+    (ρperm : Equiv.Perm (Fin n)) (sgn : ℝ)
+    (η : BHW.OS45FlatCommonChartReal d n)
+    (Astatic Amoving :
+      PointedMetricBranchChart (Fin n → Fin (d + 1) → ℂ) ℂ)
+    (Bstatic Bmoving :
+      α → PointedMetricBranchChart (Fin n → Fin (d + 1) → ℂ) ℂ)
+    (staticApproach : NPointDomain d n → Fin n → Fin (d + 1) → ℂ)
+    (hstatic_cont : Continuous staticApproach)
+    (w : SchwartzNPoint d n)
+    (hw_comp : HasCompactSupport (w : NPointDomain d n → ℂ))
+    (hw_vanish : VanishesToInfiniteOrderOnCoincidence w)
+    (U : α → Set (NPointDomain d n))
+    (hU_open : ∀ c, IsOpen (U c))
+    (hcover : tsupport (w : NPointDomain d n → ℂ) ⊆ ⋃ c, U c)
+    (hstatic_zero :
+      ∀ c, ∀ u ∈ U c,
+        staticApproach u ∈ Astatic.carrier ∩ (Bstatic c).carrier)
+    (hmoving_zero :
+      ∀ c, ∀ u ∈ U c,
+        BHW.os45FlatCommonChartSourceSide d n ρperm sgn 0 η u ∈
+          Amoving.carrier ∩ (Bmoving c).carrier)
+    (hstatic_eqOn :
+      ∀ c, Set.EqOn Astatic.branch (Bstatic c).branch
+        (Astatic.carrier ∩ (Bstatic c).carrier))
+    (hmoving_eqOn :
+      ∀ c, Set.EqOn Amoving.branch (Bmoving c).branch
+        (Amoving.carrier ∩ (Bmoving c).carrier)) :
+    ∃ piece : α → SchwartzNPoint d n,
+      (∀ c, HasCompactSupport (piece c : NPointDomain d n → ℂ)) ∧
+      (∀ c, VanishesToInfiniteOrderOnCoincidence (piece c)) ∧
+      (∀ c, tsupport (piece c : NPointDomain d n → ℂ) ⊆
+        tsupport (w : NPointDomain d n → ℂ)) ∧
+      (∀ c, tsupport (piece c : NPointDomain d n → ℂ) ⊆ U c) ∧
+      (w = ∑ c, piece c) ∧
+      ((∫ u : NPointDomain d n,
+        Astatic.branch (staticApproach u) *
+        (w : NPointDomain d n → ℂ) u) =
+      ∑ c : α,
+        ∫ u : NPointDomain d n,
+          (Bstatic c).branch (staticApproach u) *
+          (piece c : NPointDomain d n → ℂ) u) ∧
+      ((fun ε : ℝ =>
+        ∫ u : NPointDomain d n,
+          Amoving.branch
+            (BHW.os45FlatCommonChartSourceSide d n ρperm sgn ε η u) *
+          (w : NPointDomain d n → ℂ) u)
+        =ᶠ[𝓝[Set.Ioi 0] (0 : ℝ)]
+      fun ε : ℝ =>
+        ∑ c : α,
+          ∫ u : NPointDomain d n,
+            (Bmoving c).branch
+              (BHW.os45FlatCommonChartSourceSide d n ρperm sgn ε η u) *
+            (piece c : NPointDomain d n → ℂ) u) := by
+  obtain
+      ⟨piece, hpiece_factor, hpiece_compact, hpiece_base, hpiece_sub,
+        hpiece_sum⟩ :=
+    exists_finite_schwartz_smul_partition_on_tsupport
+      (w := w) hw_comp hU_open hcover
+  have hpiece_vanish :
+      ∀ c, VanishesToInfiniteOrderOnCoincidence (piece c) := by
+    intro c
+    rcases hpiece_factor c with ⟨χ, hχ⟩
+    have h :=
+      VanishesToInfiniteOrderOnCoincidence.smulLeft_schwartzNPoint
+        (ψ := χ) (f := w) hw_vanish
+    simpa [hχ] using h
+  refine
+    ⟨piece, hpiece_compact, hpiece_vanish, hpiece_base, hpiece_sub,
+      hpiece_sum, ?_, ?_⟩
+  have hsum_fun :
+      ∀ u,
+        (w : NPointDomain d n → ℂ) u =
+          ∑ c : α, (piece c : NPointDomain d n → ℂ) u := by
+    intro u
+    have happly :=
+      congrArg
+        (fun f : SchwartzNPoint d n =>
+          (f : NPointDomain d n → ℂ) u)
+        hpiece_sum
+    simpa using happly
+  · have hsplit :
+        (∫ u : NPointDomain d n,
+          Astatic.branch (staticApproach u) *
+          (w : NPointDomain d n → ℂ) u) =
+        ∑ c : α,
+          ∫ u : NPointDomain d n,
+            Astatic.branch (staticApproach u) *
+            (piece c : NPointDomain d n → ℂ) u := by
+      exact
+        integral_mul_eq_sum_integral_mul_of_finite_sum
+          (X := NPointDomain d n)
+          (F := fun u : NPointDomain d n =>
+            Astatic.branch (staticApproach u))
+          (w := fun u : NPointDomain d n =>
+            (w : NPointDomain d n → ℂ) u)
+          (piece := fun c u => (piece c : NPointDomain d n → ℂ) u)
+          hsum_fun
+          (by
+            intro c _hc
+            exact
+              integrable_pointed_fixedApproach_mul_of_compactSupport
+                (d := d) (n := n) Astatic staticApproach
+                hstatic_cont (piece c) (hpiece_compact c)
+                (by
+                  intro u hu
+                  exact (hstatic_zero c u (hpiece_sub c hu)).1))
+    have hto_chart :
+        (∑ c : α,
+          ∫ u : NPointDomain d n,
+            Astatic.branch (staticApproach u) *
+            (piece c : NPointDomain d n → ℂ) u) =
+        ∑ c : α,
+          ∫ u : NPointDomain d n,
+            (Bstatic c).branch (staticApproach u) *
+            (piece c : NPointDomain d n → ℂ) u := by
+      apply Finset.sum_congr rfl
+      intro c _hc
+      apply integral_congr_ae
+      refine Filter.Eventually.of_forall ?_
+      intro u
+      by_cases hu :
+          u ∈ Function.support (piece c : NPointDomain d n → ℂ)
+      · have hmem :
+            staticApproach u ∈ Astatic.carrier ∩ (Bstatic c).carrier :=
+          hstatic_zero c u (hpiece_sub c (subset_tsupport _ hu))
+        have hbranch := hstatic_eqOn c hmem
+        change
+          Astatic.branch (staticApproach u) *
+            (piece c : NPointDomain d n → ℂ) u =
+          (Bstatic c).branch (staticApproach u) *
+            (piece c : NPointDomain d n → ℂ) u
+        rw [hbranch]
+      · have hzero_piece :
+            (piece c : NPointDomain d n → ℂ) u = 0 := by
+          by_contra hne
+          exact hu (by simpa [Function.mem_support] using hne)
+        simp [hzero_piece]
+    exact hsplit.trans hto_chart
+  · have hsum_fun :
+        ∀ u,
+          (w : NPointDomain d n → ℂ) u =
+            ∑ c : α, (piece c : NPointDomain d n → ℂ) u := by
+      intro u
+      have happly :=
+        congrArg
+          (fun f : SchwartzNPoint d n =>
+            (f : NPointDomain d n → ℂ) u)
+          hpiece_sum
+      simpa using happly
+    have hint :
+        ∀ᶠ ε in 𝓝[Set.Ioi 0] (0 : ℝ),
+          ∀ c : α,
+            Integrable
+              (fun u : NPointDomain d n =>
+                Amoving.branch
+                  (BHW.os45FlatCommonChartSourceSide
+                    d n ρperm sgn ε η u) *
+                (piece c : NPointDomain d n → ℂ) u) ∧
+            Integrable
+              (fun u : NPointDomain d n =>
+                (Bmoving c).branch
+                  (BHW.os45FlatCommonChartSourceSide
+                    d n ρperm sgn ε η u) *
+                (piece c : NPointDomain d n → ℂ) u) := by
+      refine Filter.eventually_all.mpr ?_
+      intro c
+      have h0 :
+          ∀ u ∈ tsupport (piece c : NPointDomain d n → ℂ),
+            BHW.os45FlatCommonChartSourceSide d n ρperm sgn 0 η u ∈
+              Amoving.carrier ∩ (Bmoving c).carrier := by
+        intro u hu
+        exact hmoving_zero c u (hpiece_sub c hu)
+      exact
+        eventually_integrable_two_pointed_sourceSide_pieces
+          (d := d) (n := n) ρperm sgn η Amoving (Bmoving c)
+          (piece c) (hpiece_compact c) h0
+    have hsplit :
+        (fun ε : ℝ =>
+          ∫ u : NPointDomain d n,
+            Amoving.branch
+              (BHW.os45FlatCommonChartSourceSide d n ρperm sgn ε η u) *
+            (w : NPointDomain d n → ℂ) u)
+          =ᶠ[𝓝[Set.Ioi 0] (0 : ℝ)]
+        fun ε : ℝ =>
+          ∑ c : α,
+            ∫ u : NPointDomain d n,
+              Amoving.branch
+                (BHW.os45FlatCommonChartSourceSide d n ρperm sgn ε η u) *
+              (piece c : NPointDomain d n → ℂ) u := by
+      filter_upwards [hint] with ε hε
+      exact
+        integral_mul_eq_sum_integral_mul_of_finite_sum
+          (X := NPointDomain d n)
+          (F := fun u : NPointDomain d n =>
+            Amoving.branch
+              (BHW.os45FlatCommonChartSourceSide d n ρperm sgn ε η u))
+          (w := fun u : NPointDomain d n =>
+            (w : NPointDomain d n → ℂ) u)
+          (piece := fun c u => (piece c : NPointDomain d n → ℂ) u)
+          hsum_fun
+          (by
+            intro c _hc
+            exact (hε c).1)
+    have hto_chart :
+        (fun ε : ℝ =>
+          ∑ c : α,
+            ∫ u : NPointDomain d n,
+              Amoving.branch
+                (BHW.os45FlatCommonChartSourceSide d n ρperm sgn ε η u) *
+              (piece c : NPointDomain d n → ℂ) u)
+          =ᶠ[𝓝[Set.Ioi 0] (0 : ℝ)]
+        fun ε : ℝ =>
+          ∑ c : α,
+            ∫ u : NPointDomain d n,
+              (Bmoving c).branch
+                (BHW.os45FlatCommonChartSourceSide d n ρperm sgn ε η u) *
+              (piece c : NPointDomain d n → ℂ) u := by
+      have hpieces :
+          ∀ᶠ ε in 𝓝[Set.Ioi 0] (0 : ℝ),
+            ∀ c : α,
+              (∫ u : NPointDomain d n,
+                Amoving.branch
+                  (BHW.os45FlatCommonChartSourceSide
+                    d n ρperm sgn ε η u) *
+                (piece c : NPointDomain d n → ℂ) u) =
+              ∫ u : NPointDomain d n,
+                (Bmoving c).branch
+                  (BHW.os45FlatCommonChartSourceSide
+                    d n ρperm sgn ε η u) *
+                (piece c : NPointDomain d n → ℂ) u := by
+        refine Filter.eventually_all.mpr ?_
+        intro c
+        have hmem :
+            ∀ᶠ ε in 𝓝[Set.Ioi 0] (0 : ℝ),
+              ∀ u,
+                u ∈ Function.support
+                    (piece c : NPointDomain d n → ℂ) →
+                  BHW.os45FlatCommonChartSourceSide d n ρperm sgn ε η u ∈
+                    Amoving.carrier ∩ (Bmoving c).carrier := by
+          have hmem_tsupport :
+              ∀ᶠ ε in 𝓝[Set.Ioi 0] (0 : ℝ),
+                ∀ u ∈ tsupport (piece c : NPointDomain d n → ℂ),
+                  BHW.os45FlatCommonChartSourceSide d n ρperm sgn ε η u ∈
+                    Amoving.carrier ∩ (Bmoving c).carrier :=
+            BHW.eventually_forall_os45FlatCommonChartSourceSide_mem_of_compact
+              (d := d) (n := n) ρperm sgn η
+              (hpiece_compact c).isCompact
+              (Amoving.carrier_open.inter (Bmoving c).carrier_open)
+              (by
+                intro u hu
+                exact hmoving_zero c u (hpiece_sub c hu))
+          filter_upwards [hmem_tsupport] with ε hε u hu
+          exact hε u (subset_tsupport _ hu)
+        filter_upwards [hmem] with ε hε
+        apply integral_congr_ae
+        refine Filter.Eventually.of_forall ?_
+        intro u
+        by_cases hu :
+            u ∈ Function.support (piece c : NPointDomain d n → ℂ)
+        · have hbranch := hmoving_eqOn c (hε u hu)
+          change
+            Amoving.branch
+                (BHW.os45FlatCommonChartSourceSide d n ρperm sgn ε η u) *
+              (piece c : NPointDomain d n → ℂ) u =
+            (Bmoving c).branch
+                (BHW.os45FlatCommonChartSourceSide d n ρperm sgn ε η u) *
+              (piece c : NPointDomain d n → ℂ) u
+          rw [hbranch]
+        · have hzero_piece :
+              (piece c : NPointDomain d n → ℂ) u = 0 := by
+            by_contra hne
+            exact hu (by simpa [Function.mem_support] using hne)
+          simp [hzero_piece]
+      filter_upwards [hpieces] with ε hε
+      exact Finset.sum_congr rfl
+        (by
+          intro c _hc
+          exact hε c)
+    exact hsplit.trans hto_chart
+
+private theorem fixed_sourceSide_integral_refined_chart_partition
+    {d n : ℕ} [NeZero d]
+    {α β : Type*} [Fintype α] [Fintype β]
+    (ρperm : Equiv.Perm (Fin n)) (sgn : ℝ)
+    (η : BHW.OS45FlatCommonChartReal d n)
+    (Astatic Amoving :
+      PointedMetricBranchChart (Fin n → Fin (d + 1) → ℂ) ℂ)
+    (Bstatic : α →
+      PointedMetricBranchChart (Fin n → Fin (d + 1) → ℂ) ℂ)
+    (Bmoving : β →
+      PointedMetricBranchChart (Fin n → Fin (d + 1) → ℂ) ℂ)
+    (staticApproach : NPointDomain d n → Fin n → Fin (d + 1) → ℂ)
+    (hstatic_cont : Continuous staticApproach)
+    (w : SchwartzNPoint d n)
+    (hw_comp : HasCompactSupport (w : NPointDomain d n → ℂ))
+    (hw_vanish : VanishesToInfiniteOrderOnCoincidence w)
+    (Ustatic : α → Set (NPointDomain d n))
+    (Umoving : β → Set (NPointDomain d n))
+    (hUstatic_open : ∀ c, IsOpen (Ustatic c))
+    (hUmoving_open : ∀ c, IsOpen (Umoving c))
+    (hstatic_cover :
+      tsupport (w : NPointDomain d n → ℂ) ⊆ ⋃ c, Ustatic c)
+    (hmoving_cover :
+      tsupport (w : NPointDomain d n → ℂ) ⊆ ⋃ c, Umoving c)
+    (hstatic_zero :
+      ∀ c, ∀ u ∈ Ustatic c,
+        staticApproach u ∈ Astatic.carrier ∩ (Bstatic c).carrier)
+    (hmoving_zero :
+      ∀ c, ∀ u ∈ Umoving c,
+        BHW.os45FlatCommonChartSourceSide d n ρperm sgn 0 η u ∈
+          Amoving.carrier ∩ (Bmoving c).carrier)
+    (hstatic_eqOn :
+      ∀ c, Set.EqOn Astatic.branch (Bstatic c).branch
+        (Astatic.carrier ∩ (Bstatic c).carrier))
+    (hmoving_eqOn :
+      ∀ c, Set.EqOn Amoving.branch (Bmoving c).branch
+        (Amoving.carrier ∩ (Bmoving c).carrier)) :
+    ∃ piece : α × β → SchwartzNPoint d n,
+      (∀ c, HasCompactSupport (piece c : NPointDomain d n → ℂ)) ∧
+      (∀ c, VanishesToInfiniteOrderOnCoincidence (piece c)) ∧
+      (∀ c, tsupport (piece c : NPointDomain d n → ℂ) ⊆
+        tsupport (w : NPointDomain d n → ℂ)) ∧
+      (∀ c,
+        tsupport (piece c : NPointDomain d n → ℂ) ⊆
+          Ustatic c.1 ∩ Umoving c.2) ∧
+      (w = ∑ c, piece c) ∧
+      ((∫ u : NPointDomain d n,
+        Astatic.branch (staticApproach u) *
+        (w : NPointDomain d n → ℂ) u) =
+      ∑ c : α × β,
+        ∫ u : NPointDomain d n,
+          (Bstatic c.1).branch (staticApproach u) *
+          (piece c : NPointDomain d n → ℂ) u) ∧
+      ((fun ε : ℝ =>
+        ∫ u : NPointDomain d n,
+          Amoving.branch
+            (BHW.os45FlatCommonChartSourceSide d n ρperm sgn ε η u) *
+          (w : NPointDomain d n → ℂ) u)
+        =ᶠ[𝓝[Set.Ioi 0] (0 : ℝ)]
+      fun ε : ℝ =>
+        ∑ c : α × β,
+          ∫ u : NPointDomain d n,
+            (Bmoving c.2).branch
+              (BHW.os45FlatCommonChartSourceSide d n ρperm sgn ε η u) *
+            (piece c : NPointDomain d n → ℂ) u) := by
+  let U : α × β → Set (NPointDomain d n) := fun c =>
+    Ustatic c.1 ∩ Umoving c.2
+  have hU_open : ∀ c : α × β, IsOpen (U c) := by
+    intro c
+    exact (hUstatic_open c.1).inter (hUmoving_open c.2)
+  have hcover :
+      tsupport (w : NPointDomain d n → ℂ) ⊆ ⋃ c : α × β, U c := by
+    intro u hu
+    rcases Set.mem_iUnion.mp (hstatic_cover hu) with ⟨cs, hcs⟩
+    rcases Set.mem_iUnion.mp (hmoving_cover hu) with ⟨cm, hcm⟩
+    exact Set.mem_iUnion.mpr ⟨(cs, cm), ⟨hcs, hcm⟩⟩
+  obtain
+      ⟨piece, hpiece_compact, hpiece_vanish, hpiece_base, hpiece_sub,
+        hpiece_sum, hstatic, hmoving⟩ :=
+    fixed_sourceSide_integral_common_chart_partition
+      (d := d) (n := n) ρperm sgn η Astatic Amoving
+      (fun c : α × β => Bstatic c.1)
+      (fun c : α × β => Bmoving c.2)
+      staticApproach hstatic_cont w hw_comp hw_vanish U hU_open hcover
+      (by
+        intro c u hu
+        exact hstatic_zero c.1 u hu.1)
+      (by
+        intro c u hu
+        exact hmoving_zero c.2 u hu.2)
+      (by
+        intro c
+        exact hstatic_eqOn c.1)
+      (by
+        intro c
+        exact hmoving_eqOn c.2)
+  exact
+    ⟨piece, hpiece_compact, hpiece_vanish, hpiece_base, hpiece_sub,
+      hpiece_sum, hstatic, hmoving⟩
+
+private theorem fixed_sourceSide_integral_refined_chart_partition_tendsto_of_local
+    {d n : ℕ} [NeZero d]
+    {α β : Type*} [Fintype α] [Fintype β]
+    (ρperm : Equiv.Perm (Fin n)) (sgn : ℝ)
+    (η : BHW.OS45FlatCommonChartReal d n)
+    (Astatic Amoving :
+      PointedMetricBranchChart (Fin n → Fin (d + 1) → ℂ) ℂ)
+    (Bstatic : α →
+      PointedMetricBranchChart (Fin n → Fin (d + 1) → ℂ) ℂ)
+    (Bmoving : β →
+      PointedMetricBranchChart (Fin n → Fin (d + 1) → ℂ) ℂ)
+    (staticApproach : NPointDomain d n → Fin n → Fin (d + 1) → ℂ)
+    (hstatic_cont : Continuous staticApproach)
+    (w : SchwartzNPoint d n)
+    (hw_comp : HasCompactSupport (w : NPointDomain d n → ℂ))
+    (hw_vanish : VanishesToInfiniteOrderOnCoincidence w)
+    (Ustatic : α → Set (NPointDomain d n))
+    (Umoving : β → Set (NPointDomain d n))
+    (hUstatic_open : ∀ c, IsOpen (Ustatic c))
+    (hUmoving_open : ∀ c, IsOpen (Umoving c))
+    (hstatic_cover :
+      tsupport (w : NPointDomain d n → ℂ) ⊆ ⋃ c, Ustatic c)
+    (hmoving_cover :
+      tsupport (w : NPointDomain d n → ℂ) ⊆ ⋃ c, Umoving c)
+    (hstatic_zero :
+      ∀ c, ∀ u ∈ Ustatic c,
+        staticApproach u ∈ Astatic.carrier ∩ (Bstatic c).carrier)
+    (hmoving_zero :
+      ∀ c, ∀ u ∈ Umoving c,
+        BHW.os45FlatCommonChartSourceSide d n ρperm sgn 0 η u ∈
+          Amoving.carrier ∩ (Bmoving c).carrier)
+    (hstatic_eqOn :
+      ∀ c, Set.EqOn Astatic.branch (Bstatic c).branch
+        (Astatic.carrier ∩ (Bstatic c).carrier))
+    (hmoving_eqOn :
+      ∀ c, Set.EqOn Amoving.branch (Bmoving c).branch
+        (Amoving.carrier ∩ (Bmoving c).carrier))
+    (hlocal :
+      ∀ (cs : α) (cm : β) (piece : SchwartzNPoint d n),
+        HasCompactSupport (piece : NPointDomain d n → ℂ) →
+        VanishesToInfiniteOrderOnCoincidence piece →
+        tsupport (piece : NPointDomain d n → ℂ) ⊆
+          tsupport (w : NPointDomain d n → ℂ) →
+        tsupport (piece : NPointDomain d n → ℂ) ⊆
+          Ustatic cs ∩ Umoving cm →
+        Tendsto
+          (fun ε : ℝ =>
+            ∫ u : NPointDomain d n,
+              (Bmoving cm).branch
+                (BHW.os45FlatCommonChartSourceSide
+                  d n ρperm sgn ε η u) *
+              (piece : NPointDomain d n → ℂ) u)
+          (𝓝[Set.Ioi 0] (0 : ℝ))
+          (𝓝
+            (∫ u : NPointDomain d n,
+              (Bstatic cs).branch (staticApproach u) *
+              (piece : NPointDomain d n → ℂ) u))) :
+    Tendsto
+      (fun ε : ℝ =>
+        ∫ u : NPointDomain d n,
+          Amoving.branch
+            (BHW.os45FlatCommonChartSourceSide d n ρperm sgn ε η u) *
+          (w : NPointDomain d n → ℂ) u)
+      (𝓝[Set.Ioi 0] (0 : ℝ))
+      (𝓝
+        (∫ u : NPointDomain d n,
+          Astatic.branch (staticApproach u) *
+          (w : NPointDomain d n → ℂ) u)) := by
+  obtain
+      ⟨piece, hpiece_compact, hpiece_vanish, hpiece_base, hpiece_sub,
+        _hpiece_sum, hstatic, hmoving⟩ :=
+    fixed_sourceSide_integral_refined_chart_partition
+      (d := d) (n := n) ρperm sgn η Astatic Amoving
+      Bstatic Bmoving staticApproach hstatic_cont w hw_comp
+      hw_vanish
+      Ustatic Umoving hUstatic_open hUmoving_open
+      hstatic_cover hmoving_cover hstatic_zero hmoving_zero
+      hstatic_eqOn hmoving_eqOn
+  have hsum :
+      Tendsto
+        (fun ε : ℝ =>
+          ∑ c : α × β,
+            ∫ u : NPointDomain d n,
+              (Bmoving c.2).branch
+                (BHW.os45FlatCommonChartSourceSide
+                  d n ρperm sgn ε η u) *
+              (piece c : NPointDomain d n → ℂ) u)
+        (𝓝[Set.Ioi 0] (0 : ℝ))
+        (𝓝
+          (∑ c : α × β,
+            ∫ u : NPointDomain d n,
+              (Bstatic c.1).branch (staticApproach u) *
+              (piece c : NPointDomain d n → ℂ) u)) := by
+    refine tendsto_finset_sum Finset.univ ?_
+    intro c _hc
+    exact
+      hlocal c.1 c.2 (piece c) (hpiece_compact c)
+        (hpiece_vanish c) (hpiece_base c) (hpiece_sub c)
+  have htarget :
+      (∑ c : α × β,
+        ∫ u : NPointDomain d n,
+          (Bstatic c.1).branch (staticApproach u) *
+          (piece c : NPointDomain d n → ℂ) u) =
+      ∫ u : NPointDomain d n,
+        Astatic.branch (staticApproach u) *
+        (w : NPointDomain d n → ℂ) u :=
+    hstatic.symm
+  exact (htarget ▸ hsum).congr' hmoving.symm
+
+private theorem commonEdge_pulledRealBranch_sub_eq_zero_of_extendF_perm_eq
+    [NeZero d] (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {n : ℕ} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (u : NPointDomain d n)
+    (hEq :
+      BHW.extendF (bvt_F OS lgc n)
+          (BHW.permAct (d := d) P.τ
+            ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+              (BHW.realEmbed
+                (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                  (1 : Equiv.Perm (Fin n)) u)))) =
+        BHW.extendF (bvt_F OS lgc n)
+          ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u)))) :
+    (0 : ℂ) =
+      BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+          (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+          (BHW.realEmbed
+            (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+              (1 : Equiv.Perm (Fin n)) u)) -
+        BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+          (1 : Equiv.Perm (Fin n))
+          (BHW.realEmbed
+            (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+              (1 : Equiv.Perm (Fin n)) u)) := by
+  let p0 : Fin n → Fin (d + 1) → ℂ :=
+    (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+      (BHW.realEmbed
+        (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+          (1 : Equiv.Perm (Fin n)) u))
+  have hAdj :
+      BHW.extendF (bvt_F OS lgc n)
+          (BHW.permAct (d := d) P.τ p0) =
+        BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+          (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+          (BHW.realEmbed
+            (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+              (1 : Equiv.Perm (Fin n)) u)) := by
+    simpa [p0] using
+      BHW.os45Figure24CommonEdge_permAct_extendF_eq_adjacentPulledRealBranch
+        (d := d) (n := n) hd OS lgc (P := P) u
+  have hOrd :
+      BHW.extendF (bvt_F OS lgc n) p0 =
+        BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+          (1 : Equiv.Perm (Fin n))
+          (BHW.realEmbed
+            (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+              (1 : Equiv.Perm (Fin n)) u)) := by
+    simp [BHW.os45PulledRealBranch, p0]
+  rw [← hAdj, ← hOrd]
+  exact (sub_eq_zero.mpr (by simpa [p0] using hEq)).symm
+
+private theorem eventually_forall_os45FlatCommonChartSourceSide_mem_finset_cover
+    {d n : ℕ} [NeZero d] {ι : Type*}
+    (ρperm : Equiv.Perm (Fin n)) (sgn : ℝ)
+    (η : BHW.OS45FlatCommonChartReal d n)
+    (s : Finset ι)
+    (U : ι → Set (Fin n → Fin (d + 1) → ℂ))
+    (hU_open : ∀ i ∈ s, IsOpen (U i))
+    {φ : NPointDomain d n → ℂ}
+    (hφ_compact : HasCompactSupport φ)
+    (h0 :
+      ∀ u ∈ tsupport φ,
+        ∃ i : ι,
+          i ∈ s ∧
+            BHW.os45FlatCommonChartSourceSide
+              d n ρperm sgn 0 η u ∈ U i) :
+    ∀ᶠ eps in 𝓝[Set.Ioi 0] (0 : ℝ),
+      ∀ u,
+        u ∈ Function.support φ →
+          ∃ i : ι,
+            i ∈ s ∧
+              BHW.os45FlatCommonChartSourceSide
+                d n ρperm sgn eps η u ∈ U i := by
+  classical
+  let V : Set (Fin n → Fin (d + 1) → ℂ) :=
+    {z | ∃ i : ι, i ∈ s ∧ z ∈ U i}
+  have hV_open : IsOpen V := by
+    have hset : V = ⋃ i ∈ s, U i := by
+      ext z
+      simp [V]
+    rw [hset]
+    exact isOpen_biUnion hU_open
+  have h0V :
+      ∀ u ∈ tsupport φ,
+        BHW.os45FlatCommonChartSourceSide
+          d n ρperm sgn 0 η u ∈ V := by
+    intro u hu
+    simpa [V] using h0 u hu
+  have hcover :
+      ∀ᶠ eps in 𝓝[Set.Ioi 0] (0 : ℝ),
+        ∀ u ∈ tsupport φ,
+          BHW.os45FlatCommonChartSourceSide
+            d n ρperm sgn eps η u ∈ V :=
+    BHW.eventually_forall_os45FlatCommonChartSourceSide_mem_of_compact
+      (d := d) (n := n) ρperm sgn η
+      hφ_compact.isCompact hV_open h0V
+  filter_upwards [hcover] with eps heps u hu
+  have huK : u ∈ tsupport φ := subset_tsupport _ hu
+  simpa [V] using heps u huK
+
+private theorem eventually_forall_os45FlatCommonChartSourceSide_mem_finset_cover_inter
+    {d n : ℕ} [NeZero d] {ι : Type*}
+    (ρperm : Equiv.Perm (Fin n)) (sgn : ℝ)
+    (η : BHW.OS45FlatCommonChartReal d n)
+    (s : Finset ι)
+    (U : ι → Set (Fin n → Fin (d + 1) → ℂ))
+    (C : Set (Fin n → Fin (d + 1) → ℂ))
+    (hU_open : ∀ i ∈ s, IsOpen (U i))
+    {φ : NPointDomain d n → ℂ}
+    (hφ_compact : HasCompactSupport φ)
+    (h0 :
+      ∀ u ∈ tsupport φ,
+        ∃ i : ι,
+          i ∈ s ∧
+            BHW.os45FlatCommonChartSourceSide
+              d n ρperm sgn 0 η u ∈ U i)
+    (hC :
+      ∀ᶠ eps in 𝓝[Set.Ioi 0] (0 : ℝ),
+        ∀ u,
+          u ∈ Function.support φ →
+            BHW.os45FlatCommonChartSourceSide
+              d n ρperm sgn eps η u ∈ C) :
+    ∀ᶠ eps in 𝓝[Set.Ioi 0] (0 : ℝ),
+      ∀ u,
+        u ∈ Function.support φ →
+          BHW.os45FlatCommonChartSourceSide
+            d n ρperm sgn eps η u ∈
+            ({z | ∃ i : ι, i ∈ s ∧ z ∈ U i} ∩ C) := by
+  classical
+  have hcover :
+      ∀ᶠ eps in 𝓝[Set.Ioi 0] (0 : ℝ),
+        ∀ u,
+          u ∈ Function.support φ →
+            ∃ i : ι,
+              i ∈ s ∧
+                BHW.os45FlatCommonChartSourceSide
+                  d n ρperm sgn eps η u ∈ U i :=
+    eventually_forall_os45FlatCommonChartSourceSide_mem_finset_cover
+      ρperm sgn η s U hU_open hφ_compact h0
+  filter_upwards [hcover, hC] with eps hcover_eps hC_eps u hu
+  exact ⟨hcover_eps u hu, hC_eps u hu⟩
+
 private abbrev OS45PointedChart (d n : ℕ) :=
   PointedMetricBranchChart (Fin n → Fin (d + 1) → ℂ) ℂ
 
@@ -3787,6 +4963,169 @@ theorem os45CommonEdge_localFigure24DifferenceGerm_of_OSI45
                                 exact hu (by
                                   simpa [Function.mem_support] using hne)
                               simp [hzero]
+                          have hOrd_terminal_flat_collar :
+                              ∀ᶠ ε in 𝓝[Set.Ioi 0] (0 : ℝ),
+                                ∀ x :
+                                    BHW.OS45FlatCommonChartReal d n,
+                                  x ∈ Function.support
+                                      (SCV.translateSchwartz
+                                        (-((1 : ℝ) * ε) • η0)
+                                        (ψOrdPieceFlat a) :
+                                        BHW.OS45FlatCommonChartReal d n → ℂ) →
+                                    (BHW.os45QuarterTurnCLE
+                                      (d := d) (n := n)).symm
+                                      (BHW.unflattenCfg n d
+                                        (fun j =>
+                                          (x j : ℂ) +
+                                            ((((1 : ℝ) * ε) • η0) j : ℂ) *
+                                              Complex.I)) ∈
+                                      A1a.carrier := by
+                            have hmem_source :
+                                ∀ᶠ ε in 𝓝[Set.Ioi 0] (0 : ℝ),
+                                  ∀ u ∈ tsupport
+                                      (ψOrdPieceSource a :
+                                        NPointDomain d n → ℂ),
+                                    BHW.os45FlatCommonChartSourceSide d n
+                                      (1 : Equiv.Perm (Fin n)) (1 : ℝ)
+                                      ε η0 u ∈ A1a.carrier :=
+                              BHW.eventually_forall_os45FlatCommonChartSourceSide_mem_of_compact
+                                (d := d) (n := n)
+                                (1 : Equiv.Perm (Fin n)) (1 : ℝ) η0
+                                (hψOrdPieceSource_compact a).isCompact
+                                A1a.carrier_open
+                                hOrd_piece_sourceSide0_in_A1
+                            filter_upwards [hmem_source] with ε hε x hx
+                            let s : BHW.OS45FlatCommonChartReal d n :=
+                              ((1 : ℝ) * ε) • η0
+                            let y : BHW.OS45FlatCommonChartReal d n :=
+                              x + -s
+                            let u : NPointDomain d n := eflat.symm y
+                            have hy_support :
+                                y ∈ Function.support
+                                  (ψOrdPieceFlat a :
+                                    BHW.OS45FlatCommonChartReal d n → ℂ) := by
+                              have hx' :=
+                                (SCV.mem_support_translateSchwartz_iff
+                                  (-s) (ψOrdPieceFlat a) x).mp
+                                  (by simpa [s] using hx)
+                              simpa [y] using hx'
+                            have hu_support :
+                                u ∈ Function.support
+                                  (ψOrdPieceSource a :
+                                    NPointDomain d n → ℂ) := by
+                              simpa [u, y, ψOrdPieceSource, pullOrdFlat,
+                                SchwartzMap.compCLMOfContinuousLinearEquiv_apply]
+                                using hy_support
+                            have hu_tsupport :
+                                u ∈ tsupport
+                                  (ψOrdPieceSource a :
+                                    NPointDomain d n → ℂ) :=
+                              subset_tsupport _ hu_support
+                            have happroach :
+                                (BHW.os45QuarterTurnCLE
+                                  (d := d) (n := n)).symm
+                                  (BHW.unflattenCfg n d
+                                    (fun j =>
+                                      (x j : ℂ) +
+                                        (s j : ℂ) * Complex.I)) =
+                                BHW.os45FlatCommonChartSourceSide d n
+                                  (1 : Equiv.Perm (Fin n)) (1 : ℝ)
+                                  ε η0 u := by
+                              simp [BHW.os45FlatCommonChartSourceSide,
+                                u, y, s, eflat, one_mul, add_assoc]
+                            rw [show
+                              (BHW.os45QuarterTurnCLE
+                                (d := d) (n := n)).symm
+                                  (BHW.unflattenCfg n d
+                                    (fun j =>
+                                      (x j : ℂ) +
+                                        ((((1 : ℝ) * ε) • η0) j : ℂ) *
+                                          Complex.I)) =
+                                (BHW.os45QuarterTurnCLE
+                                  (d := d) (n := n)).symm
+                                  (BHW.unflattenCfg n d
+                                    (fun j =>
+                                      (x j : ℂ) +
+                                        (s j : ℂ) * Complex.I)) by
+                                simp [s, one_mul]]
+                            rw [happroach]
+                            exact hε u hu_tsupport
+                          let OrdTerminalFlat : ℝ → ℂ := fun ε =>
+                            ∫ x : BHW.OS45FlatCommonChartReal d n,
+                              A1a.branch
+                                ((BHW.os45QuarterTurnCLE
+                                  (d := d) (n := n)).symm
+                                  (BHW.unflattenCfg n d
+                                    (fun j =>
+                                      (x j : ℂ) +
+                                        ((((1 : ℝ) * ε) • η0) j : ℂ) *
+                                          Complex.I))) *
+                              (SCV.translateSchwartz
+                                (-((1 : ℝ) * ε) • η0)
+                                (ψOrdPieceFlat a)) x
+                          have hOrd_flat_terminal_chart :
+                              FlatOrdPiece a
+                                =ᶠ[𝓝[Set.Ioi 0] (0 : ℝ)]
+                              OrdTerminalFlat := by
+                            filter_upwards [hOrd_terminal_flat_collar]
+                              with ε hε
+                            apply integral_congr_ae
+                            refine Filter.Eventually.of_forall ?_
+                            intro x
+                            let z : Fin n → Fin (d + 1) → ℂ :=
+                              (BHW.os45QuarterTurnCLE
+                                (d := d) (n := n)).symm
+                                (BHW.unflattenCfg n d
+                                  (fun j =>
+                                    (x j : ℂ) +
+                                      ((((1 : ℝ) * ε) • η0) j : ℂ) *
+                                        Complex.I))
+                            let w : BHW.OS45FlatCommonChartReal d n → ℂ :=
+                              SCV.translateSchwartz
+                                (-((1 : ℝ) * ε) • η0)
+                                (ψOrdPieceFlat a)
+                            by_cases hx : x ∈ Function.support w
+                            · have hz : z ∈ A1a.carrier := by
+                                simpa [z, w] using hε x hx
+                              have hmodel := hA1a_model hz
+                              change
+                                BHW.os45FlatCommonChartBranch d n OS lgc
+                                    (1 : Equiv.Perm (Fin n))
+                                    (fun j =>
+                                      (x j : ℂ) +
+                                        ((((1 : ℝ) * ε) • η0) j : ℂ) *
+                                          Complex.I) *
+                                  w x =
+                                A1a.branch z * w x
+                              rw [hmodel]
+                              simp [BHW.os45FlatCommonChartBranch,
+                                BHW.os45PulledRealBranch, z, w,
+                                BHW.permAct]
+                            · have hzero : w x = 0 := by
+                                by_contra hne
+                                exact hx (by
+                                  simpa [Function.mem_support] using hne)
+                              have hzero' :
+                                  (SCV.translateSchwartz
+                                    (-((1 : ℝ) * ε) • η0)
+                                    (ψOrdPieceFlat a)) x = 0 := by
+                                simpa [w] using hzero
+                              change
+                                BHW.os45FlatCommonChartBranch d n OS lgc
+                                    (1 : Equiv.Perm (Fin n))
+                                    (fun j =>
+                                      (x j : ℂ) +
+                                        ((((1 : ℝ) * ε) • η0) j : ℂ) *
+                                          Complex.I) *
+                                  (SCV.translateSchwartz
+                                    (-((1 : ℝ) * ε) • η0)
+                                    (ψOrdPieceFlat a)) x =
+                                A1a.branch z *
+                                  (SCV.translateSchwartz
+                                    (-((1 : ℝ) * ε) • η0)
+                                    (ψOrdPieceFlat a)) x
+                              rw [hzero']
+                              simp
                           have hOrdWick_value :
                               (∫ u : NPointDomain d n,
                                 bvt_F OS lgc n
@@ -3896,6 +5235,174 @@ theorem os45CommonEdge_localFigure24DifferenceGerm_of_OSI45
                                     NPointDomain d n → ℂ) u = 0 :=
                                 image_eq_zero_of_notMem_tsupport hu
                               simp [hzero]
+                          let OrdWickApproach :
+                              ℝ → NPointDomain d n →
+                                Fin n → Fin (d + 1) → ℂ :=
+                            fun _ε u => fun k => wickRotatePoint (u k)
+                          let OrdWickWeight :
+                              ℝ → NPointDomain d n → ℂ :=
+                            fun _ε u =>
+                              (ψOrdPieceSource a :
+                                NPointDomain d n → ℂ) u
+                          let A0ext :
+                              PointedMetricBranchChart
+                                (Fin n → Fin (d + 1) → ℂ) ℂ :=
+                            { center := A0a.center
+                              radius := A0a.radius
+                              radius_pos := A0a.radius_pos
+                              branch := BHW.extendF (bvt_F OS lgc n)
+                              holo := by
+                                exact
+                                  (BHW.differentiableOn_extendF_bvt_F_extendedTube
+                                    (d := d) OS lgc n).mono
+                                    (by
+                                      intro z hz
+                                      exact
+                                        (_hA0a_sub
+                                          (by
+                                            simpa [PointedMetricBranchChart.carrier]
+                                              using hz)).1.1) }
+                          have hA0ext_model :
+                              Set.EqOn A0ext.branch
+                                (BHW.extendF (bvt_F OS lgc n))
+                                A0ext.carrier := by
+                            intro _z _hz
+                            rfl
+                          have hA0ext_edge_to_A0 :
+                              PointedSeedEdge A0a.center
+                                A0ext.carrier A0a.carrier
+                                A0ext.branch A0a.branch :=
+                            pointed_seed_edge_of_common_model
+                              A0ext.carrier_open A0a.carrier_open
+                              (by
+                                simpa [A0ext] using A0ext.center_mem)
+                              _hA0a_mem
+                              hA0ext_model _hA0a_model
+                          have hOrd_A0ext_A0_collar :
+                              ∀ᶠ ε in 𝓝[Set.Ioi 0] (0 : ℝ),
+                                ∀ u,
+                                  u ∈ Function.support
+                                      (OrdWickWeight ε) →
+                                    OrdWickApproach ε u ∈
+                                      A0ext.carrier ∩ A0a.carrier := by
+                            refine Filter.Eventually.of_forall ?_
+                            intro ε u hu
+                            have huK :
+                                u ∈ tsupport
+                                  (ψOrdPieceSource a :
+                                    NPointDomain d n → ℂ) :=
+                              subset_tsupport _ (by
+                                simpa [OrdWickWeight] using hu)
+                            have hA0 :
+                                OrdWickApproach ε u ∈ A0a.carrier := by
+                              simpa [OrdWickApproach] using
+                                hOrd_piece_wick_in_A0 u huK
+                            exact
+                              ⟨by
+                                simpa [A0ext,
+                                  PointedMetricBranchChart.carrier] using
+                                  hA0,
+                                hA0⟩
+                          have hOrd_A0ext_to_A0_integral :
+                              (fun ε : ℝ =>
+                                ∫ u : NPointDomain d n,
+                                  A0ext.branch
+                                    (OrdWickApproach ε u) *
+                                  OrdWickWeight ε u)
+                                =ᶠ[𝓝[Set.Ioi 0] (0 : ℝ)]
+                              fun ε : ℝ =>
+                                ∫ u : NPointDomain d n,
+                                  A0a.branch
+                                    (OrdWickApproach ε u) *
+                                  OrdWickWeight ε u := by
+                            exact
+                              pointed_chart_integral_eventually_eq_of_seed
+                                A0ext A0a hA0ext_edge_to_A0
+                                OrdWickApproach OrdWickWeight
+                                hOrd_A0ext_A0_collar
+                          have hOrd_A0ext_wick_value :
+                              (∫ u : NPointDomain d n,
+                                A0ext.branch
+                                  (OrdWickApproach 0 u) *
+                                OrdWickWeight 0 u) =
+                              OS.S n (ψOrdPieceZD a) := by
+                            have hEqOnA0 :
+                                Set.EqOn A0ext.branch A0a.branch
+                                  (A0ext.carrier ∩ A0a.carrier) :=
+                              PointedMetricBranchChart.eqOn_inter_of_seed
+                                A0ext A0a
+                                ⟨hA0ext_edge_to_A0.W,
+                                  hA0ext_edge_to_A0.W_open,
+                                  hA0ext_edge_to_A0.z0_mem,
+                                  hA0ext_edge_to_A0.W_sub,
+                                  hA0ext_edge_to_A0.eqOn⟩
+                            have htoA0 :
+                                (∫ u : NPointDomain d n,
+                                  A0ext.branch
+                                    (OrdWickApproach 0 u) *
+                                  OrdWickWeight 0 u) =
+                                ∫ u : NPointDomain d n,
+                                  A0a.branch
+                                    (OrdWickApproach 0 u) *
+                                  OrdWickWeight 0 u := by
+                              apply integral_congr_ae
+                              refine Filter.Eventually.of_forall ?_
+                              intro u
+                              by_cases hu :
+                                  u ∈ Function.support
+                                    (OrdWickWeight 0)
+                              · have huK :
+                                    u ∈ tsupport
+                                      (ψOrdPieceSource a :
+                                        NPointDomain d n → ℂ) :=
+                                  subset_tsupport _ (by
+                                    simpa [OrdWickWeight] using hu)
+                                have hA0 :
+                                    OrdWickApproach 0 u ∈ A0a.carrier := by
+                                  simpa [OrdWickApproach] using
+                                    hOrd_piece_wick_in_A0 u huK
+                                have hInter :
+                                    OrdWickApproach 0 u ∈
+                                      A0ext.carrier ∩ A0a.carrier :=
+                                  ⟨by
+                                    simpa [A0ext,
+                                      PointedMetricBranchChart.carrier] using
+                                      hA0,
+                                    hA0⟩
+                                have hbranch := hEqOnA0 hInter
+                                change
+                                  A0ext.branch
+                                      (OrdWickApproach 0 u) *
+                                    OrdWickWeight 0 u =
+                                  A0a.branch
+                                      (OrdWickApproach 0 u) *
+                                    OrdWickWeight 0 u
+                                rw [hbranch]
+                              · have hzero : OrdWickWeight 0 u = 0 := by
+                                  by_contra hne
+                                  exact hu (by
+                                    simpa [Function.mem_support] using hne)
+                                simp [hzero]
+                            calc
+                              (∫ u : NPointDomain d n,
+                                A0ext.branch
+                                  (OrdWickApproach 0 u) *
+                                OrdWickWeight 0 u)
+                                  =
+                                ∫ u : NPointDomain d n,
+                                  A0a.branch
+                                    (OrdWickApproach 0 u) *
+                                  OrdWickWeight 0 u := htoA0
+                              _ =
+                                ∫ u : NPointDomain d n,
+                                  bvt_F OS lgc n
+                                    (fun k => wickRotatePoint (u k)) *
+                                  (ψOrdPieceSource a :
+                                    NPointDomain d n → ℂ) u := by
+                                  simpa [OrdWickApproach, OrdWickWeight]
+                                    using hOrdWick_to_A0
+                              _ = OS.S n (ψOrdPieceZD a) :=
+                                  hOrdWick_value
                           let gammaOrdPiece : unitInterval →
                               Fin n → Fin (d + 1) → ℂ :=
                             BHW.os45Figure24IdentityPath
@@ -3968,6 +5475,163 @@ theorem os45CommonEdge_localFigure24DifferenceGerm_of_OSI45
                           have hOmegaOrd_open :
                               IsOpen (BHW.ExtendedTube d n ∩ H.ΩJ) :=
                             BHW.isOpen_extendedTube.inter H.ΩJ_open
+                          let OrdPiecePath :
+                              NPointDomain d n × unitInterval →
+                                Fin n → Fin (d + 1) → ℂ := fun p =>
+                            BHW.os45Figure24IdentityPath
+                              (d := d) (n := n) p.1 p.2
+                          let KOrdPath : Set
+                              (Fin n → Fin (d + 1) → ℂ) :=
+                            OrdPiecePath ''
+                              (tsupport
+                                  (ψOrdPieceSource a :
+                                    NPointDomain d n → ℂ) ×ˢ
+                                (Set.univ : Set unitInterval))
+                          have hOrdPiecePath_domain_compact :
+                              IsCompact
+                                (tsupport
+                                    (ψOrdPieceSource a :
+                                      NPointDomain d n → ℂ) ×ˢ
+                                  (Set.univ : Set unitInterval)) :=
+                            (hψOrdPieceSource_compact a).isCompact.prod
+                              isCompact_univ
+                          have hOrdPiecePath_cont :
+                              Continuous OrdPiecePath := by
+                            simpa [OrdPiecePath] using
+                              BHW.continuous_os45Figure24IdentityPath_joint
+                                (d := d) (n := n)
+                          have hOrdPiecePath_compact :
+                              IsCompact KOrdPath :=
+                            hOrdPiecePath_domain_compact.image
+                              hOrdPiecePath_cont
+                          have hOrdPiecePath_sub_hull :
+                              KOrdPath ⊆
+                                BHW.ExtendedTube d n ∩ H.ΩJ := by
+                            rintro z ⟨p, hp, rfl⟩
+                            rcases hp with ⟨hu, _ht⟩
+                            have huP : p.1 ∈ P.V :=
+                              hUsrc_P (hψOrdPieceSource_Usrc a hu)
+                            have hz :=
+                              BHW.os45Figure24IdentityPath_mem_initialSectorOverlap
+                                (d := d) (n := n) (hd := hd) (P := P)
+                                (x := p.1) (subset_closure huP) p.2
+                            exact ⟨hz.1, H.extendedTube_subset_ΩJ hz.1⟩
+                          have hOrdPiecePath_chart :
+                              ∀ z ∈ KOrdPath,
+                                ∃ A : PointedMetricBranchChart
+                                    (Fin n → Fin (d + 1) → ℂ) ℂ,
+                                  A.center = z ∧
+                                  A.center ∈ A.carrier ∧
+                                  A.carrier ⊆
+                                    BHW.ExtendedTube d n ∩ H.ΩJ ∧
+                                  Set.EqOn A.branch
+                                    (BHW.extendF (bvt_F OS lgc n))
+                                    A.carrier := by
+                            intro z hzK
+                            rcases Metric.mem_nhds_iff.mp
+                                (hOmegaOrd_open.mem_nhds
+                                  (hOrdPiecePath_sub_hull hzK)) with
+                              ⟨r, hr_pos, hball_sub⟩
+                            let A : PointedMetricBranchChart
+                                (Fin n → Fin (d + 1) → ℂ) ℂ :=
+                              { center := z
+                                radius := r
+                                radius_pos := hr_pos
+                                branch := BHW.extendF (bvt_F OS lgc n)
+                                holo := by
+                                  exact
+                                    (BHW.differentiableOn_extendF_bvt_F_extendedTube
+                                      (d := d) OS lgc n).mono
+                                      (by
+                                        intro w hw
+                                        exact (hball_sub hw).1) }
+                            refine ⟨A, rfl, ?_, ?_, ?_⟩
+                            · simpa [A] using A.center_mem
+                            · intro w hw
+                              exact
+                                hball_sub
+                                  (by
+                                    simpa [A,
+                                      PointedMetricBranchChart.carrier]
+                                      using hw)
+                            · intro _w _hw
+                              rfl
+                          let OrdPathChart :
+                              KOrdPath →
+                                PointedMetricBranchChart
+                                  (Fin n → Fin (d + 1) → ℂ) ℂ := fun z =>
+                            Classical.choose
+                              (hOrdPiecePath_chart z.1 z.2)
+                          have hOrdPathChart_mem :
+                              ∀ z : KOrdPath,
+                                z.1 ∈ (OrdPathChart z).carrier := by
+                            intro z
+                            have hspec :=
+                              Classical.choose_spec
+                                (hOrdPiecePath_chart z.1 z.2)
+                            change
+                              z.1 ∈
+                                (Classical.choose
+                                  (hOrdPiecePath_chart z.1 z.2)).carrier
+                            convert hspec.2.1 using 1
+                            exact hspec.1.symm
+                          have hOrdPathChart_model :
+                              ∀ z : KOrdPath,
+                                Set.EqOn (OrdPathChart z).branch
+                                  (BHW.extendF (bvt_F OS lgc n))
+                                  (OrdPathChart z).carrier := by
+                            intro z
+                            have hspec :=
+                              Classical.choose_spec
+                                (hOrdPiecePath_chart z.1 z.2)
+                            exact hspec.2.2.2
+                          obtain ⟨sOrdPath, hsOrdPath_cover⟩ :=
+                            hOrdPiecePath_compact.elim_finite_subcover
+                              (fun z : KOrdPath =>
+                                (OrdPathChart z).carrier)
+                              (fun z => (OrdPathChart z).carrier_open)
+                              (by
+                                intro z hz
+                                exact Set.mem_iUnion.mpr
+                                  ⟨⟨z, hz⟩,
+                                    hOrdPathChart_mem ⟨z, hz⟩⟩)
+                          have hOrdPath_cover_support :
+                              ∀ u ∈ tsupport
+                                  (ψOrdPieceSource a :
+                                    NPointDomain d n → ℂ),
+                                ∀ t : unitInterval,
+                                  ∃ c : KOrdPath,
+                                    c ∈ sOrdPath ∧
+                                      OrdPiecePath (u, t) ∈
+                                        (OrdPathChart c).carrier := by
+                            intro u hu t
+                            have hzK :
+                                OrdPiecePath (u, t) ∈ KOrdPath := by
+                              exact ⟨(u, t), ⟨hu, trivial⟩, rfl⟩
+                            have hcover := hsOrdPath_cover hzK
+                            rcases Set.mem_iUnion.mp hcover with ⟨c, hc⟩
+                            rcases Set.mem_iUnion.mp hc with ⟨hcs, hmem⟩
+                            exact ⟨c, hcs, hmem⟩
+                          have hOrdPath_cover_wick_support :
+                              ∀ u ∈ tsupport
+                                  (ψOrdPieceSource a :
+                                    NPointDomain d n → ℂ),
+                                ∃ c : KOrdPath,
+                                  c ∈ sOrdPath ∧
+                                    OrdWickApproach 0 u ∈
+                                      (OrdPathChart c).carrier := by
+                            intro u hu
+                            rcases hOrdPath_cover_support u hu
+                                (0 : unitInterval) with
+                              ⟨c, hc, hmem⟩
+                            refine ⟨c, hc, ?_⟩
+                            have hwick_eq_path :
+                                OrdWickApproach 0 u =
+                                  OrdPiecePath (u, (0 : unitInterval)) := by
+                              simpa [OrdPiecePath, OrdWickApproach] using
+                                (BHW.os45Figure24IdentityPath_zero
+                                  (d := d) (n := n) u).symm
+                            simpa [hwick_eq_path] using hmem
                           have hReachOrd_local :
                               ∀ t : unitInterval,
                                 ∃ U : Set unitInterval, IsOpen U ∧ t ∈ U ∧
@@ -4306,109 +5970,1488 @@ theorem os45CommonEdge_localFigure24DifferenceGerm_of_OSI45
                           -- left here is the fixed current transport from the
                           -- incoming ordinary Wick chart to this terminal
                           -- branch current.
-                          have hOrd_terminal_selected :
-                              Tendsto
-                                (fun ε : ℝ =>
-                                  ∫ u : NPointDomain d n,
-                                    A1a.branch
-                                      (BHW.os45FlatCommonChartSourceSide d n
-                                        (1 : Equiv.Perm (Fin n)) (1 : ℝ)
-                                        ε η0 u) *
-                                    (ψOrdPieceSource a :
-                                      NPointDomain d n → ℂ) u)
-                                (𝓝[Set.Ioi 0] (0 : ℝ))
-                                (𝓝 (OS.S n (ψOrdPieceZD a))) := by
-                            have hOrd_base_value :
-                                (∫ u : NPointDomain d n,
-                                  A0a.branch
-                                    (fun k => wickRotatePoint (u k)) *
-                                  (ψOrdPieceSource a :
-                                    NPointDomain d n → ℂ) u) =
-                                OS.S n (ψOrdPieceZD a) :=
-                              hOrdWick_to_A0.trans hOrdWick_value
-                            have hOrd_base_selected :
-                                Tendsto
-                                  (fun _ε : ℝ =>
-                                    ∫ u : NPointDomain d n,
-                                      A0a.branch
-                                        (fun k => wickRotatePoint (u k)) *
-                                      (ψOrdPieceSource a :
-                                        NPointDomain d n → ℂ) u)
-                                  (𝓝[Set.Ioi 0] (0 : ℝ))
-                                  (𝓝 (OS.S n (ψOrdPieceZD a))) := by
-                              simpa [hOrd_base_value] using
-                                (tendsto_const_nhds :
-                                  Tendsto
-                                    (fun _ε : ℝ =>
-                                      ∫ u : NPointDomain d n,
-                                        A0a.branch
-                                          (fun k => wickRotatePoint (u k)) *
-                                        (ψOrdPieceSource a :
-                                          NPointDomain d n → ℂ) u)
-                                    (𝓝[Set.Ioi 0] (0 : ℝ))
-                                    (𝓝
-                                      (∫ u : NPointDomain d n,
-                                        A0a.branch
-                                          (fun k => wickRotatePoint (u k)) *
-                                        (ψOrdPieceSource a :
-                                          NPointDomain d n → ℂ) u)))
-                            -- The endpoint-continuity part is already checked
-                            -- by `hOrdPieceFixed_endpoint` and the terminal
-                            -- chart normalization.  What remains is precisely
-                            -- the OS-I current value at the horizontal
-                            -- common-edge endpoint.
-                            suffices hOrd_terminal_endpoint_value :
-                                (∫ u : NPointDomain d n,
-                                  A1a.branch
-                                    (BHW.os45FlatCommonChartSourceSide d n
-                                      (1 : Equiv.Perm (Fin n)) (1 : ℝ)
-                                      0 η0 u) *
-                                  (ψOrdPieceSource a :
-                                    NPointDomain d n → ℂ) u) =
-                                OS.S n (ψOrdPieceZD a) by
-                              have hOrd_terminal_endpoint :
-                                  Tendsto
-                                    (fun ε : ℝ =>
-                                      ∫ u : NPointDomain d n,
-                                        A1a.branch
-                                          (BHW.os45FlatCommonChartSourceSide d n
-                                            (1 : Equiv.Perm (Fin n)) (1 : ℝ)
-                                            ε η0 u) *
-                                        (ψOrdPieceSource a :
-                                          NPointDomain d n → ℂ) u)
-                                    (𝓝[Set.Ioi 0] (0 : ℝ))
-                                    (𝓝
-                                      (∫ u : NPointDomain d n,
-                                        A1a.branch
-                                          (BHW.os45FlatCommonChartSourceSide d n
-                                            (1 : Equiv.Perm (Fin n)) (1 : ℝ)
-                                            0 η0 u) *
-                                        (ψOrdPieceSource a :
-                                          NPointDomain d n → ℂ) u)) := by
-                                rw [← hendpoint_to_terminal]
-                                exact
-                                  hOrdPieceFixed_endpoint.congr'
-                                    hOrdPieceFixed_terminal
-                              have hOrd_terminal_endpoint_value_qturn :
-                                  (∫ u : NPointDomain d n,
-                                    A1a.branch
-                                      (BHW.os45QuarterTurnConfig
-                                        (d := d) (n := n)
-                                        (fun k => wickRotatePoint (u k))) *
-                                    (ψOrdPieceSource a :
-                                      NPointDomain d n → ℂ) u) =
-                                  OS.S n (ψOrdPieceZD a) := by
-                                simpa [BHW.os45FlatCommonChartSourceSide_zero]
-                                  using hOrd_terminal_endpoint_value
-                              simpa [BHW.os45FlatCommonChartSourceSide_zero,
-                                hOrd_terminal_endpoint_value_qturn] using
-                                hOrd_terminal_endpoint
                           have hOrdPieceFixed_selected :
                               Tendsto OrdPieceFixed
                                 (𝓝[Set.Ioi 0] (0 : ℝ))
-                                (𝓝 (OS.S n (ψOrdPieceZD a))) :=
-                            hOrd_terminal_selected.congr'
-                              hOrdPieceFixed_terminal.symm
+                                (𝓝 (OS.S n (ψOrdPieceZD a))) := by
+                            /-
+                            Genuine ordinary `(4.1)/(4.14)` fixed
+                            source-current transport for this compact piece.
+                            This is the remaining one-branch corridor proof:
+                            start from the ordinary OS-I incoming ray,
+                            propagate through the checked Figure-2-4 chart
+                            chain by overlap identity on carrier
+                            intersections, and end at the terminal source-side
+                            chart.  The zero-height endpoint DCTs above are
+                            not a substitute for this transport.
+                            -/
+                            change
+                              Tendsto
+                                (fun ε : ℝ =>
+                                  ∫ u : NPointDomain d n,
+                                    BHW.extendF (bvt_F OS lgc n)
+                                      (BHW.os45FlatCommonChartSourceSide d n
+                                        (1 : Equiv.Perm (Fin n)) (1 : ℝ)
+                                        ε η0 u) *
+                                (ψOrdPieceSource a :
+                                  NPointDomain d n → ℂ) u)
+                                (𝓝[Set.Ioi 0] (0 : ℝ))
+                                (𝓝 (OS.S n (ψOrdPieceZD a)))
+                            let OrdSourceApproach :
+                                ℝ → NPointDomain d n →
+                                  Fin n → Fin (d + 1) → ℂ :=
+                              fun ε u =>
+                                BHW.os45FlatCommonChartSourceSide d n
+                                  (1 : Equiv.Perm (Fin n)) (1 : ℝ)
+                                  ε η0 u
+                            let OrdSourceWeight :
+                                ℝ → NPointDomain d n → ℂ :=
+                              fun _ε u =>
+                                (ψOrdPieceSource a :
+                                  NPointDomain d n → ℂ) u
+                            have hOrdPath_cover_source_zero_support :
+                                ∀ u ∈ tsupport
+                                    (ψOrdPieceSource a :
+                                      NPointDomain d n → ℂ),
+                                  ∃ c : KOrdPath,
+                                    c ∈ sOrdPath ∧
+                                      OrdSourceApproach 0 u ∈
+                                        (OrdPathChart c).carrier := by
+                              intro u hu
+                              rcases hOrdPath_cover_support u hu
+                                  (1 : unitInterval) with
+                                ⟨c, hc, hmem⟩
+                              refine ⟨c, hc, ?_⟩
+                              have hsource_eq_path :
+                                  OrdSourceApproach 0 u =
+                                    OrdPiecePath (u, (1 : unitInterval)) := by
+                                change
+                                  BHW.os45FlatCommonChartSourceSide d n
+                                      (1 : Equiv.Perm (Fin n)) (1 : ℝ)
+                                      0 η0 u =
+                                    OrdPiecePath (u, (1 : unitInterval))
+                                rw [BHW.os45FlatCommonChartSourceSide_zero_eq_commonEdge]
+                                simpa [OrdPiecePath] using
+                                  (BHW.os45Figure24IdentityPath_one
+                                    (d := d) (n := n) u).symm
+                              simpa [hsource_eq_path] using hmem
+                            let A1ext :
+                                PointedMetricBranchChart
+                                  (Fin n → Fin (d + 1) → ℂ) ℂ :=
+                              { center := A1a.center
+                                radius := A1a.radius
+                                radius_pos := A1a.radius_pos
+                                branch := BHW.extendF (bvt_F OS lgc n)
+                                holo := by
+                                  exact
+                                    (BHW.differentiableOn_extendF_bvt_F_extendedTube
+                                      (d := d) OS lgc n).mono
+                                      (by
+                                        intro z hz
+                                        exact
+                                          (_hA1a_sub
+                                            (by
+                                              simpa [PointedMetricBranchChart.carrier]
+                                                using hz)).1.1) }
+                            have hA1ext_model :
+                                Set.EqOn A1ext.branch
+                                  (BHW.extendF (bvt_F OS lgc n))
+                                  A1ext.carrier := by
+                              intro _z _hz
+                              rfl
+                            have hA1ext_edge_to_A1 :
+                                PointedSeedEdge A1a.center
+                                  A1ext.carrier A1a.carrier
+                                  A1ext.branch A1a.branch :=
+                              pointed_seed_edge_of_common_model
+                                A1ext.carrier_open A1a.carrier_open
+                                (by
+                                  simpa [A1ext] using A1ext.center_mem)
+                                _hA1a_mem
+                                hA1ext_model hA1a_model
+                            have hOrd_source_path_cover_inter_zero_support :
+                                ∀ u ∈ tsupport
+                                    (ψOrdPieceSource a :
+                                      NPointDomain d n → ℂ),
+                                  ∃ c : KOrdPath,
+                                    c ∈ sOrdPath ∧
+                                      OrdSourceApproach 0 u ∈
+                                        (OrdPathChart c).carrier ∩
+                                          A1ext.carrier := by
+                              intro u hu
+                              rcases hOrdPath_cover_source_zero_support u hu
+                                  with ⟨c, hc, hcover⟩
+                              have hA1 :
+                                  OrdSourceApproach 0 u ∈ A1ext.carrier := by
+                                have hA1a :
+                                    BHW.os45FlatCommonChartSourceSide d n
+                                      (1 : Equiv.Perm (Fin n)) (1 : ℝ)
+                                      0 η0 u ∈ A1a.carrier :=
+                                  hOrd_piece_sourceSide0_in_A1 u hu
+                                simpa [OrdSourceApproach, A1ext,
+                                  PointedMetricBranchChart.carrier] using hA1a
+                              exact ⟨c, hc, ⟨hcover, hA1⟩⟩
+                            let αOrdSourcePath := sOrdPath
+                            let UOrdSourcePath :
+                                αOrdSourcePath →
+                                  Set (NPointDomain d n) := fun c =>
+                              {u | OrdSourceApproach 0 u ∈
+                                (OrdPathChart c.1).carrier ∩
+                                  A1ext.carrier}
+                            have hOrd_source_path_cover_zero_tsupport :
+                                tsupport
+                                    (ψOrdPieceSource a :
+                                      NPointDomain d n → ℂ) ⊆
+                                  ⋃ c : αOrdSourcePath,
+                                    UOrdSourcePath c := by
+                              intro u hu
+                              rcases
+                                  hOrd_source_path_cover_inter_zero_support
+                                    u hu with ⟨c, hc, hmem⟩
+                              exact Set.mem_iUnion.mpr
+                                ⟨⟨c, hc⟩, by
+                                  simpa [UOrdSourcePath] using hmem⟩
+                            have hOrd_source_zero_support_branch_witness :
+                                ∀ u,
+                                  u ∈ Function.support
+                                      (OrdSourceWeight 0) →
+                                    ∃ c : αOrdSourcePath,
+                                      u ∈ UOrdSourcePath c ∧
+                                        A1ext.branch
+                                            (OrdSourceApproach 0 u) =
+                                          (OrdPathChart c.1).branch
+                                            (OrdSourceApproach 0 u) := by
+                              intro u hu
+                              have huK :
+                                  u ∈ tsupport
+                                    (ψOrdPieceSource a :
+                                      NPointDomain d n → ℂ) :=
+                                subset_tsupport _ (by
+                                  simpa [OrdSourceWeight] using hu)
+                              rcases Set.mem_iUnion.mp
+                                  (hOrd_source_path_cover_zero_tsupport huK)
+                                with ⟨c, hc⟩
+                              have hmem :
+                                  OrdSourceApproach 0 u ∈
+                                    (OrdPathChart c.1).carrier ∩
+                                      A1ext.carrier := by
+                                simpa [UOrdSourcePath] using hc
+                              refine ⟨c, hc, ?_⟩
+                              calc
+                                A1ext.branch (OrdSourceApproach 0 u)
+                                    =
+                                  BHW.extendF (bvt_F OS lgc n)
+                                    (OrdSourceApproach 0 u) :=
+                                  hA1ext_model hmem.2
+                                _ =
+                                  (OrdPathChart c.1).branch
+                                    (OrdSourceApproach 0 u) :=
+                                  (hOrdPathChart_model c.1 hmem.1).symm
+                            have hOrd_source_path_piece_collar :
+                                ∀ c : αOrdSourcePath,
+                                  ∀ w : SchwartzNPoint d n,
+                                    HasCompactSupport
+                                      (w : NPointDomain d n → ℂ) →
+                                    tsupport
+                                        (w : NPointDomain d n → ℂ) ⊆
+                                      UOrdSourcePath c →
+                                    ∀ᶠ ε in 𝓝[Set.Ioi 0] (0 : ℝ),
+                                      ∀ u,
+                                        u ∈ Function.support
+                                            (w :
+                                              NPointDomain d n → ℂ) →
+                                          OrdSourceApproach ε u ∈
+                                            (OrdPathChart c.1).carrier ∩
+                                              A1ext.carrier := by
+                              intro c w hw_comp hw_sub
+                              have hzero :
+                                  ∀ u ∈ tsupport
+                                      (w : NPointDomain d n → ℂ),
+                                    OrdSourceApproach 0 u ∈
+                                      (OrdPathChart c.1).carrier ∩
+                                        A1ext.carrier := by
+                                intro u hu
+                                simpa [UOrdSourcePath] using hw_sub hu
+                              have hmem :
+                                  ∀ᶠ ε in 𝓝[Set.Ioi 0] (0 : ℝ),
+                                    ∀ u ∈ tsupport
+                                        (w : NPointDomain d n → ℂ),
+                                      OrdSourceApproach ε u ∈
+                                        (OrdPathChart c.1).carrier ∩
+                                          A1ext.carrier :=
+                                BHW.eventually_forall_os45FlatCommonChartSourceSide_mem_of_compact
+                                  (d := d) (n := n)
+                                  (1 : Equiv.Perm (Fin n)) (1 : ℝ) η0
+                                  hw_comp.isCompact
+                                  ((OrdPathChart c.1).carrier_open.inter
+                                    A1ext.carrier_open)
+                                  (by
+                                    intro u hu
+                                    simpa [OrdSourceApproach] using
+                                      hzero u hu)
+                              filter_upwards [hmem] with ε hε u hu
+                              exact hε u (subset_tsupport _ hu)
+                            have hOrd_A1ext_to_pathChart_piece_integral :
+                                ∀ c : αOrdSourcePath,
+                                  ∀ w : SchwartzNPoint d n,
+                                    HasCompactSupport
+                                      (w : NPointDomain d n → ℂ) →
+                                    tsupport
+                                        (w : NPointDomain d n → ℂ) ⊆
+                                      UOrdSourcePath c →
+                                    (fun ε : ℝ =>
+                                      ∫ u : NPointDomain d n,
+                                        A1ext.branch
+                                          (OrdSourceApproach ε u) *
+                                        (w : NPointDomain d n → ℂ) u)
+                                      =ᶠ[𝓝[Set.Ioi 0] (0 : ℝ)]
+                                    fun ε : ℝ =>
+                                      ∫ u : NPointDomain d n,
+                                        (OrdPathChart c.1).branch
+                                          (OrdSourceApproach ε u) *
+                                        (w : NPointDomain d n → ℂ) u := by
+                              intro c w hw_comp hw_sub
+                              filter_upwards
+                                [hOrd_source_path_piece_collar
+                                  c w hw_comp hw_sub] with ε hε
+                              apply integral_congr_ae
+                              refine Filter.Eventually.of_forall ?_
+                              intro u
+                              by_cases hu :
+                                  u ∈ Function.support
+                                    (w : NPointDomain d n → ℂ)
+                              · have hmem := hε u hu
+                                have hA :
+                                    A1ext.branch
+                                        (OrdSourceApproach ε u) =
+                                      BHW.extendF (bvt_F OS lgc n)
+                                        (OrdSourceApproach ε u) :=
+                                  hA1ext_model hmem.2
+                                have hC :
+                                    (OrdPathChart c.1).branch
+                                        (OrdSourceApproach ε u) =
+                                      BHW.extendF (bvt_F OS lgc n)
+                                        (OrdSourceApproach ε u) :=
+                                  hOrdPathChart_model c.1 hmem.1
+                                change
+                                  A1ext.branch
+                                      (OrdSourceApproach ε u) *
+                                    (w : NPointDomain d n → ℂ) u =
+                                  (OrdPathChart c.1).branch
+                                      (OrdSourceApproach ε u) *
+                                    (w : NPointDomain d n → ℂ) u
+                                rw [hA, hC]
+                              · have hzero :
+                                    (w : NPointDomain d n → ℂ) u = 0 := by
+                                  by_contra hne
+                                  exact hu (by
+                                    simpa [Function.mem_support] using hne)
+                                simp [hzero]
+                            have hOrdSourceApproach_zero_cont :
+                                Continuous fun u : NPointDomain d n =>
+                                  OrdSourceApproach 0 u := by
+                              simpa [OrdSourceApproach] using
+                                BHW.continuous_os45FlatCommonChartSourceSide_fixed_eps
+                                  (d := d) (n := n)
+                                  (1 : Equiv.Perm (Fin n)) (1 : ℝ)
+                                  0 η0
+                            have hUOrdSourcePath_open :
+                                ∀ c : αOrdSourcePath,
+                                  IsOpen (UOrdSourcePath c) := by
+                              intro c
+                              have hopen :
+                                  IsOpen
+                                    ((OrdPathChart c.1).carrier ∩
+                                      A1ext.carrier) :=
+                                (OrdPathChart c.1).carrier_open.inter
+                                  A1ext.carrier_open
+                              simpa [UOrdSourcePath] using
+                                hopen.preimage hOrdSourceApproach_zero_cont
+                            have hOrd_terminal_edge_right_collar :
+                                ∀ᶠ ε in 𝓝[Set.Ioi 0] (0 : ℝ),
+                                  ∀ u,
+                                    u ∈ Function.support
+                                        (OrdSourceWeight ε) →
+                                      OrdSourceApproach ε u ∈
+                                        (chartOrdTerm
+                                          (Fin.succ
+                                            (Fin.last lenOrd))).carrier := by
+                              have hmemA1 :
+                                  ∀ᶠ ε in 𝓝[Set.Ioi 0] (0 : ℝ),
+                                    ∀ u ∈ tsupport
+                                        (ψOrdPieceSource a :
+                                          NPointDomain d n → ℂ),
+                                      OrdSourceApproach ε u ∈
+                                        A1a.carrier :=
+                                BHW.eventually_forall_os45FlatCommonChartSourceSide_mem_of_compact
+                                  (d := d) (n := n)
+                                  (1 : Equiv.Perm (Fin n)) (1 : ℝ) η0
+                                  (hψOrdPieceSource_compact a).isCompact
+                                  A1a.carrier_open
+                                  (by
+                                    intro u hu
+                                    simpa [OrdSourceApproach] using
+                                      hOrd_piece_sourceSide0_in_A1 u hu)
+                              filter_upwards [hmemA1] with ε hε u hu
+                              have huK :
+                                  u ∈ tsupport
+                                    (ψOrdPieceSource a :
+                                      NPointDomain d n → ℂ) :=
+                                subset_tsupport _ hu
+                              simpa [OrdSourceApproach, OrdSourceWeight,
+                                chartOrdTerm, Fin.snoc_last] using hε u huK
+                            have hOrd_A1ext_A1_collar :
+                                ∀ᶠ ε in 𝓝[Set.Ioi 0] (0 : ℝ),
+                                  ∀ u,
+                                    u ∈ Function.support
+                                        (OrdSourceWeight ε) →
+                                      OrdSourceApproach ε u ∈
+                                        A1ext.carrier ∩ A1a.carrier := by
+                              filter_upwards [hOrd_terminal_edge_right_collar]
+                                with ε hε u hu
+                              have hA1 :
+                                  OrdSourceApproach ε u ∈ A1a.carrier := by
+                                simpa [chartOrdTerm, Fin.snoc_last] using
+                                  hε u hu
+                              exact
+                                ⟨by
+                                    simpa [A1ext,
+                                      PointedMetricBranchChart.carrier] using
+                                      hA1,
+                                    hA1⟩
+                            have hOrd_A1ext_to_A1_integral :
+                                (fun ε : ℝ =>
+                                  ∫ u : NPointDomain d n,
+                                    A1ext.branch
+                                      (OrdSourceApproach ε u) *
+                                    OrdSourceWeight ε u)
+                                  =ᶠ[𝓝[Set.Ioi 0] (0 : ℝ)]
+                                fun ε : ℝ =>
+                                  ∫ u : NPointDomain d n,
+                                    A1a.branch
+                                      (OrdSourceApproach ε u) *
+                                    OrdSourceWeight ε u := by
+                              exact
+                                pointed_chart_integral_eventually_eq_of_seed
+                                  A1ext A1a hA1ext_edge_to_A1
+                                  OrdSourceApproach OrdSourceWeight
+                                  hOrd_A1ext_A1_collar
+                            have hOrd_A1ext_endpoint_bvt :
+                                (∫ u : NPointDomain d n,
+                                  A1ext.branch
+                                    (OrdSourceApproach 0 u) *
+                                  OrdSourceWeight 0 u) =
+                                ∫ u : NPointDomain d n,
+                                  bvt_F OS lgc n
+                                    (OrdSourceApproach 0 u) *
+                                  OrdSourceWeight 0 u := by
+                              apply integral_congr_ae
+                              refine Filter.Eventually.of_forall ?_
+                              intro u
+                              by_cases hu :
+                                  u ∈ Function.support
+                                    (OrdSourceWeight 0)
+                              · have hu_tsupport :
+                                    u ∈ tsupport
+                                      (ψOrdPieceSource a :
+                                        NPointDomain d n → ℂ) :=
+                                  subset_tsupport _ (by
+                                    simpa [OrdSourceWeight] using hu)
+                                have huP : u ∈ P.V :=
+                                  hUsrc_P
+                                    (hψOrdPieceSource_Usrc a hu_tsupport)
+                                have hzero :
+                                    OrdSourceApproach 0 u =
+                                      (BHW.os45QuarterTurnCLE
+                                        (d := d) (n := n)).symm
+                                        (BHW.realEmbed
+                                          (BHW.os45CommonEdgeRealPoint
+                                            (d := d) (n := n)
+                                            (1 : Equiv.Perm (Fin n)) u)) := by
+                                  simpa [OrdSourceApproach] using
+                                    BHW.os45FlatCommonChartSourceSide_zero_eq_commonEdge
+                                      (d := d) (n := n)
+                                      (1 : Equiv.Perm (Fin n)) (1 : ℝ)
+                                      η0 u
+                                have hbranch :
+                                    A1ext.branch
+                                        (OrdSourceApproach 0 u) =
+                                      bvt_F OS lgc n
+                                        (OrdSourceApproach 0 u) := by
+                                  change
+                                    BHW.extendF (bvt_F OS lgc n)
+                                        (OrdSourceApproach 0 u) =
+                                      bvt_F OS lgc n
+                                        (OrdSourceApproach 0 u)
+                                  rw [hzero]
+                                  exact
+                                    BHW.os45Figure24CommonEdge_ordinary_extendF_eq_bvt_F
+                                      (d := d) (n := n) hd OS lgc
+                                      (P := P) huP
+                                change
+                                  A1ext.branch
+                                      (OrdSourceApproach 0 u) *
+                                    OrdSourceWeight 0 u =
+                                  bvt_F OS lgc n
+                                      (OrdSourceApproach 0 u) *
+                                    OrdSourceWeight 0 u
+                                rw [hbranch]
+                              · have hzero : OrdSourceWeight 0 u = 0 := by
+                                  by_contra hne
+                                  exact hu (by
+                                    simpa [Function.mem_support] using hne)
+                                simp [hzero]
+                            have hψOrdPieceFlat_E :
+                                tsupport
+                                    (ψOrdPieceFlat a :
+                                      BHW.OS45FlatCommonChartReal d n → ℂ) ⊆
+                                  E := by
+                              intro x hx
+                              have hx0 :
+                                  x ∈ tsupport
+                                    (ψ0Flat :
+                                      BHW.OS45FlatCommonChartReal d n → ℂ) :=
+                                ((SchwartzMap.tsupport_smulLeftCLM_subset
+                                  (F := ℂ)
+                                  (g := (χOrd a :
+                                    BHW.OS45FlatCommonChartReal d n → ℂ))
+                                  (f := ψ0Flat)) hx).1
+                              exact hK0_E (by
+                                simpa [K0] using hx0)
+                            have hOrd_A1ext_endpoint_flat_zero :
+                                (∫ x : BHW.OS45FlatCommonChartReal d n,
+                                  BHW.os45FlatCommonChartBranch d n OS lgc
+                                    (1 : Equiv.Perm (Fin n))
+                                    (fun j => (x j : ℂ)) *
+                                  (ψOrdPieceFlat a) x) =
+                                J *
+                                  (∫ u : NPointDomain d n,
+                                    A1ext.branch
+                                      (OrdSourceApproach 0 u) *
+                                    OrdSourceWeight 0 u) := by
+                              have hcov :=
+                                BHW.os45FlatCommonChart_ordinaryCommonBoundary_integral_eq_sourcePullback
+                                  (d := d) hd OS lgc (P := P) D
+                                  (ψOrdPieceFlat a)
+                                  (hψOrdPieceFlat_compact a)
+                                  hψOrdPieceFlat_edge
+                              calc
+                                (∫ x : BHW.OS45FlatCommonChartReal d n,
+                                  BHW.os45FlatCommonChartBranch d n OS lgc
+                                    (1 : Equiv.Perm (Fin n))
+                                    (fun j => (x j : ℂ)) *
+                                  (ψOrdPieceFlat a) x)
+                                    =
+                                  J *
+                                    ∫ u : NPointDomain d n,
+                                      BHW.os45PulledRealBranch
+                                        (d := d) (n := n) OS lgc
+                                        (1 : Equiv.Perm (Fin n))
+                                        (BHW.realEmbed
+                                          (BHW.os45CommonEdgeRealPoint
+                                            (d := d) (n := n)
+                                            (1 : Equiv.Perm (Fin n)) u)) *
+                                      (D.toSchwartzNPointCLM
+                                        (1 : Equiv.Perm (Fin n))
+                                        (ψOrdPieceFlat a) :
+                                        NPointDomain d n → ℂ) u := by
+                                      simpa [J] using hcov
+                                _ =
+                                  J *
+                                    (∫ u : NPointDomain d n,
+                                      A1ext.branch
+                                        (OrdSourceApproach 0 u) *
+                                      OrdSourceWeight 0 u) := by
+                                      congr 1
+                                      apply integral_congr_ae
+                                      refine Filter.Eventually.of_forall ?_
+                                      intro u
+                                      have hzero :
+                                          OrdSourceApproach 0 u =
+                                            (BHW.os45QuarterTurnCLE
+                                              (d := d) (n := n)).symm
+                                              (BHW.realEmbed
+                                                (BHW.os45CommonEdgeRealPoint
+                                                  (d := d) (n := n)
+                                                  (1 : Equiv.Perm (Fin n)) u)) := by
+                                        simpa [OrdSourceApproach] using
+                                          BHW.os45FlatCommonChartSourceSide_zero_eq_commonEdge
+                                            (d := d) (n := n)
+                                            (1 : Equiv.Perm (Fin n)) (1 : ℝ)
+                                            η0 u
+                                      have hplain :
+                                          (D.toSchwartzNPointCLM
+                                            (1 : Equiv.Perm (Fin n))
+                                            (ψOrdPieceFlat a) :
+                                            NPointDomain d n → ℂ) u =
+                                          OrdSourceWeight 0 u := by
+                                        have happly :=
+                                          congrArg
+                                            (fun f : SchwartzNPoint d n =>
+                                              (f : NPointDomain d n → ℂ) u)
+                                            hD_piece_plain
+                                        simpa [OrdSourceWeight] using happly
+                                      have hbranch :
+                                          BHW.os45PulledRealBranch
+                                            (d := d) (n := n) OS lgc
+                                            (1 : Equiv.Perm (Fin n))
+                                            (BHW.realEmbed
+                                              (BHW.os45CommonEdgeRealPoint
+                                                (d := d) (n := n)
+                                                (1 : Equiv.Perm (Fin n)) u)) =
+                                          A1ext.branch
+                                            (OrdSourceApproach 0 u) := by
+                                        rw [hzero]
+                                        simp [A1ext,
+                                          BHW.os45PulledRealBranch,
+                                          BHW.permAct]
+                                      change
+                                        BHW.os45PulledRealBranch
+                                            (d := d) (n := n) OS lgc
+                                            (1 : Equiv.Perm (Fin n))
+                                            (BHW.realEmbed
+                                              (BHW.os45CommonEdgeRealPoint
+                                                (d := d) (n := n)
+                                                (1 : Equiv.Perm (Fin n)) u)) *
+                                          (D.toSchwartzNPointCLM
+                                            (1 : Equiv.Perm (Fin n))
+                                            (ψOrdPieceFlat a) :
+                                            NPointDomain d n → ℂ) u =
+                                        A1ext.branch
+                                            (OrdSourceApproach 0 u) *
+                                          OrdSourceWeight 0 u
+                                      rw [hbranch, hplain]
+                            have hOrd_A1ext_endpoint_Tlocal :
+                                J *
+                                  (∫ u : NPointDomain d n,
+                                    A1ext.branch
+                                      (OrdSourceApproach 0 u) *
+                                    OrdSourceWeight 0 u) =
+                                Tlocal (ψOrdPieceFlat a) := by
+                              have hzero_piece :=
+                                hzero_plus (ψOrdPieceFlat a)
+                                  (hψOrdPieceFlat_compact a)
+                                  hψOrdPieceFlat_E
+                              exact
+                                hOrd_A1ext_endpoint_flat_zero.symm.trans
+                                  hzero_piece
+                            have hOrdPieceFixed_scaled_Tlocal :
+                                Tendsto (fun ε : ℝ => J * OrdPieceFixed ε)
+                                  (𝓝[Set.Ioi 0] (0 : ℝ))
+                                  (𝓝 (Tlocal (ψOrdPieceFlat a))) := by
+                              have hlimit_eq :
+                                  J *
+                                    (∫ u : NPointDomain d n,
+                                      BHW.extendF (bvt_F OS lgc n)
+                                        (BHW.os45FlatCommonChartSourceSide d n
+                                          (1 : Equiv.Perm (Fin n)) (1 : ℝ)
+                                          0 η0 u) *
+                                      (ψOrdPieceSource a :
+                                        NPointDomain d n → ℂ) u) =
+                                  Tlocal (ψOrdPieceFlat a) := by
+                                simpa [A1ext, OrdSourceApproach,
+                                  OrdSourceWeight] using
+                                  hOrd_A1ext_endpoint_Tlocal
+                              exact
+                                hlimit_eq ▸
+                                  (hOrdPieceFixed_endpoint.const_mul J)
+                            have hFlatOrd_piece_selected_Tlocal :
+                                Tendsto (FlatOrdPiece a)
+                                  (𝓝[Set.Ioi 0] (0 : ℝ))
+                                  (𝓝 (Tlocal (ψOrdPieceFlat a))) :=
+                              hOrdPieceFixed_scaled_Tlocal.congr'
+                                hFlat_piece_eq_fixed.symm
+                            have hOrd_terminal_edge_left_center_collar :
+                                ∀ᶠ ε in 𝓝[Set.Ioi 0] (0 : ℝ),
+                                  OrdSourceApproach ε ua ∈
+                                    (chartOrdTerm
+                                      (Fin.castSucc
+                                        (Fin.last lenOrd))).carrier := by
+                              have hzero_left :
+                                  OrdSourceApproach 0 ua ∈
+                                    (chartOrdTerm
+                                      (Fin.castSucc
+                                        (Fin.last lenOrd))).carrier := by
+                                have hsource0 :
+                                    OrdSourceApproach 0 ua = A1a.center := by
+                                  change
+                                    BHW.os45FlatCommonChartSourceSide d n
+                                      (1 : Equiv.Perm (Fin n)) (1 : ℝ)
+                                      0 η0 ua = A1a.center
+                                  rw [BHW.os45FlatCommonChartSourceSide_zero_eq_commonEdge]
+                                  simpa [ua] using
+                                    _hA1a_center.symm
+                                simpa [hsource0, chartOrdTerm,
+                                  Fin.snoc_castSucc] using
+                                  hOrd_terminal_model.z0_mem
+                              have hmem_singleton :
+                                  ∀ᶠ ε in 𝓝[Set.Ioi 0] (0 : ℝ),
+                                    ∀ u ∈ ({ua} : Set (NPointDomain d n)),
+                                      OrdSourceApproach ε u ∈
+                                        (chartOrdTerm
+                                          (Fin.castSucc
+                                            (Fin.last lenOrd))).carrier :=
+                                BHW.eventually_forall_os45FlatCommonChartSourceSide_mem_of_compact
+                                  (d := d) (n := n)
+                                  (1 : Equiv.Perm (Fin n)) (1 : ℝ) η0
+                                  (isCompact_singleton)
+                                  (chartOrdTerm
+                                    (Fin.castSucc
+                                      (Fin.last lenOrd))).carrier_open
+                                  (by
+                                    intro u hu
+                                    rw [Set.mem_singleton_iff] at hu
+                                    subst u
+                                    exact hzero_left)
+                              filter_upwards [hmem_singleton] with ε hε
+                              exact hε ua (by simp)
+                            /-
+                            Reduce the ordinary fixed selector to the
+                            localized boundary-value comparison on the product
+                            refinement of the Wick-path and source-path chart
+                            covers.  The helper below consumes the finite
+                            partition and all chart-retargeting internally;
+                            the remaining local premise is the actual
+                            `(4.1)/(4.14)` side-current comparison for one
+                            compact refined test piece.
+                            -/
+                            let UOrdWickPath :
+                                αOrdSourcePath → Set (NPointDomain d n) :=
+                              fun c =>
+                                {u | OrdWickApproach 0 u ∈
+                                  A0ext.carrier ∩
+                                    (OrdPathChart c.1).carrier}
+                            have hOrdWickApproach_zero_cont :
+                                Continuous fun u : NPointDomain d n =>
+                                  OrdWickApproach 0 u := by
+                              simpa [OrdWickApproach] using
+                                BHW.continuous_wickRotateRealConfig
+                                  (d := d) (n := n)
+                            have hUOrdWickPath_open :
+                                ∀ c : αOrdSourcePath,
+                                  IsOpen (UOrdWickPath c) := by
+                              intro c
+                              have hopen :
+                                  IsOpen
+                                    (A0ext.carrier ∩
+                                      (OrdPathChart c.1).carrier) :=
+                                A0ext.carrier_open.inter
+                                  (OrdPathChart c.1).carrier_open
+                              simpa [UOrdWickPath] using
+                                hopen.preimage hOrdWickApproach_zero_cont
+                            have hOrd_wick_path_cover_tsupport :
+                                tsupport
+                                    (ψOrdPieceSource a :
+                                      NPointDomain d n → ℂ) ⊆
+                                  ⋃ c : αOrdSourcePath,
+                                    UOrdWickPath c := by
+                              intro u hu
+                              rcases hOrdPath_cover_wick_support u hu with
+                                ⟨c, hc, hmem⟩
+                              have hA0 :
+                                  OrdWickApproach 0 u ∈ A0ext.carrier := by
+                                have hA0a :
+                                    OrdWickApproach 0 u ∈ A0a.carrier := by
+                                  simpa [OrdWickApproach] using
+                                    hOrd_piece_wick_in_A0 u hu
+                                simpa [A0ext,
+                                  PointedMetricBranchChart.carrier] using
+                                  hA0a
+                              exact Set.mem_iUnion.mpr
+                                ⟨⟨c, hc⟩, by
+                                  simpa [UOrdWickPath] using
+                                    And.intro hA0 hmem⟩
+                            have hOrd_static_zero :
+                                ∀ c : αOrdSourcePath,
+                                  ∀ u ∈ UOrdWickPath c,
+                                    OrdWickApproach 0 u ∈
+                                      A0ext.carrier ∩
+                                        (OrdPathChart c.1).carrier := by
+                              intro c u hu
+                              simpa [UOrdWickPath] using hu
+                            have hOrd_moving_zero :
+                                ∀ c : αOrdSourcePath,
+                                  ∀ u ∈ UOrdSourcePath c,
+                                    OrdSourceApproach 0 u ∈
+                                      A1ext.carrier ∩
+                                        (OrdPathChart c.1).carrier := by
+                              intro c u hu
+                              have hmem :
+                                  OrdSourceApproach 0 u ∈
+                                    (OrdPathChart c.1).carrier ∩
+                                      A1ext.carrier := by
+                                simpa [UOrdSourcePath] using hu
+                              exact ⟨hmem.2, hmem.1⟩
+                            have hOrd_static_eqOn :
+                                ∀ c : αOrdSourcePath,
+                                  Set.EqOn A0ext.branch
+                                    (OrdPathChart c.1).branch
+                                    (A0ext.carrier ∩
+                                      (OrdPathChart c.1).carrier) := by
+                              intro c z hz
+                              calc
+                                A0ext.branch z =
+                                    BHW.extendF (bvt_F OS lgc n) z :=
+                                  hA0ext_model hz.1
+                                _ = (OrdPathChart c.1).branch z :=
+                                  (hOrdPathChart_model c.1 hz.2).symm
+                            have hOrd_moving_eqOn :
+                                ∀ c : αOrdSourcePath,
+                                  Set.EqOn A1ext.branch
+                                    (OrdPathChart c.1).branch
+                                    (A1ext.carrier ∩
+                                      (OrdPathChart c.1).carrier) := by
+                              intro c z hz
+                              calc
+                                A1ext.branch z =
+                                    BHW.extendF (bvt_F OS lgc n) z :=
+                                  hA1ext_model hz.1
+                                _ = (OrdPathChart c.1).branch z :=
+                                  (hOrdPathChart_model c.1 hz.2).symm
+                            suffices hOrd_local_comparison :
+                                ∀ (cs cm : αOrdSourcePath)
+                                  (piece : SchwartzNPoint d n),
+                                  HasCompactSupport
+                                    (piece : NPointDomain d n → ℂ) →
+                                  VanishesToInfiniteOrderOnCoincidence piece →
+                                  tsupport
+                                      (piece : NPointDomain d n → ℂ) ⊆
+                                    tsupport
+                                      (ψOrdPieceSource a :
+                                        NPointDomain d n → ℂ) →
+                                  tsupport
+                                      (piece : NPointDomain d n → ℂ) ⊆
+                                    UOrdWickPath cs ∩ UOrdSourcePath cm →
+                                  Tendsto
+                                    (fun ε : ℝ =>
+                                      ∫ u : NPointDomain d n,
+                                        (OrdPathChart cm.1).branch
+                                          (BHW.os45FlatCommonChartSourceSide
+                                            d n (1 : Equiv.Perm (Fin n))
+                                            (1 : ℝ) ε η0 u) *
+                                        (piece :
+                                          NPointDomain d n → ℂ) u)
+                                    (𝓝[Set.Ioi 0] (0 : ℝ))
+                                    (𝓝
+                                      (∫ u : NPointDomain d n,
+                                        (OrdPathChart cs.1).branch
+                                          (OrdWickApproach 0 u) *
+                                        (piece :
+                                          NPointDomain d n → ℂ) u)) by
+                              have hOrd_A1ext_to_A0ext_selected :
+                                Tendsto
+                                  (fun ε : ℝ =>
+                                    ∫ u : NPointDomain d n,
+                                      A1ext.branch
+                                        (OrdSourceApproach ε u) *
+                                      OrdSourceWeight ε u)
+                                  (𝓝[Set.Ioi 0] (0 : ℝ))
+                                  (𝓝
+                                    (∫ u : NPointDomain d n,
+                                      A0ext.branch
+                                        (OrdWickApproach 0 u) *
+                                      OrdWickWeight 0 u)) := by
+                                simpa [OrdSourceApproach, OrdSourceWeight,
+                                  OrdWickWeight] using
+                                  fixed_sourceSide_integral_refined_chart_partition_tendsto_of_local
+                                    (d := d) (n := n)
+                                    (α := αOrdSourcePath)
+                                    (β := αOrdSourcePath)
+                                    (1 : Equiv.Perm (Fin n)) (1 : ℝ) η0
+                                    A0ext A1ext
+                                    (fun c : αOrdSourcePath =>
+                                      OrdPathChart c.1)
+                                    (fun c : αOrdSourcePath =>
+                                      OrdPathChart c.1)
+                                    (fun u : NPointDomain d n =>
+                                      OrdWickApproach 0 u)
+                                    hOrdWickApproach_zero_cont
+                                    (ψOrdPieceSource a)
+                                    (hψOrdPieceSource_compact a)
+                                    (hψOrdPieceSource_zd a)
+                                    UOrdWickPath UOrdSourcePath
+                                    hUOrdWickPath_open hUOrdSourcePath_open
+                                    hOrd_wick_path_cover_tsupport
+                                    hOrd_source_path_cover_zero_tsupport
+                                    hOrd_static_zero hOrd_moving_zero
+                                    hOrd_static_eqOn hOrd_moving_eqOn
+                                    hOrd_local_comparison
+                              have hOrd_A1ext_selected :
+                                Tendsto
+                                  (fun ε : ℝ =>
+                                    ∫ u : NPointDomain d n,
+                                      A1ext.branch
+                                        (OrdSourceApproach ε u) *
+                                      OrdSourceWeight ε u)
+                                  (𝓝[Set.Ioi 0] (0 : ℝ))
+                                  (𝓝 (OS.S n (ψOrdPieceZD a))) := by
+                                exact
+                                  hOrd_A0ext_wick_value ▸
+                                    hOrd_A1ext_to_A0ext_selected
+                              exact
+                                hOrd_A1ext_selected.congr'
+                                  (hOrd_A1ext_to_A1_integral.trans
+                                    hOrdPieceFixed_terminal.symm)
+                            intro cs cm piece hpiece_compact hpiece_vanish
+                              hpiece_base hpiece_sub
+                            /-
+                            Genuine remaining local `(4.1)/(4.14)` leaf:
+                            for a compact test supported where the Wick anchor
+                            lies in `OrdPathChart cs` and the zero-height
+                            source side lies in `OrdPathChart cm`, prove the
+                            positive source-side boundary value equals the Wick
+                            boundary value.  The `hpiece_vanish` and
+                            `hpiece_base` hypotheses record that this refined
+                            piece is still a zero-diagonal part of the original
+                            ordinary source-current support.
+                            -/
+                            let pieceZD : ZeroDiagonalSchwartz d n :=
+                              ⟨piece, hpiece_vanish⟩
+                            have hpiece_source_chart :
+                                tsupport
+                                    (piece : NPointDomain d n → ℂ) ⊆
+                                  UOrdSourcePath cm := by
+                              intro u hu
+                              exact (hpiece_sub hu).2
+                            have hpiece_wick_chart :
+                                tsupport
+                                    (piece : NPointDomain d n → ℂ) ⊆
+                                  UOrdWickPath cs := by
+                              intro u hu
+                              exact (hpiece_sub hu).1
+                            have htarget_to_A0ext :
+                                (∫ u : NPointDomain d n,
+                                  (OrdPathChart cs.1).branch
+                                    (OrdWickApproach 0 u) *
+                                  (piece : NPointDomain d n → ℂ) u) =
+                                ∫ u : NPointDomain d n,
+                                  A0ext.branch
+                                    (OrdWickApproach 0 u) *
+                                  (piece : NPointDomain d n → ℂ) u := by
+                              apply integral_congr_ae
+                              refine Filter.Eventually.of_forall ?_
+                              intro u
+                              by_cases hu :
+                                  u ∈ Function.support
+                                    (piece : NPointDomain d n → ℂ)
+                              · have huK :
+                                    u ∈ tsupport
+                                      (piece : NPointDomain d n → ℂ) :=
+                                  subset_tsupport _ hu
+                                have hmem :
+                                    OrdWickApproach 0 u ∈
+                                      A0ext.carrier ∩
+                                        (OrdPathChart cs.1).carrier := by
+                                  simpa [UOrdWickPath] using
+                                    hpiece_wick_chart huK
+                                have hbranch :=
+                                  hOrd_static_eqOn cs hmem
+                                change
+                                  (OrdPathChart cs.1).branch
+                                      (OrdWickApproach 0 u) *
+                                    (piece : NPointDomain d n → ℂ) u =
+                                  A0ext.branch
+                                      (OrdWickApproach 0 u) *
+                                    (piece : NPointDomain d n → ℂ) u
+                                rw [← hbranch]
+                              · have hzero :
+                                    (piece : NPointDomain d n → ℂ) u = 0 := by
+                                  by_contra hne
+                                  exact hu (by
+                                    simpa [Function.mem_support] using hne)
+                                simp [hzero]
+                            have hA0ext_to_bvt_piece :
+                                (∫ u : NPointDomain d n,
+                                  A0ext.branch
+                                    (OrdWickApproach 0 u) *
+                                  (piece : NPointDomain d n → ℂ) u) =
+                                ∫ u : NPointDomain d n,
+                                  bvt_F OS lgc n
+                                    (fun k => wickRotatePoint (u k)) *
+                                  (piece : NPointDomain d n → ℂ) u := by
+                              apply integral_congr_ae
+                              refine Filter.Eventually.of_forall ?_
+                              intro u
+                              by_cases hu :
+                                  u ∈ Function.support
+                                    (piece : NPointDomain d n → ℂ)
+                              · have huK :
+                                    u ∈ tsupport
+                                      (piece : NPointDomain d n → ℂ) :=
+                                  subset_tsupport _ hu
+                                have huSource :
+                                    u ∈ tsupport
+                                      (ψOrdPieceSource a :
+                                        NPointDomain d n → ℂ) :=
+                                  hpiece_base huK
+                                have huP : u ∈ P.V :=
+                                  hUsrc_P
+                                    (hψOrdPieceSource_Usrc a huSource)
+                                have hforward :
+                                    OrdWickApproach 0 u ∈
+                                      BHW.ForwardTube d n := by
+                                  have hroot :
+                                      (fun k => wickRotatePoint (u k)) ∈
+                                        _root_.ForwardTube d n :=
+                                    wickRotate_mem_forwardTube_of_mem_orderedPositiveTimeSector
+                                      (d := d) (n := n)
+                                      (1 : Equiv.Perm (Fin n))
+                                      (by
+                                        simpa using P.V_ordered u huP)
+                                  simpa [OrdWickApproach,
+                                    BHW_forwardTube_eq (d := d) (n := n)]
+                                    using hroot
+                                have hF_holo :
+                                    DifferentiableOn ℂ
+                                      (bvt_F OS lgc n)
+                                      (BHW.ForwardTube d n) := by
+                                  simpa [BHW_forwardTube_eq (d := d) (n := n)]
+                                    using bvt_F_holomorphic (d := d) OS lgc n
+                                have hF_real_inv :
+                                    ∀ (Λ :
+                                        LorentzLieGroup.RestrictedLorentzGroup d)
+                                      (z : Fin n → Fin (d + 1) → ℂ),
+                                      z ∈ BHW.ForwardTube d n →
+                                      bvt_F OS lgc n
+                                        (fun k μ =>
+                                          ∑ ν,
+                                            (Λ.val.val μ ν : ℂ) * z k ν) =
+                                      bvt_F OS lgc n z := by
+                                  intro Λ z hz
+                                  have hΛz :
+                                      BHW.complexLorentzAction
+                                          (ComplexLorentzGroup.ofReal Λ) z ∈
+                                        BHW.ForwardTube d n :=
+                                    BHW.ofReal_preserves_forwardTube Λ z hz
+                                  have hcinv :=
+                                    bvt_F_complexLorentzInvariant_forwardTube
+                                      (d := d) OS lgc n
+                                      (ComplexLorentzGroup.ofReal Λ) z
+                                      ((BHW_forwardTube_eq
+                                        (d := d) (n := n)) ▸ hz)
+                                      ((BHW_forwardTube_eq
+                                        (d := d) (n := n)) ▸ hΛz)
+                                  simpa [BHW.complexLorentzAction] using hcinv
+                                have hext :
+                                    BHW.extendF (bvt_F OS lgc n)
+                                        (OrdWickApproach 0 u) =
+                                      bvt_F OS lgc n
+                                        (OrdWickApproach 0 u) :=
+                                  BHW.extendF_eq_on_forwardTube n
+                                    (bvt_F OS lgc n)
+                                    hF_holo hF_real_inv
+                                    (OrdWickApproach 0 u) hforward
+                                change
+                                  BHW.extendF (bvt_F OS lgc n)
+                                      (OrdWickApproach 0 u) *
+                                    (piece : NPointDomain d n → ℂ) u =
+                                  bvt_F OS lgc n
+                                      (fun k => wickRotatePoint (u k)) *
+                                    (piece : NPointDomain d n → ℂ) u
+                                rw [hext]
+                              · have hzero :
+                                    (piece : NPointDomain d n → ℂ) u = 0 := by
+                                  by_contra hne
+                                  exact hu (by
+                                    simpa [Function.mem_support] using hne)
+                                simp [hzero]
+                            have hpiece_bvt_value :
+                                (∫ u : NPointDomain d n,
+                                  bvt_F OS lgc n
+                                    (fun k => wickRotatePoint (u k)) *
+                                  (piece : NPointDomain d n → ℂ) u) =
+                                OS.S n pieceZD := by
+                              simpa [pieceZD] using
+                                (bvt_euclidean_restriction
+                                  (d := d) OS lgc n pieceZD).symm
+                            have htarget_value :
+                                (∫ u : NPointDomain d n,
+                                  (OrdPathChart cs.1).branch
+                                    (OrdWickApproach 0 u) *
+                                  (piece : NPointDomain d n → ℂ) u) =
+                                OS.S n pieceZD := by
+                              calc
+                                (∫ u : NPointDomain d n,
+                                  (OrdPathChart cs.1).branch
+                                    (OrdWickApproach 0 u) *
+                                  (piece : NPointDomain d n → ℂ) u)
+                                    =
+                                  ∫ u : NPointDomain d n,
+                                    A0ext.branch
+                                      (OrdWickApproach 0 u) *
+                                    (piece : NPointDomain d n → ℂ) u :=
+                                      htarget_to_A0ext
+                                _ =
+                                  ∫ u : NPointDomain d n,
+                                    bvt_F OS lgc n
+                                      (fun k => wickRotatePoint (u k)) *
+                                    (piece : NPointDomain d n → ℂ) u :=
+                                      hA0ext_to_bvt_piece
+                                _ = OS.S n pieceZD := hpiece_bvt_value
+                            let pieceFlat :
+                                SchwartzMap
+                                  (BHW.OS45FlatCommonChartReal d n) ℂ :=
+                              (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
+                                eflat.symm) piece
+                            have hpieceFlat_compact :
+                                HasCompactSupport
+                                  (pieceFlat :
+                                    BHW.OS45FlatCommonChartReal d n → ℂ) := by
+                              simpa [pieceFlat,
+                                SchwartzMap.compCLMOfContinuousLinearEquiv_apply]
+                                using
+                                  hpiece_compact.comp_homeomorph
+                                    eflat.symm.toHomeomorph
+                            have hpieceFlat_edge :
+                                tsupport
+                                    (pieceFlat :
+                                      BHW.OS45FlatCommonChartReal d n → ℂ) ⊆
+                                  BHW.os45FlatCommonChartEdgeSet d n P
+                                    (1 : Equiv.Perm (Fin n)) := by
+                              intro x hx
+                              have hx_source :
+                                  eflat.symm x ∈ tsupport
+                                    (piece : NPointDomain d n → ℂ) := by
+                                have hpre :=
+                                  tsupport_comp_subset_preimage
+                                    (piece : NPointDomain d n → ℂ)
+                                    eflat.symm.continuous
+                                simpa [pieceFlat,
+                                  SchwartzMap.compCLMOfContinuousLinearEquiv_apply]
+                                  using hpre hx
+                              have hx_base :
+                                  eflat.symm x ∈ tsupport
+                                    (ψOrdPieceSource a :
+                                      NPointDomain d n → ℂ) :=
+                                hpiece_base hx_source
+                              have hxP : eflat.symm x ∈ P.V :=
+                                hUsrc_P
+                                  (hψOrdPieceSource_Usrc a hx_base)
+                              simpa [eflat] using
+                                (BHW.os45CommonEdgeFlatCLE_mem_edgeSet_iff
+                                  d n P (1 : Equiv.Perm (Fin n))
+                                  (eflat.symm x)).mpr hxP
+                            have hD_piece_plain :
+                                D.toSchwartzNPointCLM
+                                    (1 : Equiv.Perm (Fin n)) pieceFlat =
+                                  piece := by
+                              ext u
+                              have hplain :=
+                                D.toSchwartzNPointCLM_eq_plain_of_tsupport_subset_edge
+                                  (1 : Equiv.Perm (Fin n)) pieceFlat
+                                  hpieceFlat_edge u
+                              simpa [pieceFlat, eflat,
+                                SchwartzMap.compCLMOfContinuousLinearEquiv_apply]
+                                using hplain
+                            have hD_piece_zd :
+                                D.toZeroDiagonalCLM
+                                    (1 : Equiv.Perm (Fin n)) pieceFlat =
+                                  pieceZD := by
+                              apply Subtype.ext
+                              change
+                                D.toSchwartzNPointCLM
+                                    (1 : Equiv.Perm (Fin n)) pieceFlat =
+                                  piece
+                              exact hD_piece_plain
+                            have hD_piece_zero_plain :
+                                ((D.toZeroDiagonalCLM
+                                  (1 : Equiv.Perm (Fin n)) pieceFlat).1 :
+                                  SchwartzNPoint d n) = piece := by
+                              change
+                                D.toSchwartzNPointCLM
+                                    (1 : Equiv.Perm (Fin n)) pieceFlat =
+                                  piece
+                              exact hD_piece_plain
+                            have hpiece_sideWick_selected :
+                                Tendsto
+                                  (fun ε : ℝ =>
+                                    ∫ u : NPointDomain d n,
+                                      bvt_F OS lgc n
+                                          (fun k => wickRotatePoint (u k)) *
+                                        ((((D.toSideZeroDiagonalCLM
+                                          (1 : Equiv.Perm (Fin n)) (1 : ℝ)
+                                          ε η0 pieceFlat).1 :
+                                          SchwartzNPoint d n) :
+                                          NPointDomain d n → ℂ) u))
+                                  (𝓝[Set.Ioi 0] (0 : ℝ))
+                                  (𝓝 (OS.S n pieceZD)) := by
+                              have hside_uniform :=
+                                D.sideZeroDiagonal_sourcePairings_tendstoUniformlyOn_schwinger
+                                  OS lgc Kη hKη_compact hKη_cone
+                                  pieceFlat hpieceFlat_compact hpieceFlat_edge
+                              have hη0_mem : η0 ∈ Kη := by
+                                exact ⟨k, rfl⟩
+                              simpa [hD_piece_zd] using
+                                hside_uniform.1.tendsto_at hη0_mem
+                            suffices hA1ext_piece_selected :
+                                Tendsto
+                                  (fun ε : ℝ =>
+                                    ∫ u : NPointDomain d n,
+                                      A1ext.branch
+                                        (OrdSourceApproach ε u) *
+                                      (piece :
+                                        NPointDomain d n → ℂ) u)
+                                  (𝓝[Set.Ioi 0] (0 : ℝ))
+                                  (𝓝 (OS.S n pieceZD)) by
+                              have hpath_selected :
+                                  Tendsto
+                                    (fun ε : ℝ =>
+                                      ∫ u : NPointDomain d n,
+                                        (OrdPathChart cm.1).branch
+                                          (OrdSourceApproach ε u) *
+                                        (piece :
+                                          NPointDomain d n → ℂ) u)
+                                    (𝓝[Set.Ioi 0] (0 : ℝ))
+                                    (𝓝 (OS.S n pieceZD)) :=
+                                hA1ext_piece_selected.congr'
+                                  (hOrd_A1ext_to_pathChart_piece_integral
+                                    cm piece hpiece_compact
+                                    hpiece_source_chart)
+                              simpa [OrdSourceApproach, htarget_value] using
+                                hpath_selected
+                            let SourceMovingSide : ℝ → ℂ := fun ε =>
+                              ∫ u : NPointDomain d n,
+                                A1ext.branch (OrdSourceApproach ε u) *
+                                  ((((D.toSideZeroDiagonalCLM
+                                    (1 : Equiv.Perm (Fin n)) (1 : ℝ)
+                                    ε η0 pieceFlat).1 :
+                                    SchwartzNPoint d n) :
+                                    NPointDomain d n → ℂ) u)
+                            obtain
+                                ⟨Kpiece, hKpiece_compact, hpiece_int_Kpiece,
+                                  hKpiece_source⟩ :=
+                              exists_compact_between
+                                hpiece_compact.isCompact
+                                (hUOrdSourcePath_open cm)
+                                hpiece_source_chart
+                            let Upiece : Set (NPointDomain d n) :=
+                              interior Kpiece
+                            have hUpiece_open : IsOpen Upiece := by
+                              simp [Upiece]
+                            have hUpiece_sub_Kpiece : Upiece ⊆ Kpiece := by
+                              intro u hu
+                              exact interior_subset hu
+                            have hpiece_supp_Kpiece :
+                                tsupport
+                                    (piece : NPointDomain d n → ℂ) ⊆
+                                  Kpiece := by
+                              intro u hu
+                              exact hUpiece_sub_Kpiece
+                                (hpiece_int_Kpiece hu)
+                            have hpieceFlat_Upiece :
+                                tsupport
+                                    (pieceFlat :
+                                      BHW.OS45FlatCommonChartReal d n → ℂ) ⊆
+                                  eflat '' Upiece := by
+                              intro x hx
+                              refine ⟨eflat.symm x, ?_, ?_⟩
+                              · have hx_source :
+                                    eflat.symm x ∈ tsupport
+                                      (piece : NPointDomain d n → ℂ) := by
+                                  have hpre :=
+                                    tsupport_comp_subset_preimage
+                                      (piece : NPointDomain d n → ℂ)
+                                      eflat.symm.continuous
+                                  simpa [pieceFlat,
+                                    SchwartzMap.compCLMOfContinuousLinearEquiv_apply]
+                                    using hpre hx
+                                exact hpiece_int_Kpiece hx_source
+                              · simp [eflat]
+                            have hsource0_piece_A1ext :
+                                ∀ u ∈ tsupport
+                                    (piece : NPointDomain d n → ℂ),
+                                  OrdSourceApproach 0 u ∈
+                                    A1ext.carrier := by
+                              intro u hu
+                              have hmem :
+                                  OrdSourceApproach 0 u ∈
+                                    (OrdPathChart cm.1).carrier ∩
+                                      A1ext.carrier := by
+                                simpa [UOrdSourcePath] using
+                                  hpiece_source_chart hu
+                              exact hmem.2
+                            have hsource0_Kpiece_A1ext :
+                                ∀ u ∈ Kpiece,
+                                  OrdSourceApproach 0 u ∈
+                                    A1ext.carrier := by
+                              intro u hu
+                              have hmem :
+                                  OrdSourceApproach 0 u ∈
+                                    (OrdPathChart cm.1).carrier ∩
+                                      A1ext.carrier := by
+                                simpa [UOrdSourcePath] using
+                                  hKpiece_source hu
+                              exact hmem.2
+                            have hφ0K :
+                                tsupport
+                                    ((((D.toZeroDiagonalCLM
+                                      (1 : Equiv.Perm (Fin n))
+                                      pieceFlat).1 : SchwartzNPoint d n) :
+                                      NPointDomain d n → ℂ)) ⊆
+                                  Kpiece := by
+                              simpa [hD_piece_zero_plain] using
+                                hpiece_supp_Kpiece
+                            have hcommon_piece_support :
+                                ∀ᶠ ε in 𝓝[Set.Ioi 0] (0 : ℝ),
+                                  ∀ u ∉ Kpiece,
+                                    ((((D.toSideZeroDiagonalCLM
+                                      (1 : Equiv.Perm (Fin n)) (1 : ℝ)
+                                      ε η0 pieceFlat).1 :
+                                      SchwartzNPoint d n) -
+                                      ((D.toZeroDiagonalCLM
+                                        (1 : Equiv.Perm (Fin n))
+                                        pieceFlat).1 :
+                                        SchwartzNPoint d n) :
+                                      SchwartzNPoint d n) :
+                                      NPointDomain d n → ℂ) u = 0 := by
+                              have hcommon :=
+                                D.toSideZeroDiagonalCLM_sub_toZeroDiagonalCLM_eq_zero_off_eventually
+                                  hUpiece_open hUpiece_sub_Kpiece
+                                  Kη hKη_compact pieceFlat
+                                  hpieceFlat_compact hpieceFlat_Upiece
+                              filter_upwards [hcommon] with ε hε u huK
+                              simpa [η0] using
+                                (hε η0 ⟨k, rfl⟩).1 u huK
+                            have hseminorm_piece :
+                                Tendsto
+                                  (fun ε : ℝ =>
+                                    SchwartzMap.seminorm ℝ 0 0
+                                      (((D.toSideZeroDiagonalCLM
+                                        (1 : Equiv.Perm (Fin n)) (1 : ℝ)
+                                        ε η0 pieceFlat).1 :
+                                        SchwartzNPoint d n) -
+                                        ((D.toZeroDiagonalCLM
+                                          (1 : Equiv.Perm (Fin n))
+                                          pieceFlat).1 :
+                                          SchwartzNPoint d n) :
+                                        SchwartzNPoint d n))
+                                  (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) := by
+                              exact
+                                (D.toSideZeroDiagonalCLM_sub_toZeroDiagonalCLM_seminorm_tendsto_zero
+                                  (1 : Equiv.Perm (Fin n)) (1 : ℝ)
+                                  η0 pieceFlat hpieceFlat_compact).mono_left
+                                  nhdsWithin_le_nhds
+                            have hfixed_A1ext_endpoint :
+                                Tendsto
+                                  (fun ε : ℝ =>
+                                    ∫ u : NPointDomain d n,
+                                      A1ext.branch
+                                        (OrdSourceApproach ε u) *
+                                      (piece :
+                                        NPointDomain d n → ℂ) u)
+                                  (𝓝[Set.Ioi 0] (0 : ℝ))
+                                  (𝓝
+                                    (∫ u : NPointDomain d n,
+                                      A1ext.branch
+                                        (OrdSourceApproach 0 u) *
+                                      (piece :
+                                        NPointDomain d n → ℂ) u)) := by
+                              simpa [OrdSourceApproach] using
+                                BHW.tendsto_integral_comp_os45FlatCommonChartSourceSide_mul_of_hasCompactSupport
+                                  (d := d) (n := n)
+                                  (1 : Equiv.Perm (Fin n)) (1 : ℝ) η0
+                                  (U := A1ext.carrier)
+                                  A1ext.carrier_open
+                                  A1ext.holo.continuousOn
+                                  hpiece_compact
+                                  (piece : SchwartzNPoint d n).continuous
+                                  hsource0_piece_A1ext
+                            have hmoving_A1ext_endpoint :
+                                Tendsto SourceMovingSide
+                                  (𝓝[Set.Ioi 0] (0 : ℝ))
+                                  (𝓝
+                                    (∫ u : NPointDomain d n,
+                                      A1ext.branch
+                                        (OrdSourceApproach 0 u) *
+                                      (piece :
+                                        NPointDomain d n → ℂ) u)) := by
+                              have hmove :=
+                                BHW.tendsto_integral_comp_os45FlatCommonChartSourceSide_mul_moving_of_commonCompactSupport
+                                  (d := d) (n := n)
+                                  (1 : Equiv.Perm (Fin n)) (1 : ℝ) η0
+                                  (U := A1ext.carrier)
+                                  A1ext.carrier_open
+                                  A1ext.holo.continuousOn
+                                  (K := Kpiece) hKpiece_compact
+                                  hsource0_Kpiece_A1ext
+                                  (εseq := fun ε : ℝ => ε)
+                                  (φseq := fun ε : ℝ =>
+                                    ((D.toSideZeroDiagonalCLM
+                                      (1 : Equiv.Perm (Fin n)) (1 : ℝ)
+                                      ε η0 pieceFlat).1 :
+                                      SchwartzNPoint d n))
+                                  (φ0 :=
+                                    ((D.toZeroDiagonalCLM
+                                      (1 : Equiv.Perm (Fin n))
+                                      pieceFlat).1 :
+                                      SchwartzNPoint d n))
+                                  tendsto_id hφ0K hcommon_piece_support
+                                  hseminorm_piece
+                              simpa [SourceMovingSide, OrdSourceApproach,
+                                hD_piece_zero_plain] using hmove
+                            have hfixed_to_moving :
+                                Tendsto
+                                  (fun ε : ℝ =>
+                                    (∫ u : NPointDomain d n,
+                                      A1ext.branch
+                                        (OrdSourceApproach ε u) *
+                                      (piece :
+                                        NPointDomain d n → ℂ) u) -
+                                      SourceMovingSide ε)
+                                  (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) := by
+                              have hsub :=
+                                hfixed_A1ext_endpoint.sub
+                                  hmoving_A1ext_endpoint
+                              simpa using hsub
+                            let SourceMovingExtendF : ℝ → ℂ := fun ε =>
+                              ∫ u : NPointDomain d n,
+                                BHW.extendF (bvt_F OS lgc n)
+                                    (OrdSourceApproach ε u) *
+                                  ((((D.toSideZeroDiagonalCLM
+                                    (1 : Equiv.Perm (Fin n)) (1 : ℝ)
+                                    ε η0 pieceFlat).1 :
+                                    SchwartzNPoint d n) :
+                                    NPointDomain d n → ℂ) u)
+                            have hside_tsupport_Upiece :
+                                ∀ᶠ ε in 𝓝[Set.Ioi 0] (0 : ℝ),
+                                  tsupport
+                                      ((((D.toSideZeroDiagonalCLM
+                                        (1 : Equiv.Perm (Fin n)) (1 : ℝ)
+                                        ε η0 pieceFlat).1 :
+                                        SchwartzNPoint d n) :
+                                        NPointDomain d n → ℂ)) ⊆
+                                    Upiece := by
+                              have hside :=
+                                D.toSideZeroDiagonalCLM_tsupport_subset_image_eventually
+                                  hUpiece_open Kη hKη_compact
+                                  pieceFlat hpieceFlat_compact
+                                  hpieceFlat_Upiece
+                              filter_upwards [hside] with ε hε
+                              exact (hε η0 ⟨k, rfl⟩).1
+                            have hSourceMoving_to_extendF :
+                                SourceMovingSide
+                                  =ᶠ[𝓝[Set.Ioi 0] (0 : ℝ)]
+                                SourceMovingExtendF := by
+                              have hsource_mem_Kpiece :
+                                  ∀ᶠ ε in 𝓝[Set.Ioi 0] (0 : ℝ),
+                                    ∀ u ∈ Kpiece,
+                                      OrdSourceApproach ε u ∈
+                                        A1ext.carrier := by
+                                simpa [OrdSourceApproach] using
+                                  BHW.eventually_forall_os45FlatCommonChartSourceSide_mem_of_compact
+                                    (d := d) (n := n)
+                                    (1 : Equiv.Perm (Fin n)) (1 : ℝ) η0
+                                    hKpiece_compact A1ext.carrier_open
+                                    hsource0_Kpiece_A1ext
+                              filter_upwards
+                                [hsource_mem_Kpiece, hside_tsupport_Upiece]
+                                with ε hmem hsupp_side
+                              apply integral_congr_ae
+                              refine Filter.Eventually.of_forall ?_
+                              intro u
+                              let side :
+                                  NPointDomain d n → ℂ :=
+                                (((D.toSideZeroDiagonalCLM
+                                  (1 : Equiv.Perm (Fin n)) (1 : ℝ)
+                                  ε η0 pieceFlat).1 :
+                                  SchwartzNPoint d n) :
+                                  NPointDomain d n → ℂ)
+                              by_cases hu :
+                                  u ∈ tsupport side
+                              · have hcarrier :
+                                    OrdSourceApproach ε u ∈
+                                      A1ext.carrier :=
+                                  hmem u
+                                    (hUpiece_sub_Kpiece
+                                      (hsupp_side hu))
+                                have hmodel :=
+                                  hA1ext_model hcarrier
+                                change
+                                  A1ext.branch (OrdSourceApproach ε u) *
+                                      side u =
+                                    BHW.extendF (bvt_F OS lgc n)
+                                        (OrdSourceApproach ε u) *
+                                      side u
+                                rw [hmodel]
+                              · have hzero : side u = 0 :=
+                                  image_eq_zero_of_notMem_tsupport hu
+                                change
+                                  A1ext.branch (OrdSourceApproach ε u) *
+                                      side u =
+                                    BHW.extendF (bvt_F OS lgc n)
+                                        (OrdSourceApproach ε u) *
+                                      side u
+                                simp [hzero]
+                            /-
+                            The fixed-test/moving-test mismatch for this
+                            compact source piece is now discharged by the
+                            common-compact-support moving-test estimate above.
+                            The remaining positive-side selection leaf is the
+                            genuine OS-I transport: the moving source-branch
+                            current must match the side-zero Wick pairing.
+                            -/
+                            suffices hmoving_to_sideWick :
+                                Tendsto
+                                  (fun ε : ℝ =>
+                                    SourceMovingExtendF ε -
+                                    (∫ u : NPointDomain d n,
+                                      bvt_F OS lgc n
+                                          (fun k => wickRotatePoint (u k)) *
+                                        ((((D.toSideZeroDiagonalCLM
+                                          (1 : Equiv.Perm (Fin n)) (1 : ℝ)
+                                          ε η0 pieceFlat).1 :
+                                          SchwartzNPoint d n) :
+                                          NPointDomain d n → ℂ) u)))
+                                  (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) by
+                              have hmoving_chart_to_sideWick :
+                                  Tendsto
+                                    (fun ε : ℝ =>
+                                      SourceMovingSide ε -
+                                      (∫ u : NPointDomain d n,
+                                        bvt_F OS lgc n
+                                            (fun k => wickRotatePoint (u k)) *
+                                          ((((D.toSideZeroDiagonalCLM
+                                            (1 : Equiv.Perm (Fin n)) (1 : ℝ)
+                                            ε η0 pieceFlat).1 :
+                                            SchwartzNPoint d n) :
+                                            NPointDomain d n → ℂ) u)))
+                                    (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) := by
+                                exact hmoving_to_sideWick.congr'
+                                  (hSourceMoving_to_extendF.mono
+                                    (by
+                                      intro ε hε
+                                      dsimp))
+                              have hsource_to_sideWick :
+                                  Tendsto
+                                    (fun ε : ℝ =>
+                                      (∫ u : NPointDomain d n,
+                                        A1ext.branch
+                                          (OrdSourceApproach ε u) *
+                                        (piece :
+                                          NPointDomain d n → ℂ) u) -
+                                      (∫ u : NPointDomain d n,
+                                        bvt_F OS lgc n
+                                            (fun k => wickRotatePoint (u k)) *
+                                          ((((D.toSideZeroDiagonalCLM
+                                            (1 : Equiv.Perm (Fin n)) (1 : ℝ)
+                                            ε η0 pieceFlat).1 :
+                                            SchwartzNPoint d n) :
+                                            NPointDomain d n → ℂ) u)))
+                                    (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) := by
+                                have hsum :=
+                                  hfixed_to_moving.add
+                                    hmoving_chart_to_sideWick
+                                convert hsum using 1
+                                · ext ε
+                                  simp [SourceMovingSide]
+                                · simp
+                              have hsum :=
+                                hsource_to_sideWick.add
+                                  hpiece_sideWick_selected
+                              convert hsum using 1
+                              · ext ε
+                                ring
+                              · simp
                           exact
                             (hOrdPieceFixed_selected.const_mul J).congr'
                               hFlat_piece_eq_fixed.symm
@@ -6020,6 +9063,111 @@ theorem os45CommonEdge_localFigure24DifferenceGerm_of_OSI45
                       rw [BHW.os45FlatCommonChartSourceSide_zero_eq_commonEdge]
                       simpa [τout, one_mul] using
                         hAdj_piece_common_in_A1 u hu
+                    have hAdj_terminal_flat_collar :
+                        ∀ᶠ ε in 𝓝[Set.Ioi 0] (0 : ℝ),
+                          ∀ x : BHW.OS45FlatCommonChartReal d n,
+                            x ∈ Function.support
+                                (SCV.translateSchwartz
+                                  (-((-1 : ℝ) * ε) • η0)
+                                  (ψAdjPieceFlat a) :
+                                  BHW.OS45FlatCommonChartReal d n → ℂ) →
+                              BHW.permAct (d := d) τout
+                                ((BHW.os45QuarterTurnCLE
+                                  (d := d) (n := n)).symm
+                                  (BHW.unflattenCfg n d
+                                    (fun j =>
+                                      (x j : ℂ) +
+                                        ((((-1 : ℝ) * ε) • η0) j : ℂ) *
+                                          Complex.I))) ∈
+                                A1a.carrier := by
+                      let Upre : Set (Fin n → Fin (d + 1) → ℂ) :=
+                        {z | BHW.permAct (d := d) τout z ∈
+                          A1a.carrier}
+                      have hUpre_open : IsOpen Upre := by
+                        exact
+                          A1a.carrier_open.preimage
+                            (BHW.differentiable_permAct
+                              (d := d) (n := n) τout).continuous
+                      have hzero_pre :
+                          ∀ u ∈ tsupport
+                              (ψAdjPieceSource a :
+                                NPointDomain d n → ℂ),
+                            BHW.os45FlatCommonChartSourceSide d n
+                              (1 : Equiv.Perm (Fin n)) (-1 : ℝ)
+                              0 η0 u ∈ Upre := by
+                        intro u hu
+                        exact hAdj_piece_sourceSide0_in_A1 u hu
+                      have hmem_source :
+                          ∀ᶠ ε in 𝓝[Set.Ioi 0] (0 : ℝ),
+                            ∀ u ∈ tsupport
+                                (ψAdjPieceSource a :
+                                  NPointDomain d n → ℂ),
+                              BHW.os45FlatCommonChartSourceSide d n
+                                (1 : Equiv.Perm (Fin n)) (-1 : ℝ)
+                                ε η0 u ∈ Upre :=
+                        BHW.eventually_forall_os45FlatCommonChartSourceSide_mem_of_compact
+                          (d := d) (n := n)
+                          (1 : Equiv.Perm (Fin n)) (-1 : ℝ) η0
+                          (hψAdjPieceSource_compact a).isCompact
+                          hUpre_open hzero_pre
+                      filter_upwards [hmem_source] with ε hε x hx
+                      let s : BHW.OS45FlatCommonChartReal d n :=
+                        ((-1 : ℝ) * ε) • η0
+                      let y : BHW.OS45FlatCommonChartReal d n :=
+                        x + -s
+                      let u : NPointDomain d n := eflat.symm y
+                      have hy_support :
+                          y ∈ Function.support
+                            (ψAdjPieceFlat a :
+                              BHW.OS45FlatCommonChartReal d n → ℂ) := by
+                        have hx' :=
+                          (SCV.mem_support_translateSchwartz_iff
+                            (-s) (ψAdjPieceFlat a) x).mp
+                            (by simpa [s] using hx)
+                        simpa [y] using hx'
+                      have hu_support :
+                          u ∈ Function.support
+                            (ψAdjPieceSource a :
+                              NPointDomain d n → ℂ) := by
+                        simpa [u, y, ψAdjPieceSource, pullAdjFlat,
+                          SchwartzMap.compCLMOfContinuousLinearEquiv_apply]
+                          using hy_support
+                      have hu_tsupport :
+                          u ∈ tsupport
+                            (ψAdjPieceSource a :
+                              NPointDomain d n → ℂ) :=
+                        subset_tsupport _ hu_support
+                      have happroach :
+                          (BHW.os45QuarterTurnCLE
+                            (d := d) (n := n)).symm
+                            (BHW.unflattenCfg n d
+                              (fun j =>
+                                (x j : ℂ) +
+                                  (s j : ℂ) * Complex.I)) =
+                          BHW.os45FlatCommonChartSourceSide d n
+                            (1 : Equiv.Perm (Fin n)) (-1 : ℝ)
+                            ε η0 u := by
+                        simp [BHW.os45FlatCommonChartSourceSide,
+                          u, y, s, eflat, one_mul, add_assoc]
+                      rw [show
+                        BHW.permAct (d := d) τout
+                            ((BHW.os45QuarterTurnCLE
+                              (d := d) (n := n)).symm
+                              (BHW.unflattenCfg n d
+                                (fun j =>
+                                  (x j : ℂ) +
+                                    ((((-1 : ℝ) * ε) • η0) j : ℂ) *
+                                      Complex.I))) =
+                          BHW.permAct (d := d) τout
+                            ((BHW.os45QuarterTurnCLE
+                              (d := d) (n := n)).symm
+                              (BHW.unflattenCfg n d
+                                (fun j =>
+                                  (x j : ℂ) +
+                                    (s j : ℂ) * Complex.I))) by
+                          simp [s]]
+                      rw [happroach]
+                      exact hε u hu_tsupport
                     have hAdjWick_eq_ordWick :
                         (∫ u : NPointDomain d n,
                           bvt_F OS lgc n
@@ -6525,105 +9673,37 @@ theorem os45CommonEdge_localFigure24DifferenceGerm_of_OSI45
                     outgoing sheet, not an endpoint equality obtained from
                     `extendF_eq_on_forwardTube`.
                     -/
-                    -- The remaining adjacent obligation is now the endpoint
-                    -- current selected by the retained raw chain.  The outer
-                    -- flat selector has been reduced through the fixed
-                    -- translated-test pullback and `hAdjPieceFixed_endpoint`;
-                    -- no deterministic `extendF ∘ permAct` adjacent seed is
-                    -- introduced here.
+                    -- The remaining adjacent obligation is the fixed
+                    -- source-current selected by the retained raw chain.  The
+                    -- outer flat selector has been reduced through the fixed
+                    -- translated-test pullback; endpoint DCT is not a
+                    -- substitute for the raw `(4.12)/(4.14)` transport.
                     have hAdjPieceFixed_selected :
                         Tendsto AdjPieceFixed
                           (𝓝[Set.Ioi 0] (0 : ℝ))
                           (𝓝 (OS.S n (ψAdjPieceZD a))) := by
-                      have hAdj_base_value :
-                          (∫ u : NPointDomain d n,
-                            A0a.branch
-                              (BHW.permAct (d := d) P.τ
-                                (fun k => wickRotatePoint (u k))) *
-                            (ψAdjPieceSource a :
-                              NPointDomain d n → ℂ) u) =
-                          OS.S n (ψAdjPieceZD a) := by
-                        calc
-                          (∫ u : NPointDomain d n,
-                            A0a.branch
-                              (BHW.permAct (d := d) P.τ
-                                (fun k => wickRotatePoint (u k))) *
-                            (ψAdjPieceSource a :
-                              NPointDomain d n → ℂ) u)
-                              =
+                      /-
+                      Genuine retained raw `(4.12)/(4.14)` fixed
+                      source-current transport for this compact piece.  The
+                      proof must start from the raw `(4.12)` incoming ray,
+                      propagate through the retained raw Figure-2-4 chart chain
+                      by overlap identity on carrier intersections, then use
+                      the terminal outgoing-sheet normal form.  It is not the
+                      zero-height endpoint value.
+                      -/
+                      change
+                        Tendsto
+                          (fun ε : ℝ =>
                             ∫ u : NPointDomain d n,
-                              bvt_F OS lgc n
-                                (fun k => wickRotatePoint (u k)) *
+                              BHW.extendF (bvt_F OS lgc n)
+                                (BHW.permAct (d := d) τout
+                                  (BHW.os45FlatCommonChartSourceSide d n
+                                    (1 : Equiv.Perm (Fin n)) (-1 : ℝ)
+                                    ε η0 u)) *
                               (ψAdjPieceSource a :
-                                NPointDomain d n → ℂ) u :=
-                              hAdjRawWick_to_A0
-                          _ =
-                            (∫ u : NPointDomain d n,
-                              bvt_F OS lgc n
-                                (fun k => wickRotatePoint (u (P.τ k))) *
-                              (ψAdjPieceSource a :
-                                NPointDomain d n → ℂ) u) :=
-                              hAdjWick_eq_ordWick.symm
-                          _ = OS.S n (ψAdjPieceZD a) :=
-                              hAdjWickPiece_value
-                      have hAdj_base_selected :
-                          Tendsto
-                            (fun _ε : ℝ =>
-                              ∫ u : NPointDomain d n,
-                                A0a.branch
-                                  (BHW.permAct (d := d) P.τ
-                                    (fun k => wickRotatePoint (u k))) *
-                                (ψAdjPieceSource a :
-                                  NPointDomain d n → ℂ) u)
-                            (𝓝[Set.Ioi 0] (0 : ℝ))
-                            (𝓝 (OS.S n (ψAdjPieceZD a))) := by
-                          exact hAdj_base_value ▸
-                            (tendsto_const_nhds :
-                              Tendsto
-                                (fun _ε : ℝ =>
-                                  ∫ u : NPointDomain d n,
-                                    A0a.branch
-                                      (BHW.permAct (d := d) P.τ
-                                        (fun k => wickRotatePoint (u k))) *
-                                    (ψAdjPieceSource a :
-                                      NPointDomain d n → ℂ) u)
-                                (𝓝[Set.Ioi 0] (0 : ℝ))
-                                (𝓝
-                                  (∫ u : NPointDomain d n,
-                                    A0a.branch
-                                      (BHW.permAct (d := d) P.τ
-                                        (fun k => wickRotatePoint (u k))) *
-                                    (ψAdjPieceSource a :
-                                      NPointDomain d n → ℂ) u)))
-                      -- The fixed source-side endpoint continuity is already
-                      -- checked.  The remaining retained raw `(4.12)/(4.14)`
-                      -- content is the endpoint current value itself.
-                      suffices hAdj_terminal_endpoint_value :
-                          (∫ u : NPointDomain d n,
-                            BHW.extendF (bvt_F OS lgc n)
-                              (BHW.permAct (d := d) τout
-                                (BHW.os45FlatCommonChartSourceSide d n
-                                  (1 : Equiv.Perm (Fin n)) (-1 : ℝ)
-                                  0 η0 u)) *
-                            (ψAdjPieceSource a :
-                              NPointDomain d n → ℂ) u) =
-                          OS.S n (ψAdjPieceZD a) by
-                          have hAdj_terminal_endpoint_value_qturn :
-                              (∫ u : NPointDomain d n,
-                                BHW.extendF (bvt_F OS lgc n)
-                                  (BHW.permAct (d := d) τout
-                                    (BHW.os45QuarterTurnConfig
-                                      (d := d) (n := n)
-                                      (fun k => wickRotatePoint (u k)))) *
-                                (ψAdjPieceSource a :
-                                  NPointDomain d n → ℂ) u) =
-                              OS.S n (ψAdjPieceZD a) := by
-                            simpa [BHW.os45FlatCommonChartSourceSide_zero]
-                              using hAdj_terminal_endpoint_value
-                          simpa [AdjPieceFixed,
-                            BHW.os45FlatCommonChartSourceSide_zero,
-                            hAdj_terminal_endpoint_value_qturn] using
-                            hAdjPieceFixed_endpoint
+                                NPointDomain d n → ℂ) u)
+                          (𝓝[Set.Ioi 0] (0 : ℝ))
+                          (𝓝 (OS.S n (ψAdjPieceZD a)))
                     exact
                       (hAdjPieceFixed_selected.const_mul J).congr'
                         hFlat_piece_eq_fixed.symm
@@ -6885,7 +9965,14 @@ theorem os45CommonEdge_localFigure24DifferenceGerm_of_OSI45
     have hzc_overlap :
         zc ∈ BHW.ExtendedTube d n ∩
           BHW.permutedExtendedTubeSector d n P.τ := by
-      simpa [zc] using
+      change
+        (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u)) ∈
+          BHW.ExtendedTube d n ∩
+            BHW.permutedExtendedTubeSector d n P.τ
+      exact
         BHW.os45Figure24_commonEdge_mem_initialSectorOverlap
           (d := d) (n := n) (hd := hd) (P := P)
           (subset_closure (hU_sub hu))
@@ -6902,7 +9989,14 @@ theorem os45CommonEdge_localFigure24DifferenceGerm_of_OSI45
     have hzc_overlap :
         zc ∈ BHW.ExtendedTube d n ∩
           BHW.permutedExtendedTubeSector d n P.τ := by
-      simpa [zc] using
+      change
+        (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u)) ∈
+          BHW.ExtendedTube d n ∩
+            BHW.permutedExtendedTubeSector d n P.τ
+      exact
         BHW.os45Figure24_commonEdge_mem_initialSectorOverlap
           (d := d) (n := n) (hd := hd) (P := P)
           (subset_closure (hU_sub hu))
@@ -6921,26 +10015,9 @@ theorem os45CommonEdge_localFigure24DifferenceGerm_of_OSI45
             (BHW.permAct (d := d) P.τ zc) =
           BHW.extendF (bvt_F OS lgc n) zc :=
       hAdj.symm.trans hOrd
-    have hAdjPull :
-        BHW.extendF (bvt_F OS lgc n)
-            (BHW.permAct (d := d) P.τ zc) =
-          BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
-            (P.τ.symm * (1 : Equiv.Perm (Fin n)))
-            (BHW.realEmbed
-              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
-                (1 : Equiv.Perm (Fin n)) u)) := by
-      simpa [zc] using
-        BHW.os45Figure24CommonEdge_permAct_extendF_eq_adjacentPulledRealBranch
-          (d := d) (n := n) hd OS lgc (P := P) u
-    have hOrdPull :
-        BHW.extendF (bvt_F OS lgc n) zc =
-          BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
-            (1 : Equiv.Perm (Fin n))
-            (BHW.realEmbed
-              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
-                (1 : Equiv.Perm (Fin n)) u)) := by
-      simp [BHW.os45PulledRealBranch, zc]
-    rw [← hAdjPull, ← hOrdPull]
-    exact (sub_eq_zero.mpr hEq).symm
+    refine Eq.trans rfl ?_
+    exact
+      commonEdge_pulledRealBranch_sub_eq_zero_of_extendF_perm_eq
+        (d := d) (hd := hd) OS lgc (P := P) u hEq
 
 end BHW

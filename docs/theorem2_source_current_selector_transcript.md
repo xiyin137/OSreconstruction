@@ -9,6 +9,58 @@ Lean.  The implementation should expand these steps as local `have`s inside
 the Hdiff producer, except for neutral analytic/topological helpers that do
 not mention `Hdiff`, `Word`, `Wadj`, zero-height equality, or theorem 2.
 
+## Latest Delta
+
+The ordinary localized comparison now also discharges the fixed-test versus
+side-zero moving-test mismatch for each refined compact zero-diagonal piece.
+Inside `hOrd_local_comparison`, after constructing the flat pullback
+`pieceFlat`, Lean checks the compact source window `Kpiece`, the side-test
+support packet, and the moving-test endpoint comparison:
+
+```lean
+have hfixed_to_moving :
+    Tendsto
+      (fun eps : Real =>
+        (∫ u : NPointDomain d n,
+          A1ext.branch (OrdSourceApproach eps u) * piece u) -
+        SourceMovingSide eps)
+      (nhdsWithin 0 (Set.Ioi 0)) (nhds 0)
+```
+
+The terminal chart branch has also been normalized on the eventual moving-test
+support:
+
+```lean
+have hSourceMoving_to_extendF :
+    SourceMovingSide =ᶠ[nhdsWithin 0 (Set.Ioi 0)] SourceMovingExtendF
+```
+
+Thus the ordinary leaf is now the direct moving OS-I comparison:
+
+```lean
+have hmoving_to_sideWick :
+    Tendsto
+      (fun eps : Real =>
+        SourceMovingExtendF eps -
+        ∫ u : NPointDomain d n,
+          bvt_F OS lgc n (fun k => wickRotatePoint (u k)) *
+          ((D.toSideZeroDiagonalCLM 1 1 eps eta0 pieceFlat).1 u))
+      (nhdsWithin 0 (Set.Ioi 0)) (nhds 0) := by
+  -- still open: actual moving source-side OS-I transfer
+```
+
+This is not an endpoint-value shortcut: the checked work proves the local
+compact-support moving-test comparison and the terminal chart-to-`extendF`
+collar.  The remaining ordinary bridge is exactly the moving source-side
+`extendF` current versus the Wick moving pairing.
+
+Fresh exact check:
+`lake env lean -DmaxHeartbeats=1200000 OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanLocalityOS45Figure24Hdiff.lean`
+logged to `/tmp/osr_hdiff_after_congr_dsimp_only_1779262375.log` exits `1`.
+The ordinary unsolved goal is the displayed `hmoving_to_sideWick`; the retained
+raw-adjacent selector remains open.  Downstream deterministic timeout
+diagnostics are still present while the ordinary local leaf is open.
+
 ## Exact Live Goals
 
 Inside the current `hzero_minus` body, after fixing `eta0`, `D`, `psi0`, and
@@ -58,6 +110,296 @@ the fixed flat translated-boundary value by the ordinary `(4.1)` and retained
 raw `(4.12)` one-branch chains.  Fixed endpoint DCT then identifies the
 zero-height endpoint with that selected value, and only then do the moving
 endpoint DCTs close the displayed side-current families.
+
+## Current Lean Delta
+
+As of the current Hdiff frontier, the misleading endpoint-value shortcuts have
+been removed from the two live selector bodies.  The remaining Lean goals are
+now the fixed source-current transport statements themselves:
+
+```lean
+have hOrdPieceFixed_selected :
+    Tendsto OrdPieceFixed l (nhds (OS.S n (psiOrdPieceZD a))) := by
+  -- ordinary `(4.1)/(4.14)` fixed source-current transport
+
+have hAdjPieceFixed_selected :
+    Tendsto AdjPieceFixed l (nhds (OS.S n (psiAdjPieceZD a))) := by
+  -- retained raw `(4.12)/(4.14)` fixed source-current transport
+```
+
+Do not reintroduce a proof obligation of the form
+`terminal endpoint integral = OS.S ...`.  The checked endpoint DCTs only say
+that the fixed source-current family tends to its zero-height endpoint.  The
+missing OS-I step is stronger and earlier: it must identify the fixed
+positive-side source current with the Schwinger value before endpoint
+continuity is used.
+
+Latest ordinary-side packet progress:
+
+```lean
+let OrdWickApproach :
+    Real -> NPointDomain d n -> Fin n -> Fin (d + 1) -> Complex :=
+  fun _eps u => fun k => wickRotatePoint (u k)
+
+let OrdWickWeight : Real -> NPointDomain d n -> Complex :=
+  fun _eps u => (psiOrdPieceSource a : NPointDomain d n -> Complex) u
+
+let OrdSourceApproach :
+    Real -> NPointDomain d n -> Fin n -> Fin (d + 1) -> Complex :=
+  fun eps u =>
+    BHW.os45FlatCommonChartSourceSide d n
+      (1 : Equiv.Perm (Fin n)) (1 : Real) eps eta0 u
+
+let OrdSourceWeight : Real -> NPointDomain d n -> Complex :=
+  fun _eps u => (psiOrdPieceSource a : NPointDomain d n -> Complex) u
+```
+
+The incoming ordinary Wick edge now has the same support-aware packet shape as
+the terminal edge.  A local chart `A0ext` has the same carrier as `A0a` and
+branch `BHW.extendF (bvt_F OS lgc n)`, and Lean checks:
+
+```lean
+have hOrd_A0ext_A0_collar :
+    forallᶠ eps in l, forall u,
+      u ∈ Function.support (OrdWickWeight eps) ->
+        OrdWickApproach eps u ∈ A0ext.carrier ∩ A0a.carrier
+
+have hOrd_A0ext_to_A0_integral :
+    (fun eps =>
+      ∫ u, A0ext.branch (OrdWickApproach eps u) *
+        OrdWickWeight eps u)
+      =ᶠ[l]
+    fun eps =>
+      ∫ u, A0a.branch (OrdWickApproach eps u) *
+        OrdWickWeight eps u
+
+have hOrd_A0ext_wick_value :
+    (∫ u, A0ext.branch (OrdWickApproach 0 u) *
+      OrdWickWeight 0 u) =
+    OS.S n (psiOrdPieceZD a)
+```
+
+The ordinary terminal retarget is now Lean-checked without using an endpoint
+Schwinger shortcut.  A local chart `A1ext` has the same carrier as `A1a` and
+branch `BHW.extendF (bvt_F OS lgc n)`.  The proof now has:
+
+```lean
+have hOrd_A1ext_A1_collar :
+    forallᶠ eps in l, forall u,
+      u ∈ Function.support (OrdSourceWeight eps) ->
+        OrdSourceApproach eps u ∈ A1ext.carrier ∩ A1a.carrier
+
+have hOrd_A1ext_to_A1_integral :
+    (fun eps =>
+      ∫ u, A1ext.branch (OrdSourceApproach eps u) *
+        OrdSourceWeight eps u)
+      =ᶠ[l]
+    fun eps =>
+      ∫ u, A1a.branch (OrdSourceApproach eps u) *
+        OrdSourceWeight eps u
+
+have hOrd_A1ext_endpoint_bvt :
+    (∫ u, A1ext.branch (OrdSourceApproach 0 u) *
+      OrdSourceWeight 0 u) =
+    ∫ u, bvt_F OS lgc n (OrdSourceApproach 0 u) *
+      OrdSourceWeight 0 u
+
+have hOrd_A1ext_endpoint_flat_zero :
+    (∫ x,
+      BHW.os45FlatCommonChartBranch d n OS lgc
+        (1 : Equiv.Perm (Fin n)) (fun j => (x j : Complex)) *
+      psiOrdPieceFlat a x) =
+    J * ∫ u, A1ext.branch (OrdSourceApproach 0 u) *
+      OrdSourceWeight 0 u
+
+have hOrd_A1ext_endpoint_Tlocal :
+    J * ∫ u, A1ext.branch (OrdSourceApproach 0 u) *
+      OrdSourceWeight 0 u =
+    Tlocal (psiOrdPieceFlat a)
+
+have hOrdPieceFixed_scaled_Tlocal :
+    Tendsto (fun eps => J * OrdPieceFixed eps) l
+      (nhds (Tlocal (psiOrdPieceFlat a)))
+
+have hFlatOrd_piece_selected_Tlocal :
+    Tendsto (FlatOrdPiece a) l
+      (nhds (Tlocal (psiOrdPieceFlat a)))
+```
+
+The old center-only terminal-left collar is intentionally not the next target:
+it does not control the support of the source-current integral.  The remaining
+ordinary gap is now sharper: the localized fixed ordinary piece has been
+selected to the ordinary edge CLM, so the missing normalization is the genuine
+piece-level equality
+
+```lean
+Tlocal (psiOrdPieceFlat a) = J * OS.S n (psiOrdPieceZD a)
+```
+
+This equality still has to come from the real OS-I/Wick-anchor transport, not
+from the zero-height endpoint DCT alone.  If the route proceeds by the finite
+chart chain, the relevant positive-side approaches and weights still need
+support-aware edge packets.
+
+Current ordinary-side source-cover progress:
+
+```lean
+have hOrd_source_path_cover_inter_zero_support :
+    ∀ u ∈ tsupport (ψOrdPieceSource a : NPointDomain d n -> Complex),
+      ∃ c : KOrdPath,
+        c ∈ sOrdPath ∧
+          OrdSourceApproach 0 u ∈
+            (OrdPathChart c).carrier ∩ A1ext.carrier
+
+let αOrdSourcePath := sOrdPath
+let UOrdSourcePath : αOrdSourcePath -> Set (NPointDomain d n) := fun c =>
+  {u | OrdSourceApproach 0 u ∈
+    (OrdPathChart c.1).carrier ∩ A1ext.carrier}
+
+have hOrd_source_path_cover_zero_tsupport :
+    tsupport (ψOrdPieceSource a : NPointDomain d n -> Complex) ⊆
+      ⋃ c : αOrdSourcePath, UOrdSourcePath c
+
+have hOrdPathChart_model :
+    ∀ z : KOrdPath,
+      Set.EqOn (OrdPathChart z).branch
+        (BHW.extendF (bvt_F OS lgc n))
+        (OrdPathChart z).carrier
+
+have hOrd_source_zero_support_branch_witness :
+    ∀ u,
+      u ∈ Function.support (OrdSourceWeight 0) ->
+        ∃ c : αOrdSourcePath,
+          u ∈ UOrdSourcePath c ∧
+            A1ext.branch (OrdSourceApproach 0 u) =
+              (OrdPathChart c.1).branch (OrdSourceApproach 0 u)
+
+have hOrd_source_path_piece_collar :
+    ∀ c : αOrdSourcePath,
+      ∀ w : SchwartzNPoint d n,
+        HasCompactSupport (w : NPointDomain d n -> Complex) ->
+        tsupport (w : NPointDomain d n -> Complex) ⊆ UOrdSourcePath c ->
+        ∀ᶠ eps in l, ∀ u,
+          u ∈ Function.support (w : NPointDomain d n -> Complex) ->
+            OrdSourceApproach eps u ∈
+              (OrdPathChart c.1).carrier ∩ A1ext.carrier
+
+have hOrd_A1ext_to_pathChart_piece_integral :
+    ∀ c : αOrdSourcePath,
+      ∀ w : SchwartzNPoint d n,
+        HasCompactSupport (w : NPointDomain d n -> Complex) ->
+        tsupport (w : NPointDomain d n -> Complex) ⊆ UOrdSourcePath c ->
+        (fun eps =>
+          ∫ u, A1ext.branch (OrdSourceApproach eps u) * w u)
+          =ᶠ[l]
+        fun eps =>
+          ∫ u, (OrdPathChart c.1).branch
+            (OrdSourceApproach eps u) * w u
+```
+
+This is the honest compact-local split point for the ordinary selector: the
+source support is now covered by finite chart preimages at zero height, with
+the terminal `A1ext` carrier included.  The latest checked increment also
+names the common-model fact for every finite path chart and turns the cover
+into an actual support-level branch witness: on every zero-height source
+support point, `A1ext.branch` agrees with the witnessed path-chart branch at
+the same approach.  It also now has the fixed-chart positive-side collar:
+any future localized source test supported in a chosen `UOrdSourcePath c`
+has its moving positive-side approach eventually inside the same
+`OrdPathChart c/A1ext` overlap.  Finally, this collar is consumed in the first
+scalar edge-integral transport: for such a localized source test, the
+`A1ext` integral and the selected path-chart integral are eventually equal
+with the same approach and weight.
+
+A full source-piece Schwartz partition subordinate to these preimages was
+tested in the live theorem body.  Even when compressed into a single
+existential packet, carrying the partition construction through the giant
+proof context caused deterministic downstream elaboration timeouts.  The next
+implementation should either consume such a partition in a helper whose
+exported result is a scalar edge-integral equality, or build the first
+positive-side edge packet directly from the support-level witness and
+fixed-chart collar above.  The latter now exists for the `A1ext -> OrdPathChart`
+retarget; the next missing part is producing/consuming the localized source
+pieces without carrying the raw partition construction through the whole
+theorem body.
+
+Latest Lean delta: the neutral helper
+`exists_finite_schwartz_smul_partition_on_tsupport` now packages the finite
+Schwartz source partition produced by a finite open cover of a compact
+topological support.  Re-consuming that helper directly inside
+`hOrdPieceFixed_selected` again typechecked locally but reintroduced
+downstream elaboration timeouts, so the in-body use was backed out.  The
+helper should next be consumed by a slimmer scalar-transport helper whose
+result does not keep the raw partition witnesses in the producer context.
+
+Latest incremental helper: `sourceSide_integral_eventually_eq_sum_chart_partition`
+now performs that scalar transport outside the giant producer context.  It
+packages a finite Schwartz partition subordinate to source-side carrier
+preimages, proves eventual integrability for both chart branches, splits the
+original source integral into the finite localized sum, and uses the supplied
+overlap `EqOn` plus the moving support collar to transport the sum to the
+neighboring chart branches.  A direct one-line consumption of this helper
+inside `hOrdPieceFixed_selected` was also tested; the theorem itself checks,
+but even the compact existential packet still causes downstream elaboration
+timeouts when kept in the open producer context.  Do not keep that local
+packet until the ordinary selector proof is reorganized so the packet is
+consumed immediately inside a completed subproof.
+
+The final common-edge endpoint algebra is now discharged by the small local
+folding lemma
+`commonEdge_pulledRealBranch_sub_eq_zero_of_extendF_perm_eq`; this removes the
+previous strict-heartbeat timeout at the terminal `rw`/`change` without
+changing the mathematical selector frontier.
+
+Fresh exact check:
+
+```bash
+lake env lean -DmaxHeartbeats=1200000 OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanLocalityOS45Figure24Hdiff.lean
+```
+
+Log: `/tmp/osr_hdiff_endpoint_helper_1779252829.log`.
+
+Result: exit code `1`, with only the two intended selector unsolved goals at
+`Hdiff.lean:5106:64` and `Hdiff.lean:7978:58`; no timeout diagnostics.
+
+Fresh exact check after the top-level scalar transport helper:
+
+```bash
+lake env lean -DmaxHeartbeats=1200000 OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanLocalityOS45Figure24Hdiff.lean
+```
+
+Log: `/tmp/osr_hdiff_toplevel_only_1779254354.log`.
+
+Result: exit code `1`, with only the two intended selector unsolved goals at
+`Hdiff.lean:5308:64` (`hOrdPieceFixed_selected`) and `Hdiff.lean:8180:58`
+(`hAdjPieceFixed_selected`); no timeout diagnostics.
+
+For the finite chain, branch equality on overlaps is useful only when the two
+neighboring chart integrals have first been put into the same local
+side-height coordinates on a support collar.  A bare chain of pointed charts
+and seeds does not by itself compare different approach families.  Each step
+must therefore provide:
+
+```lean
+have hleft_to_edge :
+    I_left =ᶠ[l]
+      fun eps => ∫ x, A.branch (edgeApproach eps x) * edgeWeight eps x
+
+have hright_to_edge :
+    I_right =ᶠ[l]
+      fun eps => ∫ x, B.branch (edgeApproach eps x) * edgeWeight eps x
+
+have hedge_collar :
+    ∀ᶠ eps in l, ∀ x,
+      x ∈ Function.support (edgeWeight eps : X -> Complex) ->
+        edgeApproach eps x ∈ A.carrier ∩ B.carrier
+```
+
+Only after these three facts are in place may
+`PointedMetricBranchChart.eqOn_inter_of_seed` turn the overlap seed into
+equality of the two edge integrals.  If two adjacent slots naturally use
+different local approaches, insert the local boundary-value/DCT comparison
+there; do not hide the mismatch behind `eventual_eq`.
 
 ## Fixed Local Objects
 
@@ -1521,3 +1863,97 @@ The surrounding fixed endpoint DCT, moving endpoint DCT, scalar cancellation,
 inverse-CLE support, and Schwinger normalization facts already have checked
 support theorems or local proof scripts in the frontier file.  The hard proof
 body is the finite one-branch selector itself.
+
+## Latest Common-Partition Packet
+
+The frontier now has the checked static Wick-endpoint packet
+`fixedApproach_integral_eq_sum_chart_partition` and the stronger paired packet
+`fixed_sourceSide_integral_common_chart_partition`.
+
+The paired packet chooses one finite Schwartz partition subordinate to a
+single common open cover and proves both:
+
+```lean
+∫ Astatic.branch (staticApproach u) * w u
+  =
+∑ c, ∫ (Bstatic c).branch (staticApproach u) * piece c u
+```
+
+and
+
+```lean
+(fun eps =>
+  ∫ Amoving.branch (sourceSide eps u) * w u)
+  =ᶠ[l]
+fun eps =>
+  ∑ c, ∫ (Bmoving c).branch (sourceSide eps u) * piece c u
+```
+
+This is the non-mismatched endpoint transport shape needed for the ordinary
+selector: the Wick retargeting and source-side retargeting can now share the
+same localized pieces after a common refinement of their carrier preimages.
+
+A body-level attempt to retain the ordinary common-refinement facts inside
+`hOrdPieceFixed_selected` checked locally but reintroduced deterministic
+downstream elaboration timeouts.  It was backed out.  The next implementation
+should consume `fixed_sourceSide_integral_common_chart_partition` only inside a
+completed selector subproof whose exported result is the limit statement, not
+as extra persistent local data in the open producer context.
+
+Fresh exact check:
+
+```bash
+lake env lean -DmaxHeartbeats=1200000 OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanLocalityOS45Figure24Hdiff.lean
+```
+
+Log: `/tmp/osr_hdiff_common_partition_stable_1779258600.log`.
+
+Result: exit code `1`, with only the two intended selector goals at
+`Hdiff.lean:5717:64` (`hOrdPieceFixed_selected`) and `Hdiff.lean:8589:58`
+(`hAdjPieceFixed_selected`); no timeout diagnostics.
+
+Follow-up refinement: `fixed_sourceSide_integral_refined_chart_partition` now
+takes separate finite Wick-endpoint and source-endpoint chart covers and
+constructs the product common refinement internally.  This avoids materializing
+the product cover in the giant theorem context.  Its output pieces are indexed
+by `α × β`, supported in `Ustatic α ∩ Umoving β`, and carry both retargeted
+endpoint equations against those same pieces.
+
+Fresh exact check after this refinement:
+
+```bash
+lake env lean -DmaxHeartbeats=1200000 OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanLocalityOS45Figure24Hdiff.lean
+```
+
+Log: `/tmp/osr_hdiff_refined_partition_1779260400.log`.
+
+Result: exit code `1`, with only the two intended selector goals at
+`Hdiff.lean:5813:64` (`hOrdPieceFixed_selected`) and `Hdiff.lean:8685:58`
+(`hAdjPieceFixed_selected`); no timeout diagnostics.
+
+Latest limit-level refinement: `fixed_sourceSide_integral_refined_chart_partition_tendsto_of_local`
+now consumes the refined product partition internally and exports the actual
+limit transport.  Its remaining premise is the honest localized comparison:
+for every product-refined piece supported in `Ustatic cs ∩ Umoving cm`, the
+source-side branch integral in chart `Bmoving cm` must tend to the static Wick
+integral in chart `Bstatic cs`.  Under that premise, the helper proves the
+whole `Amoving` source-side integral tends to the whole `Astatic` Wick
+integral, using the same partition pieces for both sides and then summing the
+localized limits.
+
+This pins the next mathematical gap more sharply: partition construction,
+support collars, integrability, and chart retargeting are now checked outside
+the giant producer context.  What remains for the ordinary selector is the
+localized boundary-value comparison on each refined support piece.
+
+Fresh exact check after the limit-level refinement:
+
+```bash
+lake env lean -DmaxHeartbeats=1200000 OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanLocalityOS45Figure24Hdiff.lean
+```
+
+Log: `/tmp/osr_hdiff_limit_refinement_1779265000.log`.
+
+Result: exit code `1`, with only the two intended selector goals at
+`Hdiff.lean:5915:64` (`hOrdPieceFixed_selected`) and `Hdiff.lean:8787:58`
+(`hAdjPieceFixed_selected`); no timeout diagnostics.
