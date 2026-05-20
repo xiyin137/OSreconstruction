@@ -51,16 +51,32 @@ Tendsto (fun eps => SourcePathMoving eps - WickPathMoving eps)
   (nhdsWithin 0 (Set.Ioi 0)) (nhds 0)
 ```
 
-This is the intended transport gap: the endpoint charts and the moving support
-collars are explicit, and what remains is the actual OS-I/current transport
-through the Figure-2-4 path corridor.
+A further endpoint packet is now checked in Lean:
+
+```lean
+have hpath_moving_endpoint_collar :
+    forallᶠ eps in nhdsWithin (0 : Real) (Set.Ioi 0), forall u,
+      u ∈ Function.support
+        (((D.toSideZeroDiagonalCLM 1 1 eps eta0 pieceFlat).1 :
+          SchwartzNPoint d n) : NPointDomain d n -> Complex) ->
+        OrdSourceApproach eps u ∈ (OrdPathChart cm.1).carrier /\
+        OrdWickApproach 0 u ∈ (OrdPathChart cs.1).carrier /\
+        u ∈ P.V
+```
+
+This is the intended transport gap with the endpoint charts and common moving
+support/current collar explicit.  What remains is the actual OS-I/current
+transport through the Figure-2-4 path corridor; a bare finite chart chain is
+still not enough without the intermediate approach/weight packets or a real
+local boundary-value comparison at each approach mismatch.
 
 Fresh exact check:
 `lake env lean -DmaxHeartbeats=1200000 OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanLocalityOS45Figure24Hdiff.lean`
-logged to `/tmp/osr_hdiff_path_chart_gap_final_1779265000.log` exits `1`.
-The ordinary unsolved goal is the displayed `SourcePathMoving - WickPathMoving`
-comparison.  Downstream deterministic timeout diagnostics are still present
-while this ordinary local leaf is open.
+logged to `/tmp/osr_hdiff_endpoint_collar_1779265760.log` exits `1`.
+The ordinary unsolved goal is still the displayed
+`SourcePathMoving - WickPathMoving` comparison, now with
+`hpath_moving_endpoint_collar` in context.  Downstream deterministic timeout
+diagnostics are still present while this ordinary local leaf is open.
 
 ## Exact Live Goals
 

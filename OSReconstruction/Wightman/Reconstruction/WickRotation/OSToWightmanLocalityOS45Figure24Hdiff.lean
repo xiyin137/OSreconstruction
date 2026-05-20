@@ -7860,6 +7860,71 @@ theorem os45CommonEdge_localFigure24DifferenceGerm_of_OSI45
                                       (OrdWickApproach 0 u) *
                                       side u
                                 simp [hzero]
+                            have hpath_moving_endpoint_collar :
+                                ∀ᶠ ε in 𝓝[Set.Ioi 0] (0 : ℝ),
+                                  ∀ u,
+                                    u ∈ Function.support
+                                      ((((D.toSideZeroDiagonalCLM
+                                        (1 : Equiv.Perm (Fin n)) (1 : ℝ)
+                                        ε η0 pieceFlat).1 :
+                                        SchwartzNPoint d n) :
+                                        NPointDomain d n → ℂ)) →
+                                      OrdSourceApproach ε u ∈
+                                        (OrdPathChart cm.1).carrier ∧
+                                      OrdWickApproach 0 u ∈
+                                        (OrdPathChart cs.1).carrier ∧
+                                      u ∈ P.V := by
+                              have hsource_mem_Kpiece :
+                                  ∀ᶠ ε in 𝓝[Set.Ioi 0] (0 : ℝ),
+                                    ∀ u ∈ Kpiece,
+                                      OrdSourceApproach ε u ∈
+                                        (OrdPathChart cm.1).carrier := by
+                                have hzero :
+                                    ∀ u ∈ Kpiece,
+                                      OrdSourceApproach 0 u ∈
+                                        (OrdPathChart cm.1).carrier := by
+                                  intro u hu
+                                  have hmem :
+                                      OrdSourceApproach 0 u ∈
+                                        (OrdPathChart cm.1).carrier ∩
+                                          A1ext.carrier := by
+                                    simpa [UOrdSourcePath] using
+                                      hKpiece_source hu
+                                  exact hmem.1
+                                simpa [OrdSourceApproach] using
+                                  BHW.eventually_forall_os45FlatCommonChartSourceSide_mem_of_compact
+                                    (d := d) (n := n)
+                                    (1 : Equiv.Perm (Fin n)) (1 : ℝ)
+                                    η0 hKpiece_compact
+                                    (OrdPathChart cm.1).carrier_open hzero
+                              filter_upwards
+                                [hsource_mem_Kpiece, hside_tsupport_Upiece]
+                                with ε hsource hsupp u hu
+                              let side :
+                                  NPointDomain d n → ℂ :=
+                                (((D.toSideZeroDiagonalCLM
+                                  (1 : Equiv.Perm (Fin n)) (1 : ℝ)
+                                  ε η0 pieceFlat).1 :
+                                  SchwartzNPoint d n) :
+                                  NPointDomain d n → ℂ)
+                              have hu_ts : u ∈ tsupport side :=
+                                subset_tsupport _ (by simpa [side] using hu)
+                              have huK :
+                                  u ∈ Kpiece :=
+                                hUpiece_sub_Kpiece (hsupp hu_ts)
+                              have hsource_carrier :
+                                  OrdSourceApproach ε u ∈
+                                    (OrdPathChart cm.1).carrier :=
+                                hsource u huK
+                              have hwick_mem :
+                                  OrdWickApproach 0 u ∈
+                                    A0ext.carrier ∩
+                                      (OrdPathChart cs.1).carrier := by
+                                simpa [UOrdWickPath] using
+                                  hKpiece_wick huK
+                              exact
+                                ⟨hsource_carrier, hwick_mem.2,
+                                  hUsrc_P (hKpiece_Usrc huK)⟩
                             suffices hsource_moving_to_wick :
                                 Tendsto
                                   (fun ε : ℝ =>
