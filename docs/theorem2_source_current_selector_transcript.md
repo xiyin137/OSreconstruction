@@ -11,55 +11,56 @@ not mention `Hdiff`, `Word`, `Wadj`, zero-height equality, or theorem 2.
 
 ## Latest Delta
 
-The ordinary localized comparison now also discharges the fixed-test versus
-side-zero moving-test mismatch for each refined compact zero-diagonal piece.
-Inside `hOrd_local_comparison`, after constructing the flat pullback
-`pieceFlat`, Lean checks the compact source window `Kpiece`, the side-test
-support packet, and the moving-test endpoint comparison:
+The ordinary localized comparison has been sharpened again.  After the checked
+fixed-test/moving-test source packet, terminal `extendF` normalization, and
+flat side-height/Jacobian pullback, the flat side-height selector is now carried
+through the distributional boundary-value theorem to the zero-height local
+functional `Tlocal pieceFlat`.
 
 ```lean
-have hfixed_to_moving :
-    Tendsto
-      (fun eps : Real =>
-        (∫ u : NPointDomain d n,
-          A1ext.branch (OrdSourceApproach eps u) * piece u) -
-        SourceMovingSide eps)
-      (nhdsWithin 0 (Set.Ioi 0)) (nhds 0)
+have hflat_to_Tlocal :
+    Tendsto FlatMovingSide (nhdsWithin 0 (Set.Ioi 0))
+      (nhds (Tlocal pieceFlat))
 ```
 
-The terminal chart branch has also been normalized on the eventual moving-test
-support:
+This uses the real support packet `hpieceFlat_E` plus
+`os45_BHWJost_flatCommonChart_distributionalBoundaryValue_plus_of_zeroHeight_pairingCLM`;
+it does not assert a terminal endpoint equality.  The source/Wick support
+collar was also tightened: the compact `Kpiece` now lies in
+`UOrdSourcePath cm ∩ UOrdWickPath cs ∩ Usrc`, so the moving side-zero support
+can be retargeted on both endpoint charts.
+
+The checked new local chart retargeting is:
 
 ```lean
-have hSourceMoving_to_extendF :
-    SourceMovingSide =ᶠ[nhdsWithin 0 (Set.Ioi 0)] SourceMovingExtendF
+let SourcePathMoving : Real -> Complex := ...
+let WickPathMoving : Real -> Complex := ...
+
+have hSourceExtend_to_path :
+    SourceMovingExtendF =ᶠ[nhdsWithin 0 (Set.Ioi 0)] SourcePathMoving
+
+have hWickMoving_to_path :
+    WickMovingSide =ᶠ[nhdsWithin 0 (Set.Ioi 0)] WickPathMoving
 ```
 
-Thus the ordinary leaf is now the direct moving OS-I comparison:
+The remaining ordinary leaf is now the genuinely local chart-to-chart moving
+comparison with the same moving side-zero weight:
 
 ```lean
-have hmoving_to_sideWick :
-    Tendsto
-      (fun eps : Real =>
-        SourceMovingExtendF eps -
-        ∫ u : NPointDomain d n,
-          bvt_F OS lgc n (fun k => wickRotatePoint (u k)) *
-          ((D.toSideZeroDiagonalCLM 1 1 eps eta0 pieceFlat).1 u))
-      (nhdsWithin 0 (Set.Ioi 0)) (nhds 0) := by
-  -- still open: actual moving source-side OS-I transfer
+Tendsto (fun eps => SourcePathMoving eps - WickPathMoving eps)
+  (nhdsWithin 0 (Set.Ioi 0)) (nhds 0)
 ```
 
-This is not an endpoint-value shortcut: the checked work proves the local
-compact-support moving-test comparison and the terminal chart-to-`extendF`
-collar.  The remaining ordinary bridge is exactly the moving source-side
-`extendF` current versus the Wick moving pairing.
+This is the intended transport gap: the endpoint charts and the moving support
+collars are explicit, and what remains is the actual OS-I/current transport
+through the Figure-2-4 path corridor.
 
 Fresh exact check:
 `lake env lean -DmaxHeartbeats=1200000 OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanLocalityOS45Figure24Hdiff.lean`
-logged to `/tmp/osr_hdiff_after_congr_dsimp_only_1779262375.log` exits `1`.
-The ordinary unsolved goal is the displayed `hmoving_to_sideWick`; the retained
-raw-adjacent selector remains open.  Downstream deterministic timeout
-diagnostics are still present while the ordinary local leaf is open.
+logged to `/tmp/osr_hdiff_path_chart_gap_final_1779265000.log` exits `1`.
+The ordinary unsolved goal is the displayed `SourcePathMoving - WickPathMoving`
+comparison.  Downstream deterministic timeout diagnostics are still present
+while this ordinary local leaf is open.
 
 ## Exact Live Goals
 
