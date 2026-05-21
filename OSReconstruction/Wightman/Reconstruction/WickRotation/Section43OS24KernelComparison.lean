@@ -1167,6 +1167,86 @@ theorem section43_bvt_F_forwardTubeLift_eq_xiShiftShell_succRight
           (fun i => wickRotatePoint (y i)) ((t : ℂ) * Complex.I)) := by
           rfl
 
+/-- R→E kernel version of
+`section43_bvt_F_forwardTubeLift_eq_xiShiftShell_succRight`.
+
+On forward-tube support, the lifted configuration and the raw `xiShift` shell
+represent the same total TranslatedPET value: they differ by the same
+Borchers-ordering permutation and diagonal translation used in the OS route. -/
+theorem section43_Fext_forwardTubeLift_eq_xiShiftShell_succRight
+    (d : ℕ) [NeZero d]
+    (Wfn : WightmanFunctions d)
+    {n m : ℕ}
+    {t : ℝ}
+    {y : NPointDomain d (n + (m + 1))}
+    (hlift :
+      section43OSForwardTubeLift_succRight d t y ∈
+        TubeDomainSetPi (ForwardConeAbs d (n + (m + 1)))) :
+    F_ext_on_translatedPET_total Wfn
+        (section43OSForwardTubeLift_succRight (d := d) t y) =
+      F_ext_on_translatedPET_total Wfn
+        (xiShift ⟨n, Nat.lt_add_of_pos_right (Nat.succ_pos m)⟩ 0
+          (fun i => wickRotatePoint (y i)) ((t : ℂ) * Complex.I)) := by
+  let N := n + (m + 1)
+  let zLift : Fin N → Fin (d + 1) → ℂ :=
+    section43OSForwardTubeLift_succRight (d := d) t y
+  let zBorch : Fin N → Fin (d + 1) → ℂ :=
+    section43OSBorchersTimeShiftConfig_succRight d t y
+  let zRaw : Fin N → Fin (d + 1) → ℂ :=
+    section43RawXiShiftConfig_succRight d t y
+  let a : Fin (d + 1) → ℂ :=
+    section43OSForwardTubeLiftTranslation_succRight d t y
+  have hlift_ft : zLift ∈ ForwardTube d N := by
+    simpa [zLift, N, TubeDomainSetPi, forwardTube_eq_imPreimage] using hlift
+  have hlift_pet : zLift ∈ PermutedExtendedTube d N :=
+    ((ForwardTube_subset_ComplexExtended d N).trans
+      (ComplexExtended_subset_Permuted d N)) hlift_ft
+  have hlift_tpet : zLift ∈ TranslatedPET d N :=
+    PermutedExtendedTube_subset_TranslatedPET hlift_pet
+  have hza : (fun k μ => zBorch k μ + a μ) = zLift := by
+    funext k μ
+    simp [zLift, zBorch, a, section43OSForwardTubeLift_succRight]
+  have hzBorch : zBorch ∈ TranslatedPET d N := by
+    rw [← hza] at hlift_tpet
+    exact (translatedPET_translate_iff (d := d) (n := N) zBorch a).1 hlift_tpet
+  have htrans :
+      F_ext_on_translatedPET_total Wfn zLift =
+        F_ext_on_translatedPET_total Wfn zBorch := by
+    have h :=
+      F_ext_on_translatedPET_total_translation_invariant
+        (d := d) (n := N) Wfn zBorch a hzBorch
+    simpa [hza] using h.symm
+  have hσ :
+      zBorch =
+        fun k => zRaw (section43LeftBlockReversePerm_succRight n m k) := by
+    funext k μ
+    simp [zBorch, zRaw, section43OSBorchersTimeShiftConfig_succRight]
+  have hzRaw : zRaw ∈ TranslatedPET d N := by
+    rw [hσ] at hzBorch
+    exact
+      (translatedPET_perm_iff
+        (d := d) (n := N) (section43LeftBlockReversePerm_succRight n m) zRaw).1
+        hzBorch
+  have hperm :
+      F_ext_on_translatedPET_total Wfn zBorch =
+        F_ext_on_translatedPET_total Wfn zRaw := by
+    have h :=
+      F_ext_on_translatedPET_total_perm_invariant
+        (d := d) (n := N) Wfn
+        (section43LeftBlockReversePerm_succRight n m) zRaw hzRaw
+    simpa [hσ] using h.symm
+  calc
+    F_ext_on_translatedPET_total Wfn
+        (section43OSForwardTubeLift_succRight (d := d) t y)
+        = F_ext_on_translatedPET_total Wfn zLift := rfl
+    _ = F_ext_on_translatedPET_total Wfn zBorch := htrans
+    _ = F_ext_on_translatedPET_total Wfn zRaw := hperm
+    _ =
+      F_ext_on_translatedPET_total Wfn
+        (xiShift ⟨n, Nat.lt_add_of_pos_right (Nat.succ_pos m)⟩ 0
+          (fun i => wickRotatePoint (y i)) ((t : ℂ) * Complex.I)) := by
+      rfl
+
 /-- Integral form of
 `section43_bvt_F_forwardTubeLift_eq_xiShiftShell_succRight`. -/
 theorem section43_forwardTubeLiftIntegral_eq_xiShiftShell_succRight
@@ -1983,6 +2063,124 @@ theorem section43OSForwardTubeLift_multiDimPsiZExt_apply_of_spectralRegion_succR
               ((flattenCLEquivReal N (d + 1)) '' ForwardConeAbs d N)
               hTflat_FL.hCflat_open hTflat_FL.hCflat_conv
               hTflat_FL.hCflat_cone hTflat_FL.hCflat_salient
+              (flattenCLEquiv N (d + 1)
+                (section43OSForwardTubeLift_succRight d t y))
+              hz_flat hξ_spec.1
+    _ =
+      Complex.exp
+        (Complex.I *
+          ∑ i : Fin (N * (d + 1)),
+            flattenCLEquiv N (d + 1)
+              (section43OSBorchersTimeShiftConfig_succRight d t y) i *
+              (ξ i : ℂ)) := by
+          simpa [N] using
+            section43OSForwardTubeLift_phase_cancel_of_totalMomentumZero_succRight
+              (d := d) (n := n) (m := m) t y ξ
+              (by simpa [N] using hξ_spec.2)
+
+/-- Pointwise forward-tube lift evaluation on the Section 4.3 spectral region,
+with the cone data passed explicitly rather than through an OS
+Fourier-Laplace witness. -/
+theorem section43OSForwardTubeLift_multiDimPsiZExt_apply_of_spectralRegion_of_FL_succRight
+    (d : ℕ) [NeZero d]
+    {n m : ℕ}
+    (f : euclideanPositiveTimeSubmodule (d := d) n)
+    (g : euclideanPositiveTimeSubmodule (d := d) (m + 1))
+    {t : ℝ} (ht : 0 < t)
+    (hCflat_open :
+      IsOpen
+        ((flattenCLEquivReal (n + (m + 1)) (d + 1)) ''
+          ForwardConeAbs d (n + (m + 1))))
+    (hCflat_conv :
+      Convex ℝ
+        ((flattenCLEquivReal (n + (m + 1)) (d + 1)) ''
+          ForwardConeAbs d (n + (m + 1))))
+    (hCflat_cone :
+      IsCone
+        ((flattenCLEquivReal (n + (m + 1)) (d + 1)) ''
+          ForwardConeAbs d (n + (m + 1))))
+    (hCflat_salient :
+      IsSalientCone
+        ((flattenCLEquivReal (n + (m + 1)) (d + 1)) ''
+          ForwardConeAbs d (n + (m + 1))))
+    (ξ : Fin ((n + (m + 1)) * (d + 1)) → ℝ)
+    (hξ :
+      ξ ∈ section43WightmanSpectralRegion d (n + (m + 1)))
+    (y : NPointDomain d (n + (m + 1)))
+    (hy :
+      y ∈ Function.support
+        ((f.1.osConjTensorProduct g.1) :
+          NPointDomain d (n + (m + 1)) → ℂ)) :
+    multiDimPsiZExt
+      ((flattenCLEquivReal (n + (m + 1)) (d + 1)) ''
+        ForwardConeAbs d (n + (m + 1)))
+      hCflat_open hCflat_conv hCflat_cone hCflat_salient
+      (flattenCLEquiv (n + (m + 1)) (d + 1)
+        (section43OSForwardTubeLift_succRight d t y)) ξ =
+    Complex.exp
+      (Complex.I *
+        ∑ i : Fin ((n + (m + 1)) * (d + 1)),
+          flattenCLEquiv (n + (m + 1)) (d + 1)
+            (section43OSBorchersTimeShiftConfig_succRight d t y) i *
+            (ξ i : ℂ)) := by
+  let N := n + (m + 1)
+  have hξ_spec :
+      ξ ∈
+        DualConeFlat ((flattenCLEquivReal N (d + 1)) ''
+            ForwardConeAbs d N) ∩
+          section43TotalMomentumZeroFlat d N := by
+    simpa [N, section43WightmanSpectralRegion] using hξ
+  have hz_tube :
+      section43OSForwardTubeLift_succRight d t y ∈
+        TubeDomainSetPi (ForwardConeAbs d N) := by
+    simpa [N] using
+      section43OSForwardTubeLift_mem_forwardTube_of_osSupport_succRight
+        (d := d) f g ht hy
+  have hz_flat :
+      flattenCLEquiv N (d + 1)
+          (section43OSForwardTubeLift_succRight d t y) ∈
+        SCV.TubeDomain
+          ((flattenCLEquivReal N (d + 1)) '' ForwardConeAbs d N) := by
+    exact flattenCLEquiv_mem_tubeDomain_image (n := N) (r := d) hz_tube
+  suffices h :
+      multiDimPsiZExt
+        ((flattenCLEquivReal N (d + 1)) '' ForwardConeAbs d N)
+        (by simpa [N] using hCflat_open)
+        (by simpa [N] using hCflat_conv)
+        (by simpa [N] using hCflat_cone)
+        (by simpa [N] using hCflat_salient)
+        (flattenCLEquiv N (d + 1)
+          (section43OSForwardTubeLift_succRight d t y)) ξ =
+      Complex.exp
+        (Complex.I *
+          ∑ i : Fin (N * (d + 1)),
+            flattenCLEquiv N (d + 1)
+              (section43OSBorchersTimeShiftConfig_succRight d t y) i *
+              (ξ i : ℂ)) by
+    simpa [N] using h
+  calc
+    multiDimPsiZExt
+        ((flattenCLEquivReal N (d + 1)) '' ForwardConeAbs d N)
+        (by simpa [N] using hCflat_open)
+        (by simpa [N] using hCflat_conv)
+        (by simpa [N] using hCflat_cone)
+        (by simpa [N] using hCflat_salient)
+        (flattenCLEquiv N (d + 1)
+          (section43OSForwardTubeLift_succRight d t y)) ξ
+        =
+      Complex.exp
+        (Complex.I *
+          ∑ i : Fin (N * (d + 1)),
+            flattenCLEquiv N (d + 1)
+              (section43OSForwardTubeLift_succRight d t y) i *
+              (ξ i : ℂ)) := by
+          exact
+            multiDimPsiZExt_apply_of_mem_dualCone
+              ((flattenCLEquivReal N (d + 1)) '' ForwardConeAbs d N)
+              (by simpa [N] using hCflat_open)
+              (by simpa [N] using hCflat_conv)
+              (by simpa [N] using hCflat_cone)
+              (by simpa [N] using hCflat_salient)
               (flattenCLEquiv N (d + 1)
                 (section43OSForwardTubeLift_succRight d t y))
               hz_flat hξ_spec.1

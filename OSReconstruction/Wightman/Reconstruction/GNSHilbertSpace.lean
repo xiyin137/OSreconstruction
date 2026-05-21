@@ -4795,6 +4795,61 @@ theorem gns_spectrum_condition :
   mass_shell := gns_mass_shell Wfn
     (wfn_spectralConditionDistribution Wfn) (gns_translationStronglyContinuous Wfn)
 
+/-- Public wrapper exposing the spectral-condition distribution attached to a
+Wightman family. This is an API surface for downstream R→E proofs; the
+construction remains the private one used by `gns_spectrum_condition`. -/
+theorem wfn_spectralConditionDistribution_public :
+    SpectralConditionDistribution d Wfn.W :=
+  wfn_spectralConditionDistribution Wfn
+
+/-- Public wrapper: the GNS energy spectral projection onto negative energies is
+zero. This exposes the private support lemma without duplicating its proof. -/
+theorem gns_negative_energy_projection_zero_public :
+    let hsc := (gns_spectrum_condition Wfn).strongly_continuous
+    let P₀ := (gnsPoincareRep Wfn).momentumOp 0 (hsc 0)
+    let hT := PoincareRepresentation.momentumOp_denselyDefined
+      (gnsPoincareRep Wfn) 0 (hsc 0)
+    let hsa := PoincareRepresentation.momentumOp_selfAdjoint
+      (gnsPoincareRep Wfn) 0 (hsc 0)
+    (P₀.spectralMeasure hT hsa).proj (Set.Iio 0) = 0 := by
+  simpa using
+    (gns_negative_energy_projection_zero Wfn
+      (wfn_spectralConditionDistribution Wfn)
+      (gns_translationStronglyContinuous Wfn))
+
+/-- Public wrapper: the diagonal spectral measure of the GNS energy operator has
+no mass on negative energies for every Hilbert vector. -/
+theorem gns_energy_diagonalMeasure_Iio_zero (ψ : GNSHilbertSpace Wfn) :
+    let hsc := (gns_spectrum_condition Wfn).strongly_continuous
+    let P₀ := (gnsPoincareRep Wfn).momentumOp 0 (hsc 0)
+    let hT := PoincareRepresentation.momentumOp_denselyDefined
+      (gnsPoincareRep Wfn) 0 (hsc 0)
+    let hsa := PoincareRepresentation.momentumOp_selfAdjoint
+      (gnsPoincareRep Wfn) 0 (hsc 0)
+    (P₀.spectralMeasure hT hsa).diagonalMeasure ψ (Set.Iio 0) = 0 := by
+  simpa using
+    (gns_energy_spectral_support_nonneg Wfn
+      (wfn_spectralConditionDistribution Wfn)
+      (gns_translationStronglyContinuous Wfn) ψ)
+
+/-- Dense-vector version of `gns_energy_diagonalMeasure_Iio_zero`, convenient
+when a proof is still phrased on the algebraic GNS pre-Hilbert quotient. -/
+theorem gns_preHilbert_energy_diagonalMeasure_Iio_zero
+    (F : PreHilbertSpace Wfn) :
+    let hsc := (gns_spectrum_condition Wfn).strongly_continuous
+    let P₀ := (gnsPoincareRep Wfn).momentumOp 0 (hsc 0)
+    let hT := PoincareRepresentation.momentumOp_denselyDefined
+      (gnsPoincareRep Wfn) 0 (hsc 0)
+    let hsa := PoincareRepresentation.momentumOp_selfAdjoint
+      (gnsPoincareRep Wfn) 0 (hsc 0)
+    (P₀.spectralMeasure hT hsa).diagonalMeasure
+      (F : GNSHilbertSpace Wfn) (Set.Iio 0) = 0 := by
+  simpa using
+    (gns_energy_spectral_support_nonneg Wfn
+      (wfn_spectralConditionDistribution Wfn)
+      (gns_translationStronglyContinuous Wfn)
+      (F : GNSHilbertSpace Wfn))
+
 /-- The operator-valued distribution on the GNS Hilbert space, extracted as a
     standalone definition so that the cyclicity lemma can reference it. -/
 noncomputable def gnsOVD : OperatorValuedDistribution d (GNSHilbertSpace Wfn) where
@@ -5415,7 +5470,7 @@ private theorem gns_cluster_preHilbert (F G : BorchersSequence d)
     Proof: approximate ψ by pre-Hilbert ⟦G⟧ within δ. By unitarity,
     |⟨Φ, U(λa)(ψ - ⟦G⟧)⟩| ≤ ‖Φ‖ · δ. The cluster property for ⟦G⟧
     handles the main term, and Cauchy–Schwarz bounds the remaining error. -/
-private theorem gns_cluster_completion (Φ : PreHilbertSpace Wfn)
+theorem gns_cluster_completion (Φ : PreHilbertSpace Wfn)
     (ψ : GNSHilbertSpace Wfn)
     (a : SpacetimeDim d) (ha0 : a 0 = 0)
     (ha_nonzero : ∃ i : Fin d, a (Fin.succ i) ≠ 0) :

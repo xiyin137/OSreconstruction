@@ -6,13 +6,13 @@ research-dev
 **/.DS_Store
 /references/
 /communication/
+CLAUDE.md
 /test/
 **/test/
 **/tests/
 /deprecated/
 .claude/
 .vscode/
-CLAUDE.md
 agent.md
 mcp_gemini/
 .mcp.json

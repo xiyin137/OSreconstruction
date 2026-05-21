@@ -492,6 +492,326 @@ theorem section43OSForwardTubeSafePsiZFamily_pairing_succRight
 /-- Safe forward-tube Fubini packet rewritten through the Section 4.3
 Fourier-Laplace witness.  The flattened `Tflat` integral produced by
 `section43OSForwardTubeSafePsiZFamily_pairing_succRight` is exactly the scalar
+configuration-space integral of an abstract analytic kernel `A` along the safe
+lift, provided `A` has the stated Fourier-Laplace representation. -/
+theorem section43OSForwardTubeSafePsiZFamily_pairing_of_FL_succRight
+    (d : ℕ) [NeZero d]
+    {n m : ℕ} {t : ℝ}
+    (A : (Fin (n + (m + 1)) → Fin (d + 1) → ℂ) → ℂ)
+    (hCflat_open :
+      IsOpen
+        ((flattenCLEquivReal (n + (m + 1)) (d + 1)) ''
+          ForwardConeAbs d (n + (m + 1))))
+    (hCflat_conv :
+      Convex ℝ
+        ((flattenCLEquivReal (n + (m + 1)) (d + 1)) ''
+          ForwardConeAbs d (n + (m + 1))))
+    (hCflat_cone :
+      IsCone
+        ((flattenCLEquivReal (n + (m + 1)) (d + 1)) ''
+          ForwardConeAbs d (n + (m + 1))))
+    (hCflat_salient :
+      IsSalientCone
+        ((flattenCLEquivReal (n + (m + 1)) (d + 1)) ''
+          ForwardConeAbs d (n + (m + 1))))
+    (Tflat :
+      SchwartzMap (Fin (((n + (m + 1)) * (d + 1))) → ℝ) ℂ →L[ℂ] ℂ)
+    (hFL :
+      ∀ z : Fin (n + (m + 1)) → Fin (d + 1) → ℂ,
+        z ∈ TubeDomainSetPi (ForwardConeAbs d (n + (m + 1))) →
+          A z =
+            fourierLaplaceExtMultiDim
+              ((flattenCLEquivReal (n + (m + 1)) (d + 1)) ''
+                ForwardConeAbs d (n + (m + 1)))
+              hCflat_open hCflat_conv hCflat_cone hCflat_salient
+              Tflat (flattenCLEquiv (n + (m + 1)) (d + 1) z))
+    (ρ : NPointDomain d (n + (m + 1)) → ℝ)
+    (hρ_cont : Continuous ρ)
+    (hρ_compact : HasCompactSupport ρ)
+    (hρ_range : ∀ y, ρ y ∈ Icc (0 : ℝ) 1)
+    (hρ_support :
+      Function.support ρ ⊆
+        {y | section43OSForwardTubeLift_succRight d t y ∈
+          TubeDomainSetPi (ForwardConeAbs d (n + (m + 1)))})
+    (φ : SchwartzNPoint d (n + (m + 1))) :
+    ∃ KSafe :
+      SchwartzMap (Fin (((n + (m + 1)) * (d + 1))) → ℝ) ℂ,
+      (∀ ξ : Fin (((n + (m + 1)) * (d + 1))) → ℝ,
+        KSafe ξ =
+          ∫ yflat : Fin (((n + (m + 1)) * (d + 1))) → ℝ,
+            (section43OSForwardTubeSafePsiZFamily_succRight
+              (d := d) (n := n) (m := m)
+              hCflat_open hCflat_conv hCflat_cone hCflat_salient
+              (t := t) ρ yflat) ξ *
+              _root_.flattenSchwartzNPoint (d := d) φ yflat) ∧
+      (∫ y : NPointDomain d (n + (m + 1)),
+        A (section43OSForwardTubeSafeLift_succRight d t ρ y) *
+        φ y) =
+        Tflat KSafe := by
+  let Npts := n + (m + 1)
+  let Cflat : Set (Fin (Npts * (d + 1)) → ℝ) :=
+    (flattenCLEquivReal Npts (d + 1)) '' ForwardConeAbs d Npts
+  let gFlat : (Fin (Npts * (d + 1)) → ℝ) → ℂ :=
+    fun yflat =>
+      Tflat
+        (section43OSForwardTubeSafePsiZFamily_succRight
+          (d := d) (n := n) (m := m)
+          hCflat_open hCflat_conv hCflat_cone hCflat_salient
+          (t := t) ρ yflat) *
+        _root_.flattenSchwartzNPoint (d := d) φ yflat
+  obtain ⟨KSafe, hKSafe_eval, hKSafe_pair⟩ :=
+    section43OSForwardTubeSafePsiZFamily_pairing_succRight
+      (d := d) (n := n) (m := m)
+      hCflat_open hCflat_conv hCflat_cone hCflat_salient
+      (t := t) ρ hρ_cont hρ_compact hρ_range hρ_support
+      Tflat (_root_.flattenSchwartzNPoint (d := d) φ)
+  refine ⟨KSafe, ?_, ?_⟩
+  · intro ξ
+    simpa using hKSafe_eval ξ
+  have hflat_cv :
+      ∫ yflat : Fin (Npts * (d + 1)) → ℝ, gFlat yflat =
+        ∫ y : NPointDomain d Npts,
+          gFlat (flattenCLEquivReal Npts (d + 1) y) :=
+    integral_flatten_change_of_variables Npts (d + 1) gFlat
+  have htarget_to_flat :
+      (∫ y : NPointDomain d Npts,
+        A (section43OSForwardTubeSafeLift_succRight d t ρ y) *
+        φ y) =
+        ∫ y : NPointDomain d Npts,
+          gFlat (flattenCLEquivReal Npts (d + 1) y) := by
+    apply MeasureTheory.integral_congr_ae
+    filter_upwards with y
+    let zSafe : Fin Npts → Fin (d + 1) → ℂ :=
+      section43OSForwardTubeSafeLift_succRight d t ρ y
+    have hzSafe_mem :
+        zSafe ∈ TubeDomainSetPi (ForwardConeAbs d Npts) := by
+      simpa [zSafe, Npts] using
+        section43OSForwardTubeSafeLift_mem_forwardTube_succRight
+          (d := d) (n := n) (m := m) (t := t)
+          ρ hρ_range hρ_support y
+    have hA :
+        A zSafe =
+          Tflat
+            (multiDimPsiZExt Cflat
+              hCflat_open hCflat_conv hCflat_cone hCflat_salient
+              (flattenCLEquiv Npts (d + 1) zSafe)) := by
+      calc
+        A zSafe
+            = fourierLaplaceExtMultiDim Cflat
+                hCflat_open hCflat_conv hCflat_cone hCflat_salient
+                Tflat (flattenCLEquiv Npts (d + 1) zSafe) := by
+              simpa [Cflat, Npts] using hFL zSafe hzSafe_mem
+        _ = Tflat
+              (multiDimPsiZExt Cflat
+                hCflat_open hCflat_conv hCflat_cone hCflat_salient
+                (flattenCLEquiv Npts (d + 1) zSafe)) := by
+              rw [fourierLaplaceExtMultiDim_eq_ext]
+    simp [gFlat, Cflat, zSafe, hA, Npts,
+      section43OSForwardTubeSafePsiZFamily_succRight,
+      _root_.flattenSchwartzNPoint_apply]
+  calc
+    (∫ y : NPointDomain d Npts,
+        A (section43OSForwardTubeSafeLift_succRight d t ρ y) *
+        φ y)
+        = ∫ y : NPointDomain d Npts,
+            gFlat (flattenCLEquivReal Npts (d + 1) y) := htarget_to_flat
+    _ = ∫ yflat : Fin (Npts * (d + 1)) → ℝ, gFlat yflat := hflat_cv.symm
+    _ = Tflat KSafe := by
+        simpa [gFlat, Npts] using hKSafe_pair
+
+/-- Safe forward-tube Fubini packet after removing the cutoff from the scalar
+integral for an abstract analytic kernel with a Fourier-Laplace
+representation. -/
+theorem section43OSForwardTubeLift_pairing_of_FL_of_safeCutoff_succRight
+    (d : ℕ) [NeZero d]
+    {n m : ℕ} {t : ℝ}
+    (A : (Fin (n + (m + 1)) → Fin (d + 1) → ℂ) → ℂ)
+    (hCflat_open :
+      IsOpen
+        ((flattenCLEquivReal (n + (m + 1)) (d + 1)) ''
+          ForwardConeAbs d (n + (m + 1))))
+    (hCflat_conv :
+      Convex ℝ
+        ((flattenCLEquivReal (n + (m + 1)) (d + 1)) ''
+          ForwardConeAbs d (n + (m + 1))))
+    (hCflat_cone :
+      IsCone
+        ((flattenCLEquivReal (n + (m + 1)) (d + 1)) ''
+          ForwardConeAbs d (n + (m + 1))))
+    (hCflat_salient :
+      IsSalientCone
+        ((flattenCLEquivReal (n + (m + 1)) (d + 1)) ''
+          ForwardConeAbs d (n + (m + 1))))
+    (Tflat :
+      SchwartzMap (Fin (((n + (m + 1)) * (d + 1))) → ℝ) ℂ →L[ℂ] ℂ)
+    (hFL :
+      ∀ z : Fin (n + (m + 1)) → Fin (d + 1) → ℂ,
+        z ∈ TubeDomainSetPi (ForwardConeAbs d (n + (m + 1))) →
+          A z =
+            fourierLaplaceExtMultiDim
+              ((flattenCLEquivReal (n + (m + 1)) (d + 1)) ''
+                ForwardConeAbs d (n + (m + 1)))
+              hCflat_open hCflat_conv hCflat_cone hCflat_salient
+              Tflat (flattenCLEquiv (n + (m + 1)) (d + 1) z))
+    (ρ : NPointDomain d (n + (m + 1)) → ℝ)
+    (hρ_cont : Continuous ρ)
+    (hρ_compact : HasCompactSupport ρ)
+    (hρ_range : ∀ y, ρ y ∈ Icc (0 : ℝ) 1)
+    (hρ_support :
+      Function.support ρ ⊆
+        {y | section43OSForwardTubeLift_succRight d t y ∈
+          TubeDomainSetPi (ForwardConeAbs d (n + (m + 1)))})
+    (φ : SchwartzNPoint d (n + (m + 1)))
+    (hρ_one :
+      EqOn ρ 1
+        (tsupport (φ : NPointDomain d (n + (m + 1)) → ℂ))) :
+    ∃ KSafe :
+      SchwartzMap (Fin (((n + (m + 1)) * (d + 1))) → ℝ) ℂ,
+      (∀ ξ : Fin (((n + (m + 1)) * (d + 1))) → ℝ,
+        KSafe ξ =
+          ∫ yflat : Fin (((n + (m + 1)) * (d + 1))) → ℝ,
+            (section43OSForwardTubeSafePsiZFamily_succRight
+              (d := d) (n := n) (m := m)
+              hCflat_open hCflat_conv hCflat_cone hCflat_salient
+              (t := t) ρ yflat) ξ *
+              _root_.flattenSchwartzNPoint (d := d) φ yflat) ∧
+      (∫ y : NPointDomain d (n + (m + 1)),
+        A (section43OSForwardTubeLift_succRight d t y) *
+        φ y) =
+        Tflat KSafe := by
+  obtain ⟨KSafe, hKSafe_eval, hKSafe_pair⟩ :=
+    section43OSForwardTubeSafePsiZFamily_pairing_of_FL_succRight
+      (d := d) (n := n) (m := m) (t := t)
+      A hCflat_open hCflat_conv hCflat_cone hCflat_salient
+      Tflat hFL ρ hρ_cont hρ_compact hρ_range hρ_support φ
+  refine ⟨KSafe, hKSafe_eval, ?_⟩
+  calc
+    (∫ y : NPointDomain d (n + (m + 1)),
+        A (section43OSForwardTubeLift_succRight d t y) *
+        φ y)
+        =
+      ∫ y : NPointDomain d (n + (m + 1)),
+        A (section43OSForwardTubeSafeLift_succRight d t ρ y) *
+        φ y := by
+          apply MeasureTheory.integral_congr_ae
+          filter_upwards with y
+          by_cases hφ_zero :
+              (φ : NPointDomain d (n + (m + 1)) → ℂ) y = 0
+          · simp [hφ_zero]
+          · have hy_support :
+                y ∈ Function.support
+                  (φ : NPointDomain d (n + (m + 1)) → ℂ) := by
+              simpa [Function.mem_support] using hφ_zero
+            have hy_tsupport :
+                y ∈ tsupport
+                  (φ : NPointDomain d (n + (m + 1)) → ℂ) :=
+              subset_tsupport _ hy_support
+            have hρy : ρ y = 1 := hρ_one hy_tsupport
+            rw [section43OSForwardTubeSafeLift_eq_lift_of_rho_eq_one_succRight
+              (d := d) (n := n) (m := m) (t := t) ρ hρy]
+    _ = Tflat KSafe := hKSafe_pair
+
+/-- Generic helper 3: replacing the forward-tube lift kernel by its
+spectral-region exponential evaluation turns the lift integral into the visible
+OS I `(4.24)` kernel, with cone data passed explicitly. -/
+theorem section43OSForwardTubeLiftKernelIntegral_eq_OS24Kernel_on_spectralRegion_of_FL_succRight
+    (d n m : ℕ) [NeZero d]
+    (φ : SchwartzNPoint d n) (ψ : SchwartzNPoint d (m + 1))
+    (f : euclideanPositiveTimeSubmodule (d := d) n)
+    (g : euclideanPositiveTimeSubmodule (d := d) (m + 1))
+    (hφ_rep :
+      section43FourierLaplaceRepresentative d n f
+        (section43FrequencyRepresentative (d := d) n φ))
+    (hψ_rep :
+      section43FourierLaplaceRepresentative d (m + 1) g
+        (section43FrequencyRepresentative (d := d) (m + 1) ψ))
+    {t : ℝ} (ht : 0 < t)
+    (hCflat_open :
+      IsOpen
+        ((flattenCLEquivReal (n + (m + 1)) (d + 1)) ''
+          ForwardConeAbs d (n + (m + 1))))
+    (hCflat_conv :
+      Convex ℝ
+        ((flattenCLEquivReal (n + (m + 1)) (d + 1)) ''
+          ForwardConeAbs d (n + (m + 1))))
+    (hCflat_cone :
+      IsCone
+        ((flattenCLEquivReal (n + (m + 1)) (d + 1)) ''
+          ForwardConeAbs d (n + (m + 1))))
+    (hCflat_salient :
+      IsSalientCone
+        ((flattenCLEquivReal (n + (m + 1)) (d + 1)) ''
+          ForwardConeAbs d (n + (m + 1))))
+    (ξ : Fin ((n + (m + 1)) * (d + 1)) → ℝ)
+    (hξ :
+      ξ ∈ section43WightmanSpectralRegion d (n + (m + 1))) :
+    (∫ y : NPointDomain d (n + (m + 1)),
+        multiDimPsiZExt
+          ((flattenCLEquivReal (n + (m + 1)) (d + 1)) ''
+            ForwardConeAbs d (n + (m + 1)))
+          hCflat_open hCflat_conv hCflat_cone hCflat_salient
+          (flattenCLEquiv (n + (m + 1)) (d + 1)
+            (section43OSForwardTubeLift_succRight (d := d) t y)) ξ *
+        (f.1.osConjTensorProduct g.1) y) =
+      section43OS24Kernel_succRight d n m φ ψ t ht ξ := by
+  classical
+  have hpoint :
+      ∀ y : NPointDomain d (n + (m + 1)),
+        multiDimPsiZExt
+            ((flattenCLEquivReal (n + (m + 1)) (d + 1)) ''
+              ForwardConeAbs d (n + (m + 1)))
+            hCflat_open hCflat_conv hCflat_cone hCflat_salient
+            (flattenCLEquiv (n + (m + 1)) (d + 1)
+              (section43OSForwardTubeLift_succRight (d := d) t y)) ξ *
+          (f.1.osConjTensorProduct g.1) y =
+        Complex.exp
+            (Complex.I *
+              ∑ a : Fin ((n + (m + 1)) * (d + 1)),
+                flattenCLEquiv (n + (m + 1)) (d + 1)
+                  (section43OSBorchersTimeShiftConfig_succRight
+                    (d := d) t y) a *
+                (ξ a : ℂ)) *
+          (f.1.osConjTensorProduct g.1) y := by
+    intro y
+    by_cases hzero : (f.1.osConjTensorProduct g.1) y = 0
+    · simp [hzero]
+    · have hy :
+          y ∈ Function.support
+            ((f.1.osConjTensorProduct g.1) :
+              NPointDomain d (n + (m + 1)) → ℂ) := by
+        simpa [Function.mem_support] using hzero
+      rw [section43OSForwardTubeLift_multiDimPsiZExt_apply_of_spectralRegion_of_FL_succRight
+        (d := d) (n := n) (m := m) f g ht
+        hCflat_open hCflat_conv hCflat_cone hCflat_salient ξ hξ y hy]
+  calc
+    (∫ y : NPointDomain d (n + (m + 1)),
+        multiDimPsiZExt
+          ((flattenCLEquivReal (n + (m + 1)) (d + 1)) ''
+            ForwardConeAbs d (n + (m + 1)))
+          hCflat_open hCflat_conv hCflat_cone hCflat_salient
+          (flattenCLEquiv (n + (m + 1)) (d + 1)
+            (section43OSForwardTubeLift_succRight (d := d) t y)) ξ *
+        (f.1.osConjTensorProduct g.1) y)
+        =
+      ∫ y : NPointDomain d (n + (m + 1)),
+        Complex.exp
+          (Complex.I *
+            ∑ a : Fin ((n + (m + 1)) * (d + 1)),
+              flattenCLEquiv (n + (m + 1)) (d + 1)
+                (section43OSBorchersTimeShiftConfig_succRight
+                  (d := d) t y) a *
+              (ξ a : ℂ)) *
+        (f.1.osConjTensorProduct g.1) y := by
+        apply integral_congr_ae
+        filter_upwards with y
+        exact hpoint y
+    _ = section43OS24Kernel_succRight d n m φ ψ t ht ξ :=
+        section43OSBorchersPhaseKernelIntegral_eq_OS24Kernel_on_spectralRegion_succRight
+          (d := d) (n := n) (m := m) φ ψ f g hφ_rep hψ_rep ht ξ hξ
+
+/-- Safe forward-tube Fubini packet rewritten through the Section 4.3
+Fourier-Laplace witness.  The flattened `Tflat` integral produced by
+`section43OSForwardTubeSafePsiZFamily_pairing_succRight` is exactly the scalar
 configuration-space integral of `bvt_F` along the safe lift. -/
 theorem section43OSForwardTubeSafePsiZFamily_pairing_bvt_F_succRight
     (d : ℕ) [NeZero d]
@@ -903,6 +1223,118 @@ theorem exists_section43OSForwardTubeSafeKernel_pairing_eq_OS24Kernel_on_spectra
                 (φ := φ) (ψ := ψ) (f := f) (g := g)
                 hφ_rep hψ_rep ht Tflat hTflat_FL ξ hξ
   · simpa [φOS] using hKSafe_pair
+
+/-- Generic safe-Fubini theorem for the Section 4.3 OS24 kernel.
+
+This is the explicit Fourier-Laplace version of
+`section43OS24Kernel_pairing_eq_forwardTubeLiftIntegral_succRight`: the
+analytic kernel `A` and its flattened Fourier-Laplace package are passed as
+hypotheses instead of being hard-coded as `bvt_F`. -/
+theorem section43OS24Kernel_pairing_eq_forwardTubeLiftIntegral_succRight_of_FL
+    (d n m : ℕ) [NeZero d]
+    (A : (Fin (n + (m + 1)) → Fin (d + 1) → ℂ) → ℂ)
+    (hCflat_open :
+      IsOpen
+        ((flattenCLEquivReal (n + (m + 1)) (d + 1)) ''
+          ForwardConeAbs d (n + (m + 1))))
+    (hCflat_conv :
+      Convex ℝ
+        ((flattenCLEquivReal (n + (m + 1)) (d + 1)) ''
+          ForwardConeAbs d (n + (m + 1))))
+    (hCflat_cone :
+      IsCone
+        ((flattenCLEquivReal (n + (m + 1)) (d + 1)) ''
+          ForwardConeAbs d (n + (m + 1))))
+    (hCflat_salient :
+      IsSalientCone
+        ((flattenCLEquivReal (n + (m + 1)) (d + 1)) ''
+          ForwardConeAbs d (n + (m + 1))))
+    (Tflat :
+      SchwartzMap (Fin (((n + (m + 1)) * (d + 1))) → ℝ) ℂ →L[ℂ] ℂ)
+    (hFL :
+      ∀ z : Fin (n + (m + 1)) → Fin (d + 1) → ℂ,
+        z ∈ TubeDomainSetPi (ForwardConeAbs d (n + (m + 1))) →
+          A z =
+            fourierLaplaceExtMultiDim
+              ((flattenCLEquivReal (n + (m + 1)) (d + 1)) ''
+                ForwardConeAbs d (n + (m + 1)))
+              hCflat_open hCflat_conv hCflat_cone hCflat_salient
+              Tflat (flattenCLEquiv (n + (m + 1)) (d + 1) z))
+    (φ : SchwartzNPoint d n) (ψ : SchwartzNPoint d (m + 1))
+    (f : euclideanPositiveTimeSubmodule (d := d) n)
+    (g : euclideanPositiveTimeSubmodule (d := d) (m + 1))
+    (hf_compact : HasCompactSupport (f.1 : NPointDomain d n → ℂ))
+    (hg_compact : HasCompactSupport (g.1 : NPointDomain d (m + 1) → ℂ))
+    (hφ_rep :
+      section43FourierLaplaceRepresentative d n f
+        (section43FrequencyRepresentative (d := d) n φ))
+    (hψ_rep :
+      section43FourierLaplaceRepresentative d (m + 1) g
+        (section43FrequencyRepresentative (d := d) (m + 1) ψ))
+    {t : ℝ} (ht : 0 < t)
+    (hTflat_supp :
+      HasFourierSupportIn
+        (section43WightmanSpectralRegion d (n + (m + 1))) Tflat) :
+    Tflat (section43OS24Kernel_succRight d n m φ ψ t ht) =
+      ∫ y : NPointDomain d (n + (m + 1)),
+        A (section43OSForwardTubeLift_succRight (d := d) t y) *
+        (f.1.osConjTensorProduct g.1) y := by
+  let φOS : SchwartzNPoint d (n + (m + 1)) :=
+    f.1.osConjTensorProduct g.1
+  obtain ⟨ρ, hρ_cont, hρ_compact, hρ_range, hρ_one, hρ_support⟩ :=
+    exists_section43OSForwardTubeCutoff_succRight
+      (d := d) (n := n) (m := m) f g hf_compact hg_compact ht
+  obtain ⟨KSafe, hKSafe_eval, hKSafe_pair⟩ :=
+    section43OSForwardTubeLift_pairing_of_FL_of_safeCutoff_succRight
+      (d := d) (n := n) (m := m) (t := t)
+      A hCflat_open hCflat_conv hCflat_cone hCflat_salient
+      Tflat hFL ρ hρ_cont hρ_compact hρ_range hρ_support
+      φOS (by simpa [φOS] using hρ_one)
+  have hKSafe_eqOn :
+      Set.EqOn
+        (fun ξ => KSafe ξ)
+        (fun ξ => section43OS24Kernel_succRight d n m φ ψ t ht ξ)
+        (section43WightmanSpectralRegion d (n + (m + 1))) := by
+    intro ξ hξ
+    calc
+      KSafe ξ
+          =
+        ∫ yflat : Fin (((n + (m + 1)) * (d + 1))) → ℝ,
+          (section43OSForwardTubeSafePsiZFamily_succRight
+            (d := d) (n := n) (m := m)
+            hCflat_open hCflat_conv hCflat_cone hCflat_salient
+            (t := t) ρ yflat) ξ *
+            _root_.flattenSchwartzNPoint (d := d) φOS yflat := hKSafe_eval ξ
+      _ =
+        ∫ y : NPointDomain d (n + (m + 1)),
+          multiDimPsiZExt
+            ((flattenCLEquivReal (n + (m + 1)) (d + 1)) ''
+              ForwardConeAbs d (n + (m + 1)))
+            hCflat_open hCflat_conv hCflat_cone hCflat_salient
+            (flattenCLEquiv (n + (m + 1)) (d + 1)
+              (section43OSForwardTubeLift_succRight (d := d) t y)) ξ *
+          φOS y := by
+            exact
+              section43OSForwardTubeSafeKernel_eval_eq_liftIntegral_of_rho_eq_one_on_tsupport_succRight
+                (d := d) (n := n) (m := m)
+                hCflat_open hCflat_conv hCflat_cone hCflat_salient
+                (t := t) ρ φOS (by simpa [φOS] using hρ_one) ξ
+      _ = section43OS24Kernel_succRight d n m φ ψ t ht ξ := by
+            simpa [φOS] using
+              section43OSForwardTubeLiftKernelIntegral_eq_OS24Kernel_on_spectralRegion_of_FL_succRight
+                (d := d) (n := n) (m := m)
+                (φ := φ) (ψ := ψ) (f := f) (g := g)
+                hφ_rep hψ_rep ht
+                hCflat_open hCflat_conv hCflat_cone hCflat_salient ξ hξ
+  calc
+    Tflat (section43OS24Kernel_succRight d n m φ ψ t ht)
+        = Tflat KSafe := by
+          exact hasFourierSupportIn_eqOn hTflat_supp
+            (fun ξ hξ => (hKSafe_eqOn hξ).symm)
+    _ =
+      ∫ y : NPointDomain d (n + (m + 1)),
+        A (section43OSForwardTubeLift_succRight (d := d) t y) *
+        (f.1.osConjTensorProduct g.1) y := hKSafe_pair.symm
 
 /-- The OS I `(4.24)` kernel paired with a Wightman-spectrally-supported
 flattened distribution is the forward-tube `bvt_F` scalar integral on the
