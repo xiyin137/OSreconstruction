@@ -82,6 +82,54 @@ theorem section43DiffCoordRealCLE_symm_mem_orderedPositiveTimeRegion_of_pos_time
     rw [← Finset.sum_range_add_sum_Ico fj hle]
     exact lt_add_of_pos_right _ hblock_pos
 
+/-- Pulling a Section 4.3 time/spatial tensor back from positive
+difference-time coordinates to ordered Euclidean coordinates gives a
+zero-diagonal Schwartz test.
+
+The strict-positive hypothesis is on the difference-time factor, and the
+`section43DiffCoordRealCLE` pullback is essential: positivity of the raw
+Euclidean time coordinates alone would not imply ordered support. -/
+theorem VanishesToInfiniteOrderOnCoincidence_orderedPullback_section43NPointTimeSpatialTensor
+    (d n : ℕ) [NeZero d]
+    (φ : SchwartzMap (Fin n → ℝ) ℂ)
+    (χ : SchwartzMap (Section43SpatialSpace d n) ℂ)
+    (hφ : tsupport (φ : (Fin n → ℝ) → ℂ) ⊆
+      section43TimeStrictPositiveRegion n) :
+    VanishesToInfiniteOrderOnCoincidence
+      (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
+        (section43DiffCoordRealCLE d n)
+        (section43NPointTimeSpatialTensor d n φ χ)) := by
+  apply VanishesToInfiniteOrderOnCoincidence_of_support_subset_orderedPositiveTimeRegion
+  intro y hy
+  have hy_pre :
+      section43DiffCoordRealCLE d n y ∈
+        tsupport
+          ((section43NPointTimeSpatialTensor d n φ χ :
+            SchwartzNPoint d n) : NPointDomain d n → ℂ) := by
+    exact
+      tsupport_comp_subset_preimage
+        ((section43NPointTimeSpatialTensor d n φ χ :
+          SchwartzNPoint d n) : NPointDomain d n → ℂ)
+        (section43DiffCoordRealCLE d n).continuous hy
+  have hq_time_support :
+      section43QTime (d := d) (n := n) (section43DiffCoordRealCLE d n y) ∈
+        tsupport (φ : (Fin n → ℝ) → ℂ) :=
+    tsupport_section43NPointTimeSpatialTensor_subset_time_preimage
+      d n φ χ hy_pre
+  have htime_pos :
+      ∀ i : Fin n,
+        0 < section43QTime (d := d) (n := n)
+          (section43DiffCoordRealCLE d n y) i :=
+    hφ hq_time_support
+  have hδ_pos : ∀ i : Fin n, 0 < (section43DiffCoordRealCLE d n y) i 0 := by
+    intro i
+    simpa [section43QTime, nPointTimeSpatialCLE]
+      using htime_pos i
+  have hordered :=
+    section43DiffCoordRealCLE_symm_mem_orderedPositiveTimeRegion_of_pos_time
+      d n (δ := section43DiffCoordRealCLE d n y) hδ_pos
+  simpa using hordered
+
 /-- Push a compact strict-positive source in difference coordinates back to an
 ordered compact Euclidean source. -/
 noncomputable def section43OrderedSourceOfTimeSpatialSource

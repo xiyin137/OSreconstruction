@@ -47,6 +47,7 @@ Numerical status (heuristic):
   (sparse, biased coverage of permSeedSet), not genuine disconnectedness.
 - Implication: numerical evidence now strongly supports the assertion for d=1,n=2. -/
 theorem blocker_isConnected_permSeedSet_nontrivial
+    [NeZero d]
     (n : ℕ)
     (σ : Equiv.Perm (Fin n))
     (_hσ : σ ≠ 1)

@@ -1165,10 +1165,31 @@ def timeShiftPositiveTimeBorchers (t : ℝ) (ht : 0 < t)
     simpa using timeShift_preserves_ordered_positive_tsupport (d := d) t ht
       (F : BorchersSequence d) F.ordered_tsupport
 
+/-- Nonnegative Euclidean time translation on the honest OS Borchers algebra.
+
+This endpoint-inclusive variant is needed in the OS-II split construction:
+the sum of the time differences strictly before or after the selected
+coordinate can be `0`, while the positive-time support condition is still
+preserved. -/
+def timeShiftNonnegPositiveTimeBorchers (t : ℝ) (ht : 0 ≤ t)
+    (F : PositiveTimeBorchersSequence d) : PositiveTimeBorchersSequence d where
+  toBorchersSequence := timeShiftBorchers (d := d) t (F : BorchersSequence d)
+  ordered_tsupport := by
+    simpa using timeShift_preserves_ordered_positive_tsupport_nonneg (d := d) t ht
+      (F : BorchersSequence d) F.ordered_tsupport
+
 omit [NeZero d] in
 @[simp] theorem timeShiftPositiveTimeBorchers_funcs (t : ℝ) (ht : 0 < t)
     (F : PositiveTimeBorchersSequence d) (n : ℕ) :
     ((timeShiftPositiveTimeBorchers (d := d) t ht F : PositiveTimeBorchersSequence d) :
+      BorchersSequence d).funcs n =
+        timeShiftSchwartzNPoint (d := d) t ((F : BorchersSequence d).funcs n) :=
+  rfl
+
+omit [NeZero d] in
+@[simp] theorem timeShiftNonnegPositiveTimeBorchers_funcs (t : ℝ) (ht : 0 ≤ t)
+    (F : PositiveTimeBorchersSequence d) (n : ℕ) :
+    ((timeShiftNonnegPositiveTimeBorchers (d := d) t ht F : PositiveTimeBorchersSequence d) :
       BorchersSequence d).funcs n =
         timeShiftSchwartzNPoint (d := d) t ((F : BorchersSequence d).funcs n) :=
   rfl
@@ -1181,6 +1202,13 @@ omit [NeZero d] in
         timeShiftBorchers (d := d) t (F : BorchersSequence d) := rfl
 
 omit [NeZero d] in
+@[simp] theorem timeShiftNonnegPositiveTimeBorchers_toBorchersSequence
+    (t : ℝ) (ht : 0 ≤ t) (F : PositiveTimeBorchersSequence d) :
+    ((timeShiftNonnegPositiveTimeBorchers (d := d) t ht F :
+      PositiveTimeBorchersSequence d) : BorchersSequence d) =
+        timeShiftBorchers (d := d) t (F : BorchersSequence d) := rfl
+
+omit [NeZero d] in
 private theorem timeShiftPositiveTimeBorchers_hasCompactSupport (t : ℝ) (ht : 0 < t)
     (F : PositiveTimeBorchersSequence d)
     (hF_compact : ∀ n,
@@ -1189,6 +1217,23 @@ private theorem timeShiftPositiveTimeBorchers_hasCompactSupport (t : ℝ) (ht : 
     ∀ n,
       HasCompactSupport
         (((((timeShiftPositiveTimeBorchers (d := d) t ht F :
+            PositiveTimeBorchersSequence d) : BorchersSequence d).funcs n :
+          SchwartzNPoint d n) : NPointDomain d n → ℂ)) := by
+  intro n
+  simpa using
+    hasCompactSupport_timeShiftSchwartzNPoint (d := d) t
+      ((F : BorchersSequence d).funcs n) (hF_compact n)
+
+omit [NeZero d] in
+theorem timeShiftNonnegPositiveTimeBorchers_hasCompactSupport
+    (t : ℝ) (ht : 0 ≤ t)
+    (F : PositiveTimeBorchersSequence d)
+    (hF_compact : ∀ n,
+      HasCompactSupport (((F : BorchersSequence d).funcs n : SchwartzNPoint d n) :
+        NPointDomain d n → ℂ)) :
+    ∀ n,
+      HasCompactSupport
+        (((((timeShiftNonnegPositiveTimeBorchers (d := d) t ht F :
             PositiveTimeBorchersSequence d) : BorchersSequence d).funcs n :
           SchwartzNPoint d n) : NPointDomain d n → ℂ)) := by
   intro n
@@ -1429,7 +1474,11 @@ private theorem schwinger_shift_tensor_eq (OS : OsterwalderSchraderAxioms d)
         (timeShiftSchwartzNPoint (d := d) s g))) hleft]
   exact shift_osConjTensorProduct_eq (d := d) f g s t x
 
-private theorem OSInnerProduct_timeShift_eq (OS : OsterwalderSchraderAxioms d)
+/-- Euclidean time-translation covariance of the OS pairing: a time shift on
+the left Borchers vector can be transferred to the right vector as part of the
+combined positive time shift, provided the relevant tensor products are
+admissible. -/
+theorem OSInnerProduct_timeShift_eq (OS : OsterwalderSchraderAxioms d)
     (F G : BorchersSequence d) (s t : ℝ)
     (hleft : OSTensorAdmissible d (timeShiftBorchers (d := d) t F)
       (timeShiftBorchers (d := d) s G))

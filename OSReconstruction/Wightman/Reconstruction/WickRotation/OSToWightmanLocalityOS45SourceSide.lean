@@ -221,6 +221,49 @@ theorem os45FlatCommonChart_branch_integral_eq_sourceSide_extendF_translatedTest
       (SCV.translateSchwartz (-(sgn * ε) • η) ψFlat) hg_shift
   simpa [SCV.translateSchwartz_apply, add_assoc] using h
 
+/-- The complex direction of the signed OS45 source-side ray after undoing the
+quarter-turn chart. -/
+def os45FlatCommonChartSourceSideDirection
+    (_ρperm : Equiv.Perm (Fin n))
+    (sgn : ℝ)
+    (η : BHW.OS45FlatCommonChartReal d n) :
+    Fin n → Fin (d + 1) → ℂ :=
+  (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+    (BHW.unflattenCfg n d
+      (fun a => ((sgn • η) a : ℂ) + ((sgn • η) a : ℂ) * Complex.I))
+
+/-- The OS45 source-side approach is affine in the side-height parameter.
+
+This is only coordinate algebra.  It does not assert that the resulting
+direction is an OS boundary direction or that the branch pairing has a
+Schwinger limit; those are the analytic Figure-2-4/Jost boundary-value
+lemmas. -/
+theorem os45FlatCommonChartSourceSide_affine
+    (ρperm : Equiv.Perm (Fin n))
+    (sgn ε : ℝ)
+    (η : BHW.OS45FlatCommonChartReal d n)
+    (u : NPointDomain d n) :
+    BHW.os45FlatCommonChartSourceSide d n ρperm sgn ε η u =
+      BHW.os45FlatCommonChartSourceSide d n ρperm sgn 0 η u +
+        fun k μ => (ε : ℂ) *
+          BHW.os45FlatCommonChartSourceSideDirection
+            (d := d) (n := n) ρperm sgn η k μ := by
+  ext k μ
+  by_cases hμ : μ = 0
+  · subst μ
+    simp [BHW.os45FlatCommonChartSourceSide,
+      BHW.os45FlatCommonChartSourceSideDirection,
+      BHW.os45QuarterTurnCLE_symm_apply, BHW.unflattenCfg,
+      BHW.os45CommonEdgeFlatCLE, BHW.os45CommonEdgeRealPoint,
+      flattenCLEquivReal_apply, Pi.add_apply]
+    ring_nf
+  · simp [BHW.os45FlatCommonChartSourceSide,
+      BHW.os45FlatCommonChartSourceSideDirection,
+      BHW.os45QuarterTurnCLE_symm_apply, BHW.unflattenCfg,
+      BHW.os45CommonEdgeFlatCLE, BHW.os45CommonEdgeRealPoint,
+      flattenCLEquivReal_apply, Pi.add_apply, hμ]
+    ring_nf
+
 /-- At zero side height, the genuine OS45 source-side chart lands on the
 quarter-turned Wick carrier over the selected common-edge ordering. -/
 @[simp] theorem os45FlatCommonChartSourceSide_zero

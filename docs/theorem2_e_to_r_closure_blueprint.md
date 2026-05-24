@@ -8,6 +8,159 @@ transcript store.  This file is the short operational plan.  If this file
 starts becoming an archive, split detailed proof transcripts into focused
 companion notes and keep this file as the index.
 
+Focused E-to-R payload plan, 2026-05-22: the surviving direct
+`OSToWightman.lean` gap
+`exists_acrOne_productTensor_witness` is controlled by
+`docs/e_to_r_osii_payload_closure_plan.md`.  That companion note pins the
+OS I/OS II literature route, separates Chapter V continuation from Chapter VI
+growth, and records checked scratch substrate for positive-time
+delta-smearing, OS II V.1 directional semigroup continuation, MZ-gluing
+handoff, and the Lemma 5.1 `(5.11)`--`(5.12)` coordinate estimate.  The next
+Lean target remains the actual local MZ carrier construction from the
+directional semigroup data and its overlap equality by the identity theorem.
+
+Theorem-2 locality update, 2026-05-22: the `Hdiff` selector frontier is closed;
+the active production blocker is now
+`bvt_W_swap_pairing_of_spacelike` in
+`OSToWightmanBoundaryValues.lean`.  The finite OS45/Jost patch-cover route is
+not valid for arbitrary adjacent-spacelike support: adjacent spacelike
+separation of one pair does not imply a full Jost configuration.  The live
+producer must instead be the direct compact canonical-shell boundary
+deformation theorem, reduced to the following shape:
+
+```lean
+∀ (m : ℕ) (i j : Fin (m + 1)) (f : SchwartzNPoint d (m + 1)),
+  HasCompactSupport (f : NPointDomain d (m + 1) → ℂ) →
+  (∀ x, f.toFun x ≠ 0 →
+    BHW.reducedDiffMapReal (m + 1) d x ∈
+      reducedSpacelikeSwapEdge (d := d) m i j) →
+  Filter.Tendsto
+    (fun ε : ℝ =>
+      (∫ x,
+        bvt_F_reduced OS lgc m
+          (reducedDiffMapReal x +
+            ε • permutedCanonicalReducedDirectionC m (Equiv.swap i j) * I) *
+          f x) -
+      ∫ x,
+        bvt_F_reduced OS lgc m
+          (reducedDiffMapReal x +
+            ε • canonicalReducedDirectionC m * I) *
+          f x)
+    (nhdsWithin 0 (Set.Ioi 0)) (nhds 0)
+```
+
+Checked scratch files:
+
+```text
+test/proofideas_theorem2_adjacent_boundary_limit.lean
+test/proofideas_theorem2_reduced_boundary_algebra.lean
+```
+
+The first scratch check proves that this compact canonical-shell limit feeds
+the existing transfer/density theorem and closes adjacent locality of `bvt_W`.
+The second check proves the nontrivial algebraic reduction: after changing
+variables in the swapped test integral, the full canonical-shell difference is
+exactly the reduced two-direction difference above.  It also records the
+support bridge from absolute adjacent spacelike separation to
+`reducedSpacelikeSwapEdge`.
+
+Promoted production support:
+
+```lean
+canonicalReducedDirection_mem_productForwardConeReal
+reducedCanonicalApproach_mem_reducedForwardTube
+reducedDiffMapReal_mem_reducedSpacelikeSwapEdge_of_areSpacelikeSeparated
+compact_canonicalShell_swap_tendsto_of_reduced_two_direction_tendsto
+permOnReducedDiff_adjacentSwap_selected
+permOnReducedDiff_adjacentSwap_prev
+permOnReducedDiff_adjacentSwap_next
+permOnReducedDiff_adjacentSwap_left_far
+permOnReducedDiff_adjacentSwap_right_far
+reducedPermutedExtendedTubeN_permOnReducedDiff
+reducedPermutedExtendedTubeN_of_permOnReducedDiff_mem
+permOnReducedDiff_permutedReducedApproach_eq_canonical
+permutedReducedApproach_mem_reducedPermutedExtendedTubeN
+bvt_F_reduced_permutedApproach_eq_reducedExtension_pos
+```
+
+in `OSToWightmanReduced.lean`.  The remaining theorem is the analytic
+finite-thickness/Ruelle boundary-value deformation on the reduced edge, not a
+full-configuration algebra step.
+
+Route correction after the reduced PET checks: do **not** replace the remaining
+Jost/Ruelle theorem by a claim that the whole real set
+`reducedSpacelikeSwapEdge` lies in the reduced PET.  The checked statement is
+only the correct positive-height fact: the swapped reduced canonical approach
+lies in reduced PET for every `ε > 0`, and after applying the induced adjacent
+transposition it is the canonical positive approach at the permuted real
+reduced point.  The missing theorem is a mixed boundary-value theorem on the
+real selected spacelike edge, with the other reduced directions regularized in
+the forward cone.
+
+Route correction after the DCT layer, 2026-05-23: the remaining reduced
+boundary theorem must be **distributional**, not pointwise.  The pointwise
+support hypothesis in
+`bvt_F_reduced_two_direction_integral_tendsto_zero_of_support_pointwise` is a
+DCT consumer, but it is stronger than what Jost/Ruelle proves for an arbitrary
+adjacent-spacelike compact test.  The book-faithful theorem surface is the
+integral statement now checked as a scratch consumer in
+`test/proofideas_theorem2_reduced_ruelle_distributional_shape.lean`:
+
+```lean
+def ReducedRuelleDistributionalLimit
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS) : Prop :=
+  ∀ (m : ℕ) (i j : Fin (m + 1)) (f : SchwartzNPoint d (m + 1)),
+    HasCompactSupport (f : NPointDomain d (m + 1) → ℂ) →
+    (∀ x, f.toFun x ≠ 0 →
+      BHW.reducedDiffMapReal (m + 1) d x ∈
+        reducedSpacelikeSwapEdge (d := d) m i j) →
+    Tendsto
+      (fun ε =>
+        ∫ x, bvt_F_reduced OS lgc m
+              (reducedDiffMapReal x
+                + ε • permutedCanonicalReducedDirectionC m (Equiv.swap i j) * I)
+              * f x
+          -
+        ∫ x, bvt_F_reduced OS lgc m
+              (reducedDiffMapReal x
+                + ε • canonicalReducedDirectionC m * I)
+              * f x)
+      (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0)
+```
+
+The scratch theorem
+`proofideas_bvt_W_swap_pairing_of_spacelike_from_reduced_ruelle_distributional`
+checks that this exact reduced distributional producer closes the live
+`bvt_W_swap_pairing_of_spacelike` theorem through the already-promoted
+`compact_canonicalShell_swap_tendsto_of_reduced_two_direction_tendsto` and
+`bv_local_commutativity_transfer_of_swap_pairing_tendsto`.  The next real Lean
+work is therefore to prove `ReducedRuelleDistributionalLimit` from the
+Jost/Ruelle Appendix-II argument: smear the selected spacelike reduced
+difference as in the book, use local Jost equality on the open real patch, and
+propagate by the tube/spectral uniqueness theorem.  Do not try to prove a
+pointwise boundary-value limit at every support point, and do not route through
+real reduced-PET membership.
+
+Fiber-marginal quotient update, 2026-05-23: the arbitrary absolute basepoint is
+no longer part of the theorem-2 blocker.  The small support file
+`OSToWightmanReducedTestLiftSupport.lean` now checks:
+
+```lean
+reducedFiberIntegral
+integral_reducedFiberIntegral_eq
+reducedFiberIntegral_support_subset_of_absolute_reduced_support
+reducedFiberIntegral_hasCompactSupport
+AdjacentReducedRuelleFiberMarginalLimit
+adjacentReducedRuelleDistributionalLimit_of_fiberMarginal
+```
+
+Thus the live analytic producer may be stated directly in reduced variables,
+testing the two positive-height adjacent approaches against the compact
+basepoint fiber marginal of the original absolute test.  The next proof must
+still be the Jost/Ruelle distributional boundary theorem for that marginal; the
+quotient/Fubini and support-compactness obligations are already paid.
+
 ## Route Locks
 
 The active route is strict OS-II through the OS-I section 4.5 Figure 2-4
