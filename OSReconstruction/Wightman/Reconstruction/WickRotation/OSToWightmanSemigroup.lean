@@ -1068,7 +1068,7 @@ def fieldActionTimeShiftPositiveTimeBorchers
       Reconstruction.fieldOperatorAction h
         (timeShiftBorchers (d := d) t (F : BorchersSequence d)) := rfl
 
-private theorem continuousOn_os_pairing_term_timeShift_nonneg_of_isCompactSupport
+theorem continuousOn_os_pairing_term_timeShift_nonneg_of_isCompactSupport
     (OS : OsterwalderSchraderAxioms d) {n m : ℕ}
     (f : SchwartzNPoint d n) (g : SchwartzNPoint d m)
     (hf_pos : tsupport ((f : SchwartzNPoint d n) : NPointDomain d n → ℂ) ⊆
@@ -1119,7 +1119,7 @@ private theorem continuousOn_os_pairing_term_timeShift_nonneg_of_isCompactSuppor
         (timeShiftSchwartzNPoint_preserves_ordered_positive_tsupport_nonneg
           (d := d) t.1 t.2 g hg_pos)))
 
-private theorem continuousOn_os_pairing_term_timeShift_of_isCompactSupport
+theorem continuousOn_os_pairing_term_timeShift_of_isCompactSupport
     (OS : OsterwalderSchraderAxioms d) {n m : ℕ}
     (f : SchwartzNPoint d n) (g : SchwartzNPoint d m)
     (hf_pos : tsupport ((f : SchwartzNPoint d n) : NPointDomain d n → ℂ) ⊆

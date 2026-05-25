@@ -630,4 +630,94 @@ theorem osiiParametricFlatTubeBranch_coordinate_line_eq_total_log
           (Function.update (osiiMZLogRealEmbed x) q w) := by
           simp [Gline, line, ζw]
 
+/-- The OS-II parametric flat-tube branch agrees with the explicit total-time
+semigroup branch on the whole one-coordinate flat log-tube union.  This is the
+flat-tube branch-carrier form of the common real-edge identity: after the
+coordinate-line OS-II argument, any flat-tube point is represented by updating
+one coordinate of its real log base. -/
+theorem osiiParametricFlatTubeBranch_eq_totalLog_on_flatTube
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {m : ℕ} [Nonempty (Fin m)]
+    (F G : PositiveTimeBorchersSequence d)
+    (hG_compact : ∀ n,
+      HasCompactSupport (((G : BorchersSequence d).funcs n : SchwartzNPoint d n) :
+        NPointDomain d n → ℂ)) :
+    Set.EqOn
+      (osiiParametricFlatTubeBranch (d := d) OS lgc F G)
+      (osiiTotalLogSemigroupBranch (d := d) OS lgc F G)
+      (osiiMZFlatLogTubeUnion m (Real.pi / 2)) := by
+  intro r hr
+  rcases hr with ⟨q, hq_strip, hzero⟩
+  let x : Fin m → ℝ := osiiRealLogBase r
+  have hupdate : Function.update (osiiMZLogRealEmbed x) q (r q) = r := by
+    funext p
+    by_cases hp : p = q
+    · subst hp
+      simp [x]
+    · apply Complex.ext
+      · simp [x, osiiRealLogBase, osiiMZLogRealEmbed, Function.update, hp]
+      · simp [x, osiiMZLogRealEmbed, Function.update, hp, hzero p hp]
+  have hline :=
+    osiiParametricFlatTubeBranch_coordinate_line_eq_total_log
+      (d := d) OS lgc F G hG_compact x q hq_strip
+  simpa [hupdate] using hline
+
+/-- The explicit total semigroup branch is the full log-domain MZ
+continuation packet for the OS-II parametric flat-tube branch. -/
+theorem exists_osiiTotalLogSemigroupBranch_extension_of_parametricFlatTubeBranch
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {m : ℕ} [Nonempty (Fin m)]
+    (F G : PositiveTimeBorchersSequence d)
+    (hG_compact : ∀ n,
+      HasCompactSupport (((G : BorchersSequence d).funcs n : SchwartzNPoint d n) :
+        NPointDomain d n → ℂ)) :
+    ∃ Γ : (Fin m → ℂ) → ℂ,
+      DifferentiableOn ℂ Γ (osiiMZLogDomain m (Real.pi / 2)) ∧
+        Set.EqOn Γ
+          (osiiParametricFlatTubeBranch (d := d) OS lgc F G)
+          (osiiMZFlatLogTubeUnion m (Real.pi / 2)) ∧
+          ∀ x : Fin m → ℝ,
+            Γ (osiiMZLogRealEmbed x) =
+              osiiTotalPositiveTimeRealEdge (d := d) OS F G x := by
+  refine ⟨osiiTotalLogSemigroupBranch (d := d) OS lgc F G, ?_, ?_, ?_⟩
+  · exact differentiableOn_osiiTotalLogSemigroupBranch_l1 (d := d) OS lgc F G
+  · intro z hz
+    have hflat :=
+      osiiParametricFlatTubeBranch_eq_totalLog_on_flatTube
+        (d := d) (m := m) OS lgc F G hG_compact
+    exact (hflat hz).symm
+  · exact osiiTotalLogSemigroupBranch_real_edge_eq_total
+      (d := d) OS lgc F G hG_compact
+
+/-- The full total-time log branch restricts to each matching-base directional
+branch on that coordinate's flat tube.  This is the branch-family form of the
+OS-II flat-tube carrier equality. -/
+theorem osiiTotalLogSemigroupBranch_eq_matchingBaseDirectional_on_flatCoordinate
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {m : ℕ} [Nonempty (Fin m)]
+    (F G : PositiveTimeBorchersSequence d)
+    (hG_compact : ∀ n,
+      HasCompactSupport (((G : BorchersSequence d).funcs n : SchwartzNPoint d n) :
+        NPointDomain d n → ℂ))
+    (q : Fin m) :
+    Set.EqOn
+      (osiiTotalLogSemigroupBranch (d := d) OS lgc F G)
+      (fun r : Fin m → ℂ =>
+        osiiMatchingBaseDirectionalLogBranch (d := d) OS lgc F G
+          (osiiRealLogBase r) q r)
+      {r : Fin m → ℂ |
+        |(r q).im| < Real.pi / 2 ∧ ∀ p : Fin m, p ≠ q → (r p).im = 0} := by
+  intro r hrq
+  have hflatUnion : r ∈ osiiMZFlatLogTubeUnion m (Real.pi / 2) := ⟨q, hrq⟩
+  have hparam_total :=
+    osiiParametricFlatTubeBranch_eq_totalLog_on_flatTube
+      (d := d) (m := m) OS lgc F G hG_compact hflatUnion
+  have hparam_direction :=
+    osiiParametricFlatTubeBranch_eq_directional_of_mem
+      (d := d) OS lgc F G hG_compact hrq
+  exact hparam_total.symm.trans hparam_direction
+
 end OSReconstruction

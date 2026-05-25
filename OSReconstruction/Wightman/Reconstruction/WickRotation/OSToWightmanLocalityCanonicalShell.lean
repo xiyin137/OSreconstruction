@@ -1356,6 +1356,83 @@ theorem bvt_W_eq_of_adjacentSpacelike_local_compactFigure24Packet_provider
       (fun x hx => hPatchAtSpacelike x hx)
       f g hf_compact hf_tsupport hswap
 
+/-- Strict adjacent-spacelike all-Schwartz consumer from pointwise local
+Figure-2-4 packets.
+
+This is the support-boundary density step after the compact packet consumer:
+compact approximants keep their topological support in the spacelike open set,
+so compact Figure-2-4 locality passes to the original Schwartz test by
+continuity of `bvt_W`. -/
+theorem bvt_W_adjacent_swap_of_strict_local_compactFigure24Packet_provider
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {n : ℕ} (i : Fin n) (hi : i.val + 1 < n)
+    (hPatchAtSpacelike :
+      ∀ x : NPointDomain d n,
+        MinkowskiSpace.AreSpacelikeSeparated d
+          (x i) (x ⟨i.val + 1, hi⟩) →
+        ∃ P : BHW.OS45CompactFigure24WickPairingEq
+            (d := d) n i hi OS lgc,
+          x ∈ P.realPatch 1)
+    (f g : SchwartzNPoint d n)
+    (hf_tsupport :
+      tsupport (f : NPointDomain d n → ℂ) ⊆
+        {x | MinkowskiSpace.AreSpacelikeSeparated d
+          (x i) (x ⟨i.val + 1, hi⟩)})
+    (hswap :
+      ∀ x : NPointDomain d n,
+        g.toFun x =
+          f.toFun (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k))) :
+    bvt_W OS lgc n f = bvt_W OS lgc n g := by
+  classical
+  let τ : Equiv.Perm (Fin n) := Equiv.swap i ⟨i.val + 1, hi⟩
+  obtain ⟨fN, hfN_compact, hfN_tsupport, hfN_tendsto⟩ :=
+    exists_compactSupportApprox_tsupport_subset_npoint
+      (d := d) f hf_tsupport
+  let eτ : NPointDomain d n ≃L[ℝ] NPointDomain d n :=
+    (LinearEquiv.funCongrLeft ℝ (Fin (d + 1) → ℝ) τ).toContinuousLinearEquiv
+  let P : SchwartzNPoint d n →L[ℂ] SchwartzNPoint d n :=
+    SchwartzMap.compCLMOfContinuousLinearEquiv ℂ eτ
+  let gN : ℕ → SchwartzNPoint d n := fun N => P (fN N)
+  have hcompact_eq :
+      ∀ N, bvt_W OS lgc n (fN N) = bvt_W OS lgc n (gN N) := by
+    intro N
+    have hswapN :
+        ∀ x : NPointDomain d n,
+          (gN N).toFun x =
+            (fN N).toFun (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) := by
+      intro x
+      change P (fN N) x = (fN N).toFun (fun k => x (τ k))
+      rfl
+    exact
+      BHW.bvt_W_eq_of_adjacentSpacelike_local_compactFigure24Packet_provider
+        (d := d) OS lgc i hi hPatchAtSpacelike
+        (fN N) (gN N) (hfN_compact N) (hfN_tsupport N) hswapN
+  have hleft :
+      Filter.Tendsto (fun N => bvt_W OS lgc n (fN N))
+        Filter.atTop (nhds (bvt_W OS lgc n f)) :=
+    ((bvt_W_continuous (d := d) OS lgc n).tendsto f).comp hfN_tendsto
+  have hP_tendsto :
+      Filter.Tendsto (fun N => P (fN N)) Filter.atTop (nhds (P f)) :=
+    (P.continuous.tendsto f).comp hfN_tendsto
+  have hP_f : P f = g := by
+    ext x
+    change f (fun k => x (τ k)) = g x
+    simpa [τ] using (hswap x).symm
+  have hgN_tendsto :
+      Filter.Tendsto gN Filter.atTop (nhds g) := by
+    simpa [gN, hP_f] using hP_tendsto
+  have hright :
+      Filter.Tendsto (fun N => bvt_W OS lgc n (gN N))
+        Filter.atTop (nhds (bvt_W OS lgc n g)) :=
+    ((bvt_W_continuous (d := d) OS lgc n).tendsto g).comp hgN_tendsto
+  have hleft_as_right :
+      Filter.Tendsto (fun N => bvt_W OS lgc n (fN N))
+        Filter.atTop (nhds (bvt_W OS lgc n g)) :=
+    Filter.Tendsto.congr'
+      (Filter.Eventually.of_forall fun N => (hcompact_eq N).symm) hright
+  exact tendsto_nhds_unique hleft hleft_as_right
+
 /-- Adjacent boundary locality from a compact Figure-2-4 patch-cover
 provider.
 

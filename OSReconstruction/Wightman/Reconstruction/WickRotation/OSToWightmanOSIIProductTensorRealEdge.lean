@@ -683,6 +683,186 @@ theorem osii_total_positive_time_real_edge_single_eq_schwinger_timeShift
     OSInnerProduct_single_right_timeShift
       (d := d) OS f g (∑ p : Fin m, τ p)
 
+/-- Concentrated-product form of the common-time shifted total positive-time
+real edge.  The common nonnegative Euclidean shift is absorbed into the left
+Schwinger source, while the right source is shifted by the total
+time-difference variable. -/
+theorem osii_total_positive_time_real_edge_single_leftTimeShift_eq_schwinger_timeShift
+    (OS : OsterwalderSchraderAxioms d)
+    {m n r : ℕ}
+    (a : ℝ) (ha : 0 ≤ a)
+    (f : SchwartzNPoint d n)
+    (hf_ord : tsupport (f : NPointDomain d n → ℂ) ⊆
+      OrderedPositiveTimeRegion d n)
+    (g : SchwartzNPoint d r)
+    (hg_ord : tsupport (g : NPointDomain d r → ℂ) ⊆
+      OrderedPositiveTimeRegion d r)
+    (τ : Fin m → ℝ) :
+    OSInnerProduct d OS.S
+        (timeShiftNonnegPositiveTimeBorchers (d := d) a ha
+          (PositiveTimeBorchersSequence.single n f hf_ord) : BorchersSequence d)
+        (timeShiftBorchers (d := d)
+          (∑ p : Fin m, τ p)
+          (PositiveTimeBorchersSequence.single r g hg_ord : BorchersSequence d)) =
+      OS.S (n + r) (ZeroDiagonalSchwartz.ofClassical
+        ((timeShiftSchwartzNPoint (d := d) a f).osConjTensorProduct
+          (timeShiftSchwartzNPoint (d := d)
+            (∑ p : Fin m, τ p) g))) := by
+  have hleft_shift :
+      ∀ s,
+        (timeShiftBorchers (d := d) a (BorchersSequence.single n f)).funcs s =
+          (BorchersSequence.single n
+            (timeShiftSchwartzNPoint (d := d) a f)).funcs s := by
+    intro s
+    by_cases hs : s = n
+    · subst hs
+      simp [BorchersSequence.single]
+    · simp [BorchersSequence.single, hs]
+  have hcongr :
+      OSInnerProduct d OS.S
+          (timeShiftBorchers (d := d) a (BorchersSequence.single n f))
+          (timeShiftBorchers (d := d) (∑ p : Fin m, τ p)
+            (BorchersSequence.single r g)) =
+        OSInnerProduct d OS.S
+          (BorchersSequence.single n (timeShiftSchwartzNPoint (d := d) a f))
+          (timeShiftBorchers (d := d) (∑ p : Fin m, τ p)
+            (BorchersSequence.single r g)) := by
+    exact OSInnerProduct_congr_left (d := d) OS.S OS.E0_linear
+      (timeShiftBorchers (d := d) a (BorchersSequence.single n f))
+      (BorchersSequence.single n (timeShiftSchwartzNPoint (d := d) a f))
+      (timeShiftBorchers (d := d) (∑ p : Fin m, τ p)
+        (BorchersSequence.single r g)) hleft_shift
+  calc
+    OSInnerProduct d OS.S
+        (timeShiftNonnegPositiveTimeBorchers (d := d) a ha
+          (PositiveTimeBorchersSequence.single n f hf_ord) : BorchersSequence d)
+        (timeShiftBorchers (d := d)
+          (∑ p : Fin m, τ p)
+          (PositiveTimeBorchersSequence.single r g hg_ord : BorchersSequence d)) =
+      OSInnerProduct d OS.S
+        (timeShiftBorchers (d := d) a (BorchersSequence.single n f))
+        (timeShiftBorchers (d := d)
+          (∑ p : Fin m, τ p)
+          (BorchersSequence.single r g)) := by
+        rfl
+    _ =
+      OSInnerProduct d OS.S
+        (BorchersSequence.single n (timeShiftSchwartzNPoint (d := d) a f))
+        (timeShiftBorchers (d := d)
+          (∑ p : Fin m, τ p)
+          (BorchersSequence.single r g)) := hcongr
+    _ =
+      OS.S (n + r) (ZeroDiagonalSchwartz.ofClassical
+        ((timeShiftSchwartzNPoint (d := d) a f).osConjTensorProduct
+          (timeShiftSchwartzNPoint (d := d)
+            (∑ p : Fin m, τ p) g))) := by
+        exact OSInnerProduct_single_right_timeShift
+          (d := d) OS (timeShiftSchwartzNPoint (d := d) a f) g
+          (∑ p : Fin m, τ p)
+
+/-- Product-source weighted form of the common-time shifted total real edge. -/
+theorem integral_osii_total_positive_time_real_edge_single_leftTimeShift_eq_schwinger_timeShift
+    (OS : OsterwalderSchraderAxioms d)
+    {m n r : ℕ}
+    (a : ℝ) (ha : 0 ≤ a)
+    (f : SchwartzNPoint d n)
+    (hf_ord : tsupport (f : NPointDomain d n → ℂ) ⊆
+      OrderedPositiveTimeRegion d n)
+    (g : SchwartzNPoint d r)
+    (hg_ord : tsupport (g : NPointDomain d r → ℂ) ⊆
+      OrderedPositiveTimeRegion d r)
+    (h : SchwartzMap (Fin m → ℝ) ℂ) :
+    (∫ τ : Fin m → ℝ,
+      OSInnerProduct d OS.S
+        (timeShiftNonnegPositiveTimeBorchers (d := d) a ha
+          (PositiveTimeBorchersSequence.single n f hf_ord) : BorchersSequence d)
+        (timeShiftBorchers (d := d)
+          (∑ p : Fin m, τ p)
+          (PositiveTimeBorchersSequence.single r g hg_ord : BorchersSequence d)) *
+        h τ) =
+      ∫ τ : Fin m → ℝ,
+        OS.S (n + r) (ZeroDiagonalSchwartz.ofClassical
+          ((timeShiftSchwartzNPoint (d := d) a f).osConjTensorProduct
+            (timeShiftSchwartzNPoint (d := d)
+              (∑ p : Fin m, τ p) g))) *
+          h τ := by
+  refine integral_congr_ae ?_
+  filter_upwards with τ
+  rw [osii_total_positive_time_real_edge_single_leftTimeShift_eq_schwinger_timeShift
+    (d := d) OS a ha f hf_ord g hg_ord τ]
+
+/-- Positive-branch split integral with a common left time shift, rewritten as
+the corresponding left-shifted Schwinger product-shell integral. -/
+theorem integral_osii_real_edge_positiveBranch_single_leftTimeShift_eq_schwinger_timeShift
+    (OS : OsterwalderSchraderAxioms d)
+    {m n r : ℕ}
+    (a : ℝ) (ha : 0 ≤ a)
+    (f : SchwartzNPoint d n)
+    (hf_ord : tsupport (f : NPointDomain d n → ℂ) ⊆
+      OrderedPositiveTimeRegion d n)
+    (g : SchwartzNPoint d r)
+    (hg_ord : tsupport (g : NPointDomain d r → ℂ) ⊆
+      OrderedPositiveTimeRegion d r)
+    (q : Fin m)
+    (h : SchwartzMap (Fin m → ℝ) ℂ)
+    (hh_pos : tsupport (h : (Fin m → ℝ) → ℂ) ⊆
+      {τ : Fin m → ℝ | ∀ p : Fin m, 0 < τ p}) :
+    (∫ τ : Fin m → ℝ,
+      (if hτ : ∀ p : Fin m, 0 ≤ τ p then
+        OSInnerProduct d OS.S
+          (osiiLeftSplitPositiveBranch (d := d) τ hτ
+            (timeShiftNonnegPositiveTimeBorchers (d := d) a ha
+              (PositiveTimeBorchersSequence.single n f hf_ord)) q :
+              BorchersSequence d)
+          (timeShiftBorchers (d := d) (τ q)
+            (osiiRightSplitPositiveBranch (d := d) τ hτ
+              (PositiveTimeBorchersSequence.single r g hg_ord) q :
+                BorchersSequence d))
+      else 0) * h τ) =
+      ∫ τ : Fin m → ℝ,
+        OS.S (n + r) (ZeroDiagonalSchwartz.ofClassical
+          ((timeShiftSchwartzNPoint (d := d) a f).osConjTensorProduct
+            (timeShiftSchwartzNPoint (d := d)
+              (∑ p : Fin m, τ p) g))) * h τ := by
+  calc
+    (∫ τ : Fin m → ℝ,
+      (if hτ : ∀ p : Fin m, 0 ≤ τ p then
+        OSInnerProduct d OS.S
+          (osiiLeftSplitPositiveBranch (d := d) τ hτ
+            (timeShiftNonnegPositiveTimeBorchers (d := d) a ha
+              (PositiveTimeBorchersSequence.single n f hf_ord)) q :
+              BorchersSequence d)
+          (timeShiftBorchers (d := d) (τ q)
+            (osiiRightSplitPositiveBranch (d := d) τ hτ
+              (PositiveTimeBorchersSequence.single r g hg_ord) q :
+                BorchersSequence d))
+      else 0) * h τ)
+        =
+      ∫ τ : Fin m → ℝ,
+        OSInnerProduct d OS.S
+          (timeShiftNonnegPositiveTimeBorchers (d := d) a ha
+            (PositiveTimeBorchersSequence.single n f hf_ord) :
+              BorchersSequence d)
+          (timeShiftBorchers (d := d)
+            (∑ p : Fin m, τ p)
+            (PositiveTimeBorchersSequence.single r g hg_ord :
+              BorchersSequence d)) * h τ := by
+        exact
+          integral_osii_real_edge_positiveBranch_agrees_total_of_tsupport_positive
+            (d := d) OS
+            (timeShiftNonnegPositiveTimeBorchers (d := d) a ha
+              (PositiveTimeBorchersSequence.single n f hf_ord))
+            (PositiveTimeBorchersSequence.single r g hg_ord) q h hh_pos
+    _ =
+      ∫ τ : Fin m → ℝ,
+        OS.S (n + r) (ZeroDiagonalSchwartz.ofClassical
+          ((timeShiftSchwartzNPoint (d := d) a f).osConjTensorProduct
+            (timeShiftSchwartzNPoint (d := d)
+              (∑ p : Fin m, τ p) g))) * h τ := by
+        exact
+          integral_osii_total_positive_time_real_edge_single_leftTimeShift_eq_schwinger_timeShift
+            (d := d) OS a ha f hf_ord g hg_ord h
+
 /-- Compact positive-orthant pairing of a q-directional split of concentrated
 Borchers factors, rewritten as the corresponding Schwinger product-shell
 integral.  The remaining E-to-R gap is to identify this integral with the
@@ -751,6 +931,151 @@ theorem integral_osii_real_edge_positiveBranch_single_eq_schwinger_timeShift
           filter_upwards with τ
           rw [osii_total_positive_time_real_edge_single_eq_schwinger_timeShift
             (d := d) OS f hf_ord g hg_ord τ]
+
+/-- Product-source shifted-shell pairing equality follows from the
+corresponding equality of the positive-branch OS semigroup pairings.
+
+This is the compact-source bridge from the OS-II directional semigroup side to
+the Schwinger shifted-shell pairing side.  The remaining producer still has to
+prove the positive-branch pairing equality; this theorem performs the
+book-faithful rewrite of each branch through the total positive-time real edge. -/
+theorem schwinger_shifted_productSource_pairings_eq_of_positiveBranch_pairings_eq
+    (OS : OsterwalderSchraderAxioms d)
+    {m n₁ r₁ n₂ r₂ : ℕ}
+    (f₁ : SchwartzNPoint d n₁)
+    (hf₁_ord : tsupport (f₁ : NPointDomain d n₁ → ℂ) ⊆
+      OrderedPositiveTimeRegion d n₁)
+    (g₁ : SchwartzNPoint d r₁)
+    (hg₁_ord : tsupport (g₁ : NPointDomain d r₁ → ℂ) ⊆
+      OrderedPositiveTimeRegion d r₁)
+    (f₂ : SchwartzNPoint d n₂)
+    (hf₂_ord : tsupport (f₂ : NPointDomain d n₂ → ℂ) ⊆
+      OrderedPositiveTimeRegion d n₂)
+    (g₂ : SchwartzNPoint d r₂)
+    (hg₂_ord : tsupport (g₂ : NPointDomain d r₂ → ℂ) ⊆
+      OrderedPositiveTimeRegion d r₂)
+    (q₁ q₂ : Fin m)
+    (hbranch :
+      ∀ gs : Fin m → Section43CompactPositiveTimeSource1D,
+        (∫ ξ : Fin m → ℝ,
+          (if hξ : ∀ p : Fin m, 0 ≤ ξ p then
+            OSInnerProduct d OS.S
+              (osiiLeftSplitPositiveBranch (d := d) ξ hξ
+                (PositiveTimeBorchersSequence.single n₁ f₁ hf₁_ord) q₁ :
+                  BorchersSequence d)
+              (timeShiftBorchers (d := d) (ξ q₁)
+                (osiiRightSplitPositiveBranch (d := d) ξ hξ
+                  (PositiveTimeBorchersSequence.single r₁ g₁ hg₁_ord) q₁ :
+                    BorchersSequence d))
+          else 0) * (section43TimeProductSource gs).f ξ) =
+          ∫ ξ : Fin m → ℝ,
+            (if hξ : ∀ p : Fin m, 0 ≤ ξ p then
+              OSInnerProduct d OS.S
+                (osiiLeftSplitPositiveBranch (d := d) ξ hξ
+                  (PositiveTimeBorchersSequence.single n₂ f₂ hf₂_ord) q₂ :
+                    BorchersSequence d)
+                (timeShiftBorchers (d := d) (ξ q₂)
+                  (osiiRightSplitPositiveBranch (d := d) ξ hξ
+                    (PositiveTimeBorchersSequence.single r₂ g₂ hg₂_ord) q₂ :
+                      BorchersSequence d))
+            else 0) * (section43TimeProductSource gs).f ξ) :
+    ∀ gs : Fin m → Section43CompactPositiveTimeSource1D,
+      (∫ ξ : Fin m → ℝ,
+        OS.S (n₁ + r₁) (ZeroDiagonalSchwartz.ofClassical
+          (f₁.osConjTensorProduct
+            (timeShiftSchwartzNPoint (d := d)
+              (∑ p : Fin m, ξ p) g₁))) *
+          (section43TimeProductSource gs).f ξ) =
+        ∫ ξ : Fin m → ℝ,
+          OS.S (n₂ + r₂) (ZeroDiagonalSchwartz.ofClassical
+            (f₂.osConjTensorProduct
+              (timeShiftSchwartzNPoint (d := d)
+                (∑ p : Fin m, ξ p) g₂))) *
+            (section43TimeProductSource gs).f ξ := by
+  intro gs
+  have h₁ :=
+    integral_osii_real_edge_positiveBranch_single_eq_schwinger_timeShift
+      (d := d) OS f₁ hf₁_ord g₁ hg₁_ord q₁
+      (section43TimeProductSource gs).f
+      (section43TimeProductSource gs).positive
+  have h₂ :=
+    integral_osii_real_edge_positiveBranch_single_eq_schwinger_timeShift
+      (d := d) OS f₂ hf₂_ord g₂ hg₂_ord q₂
+      (section43TimeProductSource gs).f
+      (section43TimeProductSource gs).positive
+  exact h₁.symm.trans ((hbranch gs).trans h₂)
+
+/-- Product-source left-shifted shell pairing equality follows from equality
+of the corresponding common-left-shift positive-branch OS semigroup pairings. -/
+theorem schwinger_leftShifted_productSource_pairings_eq_of_positiveBranch_pairings_eq
+    (OS : OsterwalderSchraderAxioms d)
+    {m n₁ r₁ n₂ r₂ : ℕ}
+    (a₁ : ℝ) (ha₁ : 0 ≤ a₁)
+    (f₁ : SchwartzNPoint d n₁)
+    (hf₁_ord : tsupport (f₁ : NPointDomain d n₁ → ℂ) ⊆
+      OrderedPositiveTimeRegion d n₁)
+    (g₁ : SchwartzNPoint d r₁)
+    (hg₁_ord : tsupport (g₁ : NPointDomain d r₁ → ℂ) ⊆
+      OrderedPositiveTimeRegion d r₁)
+    (a₂ : ℝ) (ha₂ : 0 ≤ a₂)
+    (f₂ : SchwartzNPoint d n₂)
+    (hf₂_ord : tsupport (f₂ : NPointDomain d n₂ → ℂ) ⊆
+      OrderedPositiveTimeRegion d n₂)
+    (g₂ : SchwartzNPoint d r₂)
+    (hg₂_ord : tsupport (g₂ : NPointDomain d r₂ → ℂ) ⊆
+      OrderedPositiveTimeRegion d r₂)
+    (q₁ q₂ : Fin m)
+    (hbranch :
+      ∀ gs : Fin m → Section43CompactPositiveTimeSource1D,
+        (∫ ξ : Fin m → ℝ,
+          (if hξ : ∀ p : Fin m, 0 ≤ ξ p then
+            OSInnerProduct d OS.S
+              (osiiLeftSplitPositiveBranch (d := d) ξ hξ
+                (timeShiftNonnegPositiveTimeBorchers (d := d) a₁ ha₁
+                  (PositiveTimeBorchersSequence.single n₁ f₁ hf₁_ord)) q₁ :
+                  BorchersSequence d)
+              (timeShiftBorchers (d := d) (ξ q₁)
+                (osiiRightSplitPositiveBranch (d := d) ξ hξ
+                  (PositiveTimeBorchersSequence.single r₁ g₁ hg₁_ord) q₁ :
+                    BorchersSequence d))
+          else 0) * (section43TimeProductSource gs).f ξ) =
+          ∫ ξ : Fin m → ℝ,
+            (if hξ : ∀ p : Fin m, 0 ≤ ξ p then
+              OSInnerProduct d OS.S
+                (osiiLeftSplitPositiveBranch (d := d) ξ hξ
+                  (timeShiftNonnegPositiveTimeBorchers (d := d) a₂ ha₂
+                    (PositiveTimeBorchersSequence.single n₂ f₂ hf₂_ord)) q₂ :
+                    BorchersSequence d)
+                (timeShiftBorchers (d := d) (ξ q₂)
+                  (osiiRightSplitPositiveBranch (d := d) ξ hξ
+                    (PositiveTimeBorchersSequence.single r₂ g₂ hg₂_ord) q₂ :
+                      BorchersSequence d))
+            else 0) * (section43TimeProductSource gs).f ξ) :
+    ∀ gs : Fin m → Section43CompactPositiveTimeSource1D,
+      (∫ ξ : Fin m → ℝ,
+        OS.S (n₁ + r₁) (ZeroDiagonalSchwartz.ofClassical
+          ((timeShiftSchwartzNPoint (d := d) a₁ f₁).osConjTensorProduct
+            (timeShiftSchwartzNPoint (d := d)
+              (∑ p : Fin m, ξ p) g₁))) *
+          (section43TimeProductSource gs).f ξ) =
+        ∫ ξ : Fin m → ℝ,
+          OS.S (n₂ + r₂) (ZeroDiagonalSchwartz.ofClassical
+            ((timeShiftSchwartzNPoint (d := d) a₂ f₂).osConjTensorProduct
+              (timeShiftSchwartzNPoint (d := d)
+                (∑ p : Fin m, ξ p) g₂))) *
+            (section43TimeProductSource gs).f ξ := by
+  intro gs
+  have h₁ :=
+    integral_osii_real_edge_positiveBranch_single_leftTimeShift_eq_schwinger_timeShift
+      (d := d) OS a₁ ha₁ f₁ hf₁_ord g₁ hg₁_ord q₁
+      (section43TimeProductSource gs).f
+      (section43TimeProductSource gs).positive
+  have h₂ :=
+    integral_osii_real_edge_positiveBranch_single_leftTimeShift_eq_schwinger_timeShift
+      (d := d) OS a₂ ha₂ f₂ hf₂_ord g₂ hg₂_ord q₂
+      (section43TimeProductSource gs).f
+      (section43TimeProductSource gs).positive
+  exact h₁.symm.trans ((hbranch gs).trans h₂)
 
 /-- Product-source version of the concentrated Schwinger shifted-shell
 positive-orthant recovery. -/

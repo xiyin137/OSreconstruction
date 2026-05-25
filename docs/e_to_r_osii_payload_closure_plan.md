@@ -1,6 +1,69 @@
 # E-to-R OS-II Payload Closure Plan
 
-Status: active proof plan, 2026-05-22.
+Status: active proof plan, updated 2026-05-24.
+
+May 24 checkpoint: the degenerate W4 branches `k = 0` and `k = 1` are closed,
+so the live W4 producer is exactly the multi-point case `k >= 2`.  The explicit
+OS-II total-time semigroup branch now has a checked spatial-slice holomorphy
+field,
+`differentiableOn_osiiFlatTotalTimeBranch_spatial_slice`, because the branch
+depends only on flattened time coordinates.  It also has the checked spatial
+common-translation covariance theorem
+`osiiFlatTotalTimeBranch_toDiffFlat_spatial_translation`, saying that after
+`BHW.toDiffFlat` the branch is unchanged by common translations `a` with
+`a 0 = 0`.  The common-time real-edge transport is now also checked:
+`OSInnerProduct_left_timeShift_real_edge_transport` and
+`osiiFlatTotalTimeBranch_wickRotate_common_time_edge_transport` prove that a
+common nonnegative Euclidean time shift on the Wick edge is transferred by OS
+`E1` into a time shift of the left positive-time vector.  The next lift is also
+checked on the product-source side:
+`osiiFlatTotalTimeBranch_single_wickRotate_common_time_edge_eq_schwinger`,
+`osii_total_positive_time_real_edge_single_leftTimeShift_eq_schwinger_timeShift`,
+and
+`integral_osii_total_positive_time_real_edge_single_leftTimeShift_eq_schwinger_timeShift`
+express the common-time shifted real edge as Schwinger shells with the left
+source shifted by the common time and the right source shifted by the total
+positive time-difference variable.  The zero-diagonal subtype facts
+`VanishesToInfiniteOrderOnCoincidence_osConjTensorProduct_leftTimeShift_timeShift_sum_of_strictPositive`
+and
+`ZeroDiagonalSchwartz_ofClassical_osConjTensorProduct_leftTimeShift_timeShift_sum_of_strictPositive`
+make those shells honest on the strict positive source orthant.  These are
+now connected to the BVT/source-current interfaces by
+`section43TimeShiftKernel_psiZ_descended_transformComponentTarget_eq_osScalar_succRight_leftTimeShift`
+and
+`schwinger_leftShiftedShell_productSource_integral_eq_timeCLM_on_positive`.
+The positive-branch side also has the checked left-shifted compact-source
+rewrites
+`integral_osii_real_edge_positiveBranch_single_leftTimeShift_eq_schwinger_timeShift`
+and
+`schwinger_leftShifted_productSource_pairings_eq_of_positiveBranch_pairings_eq`.
+The branch-specific time-shell CLM q-independence packet has now also been
+closed in the common-time lane:
+`section43_schwinger_timeCLM_oneSidedLaplaceProduct_eq_of_same_leftShifted_honest_kernel`
+proves equality on every one-sided Laplace product source for two time-shell
+CLMs with the same honest left-shifted strict-positive imaginary-axis kernel,
+using the OS-II split positive-branch semigroup equality rather than assuming
+the product-source equality.
+The compact source-current selection step for the fixed-left Section 4.3 BVT
+probe is also checked:
+`integral_bvt_timeSpatialRightProductMultilinear_imagAxis_eq_selected_fixedLeftOrderedPullbackCutoffZeroCLM`
+constructs the strict-positive cutoff current and proves that the compact
+imaginary-axis product integral is exactly the Schwinger value selected by
+that current at the raw compact right time source.  This is deliberately not a
+pointwise imaginary-axis kernel identity for the cutoff current.
+Scratch
+`proofideas_selected_current_value_eq_leftShiftedShell_integral_of_bvt_eqOn_tsupport`
+then checks the corrected consumer surface: the next producer is a
+support-local identity between the BVT imaginary-axis integrand and the
+left-shifted Schwinger shell on `tsupport (section43TimeProductSource gs).f`.
+Do not try to feed the cutoff current into the old one-sided-Laplace time-shell
+consumer; it evaluates the wrong argument of `Z`.
+The final W4 scalar still needs common complex time translation invariance:
+the remaining genuine work is to identify the concrete time-shell CLMs on the
+strict-positive imaginary-axis with these left-shifted shells, prove the
+corresponding compact product-source equality against the BVT probe, and then
+propagate that real-edge agreement by the identity theorem/MZ continuation.
+Do not use the total branch alone to close W4.
 
 This note is the current detailed plan for closing the surviving direct
 E-to-R `sorry`:
@@ -739,6 +802,9 @@ osiiLemma51_local_polydisc_sector_extension_differentiableOn
 osiiLemma51ArgSumDomain4
 osiiLemma51_abs_arg_eq_arctan_abs_im_div_re
 osiiLemma51_narrowSector_subset_argSumDomain4
+osiiLemma51_logCoeffMap_mem_mzLogDomain_of_argSum
+osiiLemma51_local_polydisc_logDomain_extension_differentiableOn
+osiiLemma51_totalLogSemigroupBranch_local_polydisc
 ```
 
 This formalizes the paper's four physical-coordinate algebra in
@@ -767,11 +833,24 @@ coordinate-estimate translation from the ratio-sector predicate to the paper's
 explicit argument-sum bound in `(5.8)`/`(5.14)`: if the four arctangent widths
 sum to less than `π / 2`, then `Σ |arg w^μ| < π / 2`.
 
-This is the local half-plane/sector coordinate input needed after the
-Malgrange-Zerner representatives have been constructed.  It still does not
-provide those local representatives; the next hard step remains the
-construction of the MZ carriers from the directional semigroup continuations
-and the proof that they continue the same real-edge distribution on overlaps.
+The log-domain handoff is now also checked.  Principal logarithms of
+coefficients in the argument-sum domain land in the exact MZ log carrier
+`Σ |Im r_μ| < π / 2`, and the local coefficient chart pulls any holomorphic
+log-domain representative back to a local coordinate polydisc.  The companion
+module
+
+```text
+OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanOSIILemma51TotalBranch.lean
+```
+
+applies this to the explicit semigroup branch
+`osiiTotalLogSemigroupBranch`, proving the concrete local Lemma 5.1
+polydisc representative for the total branch.
+
+This closes the local Lemma 5.1 coordinate extraction for the explicit total
+semigroup branch.  It still does not close the W4 producer: the next hard step
+remains the concrete compact positive product-source pairing equality between
+the fixed-left BVT probe and the left-shifted Schwinger shell.
 
 Checked OS II V.2 translated-delta substrate:
 
@@ -1217,3 +1296,564 @@ This removes another over-strong obligation from the W4/E-to-R producer.  The
 remaining gap is sharper: construct the actual OS-II time-shell scalar/CLM
 producer and prove the one-sided Laplace product representative equality.  The
 positive-support consumers no longer ask for off-support kernel values.
+
+### 2026-05-24: One-sided Laplace product equality from compact product pairings
+
+Scratch-first check:
+
+```text
+test/proofideas_osii_timeclm_laplace_product_equality.lean
+```
+
+Promoted support in:
+
+```text
+OSToWightmanOSIIProductTensorSchwingerFunctional.lean
+```
+
+New production facts:
+
+```lean
+schwinger_shifted_productSource_pairings_eq_of_positiveBranch_pairings_eq
+section43_schwinger_timeCLM_oneSidedLaplaceProduct_eq_of_pairings_eq_on_positive
+section43_schwinger_timeCLM_oneSidedLaplaceProduct_eq_of_same_honest_kernel
+eq_schwinger_timeShift_single_of_schwinger_timeCLM_honest_kernel_eq_and_pairings
+```
+
+Mathematical content:
+
+1. Product-source shifted-shell pairing equality is now obtained from equality
+   of the corresponding positive-branch OS semigroup pairings by the checked
+   real-edge rewrite
+   `integral_osii_real_edge_positiveBranch_single_eq_schwinger_timeShift`.
+2. For concrete zero-diagonal time-shell CLMs, the one-sided Laplace product
+   value is now recovered from the strict-positive imaginary-axis kernel by
+   the checked finite-product Section 4.3 Fubini theorem
+   `section43TimeProductTensor_allSlots_flattened`.
+3. If the positive imaginary-axis kernels are honest shifted Schwinger shells
+   and the compact product-source pairings of those shifted shells agree, then
+   the `hprod` input of the earlier Schwinger time-CLM consumer is proved, not
+   assumed.
+4. For two branch-specific time-shell CLMs with the same honest positive
+   imaginary-axis kernel, the one-sided Laplace product values now agree
+   directly.  The compact product-source pairing identity is supplied by
+   `integral_osii_real_edge_positiveBranch_pairings_agree_of_tsupport_positive`,
+   i.e. by the OS semigroup equality of the two split coordinates.
+5. The remaining producer is now sharper: construct the actual branch
+   time-shell CLMs and prove their strict-positive honest-kernel identities.
+
+Verification:
+
+```bash
+lake env lean -DmaxHeartbeats=1200000 \
+  test/proofideas_osii_timeclm_laplace_product_equality.lean
+lake env lean -DmaxHeartbeats=1200000 \
+  OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanOSIIProductTensorRealEdge.lean
+lake env lean -DmaxHeartbeats=1200000 \
+  OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanOSIIProductTensorSchwingerFunctional.lean
+lake build \
+  OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIProductTensorRealEdge
+lake build \
+  OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIProductTensorSchwingerFunctional
+rg -n '^\s*sorry\b|\bby\s+sorry\b|^\s*axiom\b|\badmit\b' \
+  OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanOSIIProductTensorRealEdge.lean \
+  OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanOSIIProductTensorSchwingerFunctional.lean \
+  test/proofideas_osii_timeclm_laplace_product_equality.lean
+git diff --check -- \
+  OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanOSIIProductTensorRealEdge.lean \
+  OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanOSIIProductTensorSchwingerFunctional.lean \
+  test/proofideas_osii_timeclm_laplace_product_equality.lean
+```
+
+All checks exit `0`, except the `rg` scan exits `1` because it finds no
+matches.  The targeted module build succeeds.
+
+### 2026-05-24: Product-source Section 4.3 ordered representative packet
+
+Scratch-first check:
+
+```text
+test/proofideas_osii_product_source_target.lean
+```
+
+Promoted support in:
+
+```text
+OSReconstruction/Wightman/Reconstruction/WickRotation/Section43FourierLaplaceSpatialDensity.lean
+OSReconstruction/Wightman/Reconstruction/WickRotation/Section43FourierLaplaceOrderedDensity.lean
+OSReconstruction/Wightman/Reconstruction/WickRotation/Section43FourierLaplaceCompactDifferentiation.lean
+```
+
+New production facts:
+
+```lean
+section43NPointTimeSpatialTensor_productSource_mem_timeLaplaceSpatialFourierTarget
+section43FourierLaplaceRepresentative_quotient_eq_transformComponent
+section43NPointTimeSpatialTensor_productSource_mem_ordered_component_preimage
+section43NPointTimeSpatialTensor_productSource_has_orderedFourierLaplaceRepresentative
+section43NPointTimeSpatialTensor_productSource_eq_orderedTransformComponent
+```
+
+Mathematical content:
+
+1. A product of one-sided compact positive time Laplace representatives,
+   tensored with a compact spatial Fourier factor, now has an explicit
+   compact time/spatial source representative after passing to the
+   positive-energy quotient.
+2. The same product-source tensor is transported through the ordered
+   difference-coordinate pushforward into the compact ordered
+   Fourier-Laplace component image.
+3. The strongest new surface exposes the actual compact ordered source and a
+   Fourier-Laplace representative, rather than hiding the step behind a bare
+   range-membership statement.
+4. A neutral quotient lemma now states that any Fourier-Laplace representative
+   of a compact ordered source determines the same positive-energy quotient as
+   the canonical transform component.  The product-source packet therefore
+   exposes the concrete ordered source whose transform component equals the
+   product-source quotient.
+
+This does not yet build the full branch
+`SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ZeroDiagonalSchwartz d k`.  It supplies the
+checked product-source representative packet that the branch producer must use
+when it passes from one-sided Laplace product tests to the OS-I ordered source
+current.
+
+### 2026-05-24: Descended BVT pairing is a right Section 4.3 quotient CLM
+
+Scratch-first check:
+
+```text
+test/proofideas_bvt_pairing_clm.lean
+```
+
+Promoted support in:
+
+```text
+OSReconstruction/Wightman/Reconstruction/WickRotation/Section43FourierLaplaceClosure.lean
+```
+
+New production facts:
+
+```lean
+bvt_W_pairing_descended_frequencyProjection_add_right
+bvt_W_pairing_descended_frequencyProjection_smul_right
+bvt_W_pairing_descended_frequencyProjection_rightCLM
+bvt_W_pairing_descended_frequencyProjection_rightCLM_apply
+```
+
+Mathematical content: fixing the left Section 4.3 positive-energy quotient now
+turns the descended BVT Wightman tensor pairing into a genuine continuous
+linear functional of the right quotient.  This is the scalar CLM surface needed
+to compose the product-source carrier with one-sided Laplace/spatial source
+data, without treating `ZeroDiagonalSchwartz.ofClassical` as a linear map.
+
+Verification:
+
+```bash
+lake env lean -DmaxHeartbeats=1200000 \
+  OSReconstruction/Wightman/Reconstruction/WickRotation/Section43FourierLaplaceClosure.lean
+lake env lean -DmaxHeartbeats=1200000 \
+  OSReconstruction/Wightman/Reconstruction/WickRotation/Section43FourierLaplaceProductSourceCarrier.lean
+lake env lean -DmaxHeartbeats=1200000 \
+  test/proofideas_bvt_pairing_clm.lean
+```
+
+All three exact checks exit `0`.  The remaining W4 producer is still the
+book-faithful OS-II/MZ branch-carrier construction and common real-edge
+identification; this step supplies the quotient-linear scalar substrate for
+that construction.
+
+### 2026-05-24: Product-source values of the BVT time/spatial right CLM
+
+Scratch-first extension:
+
+```text
+test/proofideas_bvt_pairing_clm.lean
+```
+
+Promoted support in:
+
+```text
+OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanOSIIProductTensorSchwingerFunctional.lean
+```
+
+New production facts:
+
+```lean
+bvt_W_pairing_descended_timeSpatialRightCLM
+bvt_W_pairing_descended_timeSpatialRightCLM_apply
+bvt_timeSpatialRightCLM_productSource_eq_osScalar_orderedSources
+```
+
+Mathematical content: the fixed-left BVT quotient CLM now composes with a
+fixed-spatial Section 4.3 time/spatial tensoring map to give a scalar CLM on
+finite time-difference Schwartz tests.  On one-sided Laplace product time
+tests with compact spatial Fourier factors, this scalar CLM is identified with
+the concrete compact ordered-source Schwinger scalar exposed by the
+product-source carrier.
+
+Verification:
+
+```bash
+lake env lean -DmaxHeartbeats=1200000 \
+  OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanOSIIProductTensorSchwingerFunctional.lean
+lake env lean -DmaxHeartbeats=1200000 \
+  test/proofideas_bvt_pairing_clm.lean
+```
+
+Both exact checks exit `0`.  The remaining producer is still the OS-II/MZ
+branch-carrier/common-edge theorem; this step gives that theorem a checked
+quotient-linear scalar time-shell target.
+
+### 2026-05-24: Product-time multilinear form of the BVT scalar probe
+
+Scratch-first extension:
+
+```text
+test/proofideas_bvt_pairing_clm.lean
+```
+
+Promoted support in:
+
+```text
+OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanOSIIProductTensorSchwingerFunctional.lean
+```
+
+New production facts:
+
+```lean
+bvt_W_pairing_descended_timeSpatialRightProductMultilinear
+bvt_W_pairing_descended_timeSpatialRightProductMultilinear_apply
+bvt_timeSpatialRightProductMultilinear_oneSidedLaplace_eq_osScalar_orderedSources
+```
+
+Mathematical content: the fixed-left BVT time/spatial right scalar CLM now
+has a continuous multilinear product-factor form.  On compact positive
+one-sided Laplace product factors, its value is the same concrete compact
+ordered-source Schwinger scalar from the Section 4.3 product-source carrier.
+This is the product-factor surface needed by the OS-II Fubini/Laplace lane
+before the remaining branch-carrier/common-edge theorem is applied.
+
+Verification:
+
+```bash
+lake env lean -DmaxHeartbeats=1200000 \
+  test/proofideas_bvt_pairing_clm.lean
+lake env lean -DmaxHeartbeats=1200000 \
+  OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanOSIIProductTensorSchwingerFunctional.lean
+```
+
+Both exact checks exit `0`.
+
+### 2026-05-24: Flat-tube branch carrier closed by explicit total branch
+
+Scratch-first extension:
+
+```text
+test/proofideas_osii_parametric_flat_tube_total_eq.lean
+```
+
+Promoted support in:
+
+```text
+OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanOSIIParametricFlatTubeBranch.lean
+```
+
+New production facts:
+
+```lean
+osiiParametricFlatTubeBranch_eq_totalLog_on_flatTube
+exists_osiiTotalLogSemigroupBranch_extension_of_parametricFlatTubeBranch
+osiiTotalLogSemigroupBranch_eq_matchingBaseDirectional_on_flatCoordinate
+```
+
+Mathematical content: the previously checked coordinate-line OS-II identity
+now transports to the entire one-coordinate flat log-tube union.  The explicit
+total-time semigroup branch is the full `sum |Im r_i| < pi / 2` log-domain
+representative, extends the parametric flat-tube branch on the flat union, and
+restricts to each matching-base directional branch on its own flat coordinate
+tube.  This closes the local flat-tube branch-carrier part of the OS-II/MZ
+packet; it does not yet prove the product-source BVT-to-shifted-shell pairing
+comparison needed by `exists_acrOne_productTensor_witness`.
+
+Verification:
+
+```bash
+lake env lean -DmaxHeartbeats=1200000 \
+  test/proofideas_osii_parametric_flat_tube_total_eq.lean
+lake env lean -DmaxHeartbeats=1200000 \
+  OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanOSIIParametricFlatTubeBranch.lean
+lake env lean -DmaxHeartbeats=1200000 \
+  OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanOSIIFlatPositiveTimeBranch.lean
+lake env lean -DmaxHeartbeats=1200000 \
+  OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightman.lean
+```
+
+All four exact checks exit `0`; the main `OSToWightman.lean` check still has
+the single pre-existing `exists_acrOne_productTensor_witness` theorem-level
+`sorry`.
+
+### 2026-05-24: Common-time real-edge transport lifted to product-source shells
+
+Scratch-first extensions:
+
+```text
+test/proofideas_osii_common_time_transport.lean
+test/proofideas_osii_positive_shift_zero_diagonal_shell.lean
+test/proofideas_osii_common_time_product_source_transport.lean
+```
+
+Promoted support in:
+
+```text
+OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanOSIIFlatPositiveTimeBranch.lean
+OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanOSIIProductTensorRealEdge.lean
+OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanOSIIProductTensorSchwingerFunctional.lean
+```
+
+New production facts:
+
+```lean
+osiiFlatTotalTimeBranch_single_wickRotate_common_time_edge_eq_schwinger
+timeShiftSchwartzNPoint_preserves_ordered_positive_tsupport_of_nonneg
+VanishesToInfiniteOrderOnCoincidence_osConjTensorProduct_leftTimeShift_timeShift_sum_of_strictPositive
+ZeroDiagonalSchwartz_ofClassical_osConjTensorProduct_leftTimeShift_timeShift_sum_of_strictPositive
+osii_total_positive_time_real_edge_single_leftTimeShift_eq_schwinger_timeShift
+integral_osii_total_positive_time_real_edge_single_leftTimeShift_eq_schwinger_timeShift
+```
+
+Mathematical content: the common-time OS `E1` transport now survives the
+scalar/product-source interfaces.  Pointwise on the ordered Wick edge, the
+common-time shifted flat branch is the Schwinger functional of
+`(timeShiftSchwartzNPoint a f).osConjTensorProduct
+  (timeShiftSchwartzNPoint T g)`.  On the positive time-difference variables,
+the same statement holds under an arbitrary Schwartz weight in
+`Fin m -> ℝ`, so the transport is available in the form needed by the
+source-current/Fubini layer.  The new zero-diagonal facts certify that these
+left/right shifted shells are honest subtypes on the strict positive source
+orthant.
+
+This does not close W4.  The remaining genuine gap is to connect this
+left-shifted shell identity to the concrete BVT/source-current time-shell CLMs:
+their strict-positive imaginary-axis kernels must be identified with the new
+left-shifted shells, their compact product-source pairings must match the BVT
+probe, and then the identity theorem/MZ package must propagate the real-edge
+common-time transport to common complex translation invariance of the final
+`ACR(1)` witness.
+
+Verification:
+
+```bash
+lake env lean -DmaxHeartbeats=1200000 \
+  test/proofideas_osii_common_time_transport.lean
+lake env lean -DmaxHeartbeats=1200000 \
+  test/proofideas_osii_positive_shift_zero_diagonal_shell.lean
+lake env lean -DmaxHeartbeats=1200000 \
+  test/proofideas_osii_common_time_product_source_transport.lean
+lake env lean -DmaxHeartbeats=1200000 \
+  OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanOSIIFlatPositiveTimeBranch.lean
+lake env lean -DmaxHeartbeats=1200000 \
+  OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanOSIIProductTensorRealEdge.lean
+lake env lean -DmaxHeartbeats=1200000 \
+  OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanOSIIProductTensorSchwingerFunctional.lean
+lake env lean -DmaxHeartbeats=1200000 \
+  OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightman.lean
+```
+
+All exact checks exit `0`; `OSToWightman.lean` still reports only the single
+pre-existing W4 theorem-level `sorry`.
+
+### 2026-05-24: Local compact-source left-shifted CLM consumer
+
+Scratch-first extension:
+
+```text
+test/proofideas_bvt_left_timeshift_kernel.lean
+```
+
+Promoted support in:
+
+```text
+OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanOSIIProductTensorSchwingerFunctional.lean
+```
+
+New production facts:
+
+```lean
+eq_leftShifted_schwinger_timeShift_of_bvt_psiZ_integrals_eq
+schwinger_leftShiftedShell_productSource_integral_eq_timeCLM_on_tsupport
+eq_leftShifted_schwinger_timeShift_single_of_positiveBranch_pairings_eq
+```
+
+Mathematical content:
+
+1. The concrete descended `ψ_Z` BVT integral now selects the corresponding
+   common-left-shifted Schwinger shell.  The remaining producer is equality of
+   the actual BVT source-current integrals, not an endpoint shortcut or an
+   assumed time-shell kernel.
+2. For one fixed compact positive product source, the CLM/Fubini consumer only
+   needs the honest shifted-shell kernel identity on that source's
+   topological support.  This is the local cutoff/source-current form needed
+   by the OS-II edge transport: a global strict-positive kernel identity is
+   stronger than the compact-source argument requires.
+3. The OS-II real-edge side now also has a direct pointwise consumer:
+   equality of the common-left-shift positive-branch split pairings against
+   all compact positive product sources identifies the corresponding
+   left-shifted Schwinger shells without inserting a time-shell CLM.
+4. The next genuine producer is therefore sharper: construct the cutoff
+   branch/source-current CLM for the selected compact source, prove its
+   support-local imaginary-axis kernel identity, and use the OS-II/MZ
+   real-edge equality to identify the two compact-source BVT pairings.
+
+Verification:
+
+```bash
+lake env lean -DmaxHeartbeats=1200000 \
+  OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanOSIIProductTensorSchwingerFunctional.lean
+lake env lean -DmaxHeartbeats=1200000 \
+  test/proofideas_bvt_left_timeshift_kernel.lean
+lake env lean -DmaxHeartbeats=1200000 \
+  OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightman.lean
+git diff --check -- \
+  OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanOSIIProductTensorSchwingerFunctional.lean \
+  test/proofideas_bvt_left_timeshift_kernel.lean
+```
+
+All exact checks exit `0`.  `OSToWightman.lean` still reports only the single
+pre-existing W4 theorem-level `sorry`.
+
+### 2026-05-24: BVT-to-shell delta-smearing consumer
+
+Scratch-first extension:
+
+```text
+test/proofideas_bvt_selected_current_shell_bridge.lean
+```
+
+Promoted support in:
+
+```text
+OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanOSIIProductTensorSchwingerFunctional.lean
+```
+
+New production fact:
+
+```lean
+bvt_imagAxis_eq_leftShiftedShell_of_productSource_pairings_eq
+```
+
+Mathematical content:
+
+1. The support-local BVT-to-shell identity is no longer an independent
+   hypothesis once compact positive product-source pairings are known.
+   Product-source approximate identities recover the pointwise strict-positive
+   value.
+2. The proof discharges both continuity obligations: the BVT side uses the
+   fixed-left time/spatial multilinear probe, and the Schwinger shell uses the
+   OS-II total positive-time real-edge continuity theorem.
+3. The selected-current scratch consumer now has the sharper input
+   `proofideas_selected_current_value_eq_leftShiftedShell_integral_of_pairings_eq`:
+   product-source pairing equality implies the support-local identity on
+   `tsupport (section43TimeProductSource gs2).f`, and the selected cutoff
+   current then gives the compact shifted-shell integral.
+4. The remaining genuine producer is the concrete compact product-source
+   pairing equality between the actual BVT probe and the left-shifted
+   Schwinger shell.  This is the OS II/Jost real-edge step; it should be proved
+   directly, not hidden behind endpoint or scalar-`Z` substitutions.
+
+Verification:
+
+```bash
+lake env lean -DmaxHeartbeats=1200000 \
+  test/proofideas_bvt_selected_current_shell_bridge.lean
+lake env lean -DmaxHeartbeats=1200000 \
+  OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanOSIIProductTensorSchwingerFunctional.lean
+lake build \
+  OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIProductTensorSchwingerFunctional
+lake env lean -DmaxHeartbeats=1200000 \
+  OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightman.lean
+```
+
+All commands exit `0`; `OSToWightman.lean` still reports only the single
+pre-existing W4 theorem-level `sorry`.
+
+### 2026-05-24: OS-II log-to-flat chart handoff
+
+Scratch-first extension:
+
+```text
+test/proofideas_osii_log_to_flat_branch.lean
+```
+
+Promoted support in:
+
+```text
+OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanOSIIFlatPositiveTimeBranch.lean
+```
+
+New production fact:
+
+```lean
+osiiFlatTotalTimeBranch_of_log_time_eq_totalLog
+```
+
+Mathematical content:
+
+1. On the OS-II exponential chart `u_i = I * exp r_i`, the flattened
+   time-difference semigroup parameter `sum_i (-I) u_i` is exactly
+   `sum_i exp r_i`.
+2. Therefore the flat ACR(1) total-time branch and the log-domain total
+   semigroup branch are the same matrix element on that chart.
+3. This supports the faithful OS-II/V.1 route from log-domain MZ carriers back
+   to flat time-difference coordinates.  It does not replace the remaining
+   product-source pairing producer.
+
+Verification:
+
+```bash
+lake env lean -DmaxHeartbeats=1200000 \
+  test/proofideas_osii_log_to_flat_branch.lean
+lake env lean -DmaxHeartbeats=1200000 \
+  OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanOSIIFlatPositiveTimeBranch.lean
+```
+
+Both commands exit `0`.  The next genuine producer remains the concrete
+compact positive product-source pairing equality between the fixed-left BVT
+probe and the left-shifted Schwinger shell.
+
+### 2026-05-24: Pairing producer reduced to fixed BVT time-shell CLM packet
+
+Scratch-only theorem:
+
+```lean
+proofideas_productSource_pairings_eq_of_bvt_timeCLM_and_leftShifted_kernel
+```
+
+in:
+
+```text
+test/proofideas_bvt_selected_current_shell_bridge.lean
+```
+
+Mathematical content: the all-compact-positive product-source pairing equality
+needed by `bvt_imagAxis_eq_leftShiftedShell_of_productSource_pairings_eq` is
+proved once the fixed BVT probe is represented by a single time-shell CLM `Z`
+with two properties:
+
+1. `Z` evaluated on one-sided Laplace product tensors gives the BVT compact
+   product-source pairings.
+2. `Z` evaluated on strict-positive imaginary-axis product kernels is the
+   honest left-shifted Schwinger shell.
+
+This is the Lean-pinned form of the OS-II/Jost branch/source-current producer.
+It should be attacked directly next; promoting another consumer around this
+packet would be wrapper churn.
+
+Verification:
+
+```bash
+lake env lean -DmaxHeartbeats=1200000 \
+  test/proofideas_bvt_selected_current_shell_bridge.lean
+```
+
+The check exits `0`.

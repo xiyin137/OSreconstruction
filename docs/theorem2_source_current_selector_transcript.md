@@ -1,15 +1,1497 @@
 # Theorem 2 Source-Current Selector Transcript
 
-Status: focused live transcript for the two remaining source-current holes in
-`BHW.os45CommonEdge_localFigure24DifferenceGerm_of_OSI45`.
+Status: live transcript for the source-current selector audit in
+`BHW.os45CommonEdge_localFigure24DifferenceGerm_of_OSI45` and its faithful
+Ruelle/Jost replacement surface.
 
-This note is not a new theorem surface and not a closure declaration.  Its
-purpose is to make the direct producer body Lean-facing before returning to
-Lean.  The implementation should expand these steps as local `have`s inside
-the Hdiff producer, except for neutral analytic/topological helpers that do
-not mention `Hdiff`, `Word`, `Wadj`, zero-height equality, or theorem 2.
+This note is not a final theorem-2 closure declaration.  Its purpose is to
+record which local selector steps are genuine and which must be replaced by
+the book-route Ruelle/Jost input instead of hidden as endpoint rewrites.
 
 ## Latest Delta
+
+May 24, 2026 local boundary handoff check:
+
+```lean
+BHW.proofideas_bvt_W_eq_of_selectedJostData_local_compactRealPatch
+```
+
+in
+
+```text
+test/proofideas_selected_jost_to_local_boundary_locality.lean
+```
+
+Verification:
+
+```bash
+lake env lean -DmaxHeartbeats=1200000 \
+  test/proofideas_selected_jost_to_local_boundary_locality.lean
+lake env lean -DmaxHeartbeats=1200000 \
+  OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanLocalityOS45SelectedCompact.lean
+lake env lean -DmaxHeartbeats=1200000 \
+  test/proofideas_boundary_locality_patch_cover_provider.lean
+lake env lean -DmaxHeartbeats=1200000 \
+  test/proofideas_os45_selected_jost_to_compact_packet.lean
+```
+
+All exit code `0`.  This is the checked downstream handoff from selected Jost
+data to one local boundary-locality packet: `SelectedAdjacentDistributionalJostAnchorData`
+plus adjacent ET-overlap connectedness gives
+`BHW.os45CompactFigure24WickPairingEq_of_selectedJostData`, and the existing
+canonical-shell consumer gives compact-test equality for tests whose
+topological support lies in that packet's identity real patch.
+
+This does **not** close the public Theorem-2 locality sorry.  The remaining
+non-wrapper producer is now the classical OS I section 4.5/Jost compact-cover
+theorem:
+
+```lean
+∀ f : SchwartzNPoint d n,
+  HasCompactSupport (f : NPointDomain d n → ℂ) →
+  (∀ x, f.toFun x ≠ 0 →
+    MinkowskiSpace.AreSpacelikeSeparated d
+      (x i) (x ⟨i.val + 1, hi⟩)) →
+  ∃ (α : Type) (_ : Fintype α),
+    ∃ hCompact : α → BHW.OS45CompactFigure24WickPairingEq
+        (d := d) n i hi OS lgc,
+      tsupport (f : NPointDomain d n → ℂ) ⊆
+        ⋃ a : α, (hCompact a).realPatch 1
+```
+
+That is the next theorem to prove faithfully from the book route: local Jost
+patches around each adjacent-spacelike real configuration, compact finite
+subcover, then the already checked boundary transfer.  A bare Hdiff germ at
+the canonical source patch is insufficient unless its real patch is transported
+to cover the actual support point.
+
+Promoted the local `S'_n` branch-to-pair-data bridge on May 22, 2026:
+
+```lean
+BHW.os45_BHWJostPairData_of_zeroHeight_pairingsCLM
+BHW.os45CompactFigure24WickPairingEq_of_sPrimeBranchData
+BHW.os45_BHWJostPairData_on_figure24SourcePatch_of_zeroHeight_pairingsCLM
+BHW.os45CompactFigure24WickPairingEq_of_zeroHeight_pairingsCLM
+```
+
+in
+
+```text
+OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanLocalityOS45PairData.lean
+```
+
+Scratch gate:
+
+```bash
+lake env lean test/proofideas_os45_pairdata_from_sprime_seed.lean
+```
+
+Production verification:
+
+```bash
+lake env lean \
+  OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanLocalityOS45PairData.lean
+```
+
+Both exit code `0`; targeted scan of the new files has no
+`sorry`/`admit`/`axiom`, and `git diff --check` passes.  The mathematical
+content is the checked Stage C -> D -> E carrier assembly: zero-height
+common-edge EOW pairings produce the local S-prime seed, the authorized local
+BHW theorem produces one branch on the selected two-sector hull, `S.toPairData`
+turns that branch into the source-patch BHW/Jost pair carrier, and the existing
+compact constructor turns the pair carrier into an
+`OS45CompactFigure24WickPairingEq`.  The remaining producer is now sharper:
+construct the zero-height common-edge pairing family, or equivalently the
+local `S'_n` branch data, for the compact adjacent-spacelike patch cover.
+
+Promoted the adjacent boundary-locality density bridge on May 22, 2026:
+
+```lean
+BHW.bvt_W_eq_of_compactFigure24Patch_at_tsupport
+BHW.bvt_W_adjacent_swap_of_compactFigure24Patch_cover_provider
+```
+
+in
+
+```text
+OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanLocalityCanonicalShell.lean
+```
+
+Scratch gate:
+
+```bash
+lake env lean test/proofideas_boundary_locality_patch_cover_provider.lean
+```
+
+Production verification:
+
+```bash
+lake env lean \
+  OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanLocalityCanonicalShell.lean
+```
+
+Both exit code `0`; `git diff --check` passes on the touched files.  The
+mathematical content is the final density step for the public adjacent
+`bvt_W` locality statement plus the finite-subcover extraction just before it.
+First, a local packet at every point of a compact topological support gives a
+finite packet family by compactness.  Second, arbitrary Schwartz tests are
+reduced to compactly supported adjacent-spacelike truncations, and each compact
+truncation is handled by the checked finite Figure-2-4 patch-cover theorem.
+The remaining producer is now precisely the local packet/compact-cover
+statement for adjacent-spacelike supports.
+
+Corrected the Hdiff producer surface on May 22, 2026.  The direct finite
+chart-corridor proof had reached the genuine circular leaf
+
+```lean
+Tendsto (fun eps => SourcePathMoving eps - WickPathMoving eps)
+  (nhdsWithin 0 (Set.Ioi 0)) (nhds 0)
+```
+
+Endpoint DCT and chart-overlap retargeting do not prove this leaf.  The
+faithful Jost/Ruelle route supplies the missing content as selected
+distributional Jost anchor data plus adjacent overlap connectedness.  The
+production theorem
+
+```lean
+BHW.os45CommonEdge_localFigure24DifferenceGerm_of_OSI45
+```
+
+now exposes those inputs explicitly:
+
+```lean
+(hOverlap :
+  ∀ (j : Fin n) (hj : j.val + 1 < n),
+    IsConnected
+      {z : Fin n → Fin (d + 1) → ℂ |
+        z ∈ BHW.ExtendedTube d n ∧
+          BHW.permAct (d := d)
+            (Equiv.swap j ⟨j.val + 1, hj⟩) z ∈
+            BHW.ExtendedTube d n})
+(hData : SelectedAdjacentDistributionalJostAnchorData OS lgc n)
+```
+
+and delegates to the checked Ruelle producer
+`BHW.os45_hdiff_of_selectedJostData`.
+
+Scratch gate:
+
+```bash
+lake env lean test/proofideas_hdiff_selected_adapter.lean
+```
+
+Production verification:
+
+```bash
+lake env lean -DmaxHeartbeats=1200000 \
+  OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanLocalityOS45Figure24Hdiff.lean
+```
+
+Both exit code `0`.  A targeted scan of the touched Lean files finds no
+`sorry`/`admit`/`axiom`.
+
+Promoted the OS45 source-side affine-ray coordinate lemma on May 22, 2026:
+
+`OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanLocalityOS45SourceSide.lean`
+now contains
+
+```lean
+BHW.os45FlatCommonChartSourceSideDirection
+BHW.os45FlatCommonChartSourceSide_affine
+```
+
+The theorem proves the exact coordinate identity
+
+```lean
+os45FlatCommonChartSourceSide d n rho sgn eps eta u
+  =
+os45FlatCommonChartSourceSide d n rho sgn 0 eta u
+  + fun k mu => (eps : Complex) *
+      os45FlatCommonChartSourceSideDirection rho sgn eta k mu
+```
+
+This is only the straight-ray algebra for the positive source-side current.
+It does not select a boundary value and does not compare the source-side
+endpoint with the Wick endpoint.  It is the neutral coordinate input needed
+before stating the honest scalar OS/Jost boundary theorem for the live
+`SourcePathMoving - WickPathMoving` gap.
+
+Verification:
+
+```bash
+lake env lean OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanLocalityOS45SourceSide.lean
+```
+
+Exit code `0`; no `sorry`/`admit`/`axiom` matches in the touched Lean file.
+
+Started a pinned Gemini Deep Research theorem-shape check for the live Hdiff
+selector:
+
+```text
+v1_Chd3VnNRYXNDcExMTDl4TjhQcHVqUXNBYxIXd1ZzUWFzQ3BMTEw5eE44UHB1alFzQWM
+```
+
+The question asks whether the finite chart-corridor proof should try to prove
+the source-path/Wick-path limit directly, or whether the faithful OS/Jost
+route is to redirect the current theorem surface through the already checked
+scalar real-edge/Ruelle-overlap producer.  The interaction is currently
+`in_progress`.
+
+Fresh Hdiff verification after the support edit:
+
+```bash
+lake env lean -DmaxHeartbeats=1200000 \
+  OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanLocalityOS45Figure24Hdiff.lean
+```
+
+Log: `/tmp/osr_hdiff_after_affine_1779457050.log`, exit code `1`.
+
+The ordinary hard goal is unchanged:
+
+```lean
+Tendsto (fun eps => SourcePathMoving eps - WickPathMoving eps)
+  (nhdsWithin 0 (Set.Ioi 0)) (nhds 0)
+```
+
+The context already contains the endpoint and retargeting facts
+`hSourcePathMoving_endpoint`, `hWickPathMoving_selected`,
+`hpath_Aext_transport_equiv`, and `hSourceMovingExtendF_gap_limit`.  This
+confirms the current diagnosis: endpoint DCT reaches the source-side endpoint,
+and Wick DCT selects the Schwinger value, but the proof still needs the
+OS/Jost distributional current transport between those two boundary values.
+
+Checked the theorem-2 adjacent-overlap narrowing on May 22, 2026:
+
+`test/proofideas_adjacent_overlap_direct_connected.lean` records the local
+Figure-2-4 replacement for the generic permutation-flow blocker.  It proves
+that a single adjacent real double-coset generation packet for
+`BHW.adjSwapForwardOverlapIndexSet` gives connectedness of the adjacent
+extended-tube overlap:
+
+```lean
+BHW.proofideas_adjacent_overlap_connected_of_real_double_coset_generation
+```
+
+The production bridge now lives in
+`OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanSelectedWitness.lean`:
+
+```lean
+bvt_selectedAdjacentOverlap_connected_of_adjacentIndexGeneration
+bvt_selectedAdjacentOverlap_connected_of_adjacentIndexGeneration_all
+bvt_F_selectedAdjacentPermutationEdgeData_of_selectedJostData_and_adjacentIndexGeneration
+```
+
+This does not prove the double-coset generation itself.  It removes ambiguity
+about the next theorem-2 geometry target: prove the adjacent-index generation
+for the local swap, then feed the already-checked selected-witness/Ruelle
+consumer.  The broader
+`BHW.blocker_isConnected_permSeedSet_nontrivial` remains generic
+permutation-flow infrastructure, not the preferred theorem-2 connectedness
+surface.
+
+Verification:
+
+```bash
+lake env lean test/proofideas_adjacent_overlap_direct_connected.lean
+lake env lean OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanSelectedWitness.lean
+lake env lean OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanRuelleOverlap.lean
+```
+
+All exit code `0`.  A scan of the touched Lean files finds no
+`sorry`/`admit`/`axiom`.
+
+Checked finite Figure-2-4 patch-cover assembly on May 22, 2026:
+
+`OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanLocalityCanonicalShell.lean`
+now exposes
+
+```lean
+BHW.bvt_W_eq_swapped_of_finite_compactFigure24Patch_cover
+BHW.bvt_W_eq_of_finite_compactFigure24Patch_cover
+```
+
+This theorem partitions a compactly supported test subordinate to finitely many
+identity real patches carrying `OS45CompactFigure24WickPairingEq`, applies the
+local canonical-shell/Wightman equality on each piece, and re-sums by
+`bvt_W_linear`.  The second statement exposes the same result for an arbitrary
+swapped test `g` satisfying the usual pointwise swap equation.  This closes the
+finite partition assembly step but does not assert that arbitrary
+adjacent-spacelike compact support admits such a cover.  That remaining
+producer is still the Jost/Ruelle/OS-I compact boundary theorem.
+
+Verification:
+
+```bash
+lake env lean test/proofideas_locality_finite_patch_cover.lean
+lake env lean OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanLocalityCanonicalShell.lean
+```
+
+Both exit code `0`.
+
+Checked and promoted the local `S'_n` consumer on May 22, 2026:
+
+`OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanRuelleOverlap.lean`
+now exposes
+
+```lean
+BHW.os45_hdiff_of_sPrimeBranchData_local
+```
+
+The theorem proves the OS45 Hdiff germ directly from
+`OS45BHWJostSPrimeBranchData`, with no global adjacent-overlap connectedness
+input.  Its proof takes `Ucx := H.ΩJ` and `Hdiff := 0`; the common-edge trace is
+the equality of the ordinary and adjacent restrictions of the same local
+`S'_n` branch.  This narrows the remaining genuine producer to the local EOW
+seed / selected-data Ruelle seed that constructs the `S'_n` branch.
+
+Verification:
+
+```bash
+lake env lean test/proofideas_os45_hdiff_from_sprime_branch_local.lean
+lake env lean OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanRuelleOverlap.lean
+```
+
+Both exit code `0`.
+
+Checked a negative Lean probe for the remaining adjacent-overlap geometry on
+May 22, 2026:
+
+`test/proofideas_forward_tube_swap_warning.lean` proves
+
+```lean
+BHW.proofideas_forwardTube_swap_counterexample_mem
+BHW.proofideas_forwardTube_swap_counterexample_not_mem
+```
+
+The concrete `d = 1`, `n = 2` example lies in the public successive-difference
+`ForwardTube`, but its adjacent swap does not.  Thus the tempting shortcut
+`adjSwapForwardOverlapSet = ForwardTube` is false.  The adjacent-overlap
+connectedness needed for the E->R route has to be the genuine Jost/Ruelle
+connectedness of `T'_n ∩ s_i T'_n`, not a permutation-invariance fact about
+the base forward tube.
+
+Verification:
+
+```bash
+lake env lean test/proofideas_forward_tube_swap_warning.lean
+```
+
+Exit code `0`.
+
+The previous pinned Deep Research overlap interaction
+`v1_ChdpOTRQYXRDZUZKamtuc0VQZ28yVnNRaxIXaTk0UGF0Q2VGSmprbnNFUGdvMlZzUWs`
+failed with an API-side processing error.  A replacement pinned Deep Research
+interaction is running as
+`v1_ChdDLVVQYXJ6QkJwX1B2ZElQcHRfaDZBSRIXQy1VUGFyekJCcF9QdmRJUHB0X2g2QUk`.
+
+Promoted selected-data flat seed from scratch to production on May 22, 2026:
+
+`OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanRuelleOverlap.lean`
+now exposes
+
+```lean
+BHW.os45_flat_seed_of_selectedJostData
+```
+
+This is the production version of the checked replacement for the long
+per-piece fixed-selector endpoint route.  From
+`SelectedAdjacentDistributionalJostAnchorData`, adjacent ET-overlap
+connectedness, and the local Ruelle common-edge source window, it produces the
+connected open initial-sector `EqOn` seed needed by the Figure-2-4 flat
+common-chart route.  It does not construct the selected data or the adjacent
+overlap connectedness; those remain the honest Jost/Ruelle/OS-I producers.
+
+Verification:
+
+```bash
+lake env lean OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanRuelleOverlap.lean
+```
+
+Exit code `0`.
+
+Checked Step-5 boundary geometry and d=0 connectedness warning on May 22,
+2026:
+
+`OSReconstruction/ComplexLieGroups/JostRuelleStep5.lean` now contains the
+first production Step-5 boundary facts needed by the faithful Jost/Ruelle
+packet:
+
+```lean
+BHW.jostRuelleStep5Seed_mem_forwardTube
+BHW.jostRuelleStep5RealBoundaryReal
+BHW.jostRuelleStep5RealBoundary_eq_ofReal
+BHW.jostRuelleStep5RealBoundary_spacelike
+BHW.jostRuelleStep5RealBoundary_mem_extendedTube
+```
+
+These prove that the explicit seed `(i, -cot φ, 0, ...)` is in the one-point
+forward tube, that the real boundary vector is spacelike when `sin φ ≠ 0`, and
+that the corresponding complex boundary point lies in the extended tube as the
+`L(iφ)` image of the seed.  This is direct Jost Appendix-II Step-5 geometry,
+not an endpoint selector replacement.
+
+The scratch file `test/proofideas_permseed_d0_counter_surface.lean` also proves
+
+```lean
+BHW.proofideas_permSeedSet_d0_nontrivial_empty
+BHW.proofideas_not_isConnected_permSeedSet_d0_nontrivial
+```
+
+showing that the current dimension-polymorphic
+`blocker_isConnected_permSeedSet_nontrivial` statement is too strong at
+`d = 0`: nontrivial permutation seed overlap is empty there, while mathlib
+`IsConnected` includes nonemptiness.  The theorem-2 route has `hd : 2 ≤ d`, so
+the next connected-overlap surface should be dimension-split or carry the
+nonzero/high-dimensional hypothesis explicitly.
+
+The production blocker surface has therefore been corrected:
+`BHW.blocker_isConnected_permSeedSet_nontrivial` now requires `[NeZero d]`, and
+`BHW.bvt_selectedAdjacentOverlap_connected_of_permSeedGeometry` carries that
+same nonzero-dimensional call-site surface.  This does not close the two
+existing blocker `sorry`s; it removes the false dimension-zero obligation from
+the E->R-critical geometry route.
+
+Verification:
+
+```bash
+lake env lean OSReconstruction/ComplexLieGroups/JostRuelleStep5.lean
+lake env lean test/proofideas_permseed_d0_counter_surface.lean
+lake env lean OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanRuelleOverlap.lean
+lake env lean OSReconstruction/ComplexLieGroups/Connectedness/BHWPermutation/PermutationFlowBlocker.lean
+lake env lean OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanSelectedWitness.lean
+lake env lean OSReconstruction/ComplexLieGroups/Connectedness/BHWPermutation/PermutationFlow.lean
+```
+
+All exit `0` (the blocker file still reports the two existing `sorry`
+warnings; `PermutationFlow.lean` has older warnings/try-this output).
+
+Fresh Deep Research interaction
+`v1_ChdVOFVQYW9HdEZJT1p2ZElQNFlQTDhRaxIXVThVUGFvR3RGSU9admRJUDRZUEw4UWs`
+completed.  Its route verdict agrees with the current correction: a direct
+`SourcePathMoving`/`WickPathMoving` contour homotopy over boundary values is
+not the faithful proof surface; construct
+`SelectedAdjacentDistributionalJostAnchorData` and adjacent ET-overlap
+connectedness from Vladimirov/Jost/Bogoliubov Edge-of-the-Wedge boundary data,
+then feed the checked Ruelle common-edge compact-test boundary consumer.
+Raw response saved at `/tmp/gemini_os45_next_surface_completed.json`.
+
+Checked selected-data-to-flat-seed scratch splice on May 22, 2026:
+
+`test/proofideas_os45_selected_data_to_flat_seed.lean` now proves
+
+```lean
+BHW.proofideas_os45_flat_seed_of_selectedJostData
+```
+
+with no `sorry`/`admit`/`axiom`.  The theorem composes the production
+selected-data compact-test boundary theorem
+
+```lean
+BHW.os45_ruelle_commonEdge_boundary_hint_of_selectedJostData
+```
+
+with the production Ruelle consumer
+
+```lean
+BHW.os45_initialSectorEqOn_open_of_ruelle_commonEdge_boundary
+```
+
+and produces exactly the local initial-sector EqOn seed shape currently needed
+at Hdiff's `hflat_seed` block:
+
+```lean
+∃ W,
+  IsOpen W ∧ IsPreconnected W ∧
+  commonEdgeSeed u0 ∈ W ∧
+  W ⊆ ExtendedTube d n ∩ permutedExtendedTubeSector d n P.τ ∧
+  Set.EqOn (extendF (bvt_F OS lgc n))
+    (fun z => extendF (bvt_F OS lgc n) (permAct P.τ z)) W
+```
+
+Verification:
+
+```bash
+lake build OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanRuelleOverlap
+lake env lean test/proofideas_os45_selected_data_to_flat_seed.lean
+```
+
+Both exit `0`.  This confirms the production replacement shape for the old
+per-piece fixed selector: construct the selected Jost/Ruelle compact-test
+boundary packet and adjacent overlap connectedness, then feed this seed into
+Hdiff.  It is not a proof of the selected data itself and should not be read
+as a closure of the OS-I/Jost producer.
+
+Checked flat-pairings-to-Ruelle-hint scratch theorem on May 22, 2026:
+
+`test/proofideas_os45_ruelle_hint_from_flat_pairings.lean` now proves
+
+```lean
+BHW.proofideas_ruelle_commonEdge_hint_of_flat_zeroHeight_pairings
+```
+
+with no `sorry`/`admit`/`axiom`.  The theorem states that if the old flat
+zero-height ordinary and adjacent pairings have already been selected against
+the same CLM `T`, then the new Ruelle common-edge compact-test boundary
+hypothesis follows after the checked common-edge change of variables and
+cutoff removal.  It uses
+
+```lean
+BHW.os45FlatCommonChart_ordinaryCommonBoundary_integral_eq_sourcePullback
+BHW.os45FlatCommonChart_adjacentCommonBoundary_integral_eq_sourcePullback
+D.toSchwartzNPointCLM_eq_plain_of_tsupport_subset_edge
+```
+
+and cancels the nonzero Jacobian `BHW.os45CommonEdgeFlatJacobianAbs n`.
+
+Verification:
+
+```bash
+lake env lean test/proofideas_os45_ruelle_hint_from_flat_pairings.lean
+```
+
+Exit code `0`.
+
+This pins the current route correction.  The Ruelle theorem surface is the
+right consumer, but feeding it from the already-selected flat plus/minus
+zero-height pairings is not a new proof of the OS-I content; it is equivalent
+bookkeeping.  The next genuine producer remains the transformed-test
+Jost/Ruelle current equality that constructs the common-edge compact-test
+boundary packet directly from OS I §4.5/Jost spacelike data, without first
+forcing the individual fixed selector.
+
+The Deep Research interaction
+`v1_ChZ6YVVQYXZibk90YWMyOG9QaXJUUFVREhZ6YVVQYXZibk90YWMyOG9QaXJUUFVR`
+completed and agrees with this correction: the primary theorem surface should
+be transformed-test contour homotopy/current equality, not pointwise endpoint
+selection.  Raw response saved at
+`/tmp/gemini_os45_current_transport_completed.json`.
+
+Production Ruelle-to-flat connector checked on May 22, 2026:
+
+The scratch OS45 Ruelle splice has now been promoted to
+`OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanRuelleOverlap.lean`.
+The checked production theorem surface is:
+
+```lean
+BHW.os45_sourceCommonEdge_eqOn_of_ruelleOverlap_extendF_pair_eqOn
+BHW.os45_initialSectorEqOn_open_of_ruelleOverlap_extendF_pair_eqOn
+BHW.os45_initialSectorEqOn_open_of_ruelle_linearReal_boundary
+BHW.os45_initialSectorEqOn_open_of_ruelle_commonEdge_boundary
+```
+
+Verification:
+
+```bash
+lake env lean OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanRuelleOverlap.lean
+lake env lean test/proofideas_os45_hdiff_current_transport_blueprint.lean
+```
+
+Both commands exit `0` (the scratch file still has older unused-`simp`
+warnings).  The remaining theorem-2 packet is unchanged mathematically but is
+now production-shaped: prove the concrete common-edge compact-test boundary
+equality
+
+```lean
+∫ x, extendF(bvt_F)
+        (Q.symm (realEmbed (os45CommonEdgeRealPoint 1 x))) * ρ x
+  =
+∫ x, extendF(bvt_F)
+        (permAct P.τ
+          (Q.symm (realEmbed (os45CommonEdgeRealPoint 1 x)))) * ρ x
+```
+
+for compactly supported tests `ρ` supported in the selected Figure-2-4 real
+source window.  This is the Jost/Ruelle real-boundary packet to construct from
+OS I §4.5/Appendix II Step 5.  The checked edge-chain and partition machinery
+inside Hdiff still exposes the same fact from the old selector direction: the
+ordinary leaf reduces to a localized moving source-side current versus Wick
+current comparison, and endpoint DCT alone gives only the wrong endpoint.
+
+Checked Ruelle-to-flat-EOW splice on May 22, 2026:
+
+The scratch file
+`test/proofideas_os45_hdiff_current_transport_blueprint.lean` now proves
+
+```lean
+BHW.proofideas_sourceCommonEdge_eqOn_of_overlap_extendF_pair_eqOn
+BHW.proofideas_initialSectorEqOn_open_of_overlap_extendF_pair_eqOn
+BHW.proofideas_initialSectorEqOn_open_of_ruelle_linearReal_boundary
+BHW.proofideas_initialSectorEqOn_open_of_ruelle_os45_commonEdge_boundary
+```
+
+This is the Lean-facing connector for the corrected route.  If the Ruelle/Jost
+overlap step supplies equality of the two deterministic branches
+
+```lean
+extendF (bvt_F OS lgc n)
+fun z => extendF (bvt_F OS lgc n) (permAct P.τ z)
+```
+
+on a complex neighborhood containing the horizontal Figure-2-4 common-edge
+section, then the existing source-common-edge consumer
+
+```lean
+BHW.os45_BHWJost_initialSectorEqOn_open_of_flatCommonChart_sourceCommonEdge_eqOn
+```
+
+gets exactly the pointwise `hsource_eq` it requires.  Thus the remaining
+mathematical packet is now sharply isolated: construct the OS45
+Ruelle/Jost boundary-distribution input that proves this deterministic overlap
+equality.  The old per-piece fixed source-current selector is a consequence of
+such a seed, not the right primary target.  The second scratch theorem packages
+the full replacement shape for the current `hflat_seed` block: Ruelle overlap
+equality on the common-edge neighborhood directly yields the local initial
+sector EqOn seed currently produced through the long fixed-selector proof.  The
+new OS45 specialization fixes the abstract linear section to
+
+```lean
+L = (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+R = BHW.os45CommonEdgeRealCLE (d := d) (n := n) 1
+```
+
+so the remaining `hint` is exactly the compact-test distributional equality on
+the Figure-2-4 real source window:
+
+```lean
+∫ x, extendF(bvt_F) (Q.symm (realEmbed (commonEdge x))) * ρ x
+  =
+∫ x, extendF(bvt_F) (permAct P.τ (Q.symm (realEmbed (commonEdge x)))) * ρ x
+```
+
+This is now the next honest OS45/Jost/Ruelle producer.  It is not an endpoint
+selector and not a pointwise real-edge shortcut.
+
+Additional Ruelle overlap reducers on May 22, 2026:
+
+`OSToWightmanRuelleOverlap` now contains checked identity-theorem reducers for
+connected open subsets of `T'_n ∩ τT'_n`:
+
+```lean
+BHW.ruelleOverlap_eqOn_of_distributional_wickSection_eq_on_realOpen
+BHW.ruelleOverlap_eqOn_of_distributional_realSection_eq_on_realOpen
+BHW.ruelleOverlap_eqOn_of_distributional_linearRealSection_eq_on_realOpen
+BHW.ruelleOverlap_extendF_pair_eqOn_of_distributional_wickSection_eq_on_realOpen
+BHW.ruelleOverlap_extendF_pair_eqOn_of_distributional_realSection_eq_on_realOpen
+```
+
+The real-section theorem is the faithful Jost/Ruelle boundary shape: compact
+test distributional equality on a real-open patch inside the overlap is first
+converted to pointwise equality by distributional uniqueness, then propagated
+by the totally-real identity theorem.  The linear-section theorem adds the
+coordinate-change form needed for OS45: a complex linear equivalence on the
+analytic variables and a real linear equivalence on the boundary variables.
+This still does not close Hdiff by itself: the missing OS45 producer is now
+the concrete boundary-distribution packet placing the Figure-2-4 real
+spacelike/current data into this reducer, not an endpoint-value equality for
+the fixed current.
+
+Fresh Ruelle production substrate on May 22, 2026:
+
+The Jost/Ruelle pivot now has two checked production companions:
+
+```lean
+OSReconstruction.ComplexLieGroups.JostRuelleStep5
+OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanRuelleOverlap
+```
+
+`JostRuelleStep5` proves the generic-`d` Appendix-II Step-5 block
+`L(iφ)` as an actual `ComplexLorentzGroup d`, including determinant one,
+metric preservation, and
+
+```lean
+BHW.jostRuelleLiPhiCLG_action_seed_eq_realBoundary
+```
+
+which sends `(i, -cot φ, 0, …)` to `(0, -(sin φ)⁻¹, 0, …)`.
+
+`OSToWightmanRuelleOverlap` exposes the honest overlap theorem surface:
+
+```lean
+BHW.ruelleOverlapDomain d n τ
+BHW.ruelleUnionDomain d n τ
+BHW.RuelleOverlapAnalyticInputs
+BHW.RuelleDistributionalBoundaryAgreementOn
+BHW.RuelleOverlapConclusion
+BHW.ruelleOverlapAnalyticInputs_extendF_pair
+```
+
+The ordinary/permuted `extendF` branch pair is now verified to satisfy the
+holomorphy and complex-Lorentz-invariance inputs on
+`T'_n ∩ τT'_n`.  The remaining missing production theorem is the OS-free
+Ruelle Appendix-II uniqueness step from distributional boundary agreement on
+the real spacelike patch to branch equality on that overlap.  This is the
+theorem that should replace the current per-piece
+`SourcePathMoving - WickPathMoving` selector leaf in Hdiff.
+
+Checks:
+
+```bash
+lake env lean OSReconstruction/ComplexLieGroups/JostRuelleStep5.lean
+lake build OSReconstruction.ComplexLieGroups.JostRuelleStep5
+lake env lean OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanRuelleOverlap.lean
+lake build OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanRuelleOverlap
+lake env lean test/proofideas_os45_hdiff_current_transport_blueprint.lean
+```
+
+All five checks succeed.  A fresh Hdiff check logged at
+`/tmp/osr_hdiff_current_1779403474.log` still fails at the genuine
+source/Wick transport goal and later timeout fallout; no endpoint-value
+shortcut was reintroduced.
+
+Fresh literal-adjacent guardrail on May 21, 2026:
+
+The scratch file now proves the direct `permAct` form of the adjacent Wick
+obstruction:
+
+```lean
+BHW.proofideas_os45Figure24_permAct_ordinaryWick_not_mem_forwardTube
+```
+
+For `u ∈ P.V`, the point
+
+```lean
+BHW.permAct (d := d) P.τ (fun k => wickRotatePoint (u k))
+```
+
+is the raw adjacent Wick trace and is not in `BHW.ForwardTube d n`.  Therefore
+the tempting literal difference branch
+`extendF (bvt_F OS lgc n) (permAct P.τ z) - extendF (bvt_F OS lgc n) z`
+still cannot provide the adjacent Wick trace by
+`extendF_eq_on_forwardTube`.  Any production closure must use the raw OS412
+preimage-forward-tube seed, or a real current-transport theorem carrying the
+integration chain and test through the local BHW corridor.
+
+Fresh source-text correction on May 21, 2026:
+
+I checked the local text extraction of OS I, Section 4.  Equation `(4.14)` is
+not itself a compact source-current transport theorem.  In the paper it is the
+Lorentz-covariance infinitesimal identity
+
+```text
+X_ij W_n(q_1, ..., q_n) = 0
+```
+
+for the Fourier-Laplace reconstructed distributions, derived from `(4.12)`,
+`(4.15)`, `(4.16)`, `(4.17)`, Lemma 8.4, and uniqueness of Laplace/Fourier
+transforms.  Section 4.5 then says locality follows because the Wightman
+functions have a single-valued symmetric analytic continuation into the BHW
+domain, using Euclidean symmetry plus `(4.1)`, `(4.12)`, and `(4.14)`.
+
+Consequently the live Lean leaf should not be described as a direct
+application of formula `(4.14)` to the Figure-2-4 source-side current.  The
+missing theorem is the derived compact-test/local-BHW consequence that turns
+that OS-I analytic-continuation package into the specific source/Wick current
+comparison on the current support.  Treating `(4.14)` as a standalone
+source-current selector would hide the same gap behind a paper citation.
+
+Fresh Deep Research v2 correction on May 21, 2026:
+
+The pinned API-backed Deep Research consult
+`deep-research-max-preview-04-2026` completed at
+`/private/tmp/gemini_os45_current_transport_v2_result.json`.  Its useful route
+correction is to abandon individual endpoint selectors and prove a
+difference-current theorem by transporting the compact test/current through
+the holomorphic bulk.  However, its slogan "prove equality for every positive
+height" must not be read as a same-weight equality following from holomorphy
+alone.  The checked scratch theorem
+
+```lean
+BHW.proofideas_same_branch_holomorphy_does_not_give_bulk_equality
+```
+
+shows that one holomorphic branch is not enough: even the identity function
+changes under a nonzero translation.  The production theorem must therefore
+carry the transformed integration chain, test, and boundary-term cancellation
+explicitly.  If the natural source and Wick slots use different weights, the
+Lean theorem surface must expose that comparison instead of asserting an
+unsupported eventual equality.
+
+Fresh exact Hdiff check:
+
+```bash
+lake env lean -DmaxHeartbeats=1200000 \
+  OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanLocalityOS45Figure24Hdiff.lean
+```
+
+Log: `/private/tmp/osr_hdiff_current_2076.log`.  It terminates with exit code
+`1`.  The first non-timeout hard proof error is still line `5976`:
+
+```lean
+Tendsto (fun eps => SourcePathMoving eps - WickPathMoving eps)
+  (nhdsWithin 0 (Set.Ioi 0)) (nhds 0)
+```
+
+The later timeout diagnostics remain downstream elaboration fallout after Lean
+continues through this unfinished current transport.
+
+Fresh scratch narrowing on May 21, 2026:
+
+The scratch file now also proves
+
+```lean
+BHW.proofideas_os45Figure24_not_all_lorentzInvariantScalars_identify_endpoints
+```
+
+This is the Lean-facing form of the latest route correction.  It says that the
+ordinary Figure-2-4 endpoints are not identified by pointwise
+complex-Lorentz-invariance as a general principle: a checked
+complex-Lorentz-invariant source-Gram scalar separates them.  Therefore the
+live Hdiff comparison cannot be closed by a generic endpoint-value invariance
+rewrite.  The remaining producer is still the distributional/current
+transport equating the compact positive source-side current with the Wick
+current, after the already checked finite chart retargeting.
+
+Fresh scratch check:
+
+```bash
+lake env lean test/proofideas_os45_hdiff_current_transport_blueprint.lean
+```
+
+terminates with exit code `0`.  A scratch/Hdiff scan for
+`sorry`/`admit`/`axiom` has no matches.
+
+Fresh process/Lean-scratch update on May 21, 2026:
+
+The scratch file now additionally proves
+
+```lean
+BHW.proofideas_os45Figure24_sourceSide_zero_not_any_wickRotate
+BHW.proofideas_os45Figure24_lorentzInvariantScalar_separates_endpoints
+```
+
+This strengthens the endpoint audit: the ordinary source-side zero endpoint is
+not a Wick rotation of any real Euclidean configuration on the source patch,
+because its time coordinate has positive real part whereas a Wick-rotated time
+coordinate is purely imaginary.  The diagonal source Gram coordinate is also a
+checked complex-Lorentz-invariant scalar that separates the raw Wick endpoint
+from the source-side endpoint on the positive source patch.  Thus the missing
+selector cannot be closed by changing the real Euclidean source variable under
+the Wick map or by pointwise complex-Lorentz invariance; it must still be an
+OS-I current transport through the Figure-2-4 corridor.
+
+Fresh exact Hdiff check:
+
+```bash
+lake env lean -DmaxHeartbeats=1200000 \
+  OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanLocalityOS45Figure24Hdiff.lean
+```
+
+Log: `/private/tmp/osr_hdiff_current_1779321034.log`.  It terminates with exit
+code `1`.  The first hard proof error is still line `5976`, the ordinary
+source/Wick moving-current transport:
+
+```lean
+Tendsto (fun eps => SourcePathMoving eps - WickPathMoving eps)
+  (nhdsWithin 0 (Set.Ioi 0)) (nhds 0)
+```
+
+The later diagnostics in that log are deterministic timeouts after Lean
+continues past the unfinished transport proof.
+
+Additional scratch narrowing on May 21, 2026, later in the same pass:
+
+The checked scratch file
+`test/proofideas_os45_hdiff_current_transport_blueprint.lean` now also proves
+
+```lean
+BHW.proofideas_os45Figure24_identityPath_endpoint_sourceGram_ne
+BHW.proofideas_os45Figure24_identityPath_endpoint_not_complexLorentzOrbit
+```
+
+The first theorem proves that the ordinary Figure-2-4 identity-path endpoints
+`t = 0` and `t = 1` have different complex Minkowski source Gram matrices on
+the positive source patch.  The second packages the consequence: the Wick
+endpoint and the source-side zero endpoint are not connected by a single
+complex Lorentz transformation.  This refutes the Gemini orbit-invariance
+shortcut in the formal geometry.  The missing current transport is therefore a
+real OS-I boundary-current theorem, not pointwise constancy of `extendF` along
+one complex-Lorentz orbit.
+
+Fresh scratch check:
+
+```bash
+lake env lean test/proofideas_os45_hdiff_current_transport_blueprint.lean
+```
+
+terminates with exit code `0`.
+
+Additional scratch narrowing on May 21, 2026:
+
+The checked scratch file
+`test/proofideas_os45_hdiff_current_transport_blueprint.lean` now also proves
+
+```lean
+BHW.proofideas_os45Figure24_sourceSide_zero_eq_identityPath_one
+BHW.proofideas_os45Figure24_sourceSide_zero_not_realEmbed
+```
+
+The first theorem identifies the ordinary source-side zero endpoint with the
+`t = 1` endpoint of `BHW.os45Figure24IdentityPath`; the raw Wick point is the
+`t = 0` endpoint.  The second theorem proves that the same source-side endpoint
+is not a real embedded Euclidean configuration on the source patch.  Thus the
+ordinary real-ray boundary theorem
+
+```lean
+bvt_boundary_values_moving
+```
+
+cannot be used by re-centering at a hidden real base point.  The live current
+transport must cross the Figure-2-4 identity-path/BHW-Jost corridor, or use an
+equivalent OS-I `(4.14)` compact-test theorem that already contains that
+transport.
+
+Fresh scratch check:
+
+```bash
+lake env lean test/proofideas_os45_hdiff_current_transport_blueprint.lean
+```
+
+terminates with exit code `0`, and the scratch/Hdiff token scan for
+`sorry`/`admit`/`axiom` has no matches.  A pinned API-backed Gemini Deep
+Research consult using `deep-research-max-preview-04-2026` is running at
+`/private/tmp/gemini_os45_current_transport_result.json` to sanity-check the
+exact theorem surface and whether OS I supplies this as a compact-test
+current-transport theorem or only a weaker distributional edge statement.
+
+The route decision from the #2071 audit is now externalized before any
+production edit.  I added the harness rule to `agent.md` and `CLAUDE.md`:
+hard proof routes must be written in a maintained blueprint/proof-audit doc or
+encoded in a Lean scratch file under `test/` / `Proofideas/` before production
+Lean is touched.
+
+I also added the checked scratch file
+`test/proofideas_os45_hdiff_current_transport_blueprint.lean`.  Its concrete
+Lean lemma
+
+```lean
+BHW.proofideas_os45Figure24_adjacentWick_not_mem_forwardTube
+```
+
+proves that for `u ∈ P.V`,
+
+```lean
+(fun k => wickRotatePoint (u (P.τ k))) ∉ BHW.ForwardTube d n
+```
+
+using the existing ordinary Wick forward-tube membership and
+`BHW.permutedForwardTube_forces_perm_one`.  This makes the #2071 caveat
+Lean-facing: the adjacent trace field for
+`BHW.os45CommonEdge_complexWickSeed_eqOn_of_E3` cannot be filled by applying
+`extendF_eq_on_forwardTube` to the adjacent Wick point.  The direct E3 refactor
+therefore still needs a genuine raw adjacent/source-current transport theorem.
+
+The exact scratch check
+
+```bash
+lake env lean test/proofideas_os45_hdiff_current_transport_blueprint.lean
+```
+
+terminated with exit code `0`.
+
+I then extended the same checked scratch file with two ordinary-side sanity
+lemmas:
+
+```lean
+BHW.proofideas_os45Figure24_sourceSide_zero_mem_forwardTube
+BHW.proofideas_os45Figure24_sourceSide_zero_ne_rawWick
+```
+
+The first proves that the live ordinary source-side zero endpoint
+
+```lean
+BHW.os45FlatCommonChartSourceSide d n 1 1 0 η u
+```
+
+is an ordinary forward-tube point for `u ∈ P.V`.  The second proves that this
+endpoint is not the raw Wick point
+
+```lean
+fun k => wickRotatePoint (u k)
+```
+
+on the Figure-2-4 source patch.  Thus the blocker is now Lean-facing in both
+directions: it is not a domain-membership problem, and it is not a definitional
+endpoint simplification.  The missing step must identify the distributional
+current carried by this quarter-turned endpoint/source-side family with the
+Wick/Schwinger current.
+
+The scratch file still checks with:
+
+```bash
+lake env lean test/proofideas_os45_hdiff_current_transport_blueprint.lean
+```
+
+exit code `0`.
+
+The current exact Hdiff check was captured at
+`/private/tmp/osr_hdiff_current_1779317864.log`:
+
+```bash
+lake env lean -DmaxHeartbeats=1200000 \
+  OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanLocalityOS45Figure24Hdiff.lean
+```
+
+It terminates with exit code `1`.  The first hard error remains line `5976`,
+the ordinary moving source/Wick comparison:
+
+```lean
+Tendsto (fun eps => SourcePathMoving eps - WickPathMoving eps)
+  (nhdsWithin 0 (Set.Ioi 0)) (nhds 0)
+```
+
+Later diagnostics include deterministic timeouts after Lean continues past
+that unfinished proof body; the first mathematical blocker is still the
+ordinary current transport above.
+
+Fresh route check on May 20, 2026 22:22 CEST:
+
+The pinned Gemini Deep Research reroute consult completed with
+`deep-research-max-preview-04-2026` and independently rejected the direct
+`Hdiff := extendF(bvt_F)(permAct P.τ z) - extendF(bvt_F) z` bypass.  Its
+diagnosis matches the Lean state: the interior/common-edge bookkeeping is not
+the obstruction; the boundary trace reduces back to
+
+```lean
+Tendsto (fun eps => SourcePathMoving eps - WickPathMoving eps)
+  (nhdsWithin 0 (Set.Ioi 0)) (nhds 0)
+```
+
+I rechecked the theorem surfaces after the consult.  The moving source-side
+DCT theorem
+
+```lean
+BHW.tendsto_integral_comp_os45FlatCommonChartSourceSide_mul_moving_of_commonCompactSupport
+```
+
+only proves convergence to the already selected zero-height source endpoint.
+The source-pairing theorem
+
+```lean
+OS45Figure24SourceCutoffData.sideZeroDiagonal_sourcePairings_tendstoUniformlyOn_schwinger
+```
+
+controls Wick pairings, including the E3 adjacent Wick rewrite, but it does
+not control the `extendF(sourceSide eps u)` pairing.  A targeted scan found
+general Cauchy/contour infrastructure and real-edge moving BV infrastructure,
+but no checked OS45 theorem equating the live source-side current with the
+Wick current.
+
+So the honest remaining theorem shape is still the compact OS-I `(4.14)`
+source-current transport for the specific `os45FlatCommonChartSourceSide`
+family and the same moving side-zero weight.  The proof should not add another
+endpoint or chart wrapper around the equivalent local identity
+
+```lean
+Tlocal pieceFlat = BHW.os45CommonEdgeFlatJacobianAbs n * OS.S n pieceZD
+```
+
+because that identity is precisely the missing current transport.
+
+Fresh route check on May 20, 2026 16:12 CEST:
+
+Latest exact-check log: `/tmp/osr_hdiff_current_1779286221.log`.
+
+The ordinary refined leaf is still
+
+```lean
+Tendsto (fun eps => SourcePathMoving eps - WickPathMoving eps)
+  (nhdsWithin 0 (Set.Ioi 0)) (nhds 0)
+```
+
+I rechecked the nearby source-side moving support theorem:
+
+```lean
+BHW.tendsto_integral_comp_os45FlatCommonChartSourceSide_mul_moving_of_commonCompactSupport
+```
+
+It is useful, but only after a branch value has already been selected.  It
+proves the moving-test source-side integral tends to its zero-height endpoint
+on the same local branch.  It does not compare that zero-height source-side
+endpoint with the Wick current.
+
+The endpoint mismatch is now explicit.  The live source-side endpoint is
+
+```lean
+BHW.os45FlatCommonChartSourceSide d n 1 1 0 η u
+  = (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+      (BHW.realEmbed (BHW.os45CommonEdgeRealPoint d n 1 u))
+```
+
+whereas the Wick Schwinger anchor comes from
+
+```lean
+fun k => wickRotatePoint (u k)
+```
+
+The Figure-2-4 path lemmas put these two configurations in the checked forward
+tube/initial-sector corridor, and the chart-chain facts identify branch names
+on carrier intersections.  They still do not prove a current equality along
+the corridor.  The support theorem
+`os45FlatCommonChart_wickSection_sourcePairing_eq_schwinger` also remains a
+different anchor: it evaluates the positive common-chart Wick section
+`real common edge + half-time * I`, not the source-side zero-height endpoint
+`real common edge + 0 * I` pulled through `os45QuarterTurnCLE.symm`.
+
+So the next genuine Lean obligation is not another endpoint DCT or chart
+retargeting lemma.  It is a compact OS-I current transport/current contour
+statement equating the source-side Figure-2-4 endpoint current with the Wick
+current, equivalently the local identity
+
+```lean
+Tlocal pieceFlat = J * OS.S n pieceZD
+```
+
+for the refined compact piece.  Without that theorem, the existing local facts
+correctly stop at the two different endpoint currents.
+
+## Previous Delta
+
+Fresh route check on May 20, 2026 16:04 CEST:
+
+Latest exact-check log: `/tmp/osr_hdiff_current_1779285726.log`.
+
+The ordinary refined leaf is still the genuine source-current comparison:
+
+```lean
+Tendsto (fun eps => SourcePathMoving eps - WickPathMoving eps)
+  (nhdsWithin 0 (Set.Ioi 0)) (nhds 0)
+```
+
+I also checked the tempting `S'_n` seed shortcut.  The existing theorem
+
+```lean
+BHW.os45CommonEdge_complexWickSeed_eqOn_of_E3
+```
+
+would be useful only after proving the Wick trace of the adjacent analytic
+candidate.  For the needed candidate
+
+```lean
+fun z => BHW.extendF (bvt_F OS lgc n) (BHW.permAct (d := d) P.τ z)
+```
+
+that trace obligation at the ordinary Wick edge is exactly
+
+```lean
+BHW.extendF (bvt_F OS lgc n)
+    (BHW.permAct (d := d) P.τ (fun k => wickRotatePoint (u k))) =
+  bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k)))
+```
+
+The available ordering fact `P.V_swap_ordered` normalizes back to the ordinary
+Wick edge after applying the selected swap; it does not put the adjacent Wick
+argument itself in the ordinary forward tube.  This matches the existing
+support-file warning that the downstream `extendF ∘ permAct` branch is not the
+raw `(4.12)` adjacent Wick seed.  Therefore the `S'_n` shortcut would hide the
+same OS-I transport gap rather than proving it.
+
+The remaining productive shape is unchanged: prove the compact positive
+source-side current transport with the same moving side-zero weight, or an
+equivalent proof that `Tlocal pieceFlat = J * OS.S n pieceZD`.
+
+## Previous Delta
+
+Fresh check/route correction on May 20, 2026 15:31 CEST:
+
+Latest exact-check log: `/tmp/osr_hdiff_current_1779283307.log`.
+
+The ordinary refined leaf is still
+
+```lean
+Tendsto (fun eps => SourcePathMoving eps - WickPathMoving eps)
+  (nhdsWithin 0 (Set.Ioi 0)) (nhds 0)
+```
+
+I checked the general SCV/OS boundary-value surfaces around
+`tube_boundaryValueData_moving_of_fixed` and `bvt_boundary_values_moving`.
+They are real-edge tube-ray moving-test theorems for arguments of the form
+`x + eps • eta * I`, after a boundary functional has already been selected.
+They do not compare the live OS45 source-side argument
+
+```lean
+BHW.os45FlatCommonChartSourceSide d n 1 1 eps eta u
+```
+
+with the raw Wick argument.  At `eps = 0`, that source-side path is the
+interior quarter-turned point
+
+```lean
+BHW.os45QuarterTurnConfig (fun k => wickRotatePoint (u k))
+```
+
+rather than a real-edge boundary ray.  `OSToWightmanTubeIdentity` also does not
+fill this gap: it upgrades a supplied distributional Wick-section equality to
+pointwise equality in the forward tube, but the missing statement here is
+exactly the distributional/current equality between the source-side current and
+the Wick current.  The source-oriented quarter-turn corridor theorem lives on
+the forbidden source-variety route and is not available for this proof.
+
+Thus the remaining useful theorem shape is still the compact source-side
+contour/current transport with the same moving side-zero weight on both
+integrals; DCT, real-ray moving BV, and pointed chart overlap retargeting all
+stop before this mathematical content.
+
+## Previous Delta
+
+Fresh exact check on May 20, 2026:
+
+```bash
+lake env lean -DmaxHeartbeats=1200000 \
+  OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanLocalityOS45Figure24Hdiff.lean
+```
+
+Log: `/tmp/osr_hdiff_current_1779281332.log`.  The only non-timeout hard
+proof leaf remains
+
+```lean
+Tendsto (fun eps => SourcePathMoving eps - WickPathMoving eps)
+  (nhdsWithin 0 (Set.Ioi 0)) (nhds 0)
+```
+
+inside the ordinary refined source-current comparison.  The downstream timeout
+locations are still elaboration fallout after this open leaf.
+
+I also rechecked the nearby pre-`Hdiff` OS45 distributional/EOW surfaces.  The
+proved theorem
+
+```lean
+BHW.os45CommonEdge_adjacentWick_sourcePairing_eq_ordinaryWick
+```
+
+compares the adjacent and ordinary *Wick* pairings against the same
+cutoff-pulled source test.  It does not compare the OS45 positive source-side
+current
+
+```lean
+extendF (bvt_F OS lgc n)
+  (BHW.os45FlatCommonChartSourceSide d n 1 1 eps eta u)
+```
+
+with the Wick pairing.  The adjacent-pairing theorem is therefore useful later
+for the Wick seed, but it is not the missing ordinary `(4.14)` side-current
+transport.  The current ordinary leaf still requires a real proof of that
+transport, or an equivalent proof of
+`Tlocal pieceFlat = J * OS.S n pieceZD`.
+
+## Previous Delta
+
+The ordinary selector obstruction is now pinned to a sharper, non-chart
+theorem shape.  At zero side-height the fixed source current evaluates
+
+```lean
+BHW.os45FlatCommonChartSourceSide d n 1 1 0 η0 u
+  = BHW.os45QuarterTurnConfig (fun k => wickRotatePoint (u k))
+```
+
+so endpoint DCT gives the pairing of `extendF` at the quarter-turned Wick
+configuration.  The Schwinger normalization instead comes from the raw Wick
+pairing
+
+```lean
+bvt_F OS lgc n (fun k => wickRotatePoint (u k))
+```
+
+via `bvt_euclidean_restriction`.  These are not the same argument of the
+branch function, and the quarter-turn is not being justified as a Lorentz
+invariance step.  Therefore the remaining proof cannot be supplied by
+`pointed_chart_integral_eventually_eq_of_seed` alone: that lemma transports
+branch names only when the same approach lies in a carrier intersection.
+
+The honest neutral lemma exposed by the current local leaf is a compact
+source-side contour/current transport, in one of the following equivalent
+forms:
+
+```lean
+Tendsto (fun eps =>
+  ∫ u, extendF (bvt_F OS lgc n)
+    (BHW.os45FlatCommonChartSourceSide d n 1 1 eps η piece u) * φ u)
+  (𝓝[Set.Ioi 0] 0) (𝓝 (OS.S n φZD))
+```
+
+or, after the moving side-zero support normalization already present in the
+proof,
+
+```lean
+Tendsto (fun eps => SourceMovingExtendF eps - WickMovingSide eps)
+  (𝓝[Set.Ioi 0] 0) (𝓝 0)
+```
+
+A finite chart chain remains useful only after such a contour/current packet
+has put neighboring integrals on the same approach and weight.  By itself it
+does not prove the equality between quarter-turned Wick pairings and raw Wick
+Schwinger pairings.
+
+## Previous Delta
+
+The ordinary source-current leaf has one further route clarification.  The flat
+positive boundary family is not an independent selector for Schwinger; in the
+current proof it is already pinned to the ordinary common-edge distribution
+`Tlocal`:
+
+```lean
+have hflat_to_Tlocal :
+    Tendsto FlatMovingSide (nhdsWithin 0 (Set.Ioi 0))
+      (nhds (Tlocal pieceFlat))
+
+have hFlatMoving_to_source :
+    FlatMovingSide =ᶠ[nhdsWithin 0 (Set.Ioi 0)]
+      fun eps => J * SourceMovingExtendF eps
+```
+
+Together these give only
+
+```lean
+have hSourceMovingExtendF_Tlocal :
+    Tendsto SourceMovingExtendF (nhdsWithin 0 (Set.Ioi 0))
+      (nhds (J⁻¹ * Tlocal pieceFlat))
+```
+
+while the Wick side-zero selector gives
+
+```lean
+have hpiece_sideWick_selected :
+    Tendsto WickMovingSide (nhdsWithin 0 (Set.Ioi 0))
+      (nhds (OS.S n pieceZD))
+```
+
+Thus any proof of
+
+```lean
+Tendsto (fun eps => SourceMovingExtendF eps - WickMovingSide eps)
+  (nhdsWithin 0 (Set.Ioi 0)) (nhds 0)
+```
+
+must genuinely prove the missing identity
+`Tlocal pieceFlat = J * OS.S n pieceZD`, not derive it from the already checked
+flat boundary-value theorem alone.  The coordinate calculation explains why:
+the zero-height source endpoint is
+
+```lean
+(BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+  (BHW.realEmbed (BHW.os45CommonEdgeRealPoint ... u))
+```
+
+equivalently `BHW.os45QuarterTurnConfig (fun k => wickRotatePoint (u k))`.
+The Wick-section theorem instead evaluates the flat point
+`commonEdge + i * halfTimeDirection`, which the inverse quarter-turn sends back
+to the raw Wick point.  Those are different branch arguments, so the remaining
+step is exactly the OS-I current transport equating the flat/common-edge
+boundary distribution with the Wick/Schwinger distribution.  A proof by
+`hflat_to_Tlocal`, by endpoint DCT, or by a bare chart-chain overlap would still
+be circular or would compare the wrong arguments.
+
+## Previous Delta
+
+The current search ruled out two tempting but non-genuine closures for the
+ordinary `SourcePathMoving - WickPathMoving` leaf.
+
+First, the existing theorem
+`BHW.os45FlatCommonChart_wickSection_sourcePairing_eq_schwinger` is the
+flat-chart Wick-section anchor, not the live source endpoint.  Its branch
+argument is the flat point
+
+```lean
+BHW.flattenCfg n d
+  (fun k mu =>
+    BHW.realEmbed (BHW.os45CommonEdgeRealPoint ... u) k mu +
+      (BHW.os45HalfTimeDirection ... u k mu : ℂ) * Complex.I)
+```
+
+and the flat branch then applies the inverse quarter-turn, so this is the raw
+Wick value.  The live fixed/moving source current instead evaluates
+
+```lean
+BHW.extendF (bvt_F OS lgc n)
+  (BHW.os45FlatCommonChartSourceSide d n 1 1 eps eta0 u)
+```
+
+whose zero-height endpoint is
+
+```lean
+(BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+  (BHW.realEmbed (BHW.os45CommonEdgeRealPoint ... u))
+```
+
+equivalently the quarter-turned Wick/common-edge endpoint.  Using the
+Wick-section anchor here would silently replace the actual source current by a
+different branch argument.
+
+Second, the ordinary `(4.1)` helper
+`ordinary41_fixed_test_boundaryValue_extendF` applies to standard real
+boundary rays `x + eps * eta * I`.  The OS45 source-side path is the
+quarter-turn pullback of a flat side-height point and has the nonzero
+Figure-2-4 source endpoint above, so applying the ordinary ray theorem would
+need an additional coordinate/current bridge that is not currently present.
+
+Thus the remaining ordinary theorem should still be stated directly as a
+source-side current transport, for example in the already exposed local form:
+
+```lean
+Tendsto (fun eps => SourcePathMoving eps - WickPathMoving eps)
+  (nhdsWithin 0 (Set.Ioi 0)) (nhds 0)
+```
+
+or equivalently through `hsource_path_gap_equiv` as
+
+```lean
+Tendsto (fun eps => SourceMovingExtendF eps - WickMovingSide eps)
+  (nhdsWithin 0 (Set.Ioi 0)) (nhds 0)
+```
+
+with the same moving side-zero weight on both integrals.  This is the genuine
+missing OS-I selector; no endpoint-value shortcut or bare chart-chain overlap
+has enough content to prove it.
+
+## Previous Delta
+
+Lean now checks the source-current-to-flat-boundary packet and exposes the
+ordinary local leaf at the path-current transport rather than at the coarser
+selected-limit wrapper.  In the local refined piece, the positive source-side
+moving current still has the checked flat zero-height limit:
+
+```lean
+have hSourceMovingExtendF_Tlocal :
+    Tendsto SourceMovingExtendF (nhdsWithin 0 (Set.Ioi 0))
+      (nhds (J⁻¹ * Tlocal pieceFlat))
+
+have hSourceMovingExtendF_gap_limit :
+    Tendsto (fun eps => SourceMovingExtendF eps - WickMovingSide eps)
+      (nhdsWithin 0 (Set.Ioi 0))
+      (nhds (J⁻¹ * Tlocal pieceFlat - OS.S n pieceZD))
+```
+
+The proof now also checks the eventual retargeting equivalence from the
+`extendF`/raw Wick moving gap to the path-chart moving gap:
+
+```lean
+have hsource_path_gap_equiv :
+    Tendsto (fun eps => SourceMovingExtendF eps - WickMovingSide eps)
+      (nhdsWithin 0 (Set.Ioi 0)) (nhds 0) <->
+    Tendsto (fun eps => SourcePathMoving eps - WickPathMoving eps)
+      (nhdsWithin 0 (Set.Ioi 0)) (nhds 0)
+```
+
+So the remaining ordinary OS-I content is again displayed as the genuine
+path-current comparison with the same moving side-zero weight:
+
+```lean
+Tendsto (fun eps => SourcePathMoving eps - WickPathMoving eps)
+  (nhdsWithin 0 (Set.Ioi 0)) (nhds 0)
+```
+
+This does not close the selector and deliberately does not assert a false
+endpoint equality.  The checked endpoint-gap facts show exactly why: DCT still
+only identifies the endpoint gap; the missing step is the local side-current
+transport along the Figure-2-4 path.
+
+Fresh exact check:
+`lake env lean -DmaxHeartbeats=1200000 OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanLocalityOS45Figure24Hdiff.lean`
+logged to `/tmp/osr_hdiff_current_followup_1779273313.log` exits `1`.
+The ordinary unsolved goal is the displayed `SourcePathMoving - WickPathMoving`
+comparison; downstream deterministic timeout diagnostics remain while this
+ordinary local leaf is open.  No `sorry`, `admit`, or `axiom` occurs in Hdiff.
+
+## Previous Delta
 
 Lean now checks the ordinary path-to-`Aext` retargeting packet.  The moving
 source path chart and moving Wick path chart have both been transported to the
@@ -2076,3 +3558,149 @@ Log: `/tmp/osr_hdiff_limit_refinement_1779265000.log`.
 Result: exit code `1`, with only the two intended selector goals at
 `Hdiff.lean:5915:64` (`hOrdPieceFixed_selected`) and `Hdiff.lean:8787:58`
 (`hAdjPieceFixed_selected`); no timeout diagnostics.
+
+## 2026-05-22 Selected-Data Hdiff Tail Splice
+
+The selector leaf is no longer the intended production surface for the final
+Hdiff germ.  I added and checked:
+
+```lean
+BHW.os45_hdiff_of_flat_seed
+BHW.os45_hdiff_of_selectedJostData
+```
+
+in `OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanRuelleOverlap.lean`.
+
+`os45_hdiff_of_flat_seed` isolates the already-checked post-seed tail of
+`BHW.os45CommonEdge_localFigure24DifferenceGerm_of_OSI45`: given the connected
+local initial-sector `EqOn` seed at the flat common edge, the `S'_n` machinery
+produces the zero Hdiff germ and the common-edge adjacent-minus-ordinary trace.
+
+`os45_hdiff_of_selectedJostData` composes the faithful selected
+Jost/Ruelle packet with that tail: it takes
+`SelectedAdjacentDistributionalJostAnchorData` plus adjacent ET-overlap
+connectedness, builds the flat seed via
+`BHW.os45_flat_seed_of_selectedJostData`, and returns the local Hdiff germ
+directly.  This is the replacement route for the old individual fixed-selector
+attempt; it still leaves the honest producers as selected Jost anchor data and
+adjacent overlap connectedness.
+
+Verification:
+
+```bash
+lake env lean OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanRuelleOverlap.lean
+lake env lean test/proofideas_os45_hdiff_from_flat_seed.lean
+```
+
+Both exit code `0`.
+
+The current Hdiff production file was updated to consume
+`BHW.os45_hdiff_of_flat_seed` after its existing `hflat_seed` construction,
+removing the duplicated downstream `S'_n` tail.  A fresh exact Hdiff check:
+
+```bash
+lake env lean -DmaxHeartbeats=1200000 OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanLocalityOS45Figure24Hdiff.lean
+```
+
+Log: `/tmp/osr_hdiff_tail_seed_1779424392.log`.
+
+Result: exit code `1`.  The ordinary selector is still the first unsolved goal
+at `Hdiff.lean:5978:64`; the adjacent selector region still times out under
+the old selector route.  The new selected-data theorem in `OSToWightmanRuelleOverlap.lean`
+is the checked route that bypasses that individual-selector surface.
+
+## 2026-05-22 Local Edge-Pairing Hdiff Surface
+
+Following the blueprint/test-file discipline, I first added and checked
+`test/proofideas_os45_hdiff_local_edge_pairing.lean`.  It verifies the
+one-edge Ruelle splice:
+
+```lean
+BHW.proofideas_bvt_F_extendF_adjacent_overlap_of_localEdgePairing
+BHW.proofideas_os45_ruelle_commonEdge_boundary_hint_of_localEdgePairing
+BHW.proofideas_os45_flat_seed_of_localEdgePairing
+BHW.proofideas_os45_hdiff_of_localEdgePairing
+```
+
+The production promotion lives in
+`OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanRuelleOverlap.lean`
+as:
+
+```lean
+BHW.bvt_F_extendF_adjacent_overlap_of_localEdgePairing
+BHW.os45_ruelle_commonEdge_boundary_hint_of_localEdgePairing
+BHW.os45_flat_seed_of_localEdgePairing
+BHW.os45_hdiff_of_localEdgePairing
+BHW.os45_hdiff_of_compactWickPairingEq
+```
+
+This removes an overlarge theorem surface from the replacement route.  The
+local OS45 Hdiff germ now only requires the one adjacent overlap connectedness
+for `P.τ` and one compact real-open edge pairing packet.  It no longer needs
+global `SelectedAdjacentDistributionalJostAnchorData` for every adjacent swap
+when proving a single Figure-2-4 local patch.
+
+`BHW.os45_hdiff_of_compactWickPairingEq` then consumes the existing
+one-adjacent-swap `OS45CompactFigure24WickPairingEq` packet directly, using
+the identity-labelled compact real patch as the local edge witness.  The
+remaining producer is therefore concrete: prove the single compact
+Figure-2-4 Wick pairing plus connectedness of the single adjacent overlap.
+
+Verification:
+
+```bash
+lake env lean OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanRuelleOverlap.lean
+lake build OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanRuelleOverlap
+lake env lean test/proofideas_os45_hdiff_local_edge_pairing.lean
+```
+
+All three exit code `0` (the scratch file has only unused-section-variable
+warnings).  No `sorry`/`admit`/`axiom` was introduced.  A pinned Deep Research
+interaction for the remaining adjacent-overlap geometry is running as
+`v1_ChdpOTRQYXRDZUZKamtuc0VQZ28yVnNRaxIXaTk0UGF0Q2VGSmprbnNFUGdvMlZzUWs`.
+
+## 2026-05-24 Reduced Local Same-Boundary Consumer
+
+The current theorem-2 locality route no longer treats the old fixed selector
+as the primary proof surface.  The reduced bridge now has a checked production
+consumer for the faithful local Ruelle/EOW packet:
+
+```lean
+reduced_local_comparison_of_sameBoundaryCLM
+reducedAfterSwap_tendsto_of_local_tsupport_cover
+reducedAfterSwap_tendsto_of_local_sameBoundaryCLM_cover
+reducedCanonicalAdjacentSwapBoundaryInvariantSchwartz_of_local_sameBoundaryCLM
+```
+
+in
+
+```text
+OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanReducedFiberMarginalSchwartz.lean
+```
+
+The theorem says that `ReducedCanonicalAdjacentSwapBoundaryInvariantSchwartz`
+follows from a pointwise local packet: around every point of the compact
+reduced support, the canonical reduced branch and the adjacent-after-swap
+reduced branch must converge, on tests supported in that local real
+neighborhood, to the same boundary-value CLM.  The finite Schwartz partition
+of unity and the reduced adjacent change of variables are now part of the
+checked substrate.
+
+Verification:
+
+```bash
+lake env lean -DmaxHeartbeats=1200000 \
+  OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanReducedFiberMarginalSchwartz.lean
+lake env lean -DmaxHeartbeats=1200000 \
+  test/proofideas_reduced_local_eow_to_global.lean
+```
+
+Both exit code `0`; targeted scan on those files reports no
+`sorry`/`admit`/`axiom`, and `git diff --check` passes.
+
+This sharpens the remaining analytic leaf.  To close the theorem-2 locality
+sorry via the reduced route, the next proof body must construct that local
+same-boundary CLM packet from the Jost/Ruelle/OS-I argument near each
+adjacent-spacelike reduced support point.  The separate nonzero-support versus
+strict-`tsupport` boundary passage remains isolated in the scratch theorem
+`proofideas_adjacent_locality_of_strict_tsupport_locality_and_zeroOff_exhaustion`.

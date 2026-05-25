@@ -1,4 +1,4 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceSpatialDensity
+import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceOrderedGeometry
 import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceClosure
 
 /-!
@@ -15,120 +15,6 @@ open scoped Topology FourierTransform BoundedContinuousFunction BigOperators
 open Set MeasureTheory Filter
 
 namespace OSReconstruction
-
-/-- Positive time-difference coordinates give ordered positive Euclidean
-times after applying the inverse difference-coordinate map. -/
-theorem section43DiffCoordRealCLE_symm_mem_orderedPositiveTimeRegion_of_pos_time
-    (d n : ℕ) [NeZero d]
-    {δ : NPointDomain d n}
-    (hδ : ∀ i : Fin n, 0 < δ i 0) :
-    (section43DiffCoordRealCLE d n).symm δ ∈
-      OrderedPositiveTimeRegion d n := by
-  intro i
-  constructor
-  · rw [section43DiffCoordRealCLE_symm_apply]
-    rw [Finset.sum_fin_eq_sum_range]
-    have hnonempty : (Finset.range (i.val + 1)).Nonempty := by
-      exact ⟨0, by simp⟩
-    refine Finset.sum_pos ?_ hnonempty
-    intro r hr
-    have hrlt : r < i.val + 1 := Finset.mem_range.mp hr
-    simpa [hrlt] using hδ ⟨r, by
-        have hr' := Finset.mem_range.mp hr
-        omega⟩
-  · intro j hij
-    rw [section43DiffCoordRealCLE_symm_apply,
-      section43DiffCoordRealCLE_symm_apply]
-    rw [Finset.sum_fin_eq_sum_range, Finset.sum_fin_eq_sum_range]
-    have hijv : i.val < j.val := by exact hij
-    have hle : i.val + 1 ≤ j.val + 1 := Nat.succ_le_succ hijv.le
-    let fj : ℕ → ℝ := fun r =>
-      if h : r < j.val + 1 then
-        δ ⟨(⟨r, h⟩ : Fin (j.val + 1)).val, by
-          have hj := j.isLt
-          omega⟩ 0
-      else 0
-    have hblock_nonempty :
-        (Finset.Ico (i.val + 1) (j.val + 1)).Nonempty := by
-      refine ⟨i.val + 1, ?_⟩
-      exact Finset.mem_Ico.mpr ⟨le_rfl, Nat.succ_lt_succ hijv⟩
-    have hleft :
-        (∑ r ∈ Finset.range (i.val + 1),
-          if h : r < i.val + 1 then
-            δ ⟨(⟨r, h⟩ : Fin (i.val + 1)).val, by
-              have hi := i.isLt
-              omega⟩ 0
-          else 0) =
-        (∑ r ∈ Finset.range (i.val + 1), fj r) := by
-      refine Finset.sum_congr rfl ?_
-      intro r hr
-      have hri : r < i.val + 1 := Finset.mem_range.mp hr
-      have hrj : r < j.val + 1 := lt_of_lt_of_le hri hle
-      have hrjle : r ≤ j.val := Nat.lt_succ_iff.mp hrj
-      rw [dif_pos hri]
-      simp [fj, hrjle]
-    have hblock_pos :
-        0 < ∑ r ∈ Finset.Ico (i.val + 1) (j.val + 1), fj r := by
-      refine Finset.sum_pos ?_ hblock_nonempty
-      intro r hr
-      have hrj : r < j.val + 1 := (Finset.mem_Ico.mp hr).2
-      have hrjle : r ≤ j.val := Nat.lt_succ_iff.mp hrj
-      simpa [fj, hrjle] using hδ ⟨r, by
-        have hj := j.isLt
-        omega⟩
-    rw [hleft]
-    change (∑ r ∈ Finset.range (i.val + 1), fj r) <
-      ∑ r ∈ Finset.range (j.val + 1), fj r
-    rw [← Finset.sum_range_add_sum_Ico fj hle]
-    exact lt_add_of_pos_right _ hblock_pos
-
-/-- Pulling a Section 4.3 time/spatial tensor back from positive
-difference-time coordinates to ordered Euclidean coordinates gives a
-zero-diagonal Schwartz test.
-
-The strict-positive hypothesis is on the difference-time factor, and the
-`section43DiffCoordRealCLE` pullback is essential: positivity of the raw
-Euclidean time coordinates alone would not imply ordered support. -/
-theorem VanishesToInfiniteOrderOnCoincidence_orderedPullback_section43NPointTimeSpatialTensor
-    (d n : ℕ) [NeZero d]
-    (φ : SchwartzMap (Fin n → ℝ) ℂ)
-    (χ : SchwartzMap (Section43SpatialSpace d n) ℂ)
-    (hφ : tsupport (φ : (Fin n → ℝ) → ℂ) ⊆
-      section43TimeStrictPositiveRegion n) :
-    VanishesToInfiniteOrderOnCoincidence
-      (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
-        (section43DiffCoordRealCLE d n)
-        (section43NPointTimeSpatialTensor d n φ χ)) := by
-  apply VanishesToInfiniteOrderOnCoincidence_of_support_subset_orderedPositiveTimeRegion
-  intro y hy
-  have hy_pre :
-      section43DiffCoordRealCLE d n y ∈
-        tsupport
-          ((section43NPointTimeSpatialTensor d n φ χ :
-            SchwartzNPoint d n) : NPointDomain d n → ℂ) := by
-    exact
-      tsupport_comp_subset_preimage
-        ((section43NPointTimeSpatialTensor d n φ χ :
-          SchwartzNPoint d n) : NPointDomain d n → ℂ)
-        (section43DiffCoordRealCLE d n).continuous hy
-  have hq_time_support :
-      section43QTime (d := d) (n := n) (section43DiffCoordRealCLE d n y) ∈
-        tsupport (φ : (Fin n → ℝ) → ℂ) :=
-    tsupport_section43NPointTimeSpatialTensor_subset_time_preimage
-      d n φ χ hy_pre
-  have htime_pos :
-      ∀ i : Fin n,
-        0 < section43QTime (d := d) (n := n)
-          (section43DiffCoordRealCLE d n y) i :=
-    hφ hq_time_support
-  have hδ_pos : ∀ i : Fin n, 0 < (section43DiffCoordRealCLE d n y) i 0 := by
-    intro i
-    simpa [section43QTime, nPointTimeSpatialCLE]
-      using htime_pos i
-  have hordered :=
-    section43DiffCoordRealCLE_symm_mem_orderedPositiveTimeRegion_of_pos_time
-      d n (δ := section43DiffCoordRealCLE d n y) hδ_pos
-  simpa using hordered
 
 /-- Push a compact strict-positive source in difference coordinates back to an
 ordered compact Euclidean source. -/
@@ -248,6 +134,171 @@ theorem section43TimeLaplaceSpatialFourierTarget_subset_component_preimage
       Set.range (section43FourierLaplaceTransformComponentMap d n)
   refine ⟨src, ?_⟩
   simpa [section43FourierLaplaceTransformComponentMap, src] using hΦ_component.symm
+
+/-- Product one-sided Laplace time factors with a compact spatial Fourier
+factor lie in the compact ordered Fourier-Laplace component preimage. -/
+theorem section43NPointTimeSpatialTensor_productSource_mem_ordered_component_preimage
+    (d n : ℕ) [NeZero d]
+    (gs : Fin n → Section43CompactPositiveTimeSource1D)
+    (χ : SchwartzMap (Section43SpatialSpace d n) ℂ)
+    (hχ : χ ∈ section43SpatialFourierCompactRange d n) :
+    section43NPointTimeSpatialTensor d n
+      (section43TimeProductTensor
+        (fun i : Fin n =>
+          section43OneSidedLaplaceSchwartzRepresentative1D (gs i)))
+      χ ∈
+        (section43PositiveEnergyQuotientMap (d := d) n) ⁻¹'
+          Set.range (section43FourierLaplaceTransformComponentMap d n) := by
+  exact
+    section43TimeLaplaceSpatialFourierTarget_subset_component_preimage d n
+      (section43NPointTimeSpatialTensor_productSource_mem_timeLaplaceSpatialFourierTarget
+        d n gs χ hχ)
+
+/-- Product one-sided Laplace time factors with a compact spatial Fourier
+factor have a concrete compact ordered Fourier-Laplace representative. -/
+theorem section43NPointTimeSpatialTensor_productSource_has_orderedFourierLaplaceRepresentative
+    (d n : ℕ) [NeZero d]
+    (gs : Fin n → Section43CompactPositiveTimeSource1D)
+    (χ : SchwartzMap (Section43SpatialSpace d n) ℂ)
+    (hχ : χ ∈ section43SpatialFourierCompactRange d n) :
+    ∃ (src : Section43CompactOrderedSource d n)
+      (Ψ : SchwartzNPoint d n),
+      section43FourierLaplaceRepresentative d n
+        ⟨src.f, src.ordered⟩ Ψ ∧
+      section43PositiveEnergyQuotientMap (d := d) n
+        (section43NPointTimeSpatialTensor d n
+          (section43TimeProductTensor
+            (fun i : Fin n =>
+              section43OneSidedLaplaceSchwartzRepresentative1D (gs i)))
+          χ) =
+      section43PositiveEnergyQuotientMap (d := d) n Ψ := by
+  rcases
+    section43NPointTimeSpatialTensor_productSource_mem_timeLaplaceSpatialFourierTarget
+      d n gs χ hχ with
+    ⟨G, Ψ, hΨ, hq⟩
+  let src : Section43CompactOrderedSource d n :=
+    section43OrderedSourceOfTimeSpatialSource d n G
+  refine ⟨src, Ψ, ?_, hq⟩
+  simpa [src] using
+    section43FourierLaplaceRepresentative_of_timeSpatialRepresentative
+      d n hΨ
+
+/-- Product one-sided Laplace time factors with a compact spatial Fourier
+factor equal the transform component of a concrete compact ordered source in
+the positive-energy quotient. -/
+theorem section43NPointTimeSpatialTensor_productSource_eq_orderedTransformComponent
+    (d n : ℕ) [NeZero d]
+    (gs : Fin n → Section43CompactPositiveTimeSource1D)
+    (χ : SchwartzMap (Section43SpatialSpace d n) ℂ)
+    (hχ : χ ∈ section43SpatialFourierCompactRange d n) :
+    ∃ (src : Section43CompactOrderedSource d n),
+      section43PositiveEnergyQuotientMap (d := d) n
+        (section43NPointTimeSpatialTensor d n
+          (section43TimeProductTensor
+            (fun i : Fin n =>
+              section43OneSidedLaplaceSchwartzRepresentative1D (gs i)))
+          χ) =
+      section43FourierLaplaceTransformComponent d n
+        src.f src.ordered src.compact := by
+  rcases
+    section43NPointTimeSpatialTensor_productSource_has_orderedFourierLaplaceRepresentative
+      d n gs χ hχ with
+    ⟨src, Ψ, hΨ, hq⟩
+  refine ⟨src, hq.trans ?_⟩
+  exact
+    section43FourierLaplaceRepresentative_quotient_eq_transformComponent
+      d n src.f src.ordered src.compact Ψ hΨ
+
+/-- Product one-sided time factors and an explicit compact spatial source give
+the transform component of the explicit ordered source obtained from their
+time/spatial product source. -/
+theorem section43NPointTimeSpatialTensor_productSource_eq_explicitOrderedTransformComponent
+    (d n : ℕ) [NeZero d]
+    (gs : Fin n → Section43CompactPositiveTimeSource1D)
+    (κ : Section43SpatialCompactSource d n) :
+    section43PositiveEnergyQuotientMap (d := d) n
+      (section43NPointTimeSpatialTensor d n
+        (section43TimeProductTensor
+          (fun i : Fin n =>
+            section43OneSidedLaplaceSchwartzRepresentative1D (gs i)))
+        (SchwartzMap.fourierTransformCLM ℂ κ.1)) =
+      section43FourierLaplaceTransformComponent d n
+        (section43OrderedSourceOfTimeSpatialSource d n
+          (section43TimeSpatialProductSource d n
+            (section43TimeProductSource gs) κ)).f
+        (section43OrderedSourceOfTimeSpatialSource d n
+          (section43TimeSpatialProductSource d n
+            (section43TimeProductSource gs) κ)).ordered
+        (section43OrderedSourceOfTimeSpatialSource d n
+          (section43TimeSpatialProductSource d n
+            (section43TimeProductSource gs) κ)).compact := by
+  let g : Section43CompactStrictPositiveTimeSource n :=
+    section43TimeProductSource gs
+  let G : Section43CompactStrictPositiveTimeSpatialSource d n :=
+    section43TimeSpatialProductSource d n g κ
+  let src : Section43CompactOrderedSource d n :=
+    section43OrderedSourceOfTimeSpatialSource d n G
+  let Ψt : SchwartzMap (Fin n → ℝ) ℂ :=
+    section43IteratedLaplaceSchwartzRepresentative n g
+  let Ψ : SchwartzNPoint d n :=
+    section43NPointTimeSpatialTensor d n Ψt
+      (SchwartzMap.fourierTransformCLM ℂ κ.1)
+  have hΨrep_time :
+      section43IteratedLaplaceRepresentative n g Ψt := by
+    intro σ hσ
+    exact section43IteratedLaplaceSchwartzRepresentative_apply_of_mem g hσ
+  have hcompact_Ψt :
+      section43IteratedLaplaceCompactTransform n g =
+        section43TimePositiveQuotientMap n Ψt :=
+    section43IteratedLaplaceCompactTransform_eq_quotient n g Ψt hΨrep_time
+  have htime_eq :
+      section43TimePositiveQuotientMap n
+        (section43TimeProductTensor
+          (fun i : Fin n =>
+            section43OneSidedLaplaceSchwartzRepresentative1D (gs i))) =
+        section43TimePositiveQuotientMap n Ψt := by
+    exact (section43IteratedLaplaceCompactTransform_productSource gs).symm.trans
+      hcompact_Ψt
+  have hq :
+      section43PositiveEnergyQuotientMap (d := d) n
+        (section43NPointTimeSpatialTensor d n
+          (section43TimeProductTensor
+            (fun i : Fin n =>
+              section43OneSidedLaplaceSchwartzRepresentative1D (gs i)))
+          (SchwartzMap.fourierTransformCLM ℂ κ.1)) =
+        section43PositiveEnergyQuotientMap (d := d) n Ψ := by
+    change section43PositiveEnergyQuotientMap (d := d) n
+        (section43NPointTimeSpatialTensor d n
+          (section43TimeProductTensor
+            (fun i : Fin n =>
+              section43OneSidedLaplaceSchwartzRepresentative1D (gs i)))
+          (SchwartzMap.fourierTransformCLM ℂ κ.1)) =
+      section43PositiveEnergyQuotientMap (d := d) n
+        (section43NPointTimeSpatialTensor d n Ψt
+          (SchwartzMap.fourierTransformCLM ℂ κ.1))
+    exact
+      section43NPointTimeSpatialTensor_positiveEnergyQuotient_eq_of_timeQuotient_eq
+        d n (SchwartzMap.fourierTransformCLM ℂ κ.1) htime_eq
+  have hΨFL :
+      section43FourierLaplaceRepresentative d n
+        ⟨src.f, src.ordered⟩ Ψ := by
+    simpa [src, G, g, Ψ] using
+      section43FourierLaplaceRepresentative_of_timeSpatialRepresentative
+        d n (section43TimeLaplaceSpatialFourierRepresentative_productSource
+          d n g κ)
+  calc
+    section43PositiveEnergyQuotientMap (d := d) n
+      (section43NPointTimeSpatialTensor d n
+        (section43TimeProductTensor
+          (fun i : Fin n =>
+            section43OneSidedLaplaceSchwartzRepresentative1D (gs i)))
+        (SchwartzMap.fourierTransformCLM ℂ κ.1))
+        =
+      section43PositiveEnergyQuotientMap (d := d) n Ψ := hq
+    _ =
+      section43FourierLaplaceTransformComponent d n src.f src.ordered src.compact :=
+        section43FourierLaplaceRepresentative_quotient_eq_transformComponent
+          d n src.f src.ordered src.compact Ψ hΨFL
 
 /-- The compact ordered Fourier-Laplace transform component image has dense
 ambient preimage under the positive-energy quotient map. -/

@@ -4,6 +4,7 @@ Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
 import Mathlib
+import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIMZLogDomain
 
 /-!
 # OS II Lemma 5.1 Coordinate Estimate
@@ -539,5 +540,86 @@ theorem osiiLemma51_local_polydisc_sector_extension_differentiableOn
     intro ζ hζ
     exact hρ ζ hζ
   simpa [polydisc, Function.comp] using hF.comp hcoeff hmaps
+
+/-- Argument-sum-domain version of the Lemma 5.1 coordinate pullback.
+
+OS II `(5.8)` uses the coefficient condition
+`Σ |arg w^μ| < π / 2`.  The narrow-sector estimate above supplies a small
+polydisc whose coefficient image lies in any sector with
+`4 * arctan η < π / 2`; the checked sector-to-argument-sum inclusion then
+puts that image in the paper's actual coefficient domain. -/
+theorem osiiLemma51_local_polydisc_argSum_extension_differentiableOn
+    (T : ℝ) (hT : 0 < T) (ξ : Fin 4 → ℝ) (hξ0 : 0 < ξ 0)
+    (η : ℝ) (hη : 0 < η)
+    (hηsum : (4 : ℝ) * Real.arctan η < Real.pi / 2)
+    (F : (Fin 4 → ℂ) → ℂ)
+    (hF : DifferentiableOn ℂ F osiiLemma51ArgSumDomain4) :
+    ∃ ρ : ℝ, 0 < ρ ∧
+      DifferentiableOn ℂ
+        (fun ζ : Fin 4 → ℂ => F (osiiLemma51CoeffMap4 T ξ ζ))
+        {ζ : Fin 4 → ℂ | ∀ ν : Fin 4, ‖ζ ν‖ < ρ} := by
+  have hF_sector :
+      DifferentiableOn ℂ F (osiiLemma51NarrowSector4 η) :=
+    hF.mono (osiiLemma51_narrowSector_subset_argSumDomain4 hηsum)
+  exact
+    osiiLemma51_local_polydisc_sector_extension_differentiableOn
+      T hT ξ hξ0 η hη F hF_sector
+
+/-- Taking principal logarithms of coefficients in the paper's argument-sum
+domain lands in the OS-II log-domain carrier. -/
+theorem osiiLemma51_logCoeffMap_mem_mzLogDomain_of_argSum
+    {w : Fin 4 → ℂ} (hw : w ∈ osiiLemma51ArgSumDomain4) :
+    (fun μ : Fin 4 => Complex.log (w μ)) ∈
+      osiiMZLogDomain 4 (Real.pi / 2) := by
+  simpa [osiiMZLogDomain, osiiLemma51ArgSumDomain4, Complex.log_im] using hw
+
+/-- Log-domain version of the Lemma 5.1 coordinate pullback.
+
+This is the exact bridge from the MZ representative constructed in logarithmic
+coefficient variables to the local coordinate-polydisc representative used in
+OS II Lemma 5.1.  The narrow sector gives positive real part for every
+coefficient, so the principal logarithm is holomorphic on the whole small
+polydisc, and the argument-sum estimate puts its image in the MZ log carrier. -/
+theorem osiiLemma51_local_polydisc_logDomain_extension_differentiableOn
+    (T : ℝ) (hT : 0 < T) (ξ : Fin 4 → ℝ) (hξ0 : 0 < ξ 0)
+    (η : ℝ) (hη : 0 < η)
+    (hηsum : (4 : ℝ) * Real.arctan η < Real.pi / 2)
+    (Γ : (Fin 4 → ℂ) → ℂ)
+    (hΓ : DifferentiableOn ℂ Γ (osiiMZLogDomain 4 (Real.pi / 2))) :
+    ∃ ρ : ℝ, 0 < ρ ∧
+      DifferentiableOn ℂ
+        (fun ζ : Fin 4 → ℂ =>
+          Γ (fun μ : Fin 4 => Complex.log (osiiLemma51CoeffMap4 T ξ ζ μ)))
+        {ζ : Fin 4 → ℂ | ∀ ν : Fin 4, ‖ζ ν‖ < ρ} := by
+  rcases osiiLemma51_exists_coord_radius_coeff4_narrowSector
+      T hT ξ hξ0 η hη with
+    ⟨ρ, hρpos, hρ⟩
+  refine ⟨ρ, hρpos, ?_⟩
+  let polydisc : Set (Fin 4 → ℂ) := {ζ | ∀ ν : Fin 4, ‖ζ ν‖ < ρ}
+  let L : (Fin 4 → ℂ) → Fin 4 → ℂ := fun ζ μ =>
+    Complex.log (osiiLemma51CoeffMap4 T ξ ζ μ)
+  have hLdiff : DifferentiableOn ℂ L polydisc := by
+    rw [differentiableOn_pi]
+    intro μ ζ hζ
+    have hpos : 0 < (osiiLemma51CoeffMap4 T ξ ζ μ).re :=
+      (hρ ζ hζ μ).1
+    have hslit : osiiLemma51CoeffMap4 T ξ ζ μ ∈ Complex.slitPlane := by
+      simp [Complex.slitPlane]
+      left
+      exact hpos
+    have hcoord_global :
+        Differentiable ℂ (fun ζ : Fin 4 → ℂ =>
+          osiiLemma51CoeffMap4 T ξ ζ μ) := by
+      unfold osiiLemma51CoeffMap4 osiiLemma51Coeff4 osiiLemma51E4
+      fun_prop
+    simpa [L, Function.comp] using
+      (Complex.differentiableAt_log hslit).comp_differentiableWithinAt
+        ζ (hcoord_global.differentiableAt.differentiableWithinAt)
+  have hmaps :
+      Set.MapsTo L polydisc (osiiMZLogDomain 4 (Real.pi / 2)) := by
+    intro ζ hζ
+    exact osiiLemma51_logCoeffMap_mem_mzLogDomain_of_argSum
+      ((osiiLemma51_narrowSector_subset_argSumDomain4 hηsum) (hρ ζ hζ))
+  simpa [polydisc, L, Function.comp] using hΓ.comp hLdiff hmaps
 
 end OSReconstruction

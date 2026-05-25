@@ -5,6 +5,7 @@ Authors: Michael Douglas, ModularPhysics Contributors
 -/
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBase
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanACRKernelPackage
+import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanACROneDegenerate
 import OSReconstruction.Wightman.Reconstruction.DenseCLM
 import OSReconstruction.SCV.DistributionalEOWCutoff
 import OSReconstruction.SCV.EuclideanWeylOpen
@@ -66,7 +67,13 @@ private theorem exists_acrOne_productTensor_witness {d : ℕ} [NeZero d]
         0 < C_bd ∧
         ∀ z ∈ AnalyticContinuationRegion d k 1,
           ‖S_prod z‖ ≤ C_bd * (1 + ‖z‖) ^ N := by
-  sorry
+  by_cases hk : k = 0
+  · subst k
+    exact exists_acrOne_productTensor_witness_zero (d := d) OS lgc
+  · by_cases hk1 : k = 1
+    · subst k
+      exact exists_acrOne_productTensor_witness_one (d := d) OS
+    · sorry
 
 /- The formal dense-extension step above factors through two separate analytic
 inputs:
@@ -2451,44 +2458,6 @@ private theorem schwinger_continuation_base_step_acrOne_assembly {d : ℕ} [NeZe
   exact
     acrOne_productTensor_witness_extends_zeroDiagonal
       (d := d) OS k S_prod hS_prod_holo hS_prod_prod hS_prod_perm hS_prod_trans hS_prod_growth
-
-/-- `ACR(1)` assembly together with the common complex translation invariance
-of the chosen witness.
-
-This is the strengthened upstream surface needed by the `k = 2` diff-block
-route: once `S₁` is chosen as a globally translation-invariant analytic
-continuation witness, the flattened witness `G := S₁ ∘ fromDiffFlat` becomes
-diff-block-dependent automatically. -/
-theorem schwinger_continuation_base_step_acrOne_productTensor_assembly_with_translationInvariant
-    {d : ℕ} [NeZero d]
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS)
-    (k : ℕ) :
-    ∃ (S_prod : (Fin k → Fin (d + 1) → ℂ) → ℂ),
-      DifferentiableOn ℂ S_prod (AnalyticContinuationRegion d k 1) ∧
-      (∀ (fs : Fin k → SchwartzSpacetime d)
-          (hvanish : VanishesToInfiniteOrderOnCoincidence (SchwartzMap.productTensor fs)),
-        OS.S k ⟨SchwartzMap.productTensor fs, hvanish⟩ =
-          ∫ x : NPointDomain d k,
-            S_prod (fun j => wickRotatePoint (x j)) *
-              (SchwartzMap.productTensor fs) x) ∧
-      (∀ (σ : Equiv.Perm (Fin k)) (z : Fin k → Fin (d + 1) → ℂ),
-        S_prod (fun j => z (σ j)) = S_prod z) ∧
-      (∀ (z : Fin k → Fin (d + 1) → ℂ) (a : Fin (d + 1) → ℂ),
-        S_prod (fun j => z j + a) = S_prod z) ∧
-      (∀ (x : NPointDomain d k) (ε : ℝ), 0 < ε →
-        starRingEnd ℂ
-          (S_prod (fun j μ =>
-            ↑(x j μ) +
-              ε * ↑(if μ = 0 then (↑(j : ℕ) + 1 : ℝ) else 0) * Complex.I)) =
-        S_prod (fun j μ =>
-          ↑(x j μ) -
-            ε * ↑(if μ = 0 then (↑(j : ℕ) + 1 : ℝ) else 0) * Complex.I)) ∧
-      ∃ (C_bd : ℝ) (N : ℕ),
-        0 < C_bd ∧
-        ∀ z ∈ AnalyticContinuationRegion d k 1,
-          ‖S_prod z‖ ≤ C_bd * (1 + ‖z‖) ^ N := by
-  exact exists_acrOne_productTensor_witness (d := d) OS lgc k
 
 /-- `ACR(1)` assembly together with the common complex translation invariance
 of the chosen witness.

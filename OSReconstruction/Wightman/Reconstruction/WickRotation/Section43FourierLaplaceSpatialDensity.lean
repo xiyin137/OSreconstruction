@@ -1222,6 +1222,34 @@ theorem section43NPointTimeSpatialTensor_mem_timeLaplaceSpatialFourierTarget
         d n (SchwartzMap.fourierTransformCLM ℂ κ.1)
         (hg.symm.trans hcompact)
 
+/-- Product one-sided Laplace time factors and a compact spatial Fourier factor
+give an explicit compact time/spatial source representative after passing to
+the positive-energy quotient. -/
+theorem section43NPointTimeSpatialTensor_productSource_mem_timeLaplaceSpatialFourierTarget
+    (d n : ℕ) [NeZero d]
+    (gs : Fin n → Section43CompactPositiveTimeSource1D)
+    (χ : SchwartzMap (Section43SpatialSpace d n) ℂ)
+    (hχ : χ ∈ section43SpatialFourierCompactRange d n) :
+    ∃ (G : Section43CompactStrictPositiveTimeSpatialSource d n)
+      (Ψ : SchwartzNPoint d n),
+      section43TimeLaplaceSpatialFourierRepresentative d n G Ψ ∧
+      section43PositiveEnergyQuotientMap (d := d) n
+        (section43NPointTimeSpatialTensor d n
+          (section43TimeProductTensor
+            (fun i : Fin n =>
+              section43OneSidedLaplaceSchwartzRepresentative1D (gs i)))
+          χ) =
+      section43PositiveEnergyQuotientMap (d := d) n Ψ := by
+  refine
+    section43NPointTimeSpatialTensor_mem_timeLaplaceSpatialFourierTarget
+      d n
+      (section43TimeProductTensor
+        (fun i : Fin n =>
+          section43OneSidedLaplaceSchwartzRepresentative1D (gs i)))
+      χ ?_ hχ
+  exact ⟨section43TimeProductSource gs,
+    section43IteratedLaplaceCompactTransform_productSource gs⟩
+
 /-- The dense restricted generator span is contained in the compact
 time-Laplace / spatial-Fourier representative target. -/
 theorem section43NPointTimeSpatialTensor_span_le_timeLaplaceSpatialFourierTarget

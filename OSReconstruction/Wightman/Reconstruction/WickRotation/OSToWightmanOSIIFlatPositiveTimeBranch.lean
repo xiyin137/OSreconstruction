@@ -95,6 +95,30 @@ def osiiFlatTotalTimeBranch
     OSInnerProductTimeShiftHolomorphicValueExpandBoth (d := d) OS lgc F G
       (osiiFlatTotalTimeSum (k := k) (d := d) u)
 
+/-- Exponential chart handoff between the OS-II log variables and flattened
+time-difference variables.  On the chart `u_i = I * exp r_i`, the rotated
+flat total time `∑ -I u_i` is the same semigroup parameter `∑ exp r_i` used
+by the log-domain branch. -/
+theorem osiiFlatTotalTimeBranch_of_log_time_eq_totalLog
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {k : ℕ}
+    (F G : PositiveTimeBorchersSequence d)
+    (u : Fin (k * (d + 1)) → ℂ)
+    (r : Fin k → ℂ)
+    (htime : ∀ i : Fin k,
+      u (finProdFinEquiv (i, (0 : Fin (d + 1)))) =
+        Complex.I * Complex.exp (r i)) :
+    osiiFlatTotalTimeBranch (d := d) (k := k) OS lgc F G u =
+      osiiTotalLogSemigroupBranch (d := d) OS lgc F G r := by
+  unfold osiiFlatTotalTimeBranch osiiTotalLogSemigroupBranch osiiFlatTotalTimeSum
+  congr 1
+  apply Finset.sum_congr rfl
+  intro i _hi
+  rw [htime i]
+  rw [← mul_assoc, neg_mul, Complex.I_mul_I]
+  ring
+
 theorem osiiFlatTotalTimeBranch_congr_time
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS)
@@ -164,6 +188,38 @@ theorem isTimeHolomorphicFlatPositiveTimeDiffWitness_osiiFlatTotalTimeBranch
       simpa [idx, Function.update, hidx_ne] using hzj
   simpa [idx] using hdiff.comp hupdate_diff.differentiableOn hline_maps
 
+/-- Spatial slices of the explicit total-time branch are holomorphic because
+the branch depends only on flattened time coordinates. -/
+theorem differentiableOn_osiiFlatTotalTimeBranch_spatial_slice
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {k : ℕ} [Nonempty (Fin k)]
+    (F G : PositiveTimeBorchersSequence d)
+    (z : Fin (k * (d + 1)) → ℂ)
+    (i : Fin k) (μ : Fin (d + 1)) (hμ : μ ≠ 0) :
+    DifferentiableOn ℂ
+      (fun w : ℂ =>
+        osiiFlatTotalTimeBranch (d := d) (k := k) OS lgc F G
+          (Function.update z (finProdFinEquiv (i, μ)) w))
+      Set.univ := by
+  have hconst :
+      (fun w : ℂ =>
+        osiiFlatTotalTimeBranch (d := d) (k := k) OS lgc F G
+          (Function.update z (finProdFinEquiv (i, μ)) w)) =
+        fun _ : ℂ =>
+          osiiFlatTotalTimeBranch (d := d) (k := k) OS lgc F G z := by
+    funext w
+    apply osiiFlatTotalTimeBranch_congr_time (d := d) OS lgc F G
+    intro j
+    have hidx_ne :
+        finProdFinEquiv (j, (0 : Fin (d + 1))) ≠ finProdFinEquiv (i, μ) := by
+      intro hidx
+      have hcoord := congrArg Prod.snd (finProdFinEquiv.injective hidx)
+      exact hμ hcoord.symm
+    simp [Function.update, hidx_ne]
+  rw [hconst]
+  exact differentiableOn_const _
+
 theorem differentiableOn_acrOne_osiiFlatTotalTimeBranch
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS)
@@ -179,6 +235,105 @@ theorem differentiableOn_acrOne_osiiFlatTotalTimeBranch
       (d := d) (k := k) OS lgc F G).comp
       (differentiable_toDiffFlat_local k d).differentiableOn
       (fun z hz => (acr_one_iff_toDiffFlat_mem_tubeDomain_positiveTimeDiff z).mp hz)
+
+/-- After passing to difference coordinates, the explicit total-time flat
+branch is invariant under common translations whose time component is zero.
+
+This records the spatial part of common-translation covariance already carried
+by the flat semigroup branch.  The common time-translation direction is not
+settled by this raw total-time carrier. -/
+theorem osiiFlatTotalTimeBranch_toDiffFlat_spatial_translation
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {k : ℕ}
+    (F G : PositiveTimeBorchersSequence d)
+    (z : Fin k → Fin (d + 1) → ℂ)
+    (a : Fin (d + 1) → ℂ)
+    (ha : a 0 = 0) :
+    osiiFlatTotalTimeBranch (d := d) (k := k) OS lgc F G
+        (BHW.toDiffFlat k d (fun j μ => z j μ + a μ)) =
+      osiiFlatTotalTimeBranch (d := d) (k := k) OS lgc F G
+        (BHW.toDiffFlat k d z) := by
+  apply osiiFlatTotalTimeBranch_congr_time (d := d) OS lgc F G
+  intro i
+  unfold BHW.toDiffFlat BHW.flattenCfg
+  rw [BHW.diffCoordEquiv_apply, BHW.diffCoordEquiv_apply]
+  by_cases hi : i.val = 0
+  · simp [hi, ha]
+  · simp [hi, ha]
+
+/-! ### Real-edge common time transport -/
+
+/-- OS `E1` real-edge transport for a common positive Euclidean time shift.
+
+The raw total-time flat carrier is not invariant in this direction.  Instead,
+on the real Wick edge the common time shift is transferred to the left
+positive-time vector by the OS semigroup algebra.  This is the real-edge
+transport step that precedes the later source-current/delta lift in the
+OS II Chapter V construction. -/
+theorem OSInnerProduct_left_timeShift_real_edge_transport
+    (OS : OsterwalderSchraderAxioms d)
+    {m : ℕ} [Nonempty (Fin m)]
+    (F G : PositiveTimeBorchersSequence d)
+    (τ : Fin m → ℝ) (hτ : ∀ p : Fin m, 0 < τ p)
+    (a : ℝ) (ha : 0 ≤ a) :
+    OSInnerProduct d OS.S
+        (timeShiftNonnegPositiveTimeBorchers (d := d) a ha F : BorchersSequence d)
+        (timeShiftBorchers (d := d) (∑ p : Fin m, τ p) (G : BorchersSequence d)) =
+      OSInnerProduct d OS.S (F : BorchersSequence d)
+        (timeShiftBorchers (d := d) (a + ∑ p : Fin m, τ p)
+          (G : BorchersSequence d)) := by
+  have hsum_pos : 0 < ∑ p : Fin m, τ p := by
+    exact Finset.sum_pos (fun p _ => hτ p) Finset.univ_nonempty
+  have htotal_nonneg : 0 ≤ a + ∑ p : Fin m, τ p := by
+    exact add_nonneg ha (le_of_lt hsum_pos)
+  have hleft :
+      OSTensorAdmissible d
+        (timeShiftNonnegPositiveTimeBorchers (d := d) a ha F : BorchersSequence d)
+        (timeShiftBorchers (d := d) (∑ p : Fin m, τ p) (G : BorchersSequence d)) := by
+    simpa [timeShiftNonnegPositiveTimeBorchers_toBorchersSequence] using
+      PositiveTimeBorchersSequence.ostensorAdmissible (d := d)
+        (timeShiftNonnegPositiveTimeBorchers (d := d) a ha F)
+        (timeShiftNonnegPositiveTimeBorchers
+          (d := d) (∑ p : Fin m, τ p) (le_of_lt hsum_pos) G)
+  have hright :
+      OSTensorAdmissible d (F : BorchersSequence d)
+        (timeShiftBorchers (d := d) (a + ∑ p : Fin m, τ p)
+          (G : BorchersSequence d)) := by
+    simpa [timeShiftNonnegPositiveTimeBorchers_toBorchersSequence] using
+      PositiveTimeBorchersSequence.ostensorAdmissible (d := d) F
+        (timeShiftNonnegPositiveTimeBorchers
+          (d := d) (a + ∑ p : Fin m, τ p) htotal_nonneg G)
+  exact
+    OSInnerProduct_timeShift_eq (d := d) OS
+      (F : BorchersSequence d) (G : BorchersSequence d)
+      (∑ p : Fin m, τ p) a hleft hright
+
+/-- Common Euclidean time shift of all points in an ordered real edge. -/
+def commonTimeShiftConfig {k : ℕ}
+    (x : NPointDomain d k) (a : ℝ) : NPointDomain d k :=
+  fun j => x j + timeShiftVec d a
+
+theorem commonTimeShiftConfig_ordered
+    {k : ℕ} {x : NPointDomain d k}
+    (hx : x ∈ OrderedPositiveTimeRegion d k)
+    {a : ℝ} (ha : 0 ≤ a) :
+    commonTimeShiftConfig (d := d) x a ∈
+      OrderedPositiveTimeRegion d k := by
+  intro i
+  constructor
+  · have hxi : 0 < x i 0 := (hx i).1
+    simp [commonTimeShiftConfig, timeShiftVec]
+    linarith
+  · intro j hij
+    have hlt : x i 0 < x j 0 := (hx i).2 j hij
+    simpa [commonTimeShiftConfig, timeShiftVec] using hlt
+
+theorem commonTimeShiftConfig_last_time
+    {k : ℕ} (x : NPointDomain d (k + 1)) (a : ℝ) :
+    commonTimeShiftConfig (d := d) x a (Fin.last k) 0 =
+      x (Fin.last k) 0 + a := by
+  simp [commonTimeShiftConfig, timeShiftVec]
 
 /-- On the positive imaginary time-difference edge, the flat branch recovers
 the positive real-time OS semigroup matrix element at the total time. -/
@@ -404,6 +559,193 @@ theorem osiiFlatTotalTimeBranch_wickRotate_ordered_edge_eq_last_time
       (d := d) (OS := OS) (lgc := lgc) (F := F) (G := G)
       hG_compact x hx
 
+/-- Real Wick-edge form of common-time transport for the flat OS-II branch.
+
+Shifting every Euclidean time by a nonnegative `a` changes the raw total-time
+branch exactly by moving that `a` onto the left OS vector.  This is the
+book-faithful replacement for the false shortcut that the raw carrier is
+already common-time-translation invariant. -/
+theorem osiiFlatTotalTimeBranch_wickRotate_common_time_edge_transport
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {k : ℕ}
+    (F G : PositiveTimeBorchersSequence d)
+    (hG_compact : ∀ n,
+      HasCompactSupport (((G : BorchersSequence d).funcs n : SchwartzNPoint d n) :
+        NPointDomain d n → ℂ))
+    (x : NPointDomain d (k + 1))
+    (hx : x ∈ OrderedPositiveTimeRegion d (k + 1))
+    (a : ℝ) (ha : 0 ≤ a) :
+    osiiFlatTotalTimeBranch (d := d) (k := k + 1) OS lgc F G
+        (BHW.toDiffFlat (k + 1) d
+          (fun j => wickRotatePoint
+            (commonTimeShiftConfig (d := d) x a j))) =
+      OSInnerProduct d OS.S
+        (timeShiftNonnegPositiveTimeBorchers (d := d) a ha F : BorchersSequence d)
+        (timeShiftBorchers (d := d) (x (Fin.last k) 0)
+          (G : BorchersSequence d)) := by
+  have hxa :
+      commonTimeShiftConfig (d := d) x a ∈
+        OrderedPositiveTimeRegion d (k + 1) :=
+    commonTimeShiftConfig_ordered (d := d) hx ha
+  have hraw :
+      osiiFlatTotalTimeBranch (d := d) (k := k + 1) OS lgc F G
+          (BHW.toDiffFlat (k + 1) d
+            (fun j => wickRotatePoint
+              (commonTimeShiftConfig (d := d) x a j))) =
+        OSInnerProduct d OS.S (F : BorchersSequence d)
+          (timeShiftBorchers (d := d)
+            (commonTimeShiftConfig (d := d) x a (Fin.last k) 0)
+            (G : BorchersSequence d)) :=
+    osiiFlatTotalTimeBranch_wickRotate_ordered_edge_eq_last_time
+      (d := d) (OS := OS) (lgc := lgc) F G hG_compact
+      (commonTimeShiftConfig (d := d) x a) hxa
+  have hxlast_pos : 0 < x (Fin.last k) 0 := (hx (Fin.last k)).1
+  have htransport :=
+    OSInnerProduct_left_timeShift_real_edge_transport
+      (d := d) OS F G (fun _ : Fin 1 => x (Fin.last k) 0)
+      (fun _ => hxlast_pos) a ha
+  have hsum_one :
+      (∑ p : Fin 1, (fun _ : Fin 1 => x (Fin.last k) 0) p) =
+        x (Fin.last k) 0 := by
+    simp
+  calc
+    osiiFlatTotalTimeBranch (d := d) (k := k + 1) OS lgc F G
+        (BHW.toDiffFlat (k + 1) d
+          (fun j => wickRotatePoint
+            (commonTimeShiftConfig (d := d) x a j))) =
+      OSInnerProduct d OS.S (F : BorchersSequence d)
+        (timeShiftBorchers (d := d) (x (Fin.last k) 0 + a)
+          (G : BorchersSequence d)) := by
+        rw [hraw, commonTimeShiftConfig_last_time]
+    _ =
+      OSInnerProduct d OS.S (F : BorchersSequence d)
+        (timeShiftBorchers (d := d) (a + x (Fin.last k) 0)
+          (G : BorchersSequence d)) := by
+        congr 2
+        ring
+    _ =
+      OSInnerProduct d OS.S
+        (timeShiftNonnegPositiveTimeBorchers (d := d) a ha F : BorchersSequence d)
+        (timeShiftBorchers (d := d) (x (Fin.last k) 0)
+          (G : BorchersSequence d)) := by
+        simpa [hsum_one] using htransport.symm
+
+/-- Concentrated scalarization of the common-time transported ordered real
+edge.  After the OS `E1` transport, the common nonnegative time shift is
+absorbed into the left tensor factor, while the right tensor retains the
+telescoped final-time shift. -/
+theorem osiiFlatTotalTimeBranch_single_wickRotate_common_time_edge_eq_schwinger
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {k n m : ℕ}
+    (f : SchwartzNPoint d n)
+    (hf_ord : tsupport (f : NPointDomain d n → ℂ) ⊆
+      OrderedPositiveTimeRegion d n)
+    (g : SchwartzNPoint d m)
+    (hg_ord : tsupport (g : NPointDomain d m → ℂ) ⊆
+      OrderedPositiveTimeRegion d m)
+    (hg_compact : HasCompactSupport (g : NPointDomain d m → ℂ))
+    (x : NPointDomain d (k + 1))
+    (hx : x ∈ OrderedPositiveTimeRegion d (k + 1))
+    (a : ℝ) (ha : 0 ≤ a) :
+    osiiFlatTotalTimeBranch (d := d) (k := k + 1) OS lgc
+        (PositiveTimeBorchersSequence.single n f hf_ord)
+        (PositiveTimeBorchersSequence.single m g hg_ord)
+        (BHW.toDiffFlat (k + 1) d
+          (fun j => wickRotatePoint (commonTimeShiftConfig (d := d) x a j))) =
+      OS.S (n + m) (ZeroDiagonalSchwartz.ofClassical
+        ((timeShiftSchwartzNPoint (d := d) a f).osConjTensorProduct
+          (timeShiftSchwartzNPoint (d := d) (x (Fin.last k) 0) g))) := by
+  have hG_compact :
+      ∀ r,
+        HasCompactSupport (((((PositiveTimeBorchersSequence.single m g hg_ord :
+          PositiveTimeBorchersSequence d) : BorchersSequence d).funcs r :
+          SchwartzNPoint d r) : NPointDomain d r → ℂ)) := by
+    intro r
+    by_cases hr : r = m
+    · subst hr
+      simpa [PositiveTimeBorchersSequence.single_toBorchersSequence] using hg_compact
+    · have hzero :
+        ((((PositiveTimeBorchersSequence.single m g hg_ord :
+          PositiveTimeBorchersSequence d) : BorchersSequence d).funcs r :
+          SchwartzNPoint d r) : NPointDomain d r → ℂ) = 0 := by
+          simp [PositiveTimeBorchersSequence.single_toBorchersSequence,
+            BorchersSequence.single, hr]
+      rw [hzero]
+      simpa using (HasCompactSupport.zero :
+        HasCompactSupport (0 : NPointDomain d r → ℂ))
+  calc
+    osiiFlatTotalTimeBranch (d := d) (k := k + 1) OS lgc
+        (PositiveTimeBorchersSequence.single n f hf_ord)
+        (PositiveTimeBorchersSequence.single m g hg_ord)
+        (BHW.toDiffFlat (k + 1) d
+          (fun j => wickRotatePoint (commonTimeShiftConfig (d := d) x a j))) =
+      OSInnerProduct d OS.S
+        (timeShiftNonnegPositiveTimeBorchers (d := d) a ha
+          (PositiveTimeBorchersSequence.single n f hf_ord) : BorchersSequence d)
+        (timeShiftBorchers (d := d) (x (Fin.last k) 0)
+          ((PositiveTimeBorchersSequence.single m g hg_ord :
+            PositiveTimeBorchersSequence d) : BorchersSequence d)) := by
+        exact
+          osiiFlatTotalTimeBranch_wickRotate_common_time_edge_transport
+            (d := d) (OS := OS) (lgc := lgc)
+            (F := PositiveTimeBorchersSequence.single n f hf_ord)
+            (G := PositiveTimeBorchersSequence.single m g hg_ord)
+            hG_compact x hx a ha
+    _ = OS.S (n + m) (ZeroDiagonalSchwartz.ofClassical
+        ((timeShiftSchwartzNPoint (d := d) a f).osConjTensorProduct
+          (timeShiftSchwartzNPoint (d := d) (x (Fin.last k) 0) g))) := by
+        have hleft_shift :
+            ∀ r,
+              (timeShiftBorchers (d := d) a (BorchersSequence.single n f)).funcs r =
+                (BorchersSequence.single n
+                  (timeShiftSchwartzNPoint (d := d) a f)).funcs r := by
+          intro r
+          by_cases hr : r = n
+          · subst hr
+            simp [BorchersSequence.single]
+          · simp [BorchersSequence.single, hr]
+        have hcongr :
+            OSInnerProduct d OS.S
+                (timeShiftBorchers (d := d) a (BorchersSequence.single n f))
+                (timeShiftBorchers (d := d) (x (Fin.last k) 0)
+                  (BorchersSequence.single m g)) =
+              OSInnerProduct d OS.S
+                (BorchersSequence.single n
+                  (timeShiftSchwartzNPoint (d := d) a f))
+                (timeShiftBorchers (d := d) (x (Fin.last k) 0)
+                  (BorchersSequence.single m g)) := by
+          exact OSInnerProduct_congr_left (d := d) OS.S OS.E0_linear
+            (timeShiftBorchers (d := d) a (BorchersSequence.single n f))
+            (BorchersSequence.single n (timeShiftSchwartzNPoint (d := d) a f))
+            (timeShiftBorchers (d := d) (x (Fin.last k) 0)
+              (BorchersSequence.single m g)) hleft_shift
+        calc
+          OSInnerProduct d OS.S
+              (timeShiftNonnegPositiveTimeBorchers (d := d) a ha
+                (PositiveTimeBorchersSequence.single n f hf_ord) : BorchersSequence d)
+              (timeShiftBorchers (d := d) (x (Fin.last k) 0)
+                ((PositiveTimeBorchersSequence.single m g hg_ord :
+                  PositiveTimeBorchersSequence d) : BorchersSequence d)) =
+            OSInnerProduct d OS.S
+                (timeShiftBorchers (d := d) a (BorchersSequence.single n f))
+                (timeShiftBorchers (d := d) (x (Fin.last k) 0)
+                  (BorchersSequence.single m g)) := by
+              rfl
+          _ =
+            OSInnerProduct d OS.S
+                (BorchersSequence.single n
+                  (timeShiftSchwartzNPoint (d := d) a f))
+                (timeShiftBorchers (d := d) (x (Fin.last k) 0)
+                  (BorchersSequence.single m g)) := hcongr
+          _ = OS.S (n + m) (ZeroDiagonalSchwartz.ofClassical
+              ((timeShiftSchwartzNPoint (d := d) a f).osConjTensorProduct
+                (timeShiftSchwartzNPoint (d := d) (x (Fin.last k) 0) g))) := by
+              exact OSInnerProduct_single_right_timeShift
+                (d := d) OS (timeShiftSchwartzNPoint (d := d) a f) g
+                (x (Fin.last k) 0)
+
 /-- Concentrated scalarization of the telescoped ordered real edge.  The
 coordinate edge may have any positive number of time differences; the branch
 only sees their total, which telescopes to the final Euclidean time. -/
@@ -468,6 +810,73 @@ theorem osiiFlatTotalTimeBranch_single_wickRotate_ordered_edge_eq_schwinger_last
         simpa [PositiveTimeBorchersSequence.single_toBorchersSequence] using
           OSInnerProduct_single_right_timeShift
             (d := d) OS f g (x (Fin.last k) 0)
+
+theorem timeShiftSchwartzNPoint_zero_eq
+    (a : ℝ) (f : SchwartzNPoint d 0) :
+    timeShiftSchwartzNPoint (d := d) a f = f := by
+  ext y
+  rw [timeShiftSchwartzNPoint_apply]
+  congr 1
+  ext i
+  exact Fin.elim0 i
+
+/-- On a vacuum-left real edge the common nonnegative time shift is invisible:
+the OS `E1` transport moves it to the zero-point left factor, where time
+translation acts trivially. -/
+theorem osiiFlatTotalTimeBranch_vacuumLeft_wickRotate_common_time_edge_invariant
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {k m : ℕ}
+    (f0 : SchwartzNPoint d 0)
+    (hf0_ord : tsupport (f0 : NPointDomain d 0 → ℂ) ⊆
+      OrderedPositiveTimeRegion d 0)
+    (g : SchwartzNPoint d m)
+    (hg_ord : tsupport (g : NPointDomain d m → ℂ) ⊆
+      OrderedPositiveTimeRegion d m)
+    (hg_compact : HasCompactSupport (g : NPointDomain d m → ℂ))
+    (x : NPointDomain d (k + 1))
+    (hx : x ∈ OrderedPositiveTimeRegion d (k + 1))
+    (a : ℝ) (ha : 0 ≤ a) :
+    osiiFlatTotalTimeBranch (d := d) (k := k + 1) OS lgc
+        (PositiveTimeBorchersSequence.single 0 f0 hf0_ord)
+        (PositiveTimeBorchersSequence.single m g hg_ord)
+        (BHW.toDiffFlat (k + 1) d
+          (fun j => wickRotatePoint (commonTimeShiftConfig (d := d) x a j))) =
+      osiiFlatTotalTimeBranch (d := d) (k := k + 1) OS lgc
+        (PositiveTimeBorchersSequence.single 0 f0 hf0_ord)
+        (PositiveTimeBorchersSequence.single m g hg_ord)
+        (BHW.toDiffFlat (k + 1) d (fun j => wickRotatePoint (x j))) := by
+  have hshift0 :
+      timeShiftSchwartzNPoint (d := d) a f0 = f0 :=
+    timeShiftSchwartzNPoint_zero_eq (d := d) a f0
+  have hleft :=
+    osiiFlatTotalTimeBranch_single_wickRotate_common_time_edge_eq_schwinger
+      (d := d) (OS := OS) (lgc := lgc)
+      (k := k) (n := 0) (m := m)
+      f0 hf0_ord g hg_ord hg_compact x hx a ha
+  have hright :=
+    osiiFlatTotalTimeBranch_single_wickRotate_ordered_edge_eq_schwinger_last_time
+      (d := d) (OS := OS) (lgc := lgc)
+      (k := k) (n := 0) (m := m)
+      f0 hf0_ord g hg_ord hg_compact x hx
+  calc
+    osiiFlatTotalTimeBranch (d := d) (k := k + 1) OS lgc
+        (PositiveTimeBorchersSequence.single 0 f0 hf0_ord)
+        (PositiveTimeBorchersSequence.single m g hg_ord)
+        (BHW.toDiffFlat (k + 1) d
+          (fun j => wickRotatePoint (commonTimeShiftConfig (d := d) x a j))) =
+      OS.S (0 + m) (ZeroDiagonalSchwartz.ofClassical
+        ((timeShiftSchwartzNPoint (d := d) a f0).osConjTensorProduct
+          (timeShiftSchwartzNPoint (d := d) (x (Fin.last k) 0) g))) := hleft
+    _ = OS.S (0 + m) (ZeroDiagonalSchwartz.ofClassical
+        (f0.osConjTensorProduct
+          (timeShiftSchwartzNPoint (d := d) (x (Fin.last k) 0) g))) := by
+        rw [hshift0]
+    _ =
+      osiiFlatTotalTimeBranch (d := d) (k := k + 1) OS lgc
+        (PositiveTimeBorchersSequence.single 0 f0 hf0_ord)
+        (PositiveTimeBorchersSequence.single m g hg_ord)
+        (BHW.toDiffFlat (k + 1) d (fun j => wickRotatePoint (x j))) := hright.symm
 
 /-- Concentrated left/right Borchers scalarization of the flat branch real edge:
 on ordered Wick-rotated Euclidean configurations, the flat branch is the

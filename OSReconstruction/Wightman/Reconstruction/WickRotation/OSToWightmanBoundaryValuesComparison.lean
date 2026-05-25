@@ -4,6 +4,7 @@ Released under Apache 2.0 license.
 Authors: Michael Douglas, ModularPhysics Contributors
 -/
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBoundaryValuesBase
+import OSReconstruction.SCV.DistributionalEOWCutoff
 
 /-!
 # OS to Wightman Boundary Value Transfer Support
@@ -1760,6 +1761,96 @@ theorem exists_compactSupportApprox_tsupport_subset_npoint
     rw [hrew]
     simpa [Function.comp,
       locality_unflatten_flattenSchwartzNPoint (d := d) f] using hunflat
+
+omit [NeZero d] in
+/-- A compact subset of an open `NPointDomain` set admits a Schwartz cutoff
+equal to one on the compact set and whose topological support lies in the open
+set. -/
+theorem exists_schwartzNPoint_cutoff_eq_one_on_compact_subset_open
+    {n : ℕ} {K U : Set (NPointDomain d n)}
+    (hK : IsCompact K) (hU : IsOpen U) (hKU : K ⊆ U) :
+    ∃ χ : SchwartzNPoint d n,
+      (∀ x ∈ K, χ x = 1) ∧
+      tsupport (χ : NPointDomain d n → ℂ) ⊆ U := by
+  classical
+  let e : NPointDomain d n ≃L[ℝ] (Fin (n * (d + 1)) → ℝ) :=
+    flattenCLEquivReal n (d + 1)
+  let Kflat : Set (Fin (n * (d + 1)) → ℝ) := e '' K
+  let Uflat : Set (Fin (n * (d + 1)) → ℝ) := e '' U
+  have hKflat : IsCompact Kflat := hK.image e.continuous
+  have hUflat : IsOpen Uflat := by
+    simpa [Uflat] using e.toHomeomorph.isOpenMap U hU
+  have hKUflat : Kflat ⊆ Uflat := by
+    intro y hy
+    rcases hy with ⟨x, hxK, rfl⟩
+    exact ⟨x, hKU hxK, rfl⟩
+  obtain ⟨χflat, hχflat_one, hχflat_sub⟩ :=
+    SCV.exists_schwartz_cutoff_eq_one_on_compact_subset_open
+      (m := n * (d + 1)) hKflat hUflat hKUflat
+  let χ : SchwartzNPoint d n :=
+    SchwartzMap.compCLMOfContinuousLinearEquiv ℂ e χflat
+  refine ⟨χ, ?_, ?_⟩
+  · intro x hxK
+    change χflat (e x) = 1
+    exact hχflat_one (e x) ⟨x, hxK, rfl⟩
+  · have hχ_tsupport :
+        tsupport (χ : NPointDomain d n → ℂ) =
+          e.toHomeomorph ⁻¹'
+            tsupport (χflat : (Fin (n * (d + 1)) → ℝ) → ℂ) := by
+      simpa [χ, e, SchwartzMap.compCLMOfContinuousLinearEquiv_apply] using
+        (tsupport_comp_eq_preimage
+          (g := (χflat : (Fin (n * (d + 1)) → ℝ) → ℂ)) e.toHomeomorph)
+    intro x hx
+    have hex : e x ∈ Uflat := hχflat_sub (by
+      simpa [hχ_tsupport] using hx)
+    rcases hex with ⟨y, hyU, hy_eq⟩
+    have hyx : y = x := e.injective hy_eq
+    simpa [hyx] using hyU
+
+omit [NeZero d] in
+/-- Localize a Schwartz test to an open patch while preserving its values on a
+chosen compact core. -/
+theorem exists_schwartzNPoint_localized_eq_on_compact_subset_open
+    {n : ℕ} {K U : Set (NPointDomain d n)}
+    (hK : IsCompact K) (hU : IsOpen U) (hKU : K ⊆ U)
+    (f : SchwartzNPoint d n) :
+    ∃ ψ : SchwartzNPoint d n,
+      (∀ x ∈ K, ψ x = f x) ∧
+      tsupport (ψ : NPointDomain d n → ℂ) ⊆ U := by
+  obtain ⟨χ, hχ_one, hχ_support⟩ :=
+    exists_schwartzNPoint_cutoff_eq_one_on_compact_subset_open
+      (d := d) hK hU hKU
+  let ψ : SchwartzNPoint d n := SchwartzMap.smulLeftCLM ℂ χ f
+  refine ⟨ψ, ?_, ?_⟩
+  · intro x hxK
+    change (SchwartzMap.smulLeftCLM ℂ χ f : SchwartzNPoint d n) x = f x
+    rw [SchwartzMap.smulLeftCLM_apply_apply χ.hasTemperateGrowth f x]
+    simp [hχ_one x hxK]
+  · intro x hx
+    exact hχ_support
+      ((SchwartzMap.tsupport_smulLeftCLM_subset
+        (F := ℂ)
+        (g := (χ : NPointDomain d n → ℂ))
+        (f := f)) hx).2
+
+omit [NeZero d] in
+/-- If the ordinary support of a Schwartz test is contained in a compact core
+inside a patch, then its topological support is contained in the patch.  This
+is the compact-core support upgrade needed before applying local
+boundary-value packets with `tsupport` hypotheses. -/
+theorem tsupport_subset_of_support_subset_compact_subset_open
+    {n : ℕ} {K U : Set (NPointDomain d n)}
+    (hK : IsCompact K) (_hU : IsOpen U) (hKU : K ⊆ U)
+    (f : SchwartzNPoint d n)
+    (hf_support : Function.support (f : NPointDomain d n → ℂ) ⊆ K) :
+    tsupport (f : NPointDomain d n → ℂ) ⊆ U := by
+  have hclosure :
+      closure (Function.support (f : NPointDomain d n → ℂ)) ⊆ K :=
+    closure_minimal hf_support hK.isClosed
+  have htsupport :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ K := by
+    simpa [tsupport] using hclosure
+  exact htsupport.trans hKU
 
 private noncomputable def localityPermuteSchwartzCLM {n : ℕ}
     (σ : Equiv.Perm (Fin n)) :
