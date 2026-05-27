@@ -820,6 +820,360 @@ theorem timeShiftSchwartzNPoint_zero_eq
   ext i
   exact Fin.elim0 i
 
+theorem timeShiftBorchers_zero_funcs
+    (F : BorchersSequence d) :
+    ∀ n, (timeShiftBorchers (d := d) 0 F).funcs n = F.funcs n := by
+  intro n
+  ext x
+  rw [timeShiftBorchers_funcs, timeShiftSchwartzNPoint_apply]
+  congr 1
+  funext i
+  ext μ
+  simp [timeShiftVec]
+
+theorem timeShiftBorchers_single_zero_arity_funcs
+    (t : ℝ) (f0 : SchwartzNPoint d 0) :
+    ∀ n,
+      (timeShiftBorchers (d := d) t (BorchersSequence.single 0 f0)).funcs n =
+        (BorchersSequence.single 0 f0).funcs n := by
+  intro n
+  by_cases hn : n = 0
+  · subst hn
+    simp [BorchersSequence.single, timeShiftSchwartzNPoint_zero_eq]
+  · ext x
+    simp [BorchersSequence.single, hn]
+
+/-- Vacuum-left OS inner products are invariant under positive time shifts of
+the right vector.  This is OS `E1`: move the shift to the zero-point left
+factor, where the time shift is trivial. -/
+theorem OSInnerProduct_vacuumLeft_timeShift_eq
+    (OS : OsterwalderSchraderAxioms d)
+    (f0 : SchwartzNPoint d 0)
+    (hf0_ord : tsupport (f0 : NPointDomain d 0 → ℂ) ⊆
+      OrderedPositiveTimeRegion d 0)
+    (G : PositiveTimeBorchersSequence d)
+    (t : ℝ) (ht : 0 < t) :
+    OSInnerProduct d OS.S
+        (PositiveTimeBorchersSequence.single 0 f0 hf0_ord : BorchersSequence d)
+        (timeShiftBorchers (d := d) t (G : BorchersSequence d)) =
+      OSInnerProduct d OS.S
+        (PositiveTimeBorchersSequence.single 0 f0 hf0_ord : BorchersSequence d)
+        (G : BorchersSequence d) := by
+  let F0 : PositiveTimeBorchersSequence d :=
+    PositiveTimeBorchersSequence.single 0 f0 hf0_ord
+  have hleft_adm :
+      OSTensorAdmissible d
+        (timeShiftBorchers (d := d) t (F0 : BorchersSequence d))
+        (timeShiftBorchers (d := d) 0 (G : BorchersSequence d)) := by
+    simpa [timeShiftNonnegPositiveTimeBorchers_toBorchersSequence]
+      using
+        PositiveTimeBorchersSequence.ostensorAdmissible (d := d)
+          (timeShiftNonnegPositiveTimeBorchers (d := d) t (le_of_lt ht) F0)
+          (timeShiftNonnegPositiveTimeBorchers (d := d) 0 le_rfl G)
+  have hright_adm :
+      OSTensorAdmissible d (F0 : BorchersSequence d)
+        (timeShiftBorchers (d := d) (t + 0) (G : BorchersSequence d)) := by
+    simpa [timeShiftNonnegPositiveTimeBorchers_toBorchersSequence]
+      using
+        PositiveTimeBorchersSequence.ostensorAdmissible (d := d)
+          F0
+          (timeShiftNonnegPositiveTimeBorchers (d := d) (t + 0)
+            (by positivity) G)
+  have hshift :=
+    OSInnerProduct_timeShift_eq (d := d) OS (F0 : BorchersSequence d)
+      (G : BorchersSequence d) 0 t hleft_adm hright_adm
+  calc
+    OSInnerProduct d OS.S
+        (PositiveTimeBorchersSequence.single 0 f0 hf0_ord : BorchersSequence d)
+        (timeShiftBorchers (d := d) t (G : BorchersSequence d))
+        =
+      OSInnerProduct d OS.S
+        (timeShiftBorchers (d := d) t (F0 : BorchersSequence d))
+        (timeShiftBorchers (d := d) 0 (G : BorchersSequence d)) := by
+        simpa [F0, add_zero] using hshift.symm
+    _ =
+      OSInnerProduct d OS.S (F0 : BorchersSequence d)
+        (timeShiftBorchers (d := d) 0 (G : BorchersSequence d)) := by
+        exact OSInnerProduct_congr_left (d := d) OS.S OS.E0_linear
+          (timeShiftBorchers (d := d) t (F0 : BorchersSequence d))
+          (F0 : BorchersSequence d)
+          (timeShiftBorchers (d := d) 0 (G : BorchersSequence d))
+          (by
+            simpa [F0] using
+              timeShiftBorchers_single_zero_arity_funcs
+                (d := d) t f0)
+    _ =
+      OSInnerProduct d OS.S (F0 : BorchersSequence d) (G : BorchersSequence d) := by
+        exact OSInnerProduct_congr_right (d := d) OS.S OS.E0_linear
+          (F0 : BorchersSequence d)
+          (timeShiftBorchers (d := d) 0 (G : BorchersSequence d))
+          (G : BorchersSequence d)
+          (timeShiftBorchers_zero_funcs (d := d) (G : BorchersSequence d))
+
+/-- The vacuum-left one-variable OS-II semigroup branch is constant on the
+right half-plane.  The proof is the OS II Chapter V identity-theorem upgrade:
+the positive real edge is constant by OS `E1`, and both sides are holomorphic
+on the right half-plane. -/
+theorem OSInnerProductTimeShiftHolomorphicValueExpandBoth_vacuumLeft_constant
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (f0 : SchwartzNPoint d 0)
+    (hf0_ord : tsupport (f0 : NPointDomain d 0 → ℂ) ⊆
+      OrderedPositiveTimeRegion d 0)
+    (G : PositiveTimeBorchersSequence d)
+    (hG_compact : ∀ n,
+      HasCompactSupport (((G : BorchersSequence d).funcs n : SchwartzNPoint d n) :
+        NPointDomain d n → ℂ))
+    (z : ℂ) (hz : 0 < z.re) :
+    OSInnerProductTimeShiftHolomorphicValueExpandBoth (d := d) OS lgc
+        (PositiveTimeBorchersSequence.single 0 f0 hf0_ord) G z =
+      OSInnerProduct d OS.S
+        (PositiveTimeBorchersSequence.single 0 f0 hf0_ord : BorchersSequence d)
+        (G : BorchersSequence d) := by
+  let F0 : PositiveTimeBorchersSequence d :=
+    PositiveTimeBorchersSequence.single 0 f0 hf0_ord
+  let H : ℂ → ℂ :=
+    OSInnerProductTimeShiftHolomorphicValueExpandBoth (d := d) OS lgc F0 G
+  let C : ℂ → ℂ := fun _ =>
+    OSInnerProduct d OS.S (F0 : BorchersSequence d) (G : BorchersSequence d)
+  let U : Set ℂ := {w : ℂ | 0 < w.re}
+  have hU_open : IsOpen U := isOpen_lt continuous_const Complex.continuous_re
+  have hU_conv : Convex ℝ U := convex_halfSpace_re_gt (0 : ℝ)
+  have hU_conn : IsConnected U := ⟨⟨1, by simp [U]⟩, hU_conv.isPreconnected⟩
+  have hH_holo : DifferentiableOn ℂ H U := by
+    simpa [H, U, F0] using
+      differentiableOn_OSInnerProductTimeShiftHolomorphicValueExpandBoth
+        (d := d) OS lgc F0 G
+  have hC_holo : DifferentiableOn ℂ C U := by
+    simp [C]
+  have h_freq : ∃ᶠ w in nhdsWithin (1 : ℂ) {(1 : ℂ)}ᶜ, H w = C w := by
+    rw [Filter.Frequently, Filter.Eventually, mem_nhdsWithin]
+    rintro ⟨V, hV_open, h1_mem, hV_sub⟩
+    obtain ⟨r, hr_pos, hrV⟩ := Metric.isOpen_iff.mp hV_open 1 h1_mem
+    let ε : ℝ := min (r / 2) (1 / 2)
+    have hε_pos : 0 < ε := by
+      dsimp [ε]
+      positivity
+    have hε_lt_r : ε < r := by
+      have hr2 : r / 2 < r := by linarith
+      exact lt_of_le_of_lt (by dsimp [ε]; exact min_le_left _ _) hr2
+    have hz_in_V : (((1 + ε : ℝ) : ℂ)) ∈ V := by
+      apply hrV
+      rw [Metric.mem_ball, Complex.dist_eq]
+      have hsub : (((1 + ε : ℝ) : ℂ) - 1) = (ε : ℂ) := by
+        norm_num
+      rw [hsub, Complex.norm_real, Real.norm_eq_abs,
+        abs_of_nonneg (le_of_lt hε_pos)]
+      exact hε_lt_r
+    have hz_ne : (((1 + ε : ℝ) : ℂ)) ≠ 1 := by
+      intro hEq
+      have hsub : (((1 + ε : ℝ) : ℂ) - 1) = (ε : ℂ) := by
+        norm_num
+      have hε_zero : (ε : ℂ) = 0 := by
+        simpa [hsub] using sub_eq_zero.mpr hEq
+      exact hε_pos.ne' (Complex.ofReal_eq_zero.mp hε_zero)
+    have hpos : 0 < 1 + ε := by linarith
+    have hrealH :
+        H ((1 + ε : ℝ) : ℂ) =
+          OSInnerProduct d OS.S (F0 : BorchersSequence d)
+            (timeShiftBorchers (d := d) (1 + ε) (G : BorchersSequence d)) := by
+      simpa [H, F0] using
+        OSInnerProductTimeShiftHolomorphicValueExpandBoth_ofReal_eq_of_isCompactSupport
+          (d := d) OS lgc F0 G hG_compact (1 + ε) hpos
+    have hrealC :
+        OSInnerProduct d OS.S (F0 : BorchersSequence d)
+            (timeShiftBorchers (d := d) (1 + ε) (G : BorchersSequence d)) =
+          C ((1 + ε : ℝ) : ℂ) := by
+      simpa [C] using
+        OSInnerProduct_vacuumLeft_timeShift_eq
+          (d := d) OS f0 hf0_ord G (1 + ε) hpos
+    exact hV_sub ⟨hz_in_V, hz_ne⟩ (hrealH.trans hrealC)
+  have hEq : Set.EqOn H C U := by
+    exact identity_theorem_connected hU_open hU_conn H C hH_holo hC_holo
+      (1 : ℂ) (by simp [U]) h_freq
+  exact hEq hz
+
+/-- Vacuum-left total-time flat branch is constant on the OS-II positive-time
+tube.  This is the flat-coordinate form of the preceding one-variable
+identity-theorem step. -/
+theorem osiiFlatTotalTimeBranch_vacuumLeft_eq_const_on_tube
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {k : ℕ} [Nonempty (Fin k)]
+    (f0 : SchwartzNPoint d 0)
+    (hf0_ord : tsupport (f0 : NPointDomain d 0 → ℂ) ⊆
+      OrderedPositiveTimeRegion d 0)
+    (G : PositiveTimeBorchersSequence d)
+    (hG_compact : ∀ n,
+      HasCompactSupport (((G : BorchersSequence d).funcs n : SchwartzNPoint d n) :
+        NPointDomain d n → ℂ))
+    (u : Fin (k * (d + 1)) → ℂ)
+    (hu : u ∈ SCV.TubeDomain (FlatPositiveTimeDiffReal k d)) :
+    osiiFlatTotalTimeBranch (d := d) (k := k) OS lgc
+        (PositiveTimeBorchersSequence.single 0 f0 hf0_ord) G u =
+      OSInnerProduct d OS.S
+        (PositiveTimeBorchersSequence.single 0 f0 hf0_ord : BorchersSequence d)
+        (G : BorchersSequence d) := by
+  rw [osiiFlatTotalTimeBranch]
+  exact
+    OSInnerProductTimeShiftHolomorphicValueExpandBoth_vacuumLeft_constant
+      (d := d) OS lgc f0 hf0_ord G hG_compact
+      (osiiFlatTotalTimeSum (k := k) (d := d) u)
+      (osiiFlatTotalTimeSum_mem_rightHalfPlane (d := d) hu)
+
+/-- ACR(1)-coordinate form of the vacuum-left constant flat branch. -/
+theorem osiiFlatTotalTimeBranch_vacuumLeft_toDiffFlat_eq_const_on_acr
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {k : ℕ} [Nonempty (Fin k)]
+    (f0 : SchwartzNPoint d 0)
+    (hf0_ord : tsupport (f0 : NPointDomain d 0 → ℂ) ⊆
+      OrderedPositiveTimeRegion d 0)
+    (G : PositiveTimeBorchersSequence d)
+    (hG_compact : ∀ n,
+      HasCompactSupport (((G : BorchersSequence d).funcs n : SchwartzNPoint d n) :
+        NPointDomain d n → ℂ))
+    (z : Fin k → Fin (d + 1) → ℂ)
+    (hz : z ∈ AnalyticContinuationRegion d k 1) :
+    osiiFlatTotalTimeBranch (d := d) (k := k) OS lgc
+        (PositiveTimeBorchersSequence.single 0 f0 hf0_ord) G
+        (BHW.toDiffFlat k d z) =
+      OSInnerProduct d OS.S
+        (PositiveTimeBorchersSequence.single 0 f0 hf0_ord : BorchersSequence d)
+        (G : BorchersSequence d) := by
+  exact
+    osiiFlatTotalTimeBranch_vacuumLeft_eq_const_on_tube
+      (d := d) (k := k) OS lgc f0 hf0_ord G hG_compact
+      (BHW.toDiffFlat k d z)
+      ((acr_one_iff_toDiffFlat_mem_tubeDomain_positiveTimeDiff z).mp hz)
+
+/-- The vacuum-left ACR(1) flat branch is invariant under arbitrary common
+complex translations that stay inside the ACR(1) carrier.
+
+For the raw total-time flat branch only spatial common translations are
+available directly.  The missing common-time direction is recovered here from
+the OS-II vacuum-left constant-branch argument. -/
+theorem osiiFlatTotalTimeBranch_vacuumLeft_toDiffFlat_common_translation_on_acr
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {k : ℕ} [Nonempty (Fin k)]
+    (f0 : SchwartzNPoint d 0)
+    (hf0_ord : tsupport (f0 : NPointDomain d 0 → ℂ) ⊆
+      OrderedPositiveTimeRegion d 0)
+    (G : PositiveTimeBorchersSequence d)
+    (hG_compact : ∀ n,
+      HasCompactSupport (((G : BorchersSequence d).funcs n : SchwartzNPoint d n) :
+        NPointDomain d n → ℂ))
+    (z : Fin k → Fin (d + 1) → ℂ)
+    (hz : z ∈ AnalyticContinuationRegion d k 1)
+    (a : Fin (d + 1) → ℂ)
+    (hza : (fun j μ => z j μ + a μ) ∈ AnalyticContinuationRegion d k 1) :
+    osiiFlatTotalTimeBranch (d := d) (k := k) OS lgc
+        (PositiveTimeBorchersSequence.single 0 f0 hf0_ord) G
+        (BHW.toDiffFlat k d (fun j μ => z j μ + a μ)) =
+      osiiFlatTotalTimeBranch (d := d) (k := k) OS lgc
+        (PositiveTimeBorchersSequence.single 0 f0 hf0_ord) G
+        (BHW.toDiffFlat k d z) := by
+  have hleft :=
+    osiiFlatTotalTimeBranch_vacuumLeft_toDiffFlat_eq_const_on_acr
+      (d := d) (k := k) OS lgc f0 hf0_ord G hG_compact
+      (fun j μ => z j μ + a μ) hza
+  have hright :=
+    osiiFlatTotalTimeBranch_vacuumLeft_toDiffFlat_eq_const_on_acr
+      (d := d) (k := k) OS lgc f0 hf0_ord G hG_compact z hz
+  exact hleft.trans hright.symm
+
+/-- Concentrated right-factor form of the vacuum-left ACR(1) flat branch.  For
+a fixed right test vector, the branch value on the ACR(1) tube is the
+unshifted Schwinger scalar of the vacuum-left tensor. -/
+theorem osiiFlatTotalTimeBranch_vacuumLeft_single_toDiffFlat_eq_schwinger_on_acr
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {k r : ℕ} [Nonempty (Fin k)]
+    (f0 : SchwartzNPoint d 0)
+    (hf0_ord : tsupport (f0 : NPointDomain d 0 → ℂ) ⊆
+      OrderedPositiveTimeRegion d 0)
+    (g : SchwartzNPoint d r)
+    (hg_ord : tsupport (g : NPointDomain d r → ℂ) ⊆
+      OrderedPositiveTimeRegion d r)
+    (hg_compact : HasCompactSupport (g : NPointDomain d r → ℂ))
+    (z : Fin k → Fin (d + 1) → ℂ)
+    (hz : z ∈ AnalyticContinuationRegion d k 1) :
+    osiiFlatTotalTimeBranch (d := d) (k := k) OS lgc
+        (PositiveTimeBorchersSequence.single 0 f0 hf0_ord)
+        (PositiveTimeBorchersSequence.single r g hg_ord)
+        (BHW.toDiffFlat k d z) =
+      OS.S (0 + r) (ZeroDiagonalSchwartz.ofClassical
+        (f0.osConjTensorProduct g)) := by
+  let G : PositiveTimeBorchersSequence d :=
+    PositiveTimeBorchersSequence.single r g hg_ord
+  have hG_compact :
+      ∀ s,
+        HasCompactSupport ((((G : BorchersSequence d).funcs s :
+          SchwartzNPoint d s) : NPointDomain d s → ℂ)) := by
+    intro s
+    by_cases hs : s = r
+    · subst hs
+      simpa [G, PositiveTimeBorchersSequence.single_toBorchersSequence] using
+        hg_compact
+    · have hzero :
+        (((G : BorchersSequence d).funcs s : SchwartzNPoint d s) :
+          NPointDomain d s → ℂ) = 0 := by
+          simp [G, PositiveTimeBorchersSequence.single_toBorchersSequence,
+            BorchersSequence.single, hs]
+      rw [hzero]
+      simpa using (HasCompactSupport.zero :
+        HasCompactSupport (0 : NPointDomain d s → ℂ))
+  have hconst :=
+    osiiFlatTotalTimeBranch_vacuumLeft_toDiffFlat_eq_const_on_acr
+      (d := d) (k := k) OS lgc f0 hf0_ord G hG_compact z hz
+  calc
+    osiiFlatTotalTimeBranch (d := d) (k := k) OS lgc
+        (PositiveTimeBorchersSequence.single 0 f0 hf0_ord)
+        (PositiveTimeBorchersSequence.single r g hg_ord)
+        (BHW.toDiffFlat k d z) =
+      OSInnerProduct d OS.S
+        (PositiveTimeBorchersSequence.single 0 f0 hf0_ord : BorchersSequence d)
+        (G : BorchersSequence d) := hconst
+    _ =
+      OS.S (0 + r) (ZeroDiagonalSchwartz.ofClassical
+        (f0.osConjTensorProduct
+          (timeShiftSchwartzNPoint (d := d) 0 g))) := by
+        have hzero_congr :
+            OSInnerProduct d OS.S (BorchersSequence.single 0 f0)
+                (timeShiftBorchers (d := d) 0 (BorchersSequence.single r g)) =
+              OSInnerProduct d OS.S (BorchersSequence.single 0 f0)
+                (BorchersSequence.single r g) :=
+          OSInnerProduct_congr_right (d := d) OS.S OS.E0_linear
+            (BorchersSequence.single 0 f0)
+            (timeShiftBorchers (d := d) 0 (BorchersSequence.single r g))
+            (BorchersSequence.single r g)
+            (timeShiftBorchers_zero_funcs (d := d) (BorchersSequence.single r g))
+        calc
+          OSInnerProduct d OS.S
+              (PositiveTimeBorchersSequence.single 0 f0 hf0_ord : BorchersSequence d)
+              (G : BorchersSequence d) =
+            OSInnerProduct d OS.S (BorchersSequence.single 0 f0)
+              (timeShiftBorchers (d := d) 0 (BorchersSequence.single r g)) := by
+              simpa [G, PositiveTimeBorchersSequence.single_toBorchersSequence]
+                using hzero_congr.symm
+          _ =
+            OS.S (0 + r) (ZeroDiagonalSchwartz.ofClassical
+              (f0.osConjTensorProduct
+                (timeShiftSchwartzNPoint (d := d) 0 g))) :=
+              OSInnerProduct_single_right_timeShift (d := d) OS f0 g 0
+    _ =
+      OS.S (0 + r) (ZeroDiagonalSchwartz.ofClassical
+        (f0.osConjTensorProduct g)) := by
+        have hshift_zero : timeShiftSchwartzNPoint (d := d) 0 g = g := by
+          ext y
+          rw [timeShiftSchwartzNPoint_apply]
+          congr 1
+          funext i
+          ext μ
+          simp [timeShiftVec]
+        rw [hshift_zero]
+
 /-- On a vacuum-left real edge the common nonnegative time shift is invisible:
 the OS `E1` transport moves it to the zero-point left factor, where time
 translation acts trivially. -/

@@ -24,6 +24,114 @@ namespace SCV
 
 variable {m : ℕ}
 
+noncomputable def sideHeightSlice (y x : Fin m → ℝ) :
+    ComplexChartSpace m :=
+  fun i => (x i : ℂ) + ((y i : ℝ) : ℂ) * Complex.I
+
+/-- Compact-support continuity of vector side-height boundary integrals.
+
+This is the local comparison needed when the genuine holomorphic side branch is
+evaluated at `x + i y` and the side height `y` tends to zero inside a vector
+cone.  It is only a continuity/DCT statement: finite-height side values are not
+identified with any real-shifted source current. -/
+theorem tendsto_sideIntegral_vector_nhdsWithin_zero
+    {C Y : Set (Fin m → ℝ)}
+    {Ω : Set (ComplexChartSpace m)}
+    (F : ComplexChartSpace m → ℂ)
+    (φ : SchwartzMap (Fin m → ℝ) ℂ)
+    (hΩ_open : IsOpen Ω)
+    (hF_cont : ContinuousOn F Ω)
+    (hφ_compact : HasCompactSupport (φ : (Fin m → ℝ) → ℂ))
+    (hY_mem : Y ∈ 𝓝[C] (0 : Fin m → ℝ))
+    (hY0 : (0 : Fin m → ℝ) ∈ Y)
+    (hmargin :
+      ∀ y ∈ Y, ∀ x ∈ tsupport (φ : (Fin m → ℝ) → ℂ),
+        sideHeightSlice y x ∈ Ω) :
+    Tendsto
+      (fun y : Fin m → ℝ =>
+        ∫ x : Fin m → ℝ, F (sideHeightSlice y x) * φ x)
+      (𝓝[C] (0 : Fin m → ℝ))
+      (𝓝 (∫ x : Fin m → ℝ, F (sideHeightSlice 0 x) * φ x)) := by
+  classical
+  let K : Set (Fin m → ℝ) := tsupport (φ : (Fin m → ℝ) → ℂ)
+  let f : (Fin m → ℝ) → (Fin m → ℝ) → ℂ :=
+    fun y x => F (sideHeightSlice y x) * φ x
+  have hK_compact : IsCompact K := by
+    simpa [K, HasCompactSupport] using hφ_compact
+  have hK_closed : IsClosed K := isClosed_tsupport _
+  have hside_cont :
+      Continuous fun q : (Fin m → ℝ) × (Fin m → ℝ) =>
+        sideHeightSlice q.1 q.2 := by
+    refine continuous_pi ?_
+    intro i
+    exact
+      (Complex.continuous_ofReal.comp
+          ((continuous_apply i).comp continuous_snd)).add
+        ((Complex.continuous_ofReal.comp
+            ((continuous_apply i).comp continuous_fst)).mul continuous_const)
+  have hf_cont :
+      ContinuousOn f.uncurry (Y ×ˢ Set.univ) := by
+    intro q hq
+    by_cases hxK : q.2 ∈ K
+    · have hqΩ : sideHeightSlice q.1 q.2 ∈ Ω :=
+        hmargin q.1 hq.1 q.2 hxK
+      have hF_at : ContinuousAt F (sideHeightSlice q.1 q.2) :=
+        (hF_cont (sideHeightSlice q.1 q.2) hqΩ).continuousAt
+          (hΩ_open.mem_nhds hqΩ)
+      have hside_at :
+          ContinuousAt
+            (fun q' : (Fin m → ℝ) × (Fin m → ℝ) =>
+              sideHeightSlice q'.1 q'.2) q :=
+        hside_cont.continuousAt
+      have hleft : ContinuousAt (fun p : (Fin m → ℝ) × (Fin m → ℝ) =>
+          F (sideHeightSlice p.1 p.2)) q :=
+        (ContinuousAt.comp
+          (x := q)
+          (f := fun p : (Fin m → ℝ) × (Fin m → ℝ) =>
+            sideHeightSlice p.1 p.2)
+          (g := F) hF_at hside_at)
+      have hright : ContinuousAt (fun p : (Fin m → ℝ) × (Fin m → ℝ) =>
+          φ p.2) q :=
+        φ.continuous.continuousAt.comp continuous_snd.continuousAt
+      simpa [f] using (hleft.mul hright).continuousWithinAt
+    · have hnotK_nhds : {x : Fin m → ℝ | x ∉ K} ∈ 𝓝 q.2 :=
+        hK_closed.isOpen_compl.mem_nhds hxK
+      have hnotK_pair :
+          ∀ᶠ q' : (Fin m → ℝ) × (Fin m → ℝ)
+            in nhdsWithin q (Y ×ˢ Set.univ), q'.2 ∉ K := by
+        exact (continuous_snd.continuousAt.eventually hnotK_nhds).filter_mono
+          nhdsWithin_le_nhds
+      have hprod_zero :
+          f.uncurry =ᶠ[nhdsWithin q (Y ×ˢ Set.univ)] fun _ => 0 := by
+        filter_upwards [self_mem_nhdsWithin, hnotK_pair] with q' _ hq'K
+        have hφ_zero : φ q'.2 = 0 := by
+          simpa [K] using image_eq_zero_of_notMem_tsupport hq'K
+        change F (sideHeightSlice q'.1 q'.2) * φ q'.2 = 0
+        simp [hφ_zero]
+      exact (continuousWithinAt_const.congr_of_eventuallyEq hprod_zero) (by
+        have hφ_zero : φ q.2 = 0 := by
+          simpa [K] using image_eq_zero_of_notMem_tsupport hxK
+        change F (sideHeightSlice q.1 q.2) * φ q.2 = 0
+        simp [hφ_zero])
+  have hfs :
+      ∀ p, ∀ x, p ∈ Y → x ∉ K → f p x = 0 := by
+    intro p x _ hx
+    have hφ_zero : φ x = 0 := by
+      simpa [K] using image_eq_zero_of_notMem_tsupport hx
+    simp [f, hφ_zero]
+  have hInt_cont :
+      ContinuousOn (fun y : Fin m → ℝ => ∫ x, f y x) Y :=
+    continuousOn_integral_of_compact_support (μ := volume)
+      hK_compact hf_cont hfs
+  have hY_tendsto :
+      Tendsto (fun y : Fin m → ℝ => ∫ x, f y x)
+        (𝓝[Y] (0 : Fin m → ℝ))
+        (𝓝 (∫ x, f (0 : Fin m → ℝ) x)) :=
+    hInt_cont.continuousWithinAt hY0
+  have hfilter : 𝓝[C] (0 : Fin m → ℝ) ≤ 𝓝[Y] (0 : Fin m → ℝ) :=
+    nhdsWithin_le_of_mem hY_mem
+  simpa [f] using hY_tendsto.mono_left hfilter
+
 /-- If two side-height integral families converge uniformly on a nonempty compact
 direction set and are eventually equal there, then their zero-height limits are
 the same.

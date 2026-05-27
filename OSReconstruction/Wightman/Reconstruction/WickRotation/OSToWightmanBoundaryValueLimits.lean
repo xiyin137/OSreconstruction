@@ -1575,6 +1575,14 @@ private theorem reindexSchwartzFin_translateSchwartz
     SCV.translateSchwartz_apply, OSReconstruction.reindexSchwartzFin_apply]
   simp
 
+private theorem reindexSchwartzFin_symm_comp_self_local {a b : ℕ} (h : a = b)
+    (F : SchwartzMap (Fin a → ℝ) ℂ) :
+    OSReconstruction.reindexSchwartzFin h.symm
+      (OSReconstruction.reindexSchwartzFin h F) = F := by
+  subst h
+  ext x
+  rfl
+
 /-- Fourier-shift specialization on the exact full-flat translated tensor
 surface produced by `exists_flattened_bvt_W_conjTensorProduct_right_dualCone_distribution_translate`.
 After reindexing the split head/tail block back to the literal `(n+m)`-point
@@ -3061,7 +3069,7 @@ private theorem conjTensorProduct_timeShift_eq_unflatten_reindex_translate_zeroH
     ext x
     simp [unflattenSchwartzNPoint_apply, flattenSchwartzNPoint_apply]
   exact hfull_left.symm.trans (by
-    simpa [ψt, Ψ] using
+    simpa [ψt, Ψ, reindexSchwartzFin_symm_comp_self_local] using
       congrArg (unflattenSchwartzNPoint (d := d)) hflat')
 
 /-- The full flattened Fourier-side orbit for translating the right tensor

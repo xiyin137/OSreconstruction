@@ -1,5 +1,6 @@
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIDirectionalSemigroup
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIMZFlatTubeEnvelope
+import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceTimeProductDensity
 
 /-!
 # OS-II Parametric Flat-Tube Branch
@@ -20,6 +21,16 @@ open scoped Classical BigOperators
 namespace OSReconstruction
 
 variable {d : ℕ} [NeZero d]
+
+private instance instLineSchwartzCompatibleSMul :
+    LinearMap.CompatibleSMul (SchwartzMap ℝ ℂ) ℂ ℝ ℂ where
+  map_smul := by
+    intro f r x
+    have hx : r • x = (r : ℂ) • x := by
+      ext t
+      simp
+    rw [hx]
+    simpa using f.map_smul (r : ℂ) x
 
 /-- Real log base associated to a complex log point. -/
 def osiiRealLogBase {m : ℕ} (r : Fin m → ℂ) : Fin m → ℝ :=
@@ -379,6 +390,1580 @@ theorem differentiableOn_osiiTotalLogSemigroupBranch_l1
     (differentiableOn_OSInnerProductTimeShiftHolomorphicValueExpandBoth
       (d := d) OS lgc F G).comp hsum_diff
       (fun r hr => osiiMZLogDomain_sum_exp_mem_rightHalfPlane (m := m) hr)
+
+/-- Along each positive horizontal line in the rotated upper half-plane, the
+finite Borchers expansion of the OS semigroup branch has polynomial growth.
+The estimate is obtained by summing the checked one-component semigroup
+growth bounds over the finite left and right Borchers supports. -/
+theorem hasPolynomialGrowthOnLine_rotated_OSInnerProductTimeShiftHolomorphicValueExpandBoth
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    (F G : PositiveTimeBorchersSequence d)
+    (η : ℝ) (hη : 0 < η) :
+    SCV.HasPolynomialGrowthOnLine
+      (fun x : ℝ =>
+        OSInnerProductTimeShiftHolomorphicValueExpandBoth (d := d) OS lgc F G
+          (-Complex.I * ((x : ℂ) + η * Complex.I))) := by
+  classical
+  let I : Finset ℕ := Finset.range (((F : BorchersSequence d).bound) + 1)
+  let J : Finset ℕ := Finset.range (((G : BorchersSequence d).bound) + 1)
+  let Cterm : ℕ → ℕ → ℝ := fun n m =>
+    (hasPolynomialGrowthOnLine_rotated_OSInnerProductTimeShiftHolomorphicValue
+      (d := d) OS lgc
+      (PositiveTimeBorchersSequence.single n (((F : BorchersSequence d).funcs n))
+        (F.ordered_tsupport n))
+      (PositiveTimeBorchersSequence.single m (((G : BorchersSequence d).funcs m))
+        (G.ordered_tsupport m))
+      η hη).choose
+  let Nterm : ℕ → ℕ → ℕ := fun n m =>
+    (hasPolynomialGrowthOnLine_rotated_OSInnerProductTimeShiftHolomorphicValue
+      (d := d) OS lgc
+      (PositiveTimeBorchersSequence.single n (((F : BorchersSequence d).funcs n))
+        (F.ordered_tsupport n))
+      (PositiveTimeBorchersSequence.single m (((G : BorchersSequence d).funcs m))
+        (G.ordered_tsupport m))
+      η hη).choose_spec.choose
+  let C : ℝ := ∑ n ∈ I, ∑ m ∈ J, Cterm n m
+  let N : ℕ := ∑ n ∈ I, ∑ m ∈ J, Nterm n m
+  have hCterm_pos : ∀ n ∈ I, ∀ m ∈ J, 0 < Cterm n m := by
+    intro n hn m hm
+    exact
+      (hasPolynomialGrowthOnLine_rotated_OSInnerProductTimeShiftHolomorphicValue
+        (d := d) OS lgc
+        (PositiveTimeBorchersSequence.single n (((F : BorchersSequence d).funcs n))
+          (F.ordered_tsupport n))
+        (PositiveTimeBorchersSequence.single m (((G : BorchersSequence d).funcs m))
+          (G.ordered_tsupport m))
+        η hη).choose_spec.choose_spec.1
+  have hC_nonneg : 0 ≤ C := by
+    dsimp [C]
+    exact Finset.sum_nonneg fun n hn =>
+      Finset.sum_nonneg fun m hm => le_of_lt (hCterm_pos n hn m hm)
+  refine ⟨C + 1, N, by linarith, ?_⟩
+  intro x
+  have hbase_one : 1 ≤ 1 + |x| := by
+    linarith [abs_nonneg x]
+  have hbase_nonneg : 0 ≤ 1 + |x| := by positivity
+  have hterm :
+      ∀ n ∈ I, ∀ m ∈ J,
+        ‖OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc
+            (PositiveTimeBorchersSequence.single n (((F : BorchersSequence d).funcs n))
+              (F.ordered_tsupport n))
+            (PositiveTimeBorchersSequence.single m (((G : BorchersSequence d).funcs m))
+              (G.ordered_tsupport m))
+            (-Complex.I * ((x : ℂ) + η * Complex.I))‖ ≤ Cterm n m * (1 + |x|) ^ N := by
+    intro n hn m hm
+    have hgrowth :=
+      (hasPolynomialGrowthOnLine_rotated_OSInnerProductTimeShiftHolomorphicValue
+        (d := d) OS lgc
+        (PositiveTimeBorchersSequence.single n (((F : BorchersSequence d).funcs n))
+          (F.ordered_tsupport n))
+        (PositiveTimeBorchersSequence.single m (((G : BorchersSequence d).funcs m))
+          (G.ordered_tsupport m))
+        η hη).choose_spec.choose_spec.2
+    have hN_inner :
+        Nterm n m ≤ ∑ m ∈ J, Nterm n m :=
+      Finset.single_le_sum (fun _ _ => Nat.zero_le _) hm
+    have hN_outer :
+        (∑ m ∈ J, Nterm n m) ≤ N :=
+      Finset.single_le_sum
+        (s := I) (a := n)
+        (f := fun n => ∑ m ∈ J, Nterm n m)
+        (fun _ _ => Nat.zero_le _) hn
+    have hN_le : Nterm n m ≤ N := le_trans hN_inner hN_outer
+    have hpow :
+        (1 + |x|) ^ Nterm n m ≤ (1 + |x|) ^ N :=
+      pow_le_pow_right₀ hbase_one hN_le
+    have hC_nonneg_nm : 0 ≤ Cterm n m := le_of_lt (hCterm_pos n hn m hm)
+    calc
+      ‖OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc
+          (PositiveTimeBorchersSequence.single n (((F : BorchersSequence d).funcs n))
+            (F.ordered_tsupport n))
+          (PositiveTimeBorchersSequence.single m (((G : BorchersSequence d).funcs m))
+            (G.ordered_tsupport m))
+          (-Complex.I * ((x : ℂ) + η * Complex.I))‖
+          ≤ Cterm n m * (1 + |x|) ^ Nterm n m := by
+            simpa [Cterm, Nterm] using hgrowth x
+      _ ≤ Cterm n m * (1 + |x|) ^ N := by
+            exact mul_le_mul_of_nonneg_left hpow hC_nonneg_nm
+  have hsum_norm :
+      ‖∑ n ∈ I, ∑ m ∈ J,
+        OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc
+          (PositiveTimeBorchersSequence.single n (((F : BorchersSequence d).funcs n))
+            (F.ordered_tsupport n))
+          (PositiveTimeBorchersSequence.single m (((G : BorchersSequence d).funcs m))
+            (G.ordered_tsupport m))
+          (-Complex.I * ((x : ℂ) + η * Complex.I))‖ ≤ C * (1 + |x|) ^ N := by
+    calc
+      ‖∑ n ∈ I, ∑ m ∈ J,
+        OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc
+          (PositiveTimeBorchersSequence.single n (((F : BorchersSequence d).funcs n))
+            (F.ordered_tsupport n))
+          (PositiveTimeBorchersSequence.single m (((G : BorchersSequence d).funcs m))
+            (G.ordered_tsupport m))
+          (-Complex.I * ((x : ℂ) + η * Complex.I))‖
+          ≤ ∑ n ∈ I, ‖∑ m ∈ J,
+        OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc
+          (PositiveTimeBorchersSequence.single n (((F : BorchersSequence d).funcs n))
+            (F.ordered_tsupport n))
+          (PositiveTimeBorchersSequence.single m (((G : BorchersSequence d).funcs m))
+            (G.ordered_tsupport m))
+          (-Complex.I * ((x : ℂ) + η * Complex.I))‖ := by
+            exact norm_sum_le _ _
+      _ ≤ ∑ n ∈ I, ∑ m ∈ J, Cterm n m * (1 + |x|) ^ N := by
+            exact Finset.sum_le_sum fun n hn =>
+              calc
+                ‖∑ m ∈ J,
+                  OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc
+                    (PositiveTimeBorchersSequence.single n
+                      (((F : BorchersSequence d).funcs n))
+                      (F.ordered_tsupport n))
+                    (PositiveTimeBorchersSequence.single m
+                      (((G : BorchersSequence d).funcs m))
+                      (G.ordered_tsupport m))
+                    (-Complex.I * ((x : ℂ) + η * Complex.I))‖
+                    ≤ ∑ m ∈ J,
+                      ‖OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc
+                        (PositiveTimeBorchersSequence.single n
+                          (((F : BorchersSequence d).funcs n))
+                          (F.ordered_tsupport n))
+                        (PositiveTimeBorchersSequence.single m
+                          (((G : BorchersSequence d).funcs m))
+                          (G.ordered_tsupport m))
+                        (-Complex.I * ((x : ℂ) + η * Complex.I))‖ := by
+                          exact norm_sum_le _ _
+                _ ≤ ∑ m ∈ J, Cterm n m * (1 + |x|) ^ N := by
+                          exact Finset.sum_le_sum fun m hm => hterm n hn m hm
+      _ = C * (1 + |x|) ^ N := by
+            simp [C, Finset.sum_mul]
+  calc
+    ‖OSInnerProductTimeShiftHolomorphicValueExpandBoth (d := d) OS lgc F G
+        (-Complex.I * ((x : ℂ) + η * Complex.I))‖
+        = ‖∑ n ∈ I, ∑ m ∈ J,
+          OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc
+            (PositiveTimeBorchersSequence.single n (((F : BorchersSequence d).funcs n))
+              (F.ordered_tsupport n))
+            (PositiveTimeBorchersSequence.single m (((G : BorchersSequence d).funcs m))
+              (G.ordered_tsupport m))
+            (-Complex.I * ((x : ℂ) + η * Complex.I))‖ := by
+          simp [OSInnerProductTimeShiftHolomorphicValueExpandBoth, I, J]
+    _ ≤ C * (1 + |x|) ^ N := hsum_norm
+    _ ≤ (C + 1) * (1 + |x|) ^ N := by
+          exact mul_le_mul_of_nonneg_right (by linarith) (pow_nonneg hbase_nonneg N)
+
+/-- Integrability of the recombined finite Borchers expansion against Fourier
+transforms of Schwartz tests along positive horizontal lines. -/
+theorem integrable_mul_fourierTransform_of_rotated_OSInnerProductTimeShiftHolomorphicValueExpandBoth
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    (F G : PositiveTimeBorchersSequence d)
+    (χ : SchwartzMap ℝ ℂ)
+    {η : ℝ} (hη : 0 < η) :
+    MeasureTheory.Integrable
+      (fun x : ℝ =>
+        OSInnerProductTimeShiftHolomorphicValueExpandBoth (d := d) OS lgc F G
+            (-Complex.I * ((x : ℂ) + η * Complex.I)) *
+          (SchwartzMap.fourierTransformCLM ℂ χ) x) := by
+  have hline_cont :
+      Continuous
+        (fun x : ℝ =>
+          OSInnerProductTimeShiftHolomorphicValueExpandBoth (d := d) OS lgc F G
+            (-Complex.I * ((x : ℂ) + η * Complex.I))) := by
+    have hmap_cont : Continuous (fun x : ℝ => -Complex.I * ((x : ℂ) + η * Complex.I)) := by
+      fun_prop
+    exact
+      (differentiableOn_OSInnerProductTimeShiftHolomorphicValueExpandBoth
+        (d := d) OS lgc F G).continuousOn.comp_continuous hmap_cont
+        (by
+          intro x
+          simp [Complex.mul_re, hη])
+  exact SCV.integrable_mul_fourierTransform_of_continuous_polynomialGrowthOnLine
+    (f := fun x : ℝ =>
+      OSInnerProductTimeShiftHolomorphicValueExpandBoth (d := d) OS lgc F G
+        (-Complex.I * ((x : ℂ) + η * Complex.I)))
+    hline_cont
+    (hasPolynomialGrowthOnLine_rotated_OSInnerProductTimeShiftHolomorphicValueExpandBoth
+      (d := d) OS lgc F G η hη)
+    χ
+
+/-- A continuous polynomial-growth function on the real line defines a
+one-variable tempered distribution.  This is the local functional-analytic
+bridge used to turn the positive-height OS-II semigroup branch into the
+`Tseq` family required by the Section 4.3 dense-boundary theorem. -/
+private theorem exists_lineTemperedCLM_of_continuous_polynomialGrowthOnLine
+    (f : ℝ → ℂ)
+    (hf_cont : Continuous f)
+    (hf_growth : SCV.HasPolynomialGrowthOnLine f) :
+    ∃ T : SchwartzMap ℝ ℂ →L[ℂ] ℂ,
+      ∀ φ : SchwartzMap ℝ ℂ, T φ = ∫ x : ℝ, f x * φ x := by
+  rcases hf_growth with ⟨C_bound, N, hC_bound_pos, h_growth_bound⟩
+  let M : ℕ := N + 2
+  let sem : SchwartzMap ℝ ℂ → ℝ :=
+    fun φ => (Finset.Iic (M, 0)).sup (schwartzSeminormFamily ℂ ℝ ℂ) φ
+  have h_decay_int : MeasureTheory.Integrable
+      (fun t : ℝ => (1 + ‖t‖) ^ (-(2 : ℝ))) MeasureTheory.volume := by
+    have : (Module.finrank ℝ ℝ : ℝ) < (2 : ℝ) := by norm_num
+    simpa using integrable_one_add_norm this
+  have h_decay_int_nat : MeasureTheory.Integrable
+      (fun t : ℝ => ((1 + ‖t‖) ^ 2)⁻¹) MeasureTheory.volume := by
+    simpa [Real.rpow_neg (by positivity : 0 ≤ (1 + ‖(0 : ℝ)‖)),
+      Real.rpow_natCast] using h_decay_int
+  have hsem_bound : ∀ (φ : SchwartzMap ℝ ℂ) (t : ℝ),
+      (1 + ‖t‖) ^ M * ‖φ t‖ ≤ 2 ^ M * sem φ := by
+    intro φ t
+    simpa [sem, M, norm_iteratedFDeriv_zero] using
+      (SchwartzMap.one_add_le_sup_seminorm_apply
+        (𝕜 := ℂ) (m := (M, 0)) (k := M) (n := 0)
+        (le_rfl) (le_rfl) φ t)
+  have h_pointwise_bound : ∀ (φ : SchwartzMap ℝ ℂ) (t : ℝ),
+      ‖f t * φ t‖ ≤
+        C_bound * 2 ^ M * sem φ * ((1 + ‖t‖) ^ 2)⁻¹ := by
+    intro φ t
+    have h_growth_t : ‖f t‖ ≤ C_bound * (1 + ‖t‖) ^ N :=
+      h_growth_bound t
+    have h_pow_pos : 0 < (1 + ‖t‖) ^ 2 := by positivity
+    have h_decay_step :
+        (1 + ‖t‖) ^ N * ‖φ t‖ ≤
+          2 ^ M * sem φ * ((1 + ‖t‖) ^ 2)⁻¹ := by
+      rw [le_mul_inv_iff₀ h_pow_pos]
+      calc
+        (1 + ‖t‖) ^ N * ‖φ t‖ * (1 + ‖t‖) ^ 2
+            = (1 + ‖t‖) ^ M * ‖φ t‖ := by
+                rw [show M = N + 2 by simp [M], pow_add]
+                ring
+        _ ≤ 2 ^ M * sem φ := hsem_bound φ t
+    have h_decay_mul :
+        C_bound * (1 + ‖t‖) ^ N * ‖φ t‖ ≤
+          C_bound * (2 ^ M * sem φ * ((1 + ‖t‖) ^ 2)⁻¹) := by
+      simpa [mul_assoc] using
+        (mul_le_mul_of_nonneg_left h_decay_step (le_of_lt hC_bound_pos))
+    calc
+      ‖f t * φ t‖ = ‖f t‖ * ‖φ t‖ := norm_mul _ _
+      _ ≤ C_bound * (1 + ‖t‖) ^ N * ‖φ t‖ :=
+        mul_le_mul_of_nonneg_right h_growth_t (norm_nonneg _)
+      _ ≤ C_bound * (2 ^ M * sem φ * ((1 + ‖t‖) ^ 2)⁻¹) := h_decay_mul
+      _ = C_bound * 2 ^ M * sem φ * ((1 + ‖t‖) ^ 2)⁻¹ := by ring
+  have h_integrable : ∀ φ : SchwartzMap ℝ ℂ,
+      MeasureTheory.Integrable (fun t : ℝ => f t * φ t) MeasureTheory.volume := by
+    intro φ
+    have h_majorant_int : MeasureTheory.Integrable
+        (fun t : ℝ => C_bound * 2 ^ M * sem φ * ((1 + ‖t‖) ^ 2)⁻¹)
+        MeasureTheory.volume :=
+      h_decay_int_nat.const_mul (C_bound * 2 ^ M * sem φ)
+    refine h_majorant_int.mono' ((hf_cont.mul φ.continuous).aestronglyMeasurable) ?_
+    exact Filter.Eventually.of_forall (h_pointwise_bound φ)
+  let I₂ : ℝ := ∫ t : ℝ, ((1 + ‖t‖) ^ 2)⁻¹
+  let T : SchwartzMap ℝ ℂ →L[ℂ] ℂ :=
+    SchwartzMap.mkCLMtoNormedSpace (𝕜 := ℂ)
+      (fun φ : SchwartzMap ℝ ℂ => ∫ t : ℝ, f t * φ t)
+      (fun φ ψ => by
+        simpa [mul_add] using
+          (MeasureTheory.integral_add
+            (f := fun t : ℝ => f t * φ t)
+            (g := fun t : ℝ => f t * ψ t)
+            (h_integrable φ) (h_integrable ψ)))
+      (fun a φ => by
+        simpa [mul_assoc, mul_left_comm, mul_comm] using
+          (MeasureTheory.integral_smul a (fun t : ℝ => f t * φ t)))
+      (by
+        have hI₂_nonneg : 0 ≤ I₂ := by
+          unfold I₂
+          exact MeasureTheory.integral_nonneg fun _ => by positivity
+        refine ⟨Finset.Iic (M, 0), C_bound * 2 ^ M * I₂, ?_, ?_⟩
+        · exact mul_nonneg (mul_nonneg (le_of_lt hC_bound_pos) (by positivity)) hI₂_nonneg
+        · intro φ
+          calc
+            ‖∫ t : ℝ, f t * φ t‖ ≤ ∫ t : ℝ, ‖f t * φ t‖ :=
+              MeasureTheory.norm_integral_le_integral_norm _
+            _ ≤ ∫ t : ℝ, C_bound * 2 ^ M * sem φ * ((1 + ‖t‖) ^ 2)⁻¹ :=
+              MeasureTheory.integral_mono_ae (h_integrable φ).norm
+                (h_decay_int_nat.const_mul (C_bound * 2 ^ M * sem φ))
+                (Filter.Eventually.of_forall (h_pointwise_bound φ))
+            _ = C_bound * 2 ^ M * I₂ * sem φ := by
+              rw [show (∫ t : ℝ, C_bound * 2 ^ M * sem φ * ((1 + ‖t‖) ^ 2)⁻¹) =
+                  (C_bound * 2 ^ M * sem φ) * I₂ by
+                    simp [I₂, MeasureTheory.integral_const_mul]]
+              ring
+            _ = (C_bound * 2 ^ M * I₂) *
+                (Finset.Iic (M, 0)).sup (schwartzSeminormFamily ℂ ℝ ℂ) φ := by
+              simp [sem, mul_assoc])
+  refine ⟨T, ?_⟩
+  intro φ
+  rfl
+
+/-- Positive-height regularized boundary functional for the recombined OS-II
+semigroup branch.  It is the polynomial-growth line distribution at height
+`η`, composed with the Fourier transform on Schwartz tests. -/
+noncomputable def OSInnerProductTimeShiftHolomorphicValueExpandBothRegularizedCLM
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    (F G : PositiveTimeBorchersSequence d)
+    (η : ℝ) (hη : 0 < η) :
+    SchwartzMap ℝ ℂ →L[ℂ] ℂ :=
+  let f : ℝ → ℂ := fun x =>
+    OSInnerProductTimeShiftHolomorphicValueExpandBoth (d := d) OS lgc F G
+      (-Complex.I * ((x : ℂ) + η * Complex.I))
+  have hf_cont : Continuous f := by
+    have hmap_cont : Continuous (fun x : ℝ => -Complex.I * ((x : ℂ) + η * Complex.I)) := by
+      fun_prop
+    exact
+      (differentiableOn_OSInnerProductTimeShiftHolomorphicValueExpandBoth
+        (d := d) OS lgc F G).continuousOn.comp_continuous hmap_cont
+        (by
+          intro x
+          simp [Complex.mul_re, hη])
+  have hf_growth : SCV.HasPolynomialGrowthOnLine f :=
+    hasPolynomialGrowthOnLine_rotated_OSInnerProductTimeShiftHolomorphicValueExpandBoth
+      (d := d) OS lgc F G η hη
+  (Classical.choose
+    (exists_lineTemperedCLM_of_continuous_polynomialGrowthOnLine f hf_cont hf_growth)).comp
+      (SchwartzMap.fourierTransformCLM ℂ)
+
+@[simp] theorem OSInnerProductTimeShiftHolomorphicValueExpandBothRegularizedCLM_apply
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    (F G : PositiveTimeBorchersSequence d)
+    (χ : SchwartzMap ℝ ℂ)
+    {η : ℝ} (hη : 0 < η) :
+    OSInnerProductTimeShiftHolomorphicValueExpandBothRegularizedCLM
+        (d := d) OS lgc F G η hη χ =
+      ∫ x : ℝ,
+        OSInnerProductTimeShiftHolomorphicValueExpandBoth
+            (d := d) OS lgc F G
+            (-Complex.I * ((x : ℂ) + η * Complex.I)) *
+          (SchwartzMap.fourierTransformCLM ℂ χ) x := by
+  let f : ℝ → ℂ := fun x =>
+    OSInnerProductTimeShiftHolomorphicValueExpandBoth (d := d) OS lgc F G
+      (-Complex.I * ((x : ℂ) + η * Complex.I))
+  have hf_cont : Continuous f := by
+    have hmap_cont : Continuous (fun x : ℝ => -Complex.I * ((x : ℂ) + η * Complex.I)) := by
+      fun_prop
+    exact
+      (differentiableOn_OSInnerProductTimeShiftHolomorphicValueExpandBoth
+        (d := d) OS lgc F G).continuousOn.comp_continuous hmap_cont
+        (by
+          intro x
+          simp [Complex.mul_re, hη])
+  have hf_growth : SCV.HasPolynomialGrowthOnLine f :=
+    hasPolynomialGrowthOnLine_rotated_OSInnerProductTimeShiftHolomorphicValueExpandBoth
+      (d := d) OS lgc F G η hη
+  change
+    (Classical.choose
+      (exists_lineTemperedCLM_of_continuous_polynomialGrowthOnLine f hf_cont hf_growth))
+        ((SchwartzMap.fourierTransformCLM ℂ) χ) =
+      ∫ x : ℝ, f x * (SchwartzMap.fourierTransformCLM ℂ χ) x
+  exact
+    (Classical.choose_spec
+      (exists_lineTemperedCLM_of_continuous_polynomialGrowthOnLine f hf_cont hf_growth))
+      ((SchwartzMap.fourierTransformCLM ℂ) χ)
+
+/-- Moving the finite Borchers expansion through the regularized
+Fourier-paired boundary integral. -/
+private theorem integral_rotated_OSInnerProductTimeShiftHolomorphicValueExpandBoth_mul_fourierTransform_eq_sum
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    (F G : PositiveTimeBorchersSequence d)
+    (χ : SchwartzMap ℝ ℂ)
+    {η : ℝ} (hη : 0 < η) :
+    (∫ x : ℝ,
+      OSInnerProductTimeShiftHolomorphicValueExpandBoth
+          (d := d) OS lgc F G
+          (-Complex.I * ((x : ℂ) + η * Complex.I)) *
+        (SchwartzMap.fourierTransformCLM ℂ χ) x) =
+      ∑ n ∈ Finset.range (((F : BorchersSequence d).bound) + 1),
+        ∑ m ∈ Finset.range (((G : BorchersSequence d).bound) + 1),
+          ∫ x : ℝ,
+            OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc
+                (PositiveTimeBorchersSequence.single n
+                  (((F : BorchersSequence d).funcs n))
+                  (F.ordered_tsupport n))
+                (PositiveTimeBorchersSequence.single m
+                  (((G : BorchersSequence d).funcs m))
+                  (G.ordered_tsupport m))
+                (-Complex.I * ((x : ℂ) + η * Complex.I)) *
+              (SchwartzMap.fourierTransformCLM ℂ χ) x := by
+  classical
+  let I : Finset ℕ := Finset.range (((F : BorchersSequence d).bound) + 1)
+  let J : Finset ℕ := Finset.range (((G : BorchersSequence d).bound) + 1)
+  have hint :
+      ∀ n ∈ I, ∀ m ∈ J,
+        MeasureTheory.Integrable
+          (fun x : ℝ =>
+            OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc
+                (PositiveTimeBorchersSequence.single n
+                  (((F : BorchersSequence d).funcs n))
+                  (F.ordered_tsupport n))
+                (PositiveTimeBorchersSequence.single m
+                  (((G : BorchersSequence d).funcs m))
+                  (G.ordered_tsupport m))
+                (-Complex.I * ((x : ℂ) + η * Complex.I)) *
+              (SchwartzMap.fourierTransformCLM ℂ χ) x) := by
+    intro n _hn m _hm
+    exact
+      integrable_mul_fourierTransform_of_rotated_OSInnerProductTimeShiftHolomorphicValue
+        (d := d) OS lgc
+        (PositiveTimeBorchersSequence.single n
+          (((F : BorchersSequence d).funcs n))
+          (F.ordered_tsupport n))
+        (PositiveTimeBorchersSequence.single m
+          (((G : BorchersSequence d).funcs m))
+          (G.ordered_tsupport m))
+        χ hη
+  have hinner :
+      ∀ n ∈ I,
+        MeasureTheory.Integrable
+          (fun x : ℝ =>
+            ∑ m ∈ J,
+              OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc
+                  (PositiveTimeBorchersSequence.single n
+                    (((F : BorchersSequence d).funcs n))
+                    (F.ordered_tsupport n))
+                  (PositiveTimeBorchersSequence.single m
+                    (((G : BorchersSequence d).funcs m))
+                    (G.ordered_tsupport m))
+                  (-Complex.I * ((x : ℂ) + η * Complex.I)) *
+                (SchwartzMap.fourierTransformCLM ℂ χ) x) := by
+    intro n hn
+    exact MeasureTheory.integrable_finset_sum J (fun m hm => hint n hn m hm)
+  calc
+    (∫ x : ℝ,
+        OSInnerProductTimeShiftHolomorphicValueExpandBoth
+            (d := d) OS lgc F G
+            (-Complex.I * ((x : ℂ) + η * Complex.I)) *
+          (SchwartzMap.fourierTransformCLM ℂ χ) x)
+        =
+      ∫ x : ℝ,
+        ∑ n ∈ I, ∑ m ∈ J,
+          OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc
+              (PositiveTimeBorchersSequence.single n
+                (((F : BorchersSequence d).funcs n))
+                (F.ordered_tsupport n))
+              (PositiveTimeBorchersSequence.single m
+                (((G : BorchersSequence d).funcs m))
+                (G.ordered_tsupport m))
+              (-Complex.I * ((x : ℂ) + η * Complex.I)) *
+            (SchwartzMap.fourierTransformCLM ℂ χ) x := by
+          congr 1
+          funext x
+          simp [OSInnerProductTimeShiftHolomorphicValueExpandBoth, I, J,
+            Finset.sum_mul]
+    _ =
+      ∑ n ∈ I,
+        ∫ x : ℝ,
+          ∑ m ∈ J,
+            OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc
+                (PositiveTimeBorchersSequence.single n
+                  (((F : BorchersSequence d).funcs n))
+                  (F.ordered_tsupport n))
+                (PositiveTimeBorchersSequence.single m
+                  (((G : BorchersSequence d).funcs m))
+                  (G.ordered_tsupport m))
+                (-Complex.I * ((x : ℂ) + η * Complex.I)) *
+              (SchwartzMap.fourierTransformCLM ℂ χ) x := by
+          rw [MeasureTheory.integral_finset_sum I hinner]
+    _ =
+      ∑ n ∈ I, ∑ m ∈ J,
+        ∫ x : ℝ,
+          OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc
+              (PositiveTimeBorchersSequence.single n
+                (((F : BorchersSequence d).funcs n))
+                (F.ordered_tsupport n))
+              (PositiveTimeBorchersSequence.single m
+                (((G : BorchersSequence d).funcs m))
+                (G.ordered_tsupport m))
+              (-Complex.I * ((x : ℂ) + η * Complex.I)) *
+            (SchwartzMap.fourierTransformCLM ℂ χ) x := by
+          apply Finset.sum_congr rfl
+          intro n hn
+          rw [MeasureTheory.integral_finset_sum J (fun m hm => hint n hn m hm)]
+
+/-- Finite-height Paley-kernel value of the recombined OS-II regularized CLM.
+
+The Section 4.3 line current at height `η`, tested on the Paley kernel for a
+strict positive time `t`, is exactly the recombined OS semigroup branch at the
+positive shifted time `t + η`.  This is the finite-height analogue of the
+boundary selector theorem and is the kernel identity needed before the
+product-source side-integral conversion. -/
+theorem OSInnerProductTimeShiftHolomorphicValueExpandBothRegularizedCLM_psiZ_eq
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    (F G : PositiveTimeBorchersSequence d)
+    {t η : ℝ} (ht : 0 < t) (hη : 0 < η) :
+    OSInnerProductTimeShiftHolomorphicValueExpandBothRegularizedCLM
+        (d := d) OS lgc F G η hη
+        (SCV.schwartzPsiZ
+          (((2 * Real.pi : ℂ) * (t * Complex.I)))
+          (by simpa [Complex.mul_im, ht.ne'] using
+            mul_pos Real.two_pi_pos ht)) =
+      OSInnerProductTimeShiftHolomorphicValueExpandBoth
+        (d := d) OS lgc F G (((t + η : ℝ) : ℂ)) := by
+  classical
+  let χ : SchwartzMap ℝ ℂ :=
+    SCV.schwartzPsiZ
+      (((2 * Real.pi : ℂ) * (t * Complex.I)))
+      (by simpa [Complex.mul_im, ht.ne'] using mul_pos Real.two_pi_pos ht)
+  rw [OSInnerProductTimeShiftHolomorphicValueExpandBothRegularizedCLM_apply]
+  rw [integral_rotated_OSInnerProductTimeShiftHolomorphicValueExpandBoth_mul_fourierTransform_eq_sum
+    (d := d) OS lgc F G χ hη]
+  unfold OSInnerProductTimeShiftHolomorphicValueExpandBoth
+  simp only [Finset.sum_apply]
+  apply Finset.sum_congr rfl
+  intro n hn
+  apply Finset.sum_congr rfl
+  intro m hm
+  let Fn : PositiveTimeBorchersSequence d :=
+    PositiveTimeBorchersSequence.single n (((F : BorchersSequence d).funcs n))
+      (F.ordered_tsupport n)
+  let Gm : PositiveTimeBorchersSequence d :=
+    PositiveTimeBorchersSequence.single m (((G : BorchersSequence d).funcs m))
+      (G.ordered_tsupport m)
+  have hpoint :
+      ∀ s : ℝ,
+        OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc Fn Gm
+            (-Complex.I * ((s : ℂ) + η * Complex.I)) =
+          ContinuousLinearMap.selfAdjointSpectralLaplaceOffdiag
+            (osTimeShiftHilbert (d := d) OS lgc 1 one_pos)
+            (osTimeShiftHilbert_isSelfAdjoint (d := d) OS lgc 1 one_pos)
+            (((show OSPreHilbertSpace OS from (⟦Fn⟧)) : OSHilbertSpace OS))
+            (((show OSPreHilbertSpace OS from (⟦Gm⟧)) : OSHilbertSpace OS))
+            (-Complex.I * ((s : ℂ) + η * Complex.I)) := by
+    intro s
+    exact
+      OSInnerProductTimeShiftHolomorphicValue_eq_selfAdjointSpectralLaplaceOffdiag
+        (d := d) OS lgc Fn Gm (-Complex.I * ((s : ℂ) + η * Complex.I))
+        (by simp [Complex.mul_re, hη])
+  calc
+    (∫ s : ℝ,
+        OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc Fn Gm
+            (-Complex.I * ((s : ℂ) + η * Complex.I)) *
+          (SchwartzMap.fourierTransformCLM ℂ χ) s)
+        =
+      ∫ s : ℝ,
+        ContinuousLinearMap.selfAdjointSpectralLaplaceOffdiag
+            (osTimeShiftHilbert (d := d) OS lgc 1 one_pos)
+            (osTimeShiftHilbert_isSelfAdjoint (d := d) OS lgc 1 one_pos)
+            (((show OSPreHilbertSpace OS from (⟦Fn⟧)) : OSHilbertSpace OS))
+            (((show OSPreHilbertSpace OS from (⟦Gm⟧)) : OSHilbertSpace OS))
+            (-Complex.I * ((s : ℂ) + η * Complex.I)) *
+          (SchwartzMap.fourierTransformCLM ℂ χ) s := by
+            refine MeasureTheory.integral_congr_ae ?_
+            filter_upwards with s
+            rw [hpoint s]
+    _ =
+      ContinuousLinearMap.selfAdjointSpectralLaplaceOffdiag
+        (osTimeShiftHilbert (d := d) OS lgc 1 one_pos)
+        (osTimeShiftHilbert_isSelfAdjoint (d := d) OS lgc 1 one_pos)
+        (((show OSPreHilbertSpace OS from (⟦Fn⟧)) : OSHilbertSpace OS))
+        (((show OSPreHilbertSpace OS from (⟦Gm⟧)) : OSHilbertSpace OS))
+        (((t + η : ℝ) : ℂ)) := by
+          simpa [χ] using
+            integral_rotated_selfAdjointSpectralLaplaceOffdiag_mul_fourierTransform_psiZ
+              (A := osTimeShiftHilbert (d := d) OS lgc 1 one_pos)
+              (hA := osTimeShiftHilbert_isSelfAdjoint (d := d) OS lgc 1 one_pos)
+              (hspec := spectrum_osTimeShiftHilbert_subset_Icc (d := d) OS lgc 1 one_pos)
+              (x := (((show OSPreHilbertSpace OS from (⟦Fn⟧)) : OSHilbertSpace OS)))
+              (y := (((show OSPreHilbertSpace OS from (⟦Gm⟧)) : OSHilbertSpace OS)))
+              (t := t) (η := η) ht hη
+    _ =
+      OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc Fn Gm
+        (((t + η : ℝ) : ℂ)) := by
+          symm
+          exact
+            OSInnerProductTimeShiftHolomorphicValue_eq_selfAdjointSpectralLaplaceOffdiag
+              (d := d) OS lgc Fn Gm (((t + η : ℝ) : ℂ))
+              (by simp [add_pos ht hη])
+
+/-- For each fixed Schwartz test, the recombined finite Borchers branch gives a
+uniformly bounded family of positive-side regularized boundary pairings. -/
+theorem exists_bound_integral_rotated_OSInnerProductTimeShiftHolomorphicValueExpandBoth_mul_fourierTransform
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    (F G : PositiveTimeBorchersSequence d)
+    (χ : SchwartzMap ℝ ℂ) :
+    ∃ C : ℝ, 0 ≤ C ∧ ∀ {η : ℝ}, 0 < η →
+      ‖∫ x : ℝ,
+        OSInnerProductTimeShiftHolomorphicValueExpandBoth
+            (d := d) OS lgc F G
+            (-Complex.I * ((x : ℂ) + η * Complex.I)) *
+          (SchwartzMap.fourierTransformCLM ℂ χ) x‖ ≤ C := by
+  classical
+  let I : Finset ℕ := Finset.range (((F : BorchersSequence d).bound) + 1)
+  let J : Finset ℕ := Finset.range (((G : BorchersSequence d).bound) + 1)
+  let Cterm : ℕ → ℕ → ℝ := fun n m =>
+    Classical.choose
+      (exists_bound_integral_rotated_OSInnerProductTimeShiftHolomorphicValue_mul_fourierTransform
+        (d := d) OS lgc
+        (PositiveTimeBorchersSequence.single n
+          (((F : BorchersSequence d).funcs n))
+          (F.ordered_tsupport n))
+        (PositiveTimeBorchersSequence.single m
+          (((G : BorchersSequence d).funcs m))
+          (G.ordered_tsupport m))
+        χ)
+  have hCterm_nonneg : ∀ n m, 0 ≤ Cterm n m := by
+    intro n m
+    exact
+      (Classical.choose_spec
+        (exists_bound_integral_rotated_OSInnerProductTimeShiftHolomorphicValue_mul_fourierTransform
+          (d := d) OS lgc
+          (PositiveTimeBorchersSequence.single n
+            (((F : BorchersSequence d).funcs n))
+            (F.ordered_tsupport n))
+          (PositiveTimeBorchersSequence.single m
+            (((G : BorchersSequence d).funcs m))
+            (G.ordered_tsupport m))
+          χ)).1
+  have hCterm_bound :
+      ∀ n m, ∀ {η : ℝ}, 0 < η →
+        ‖∫ x : ℝ,
+          OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc
+              (PositiveTimeBorchersSequence.single n
+                (((F : BorchersSequence d).funcs n))
+                (F.ordered_tsupport n))
+              (PositiveTimeBorchersSequence.single m
+                (((G : BorchersSequence d).funcs m))
+                (G.ordered_tsupport m))
+              (-Complex.I * ((x : ℂ) + η * Complex.I)) *
+            (SchwartzMap.fourierTransformCLM ℂ χ) x‖ ≤ Cterm n m := by
+    intro n m η hη
+    exact
+      (Classical.choose_spec
+        (exists_bound_integral_rotated_OSInnerProductTimeShiftHolomorphicValue_mul_fourierTransform
+          (d := d) OS lgc
+          (PositiveTimeBorchersSequence.single n
+            (((F : BorchersSequence d).funcs n))
+            (F.ordered_tsupport n))
+          (PositiveTimeBorchersSequence.single m
+            (((G : BorchersSequence d).funcs m))
+            (G.ordered_tsupport m))
+          χ)).2 hη
+  refine ⟨∑ n ∈ I, ∑ m ∈ J, Cterm n m, ?_, ?_⟩
+  · exact Finset.sum_nonneg fun n _hn =>
+      Finset.sum_nonneg fun m _hm => hCterm_nonneg n m
+  · intro η hη
+    rw [
+      integral_rotated_OSInnerProductTimeShiftHolomorphicValueExpandBoth_mul_fourierTransform_eq_sum
+        (d := d) OS lgc F G χ hη]
+    calc
+      ‖∑ n ∈ I, ∑ m ∈ J,
+          ∫ x : ℝ,
+            OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc
+                (PositiveTimeBorchersSequence.single n
+                  (((F : BorchersSequence d).funcs n))
+                  (F.ordered_tsupport n))
+                (PositiveTimeBorchersSequence.single m
+                  (((G : BorchersSequence d).funcs m))
+                  (G.ordered_tsupport m))
+                (-Complex.I * ((x : ℂ) + η * Complex.I)) *
+              (SchwartzMap.fourierTransformCLM ℂ χ) x‖
+          ≤ ∑ n ∈ I,
+              ‖∑ m ∈ J,
+                ∫ x : ℝ,
+                  OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc
+                      (PositiveTimeBorchersSequence.single n
+                        (((F : BorchersSequence d).funcs n))
+                        (F.ordered_tsupport n))
+                      (PositiveTimeBorchersSequence.single m
+                        (((G : BorchersSequence d).funcs m))
+                        (G.ordered_tsupport m))
+                      (-Complex.I * ((x : ℂ) + η * Complex.I)) *
+                    (SchwartzMap.fourierTransformCLM ℂ χ) x‖ := by
+            exact norm_sum_le _ _
+      _ ≤ ∑ n ∈ I, ∑ m ∈ J,
+              ‖∫ x : ℝ,
+                OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc
+                    (PositiveTimeBorchersSequence.single n
+                      (((F : BorchersSequence d).funcs n))
+                      (F.ordered_tsupport n))
+                    (PositiveTimeBorchersSequence.single m
+                      (((G : BorchersSequence d).funcs m))
+                      (G.ordered_tsupport m))
+                    (-Complex.I * ((x : ℂ) + η * Complex.I)) *
+                  (SchwartzMap.fourierTransformCLM ℂ χ) x‖ := by
+            exact Finset.sum_le_sum fun n _hn => norm_sum_le _ _
+      _ ≤ ∑ n ∈ I, ∑ m ∈ J, Cterm n m := by
+            exact Finset.sum_le_sum fun n _hn =>
+              Finset.sum_le_sum fun m _hm => hCterm_bound n m hη
+
+/-- Continuous-linear spectral boundary functional for the finite Borchers
+expansion of the rotated OS semigroup branch. -/
+noncomputable def OSInnerProductTimeShiftHolomorphicValueExpandBothBoundaryValueCLM
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    (F G : PositiveTimeBorchersSequence d) :
+    SchwartzMap ℝ ℂ →L[ℂ] ℂ :=
+  ∑ n ∈ Finset.range (((F : BorchersSequence d).bound) + 1),
+    ∑ m ∈ Finset.range (((G : BorchersSequence d).bound) + 1),
+      selfAdjointSpectralBoundaryValueOffdiagCLM
+        (osTimeShiftHilbert (d := d) OS lgc 1 one_pos)
+        (osTimeShiftHilbert_isSelfAdjoint (d := d) OS lgc 1 one_pos)
+        (((show OSPreHilbertSpace OS from
+          (⟦PositiveTimeBorchersSequence.single n
+            (((F : BorchersSequence d).funcs n))
+            (F.ordered_tsupport n)⟧)) : OSHilbertSpace OS))
+        (((show OSPreHilbertSpace OS from
+          (⟦PositiveTimeBorchersSequence.single m
+            (((G : BorchersSequence d).funcs m))
+            (G.ordered_tsupport m)⟧)) : OSHilbertSpace OS))
+
+@[simp] theorem OSInnerProductTimeShiftHolomorphicValueExpandBothBoundaryValueCLM_apply
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    (F G : PositiveTimeBorchersSequence d)
+    (χ : SchwartzMap ℝ ℂ) :
+    OSInnerProductTimeShiftHolomorphicValueExpandBothBoundaryValueCLM
+        (d := d) OS lgc F G χ =
+      ∑ n ∈ Finset.range (((F : BorchersSequence d).bound) + 1),
+        ∑ m ∈ Finset.range (((G : BorchersSequence d).bound) + 1),
+          selfAdjointSpectralBoundaryValueOffdiag
+            (osTimeShiftHilbert (d := d) OS lgc 1 one_pos)
+            (osTimeShiftHilbert_isSelfAdjoint (d := d) OS lgc 1 one_pos)
+            (((show OSPreHilbertSpace OS from
+              (⟦PositiveTimeBorchersSequence.single n
+                (((F : BorchersSequence d).funcs n))
+                (F.ordered_tsupport n)⟧)) : OSHilbertSpace OS))
+            (((show OSPreHilbertSpace OS from
+              (⟦PositiveTimeBorchersSequence.single m
+                (((G : BorchersSequence d).funcs m))
+                (G.ordered_tsupport m)⟧)) : OSHilbertSpace OS))
+            χ := by
+  simp [OSInnerProductTimeShiftHolomorphicValueExpandBothBoundaryValueCLM]
+
+/-- Pointwise boundedness of the regularized expanded branch after subtracting
+its spectral boundary-value distribution. -/
+theorem exists_bound_integral_rotated_OSInnerProductTimeShiftHolomorphicValueExpandBoth_boundaryDifference
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    (F G : PositiveTimeBorchersSequence d)
+    (χ : SchwartzMap ℝ ℂ) :
+    ∃ C : ℝ, 0 ≤ C ∧ ∀ {η : ℝ}, 0 < η →
+      ‖(∫ x : ℝ,
+        OSInnerProductTimeShiftHolomorphicValueExpandBoth
+            (d := d) OS lgc F G
+            (-Complex.I * ((x : ℂ) + η * Complex.I)) *
+          (SchwartzMap.fourierTransformCLM ℂ χ) x) -
+        OSInnerProductTimeShiftHolomorphicValueExpandBothBoundaryValueCLM
+          (d := d) OS lgc F G χ‖ ≤ C := by
+  rcases
+    exists_bound_integral_rotated_OSInnerProductTimeShiftHolomorphicValueExpandBoth_mul_fourierTransform
+      (d := d) OS lgc F G χ with
+    ⟨Craw, hCraw_nonneg, hCraw_bound⟩
+  refine
+    ⟨Craw +
+      ‖OSInnerProductTimeShiftHolomorphicValueExpandBothBoundaryValueCLM
+          (d := d) OS lgc F G χ‖, ?_, ?_⟩
+  · exact add_nonneg hCraw_nonneg (norm_nonneg _)
+  · intro η hη
+    calc
+      ‖(∫ x : ℝ,
+          OSInnerProductTimeShiftHolomorphicValueExpandBoth
+              (d := d) OS lgc F G
+              (-Complex.I * ((x : ℂ) + η * Complex.I)) *
+            (SchwartzMap.fourierTransformCLM ℂ χ) x) -
+          OSInnerProductTimeShiftHolomorphicValueExpandBothBoundaryValueCLM
+            (d := d) OS lgc F G χ‖
+          ≤
+            ‖∫ x : ℝ,
+              OSInnerProductTimeShiftHolomorphicValueExpandBoth
+                  (d := d) OS lgc F G
+                  (-Complex.I * ((x : ℂ) + η * Complex.I)) *
+                (SchwartzMap.fourierTransformCLM ℂ χ) x‖ +
+            ‖OSInnerProductTimeShiftHolomorphicValueExpandBothBoundaryValueCLM
+              (d := d) OS lgc F G χ‖ := by
+              exact norm_sub_le _ _
+      _ ≤ Craw +
+            ‖OSInnerProductTimeShiftHolomorphicValueExpandBothBoundaryValueCLM
+              (d := d) OS lgc F G χ‖ := by
+            exact add_le_add (hCraw_bound hη) le_rfl
+
+/-- Pointwise boundedness in the actual complex-linear `Tseq - T` form used by
+the dense-boundary adapter. -/
+theorem exists_bound_OSInnerProductTimeShiftHolomorphicValueExpandBothRegularizedCLM_boundaryDifference
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    (F G : PositiveTimeBorchersSequence d)
+    (χ : SchwartzMap ℝ ℂ) :
+    ∃ C : ℝ, 0 ≤ C ∧ ∀ {η : ℝ}, (hη : 0 < η) →
+      ‖(OSInnerProductTimeShiftHolomorphicValueExpandBothRegularizedCLM
+          (d := d) OS lgc F G η hη -
+        OSInnerProductTimeShiftHolomorphicValueExpandBothBoundaryValueCLM
+          (d := d) OS lgc F G) χ‖ ≤ C := by
+  rcases
+    exists_bound_integral_rotated_OSInnerProductTimeShiftHolomorphicValueExpandBoth_boundaryDifference
+      (d := d) OS lgc F G χ with
+    ⟨C, hC_nonneg, hC_bound⟩
+  refine ⟨C, hC_nonneg, ?_⟩
+  intro η hη
+  simpa [ContinuousLinearMap.sub_apply] using hC_bound hη
+
+/-- Subtype-indexed form of the complex-linear pointwise boundedness, ready for
+positive-height nets. -/
+theorem exists_bound_OSInnerProductTimeShiftHolomorphicValueExpandBothRegularizedCLM_boundaryDifference_posSubtype
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    (F G : PositiveTimeBorchersSequence d)
+    (χ : SchwartzMap ℝ ℂ) :
+    ∃ C : ℝ, 0 ≤ C ∧ ∀ η : {η : ℝ // 0 < η},
+      ‖(OSInnerProductTimeShiftHolomorphicValueExpandBothRegularizedCLM
+          (d := d) OS lgc F G η.1 η.2 -
+        OSInnerProductTimeShiftHolomorphicValueExpandBothBoundaryValueCLM
+          (d := d) OS lgc F G) χ‖ ≤ C := by
+  rcases
+    exists_bound_OSInnerProductTimeShiftHolomorphicValueExpandBothRegularizedCLM_boundaryDifference
+      (d := d) OS lgc F G χ with
+    ⟨C, hC_nonneg, hC_bound⟩
+  refine ⟨C, hC_nonneg, ?_⟩
+  intro η
+  exact hC_bound η.2
+
+/-- Real-linear version of the subtype-indexed pointwise boundedness, matching
+the scalar interface of the Section 4.3 Banach-Steinhaus adapter. -/
+theorem exists_bound_OSInnerProductTimeShiftHolomorphicValueExpandBothRegularizedCLM_boundaryDifference_posSubtype_restrictScalars
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    (F G : PositiveTimeBorchersSequence d)
+    (χ : SchwartzMap ℝ ℂ) :
+    ∃ C : ℝ, 0 ≤ C ∧ ∀ η : {η : ℝ // 0 < η},
+      ‖((OSInnerProductTimeShiftHolomorphicValueExpandBothRegularizedCLM
+            (d := d) OS lgc F G η.1 η.2).restrictScalars ℝ -
+        (OSInnerProductTimeShiftHolomorphicValueExpandBothBoundaryValueCLM
+            (d := d) OS lgc F G).restrictScalars ℝ) χ‖ ≤ C := by
+  rcases
+    exists_bound_OSInnerProductTimeShiftHolomorphicValueExpandBothRegularizedCLM_boundaryDifference_posSubtype
+      (d := d) OS lgc F G χ with
+    ⟨C, hC_nonneg, hC_bound⟩
+  refine ⟨C, hC_nonneg, ?_⟩
+  intro η
+  simpa [ContinuousLinearMap.sub_apply] using hC_bound η
+
+/-- The finite Borchers spectral boundary target descends to the one-variable
+positive-time quotient. -/
+theorem OSInnerProductTimeShiftHolomorphicValueExpandBothBoundaryValueCLM_eq_of_eqOn_nonneg
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    (F G : PositiveTimeBorchersSequence d)
+    {χ ψ : SchwartzMap ℝ ℂ}
+    (hχψ : Set.EqOn (χ : ℝ → ℂ) ψ (Set.Ici (0 : ℝ))) :
+    OSInnerProductTimeShiftHolomorphicValueExpandBothBoundaryValueCLM
+        (d := d) OS lgc F G χ =
+      OSInnerProductTimeShiftHolomorphicValueExpandBothBoundaryValueCLM
+        (d := d) OS lgc F G ψ := by
+  classical
+  simp [OSInnerProductTimeShiftHolomorphicValueExpandBothBoundaryValueCLM,
+    selfAdjointSpectralBoundaryValueOffdiagCLM_eq_of_eqOn_nonneg
+      (A := osTimeShiftHilbert (d := d) OS lgc 1 one_pos)
+      (hA := osTimeShiftHilbert_isSelfAdjoint (d := d) OS lgc 1 one_pos)
+      (hspec := spectrum_osTimeShiftHilbert_subset_Icc (d := d) OS lgc 1 one_pos)
+      (hχψ := hχψ)]
+
+/-- The regularized positive-side family for the recombined finite Borchers
+semigroup branch descends to the one-variable positive-time quotient. -/
+theorem integral_rotated_OSInnerProductTimeShiftHolomorphicValueExpandBoth_mul_fourierTransform_eq_of_eqOn_nonneg
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    (F G : PositiveTimeBorchersSequence d)
+    {χ ψ : SchwartzMap ℝ ℂ}
+    {η : ℝ} (hη : 0 < η)
+    (hχψ : Set.EqOn (χ : ℝ → ℂ) ψ (Set.Ici (0 : ℝ))) :
+    (∫ x : ℝ,
+      OSInnerProductTimeShiftHolomorphicValueExpandBoth
+          (d := d) OS lgc F G
+          (-Complex.I * ((x : ℂ) + η * Complex.I)) *
+        (SchwartzMap.fourierTransformCLM ℂ χ) x) =
+      ∫ x : ℝ,
+        OSInnerProductTimeShiftHolomorphicValueExpandBoth
+            (d := d) OS lgc F G
+            (-Complex.I * ((x : ℂ) + η * Complex.I)) *
+          (SchwartzMap.fourierTransformCLM ℂ ψ) x := by
+  classical
+  let I : Finset ℕ := Finset.range (((F : BorchersSequence d).bound) + 1)
+  let J : Finset ℕ := Finset.range (((G : BorchersSequence d).bound) + 1)
+  have hterm :
+      ∀ n ∈ I, ∀ m ∈ J,
+        (∫ x : ℝ,
+          OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc
+              (PositiveTimeBorchersSequence.single n
+                (((F : BorchersSequence d).funcs n))
+                (F.ordered_tsupport n))
+              (PositiveTimeBorchersSequence.single m
+                (((G : BorchersSequence d).funcs m))
+                (G.ordered_tsupport m))
+              (-Complex.I * ((x : ℂ) + η * Complex.I)) *
+            (SchwartzMap.fourierTransformCLM ℂ χ) x) =
+          ∫ x : ℝ,
+            OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc
+                (PositiveTimeBorchersSequence.single n
+                  (((F : BorchersSequence d).funcs n))
+                  (F.ordered_tsupport n))
+                (PositiveTimeBorchersSequence.single m
+                  (((G : BorchersSequence d).funcs m))
+                  (G.ordered_tsupport m))
+                (-Complex.I * ((x : ℂ) + η * Complex.I)) *
+              (SchwartzMap.fourierTransformCLM ℂ ψ) x := by
+    intro n _hn m _hm
+    exact
+      integral_rotated_OSInnerProductTimeShiftHolomorphicValue_mul_fourierTransform_eq_of_eqOn_nonneg
+        (d := d) OS lgc
+        (PositiveTimeBorchersSequence.single n
+          (((F : BorchersSequence d).funcs n))
+          (F.ordered_tsupport n))
+        (PositiveTimeBorchersSequence.single m
+          (((G : BorchersSequence d).funcs m))
+          (G.ordered_tsupport m))
+        hη hχψ
+  have hexpand :
+      ∀ θ : SchwartzMap ℝ ℂ,
+        (∫ x : ℝ,
+          OSInnerProductTimeShiftHolomorphicValueExpandBoth
+              (d := d) OS lgc F G
+              (-Complex.I * ((x : ℂ) + η * Complex.I)) *
+            (SchwartzMap.fourierTransformCLM ℂ θ) x) =
+          ∑ n ∈ I, ∑ m ∈ J,
+            ∫ x : ℝ,
+              OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc
+                  (PositiveTimeBorchersSequence.single n
+                    (((F : BorchersSequence d).funcs n))
+                    (F.ordered_tsupport n))
+                  (PositiveTimeBorchersSequence.single m
+                    (((G : BorchersSequence d).funcs m))
+                    (G.ordered_tsupport m))
+                  (-Complex.I * ((x : ℂ) + η * Complex.I)) *
+                (SchwartzMap.fourierTransformCLM ℂ θ) x := by
+    intro θ
+    have hint :
+        ∀ n ∈ I, ∀ m ∈ J,
+          MeasureTheory.Integrable
+            (fun x : ℝ =>
+              OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc
+                  (PositiveTimeBorchersSequence.single n
+                    (((F : BorchersSequence d).funcs n))
+                    (F.ordered_tsupport n))
+                  (PositiveTimeBorchersSequence.single m
+                    (((G : BorchersSequence d).funcs m))
+                    (G.ordered_tsupport m))
+                  (-Complex.I * ((x : ℂ) + η * Complex.I)) *
+                (SchwartzMap.fourierTransformCLM ℂ θ) x) := by
+      intro n _hn m _hm
+      exact
+        integrable_mul_fourierTransform_of_rotated_OSInnerProductTimeShiftHolomorphicValue
+          (d := d) OS lgc
+          (PositiveTimeBorchersSequence.single n
+            (((F : BorchersSequence d).funcs n))
+            (F.ordered_tsupport n))
+          (PositiveTimeBorchersSequence.single m
+            (((G : BorchersSequence d).funcs m))
+            (G.ordered_tsupport m))
+          θ hη
+    have hinner :
+        ∀ n ∈ I,
+          MeasureTheory.Integrable
+            (fun x : ℝ =>
+              ∑ m ∈ J,
+                OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc
+                    (PositiveTimeBorchersSequence.single n
+                      (((F : BorchersSequence d).funcs n))
+                      (F.ordered_tsupport n))
+                    (PositiveTimeBorchersSequence.single m
+                      (((G : BorchersSequence d).funcs m))
+                      (G.ordered_tsupport m))
+                    (-Complex.I * ((x : ℂ) + η * Complex.I)) *
+                  (SchwartzMap.fourierTransformCLM ℂ θ) x) := by
+      intro n hn
+      exact MeasureTheory.integrable_finset_sum J (fun m hm => hint n hn m hm)
+    calc
+      (∫ x : ℝ,
+          OSInnerProductTimeShiftHolomorphicValueExpandBoth
+              (d := d) OS lgc F G
+              (-Complex.I * ((x : ℂ) + η * Complex.I)) *
+            (SchwartzMap.fourierTransformCLM ℂ θ) x)
+          =
+        ∫ x : ℝ,
+          ∑ n ∈ I, ∑ m ∈ J,
+            OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc
+                (PositiveTimeBorchersSequence.single n
+                  (((F : BorchersSequence d).funcs n))
+                  (F.ordered_tsupport n))
+                (PositiveTimeBorchersSequence.single m
+                  (((G : BorchersSequence d).funcs m))
+                  (G.ordered_tsupport m))
+                (-Complex.I * ((x : ℂ) + η * Complex.I)) *
+              (SchwartzMap.fourierTransformCLM ℂ θ) x := by
+            congr 1
+            funext x
+            simp [OSInnerProductTimeShiftHolomorphicValueExpandBoth, I, J,
+              Finset.sum_mul]
+      _ =
+        ∑ n ∈ I,
+          ∫ x : ℝ,
+            ∑ m ∈ J,
+              OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc
+                  (PositiveTimeBorchersSequence.single n
+                    (((F : BorchersSequence d).funcs n))
+                    (F.ordered_tsupport n))
+                  (PositiveTimeBorchersSequence.single m
+                    (((G : BorchersSequence d).funcs m))
+                    (G.ordered_tsupport m))
+                  (-Complex.I * ((x : ℂ) + η * Complex.I)) *
+                (SchwartzMap.fourierTransformCLM ℂ θ) x := by
+            rw [MeasureTheory.integral_finset_sum I hinner]
+      _ =
+        ∑ n ∈ I, ∑ m ∈ J,
+          ∫ x : ℝ,
+            OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc
+                (PositiveTimeBorchersSequence.single n
+                  (((F : BorchersSequence d).funcs n))
+                  (F.ordered_tsupport n))
+                (PositiveTimeBorchersSequence.single m
+                  (((G : BorchersSequence d).funcs m))
+                  (G.ordered_tsupport m))
+                (-Complex.I * ((x : ℂ) + η * Complex.I)) *
+              (SchwartzMap.fourierTransformCLM ℂ θ) x := by
+            apply Finset.sum_congr rfl
+            intro n hn
+            rw [MeasureTheory.integral_finset_sum J (fun m hm => hint n hn m hm)]
+  rw [hexpand χ, hexpand ψ]
+  exact Finset.sum_congr rfl fun n hn =>
+    Finset.sum_congr rfl fun m hm => hterm n hn m hm
+
+/-- The regularized positive-side CLM for the recombined branch descends to the
+one-variable positive-time quotient. -/
+theorem OSInnerProductTimeShiftHolomorphicValueExpandBothRegularizedCLM_eq_of_eqOn_nonneg
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    (F G : PositiveTimeBorchersSequence d)
+    {χ ψ : SchwartzMap ℝ ℂ}
+    {η : ℝ} (hη : 0 < η)
+    (hχψ : Set.EqOn (χ : ℝ → ℂ) ψ (Set.Ici (0 : ℝ))) :
+    OSInnerProductTimeShiftHolomorphicValueExpandBothRegularizedCLM
+        (d := d) OS lgc F G η hη χ =
+      OSInnerProductTimeShiftHolomorphicValueExpandBothRegularizedCLM
+        (d := d) OS lgc F G η hη ψ := by
+  simpa using
+    integral_rotated_OSInnerProductTimeShiftHolomorphicValueExpandBoth_mul_fourierTransform_eq_of_eqOn_nonneg
+      (d := d) OS lgc F G hη hχψ
+
+/-- Boundary-value distribution of the recombined finite Borchers semigroup
+branch.
+
+The scalar semigroup branch is a finite Borchers expansion.  Applying the
+one-component spectral boundary theorem termwise and then moving the finite sum
+back inside the integral gives the boundary functional used by the compact
+Laplace representative step. -/
+theorem tendsto_rotated_OSInnerProductTimeShiftHolomorphicValueExpandBoth_boundaryValue_fourierTransform
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    (F G : PositiveTimeBorchersSequence d)
+    (χ : SchwartzMap ℝ ℂ) :
+    Filter.Tendsto
+      (fun η : ℝ =>
+        ∫ x : ℝ,
+          OSInnerProductTimeShiftHolomorphicValueExpandBoth
+              (d := d) OS lgc F G
+              (-Complex.I * ((x : ℂ) + η * Complex.I)) *
+            (SchwartzMap.fourierTransformCLM ℂ χ) x)
+      (𝓝[Set.Ioi 0] (0 : ℝ))
+      (𝓝
+        (∑ n ∈ Finset.range (((F : BorchersSequence d).bound) + 1),
+          ∑ m ∈ Finset.range (((G : BorchersSequence d).bound) + 1),
+            selfAdjointSpectralBoundaryValueOffdiag
+              (osTimeShiftHilbert (d := d) OS lgc 1 one_pos)
+              (osTimeShiftHilbert_isSelfAdjoint (d := d) OS lgc 1 one_pos)
+              (((show OSPreHilbertSpace OS from
+                (⟦PositiveTimeBorchersSequence.single n
+                  (((F : BorchersSequence d).funcs n))
+                  (F.ordered_tsupport n)⟧)) : OSHilbertSpace OS))
+              (((show OSPreHilbertSpace OS from
+                (⟦PositiveTimeBorchersSequence.single m
+                  (((G : BorchersSequence d).funcs m))
+                  (G.ordered_tsupport m)⟧)) : OSHilbertSpace OS))
+              χ)) := by
+  classical
+  let I : Finset ℕ := Finset.range (((F : BorchersSequence d).bound) + 1)
+  let J : Finset ℕ := Finset.range (((G : BorchersSequence d).bound) + 1)
+  have hterm :
+      ∀ n ∈ I, ∀ m ∈ J,
+        Filter.Tendsto
+          (fun η : ℝ =>
+            ∫ x : ℝ,
+              OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc
+                  (PositiveTimeBorchersSequence.single n
+                    (((F : BorchersSequence d).funcs n))
+                    (F.ordered_tsupport n))
+                  (PositiveTimeBorchersSequence.single m
+                    (((G : BorchersSequence d).funcs m))
+                    (G.ordered_tsupport m))
+                  (-Complex.I * ((x : ℂ) + η * Complex.I)) *
+                (SchwartzMap.fourierTransformCLM ℂ χ) x)
+          (𝓝[Set.Ioi 0] (0 : ℝ))
+          (𝓝
+            (selfAdjointSpectralBoundaryValueOffdiag
+              (osTimeShiftHilbert (d := d) OS lgc 1 one_pos)
+              (osTimeShiftHilbert_isSelfAdjoint (d := d) OS lgc 1 one_pos)
+              (((show OSPreHilbertSpace OS from
+                (⟦PositiveTimeBorchersSequence.single n
+                  (((F : BorchersSequence d).funcs n))
+                  (F.ordered_tsupport n)⟧)) : OSHilbertSpace OS))
+              (((show OSPreHilbertSpace OS from
+                (⟦PositiveTimeBorchersSequence.single m
+                  (((G : BorchersSequence d).funcs m))
+                  (G.ordered_tsupport m)⟧)) : OSHilbertSpace OS))
+              χ)) := by
+    intro n _hn m _hm
+    simpa using
+      tendsto_rotated_OSInnerProductTimeShiftHolomorphicValue_boundaryValue_fourierTransform
+        (d := d) OS lgc
+        (PositiveTimeBorchersSequence.single n
+          (((F : BorchersSequence d).funcs n))
+          (F.ordered_tsupport n))
+        (PositiveTimeBorchersSequence.single m
+          (((G : BorchersSequence d).funcs m))
+          (G.ordered_tsupport m))
+        χ
+  have hsum :
+      Filter.Tendsto
+        (fun η : ℝ =>
+          ∑ n ∈ I, ∑ m ∈ J,
+            ∫ x : ℝ,
+              OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc
+                  (PositiveTimeBorchersSequence.single n
+                    (((F : BorchersSequence d).funcs n))
+                    (F.ordered_tsupport n))
+                  (PositiveTimeBorchersSequence.single m
+                    (((G : BorchersSequence d).funcs m))
+                    (G.ordered_tsupport m))
+                  (-Complex.I * ((x : ℂ) + η * Complex.I)) *
+                (SchwartzMap.fourierTransformCLM ℂ χ) x)
+        (𝓝[Set.Ioi 0] (0 : ℝ))
+        (𝓝
+          (∑ n ∈ I, ∑ m ∈ J,
+            selfAdjointSpectralBoundaryValueOffdiag
+              (osTimeShiftHilbert (d := d) OS lgc 1 one_pos)
+              (osTimeShiftHilbert_isSelfAdjoint (d := d) OS lgc 1 one_pos)
+              (((show OSPreHilbertSpace OS from
+                (⟦PositiveTimeBorchersSequence.single n
+                  (((F : BorchersSequence d).funcs n))
+                  (F.ordered_tsupport n)⟧)) : OSHilbertSpace OS))
+              (((show OSPreHilbertSpace OS from
+                (⟦PositiveTimeBorchersSequence.single m
+                  (((G : BorchersSequence d).funcs m))
+                  (G.ordered_tsupport m)⟧)) : OSHilbertSpace OS))
+              χ)) :=
+    tendsto_finset_sum I fun n hn =>
+      tendsto_finset_sum J fun m hm => hterm n hn m hm
+  have hEq :
+      (fun η : ℝ =>
+        ∫ x : ℝ,
+          OSInnerProductTimeShiftHolomorphicValueExpandBoth
+              (d := d) OS lgc F G
+              (-Complex.I * ((x : ℂ) + η * Complex.I)) *
+            (SchwartzMap.fourierTransformCLM ℂ χ) x)
+        =ᶠ[𝓝[Set.Ioi 0] (0 : ℝ)]
+      (fun η : ℝ =>
+        ∑ n ∈ I, ∑ m ∈ J,
+          ∫ x : ℝ,
+            OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc
+                (PositiveTimeBorchersSequence.single n
+                  (((F : BorchersSequence d).funcs n))
+                  (F.ordered_tsupport n))
+                (PositiveTimeBorchersSequence.single m
+                  (((G : BorchersSequence d).funcs m))
+                  (G.ordered_tsupport m))
+                (-Complex.I * ((x : ℂ) + η * Complex.I)) *
+              (SchwartzMap.fourierTransformCLM ℂ χ) x) := by
+    filter_upwards [self_mem_nhdsWithin] with η hη
+    have hη_pos : 0 < η := by simpa using hη
+    have hint :
+        ∀ n ∈ I, ∀ m ∈ J,
+          MeasureTheory.Integrable
+            (fun x : ℝ =>
+              OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc
+                  (PositiveTimeBorchersSequence.single n
+                    (((F : BorchersSequence d).funcs n))
+                    (F.ordered_tsupport n))
+                  (PositiveTimeBorchersSequence.single m
+                    (((G : BorchersSequence d).funcs m))
+                    (G.ordered_tsupport m))
+                  (-Complex.I * ((x : ℂ) + η * Complex.I)) *
+                (SchwartzMap.fourierTransformCLM ℂ χ) x) := by
+      intro n _hn m _hm
+      exact
+        integrable_mul_fourierTransform_of_rotated_OSInnerProductTimeShiftHolomorphicValue
+          (d := d) OS lgc
+          (PositiveTimeBorchersSequence.single n
+            (((F : BorchersSequence d).funcs n))
+            (F.ordered_tsupport n))
+          (PositiveTimeBorchersSequence.single m
+            (((G : BorchersSequence d).funcs m))
+            (G.ordered_tsupport m))
+          χ hη_pos
+    have hinner :
+        ∀ n ∈ I,
+          MeasureTheory.Integrable
+            (fun x : ℝ =>
+              ∑ m ∈ J,
+                OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc
+                    (PositiveTimeBorchersSequence.single n
+                      (((F : BorchersSequence d).funcs n))
+                      (F.ordered_tsupport n))
+                    (PositiveTimeBorchersSequence.single m
+                      (((G : BorchersSequence d).funcs m))
+                      (G.ordered_tsupport m))
+                    (-Complex.I * ((x : ℂ) + η * Complex.I)) *
+                  (SchwartzMap.fourierTransformCLM ℂ χ) x) := by
+      intro n hn
+      exact MeasureTheory.integrable_finset_sum J (fun m hm => hint n hn m hm)
+    calc
+      (∫ x : ℝ,
+          OSInnerProductTimeShiftHolomorphicValueExpandBoth
+              (d := d) OS lgc F G
+              (-Complex.I * ((x : ℂ) + η * Complex.I)) *
+            (SchwartzMap.fourierTransformCLM ℂ χ) x)
+          =
+        ∫ x : ℝ,
+          ∑ n ∈ I, ∑ m ∈ J,
+            OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc
+                (PositiveTimeBorchersSequence.single n
+                  (((F : BorchersSequence d).funcs n))
+                  (F.ordered_tsupport n))
+                (PositiveTimeBorchersSequence.single m
+                  (((G : BorchersSequence d).funcs m))
+                  (G.ordered_tsupport m))
+                (-Complex.I * ((x : ℂ) + η * Complex.I)) *
+              (SchwartzMap.fourierTransformCLM ℂ χ) x := by
+            congr 1
+            funext x
+            simp [OSInnerProductTimeShiftHolomorphicValueExpandBoth, I, J,
+              Finset.sum_mul]
+      _ =
+        ∑ n ∈ I,
+          ∫ x : ℝ,
+            ∑ m ∈ J,
+              OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc
+                  (PositiveTimeBorchersSequence.single n
+                    (((F : BorchersSequence d).funcs n))
+                    (F.ordered_tsupport n))
+                  (PositiveTimeBorchersSequence.single m
+                    (((G : BorchersSequence d).funcs m))
+                    (G.ordered_tsupport m))
+                  (-Complex.I * ((x : ℂ) + η * Complex.I)) *
+                (SchwartzMap.fourierTransformCLM ℂ χ) x := by
+            rw [MeasureTheory.integral_finset_sum I hinner]
+      _ =
+        ∑ n ∈ I, ∑ m ∈ J,
+          ∫ x : ℝ,
+            OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc
+                (PositiveTimeBorchersSequence.single n
+                  (((F : BorchersSequence d).funcs n))
+                  (F.ordered_tsupport n))
+                (PositiveTimeBorchersSequence.single m
+                  (((G : BorchersSequence d).funcs m))
+                  (G.ordered_tsupport m))
+                (-Complex.I * ((x : ℂ) + η * Complex.I)) *
+              (SchwartzMap.fourierTransformCLM ℂ χ) x := by
+            apply Finset.sum_congr rfl
+            intro n hn
+            rw [MeasureTheory.integral_finset_sum J (fun m hm => hint n hn m hm)]
+  simpa [I, J] using Filter.Tendsto.congr' hEq.symm hsum
+
+/-- One-sided dense-boundary convergence for the recombined OS-II total-time
+regularized CLM.
+
+This is the Section 4.3 Banach-Steinhaus handoff for OS II `(5.7)`--`(5.8)`:
+the positive-height family descends to the one-sided quotient, converges on
+compact one-sided Laplace representatives by the spectral boundary theorem,
+and is pointwise bounded by the semigroup estimate above. -/
+theorem tendsto_OSInnerProductTimeShiftHolomorphicValueExpandBothRegularizedCLM_boundaryValue_oneSided
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    (F G : PositiveTimeBorchersSequence d) :
+    ∀ χ : SchwartzMap ℝ ℂ,
+      Filter.Tendsto
+        (fun η : {η : ℝ // 0 < η} =>
+          ((OSInnerProductTimeShiftHolomorphicValueExpandBothRegularizedCLM
+              (d := d) OS lgc F G η.1 η.2).restrictScalars ℝ) χ)
+        (Filter.comap (fun η : {η : ℝ // 0 < η} => η.1)
+          (𝓝[Set.Ioi 0] (0 : ℝ)))
+        (𝓝
+          (((OSInnerProductTimeShiftHolomorphicValueExpandBothBoundaryValueCLM
+              (d := d) OS lgc F G).restrictScalars ℝ) χ)) := by
+  let lpos : Filter {η : ℝ // 0 < η} :=
+    Filter.comap (fun η : {η : ℝ // 0 < η} => η.1)
+      (𝓝[Set.Ioi 0] (0 : ℝ))
+  have hlpos_neBot : Filter.NeBot lpos := by
+    have hbase : Filter.NeBot (𝓝[Set.Ioi 0] (0 : ℝ)) := by infer_instance
+    have hrange :
+        Set.range (fun η : {η : ℝ // 0 < η} => η.1) ∈
+          (𝓝[Set.Ioi 0] (0 : ℝ)) := by
+      have hrange_eq :
+          Set.range (fun η : {η : ℝ // 0 < η} => η.1) =
+            Set.Ioi (0 : ℝ) := by
+        ext x
+        simp
+      simpa [hrange_eq] using
+        (self_mem_nhdsWithin : Set.Ioi (0 : ℝ) ∈ 𝓝[Set.Ioi 0] (0 : ℝ))
+    exact Filter.NeBot.comap_of_range_mem hbase hrange
+  letI : Filter.NeBot lpos := hlpos_neBot
+  refine
+    section43_tendsto_oneSided_timeSchwartz_real_of_compact_representatives_of_pointwise_bounded
+      (l := lpos)
+      (Tseq := fun η : {η : ℝ // 0 < η} =>
+        (OSInnerProductTimeShiftHolomorphicValueExpandBothRegularizedCLM
+          (d := d) OS lgc F G η.1 η.2).restrictScalars ℝ)
+      (T := (OSInnerProductTimeShiftHolomorphicValueExpandBothBoundaryValueCLM
+        (d := d) OS lgc F G).restrictScalars ℝ)
+      ?_ ?_ ?_ ?_
+  · intro η φ ψ hq
+    have hφψ := eqOn_nonneg_of_section43PositiveEnergyQuotientMap1D_eq hq
+    change
+      OSInnerProductTimeShiftHolomorphicValueExpandBothRegularizedCLM
+          (d := d) OS lgc F G η.1 η.2 φ =
+        OSInnerProductTimeShiftHolomorphicValueExpandBothRegularizedCLM
+          (d := d) OS lgc F G η.1 η.2 ψ
+    exact
+      OSInnerProductTimeShiftHolomorphicValueExpandBothRegularizedCLM_eq_of_eqOn_nonneg
+        (d := d) OS lgc F G η.2 hφψ
+  · intro φ ψ hq
+    have hφψ := eqOn_nonneg_of_section43PositiveEnergyQuotientMap1D_eq hq
+    change
+      OSInnerProductTimeShiftHolomorphicValueExpandBothBoundaryValueCLM
+          (d := d) OS lgc F G φ =
+        OSInnerProductTimeShiftHolomorphicValueExpandBothBoundaryValueCLM
+          (d := d) OS lgc F G ψ
+    exact
+      OSInnerProductTimeShiftHolomorphicValueExpandBothBoundaryValueCLM_eq_of_eqOn_nonneg
+        (d := d) OS lgc F G hφψ
+  · intro g
+    have hreal :=
+      tendsto_rotated_OSInnerProductTimeShiftHolomorphicValueExpandBoth_boundaryValue_fourierTransform
+        (d := d) OS lgc F G (section43OneSidedLaplaceSchwartzRepresentative1D g)
+    have hsub :
+        Filter.Tendsto (fun η : {η : ℝ // 0 < η} => η.1)
+          lpos
+          (𝓝[Set.Ioi 0] (0 : ℝ)) :=
+      Filter.tendsto_comap
+    simpa [Function.comp_def, ContinuousLinearMap.coe_restrictScalars] using
+      hreal.comp hsub
+  · intro χ
+    rcases
+      exists_bound_OSInnerProductTimeShiftHolomorphicValueExpandBothRegularizedCLM_boundaryDifference_posSubtype_restrictScalars
+        (d := d) OS lgc F G χ with
+      ⟨C, _hC, hC⟩
+    exact ⟨C, hC⟩
+
+/-- Termwise semigroup boundary value for the finite expanded branch.
+
+This is the OS-II `(5.7)` one-sided Fourier/Laplace boundary input before the
+finite Borchers expansion is recombined into a single scalar branch.  The target
+is the expanded semigroup value at the positive imaginary-axis generator. -/
+theorem tendsto_rotated_OSInnerProductTimeShiftHolomorphicValueExpandBoth_to_imagAxis_sum
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    (F G : PositiveTimeBorchersSequence d)
+    {t : ℝ} (ht : 0 < t) :
+    Filter.Tendsto
+      (fun η : ℝ =>
+        ∑ n ∈ Finset.range (((F : BorchersSequence d).bound) + 1),
+          ∑ m ∈ Finset.range (((G : BorchersSequence d).bound) + 1),
+            ∫ x : ℝ,
+              OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc
+                  (PositiveTimeBorchersSequence.single n
+                    (((F : BorchersSequence d).funcs n))
+                    (F.ordered_tsupport n))
+                  (PositiveTimeBorchersSequence.single m
+                    (((G : BorchersSequence d).funcs m))
+                    (G.ordered_tsupport m))
+                  (-Complex.I * ((x : ℂ) + η * Complex.I)) *
+                (SchwartzMap.fourierTransformCLM ℂ
+                  (SCV.schwartzPsiZ
+                    (((2 * Real.pi : ℂ) * (t * Complex.I)))
+                    (by
+                      simpa [Complex.mul_im, ht.ne']
+                        using mul_pos Real.two_pi_pos ht))) x)
+      (𝓝[Set.Ioi 0] (0 : ℝ))
+      (𝓝 (OSInnerProductTimeShiftHolomorphicValueExpandBoth
+        (d := d) OS lgc F G (t : ℂ))) := by
+  classical
+  let ψ : SchwartzMap ℝ ℂ :=
+    SCV.schwartzPsiZ
+      (((2 * Real.pi : ℂ) * (t * Complex.I)))
+      (by
+        simpa [Complex.mul_im, ht.ne']
+          using mul_pos Real.two_pi_pos ht)
+  have hterm :
+      ∀ n ∈ Finset.range (((F : BorchersSequence d).bound) + 1),
+        ∀ m ∈ Finset.range (((G : BorchersSequence d).bound) + 1),
+          Filter.Tendsto
+            (fun η : ℝ =>
+              ∫ x : ℝ,
+                OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc
+                    (PositiveTimeBorchersSequence.single n
+                      (((F : BorchersSequence d).funcs n))
+                      (F.ordered_tsupport n))
+                    (PositiveTimeBorchersSequence.single m
+                      (((G : BorchersSequence d).funcs m))
+                      (G.ordered_tsupport m))
+                    (-Complex.I * ((x : ℂ) + η * Complex.I)) *
+                  (SchwartzMap.fourierTransformCLM ℂ ψ) x)
+            (𝓝[Set.Ioi 0] (0 : ℝ))
+            (𝓝 (OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc
+              (PositiveTimeBorchersSequence.single n
+                (((F : BorchersSequence d).funcs n))
+                (F.ordered_tsupport n))
+              (PositiveTimeBorchersSequence.single m
+                (((G : BorchersSequence d).funcs m))
+                (G.ordered_tsupport m))
+              (t : ℂ))) := by
+    intro n _hn m _hm
+    simpa [ψ] using
+      tendsto_rotated_OSInnerProductTimeShiftHolomorphicValue_to_imagAxis
+        (d := d) OS lgc
+        (PositiveTimeBorchersSequence.single n
+          (((F : BorchersSequence d).funcs n))
+          (F.ordered_tsupport n))
+        (PositiveTimeBorchersSequence.single m
+          (((G : BorchersSequence d).funcs m))
+          (G.ordered_tsupport m))
+        ht
+  simpa [OSInnerProductTimeShiftHolomorphicValueExpandBoth, ψ] using
+    tendsto_finset_sum
+      (Finset.range (((F : BorchersSequence d).bound) + 1))
+      (fun n hn =>
+        tendsto_finset_sum
+          (Finset.range (((G : BorchersSequence d).bound) + 1))
+          (fun m hm => hterm n hn m hm))
+
+/-- Recombined semigroup boundary value for the finite expanded branch.
+
+This is the same OS-II `(5.7)` generator limit as
+`tendsto_rotated_OSInnerProductTimeShiftHolomorphicValueExpandBoth_to_imagAxis_sum`,
+with the finite Borchers expansion put back inside the integral. -/
+theorem tendsto_rotated_OSInnerProductTimeShiftHolomorphicValueExpandBoth_to_imagAxis
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    (F G : PositiveTimeBorchersSequence d)
+    {t : ℝ} (ht : 0 < t) :
+    Filter.Tendsto
+      (fun η : ℝ =>
+        ∫ x : ℝ,
+          OSInnerProductTimeShiftHolomorphicValueExpandBoth
+              (d := d) OS lgc F G
+              (-Complex.I * ((x : ℂ) + η * Complex.I)) *
+            (SchwartzMap.fourierTransformCLM ℂ
+              (SCV.schwartzPsiZ
+                (((2 * Real.pi : ℂ) * (t * Complex.I)))
+                (by
+                  simpa [Complex.mul_im, ht.ne']
+                    using mul_pos Real.two_pi_pos ht))) x)
+      (𝓝[Set.Ioi 0] (0 : ℝ))
+      (𝓝 (OSInnerProductTimeShiftHolomorphicValueExpandBoth
+        (d := d) OS lgc F G (t : ℂ))) := by
+  classical
+  let ψ : SchwartzMap ℝ ℂ :=
+    SCV.schwartzPsiZ
+      (((2 * Real.pi : ℂ) * (t * Complex.I)))
+      (by
+        simpa [Complex.mul_im, ht.ne']
+          using mul_pos Real.two_pi_pos ht)
+  have hsum :=
+    tendsto_rotated_OSInnerProductTimeShiftHolomorphicValueExpandBoth_to_imagAxis_sum
+      (d := d) OS lgc F G ht
+  have hEq :
+      (fun η : ℝ =>
+        ∫ x : ℝ,
+          OSInnerProductTimeShiftHolomorphicValueExpandBoth
+              (d := d) OS lgc F G
+              (-Complex.I * ((x : ℂ) + η * Complex.I)) *
+            (SchwartzMap.fourierTransformCLM ℂ ψ) x)
+        =ᶠ[𝓝[Set.Ioi 0] (0 : ℝ)]
+      (fun η : ℝ =>
+        ∑ n ∈ Finset.range (((F : BorchersSequence d).bound) + 1),
+          ∑ m ∈ Finset.range (((G : BorchersSequence d).bound) + 1),
+            ∫ x : ℝ,
+              OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc
+                  (PositiveTimeBorchersSequence.single n
+                    (((F : BorchersSequence d).funcs n))
+                    (F.ordered_tsupport n))
+                  (PositiveTimeBorchersSequence.single m
+                    (((G : BorchersSequence d).funcs m))
+                    (G.ordered_tsupport m))
+                  (-Complex.I * ((x : ℂ) + η * Complex.I)) *
+                (SchwartzMap.fourierTransformCLM ℂ ψ) x) := by
+    filter_upwards [self_mem_nhdsWithin] with η hη
+    have hη_pos : 0 < η := by simpa using hη
+    let I : Finset ℕ := Finset.range (((F : BorchersSequence d).bound) + 1)
+    let J : Finset ℕ := Finset.range (((G : BorchersSequence d).bound) + 1)
+    have hint :
+        ∀ n ∈ I, ∀ m ∈ J,
+          MeasureTheory.Integrable
+            (fun x : ℝ =>
+              OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc
+                  (PositiveTimeBorchersSequence.single n
+                    (((F : BorchersSequence d).funcs n))
+                    (F.ordered_tsupport n))
+                  (PositiveTimeBorchersSequence.single m
+                    (((G : BorchersSequence d).funcs m))
+                    (G.ordered_tsupport m))
+                  (-Complex.I * ((x : ℂ) + η * Complex.I)) *
+                (SchwartzMap.fourierTransformCLM ℂ ψ) x) := by
+      intro n _hn m _hm
+      exact
+        integrable_mul_fourierTransform_of_rotated_OSInnerProductTimeShiftHolomorphicValue
+          (d := d) OS lgc
+          (PositiveTimeBorchersSequence.single n
+            (((F : BorchersSequence d).funcs n))
+            (F.ordered_tsupport n))
+          (PositiveTimeBorchersSequence.single m
+            (((G : BorchersSequence d).funcs m))
+            (G.ordered_tsupport m))
+          ψ hη_pos
+    have hinner :
+        ∀ n ∈ I,
+          MeasureTheory.Integrable
+            (fun x : ℝ =>
+              ∑ m ∈ J,
+                OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc
+                    (PositiveTimeBorchersSequence.single n
+                      (((F : BorchersSequence d).funcs n))
+                      (F.ordered_tsupport n))
+                    (PositiveTimeBorchersSequence.single m
+                      (((G : BorchersSequence d).funcs m))
+                      (G.ordered_tsupport m))
+                    (-Complex.I * ((x : ℂ) + η * Complex.I)) *
+                  (SchwartzMap.fourierTransformCLM ℂ ψ) x) := by
+      intro n hn
+      exact MeasureTheory.integrable_finset_sum J (fun m hm => hint n hn m hm)
+    calc
+      (∫ x : ℝ,
+          OSInnerProductTimeShiftHolomorphicValueExpandBoth
+              (d := d) OS lgc F G
+              (-Complex.I * ((x : ℂ) + η * Complex.I)) *
+            (SchwartzMap.fourierTransformCLM ℂ ψ) x)
+          =
+        ∫ x : ℝ,
+          ∑ n ∈ I, ∑ m ∈ J,
+            OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc
+                (PositiveTimeBorchersSequence.single n
+                  (((F : BorchersSequence d).funcs n))
+                  (F.ordered_tsupport n))
+                (PositiveTimeBorchersSequence.single m
+                  (((G : BorchersSequence d).funcs m))
+                  (G.ordered_tsupport m))
+                (-Complex.I * ((x : ℂ) + η * Complex.I)) *
+              (SchwartzMap.fourierTransformCLM ℂ ψ) x := by
+            congr 1
+            funext x
+            simp [OSInnerProductTimeShiftHolomorphicValueExpandBoth, I, J,
+              Finset.sum_mul]
+      _ =
+        ∑ n ∈ I,
+          ∫ x : ℝ,
+            ∑ m ∈ J,
+              OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc
+                  (PositiveTimeBorchersSequence.single n
+                    (((F : BorchersSequence d).funcs n))
+                    (F.ordered_tsupport n))
+                  (PositiveTimeBorchersSequence.single m
+                    (((G : BorchersSequence d).funcs m))
+                    (G.ordered_tsupport m))
+                  (-Complex.I * ((x : ℂ) + η * Complex.I)) *
+                (SchwartzMap.fourierTransformCLM ℂ ψ) x := by
+            rw [MeasureTheory.integral_finset_sum I hinner]
+      _ =
+        ∑ n ∈ I, ∑ m ∈ J,
+          ∫ x : ℝ,
+            OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc
+                (PositiveTimeBorchersSequence.single n
+                  (((F : BorchersSequence d).funcs n))
+                  (F.ordered_tsupport n))
+                (PositiveTimeBorchersSequence.single m
+                  (((G : BorchersSequence d).funcs m))
+                  (G.ordered_tsupport m))
+                (-Complex.I * ((x : ℂ) + η * Complex.I)) *
+              (SchwartzMap.fourierTransformCLM ℂ ψ) x := by
+            apply Finset.sum_congr rfl
+            intro n hn
+            rw [MeasureTheory.integral_finset_sum J (fun m hm => hint n hn m hm)]
+  exact Filter.Tendsto.congr' hEq.symm (by simpa [ψ] using hsum)
 
 /-- On the real log edge, the explicit total-time semigroup candidate recovers
 the common positive-time Schwinger scalar. -/

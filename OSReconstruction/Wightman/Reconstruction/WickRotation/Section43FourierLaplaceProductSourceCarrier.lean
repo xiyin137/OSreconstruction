@@ -42,6 +42,35 @@ theorem section43OrderedSourceOfTimeSpatialProductSource_product_f_eq_orderedPul
         (section43TimeProductSource gs).f := by
   rfl
 
+/-- The ordered-pullback source current of a compact time/spatial product
+source has compact support. -/
+theorem hasCompactSupport_section43OrderedPullbackTimeSpatialTensorCLM
+    (d n : ℕ) [NeZero d]
+    (g : Section43CompactStrictPositiveTimeSource n)
+    (κ : Section43SpatialCompactSource d n) :
+    HasCompactSupport
+      (((section43OrderedPullbackTimeSpatialTensorCLM d n κ.1 g.f :
+        SchwartzNPoint d n) : NPointDomain d n → ℂ)) := by
+  have hcompact :=
+    (section43OrderedSourceOfTimeSpatialSource d n
+      (section43TimeSpatialProductSource d n g κ)).compact
+  simpa [section43OrderedSourceOfTimeSpatialProductSource_f_eq_orderedPullback]
+    using hcompact
+
+/-- Product-source specialization of compact support for the ordered-pullback
+source current. -/
+theorem hasCompactSupport_section43OrderedPullbackTimeSpatialTensorCLM_product
+    (d n : ℕ) [NeZero d]
+    (gs : Fin n → Section43CompactPositiveTimeSource1D)
+    (κ : Section43SpatialCompactSource d n) :
+    HasCompactSupport
+      (((section43OrderedPullbackTimeSpatialTensorCLM d n κ.1
+        (section43TimeProductSource gs).f : SchwartzNPoint d n) :
+        NPointDomain d n → ℂ)) := by
+  exact
+    hasCompactSupport_section43OrderedPullbackTimeSpatialTensorCLM
+      d n (section43TimeProductSource gs) κ
+
 /-- The descended Wightman pairing of two product-source Section 4.3
 components is the OS Schwinger scalar of the concrete compact ordered sources
 produced by the product-source representative packet. -/

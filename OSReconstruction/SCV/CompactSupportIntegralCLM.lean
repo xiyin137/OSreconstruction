@@ -81,4 +81,47 @@ theorem compactSupport_integralMultiplierCLM_fin
     _ = ∫ x, g x * φ x :=
       MeasureTheory.setIntegral_eq_integral_of_forall_compl_eq_zero hzero
 
+/-- A locally continuous branch becomes a global Schwartz distribution after
+multiplication by a compact cutoff supported in its continuity carrier.  On
+tests where the cutoff is one, this distribution is exactly the original branch
+pairing. -/
+theorem compact_cutoff_integralMultiplierCLM_fin_of_continuousOn
+    {m : Nat} {U : Set (Fin m → ℝ)}
+    (H : (Fin m → ℝ) → ℂ)
+    (χ : SchwartzMap (Fin m → ℝ) ℂ)
+    (hU : IsOpen U)
+    (hχ_compact : HasCompactSupport (χ : (Fin m → ℝ) → ℂ))
+    (hχ_support : tsupport (χ : (Fin m → ℝ) → ℂ) ⊆ U)
+    (hH : ContinuousOn H U) :
+    ∃ L : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ,
+      (∀ φ : SchwartzMap (Fin m → ℝ) ℂ,
+        L φ = ∫ x, (χ x * H x) * φ x) ∧
+      ∀ φ : SchwartzMap (Fin m → ℝ) ℂ,
+        (∀ x ∈ tsupport (φ : (Fin m → ℝ) → ℂ), χ x = 1) →
+          L φ = ∫ x, H x * φ x := by
+  classical
+  let g : (Fin m → ℝ) → ℂ := fun x => χ x * H x
+  have hg_cont : Continuous g := by
+    exact
+      continuous_mul_of_continuousOn_of_tsupport_subset_open
+        (U := U) hU χ.continuous hχ_support hH
+  have hg_compact : HasCompactSupport g := by
+    simpa [g, mul_comm] using
+      (HasCompactSupport.mul_left (f := H) hχ_compact)
+  rcases compactSupport_integralMultiplierCLM_fin g hg_cont hg_compact with
+    ⟨L, hL⟩
+  refine ⟨L, ?_, ?_⟩
+  · intro φ
+    exact hL φ
+  · intro φ hχ_one
+    calc
+      L φ = ∫ x, (χ x * H x) * φ x := hL φ
+      _ = ∫ x, H x * φ x := by
+        apply integral_congr_ae
+        filter_upwards with x
+        by_cases hx : x ∈ tsupport (φ : (Fin m → ℝ) → ℂ)
+        · simp [hχ_one x hx]
+        · have hφx : φ x = 0 := image_eq_zero_of_notMem_tsupport hx
+          simp [hφx]
+
 end SCV

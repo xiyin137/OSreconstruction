@@ -1,5 +1,6 @@
 import OSReconstruction.Wightman.Reconstruction.SchwartzDensity
 import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceTimeProductDensity
+import OSReconstruction.SCV.DenseBoundaryExtension
 
 /-!
 # Section 4.3 spatial Fourier density support
@@ -541,6 +542,106 @@ theorem dense_section43NPointTimeSpatialTensor_span_compactLaplace_spatialFourie
     (d := d) (n := n)
     (hSt := dense_section43IteratedLaplaceCompactTransform_preimage n)
     (hSx := dense_section43SpatialFourierCompactRange d n)
+
+/-- The compact time-Laplace / compact spatial-Fourier `SchwartzNPoint`
+generator set is closed under complex scalar multiplication. -/
+theorem section43NPointTimeSpatialTensor_compactLaplace_spatialFourier_generator_smul_mem
+    (d n : ℕ) [NeZero d] (c : ℂ)
+    {F : SchwartzNPoint d n}
+    (hF :
+      F ∈
+        {F : SchwartzNPoint d n |
+          ∃ φ : SchwartzMap (Fin n → ℝ) ℂ,
+            φ ∈
+              ((section43TimePositiveQuotientMap n) ⁻¹'
+                Set.range (section43IteratedLaplaceCompactTransform n)) ∧
+          ∃ χ : SchwartzMap (Section43SpatialSpace d n) ℂ,
+            χ ∈ section43SpatialFourierCompactRange d n ∧
+              F = section43NPointTimeSpatialTensor d n φ χ}) :
+    c • F ∈
+        {F : SchwartzNPoint d n |
+          ∃ φ : SchwartzMap (Fin n → ℝ) ℂ,
+            φ ∈
+              ((section43TimePositiveQuotientMap n) ⁻¹'
+                Set.range (section43IteratedLaplaceCompactTransform n)) ∧
+          ∃ χ : SchwartzMap (Section43SpatialSpace d n) ℂ,
+            χ ∈ section43SpatialFourierCompactRange d n ∧
+              F = section43NPointTimeSpatialTensor d n φ χ} := by
+  rcases hF with ⟨φ, hφ, χ, hχ, rfl⟩
+  refine ⟨c • φ, ?_, χ, hχ, ?_⟩
+  · rcases hφ with ⟨g, hg⟩
+    refine ⟨c • g, ?_⟩
+    calc
+      section43IteratedLaplaceCompactTransform n (c • g)
+          = c • section43IteratedLaplaceCompactTransform n g := by
+          rw [section43IteratedLaplaceCompactTransform_map_smul]
+      _ = c • section43TimePositiveQuotientMap n φ := by rw [hg]
+      _ = section43TimePositiveQuotientMap n (c • φ) := by rw [map_smul]
+  · ext q
+    simp [section43NPointTimeSpatialTensor_apply, mul_assoc]
+
+/-- The same compact time-Laplace / compact spatial-Fourier generator family is
+dense after taking real span.  This is the algebraic bridge from the
+complex-linear Section 4.3 density theorem to the real-linear local EOW
+boundary-value hypotheses. -/
+theorem dense_section43NPointTimeSpatialTensor_real_span_compactLaplace_spatialFourier
+    (d n : ℕ) [NeZero d] :
+    Dense
+      (((Submodule.span ℝ
+        {F : SchwartzNPoint d n |
+          ∃ φ : SchwartzMap (Fin n → ℝ) ℂ,
+            φ ∈
+              ((section43TimePositiveQuotientMap n) ⁻¹'
+                Set.range (section43IteratedLaplaceCompactTransform n)) ∧
+          ∃ χ : SchwartzMap (Section43SpatialSpace d n) ℂ,
+            χ ∈ section43SpatialFourierCompactRange d n ∧
+              F = section43NPointTimeSpatialTensor d n φ χ}) :
+        Submodule ℝ (SchwartzNPoint d n)) :
+        Set (SchwartzNPoint d n)) := by
+  let S : Set (SchwartzNPoint d n) :=
+    {F : SchwartzNPoint d n |
+      ∃ φ : SchwartzMap (Fin n → ℝ) ℂ,
+        φ ∈
+          ((section43TimePositiveQuotientMap n) ⁻¹'
+            Set.range (section43IteratedLaplaceCompactTransform n)) ∧
+      ∃ χ : SchwartzMap (Section43SpatialSpace d n) ℂ,
+        χ ∈ section43SpatialFourierCompactRange d n ∧
+          F = section43NPointTimeSpatialTensor d n φ χ}
+  let MR : Submodule ℝ (SchwartzNPoint d n) := Submodule.span ℝ S
+  let MC : Submodule ℂ (SchwartzNPoint d n) := Submodule.span ℂ S
+  have hMC_dense : Dense (MC : Set (SchwartzNPoint d n)) := by
+    simpa [MC, S] using
+      dense_section43NPointTimeSpatialTensor_span_compactLaplace_spatialFourier d n
+  have hcomplex_smul :
+      ∀ c : ℂ, ∀ F : SchwartzNPoint d n, F ∈ (MR : Set (SchwartzNPoint d n)) →
+        c • F ∈ (MR : Set (SchwartzNPoint d n)) := by
+    intro c F hF
+    change F ∈ Submodule.span ℝ S at hF
+    refine Submodule.span_induction ?_ ?_ ?_ ?_ hF
+    · intro G hG
+      exact Submodule.subset_span
+        (section43NPointTimeSpatialTensor_compactLaplace_spatialFourier_generator_smul_mem
+          d n c hG)
+    · simp
+    · intro G H _ _ hG hH
+      simpa [smul_add] using MR.add_mem hG hH
+    · intro r G _ hG
+      have hcomm : c • (r • G) = r • (c • G) := by
+        exact (smul_comm r c G).symm
+      rw [hcomm]
+      exact MR.smul_mem r hG
+  have hMC_le_MR : (MC : Set (SchwartzNPoint d n)) ⊆ (MR : Set (SchwartzNPoint d n)) := by
+    intro F hF
+    change F ∈ Submodule.span ℂ S at hF
+    refine Submodule.span_induction ?_ ?_ ?_ ?_ hF
+    · intro G hG
+      exact Submodule.subset_span hG
+    · simp [MR]
+    · intro G H _ _ hG hH
+      exact MR.add_mem hG hH
+    · intro c G _ hG
+      exact hcomplex_smul c G hG
+  exact Dense.mono hMC_le_MR hMC_dense
 
 /-- The topological support of a transported time/spatial tensor is controlled
 by the topological support of its time factor. -/
@@ -1323,5 +1424,201 @@ theorem dense_section43TimeLaplaceSpatialFourier_compact_preimage
       Dense (section43TimeLaplaceSpatialFourierTarget d n) :=
     Dense.mono hM_le hM_dense
   simpa [section43TimeLaplaceSpatialFourierTarget] using htarget_dense
+
+/-- Equality on compact time-Laplace / spatial-Fourier source representatives
+extends to equality of the corresponding `SchwartzNPoint` complex CLMs, provided
+both CLMs descend to the positive-energy quotient.
+
+This is the full Section 4.3 form of the OS II V.2 `(5.2)` distributional
+identification step: the concrete compact Laplace/Fourier representatives
+identify the two distributions on a dense generator family, and quotient descent
+transports equality to arbitrary representatives of the same positive-energy
+class. -/
+theorem section43_schwartzNPoint_clm_eq_of_laplace_fourier_sources
+    (d n : ℕ) [NeZero d]
+    (T U : SchwartzNPoint d n →L[ℂ] ℂ)
+    (hT_desc :
+      ∀ F G : SchwartzNPoint d n,
+        section43PositiveEnergyQuotientMap (d := d) n F =
+          section43PositiveEnergyQuotientMap (d := d) n G →
+        T F = T G)
+    (hU_desc :
+      ∀ F G : SchwartzNPoint d n,
+        section43PositiveEnergyQuotientMap (d := d) n F =
+          section43PositiveEnergyQuotientMap (d := d) n G →
+        U F = U G)
+    (h_on_sources :
+      ∀ (g : Section43CompactStrictPositiveTimeSource n)
+        (κ : Section43SpatialCompactSource d n),
+        T (section43NPointTimeSpatialTensor d n
+          (section43IteratedLaplaceSchwartzRepresentative n g)
+          (SchwartzMap.fourierTransformCLM ℂ κ.1)) =
+        U (section43NPointTimeSpatialTensor d n
+          (section43IteratedLaplaceSchwartzRepresentative n g)
+          (SchwartzMap.fourierTransformCLM ℂ κ.1))) :
+    T = U := by
+  let S : Set (SchwartzNPoint d n) :=
+    {F : SchwartzNPoint d n |
+      ∃ φ : SchwartzMap (Fin n → ℝ) ℂ,
+      φ ∈
+        ((section43TimePositiveQuotientMap n) ⁻¹'
+          Set.range (section43IteratedLaplaceCompactTransform n)) ∧
+      ∃ χ : SchwartzMap (Section43SpatialSpace d n) ℂ,
+      χ ∈ section43SpatialFourierCompactRange d n ∧
+        F = section43NPointTimeSpatialTensor d n φ χ}
+  have hDense :
+      Dense (((Submodule.span ℂ S : Submodule ℂ (SchwartzNPoint d n)) :
+        Set (SchwartzNPoint d n))) := by
+    simpa [S] using
+      dense_section43NPointTimeSpatialTensor_span_compactLaplace_spatialFourier
+        d n
+  have h_onS : ∀ F ∈ S, T F = U F := by
+    intro F hF
+    rcases hF with ⟨φ, hφ, χ, hχ, rfl⟩
+    rcases hφ with ⟨g, hg⟩
+    rcases hχ with ⟨κ, rfl⟩
+    let Ψt : SchwartzMap (Fin n → ℝ) ℂ :=
+      section43IteratedLaplaceSchwartzRepresentative n g
+    let Ψ : SchwartzNPoint d n :=
+      section43NPointTimeSpatialTensor d n Ψt
+        (SchwartzMap.fourierTransformCLM ℂ κ.1)
+    have hΨt_rep : section43IteratedLaplaceRepresentative n g Ψt := by
+      intro σ hσ
+      exact section43IteratedLaplaceSchwartzRepresentative_apply_of_mem g hσ
+    have hcompact :
+        section43IteratedLaplaceCompactTransform n g =
+          section43TimePositiveQuotientMap n Ψt :=
+      section43IteratedLaplaceCompactTransform_eq_quotient n g Ψt hΨt_rep
+    have hq :
+        section43PositiveEnergyQuotientMap (d := d) n
+            (section43NPointTimeSpatialTensor d n φ
+              (SchwartzMap.fourierTransformCLM ℂ κ.1)) =
+          section43PositiveEnergyQuotientMap (d := d) n Ψ := by
+      dsimp [Ψ]
+      exact
+        section43NPointTimeSpatialTensor_positiveEnergyQuotient_eq_of_timeQuotient_eq
+          d n (SchwartzMap.fourierTransformCLM ℂ κ.1)
+          (hg.symm.trans hcompact)
+    calc
+      T (section43NPointTimeSpatialTensor d n φ
+          (SchwartzMap.fourierTransformCLM ℂ κ.1)) = T Ψ :=
+        hT_desc
+          (section43NPointTimeSpatialTensor d n φ
+            (SchwartzMap.fourierTransformCLM ℂ κ.1))
+          Ψ hq
+      _ = U Ψ := by
+        simpa [Ψ, Ψt] using h_on_sources g κ
+      _ = U (section43NPointTimeSpatialTensor d n φ
+          (SchwartzMap.fourierTransformCLM ℂ κ.1)) :=
+        (hU_desc
+          (section43NPointTimeSpatialTensor d n φ
+            (SchwartzMap.fourierTransformCLM ℂ κ.1))
+          Ψ hq).symm
+  apply ContinuousLinearMap.eq_of_eq_on_dense T U hDense
+  intro F hF
+  change F ∈ Submodule.span ℂ S at hF
+  refine Submodule.span_induction ?_ ?_ ?_ ?_ hF
+  · intro G hG
+    exact h_onS G hG
+  · simp
+  · intro G H _ _ hG hH
+    simpa using congrArg₂ (fun a b : ℂ => a + b) hG hH
+  · intro c G _ hG
+    simpa using congrArg (fun z : ℂ => c * z) hG
+
+/-- Boundary-value convergence on the compact time-Laplace / compact spatial
+Fourier product generators extends to all `n`-point Schwartz tests once the
+actual branch family is eventually equicontinuous at zero.
+
+This is the locally convex form of OS II V.1 `(5.7)`--`(5.8)`: the remaining
+analytic input is convergence on the product-source generators and
+equicontinuity of the branch CLM differences. -/
+theorem section43_tendsto_schwartzNPoint_of_compactLaplace_spatialFourier_generators
+    (d n : ℕ) [NeZero d]
+    {α : Type*} {l : Filter α} [NeBot l]
+    {Tseq : α → SchwartzNPoint d n →L[ℂ] ℂ}
+    {T : SchwartzNPoint d n →L[ℂ] ℂ}
+    (h_on_generators :
+      ∀ F : SchwartzNPoint d n,
+        F ∈
+          {F : SchwartzNPoint d n |
+            ∃ φ : SchwartzMap (Fin n → ℝ) ℂ,
+              φ ∈
+                ((section43TimePositiveQuotientMap n) ⁻¹'
+                  Set.range (section43IteratedLaplaceCompactTransform n)) ∧
+            ∃ χ : SchwartzMap (Section43SpatialSpace d n) ℂ,
+              χ ∈ section43SpatialFourierCompactRange d n ∧
+                F = section43NPointTimeSpatialTensor d n φ χ} →
+          Tendsto (fun a => Tseq a F) l (nhds (T F)))
+    (h_equicont :
+      ∀ W ∈ nhds (0 : ℂ), ∃ U ∈ nhds (0 : SchwartzNPoint d n),
+        ∀ᶠ a in l, ∀ F ∈ U, (Tseq a - T) F ∈ W) :
+    ∀ F : SchwartzNPoint d n, Tendsto (fun a => Tseq a F) l (nhds (T F)) := by
+  exact
+    SCV.tendsto_clm_apply_of_dense_span_of_eventually_equicontinuous
+      (hD := dense_section43NPointTimeSpatialTensor_span_compactLaplace_spatialFourier d n)
+      h_on_generators h_equicont
+
+/-- Real-linear version of
+`section43_tendsto_schwartzNPoint_of_compactLaplace_spatialFourier_generators`,
+matching the boundary-value hypotheses used by the local EOW chart theorem. -/
+theorem section43_tendsto_schwartzNPoint_real_of_compactLaplace_spatialFourier_generators
+    (d n : ℕ) [NeZero d]
+    {α : Type*} {l : Filter α} [NeBot l]
+    {Tseq : α → SchwartzNPoint d n →L[ℝ] ℂ}
+    {T : SchwartzNPoint d n →L[ℝ] ℂ}
+    (h_on_generators :
+      ∀ F : SchwartzNPoint d n,
+        F ∈
+          {F : SchwartzNPoint d n |
+            ∃ φ : SchwartzMap (Fin n → ℝ) ℂ,
+              φ ∈
+                ((section43TimePositiveQuotientMap n) ⁻¹'
+                  Set.range (section43IteratedLaplaceCompactTransform n)) ∧
+            ∃ χ : SchwartzMap (Section43SpatialSpace d n) ℂ,
+              χ ∈ section43SpatialFourierCompactRange d n ∧
+                F = section43NPointTimeSpatialTensor d n φ χ} →
+          Tendsto (fun a => Tseq a F) l (nhds (T F)))
+    (h_equicont :
+      ∀ W ∈ nhds (0 : ℂ), ∃ U ∈ nhds (0 : SchwartzNPoint d n),
+        ∀ᶠ a in l, ∀ F ∈ U, (Tseq a - T) F ∈ W) :
+    ∀ F : SchwartzNPoint d n, Tendsto (fun a => Tseq a F) l (nhds (T F)) := by
+  exact
+    SCV.tendsto_clm_apply_of_dense_span_of_eventually_equicontinuous
+      (hD := dense_section43NPointTimeSpatialTensor_real_span_compactLaplace_spatialFourier d n)
+      h_on_generators h_equicont
+
+/-- Banach-Steinhaus form of the real-linear Section 4.3 boundary upgrade.
+
+After the raw OS-II product-source identities give convergence on the compact
+Laplace/Fourier generators, it is enough to prove pointwise boundedness of the
+branch-difference family.  Banach-Steinhaus supplies the equicontinuity needed
+to extend convergence to every `SchwartzNPoint` test. -/
+theorem section43_tendsto_schwartzNPoint_real_of_generators_of_pointwise_bounded
+    (d n : ℕ) [NeZero d]
+    {α : Type*} {l : Filter α} [NeBot l]
+    {Tseq : α → SchwartzNPoint d n →L[ℝ] ℂ}
+    {T : SchwartzNPoint d n →L[ℝ] ℂ}
+    (h_on_generators :
+      ∀ F : SchwartzNPoint d n,
+        F ∈
+          {F : SchwartzNPoint d n |
+            ∃ φ : SchwartzMap (Fin n → ℝ) ℂ,
+              φ ∈
+                ((section43TimePositiveQuotientMap n) ⁻¹'
+                  Set.range (section43IteratedLaplaceCompactTransform n)) ∧
+            ∃ χ : SchwartzMap (Section43SpatialSpace d n) ℂ,
+              χ ∈ section43SpatialFourierCompactRange d n ∧
+                F = section43NPointTimeSpatialTensor d n φ χ} →
+          Tendsto (fun a => Tseq a F) l (nhds (T F)))
+    (h_pointwise_bounded :
+      ∀ F : SchwartzNPoint d n, ∃ C : ℝ,
+        ∀ a : α, ‖(Tseq a - T) F‖ ≤ C) :
+    ∀ F : SchwartzNPoint d n, Tendsto (fun a => Tseq a F) l (nhds (T F)) := by
+  exact
+    section43_tendsto_schwartzNPoint_real_of_compactLaplace_spatialFourier_generators
+      d n h_on_generators
+      (SCV.tempered_eventually_equicontinuous_of_pointwise_bounded
+        (l := l) (T := fun a => Tseq a - T) h_pointwise_bounded)
 
 end OSReconstruction

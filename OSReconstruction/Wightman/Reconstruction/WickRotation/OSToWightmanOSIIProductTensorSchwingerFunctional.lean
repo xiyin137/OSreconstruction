@@ -1,8 +1,10 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIProductTensorRealEdge
+import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIProductTensorSchwingerSourceCurrent
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIProductTensorSourceCurrent
+import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIA0LocalSchwinger
 import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceOrderedDensity
 import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceProductSourceCarrier
 import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceTotalTimePushforward
+import OSReconstruction.SCV.EuclideanWeylOpen
 
 /-!
 # OS II Product-Tensor Schwinger Functionals
@@ -126,6 +128,39 @@ theorem timeShift_orderedPullbackTimeSpatialTensorCLM_apply
   simp [SchwartzMap.compCLMOfContinuousLinearEquiv_apply,
     section43NPointTimeSpatialTensor_apply, htime, hspatial]
 
+/-- Translation of the first finite difference-time coordinate by `-t`. -/
+def section43FirstTimeShift {m : ℕ} (hm : 0 < m) (t : ℝ) : Fin m → ℝ :=
+  fun i => if i = (⟨0, hm⟩ : Fin m) then -t else 0
+
+/-- Common Euclidean time translation of an ordered-pullback source is
+translation of only the first finite difference-time coordinate. -/
+theorem timeShift_orderedPullbackTimeSpatialTensorCLM_eq_translate_firstTime
+    {m : ℕ} (hm : 0 < m)
+    (χ : SchwartzMap (Section43SpatialSpace d m) ℂ)
+    (φ : SchwartzMap (Fin m → ℝ) ℂ)
+    (t : ℝ) :
+    timeShiftSchwartzNPoint (d := d) t
+        (section43OrderedPullbackTimeSpatialTensorCLM d m χ φ) =
+      section43OrderedPullbackTimeSpatialTensorCLM d m χ
+        (SCV.translateSchwartz (section43FirstTimeShift (m := m) hm t) φ) := by
+  ext y
+  rw [timeShift_orderedPullbackTimeSpatialTensorCLM_apply]
+  rw [section43OrderedPullbackTimeSpatialTensorCLM_apply]
+  simp only [SchwartzMap.compCLMOfContinuousLinearEquiv_apply, Function.comp_apply,
+    section43NPointTimeSpatialTensor_apply, SCV.translateSchwartz_apply]
+  congr 2
+  · funext i
+    by_cases hi0 : i.val = 0
+    · have hi : i = (⟨0, hm⟩ : Fin m) := by
+        ext
+        exact hi0
+      simp [section43FirstTimeShift, hi]
+      ring
+    · have hi : i ≠ (⟨0, hm⟩ : Fin m) := by
+        intro h
+        exact hi0 (by simpa using congrArg Fin.val h)
+      simp [section43FirstTimeShift, hi0, hi]
+
 private theorem tsupport_precomp_subset_local {X Y α : Type*}
     [TopologicalSpace X] [TopologicalSpace Y] [Zero α]
     {f : Y → α} {h : X → Y} (hh : Continuous h) :
@@ -141,85 +176,6 @@ private theorem continuous_translateNPointDomain_local
   apply continuous_pi
   intro i
   exact (continuous_apply i).sub continuous_const
-
-/-- A strictly positive Euclidean time shift preserves zero-diagonal
-admissibility of an OS tensor product whose two factors have ordered
-positive-time support. -/
-theorem VanishesToInfiniteOrderOnCoincidence_osConjTensorProduct_timeShift_of_ordered_positive
-    {n r : ℕ}
-    (f : SchwartzNPoint d n)
-    (hf_ord : tsupport (f : NPointDomain d n → ℂ) ⊆
-      OrderedPositiveTimeRegion d n)
-    (g : SchwartzNPoint d r)
-    (hg_ord : tsupport (g : NPointDomain d r → ℂ) ⊆
-      OrderedPositiveTimeRegion d r)
-    (t : ℝ) (ht : 0 < t) :
-    VanishesToInfiniteOrderOnCoincidence
-      (f.osConjTensorProduct (timeShiftSchwartzNPoint (d := d) t g)) := by
-  exact
-    VanishesToInfiniteOrderOnCoincidence_osConjTensorProduct_of_tsupport_subset_orderedPositiveTimeRegion
-      (d := d) (f := f)
-      (g := timeShiftSchwartzNPoint (d := d) t g)
-      hf_ord
-      (timeShiftSchwartzNPoint_preserves_ordered_positive_tsupport
-        (d := d) t ht g hg_ord)
-
-/-- On the strict positive orthant, the total OS-II finite-time shift is
-strictly positive. -/
-theorem section43TimeStrictPositiveRegion_sum_pos
-    {m : ℕ} [Nonempty (Fin m)] {ξ : Fin m → ℝ}
-    (hξ : ξ ∈ section43TimeStrictPositiveRegion m) :
-    0 < ∑ p : Fin m, ξ p := by
-  classical
-  exact
-    Finset.sum_pos
-      (fun p _ => hξ p)
-      Finset.univ_nonempty
-
-/-- The OS-II strict positive orthant gives honest zero-diagonal shifted shells
-for the Schwinger functional. -/
-theorem VanishesToInfiniteOrderOnCoincidence_osConjTensorProduct_timeShift_sum_of_strictPositive
-    {m n r : ℕ} [Nonempty (Fin m)]
-    (f : SchwartzNPoint d n)
-    (hf_ord : tsupport (f : NPointDomain d n → ℂ) ⊆
-      OrderedPositiveTimeRegion d n)
-    (g : SchwartzNPoint d r)
-    (hg_ord : tsupport (g : NPointDomain d r → ℂ) ⊆
-      OrderedPositiveTimeRegion d r)
-    (ξ : Fin m → ℝ) (hξ : ξ ∈ section43TimeStrictPositiveRegion m) :
-    VanishesToInfiniteOrderOnCoincidence
-      (f.osConjTensorProduct
-        (timeShiftSchwartzNPoint (d := d) (∑ p : Fin m, ξ p) g)) := by
-  exact
-    VanishesToInfiniteOrderOnCoincidence_osConjTensorProduct_timeShift_of_ordered_positive
-      (d := d) f hf_ord g hg_ord
-      (∑ p : Fin m, ξ p)
-      (section43TimeStrictPositiveRegion_sum_pos (m := m) hξ)
-
-/-- The totalized `ofClassical` branch is the honest shifted-shell subtype on
-the OS-II strict positive orthant. -/
-theorem ZeroDiagonalSchwartz_ofClassical_osConjTensorProduct_timeShift_sum_of_strictPositive
-    {m n r : ℕ} [Nonempty (Fin m)]
-    (f : SchwartzNPoint d n)
-    (hf_ord : tsupport (f : NPointDomain d n → ℂ) ⊆
-      OrderedPositiveTimeRegion d n)
-    (g : SchwartzNPoint d r)
-    (hg_ord : tsupport (g : NPointDomain d r → ℂ) ⊆
-      OrderedPositiveTimeRegion d r)
-    (ξ : Fin m → ℝ) (hξ : ξ ∈ section43TimeStrictPositiveRegion m) :
-    ZeroDiagonalSchwartz.ofClassical
-        (f.osConjTensorProduct
-          (timeShiftSchwartzNPoint (d := d) (∑ p : Fin m, ξ p) g)) =
-      ⟨f.osConjTensorProduct
-          (timeShiftSchwartzNPoint (d := d) (∑ p : Fin m, ξ p) g),
-        VanishesToInfiniteOrderOnCoincidence_osConjTensorProduct_timeShift_sum_of_strictPositive
-          (d := d) f hf_ord g hg_ord ξ hξ⟩ := by
-  exact
-    ZeroDiagonalSchwartz.ofClassical_of_vanishes
-      (f := f.osConjTensorProduct
-        (timeShiftSchwartzNPoint (d := d) (∑ p : Fin m, ξ p) g))
-      (VanishesToInfiniteOrderOnCoincidence_osConjTensorProduct_timeShift_sum_of_strictPositive
-        (d := d) f hf_ord g hg_ord ξ hξ)
 
 omit [NeZero d] in
 theorem timeShiftSchwartzNPoint_preserves_ordered_positive_tsupport_of_nonneg
@@ -333,6 +289,88 @@ noncomputable def bvt_W_pairing_descended_timeSpatialRightCLM
       bvt_W_pairing_descended_frequencyProjection (d := d) OS lgc n k u
         (section43PositiveEnergyQuotientMap (d := d) k
           (section43NPointTimeSpatialTensor d k φ χ)) := rfl
+
+/-- The fixed-left BVT right time-shell functional descends to the finite
+positive-time quotient.
+
+This is the branch-side quotient-descent fact needed by the OS-II `(5.7)`--`(5.8)`
+dense boundary handoff: the fixed spatial shell is paired only after passing
+the right block to the Section 4.3 positive-energy quotient. -/
+theorem bvt_W_pairing_descended_timeSpatialRightCLM_eq_of_timePositiveQuotient_eq
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (n k : ℕ)
+    (u : Section43PositiveEnergyComponent (d := d) n)
+    (χ : SchwartzMap (Section43SpatialSpace d k) ℂ)
+    {φ ψ : SchwartzMap (Fin k → ℝ) ℂ}
+    (hφψ :
+      section43TimePositiveQuotientMap k φ =
+        section43TimePositiveQuotientMap k ψ) :
+    bvt_W_pairing_descended_timeSpatialRightCLM
+        (d := d) OS lgc n k u χ φ =
+      bvt_W_pairing_descended_timeSpatialRightCLM
+        (d := d) OS lgc n k u χ ψ := by
+  change
+    bvt_W_pairing_descended_frequencyProjection (d := d) OS lgc n k u
+        (section43PositiveEnergyQuotientMap (d := d) k
+          (section43NPointTimeSpatialTensor d k φ χ)) =
+      bvt_W_pairing_descended_frequencyProjection (d := d) OS lgc n k u
+        (section43PositiveEnergyQuotientMap (d := d) k
+          (section43NPointTimeSpatialTensor d k ψ χ))
+  rw [section43NPointTimeSpatialTensor_positiveEnergyQuotient_eq_of_timeQuotient_eq
+    d k χ hφψ]
+
+/-- Same-distribution handoff between the descended BVT time-shell CLM and the
+local A0 cutoff time-shell CLM.
+
+This is the concrete OS-II V.2 `(5.2)` instantiation for the actual BVT
+right-time shell: the BVT side descends to the positive-time quotient by
+construction, the A0 side descends from the strict-positive cutoff carrier, and
+equality on compact one-sided Laplace product representatives identifies the two
+finite-time distributions. -/
+theorem bvt_W_pairing_descended_timeSpatialRightCLM_eq_osiiA0LocalCutoffTimeShellCLM
+    {n k : ℕ} [Nonempty (Fin k)]
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (u : Section43PositiveEnergyComponent (d := d) n)
+    (κ : Section43SpatialCompactSource d k)
+    (χ : SchwartzNPoint d (n + k))
+    (hχ_disj :
+      Disjoint (tsupport (χ : NPointDomain d (n + k) → ℂ))
+        (CoincidenceLocus d (n + k)))
+    (hχ_time :
+      tsupport (χ : NPointDomain d (n + k) → ℂ) ⊆
+        { x : NPointDomain d (n + k) |
+          section43QTime (d := d) (n := k)
+            (section43DiffCoordRealCLE d k (splitLast n k x)) ∈
+              section43TimeStrictPositiveRegion k })
+    (fLeft : SchwartzNPoint d n)
+    (h_on_products :
+      ∀ gs : Fin k → Section43CompactPositiveTimeSource1D,
+        bvt_W_pairing_descended_timeSpatialRightCLM
+            (d := d) OS lgc n k u κ.1
+            (section43TimeProductTensor
+              (fun i : Fin k =>
+                section43OneSidedLaplaceSchwartzRepresentative1D (gs i))) =
+          osiiA0LocalCutoffTimeShellCLM
+            (d := d) OS χ hχ_disj fLeft κ
+            (section43TimeProductTensor
+              (fun i : Fin k =>
+                section43OneSidedLaplaceSchwartzRepresentative1D (gs i)))) :
+    bvt_W_pairing_descended_timeSpatialRightCLM
+        (d := d) OS lgc n k u κ.1 =
+      osiiA0LocalCutoffTimeShellCLM
+        (d := d) OS χ hχ_disj fLeft κ := by
+  refine
+    osiiA0LocalCutoffTimeShellCLM_eq_of_compactLaplace_product_sources
+      (d := d) (n := n) (m := k) OS χ hχ_disj hχ_time fLeft κ
+      (bvt_W_pairing_descended_timeSpatialRightCLM
+        (d := d) OS lgc n k u κ.1)
+      ?_ h_on_products
+  intro φ ψ hφψ
+  exact
+    bvt_W_pairing_descended_timeSpatialRightCLM_eq_of_timePositiveQuotient_eq
+      (d := d) OS lgc n k u κ.1 hφψ
 
 /-- Product-source values of the fixed-left BVT time/spatial right CLM are the
 ordered-source OS Schwinger scalars supplied by the Section 4.3 carrier. -/
@@ -585,6 +623,103 @@ theorem bvt_imagAxis_eq_leftShiftedShell_of_productSource_pairings_eq
             (d := d) OS
             (timeShiftSchwartzNPoint (d := d) a f) hf_shift
             g hg_ord x0
+
+/-- Coordinate-height BVT delta-smearing.
+
+The total-time BVT theorem above uses the height `∑ p, ξ p`.  The axis-pair
+chart instead selects one distinguished coordinate height.  This local variant
+keeps that convention explicit: equal compact positive product-source pairings
+near `x0` force the fixed-left BVT imaginary-axis probe to equal the
+coordinate-height Schwinger shell at `x0`. -/
+theorem bvt_imagAxis_eq_coordinateShiftShell_of_local_productSource_pairings_eq
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {n m r : ℕ} [Nonempty (Fin m)]
+    (u : Section43PositiveEnergyComponent (d := d) n)
+    (χ : SchwartzMap (Section43SpatialSpace d m) ℂ)
+    (q : Fin m)
+    (f : SchwartzNPoint d n)
+    (hf_ord : tsupport (f : NPointDomain d n → ℂ) ⊆
+      OrderedPositiveTimeRegion d n)
+    (g : SchwartzNPoint d r)
+    (hg_ord : tsupport (g : NPointDomain d r → ℂ) ⊆
+      OrderedPositiveTimeRegion d r)
+    (hg_compact : HasCompactSupport (g : NPointDomain d r → ℂ))
+    (x0 : Fin m → ℝ) (hx0 : ∀ i : Fin m, 0 < x0 i)
+    (U : Set (Fin m → ℝ)) (hU_nhds : U ∈ 𝓝 x0)
+    (hpair :
+      ∀ gs : Fin m → Section43CompactPositiveTimeSource1D,
+        tsupport ((section43TimeProductSource gs).f :
+          (Fin m → ℝ) → ℂ) ⊆ U →
+        (∫ ξ : Fin m → ℝ,
+          bvt_W_pairing_descended_timeSpatialRightProductMultilinear
+              (d := d) OS lgc n m u χ
+              (fun i : Fin m => section43ImagAxisPsiKernel (ξ i)) *
+            (section43TimeProductSource gs).f ξ) =
+          ∫ ξ : Fin m → ℝ,
+            OS.S (n + r) (ZeroDiagonalSchwartz.ofClassical
+              (f.osConjTensorProduct
+                (timeShiftSchwartzNPoint (d := d) (ξ q) g))) *
+              (section43TimeProductSource gs).f ξ) :
+    bvt_W_pairing_descended_timeSpatialRightProductMultilinear
+        (d := d) OS lgc n m u χ
+        (fun i : Fin m => section43ImagAxisPsiKernel (x0 i)) =
+      OS.S (n + r) (ZeroDiagonalSchwartz.ofClassical
+        (f.osConjTensorProduct
+          (timeShiftSchwartzNPoint (d := d) (x0 q) g))) := by
+  let KBVT : (Fin m → ℝ) → ℂ := fun ξ =>
+    bvt_W_pairing_descended_timeSpatialRightProductMultilinear
+      (d := d) OS lgc n m u χ
+      (fun i : Fin m => section43ImagAxisPsiKernel (ξ i))
+  let Kcoord : (Fin m → ℝ) → ℂ := fun ξ =>
+    OS.S (n + r) (ZeroDiagonalSchwartz.ofClassical
+      (f.osConjTensorProduct
+        (timeShiftSchwartzNPoint (d := d) (ξ q) g)))
+  have hKBVT_contOn :
+      ContinuousOn KBVT {ξ : Fin m → ℝ | ∀ i : Fin m, 0 < ξ i} := by
+    simpa [KBVT, section43TimeStrictPositiveRegion] using
+      continuousOn_bvt_W_pairing_descended_timeSpatialRightProductMultilinear_imagAxis
+        (d := d) OS lgc n m u χ
+  have hKBVT_cont : ContinuousAt KBVT x0 :=
+    hKBVT_contOn.continuousAt
+      ((isOpen_section43TimeStrictPositiveRegion m).mem_nhds (by
+        simpa [section43TimeStrictPositiveRegion] using hx0))
+  have hKcoord_cont_t :
+      ContinuousOn
+        (fun t : ℝ =>
+          OS.S (n + r) (ZeroDiagonalSchwartz.ofClassical
+            (f.osConjTensorProduct
+              (timeShiftSchwartzNPoint (d := d) t g))))
+        (Set.Ioi 0) :=
+    continuousOn_os_pairing_term_timeShift_of_isCompactSupport
+      (d := d) OS f g hf_ord hg_ord hg_compact
+  have hKcoord_cont : ContinuousAt Kcoord x0 := by
+    have ht :
+        ContinuousAt
+          (fun t : ℝ =>
+            OS.S (n + r) (ZeroDiagonalSchwartz.ofClassical
+              (f.osConjTensorProduct
+                (timeShiftSchwartzNPoint (d := d) t g))))
+          (x0 q) :=
+      hKcoord_cont_t.continuousAt (isOpen_Ioi.mem_nhds (hx0 q))
+    simpa [Kcoord, Function.comp_def] using
+      ContinuousAt.comp (x := x0) (f := fun ξ : Fin m → ℝ => ξ q)
+        (g := fun t : ℝ =>
+          OS.S (n + r) (ZeroDiagonalSchwartz.ofClassical
+            (f.osConjTensorProduct
+              (timeShiftSchwartzNPoint (d := d) t g))))
+        ht (continuous_apply q).continuousAt
+  have hKcoord_contOn :
+      ContinuousOn Kcoord {ξ : Fin m → ℝ | ∀ i : Fin m, 0 < ξ i} := by
+    exact hKcoord_cont_t.comp
+      (continuous_apply q).continuousOn
+      (by intro ξ hξ; exact hξ q)
+  change KBVT x0 = Kcoord x0
+  exact
+    eq_of_local_positiveOrthant_productSource_pairings_eq
+      KBVT Kcoord x0 hx0 U hU_nhds hKBVT_cont hKcoord_cont
+      hKBVT_contOn hKcoord_contOn
+      (by intro gs hgsU; exact hpair gs hgsU)
 
 /-- Product-source values of the fixed-left BVT time/spatial right multilinear
 probe are the ordered-source OS Schwinger scalars supplied by the Section 4.3
@@ -955,6 +1090,1732 @@ theorem integral_bvt_timeSpatialRightProductMultilinear_imagAxis_eq_selected_fix
               (d := d) n k OS lgc gs1 kappa1 gs2 kappa2
       _ = OS.S (n + k) (Z (section43TimeProductSource gs2).f) := by
           rw [hZ_eq]
+
+/-- Selected fixed-left source-current value from a support-local BVT shell
+identity.
+
+The selected cutoff current already represents the compact BVT product-source
+integral.  Therefore a pointwise BVT-to-shifted-Schwinger-shell identity only
+on the support of the compact product source is enough to identify the selected
+current value with the shifted-shell integral.  This is the source-current
+transport form used by the local MZ/A0 route: the comparison is local on the
+actual support, not a global kernel shortcut. -/
+theorem selected_fixedLeftOrderedPullbackCutoffZeroCLM_eq_leftShiftedShell_integral_of_bvt_eqOn_tsupport
+    (n k : ℕ)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (gs1 : Fin n → Section43CompactPositiveTimeSource1D)
+    (kappa1 : Section43SpatialCompactSource d n)
+    (gs2 : Fin k → Section43CompactPositiveTimeSource1D)
+    (kappa2 : Section43SpatialCompactSource d k)
+    (a : ℝ) (_ha : 0 ≤ a)
+    (f : SchwartzNPoint d n)
+    (_hf_ord : tsupport (f : NPointDomain d n → ℂ) ⊆
+      OrderedPositiveTimeRegion d n)
+    (g : SchwartzNPoint d k)
+    (_hg_ord : tsupport (g : NPointDomain d k → ℂ) ⊆
+      OrderedPositiveTimeRegion d k)
+    (hBVT_shell :
+      ∀ ξ : Fin k → ℝ,
+        ξ ∈ tsupport ((section43TimeProductSource gs2).f :
+          (Fin k → ℝ) → ℂ) →
+        bvt_W_pairing_descended_timeSpatialRightProductMultilinear
+            (d := d) OS lgc n k
+            (section43PositiveEnergyQuotientMap (d := d) n
+              (section43NPointTimeSpatialTensor d n
+                (section43TimeProductTensor
+                  (fun i : Fin n =>
+                    section43OneSidedLaplaceSchwartzRepresentative1D
+                      (gs1 i)))
+                (SchwartzMap.fourierTransformCLM ℂ kappa1.1)))
+            (SchwartzMap.fourierTransformCLM ℂ kappa2.1)
+            (fun i : Fin k => section43ImagAxisPsiKernel (ξ i)) =
+          OS.S (n + k)
+            (ZeroDiagonalSchwartz.ofClassical
+              ((timeShiftSchwartzNPoint (d := d) a f).osConjTensorProduct
+                (timeShiftSchwartzNPoint (d := d)
+                  (∑ p : Fin k, ξ p) g)))) :
+    ∃ η : SchwartzMap (Fin k → ℝ) ℂ,
+      (∀ x ∈ tsupport ((section43TimeProductSource gs2).f :
+          (Fin k → ℝ) → ℂ), η x = 1) ∧
+      tsupport (η : (Fin k → ℝ) → ℂ) ⊆
+        section43TimeStrictPositiveRegion k ∧
+      ∃ Z : SchwartzMap (Fin k → ℝ) ℂ →L[ℂ]
+          ZeroDiagonalSchwartz d (n + k),
+        (∀ φ,
+          (Z φ).1 =
+            (section43OrderedPullbackTimeSpatialTensorCLM d n kappa1.1
+                (section43TimeProductSource gs1).f).osConjTensorProduct
+              (section43OrderedPullbackTimeSpatialTensorCLM d k kappa2.1
+                (SchwartzMap.smulLeftCLM ℂ
+                  (η : (Fin k → ℝ) → ℂ) φ))) ∧
+        OS.S (n + k) (Z (section43TimeProductSource gs2).f) =
+          ∫ ξ : Fin k → ℝ,
+            OS.S (n + k)
+              (ZeroDiagonalSchwartz.ofClassical
+                ((timeShiftSchwartzNPoint (d := d) a f).osConjTensorProduct
+                  (timeShiftSchwartzNPoint (d := d)
+                    (∑ p : Fin k, ξ p) g))) *
+              (section43TimeProductSource gs2).f ξ := by
+  classical
+  rcases
+    integral_bvt_timeSpatialRightProductMultilinear_imagAxis_eq_selected_fixedLeftOrderedPullbackCutoffZeroCLM
+      (d := d) n k OS lgc gs1 kappa1 gs2 kappa2 with
+  ⟨η, hη_one, hη_support, Z, hZ_coe, hselected⟩
+  refine ⟨η, hη_one, hη_support, Z, hZ_coe, ?_⟩
+  let KBVT : (Fin k → ℝ) → ℂ := fun ξ =>
+    bvt_W_pairing_descended_timeSpatialRightProductMultilinear
+      (d := d) OS lgc n k
+      (section43PositiveEnergyQuotientMap (d := d) n
+        (section43NPointTimeSpatialTensor d n
+          (section43TimeProductTensor
+            (fun i : Fin n =>
+              section43OneSidedLaplaceSchwartzRepresentative1D (gs1 i)))
+          (SchwartzMap.fourierTransformCLM ℂ kappa1.1)))
+      (SchwartzMap.fourierTransformCLM ℂ kappa2.1)
+      (fun i : Fin k => section43ImagAxisPsiKernel (ξ i))
+  let Kshell : (Fin k → ℝ) → ℂ := fun ξ =>
+    OS.S (n + k)
+      (ZeroDiagonalSchwartz.ofClassical
+        ((timeShiftSchwartzNPoint (d := d) a f).osConjTensorProduct
+          (timeShiftSchwartzNPoint (d := d) (∑ p : Fin k, ξ p) g)))
+  have hint :
+      (∫ ξ : Fin k → ℝ, KBVT ξ * (section43TimeProductSource gs2).f ξ) =
+        ∫ ξ : Fin k → ℝ, Kshell ξ * (section43TimeProductSource gs2).f ξ := by
+    exact
+      integral_mul_eq_of_eqOn_tsupport
+        KBVT Kshell
+        ((section43TimeProductSource gs2).f : (Fin k → ℝ) → ℂ)
+        (fun ξ hξ => hBVT_shell ξ hξ)
+  calc
+    OS.S (n + k) (Z (section43TimeProductSource gs2).f) =
+      ∫ ξ : Fin k → ℝ, KBVT ξ * (section43TimeProductSource gs2).f ξ := by
+        exact hselected.symm
+    _ =
+      ∫ ξ : Fin k → ℝ, Kshell ξ * (section43TimeProductSource gs2).f ξ := hint
+    _ =
+      ∫ ξ : Fin k → ℝ,
+        OS.S (n + k)
+          (ZeroDiagonalSchwartz.ofClassical
+            ((timeShiftSchwartzNPoint (d := d) a f).osConjTensorProduct
+              (timeShiftSchwartzNPoint (d := d)
+                (∑ p : Fin k, ξ p) g))) *
+          (section43TimeProductSource gs2).f ξ := by
+        rfl
+
+/-- Selected fixed-left source-current value from genuine compact product-source
+pairing equality.
+
+The BVT compact product integral is first represented by the selected cutoff
+current above.  The product-source pairing equality then gives, by the
+positive-orthant delta theorem, the support-local BVT kernel identity needed to
+replace that selected value by the left-shifted Schwinger shell integral. -/
+theorem selected_fixedLeftOrderedPullbackCutoffZeroCLM_eq_leftShiftedShell_integral_of_pairings_eq
+    (n k : ℕ) [Nonempty (Fin k)]
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (gs1 : Fin n → Section43CompactPositiveTimeSource1D)
+    (kappa1 : Section43SpatialCompactSource d n)
+    (gs2 : Fin k → Section43CompactPositiveTimeSource1D)
+    (kappa2 : Section43SpatialCompactSource d k)
+    (a : ℝ) (ha : 0 ≤ a)
+    (f : SchwartzNPoint d n)
+    (hf_ord : tsupport (f : NPointDomain d n → ℂ) ⊆
+      OrderedPositiveTimeRegion d n)
+    (g : SchwartzNPoint d k)
+    (hg_ord : tsupport (g : NPointDomain d k → ℂ) ⊆
+      OrderedPositiveTimeRegion d k)
+    (hg_compact : HasCompactSupport (g : NPointDomain d k → ℂ))
+    (hpair :
+      ∀ gs : Fin k → Section43CompactPositiveTimeSource1D,
+        (∫ ξ : Fin k → ℝ,
+          bvt_W_pairing_descended_timeSpatialRightProductMultilinear
+              (d := d) OS lgc n k
+              (section43PositiveEnergyQuotientMap (d := d) n
+                (section43NPointTimeSpatialTensor d n
+                  (section43TimeProductTensor
+                    (fun i : Fin n =>
+                      section43OneSidedLaplaceSchwartzRepresentative1D
+                        (gs1 i)))
+                  (SchwartzMap.fourierTransformCLM ℂ kappa1.1)))
+              (SchwartzMap.fourierTransformCLM ℂ kappa2.1)
+              (fun i : Fin k => section43ImagAxisPsiKernel (ξ i)) *
+            (section43TimeProductSource gs).f ξ) =
+          ∫ ξ : Fin k → ℝ,
+            OS.S (n + k)
+              (ZeroDiagonalSchwartz.ofClassical
+                ((timeShiftSchwartzNPoint (d := d) a f).osConjTensorProduct
+                  (timeShiftSchwartzNPoint (d := d)
+                    (∑ p : Fin k, ξ p) g))) *
+              (section43TimeProductSource gs).f ξ) :
+    ∃ η : SchwartzMap (Fin k → ℝ) ℂ,
+      (∀ x ∈ tsupport ((section43TimeProductSource gs2).f :
+          (Fin k → ℝ) → ℂ), η x = 1) ∧
+      tsupport (η : (Fin k → ℝ) → ℂ) ⊆
+        section43TimeStrictPositiveRegion k ∧
+      ∃ Z : SchwartzMap (Fin k → ℝ) ℂ →L[ℂ]
+          ZeroDiagonalSchwartz d (n + k),
+        (∀ φ,
+          (Z φ).1 =
+            (section43OrderedPullbackTimeSpatialTensorCLM d n kappa1.1
+                (section43TimeProductSource gs1).f).osConjTensorProduct
+              (section43OrderedPullbackTimeSpatialTensorCLM d k kappa2.1
+                (SchwartzMap.smulLeftCLM ℂ
+                  (η : (Fin k → ℝ) → ℂ) φ))) ∧
+        OS.S (n + k) (Z (section43TimeProductSource gs2).f) =
+          ∫ ξ : Fin k → ℝ,
+            OS.S (n + k)
+              (ZeroDiagonalSchwartz.ofClassical
+                ((timeShiftSchwartzNPoint (d := d) a f).osConjTensorProduct
+                  (timeShiftSchwartzNPoint (d := d)
+                    (∑ p : Fin k, ξ p) g))) *
+              (section43TimeProductSource gs2).f ξ := by
+  have hBVT_shell :
+      ∀ ξ : Fin k → ℝ,
+        ξ ∈ tsupport ((section43TimeProductSource gs2).f :
+          (Fin k → ℝ) → ℂ) →
+        bvt_W_pairing_descended_timeSpatialRightProductMultilinear
+            (d := d) OS lgc n k
+            (section43PositiveEnergyQuotientMap (d := d) n
+              (section43NPointTimeSpatialTensor d n
+                (section43TimeProductTensor
+                  (fun i : Fin n =>
+                    section43OneSidedLaplaceSchwartzRepresentative1D
+                      (gs1 i)))
+                (SchwartzMap.fourierTransformCLM ℂ kappa1.1)))
+            (SchwartzMap.fourierTransformCLM ℂ kappa2.1)
+            (fun i : Fin k => section43ImagAxisPsiKernel (ξ i)) =
+          OS.S (n + k)
+            (ZeroDiagonalSchwartz.ofClassical
+              ((timeShiftSchwartzNPoint (d := d) a f).osConjTensorProduct
+                (timeShiftSchwartzNPoint (d := d)
+                  (∑ p : Fin k, ξ p) g))) := by
+    intro ξ hξ
+    exact
+      bvt_imagAxis_eq_leftShiftedShell_of_productSource_pairings_eq
+        (d := d) OS lgc
+        (section43PositiveEnergyQuotientMap (d := d) n
+          (section43NPointTimeSpatialTensor d n
+            (section43TimeProductTensor
+              (fun i : Fin n =>
+                section43OneSidedLaplaceSchwartzRepresentative1D (gs1 i)))
+            (SchwartzMap.fourierTransformCLM ℂ kappa1.1)))
+        (SchwartzMap.fourierTransformCLM ℂ kappa2.1)
+        a ha f hf_ord g hg_ord hg_compact
+        ξ ((section43TimeProductSource gs2).positive hξ)
+        hpair
+  exact
+    selected_fixedLeftOrderedPullbackCutoffZeroCLM_eq_leftShiftedShell_integral_of_bvt_eqOn_tsupport
+      (d := d) n k OS lgc gs1 kappa1 gs2 kappa2 a ha f hf_ord g hg_ord
+      hBVT_shell
+
+/-- Local `(A0)` form of the compact BVT product-source seam.
+
+The same compact product integral selected by the Section 4.3 BVT carrier is
+the value of a cutoff-local full-Schwartz Schwinger distribution on the
+ordered-pullback OS-conjugated two-block product current. -/
+theorem integral_bvt_timeSpatialRightProductMultilinear_imagAxis_eq_osiiA0LocalCutoffSchwingerCLM
+    (n k : ℕ)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (gs1 : Fin n → Section43CompactPositiveTimeSource1D)
+    (kappa1 : Section43SpatialCompactSource d n)
+    (gs2 : Fin k → Section43CompactPositiveTimeSource1D)
+    (kappa2 : Section43SpatialCompactSource d k) :
+    ∃ (χ : SchwartzNPoint d (n + k))
+      (hχ_disj :
+        Disjoint (tsupport (χ : NPointDomain d (n + k) → ℂ))
+          (CoincidenceLocus d (n + k))),
+      (∀ x ∈ tsupport
+          (((section43OrderedPullbackTimeSpatialTensorCLM d n kappa1.1
+              (section43TimeProductSource gs1).f).osConjTensorProduct
+            (section43OrderedPullbackTimeSpatialTensorCLM d k kappa2.1
+              (section43TimeProductSource gs2).f) :
+              SchwartzNPoint d (n + k)) : NPointDomain d (n + k) → ℂ),
+          χ x = 1) ∧
+      (∫ ξ : Fin k → ℝ,
+          bvt_W_pairing_descended_timeSpatialRightProductMultilinear
+            (d := d) OS lgc n k
+            (section43PositiveEnergyQuotientMap (d := d) n
+              (section43NPointTimeSpatialTensor d n
+                (section43TimeProductTensor
+                  (fun i : Fin n =>
+                    section43OneSidedLaplaceSchwartzRepresentative1D
+                      (gs1 i)))
+                (SchwartzMap.fourierTransformCLM ℂ kappa1.1)))
+            (SchwartzMap.fourierTransformCLM ℂ kappa2.1)
+            (fun i : Fin k => section43ImagAxisPsiKernel (ξ i)) *
+          (section43TimeProductSource gs2).f ξ) =
+        osiiA0LocalCutoffSchwingerCLM OS χ hχ_disj
+          ((section43OrderedPullbackTimeSpatialTensorCLM d n kappa1.1
+              (section43TimeProductSource gs1).f).osConjTensorProduct
+            (section43OrderedPullbackTimeSpatialTensorCLM d k kappa2.1
+              (section43TimeProductSource gs2).f)) := by
+  let F : SchwartzNPoint d (n + k) :=
+    (section43OrderedPullbackTimeSpatialTensorCLM d n kappa1.1
+        (section43TimeProductSource gs1).f).osConjTensorProduct
+      (section43OrderedPullbackTimeSpatialTensorCLM d k kappa2.1
+        (section43TimeProductSource gs2).f)
+  rcases
+    exists_osiiA0LocalCutoffSchwingerCLM_for_section43TwoBlockProductSource
+      (d := d) OS gs1 kappa1 gs2 kappa2 with
+    ⟨χ, hχ_disj, hχ_one, hχ_apply⟩
+  refine ⟨χ, hχ_disj, ?_, ?_⟩
+  · simpa [F] using hχ_one
+  · calc
+      (∫ ξ : Fin k → ℝ,
+          bvt_W_pairing_descended_timeSpatialRightProductMultilinear
+            (d := d) OS lgc n k
+            (section43PositiveEnergyQuotientMap (d := d) n
+              (section43NPointTimeSpatialTensor d n
+                (section43TimeProductTensor
+                  (fun i : Fin n =>
+                    section43OneSidedLaplaceSchwartzRepresentative1D
+                      (gs1 i)))
+                (SchwartzMap.fourierTransformCLM ℂ kappa1.1)))
+            (SchwartzMap.fourierTransformCLM ℂ kappa2.1)
+            (fun i : Fin k => section43ImagAxisPsiKernel (ξ i)) *
+          (section43TimeProductSource gs2).f ξ)
+          = OS.S (n + k) (ZeroDiagonalSchwartz.ofClassical F) := by
+            simpa [F] using
+              integral_bvt_timeSpatialRightProductMultilinear_imagAxis_eq_osScalar_explicitOrderedSources
+                (d := d) n k OS lgc gs1 kappa1 gs2 kappa2
+      _ = osiiA0LocalCutoffSchwingerCLM OS χ hχ_disj F := by
+            exact hχ_apply.symm
+
+/-- Uniform local `(A0)` pairing packet for compact right product sources.
+
+After fixing the left product source, the right spatial source, and a compact
+strict-positive right-time shell `U`, one cutoff-local Schwinger distribution
+represents the BVT product-source pairing for every compact product source
+whose time support is contained in `U`. -/
+theorem exists_osiiA0LocalCutoffSchwingerCLM_for_uniform_productSource_pairings
+    (n k : ℕ)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (gs1 : Fin n → Section43CompactPositiveTimeSource1D)
+    (kappa1 : Section43SpatialCompactSource d n)
+    (kappa2 : Section43SpatialCompactSource d k)
+    (U : Set (Fin k → ℝ))
+    (hU_comp : IsCompact U)
+    (hU_pos : U ⊆ section43TimeStrictPositiveRegion k) :
+    ∃ (χ : SchwartzNPoint d (n + k))
+      (hχ_disj :
+        Disjoint (tsupport (χ : NPointDomain d (n + k) → ℂ))
+          (CoincidenceLocus d (n + k))),
+      ∀ gs2 : Fin k → Section43CompactPositiveTimeSource1D,
+        tsupport ((section43TimeProductSource gs2).f : (Fin k → ℝ) → ℂ) ⊆ U →
+          (∫ ξ : Fin k → ℝ,
+              bvt_W_pairing_descended_timeSpatialRightProductMultilinear
+                (d := d) OS lgc n k
+                (section43PositiveEnergyQuotientMap (d := d) n
+                  (section43NPointTimeSpatialTensor d n
+                    (section43TimeProductTensor
+                      (fun i : Fin n =>
+                        section43OneSidedLaplaceSchwartzRepresentative1D
+                          (gs1 i)))
+                    (SchwartzMap.fourierTransformCLM ℂ kappa1.1)))
+                (SchwartzMap.fourierTransformCLM ℂ kappa2.1)
+                (fun i : Fin k => section43ImagAxisPsiKernel (ξ i)) *
+              (section43TimeProductSource gs2).f ξ) =
+            osiiA0LocalCutoffSchwingerCLM OS χ hχ_disj
+              ((section43OrderedPullbackTimeSpatialTensorCLM d n kappa1.1
+                  (section43TimeProductSource gs1).f).osConjTensorProduct
+                (section43OrderedPullbackTimeSpatialTensorCLM d k kappa2.1
+                  (section43TimeProductSource gs2).f)) := by
+  let fLeft : SchwartzNPoint d n :=
+    section43OrderedPullbackTimeSpatialTensorCLM d n kappa1.1
+      (section43TimeProductSource gs1).f
+  have hfLeft_comp : HasCompactSupport (fLeft : NPointDomain d n → ℂ) := by
+    simpa [fLeft] using
+      osiiA0_hasCompactSupport_section43OrderedPullbackTimeSpatialTensorCLM_product
+        (d := d) (n := n) gs1 kappa1
+  have hfLeft_ord :
+      tsupport (fLeft : NPointDomain d n → ℂ) ⊆
+        OrderedPositiveTimeRegion d n := by
+    simpa [fLeft] using
+      section43OrderedPullbackTimeSpatialTensorCLM_tsupport_subset_orderedPositive_of_tsupport_strictPositive
+        d n kappa1.1 (section43TimeProductSource gs1).f
+        (section43TimeProductSource gs1).positive
+  rcases
+    exists_osiiA0LocalCutoffSchwingerCLM_for_uniform_right_time_support
+      (d := d) OS fLeft hfLeft_comp hfLeft_ord kappa2 U hU_comp hU_pos with
+    ⟨χ, hχ_disj, _hχ_time, hχ_uniform⟩
+  refine ⟨χ, hχ_disj, ?_⟩
+  intro gs2 hgs2U
+  let right : SchwartzNPoint d k :=
+    section43OrderedPullbackTimeSpatialTensorCLM d k kappa2.1
+      (section43TimeProductSource gs2).f
+  let F : SchwartzNPoint d (n + k) := fLeft.osConjTensorProduct right
+  have hlocal :=
+    (hχ_uniform (section43TimeProductSource gs2).f hgs2U).2
+  have hscalar :
+      (∫ ξ : Fin k → ℝ,
+          bvt_W_pairing_descended_timeSpatialRightProductMultilinear
+            (d := d) OS lgc n k
+            (section43PositiveEnergyQuotientMap (d := d) n
+              (section43NPointTimeSpatialTensor d n
+                (section43TimeProductTensor
+                  (fun i : Fin n =>
+                    section43OneSidedLaplaceSchwartzRepresentative1D
+                      (gs1 i)))
+                (SchwartzMap.fourierTransformCLM ℂ kappa1.1)))
+            (SchwartzMap.fourierTransformCLM ℂ kappa2.1)
+            (fun i : Fin k => section43ImagAxisPsiKernel (ξ i)) *
+          (section43TimeProductSource gs2).f ξ) =
+        OS.S (n + k) (ZeroDiagonalSchwartz.ofClassical F) := by
+    simpa [F, right, fLeft] using
+      integral_bvt_timeSpatialRightProductMultilinear_imagAxis_eq_osScalar_explicitOrderedSources
+        (d := d) n k OS lgc gs1 kappa1 gs2 kappa2
+  calc
+    (∫ ξ : Fin k → ℝ,
+        bvt_W_pairing_descended_timeSpatialRightProductMultilinear
+          (d := d) OS lgc n k
+          (section43PositiveEnergyQuotientMap (d := d) n
+            (section43NPointTimeSpatialTensor d n
+              (section43TimeProductTensor
+                (fun i : Fin n =>
+                  section43OneSidedLaplaceSchwartzRepresentative1D
+                    (gs1 i)))
+              (SchwartzMap.fourierTransformCLM ℂ kappa1.1)))
+          (SchwartzMap.fourierTransformCLM ℂ kappa2.1)
+          (fun i : Fin k => section43ImagAxisPsiKernel (ξ i)) *
+        (section43TimeProductSource gs2).f ξ)
+        = OS.S (n + k) (ZeroDiagonalSchwartz.ofClassical F) := hscalar
+    _ =
+        osiiA0LocalCutoffSchwingerCLM OS χ hχ_disj
+          ((section43OrderedPullbackTimeSpatialTensorCLM d n kappa1.1
+              (section43TimeProductSource gs1).f).osConjTensorProduct
+            (section43OrderedPullbackTimeSpatialTensorCLM d k kappa2.1
+              (section43TimeProductSource gs2).f)) := by
+          simpa [F, right, fLeft] using hlocal.symm
+
+/-- Uniform local `(A0)` cutoff packet retaining quotient descent.
+
+This is the OS-II V.2 `(5.2)` handoff in the form needed by the dense
+time-shell boundary adapter: one cutoff over a compact strict-positive
+right-time carrier provides both the compact BVT/A0 product-source pairings and
+the positive-time quotient descent of the induced A0 time-shell distribution. -/
+theorem exists_osiiA0LocalCutoffSchwingerCLM_for_uniform_productSource_pairings_with_descent
+    (n k : ℕ)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (gs1 : Fin n → Section43CompactPositiveTimeSource1D)
+    (kappa1 : Section43SpatialCompactSource d n)
+    (kappa2 : Section43SpatialCompactSource d k)
+    (U : Set (Fin k → ℝ))
+    (hU_comp : IsCompact U)
+    (hU_pos : U ⊆ section43TimeStrictPositiveRegion k) :
+    ∃ (χ : SchwartzNPoint d (n + k))
+      (hχ_disj :
+        Disjoint (tsupport (χ : NPointDomain d (n + k) → ℂ))
+          (CoincidenceLocus d (n + k))),
+      (tsupport (χ : NPointDomain d (n + k) → ℂ) ⊆
+        { x : NPointDomain d (n + k) |
+          section43QTime (d := d) (n := k)
+            (section43DiffCoordRealCLE d k (splitLast n k x)) ∈
+              section43TimeStrictPositiveRegion k }) ∧
+      (∀ φ ψ : SchwartzMap (Fin k → ℝ) ℂ,
+        section43TimePositiveQuotientMap k φ =
+          section43TimePositiveQuotientMap k ψ →
+        osiiA0LocalCutoffTimeShellCLM
+            OS χ hχ_disj
+            (section43OrderedPullbackTimeSpatialTensorCLM d n kappa1.1
+              (section43TimeProductSource gs1).f)
+            kappa2 φ =
+          osiiA0LocalCutoffTimeShellCLM
+            OS χ hχ_disj
+            (section43OrderedPullbackTimeSpatialTensorCLM d n kappa1.1
+              (section43TimeProductSource gs1).f)
+            kappa2 ψ) ∧
+      ∀ gs2 : Fin k → Section43CompactPositiveTimeSource1D,
+        tsupport ((section43TimeProductSource gs2).f : (Fin k → ℝ) → ℂ) ⊆ U →
+          (∫ ξ : Fin k → ℝ,
+              bvt_W_pairing_descended_timeSpatialRightProductMultilinear
+                (d := d) OS lgc n k
+                (section43PositiveEnergyQuotientMap (d := d) n
+                  (section43NPointTimeSpatialTensor d n
+                    (section43TimeProductTensor
+                      (fun i : Fin n =>
+                        section43OneSidedLaplaceSchwartzRepresentative1D
+                          (gs1 i)))
+                    (SchwartzMap.fourierTransformCLM ℂ kappa1.1)))
+                (SchwartzMap.fourierTransformCLM ℂ kappa2.1)
+                (fun i : Fin k => section43ImagAxisPsiKernel (ξ i)) *
+              (section43TimeProductSource gs2).f ξ) =
+            osiiA0LocalCutoffSchwingerCLM OS χ hχ_disj
+              ((section43OrderedPullbackTimeSpatialTensorCLM d n kappa1.1
+                  (section43TimeProductSource gs1).f).osConjTensorProduct
+                (section43OrderedPullbackTimeSpatialTensorCLM d k kappa2.1
+                  (section43TimeProductSource gs2).f)) := by
+  let fLeft : SchwartzNPoint d n :=
+    section43OrderedPullbackTimeSpatialTensorCLM d n kappa1.1
+      (section43TimeProductSource gs1).f
+  have hfLeft_comp : HasCompactSupport (fLeft : NPointDomain d n → ℂ) := by
+    simpa [fLeft] using
+      osiiA0_hasCompactSupport_section43OrderedPullbackTimeSpatialTensorCLM_product
+        (d := d) (n := n) gs1 kappa1
+  have hfLeft_ord :
+      tsupport (fLeft : NPointDomain d n → ℂ) ⊆
+        OrderedPositiveTimeRegion d n := by
+    simpa [fLeft] using
+      section43OrderedPullbackTimeSpatialTensorCLM_tsupport_subset_orderedPositive_of_tsupport_strictPositive
+        d n kappa1.1 (section43TimeProductSource gs1).f
+        (section43TimeProductSource gs1).positive
+  rcases
+    exists_osiiA0LocalCutoffSchwingerCLM_for_uniform_right_time_support
+      (d := d) OS fLeft hfLeft_comp hfLeft_ord kappa2 U hU_comp hU_pos with
+    ⟨χ, hχ_disj, hχ_time, hχ_uniform⟩
+  have hχ_time_nonneg :
+      tsupport (χ : NPointDomain d (n + k) → ℂ) ⊆
+        { x : NPointDomain d (n + k) |
+          section43QTime (d := d) (n := k)
+            (section43DiffCoordRealCLE d k (splitLast n k x)) ∈
+              section43TimePositiveRegion k } := by
+    intro x hx
+    intro i
+    exact le_of_lt ((hχ_time hx) i)
+  refine ⟨χ, hχ_disj, hχ_time, ?_, ?_⟩
+  · intro φ ψ hφψ
+    exact
+      osiiA0LocalCutoffTimeShellCLM_eq_of_timePositiveQuotient_eq
+        (d := d) OS χ hχ_disj hχ_time_nonneg
+        (section43OrderedPullbackTimeSpatialTensorCLM d n kappa1.1
+          (section43TimeProductSource gs1).f)
+        kappa2 hφψ
+  · intro gs2 hgs2U
+    let right : SchwartzNPoint d k :=
+      section43OrderedPullbackTimeSpatialTensorCLM d k kappa2.1
+        (section43TimeProductSource gs2).f
+    let F : SchwartzNPoint d (n + k) := fLeft.osConjTensorProduct right
+    have hlocal :=
+      (hχ_uniform (section43TimeProductSource gs2).f hgs2U).2
+    have hscalar :
+        (∫ ξ : Fin k → ℝ,
+            bvt_W_pairing_descended_timeSpatialRightProductMultilinear
+              (d := d) OS lgc n k
+              (section43PositiveEnergyQuotientMap (d := d) n
+                (section43NPointTimeSpatialTensor d n
+                  (section43TimeProductTensor
+                    (fun i : Fin n =>
+                      section43OneSidedLaplaceSchwartzRepresentative1D
+                        (gs1 i)))
+                  (SchwartzMap.fourierTransformCLM ℂ kappa1.1)))
+              (SchwartzMap.fourierTransformCLM ℂ kappa2.1)
+              (fun i : Fin k => section43ImagAxisPsiKernel (ξ i)) *
+            (section43TimeProductSource gs2).f ξ) =
+          OS.S (n + k) (ZeroDiagonalSchwartz.ofClassical F) := by
+      simpa [F, right, fLeft] using
+        integral_bvt_timeSpatialRightProductMultilinear_imagAxis_eq_osScalar_explicitOrderedSources
+          (d := d) n k OS lgc gs1 kappa1 gs2 kappa2
+    calc
+      (∫ ξ : Fin k → ℝ,
+          bvt_W_pairing_descended_timeSpatialRightProductMultilinear
+            (d := d) OS lgc n k
+            (section43PositiveEnergyQuotientMap (d := d) n
+              (section43NPointTimeSpatialTensor d n
+                (section43TimeProductTensor
+                  (fun i : Fin n =>
+                    section43OneSidedLaplaceSchwartzRepresentative1D
+                      (gs1 i)))
+                (SchwartzMap.fourierTransformCLM ℂ kappa1.1)))
+            (SchwartzMap.fourierTransformCLM ℂ kappa2.1)
+            (fun i : Fin k => section43ImagAxisPsiKernel (ξ i)) *
+          (section43TimeProductSource gs2).f ξ)
+          = OS.S (n + k) (ZeroDiagonalSchwartz.ofClassical F) := hscalar
+      _ =
+          osiiA0LocalCutoffSchwingerCLM OS χ hχ_disj
+            ((section43OrderedPullbackTimeSpatialTensorCLM d n kappa1.1
+                (section43TimeProductSource gs1).f).osConjTensorProduct
+              (section43OrderedPullbackTimeSpatialTensorCLM d k kappa2.1
+                (section43TimeProductSource gs2).f)) := by
+            simpa [F, right, fLeft] using hlocal.symm
+
+/-- Strengthened uniform local `(A0)` cutoff packet exposing the Schwinger
+recovery fact carried by the same cutoff.
+
+This is the packet needed after a local-EOW/MZ construction supplies a
+`RepresentsDistributionOn` proof for the chosen time-shell CLM: the
+representative gets Schwinger product-source pairings from the exposed
+`hχ_schwinger`, and the same cutoff also supplies the BVT/A0 pairings. -/
+theorem exists_osiiA0LocalCutoffSchwingerCLM_for_uniform_productSource_pairings_with_descent_and_schwinger
+    (n k : ℕ)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (gs1 : Fin n → Section43CompactPositiveTimeSource1D)
+    (kappa1 : Section43SpatialCompactSource d n)
+    (kappa2 : Section43SpatialCompactSource d k)
+    (U : Set (Fin k → ℝ))
+    (hU_comp : IsCompact U)
+    (hU_pos : U ⊆ section43TimeStrictPositiveRegion k) :
+    ∃ (χ : SchwartzNPoint d (n + k))
+      (hχ_disj :
+        Disjoint (tsupport (χ : NPointDomain d (n + k) → ℂ))
+          (CoincidenceLocus d (n + k))),
+      (tsupport (χ : NPointDomain d (n + k) → ℂ) ⊆
+        { x : NPointDomain d (n + k) |
+          section43QTime (d := d) (n := k)
+            (section43DiffCoordRealCLE d k (splitLast n k x)) ∈
+              section43TimeStrictPositiveRegion k }) ∧
+      (∀ φ ψ : SchwartzMap (Fin k → ℝ) ℂ,
+        section43TimePositiveQuotientMap k φ =
+          section43TimePositiveQuotientMap k ψ →
+        osiiA0LocalCutoffTimeShellCLM
+            OS χ hχ_disj
+            (section43OrderedPullbackTimeSpatialTensorCLM d n kappa1.1
+              (section43TimeProductSource gs1).f)
+            kappa2 φ =
+          osiiA0LocalCutoffTimeShellCLM
+            OS χ hχ_disj
+            (section43OrderedPullbackTimeSpatialTensorCLM d n kappa1.1
+              (section43TimeProductSource gs1).f)
+            kappa2 ψ) ∧
+      (∀ φ : SchwartzMap (Fin k → ℝ) ℂ,
+        tsupport (φ : (Fin k → ℝ) → ℂ) ⊆ U →
+          osiiA0LocalCutoffSchwingerCLM OS χ hχ_disj
+              ((section43OrderedPullbackTimeSpatialTensorCLM d n kappa1.1
+                  (section43TimeProductSource gs1).f).osConjTensorProduct
+                (section43OrderedPullbackTimeSpatialTensorCLM d k kappa2.1 φ)) =
+            OS.S (n + k)
+              (ZeroDiagonalSchwartz.ofClassical
+                ((section43OrderedPullbackTimeSpatialTensorCLM d n kappa1.1
+                    (section43TimeProductSource gs1).f).osConjTensorProduct
+                  (section43OrderedPullbackTimeSpatialTensorCLM d k kappa2.1 φ)))) ∧
+      ∀ gs2 : Fin k → Section43CompactPositiveTimeSource1D,
+        tsupport ((section43TimeProductSource gs2).f : (Fin k → ℝ) → ℂ) ⊆ U →
+          (∫ ξ : Fin k → ℝ,
+              bvt_W_pairing_descended_timeSpatialRightProductMultilinear
+                (d := d) OS lgc n k
+                (section43PositiveEnergyQuotientMap (d := d) n
+                  (section43NPointTimeSpatialTensor d n
+                    (section43TimeProductTensor
+                      (fun i : Fin n =>
+                        section43OneSidedLaplaceSchwartzRepresentative1D
+                          (gs1 i)))
+                    (SchwartzMap.fourierTransformCLM ℂ kappa1.1)))
+                (SchwartzMap.fourierTransformCLM ℂ kappa2.1)
+                (fun i : Fin k => section43ImagAxisPsiKernel (ξ i)) *
+              (section43TimeProductSource gs2).f ξ) =
+            osiiA0LocalCutoffSchwingerCLM OS χ hχ_disj
+              ((section43OrderedPullbackTimeSpatialTensorCLM d n kappa1.1
+                  (section43TimeProductSource gs1).f).osConjTensorProduct
+                (section43OrderedPullbackTimeSpatialTensorCLM d k kappa2.1
+                  (section43TimeProductSource gs2).f)) := by
+  let fLeft : SchwartzNPoint d n :=
+    section43OrderedPullbackTimeSpatialTensorCLM d n kappa1.1
+      (section43TimeProductSource gs1).f
+  have hfLeft_comp : HasCompactSupport (fLeft : NPointDomain d n → ℂ) := by
+    simpa [fLeft] using
+      osiiA0_hasCompactSupport_section43OrderedPullbackTimeSpatialTensorCLM_product
+        (d := d) (n := n) gs1 kappa1
+  have hfLeft_ord :
+      tsupport (fLeft : NPointDomain d n → ℂ) ⊆
+        OrderedPositiveTimeRegion d n := by
+    simpa [fLeft] using
+      section43OrderedPullbackTimeSpatialTensorCLM_tsupport_subset_orderedPositive_of_tsupport_strictPositive
+        d n kappa1.1 (section43TimeProductSource gs1).f
+        (section43TimeProductSource gs1).positive
+  rcases
+    exists_osiiA0LocalCutoffSchwingerCLM_for_uniform_right_time_support
+      (d := d) OS fLeft hfLeft_comp hfLeft_ord kappa2 U hU_comp hU_pos with
+    ⟨χ, hχ_disj, hχ_time, hχ_uniform⟩
+  have hχ_time_nonneg :
+      tsupport (χ : NPointDomain d (n + k) → ℂ) ⊆
+        { x : NPointDomain d (n + k) |
+          section43QTime (d := d) (n := k)
+            (section43DiffCoordRealCLE d k (splitLast n k x)) ∈
+              section43TimePositiveRegion k } := by
+    intro x hx
+    intro i
+    exact le_of_lt ((hχ_time hx) i)
+  refine ⟨χ, hχ_disj, hχ_time, ?_, ?_, ?_⟩
+  · intro φ ψ hφψ
+    exact
+      osiiA0LocalCutoffTimeShellCLM_eq_of_timePositiveQuotient_eq
+        (d := d) OS χ hχ_disj hχ_time_nonneg
+        fLeft kappa2 hφψ
+  · intro φ hφU
+    simpa [fLeft] using (hχ_uniform φ hφU).2
+  · intro gs2 hgs2U
+    let right : SchwartzNPoint d k :=
+      section43OrderedPullbackTimeSpatialTensorCLM d k kappa2.1
+        (section43TimeProductSource gs2).f
+    let F : SchwartzNPoint d (n + k) := fLeft.osConjTensorProduct right
+    have hlocal :=
+      (hχ_uniform (section43TimeProductSource gs2).f hgs2U).2
+    have hscalar :
+        (∫ ξ : Fin k → ℝ,
+            bvt_W_pairing_descended_timeSpatialRightProductMultilinear
+              (d := d) OS lgc n k
+              (section43PositiveEnergyQuotientMap (d := d) n
+                (section43NPointTimeSpatialTensor d n
+                  (section43TimeProductTensor
+                    (fun i : Fin n =>
+                      section43OneSidedLaplaceSchwartzRepresentative1D
+                        (gs1 i)))
+                  (SchwartzMap.fourierTransformCLM ℂ kappa1.1)))
+              (SchwartzMap.fourierTransformCLM ℂ kappa2.1)
+              (fun i : Fin k => section43ImagAxisPsiKernel (ξ i)) *
+            (section43TimeProductSource gs2).f ξ) =
+          OS.S (n + k) (ZeroDiagonalSchwartz.ofClassical F) := by
+      simpa [F, right, fLeft] using
+        integral_bvt_timeSpatialRightProductMultilinear_imagAxis_eq_osScalar_explicitOrderedSources
+          (d := d) n k OS lgc gs1 kappa1 gs2 kappa2
+    calc
+      (∫ ξ : Fin k → ℝ,
+          bvt_W_pairing_descended_timeSpatialRightProductMultilinear
+            (d := d) OS lgc n k
+            (section43PositiveEnergyQuotientMap (d := d) n
+              (section43NPointTimeSpatialTensor d n
+                (section43TimeProductTensor
+                  (fun i : Fin n =>
+                    section43OneSidedLaplaceSchwartzRepresentative1D
+                      (gs1 i)))
+                (SchwartzMap.fourierTransformCLM ℂ kappa1.1)))
+            (SchwartzMap.fourierTransformCLM ℂ kappa2.1)
+            (fun i : Fin k => section43ImagAxisPsiKernel (ξ i)) *
+          (section43TimeProductSource gs2).f ξ)
+          = OS.S (n + k) (ZeroDiagonalSchwartz.ofClassical F) := hscalar
+      _ =
+          osiiA0LocalCutoffSchwingerCLM OS χ hχ_disj
+            ((section43OrderedPullbackTimeSpatialTensorCLM d n kappa1.1
+                (section43TimeProductSource gs1).f).osConjTensorProduct
+              (section43OrderedPullbackTimeSpatialTensorCLM d k kappa2.1
+                (section43TimeProductSource gs2).f)) := by
+            simpa [F, right, fLeft] using hlocal.symm
+
+/-- Product-source transport packet from the represented local `(A0)` cutoff
+shell to the actual BVT right time-shell functional.
+
+This is the concrete `h52` equality needed by the `(A0)->(P0)` product-tensor
+bridge.  The compact source current is not definitionally the one-sided
+Laplace representative; the transport uses the local A0 representative and the
+imaginary-axis kernel identification to rewrite the A0 Fubini integral, then
+uses the compact BVT pairing identity. -/
+theorem osiiA0LocalCutoffTimeShell_productTensor_eq_bvt_of_rep_kernel_and_pairings
+    (n k : ℕ)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (gs1 : Fin n → Section43CompactPositiveTimeSource1D)
+    (kappa1 : Section43SpatialCompactSource d n)
+    (kappa2 : Section43SpatialCompactSource d k)
+    (χ : SchwartzNPoint d (n + k))
+    (hχ_disj :
+      Disjoint (tsupport (χ : NPointDomain d (n + k) → ℂ))
+        (CoincidenceLocus d (n + k)))
+    (S_real : (Fin k → ℝ) → ℂ)
+    (U : Set (Fin k → ℝ))
+    (hRep :
+      SCV.RepresentsDistributionOn
+        (osiiA0LocalCutoffTimeShellCLM
+          OS χ hχ_disj
+          (section43OrderedPullbackTimeSpatialTensorCLM d n kappa1.1
+            (section43TimeProductSource gs1).f)
+          kappa2)
+        S_real U)
+    (hA0_kernel :
+      ∀ ξ : Fin k → ℝ, ξ ∈ U →
+        osiiA0LocalCutoffTimeShellCLM
+            OS χ hχ_disj
+            (section43OrderedPullbackTimeSpatialTensorCLM d n kappa1.1
+              (section43TimeProductSource gs1).f)
+            kappa2
+            (section43TimeImagAxisProductKernel ξ) =
+          S_real ξ)
+    (hpairBVT :
+      ∀ gs2 : Fin k → Section43CompactPositiveTimeSource1D,
+        tsupport ((section43TimeProductSource gs2).f : (Fin k → ℝ) → ℂ) ⊆ U →
+          (∫ ξ : Fin k → ℝ,
+              bvt_W_pairing_descended_timeSpatialRightProductMultilinear
+                (d := d) OS lgc n k
+                (section43PositiveEnergyQuotientMap (d := d) n
+                  (section43NPointTimeSpatialTensor d n
+                    (section43TimeProductTensor
+                      (fun i : Fin n =>
+                        section43OneSidedLaplaceSchwartzRepresentative1D
+                          (gs1 i)))
+                    (SchwartzMap.fourierTransformCLM ℂ kappa1.1)))
+                (SchwartzMap.fourierTransformCLM ℂ kappa2.1)
+                (fun i : Fin k => section43ImagAxisPsiKernel (ξ i)) *
+              (section43TimeProductSource gs2).f ξ) =
+            osiiA0LocalCutoffSchwingerCLM OS χ hχ_disj
+              ((section43OrderedPullbackTimeSpatialTensorCLM d n kappa1.1
+                  (section43TimeProductSource gs1).f).osConjTensorProduct
+                (section43OrderedPullbackTimeSpatialTensorCLM d k kappa2.1
+                  (section43TimeProductSource gs2).f))) :
+    ∀ gs2 : Fin k → Section43CompactPositiveTimeSource1D,
+      tsupport ((section43TimeProductSource gs2).f : (Fin k → ℝ) → ℂ) ⊆ U →
+        osiiA0LocalCutoffTimeShellCLM
+            OS χ hχ_disj
+            (section43OrderedPullbackTimeSpatialTensorCLM d n kappa1.1
+              (section43TimeProductSource gs1).f)
+            kappa2
+            (section43TimeProductTensor
+              (fun i : Fin k =>
+                section43OneSidedLaplaceSchwartzRepresentative1D (gs2 i))) =
+          bvt_W_pairing_descended_timeSpatialRightCLM
+            (d := d) OS lgc n k
+            (section43PositiveEnergyQuotientMap (d := d) n
+              (section43NPointTimeSpatialTensor d n
+                (section43TimeProductTensor
+                  (fun i : Fin n =>
+                    section43OneSidedLaplaceSchwartzRepresentative1D
+                      (gs1 i)))
+                (SchwartzMap.fourierTransformCLM ℂ kappa1.1)))
+            (SchwartzMap.fourierTransformCLM ℂ kappa2.1)
+            (section43TimeProductTensor
+              (fun i : Fin k =>
+                section43OneSidedLaplaceSchwartzRepresentative1D (gs2 i))) := by
+  intro gs2 hgs2U
+  let T_A0 : SchwartzMap (Fin k → ℝ) ℂ →L[ℂ] ℂ :=
+    osiiA0LocalCutoffTimeShellCLM
+      OS χ hχ_disj
+      (section43OrderedPullbackTimeSpatialTensorCLM d n kappa1.1
+        (section43TimeProductSource gs1).f)
+      kappa2
+  let T_BVT : SchwartzMap (Fin k → ℝ) ℂ →L[ℂ] ℂ :=
+    bvt_W_pairing_descended_timeSpatialRightCLM
+      (d := d) OS lgc n k
+      (section43PositiveEnergyQuotientMap (d := d) n
+        (section43NPointTimeSpatialTensor d n
+          (section43TimeProductTensor
+            (fun i : Fin n =>
+              section43OneSidedLaplaceSchwartzRepresentative1D
+                (gs1 i)))
+          (SchwartzMap.fourierTransformCLM ℂ kappa1.1)))
+      (SchwartzMap.fourierTransformCLM ℂ kappa2.1)
+  have hflatA0 :=
+    section43TimeProductTensor_allSlots_flattened
+      T_A0 gs2 (fun _ : Fin k => 0)
+  have hflatBVT :=
+    section43TimeProductTensor_allSlots_flattened
+      T_BVT gs2 (fun _ : Fin k => 0)
+  have hRep_source :
+      T_A0 (section43TimeProductSource gs2).f =
+        ∫ ξ : Fin k → ℝ,
+          S_real ξ * (section43TimeProductSource gs2).f ξ := by
+    exact hRep (section43TimeProductSource gs2).f
+      ⟨(section43TimeProductSource gs2).compact, hgs2U⟩
+  calc
+    osiiA0LocalCutoffTimeShellCLM
+        OS χ hχ_disj
+        (section43OrderedPullbackTimeSpatialTensorCLM d n kappa1.1
+          (section43TimeProductSource gs1).f)
+        kappa2
+        (section43TimeProductTensor
+          (fun i : Fin k =>
+            section43OneSidedLaplaceSchwartzRepresentative1D (gs2 i)))
+        =
+      ∫ ξ : Fin k → ℝ,
+        T_A0 (section43TimeImagAxisProductKernel ξ) *
+          (section43TimeProductSource gs2).f ξ := by
+        simpa [T_A0] using hflatA0
+    _ =
+      ∫ ξ : Fin k → ℝ,
+        S_real ξ * (section43TimeProductSource gs2).f ξ := by
+        refine
+          integral_mul_eq_of_eqOn_tsupport
+            (fun ξ : Fin k → ℝ =>
+              T_A0 (section43TimeImagAxisProductKernel ξ))
+            S_real
+            ((section43TimeProductSource gs2).f : (Fin k → ℝ) → ℂ)
+            ?_
+        intro ξ hξ
+        exact hA0_kernel ξ (hgs2U hξ)
+    _ =
+      T_A0 (section43TimeProductSource gs2).f := hRep_source.symm
+    _ =
+      ∫ ξ : Fin k → ℝ,
+        bvt_W_pairing_descended_timeSpatialRightProductMultilinear
+          (d := d) OS lgc n k
+          (section43PositiveEnergyQuotientMap (d := d) n
+            (section43NPointTimeSpatialTensor d n
+              (section43TimeProductTensor
+                (fun i : Fin n =>
+                  section43OneSidedLaplaceSchwartzRepresentative1D
+                    (gs1 i)))
+              (SchwartzMap.fourierTransformCLM ℂ kappa1.1)))
+          (SchwartzMap.fourierTransformCLM ℂ kappa2.1)
+          (fun i : Fin k => section43ImagAxisPsiKernel (ξ i)) *
+        (section43TimeProductSource gs2).f ξ := by
+        simpa [T_A0, osiiA0LocalCutoffTimeShellCLM] using
+          (hpairBVT gs2 hgs2U).symm
+    _ =
+      T_BVT (section43TimeProductTensor
+        (fun i : Fin k =>
+          section43OneSidedLaplaceSchwartzRepresentative1D (gs2 i))) := by
+        simpa [T_BVT, bvt_W_pairing_descended_timeSpatialRightProductMultilinear,
+          bvt_W_pairing_descended_timeSpatialRightCLM,
+          section43TimeImagAxisProductKernel] using hflatBVT.symm
+    _ =
+      bvt_W_pairing_descended_timeSpatialRightCLM
+        (d := d) OS lgc n k
+        (section43PositiveEnergyQuotientMap (d := d) n
+          (section43NPointTimeSpatialTensor d n
+            (section43TimeProductTensor
+              (fun i : Fin n =>
+                section43OneSidedLaplaceSchwartzRepresentative1D
+                  (gs1 i)))
+            (SchwartzMap.fourierTransformCLM ℂ kappa1.1)))
+        (SchwartzMap.fourierTransformCLM ℂ kappa2.1)
+        (section43TimeProductTensor
+          (fun i : Fin k =>
+            section43OneSidedLaplaceSchwartzRepresentative1D (gs2 i))) := rfl
+
+/-- Concrete local `(A0)->(P0)` assembly with the represented cutoff time-shell
+and the BVT right time-shell.
+
+This is the direct instantiation of the OS II V.2 smearing bridge at the
+current W4 seam.  The compact source-vs-Laplace transport is supplied by
+`osiiA0LocalCutoffTimeShell_productTensor_eq_bvt_of_rep_kernel_and_pairings`;
+the only remaining analytic leaves are the local A0 representation/kernel and
+the BVT semigroup-kernel identification. -/
+theorem osiiA0LocalCutoffTimeShell_rep_eq_schwinger_of_bvt_semigroup_kernel
+    (n k : ℕ) [Nonempty (Fin k)]
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (gs1 : Fin n → Section43CompactPositiveTimeSource1D)
+    (kappa1 : Section43SpatialCompactSource d n)
+    (kappa2 : Section43SpatialCompactSource d k)
+    (χ : SchwartzNPoint d (n + k))
+    (hχ_disj :
+      Disjoint (tsupport (χ : NPointDomain d (n + k) → ℂ))
+        (CoincidenceLocus d (n + k)))
+    (S_real : (Fin k → ℝ) → ℂ)
+    (τ0 : Fin k → ℝ) (hτ0 : ∀ i : Fin k, 0 < τ0 i)
+    (U : Set (Fin k → ℝ)) (hU_nhds : U ∈ 𝓝 τ0)
+    (hU_pos : U ⊆ section43TimeStrictPositiveRegion k)
+    (hS_cont : ContinuousAt S_real τ0)
+    (hS_contOn_U : ContinuousOn S_real U)
+    (f : SchwartzNPoint d n)
+    (hf_ord : tsupport (f : NPointDomain d n → ℂ) ⊆
+      OrderedPositiveTimeRegion d n)
+    (g : SchwartzNPoint d k)
+    (hg_ord : tsupport (g : NPointDomain d k → ℂ) ⊆
+      OrderedPositiveTimeRegion d k)
+    (hg_compact : HasCompactSupport (g : NPointDomain d k → ℂ))
+    (hRep :
+      SCV.RepresentsDistributionOn
+        (osiiA0LocalCutoffTimeShellCLM
+          OS χ hχ_disj
+          (section43OrderedPullbackTimeSpatialTensorCLM d n kappa1.1
+            (section43TimeProductSource gs1).f)
+          kappa2)
+        S_real U)
+    (hA0_kernel :
+      ∀ ξ : Fin k → ℝ, ξ ∈ section43TimeStrictPositiveRegion k →
+        osiiA0LocalCutoffTimeShellCLM
+            OS χ hχ_disj
+            (section43OrderedPullbackTimeSpatialTensorCLM d n kappa1.1
+              (section43TimeProductSource gs1).f)
+            kappa2
+            (section43TimeImagAxisProductKernel ξ) =
+          S_real ξ)
+    (hBVT_semigroup_kernel :
+      ∀ ξ : Fin k → ℝ, ξ ∈ section43TimeStrictPositiveRegion k →
+        bvt_W_pairing_descended_timeSpatialRightCLM
+            (d := d) OS lgc n k
+            (section43PositiveEnergyQuotientMap (d := d) n
+              (section43NPointTimeSpatialTensor d n
+                (section43TimeProductTensor
+                  (fun i : Fin n =>
+                    section43OneSidedLaplaceSchwartzRepresentative1D
+                      (gs1 i)))
+                (SchwartzMap.fourierTransformCLM ℂ kappa1.1)))
+            (SchwartzMap.fourierTransformCLM ℂ kappa2.1)
+            (section43TimeImagAxisProductKernel ξ) =
+          OSInnerProduct d OS.S
+            (PositiveTimeBorchersSequence.single n f hf_ord : BorchersSequence d)
+            (timeShiftBorchers (d := d)
+              (∑ p : Fin k, ξ p)
+              (PositiveTimeBorchersSequence.single k g hg_ord :
+                BorchersSequence d)))
+    (hpairBVT :
+      ∀ gs2 : Fin k → Section43CompactPositiveTimeSource1D,
+        tsupport ((section43TimeProductSource gs2).f : (Fin k → ℝ) → ℂ) ⊆ U →
+          (∫ ξ : Fin k → ℝ,
+              bvt_W_pairing_descended_timeSpatialRightProductMultilinear
+                (d := d) OS lgc n k
+                (section43PositiveEnergyQuotientMap (d := d) n
+                  (section43NPointTimeSpatialTensor d n
+                    (section43TimeProductTensor
+                      (fun i : Fin n =>
+                        section43OneSidedLaplaceSchwartzRepresentative1D
+                          (gs1 i)))
+                    (SchwartzMap.fourierTransformCLM ℂ kappa1.1)))
+                (SchwartzMap.fourierTransformCLM ℂ kappa2.1)
+                (fun i : Fin k => section43ImagAxisPsiKernel (ξ i)) *
+              (section43TimeProductSource gs2).f ξ) =
+            osiiA0LocalCutoffSchwingerCLM OS χ hχ_disj
+              ((section43OrderedPullbackTimeSpatialTensorCLM d n kappa1.1
+                  (section43TimeProductSource gs1).f).osConjTensorProduct
+                (section43OrderedPullbackTimeSpatialTensorCLM d k kappa2.1
+                  (section43TimeProductSource gs2).f))) :
+    S_real τ0 =
+      OS.S (n + k) (ZeroDiagonalSchwartz.ofClassical
+        (f.osConjTensorProduct
+          (timeShiftSchwartzNPoint (d := d) (∑ p : Fin k, τ0 p) g))) := by
+  let T_A0 : SchwartzMap (Fin k → ℝ) ℂ →L[ℂ] ℂ :=
+    osiiA0LocalCutoffTimeShellCLM
+      OS χ hχ_disj
+      (section43OrderedPullbackTimeSpatialTensorCLM d n kappa1.1
+        (section43TimeProductSource gs1).f)
+      kappa2
+  let T_BVT : SchwartzMap (Fin k → ℝ) ℂ →L[ℂ] ℂ :=
+    bvt_W_pairing_descended_timeSpatialRightCLM
+      (d := d) OS lgc n k
+      (section43PositiveEnergyQuotientMap (d := d) n
+        (section43NPointTimeSpatialTensor d n
+          (section43TimeProductTensor
+            (fun i : Fin n =>
+              section43OneSidedLaplaceSchwartzRepresentative1D
+                (gs1 i)))
+          (SchwartzMap.fourierTransformCLM ℂ kappa1.1)))
+      (SchwartzMap.fourierTransformCLM ℂ kappa2.1)
+  refine
+    osiiA0P0_local_productTensor_single_schwinger_value
+      (d := d) OS lgc f hf_ord g hg_ord hg_compact
+      T_A0 T_BVT S_real τ0 hτ0 U hU_nhds hU_pos hS_cont hS_contOn_U ?_ ?_ ?_
+  · intro ξ hξ
+    exact hA0_kernel ξ hξ
+  · intro ξ hξ
+    exact hBVT_semigroup_kernel ξ hξ
+  · exact
+      osiiA0LocalCutoffTimeShell_productTensor_eq_bvt_of_rep_kernel_and_pairings
+        (d := d) n k OS lgc gs1 kappa1 kappa2 χ hχ_disj S_real U hRep
+        (fun ξ hξU => hA0_kernel ξ (hU_pos hξU)) hpairBVT
+
+/-- Concrete local `(A0)->(P0)` assembly from support-local BVT shell selection.
+
+This is one step closer to the OS II V.1/V.2 proof text than
+`osiiA0LocalCutoffTimeShell_rep_eq_schwinger_of_bvt_semigroup_kernel`: it no
+longer first manufactures a global pointwise BVT kernel identity.  For each
+compact positive product source supported in the local A0 carrier, the proof
+uses the represented A0 pairing, the BVT/A0 source-current identity, and
+pointwise BVT-shell equality only on that source support; the local
+positive-orthant delta theorem then selects the target point value. -/
+theorem osiiA0LocalCutoffTimeShell_rep_eq_leftShifted_schwinger_of_bvt_pairings
+    (n k : ℕ) [Nonempty (Fin k)]
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (gs1 : Fin n → Section43CompactPositiveTimeSource1D)
+    (kappa1 : Section43SpatialCompactSource d n)
+    (kappa2 : Section43SpatialCompactSource d k)
+    (χ : SchwartzNPoint d (n + k))
+    (hχ_disj :
+      Disjoint (tsupport (χ : NPointDomain d (n + k) → ℂ))
+        (CoincidenceLocus d (n + k)))
+    (S_real : (Fin k → ℝ) → ℂ)
+    (τ0 : Fin k → ℝ) (hτ0 : ∀ i : Fin k, 0 < τ0 i)
+    (U : Set (Fin k → ℝ)) (hU_nhds : U ∈ 𝓝 τ0)
+    (hU_pos : U ⊆ section43TimeStrictPositiveRegion k)
+    (hS_cont : ContinuousAt S_real τ0)
+    (hS_contOn_U : ContinuousOn S_real U)
+    (a : ℝ) (ha : 0 ≤ a)
+    (f : SchwartzNPoint d n)
+    (hf_ord : tsupport (f : NPointDomain d n → ℂ) ⊆
+      OrderedPositiveTimeRegion d n)
+    (g : SchwartzNPoint d k)
+    (hg_ord : tsupport (g : NPointDomain d k → ℂ) ⊆
+      OrderedPositiveTimeRegion d k)
+    (hg_compact : HasCompactSupport (g : NPointDomain d k → ℂ))
+    (hRep :
+      SCV.RepresentsDistributionOn
+        (osiiA0LocalCutoffTimeShellCLM
+          OS χ hχ_disj
+          (section43OrderedPullbackTimeSpatialTensorCLM d n kappa1.1
+            (section43TimeProductSource gs1).f)
+          kappa2)
+        S_real U)
+    (hpairBVT_A0 :
+      ∀ gs2 : Fin k → Section43CompactPositiveTimeSource1D,
+        tsupport ((section43TimeProductSource gs2).f : (Fin k → ℝ) → ℂ) ⊆ U →
+          (∫ ξ : Fin k → ℝ,
+              bvt_W_pairing_descended_timeSpatialRightProductMultilinear
+                (d := d) OS lgc n k
+                (section43PositiveEnergyQuotientMap (d := d) n
+                  (section43NPointTimeSpatialTensor d n
+                    (section43TimeProductTensor
+                      (fun i : Fin n =>
+                        section43OneSidedLaplaceSchwartzRepresentative1D
+                          (gs1 i)))
+                    (SchwartzMap.fourierTransformCLM ℂ kappa1.1)))
+                (SchwartzMap.fourierTransformCLM ℂ kappa2.1)
+                (fun i : Fin k => section43ImagAxisPsiKernel (ξ i)) *
+              (section43TimeProductSource gs2).f ξ) =
+            osiiA0LocalCutoffSchwingerCLM OS χ hχ_disj
+              ((section43OrderedPullbackTimeSpatialTensorCLM d n kappa1.1
+                  (section43TimeProductSource gs1).f).osConjTensorProduct
+                (section43OrderedPullbackTimeSpatialTensorCLM d k kappa2.1
+                  (section43TimeProductSource gs2).f)))
+    (hBVT_shell :
+      ∀ gs2 : Fin k → Section43CompactPositiveTimeSource1D,
+        tsupport ((section43TimeProductSource gs2).f : (Fin k → ℝ) → ℂ) ⊆ U →
+        ∀ ξ : Fin k → ℝ,
+          ξ ∈ tsupport ((section43TimeProductSource gs2).f :
+            (Fin k → ℝ) → ℂ) →
+          bvt_W_pairing_descended_timeSpatialRightProductMultilinear
+              (d := d) OS lgc n k
+              (section43PositiveEnergyQuotientMap (d := d) n
+                (section43NPointTimeSpatialTensor d n
+                  (section43TimeProductTensor
+                    (fun i : Fin n =>
+                      section43OneSidedLaplaceSchwartzRepresentative1D
+                        (gs1 i)))
+                  (SchwartzMap.fourierTransformCLM ℂ kappa1.1)))
+              (SchwartzMap.fourierTransformCLM ℂ kappa2.1)
+              (fun i : Fin k => section43ImagAxisPsiKernel (ξ i)) =
+            OS.S (n + k) (ZeroDiagonalSchwartz.ofClassical
+              ((timeShiftSchwartzNPoint (d := d) a f).osConjTensorProduct
+                (timeShiftSchwartzNPoint (d := d)
+                  (∑ p : Fin k, ξ p) g)))) :
+    S_real τ0 =
+      OS.S (n + k) (ZeroDiagonalSchwartz.ofClassical
+        ((timeShiftSchwartzNPoint (d := d) a f).osConjTensorProduct
+          (timeShiftSchwartzNPoint (d := d) (∑ p : Fin k, τ0 p) g))) := by
+  classical
+  have hf_shift :
+      tsupport (((timeShiftSchwartzNPoint (d := d) a f :
+        SchwartzNPoint d n) : NPointDomain d n → ℂ)) ⊆
+        OrderedPositiveTimeRegion d n :=
+    timeShiftSchwartzNPoint_preserves_ordered_positive_tsupport_of_nonneg
+      a ha f hf_ord
+  let F : PositiveTimeBorchersSequence d :=
+    PositiveTimeBorchersSequence.single n
+      (timeShiftSchwartzNPoint (d := d) a f) hf_shift
+  let G : PositiveTimeBorchersSequence d :=
+    PositiveTimeBorchersSequence.single k g hg_ord
+  have hG_compact :
+      ∀ s,
+        HasCompactSupport ((((G : BorchersSequence d).funcs s :
+          SchwartzNPoint d s) : NPointDomain d s → ℂ)) := by
+    intro s
+    by_cases hs : s = k
+    · subst hs
+      simpa [G, PositiveTimeBorchersSequence.single_toBorchersSequence] using
+        hg_compact
+    · have hzero :
+        (((G : BorchersSequence d).funcs s : SchwartzNPoint d s) :
+          NPointDomain d s → ℂ) = 0 := by
+          simp [G, PositiveTimeBorchersSequence.single_toBorchersSequence,
+            BorchersSequence.single, hs]
+      rw [hzero]
+      simpa using (HasCompactSupport.zero :
+        HasCompactSupport (0 : NPointDomain d s → ℂ))
+  have hpair :
+      ∀ gs2 : Fin k → Section43CompactPositiveTimeSource1D,
+        tsupport ((section43TimeProductSource gs2).f : (Fin k → ℝ) → ℂ) ⊆ U →
+        (∫ τ : Fin k → ℝ,
+          S_real τ * (section43TimeProductSource gs2).f τ) =
+          ∫ τ : Fin k → ℝ,
+            OSInnerProduct d OS.S (F : BorchersSequence d)
+              (timeShiftBorchers (d := d)
+                (∑ p : Fin k, τ p)
+                (G : BorchersSequence d)) *
+              (section43TimeProductSource gs2).f τ := by
+    intro gs2 hgs2U
+    have hsupport :
+        SCV.SupportsInOpen
+          ((section43TimeProductSource gs2).f : (Fin k → ℝ) → ℂ) U :=
+      ⟨(section43TimeProductSource gs2).compact, hgs2U⟩
+    have hA0 :
+        osiiA0LocalCutoffSchwingerCLM OS χ hχ_disj
+              ((section43OrderedPullbackTimeSpatialTensorCLM d n kappa1.1
+                  (section43TimeProductSource gs1).f).osConjTensorProduct
+                (section43OrderedPullbackTimeSpatialTensorCLM d k kappa2.1
+                  (section43TimeProductSource gs2).f)) =
+          ∫ τ : Fin k → ℝ,
+            S_real τ * (section43TimeProductSource gs2).f τ := by
+      simpa [osiiA0LocalCutoffTimeShellCLM] using
+        hRep (section43TimeProductSource gs2).f hsupport
+    have hBVT_to_A0 := hpairBVT_A0 gs2 hgs2U
+    have hBVT_to_shell :
+        (∫ ξ : Fin k → ℝ,
+            bvt_W_pairing_descended_timeSpatialRightProductMultilinear
+              (d := d) OS lgc n k
+              (section43PositiveEnergyQuotientMap (d := d) n
+                (section43NPointTimeSpatialTensor d n
+                  (section43TimeProductTensor
+                    (fun i : Fin n =>
+                      section43OneSidedLaplaceSchwartzRepresentative1D
+                        (gs1 i)))
+                  (SchwartzMap.fourierTransformCLM ℂ kappa1.1)))
+              (SchwartzMap.fourierTransformCLM ℂ kappa2.1)
+              (fun i : Fin k => section43ImagAxisPsiKernel (ξ i)) *
+            (section43TimeProductSource gs2).f ξ) =
+          ∫ ξ : Fin k → ℝ,
+            OS.S (n + k) (ZeroDiagonalSchwartz.ofClassical
+              ((timeShiftSchwartzNPoint (d := d) a f).osConjTensorProduct
+                (timeShiftSchwartzNPoint (d := d)
+                  (∑ p : Fin k, ξ p) g))) *
+              (section43TimeProductSource gs2).f ξ := by
+      exact
+        integral_mul_eq_of_eqOn_tsupport
+          (fun ξ : Fin k → ℝ =>
+            bvt_W_pairing_descended_timeSpatialRightProductMultilinear
+              (d := d) OS lgc n k
+              (section43PositiveEnergyQuotientMap (d := d) n
+                (section43NPointTimeSpatialTensor d n
+                  (section43TimeProductTensor
+                    (fun i : Fin n =>
+                      section43OneSidedLaplaceSchwartzRepresentative1D
+                        (gs1 i)))
+                  (SchwartzMap.fourierTransformCLM ℂ kappa1.1)))
+              (SchwartzMap.fourierTransformCLM ℂ kappa2.1)
+              (fun i : Fin k => section43ImagAxisPsiKernel (ξ i)))
+          (fun ξ : Fin k → ℝ =>
+            OS.S (n + k) (ZeroDiagonalSchwartz.ofClassical
+              ((timeShiftSchwartzNPoint (d := d) a f).osConjTensorProduct
+                (timeShiftSchwartzNPoint (d := d)
+                  (∑ p : Fin k, ξ p) g))))
+          (section43TimeProductSource gs2).f
+          (fun ξ hξ => hBVT_shell gs2 hgs2U ξ hξ)
+    calc
+      (∫ τ : Fin k → ℝ,
+          S_real τ * (section43TimeProductSource gs2).f τ)
+          =
+        osiiA0LocalCutoffSchwingerCLM OS χ hχ_disj
+              ((section43OrderedPullbackTimeSpatialTensorCLM d n kappa1.1
+                  (section43TimeProductSource gs1).f).osConjTensorProduct
+                (section43OrderedPullbackTimeSpatialTensorCLM d k kappa2.1
+                  (section43TimeProductSource gs2).f)) := hA0.symm
+      _ =
+        ∫ ξ : Fin k → ℝ,
+            bvt_W_pairing_descended_timeSpatialRightProductMultilinear
+              (d := d) OS lgc n k
+              (section43PositiveEnergyQuotientMap (d := d) n
+                (section43NPointTimeSpatialTensor d n
+                  (section43TimeProductTensor
+                    (fun i : Fin n =>
+                      section43OneSidedLaplaceSchwartzRepresentative1D
+                        (gs1 i)))
+                  (SchwartzMap.fourierTransformCLM ℂ kappa1.1)))
+              (SchwartzMap.fourierTransformCLM ℂ kappa2.1)
+              (fun i : Fin k => section43ImagAxisPsiKernel (ξ i)) *
+            (section43TimeProductSource gs2).f ξ := hBVT_to_A0.symm
+      _ =
+          ∫ ξ : Fin k → ℝ,
+            OS.S (n + k) (ZeroDiagonalSchwartz.ofClassical
+              ((timeShiftSchwartzNPoint (d := d) a f).osConjTensorProduct
+                (timeShiftSchwartzNPoint (d := d)
+                  (∑ p : Fin k, ξ p) g))) *
+              (section43TimeProductSource gs2).f ξ := hBVT_to_shell
+      _ =
+          ∫ τ : Fin k → ℝ,
+            OSInnerProduct d OS.S (F : BorchersSequence d)
+              (timeShiftBorchers (d := d)
+                (∑ p : Fin k, τ p)
+                (G : BorchersSequence d)) *
+              (section43TimeProductSource gs2).f τ := by
+          apply integral_congr_ae
+          filter_upwards with τ
+          have hinner :
+              OSInnerProduct d OS.S (F : BorchersSequence d)
+                  (timeShiftBorchers (d := d)
+                    (∑ p : Fin k, τ p)
+                    (G : BorchersSequence d)) =
+                OS.S (n + k) (ZeroDiagonalSchwartz.ofClassical
+                  ((timeShiftSchwartzNPoint (d := d) a f).osConjTensorProduct
+                    (timeShiftSchwartzNPoint (d := d)
+                      (∑ p : Fin k, τ p) g))) := by
+            simpa [F, G, PositiveTimeBorchersSequence.single_toBorchersSequence] using
+              OSInnerProduct_single_right_timeShift (d := d) OS
+                (timeShiftSchwartzNPoint (d := d) a f) g
+                (∑ p : Fin k, τ p)
+          rw [hinner]
+  have hpoint :
+      S_real τ0 =
+        OSInnerProduct d OS.S (F : BorchersSequence d)
+          (timeShiftBorchers (d := d)
+            (∑ p : Fin k, τ0 p)
+            (G : BorchersSequence d)) :=
+    osiiA0P0_total_time_semigroup_pointwise_of_local_pairings
+      (d := d) OS lgc F G hG_compact S_real τ0 hτ0 U hU_nhds
+      hU_pos hS_cont hS_contOn_U hpair
+  calc
+    S_real τ0 =
+        OSInnerProduct d OS.S (F : BorchersSequence d)
+          (timeShiftBorchers (d := d)
+            (∑ p : Fin k, τ0 p)
+            (G : BorchersSequence d)) := hpoint
+    _ =
+      OS.S (n + k) (ZeroDiagonalSchwartz.ofClassical
+        ((timeShiftSchwartzNPoint (d := d) a f).osConjTensorProduct
+          (timeShiftSchwartzNPoint (d := d) (∑ p : Fin k, τ0 p) g))) := by
+        simpa [F, G, PositiveTimeBorchersSequence.single_toBorchersSequence] using
+          OSInnerProduct_single_right_timeShift (d := d) OS
+            (timeShiftSchwartzNPoint (d := d) a f) g
+            (∑ p : Fin k, τ0 p)
+
+/-- Local OS-II V.2 bridge from an `(A0)` time-shell representative to
+pointwise BVT selection.
+
+If the fixed cutoff A0 time-shell distribution is represented by `S_real` on a
+neighborhood `U`, and the already-constructed uniform cutoff has the same
+compact product-source pairings as the BVT imaginary-axis kernel on `U`, then
+positive-orthant delta smearing identifies `S_real` pointwise with that BVT
+kernel at the target strict-positive time vector. -/
+theorem osiiA0LocalCutoffTimeShell_rep_eq_bvt_imagAxis_of_pairings
+    (n k : ℕ) [Nonempty (Fin k)]
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (gs1 : Fin n → Section43CompactPositiveTimeSource1D)
+    (kappa1 : Section43SpatialCompactSource d n)
+    (kappa2 : Section43SpatialCompactSource d k)
+    (χ : SchwartzNPoint d (n + k))
+    (hχ_disj :
+      Disjoint (tsupport (χ : NPointDomain d (n + k) → ℂ))
+        (CoincidenceLocus d (n + k)))
+    (S_real : (Fin k → ℝ) → ℂ)
+    (τ0 : Fin k → ℝ) (hτ0 : ∀ i : Fin k, 0 < τ0 i)
+    (U : Set (Fin k → ℝ)) (hU_nhds : U ∈ 𝓝 τ0)
+    (hU_pos : U ⊆ section43TimeStrictPositiveRegion k)
+    (hS_cont : ContinuousAt S_real τ0)
+    (hS_contOn_U : ContinuousOn S_real U)
+    (hrep :
+      SCV.RepresentsDistributionOn
+        (osiiA0LocalCutoffTimeShellCLM
+          OS χ hχ_disj
+          (section43OrderedPullbackTimeSpatialTensorCLM d n kappa1.1
+            (section43TimeProductSource gs1).f)
+          kappa2)
+        S_real U)
+    (hpairBVT :
+      ∀ gs2 : Fin k → Section43CompactPositiveTimeSource1D,
+        tsupport ((section43TimeProductSource gs2).f : (Fin k → ℝ) → ℂ) ⊆ U →
+          (∫ ξ : Fin k → ℝ,
+              bvt_W_pairing_descended_timeSpatialRightProductMultilinear
+                (d := d) OS lgc n k
+                (section43PositiveEnergyQuotientMap (d := d) n
+                  (section43NPointTimeSpatialTensor d n
+                    (section43TimeProductTensor
+                      (fun i : Fin n =>
+                        section43OneSidedLaplaceSchwartzRepresentative1D
+                          (gs1 i)))
+                    (SchwartzMap.fourierTransformCLM ℂ kappa1.1)))
+                (SchwartzMap.fourierTransformCLM ℂ kappa2.1)
+                (fun i : Fin k => section43ImagAxisPsiKernel (ξ i)) *
+              (section43TimeProductSource gs2).f ξ) =
+            osiiA0LocalCutoffSchwingerCLM OS χ hχ_disj
+              ((section43OrderedPullbackTimeSpatialTensorCLM d n kappa1.1
+                  (section43TimeProductSource gs1).f).osConjTensorProduct
+                (section43OrderedPullbackTimeSpatialTensorCLM d k kappa2.1
+                  (section43TimeProductSource gs2).f))) :
+    S_real τ0 =
+      bvt_W_pairing_descended_timeSpatialRightProductMultilinear
+        (d := d) OS lgc n k
+        (section43PositiveEnergyQuotientMap (d := d) n
+          (section43NPointTimeSpatialTensor d n
+            (section43TimeProductTensor
+              (fun i : Fin n =>
+                section43OneSidedLaplaceSchwartzRepresentative1D
+                  (gs1 i)))
+            (SchwartzMap.fourierTransformCLM ℂ kappa1.1)))
+        (SchwartzMap.fourierTransformCLM ℂ kappa2.1)
+        (fun i : Fin k => section43ImagAxisPsiKernel (τ0 i)) := by
+  let fLeft : SchwartzNPoint d n :=
+    section43OrderedPullbackTimeSpatialTensorCLM d n kappa1.1
+      (section43TimeProductSource gs1).f
+  let u : Section43PositiveEnergyComponent (d := d) n :=
+    section43PositiveEnergyQuotientMap (d := d) n
+      (section43NPointTimeSpatialTensor d n
+        (section43TimeProductTensor
+          (fun i : Fin n =>
+            section43OneSidedLaplaceSchwartzRepresentative1D
+              (gs1 i)))
+        (SchwartzMap.fourierTransformCLM ℂ kappa1.1))
+  let χsp : SchwartzMap (Section43SpatialSpace d k) ℂ :=
+    SchwartzMap.fourierTransformCLM ℂ kappa2.1
+  let KBVT : (Fin k → ℝ) → ℂ := fun ξ =>
+    bvt_W_pairing_descended_timeSpatialRightProductMultilinear
+      (d := d) OS lgc n k u χsp
+      (fun i : Fin k => section43ImagAxisPsiKernel (ξ i))
+  have hKBVT_contOn :
+      ContinuousOn KBVT {τ : Fin k → ℝ | ∀ i : Fin k, 0 < τ i} := by
+    simpa [KBVT, u, χsp, section43TimeStrictPositiveRegion] using
+      continuousOn_bvt_W_pairing_descended_timeSpatialRightProductMultilinear_imagAxis
+        (d := d) OS lgc n k u χsp
+  have hKBVT_cont : ContinuousAt KBVT τ0 := by
+    exact hKBVT_contOn.continuousAt
+      ((isOpen_section43TimeStrictPositiveRegion k).mem_nhds (by
+        simpa [section43TimeStrictPositiveRegion] using hτ0))
+  have hKBVT_contOn_U : ContinuousOn KBVT U := by
+    exact hKBVT_contOn.mono (by
+      intro ξ hξ
+      simpa [section43TimeStrictPositiveRegion] using hU_pos hξ)
+  change S_real τ0 = KBVT τ0
+  refine
+    eq_of_local_positiveOrthant_productSource_pairings_eq_of_continuousOn
+      S_real KBVT τ0 hτ0 U hU_nhds hS_cont hKBVT_cont
+      hS_contOn_U hKBVT_contOn_U ?_
+  intro gs2 hgs2U
+  have hS :=
+    hrep (section43TimeProductSource gs2).f
+      ⟨(section43TimeProductSource gs2).compact, hgs2U⟩
+  have hBVT := hpairBVT gs2 hgs2U
+  calc
+    (∫ ξ : Fin k → ℝ, S_real ξ * (section43TimeProductSource gs2).f ξ)
+        =
+      osiiA0LocalCutoffSchwingerCLM OS χ hχ_disj
+        (fLeft.osConjTensorProduct
+          (section43OrderedPullbackTimeSpatialTensorCLM d k kappa2.1
+            (section43TimeProductSource gs2).f)) := by
+        simpa [fLeft] using hS.symm
+    _ =
+      ∫ ξ : Fin k → ℝ,
+        KBVT ξ * (section43TimeProductSource gs2).f ξ := by
+        simpa [KBVT, u, χsp, fLeft] using hBVT.symm
+
+/-- Product-source pairing form of the local OS-II V.2 bridge from an `(A0)`
+time-shell representative to pointwise BVT selection.
+
+The pointwise positive-orthant delta step does not need the stronger global
+`RepresentsDistributionOn` hypothesis for the A0 cutoff distribution.  It only
+needs the compact positive product-source pairings of the candidate real
+representative.  This is the sharper surface fed by the glued MZ real
+representative before the full local-EOW representation has been assembled. -/
+theorem osiiA0LocalCutoffTimeShell_pairings_eq_bvt_imagAxis
+    (n k : ℕ) [Nonempty (Fin k)]
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (gs1 : Fin n → Section43CompactPositiveTimeSource1D)
+    (kappa1 : Section43SpatialCompactSource d n)
+    (kappa2 : Section43SpatialCompactSource d k)
+    (χ : SchwartzNPoint d (n + k))
+    (hχ_disj :
+      Disjoint (tsupport (χ : NPointDomain d (n + k) → ℂ))
+        (CoincidenceLocus d (n + k)))
+    (S_real : (Fin k → ℝ) → ℂ)
+    (τ0 : Fin k → ℝ) (hτ0 : ∀ i : Fin k, 0 < τ0 i)
+    (U : Set (Fin k → ℝ)) (hU_nhds : U ∈ 𝓝 τ0)
+    (hU_pos : U ⊆ section43TimeStrictPositiveRegion k)
+    (hS_cont : ContinuousAt S_real τ0)
+    (hS_contOn_U : ContinuousOn S_real U)
+    (hS_pair :
+      ∀ gs2 : Fin k → Section43CompactPositiveTimeSource1D,
+        tsupport ((section43TimeProductSource gs2).f : (Fin k → ℝ) → ℂ) ⊆ U →
+          (∫ ξ : Fin k → ℝ,
+              S_real ξ * (section43TimeProductSource gs2).f ξ) =
+            osiiA0LocalCutoffSchwingerCLM OS χ hχ_disj
+              ((section43OrderedPullbackTimeSpatialTensorCLM d n kappa1.1
+                  (section43TimeProductSource gs1).f).osConjTensorProduct
+                (section43OrderedPullbackTimeSpatialTensorCLM d k kappa2.1
+                  (section43TimeProductSource gs2).f)))
+    (hpairBVT :
+      ∀ gs2 : Fin k → Section43CompactPositiveTimeSource1D,
+        tsupport ((section43TimeProductSource gs2).f : (Fin k → ℝ) → ℂ) ⊆ U →
+          (∫ ξ : Fin k → ℝ,
+              bvt_W_pairing_descended_timeSpatialRightProductMultilinear
+                (d := d) OS lgc n k
+                (section43PositiveEnergyQuotientMap (d := d) n
+                  (section43NPointTimeSpatialTensor d n
+                    (section43TimeProductTensor
+                      (fun i : Fin n =>
+                        section43OneSidedLaplaceSchwartzRepresentative1D
+                          (gs1 i)))
+                    (SchwartzMap.fourierTransformCLM ℂ kappa1.1)))
+                (SchwartzMap.fourierTransformCLM ℂ kappa2.1)
+                (fun i : Fin k => section43ImagAxisPsiKernel (ξ i)) *
+              (section43TimeProductSource gs2).f ξ) =
+            osiiA0LocalCutoffSchwingerCLM OS χ hχ_disj
+              ((section43OrderedPullbackTimeSpatialTensorCLM d n kappa1.1
+                  (section43TimeProductSource gs1).f).osConjTensorProduct
+                (section43OrderedPullbackTimeSpatialTensorCLM d k kappa2.1
+                  (section43TimeProductSource gs2).f))) :
+    S_real τ0 =
+      bvt_W_pairing_descended_timeSpatialRightProductMultilinear
+        (d := d) OS lgc n k
+        (section43PositiveEnergyQuotientMap (d := d) n
+          (section43NPointTimeSpatialTensor d n
+            (section43TimeProductTensor
+              (fun i : Fin n =>
+                section43OneSidedLaplaceSchwartzRepresentative1D
+                  (gs1 i)))
+            (SchwartzMap.fourierTransformCLM ℂ kappa1.1)))
+        (SchwartzMap.fourierTransformCLM ℂ kappa2.1)
+        (fun i : Fin k => section43ImagAxisPsiKernel (τ0 i)) := by
+  let u : Section43PositiveEnergyComponent (d := d) n :=
+    section43PositiveEnergyQuotientMap (d := d) n
+      (section43NPointTimeSpatialTensor d n
+        (section43TimeProductTensor
+          (fun i : Fin n =>
+            section43OneSidedLaplaceSchwartzRepresentative1D
+              (gs1 i)))
+        (SchwartzMap.fourierTransformCLM ℂ kappa1.1))
+  let χsp : SchwartzMap (Section43SpatialSpace d k) ℂ :=
+    SchwartzMap.fourierTransformCLM ℂ kappa2.1
+  let KBVT : (Fin k → ℝ) → ℂ := fun ξ =>
+    bvt_W_pairing_descended_timeSpatialRightProductMultilinear
+      (d := d) OS lgc n k u χsp
+      (fun i : Fin k => section43ImagAxisPsiKernel (ξ i))
+  have hKBVT_contOn :
+      ContinuousOn KBVT {τ : Fin k → ℝ | ∀ i : Fin k, 0 < τ i} := by
+    simpa [KBVT, u, χsp, section43TimeStrictPositiveRegion] using
+      continuousOn_bvt_W_pairing_descended_timeSpatialRightProductMultilinear_imagAxis
+        (d := d) OS lgc n k u χsp
+  have hKBVT_cont : ContinuousAt KBVT τ0 := by
+    exact hKBVT_contOn.continuousAt
+      ((isOpen_section43TimeStrictPositiveRegion k).mem_nhds (by
+        simpa [section43TimeStrictPositiveRegion] using hτ0))
+  have hKBVT_contOn_U : ContinuousOn KBVT U := by
+    exact hKBVT_contOn.mono (by
+      intro ξ hξ
+      simpa [section43TimeStrictPositiveRegion] using hU_pos hξ)
+  change S_real τ0 = KBVT τ0
+  refine
+    eq_of_local_positiveOrthant_productSource_pairings_eq_of_continuousOn
+      S_real KBVT τ0 hτ0 U hU_nhds hS_cont hKBVT_cont
+      hS_contOn_U hKBVT_contOn_U ?_
+  intro gs2 hgs2U
+  calc
+    (∫ ξ : Fin k → ℝ, S_real ξ * (section43TimeProductSource gs2).f ξ)
+        =
+      osiiA0LocalCutoffSchwingerCLM OS χ hχ_disj
+        ((section43OrderedPullbackTimeSpatialTensorCLM d n kappa1.1
+            (section43TimeProductSource gs1).f).osConjTensorProduct
+          (section43OrderedPullbackTimeSpatialTensorCLM d k kappa2.1
+            (section43TimeProductSource gs2).f)) := hS_pair gs2 hgs2U
+    _ =
+      ∫ ξ : Fin k → ℝ,
+        KBVT ξ * (section43TimeProductSource gs2).f ξ := by
+        simpa [KBVT, u, χsp] using (hpairBVT gs2 hgs2U).symm
+
+/-- Schwinger-pairing form of the local OS-II V.2 bridge.
+
+If the glued MZ real representative already has the compact positive
+product-source pairings of the Schwinger shell, then the existing BVT/A0 cutoff
+packet turns those pairings into pointwise equality with the BVT imaginary-axis
+kernel.  This is the direct consumer for the compact axis-pair real
+representative. -/
+theorem osiiA0LocalCutoffTimeShell_schwinger_pairings_eq_bvt_imagAxis
+    (n k : ℕ) [Nonempty (Fin k)]
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (gs1 : Fin n → Section43CompactPositiveTimeSource1D)
+    (kappa1 : Section43SpatialCompactSource d n)
+    (kappa2 : Section43SpatialCompactSource d k)
+    (χ : SchwartzNPoint d (n + k))
+    (hχ_disj :
+      Disjoint (tsupport (χ : NPointDomain d (n + k) → ℂ))
+        (CoincidenceLocus d (n + k)))
+    (S_real : (Fin k → ℝ) → ℂ)
+    (τ0 : Fin k → ℝ) (hτ0 : ∀ i : Fin k, 0 < τ0 i)
+    (U : Set (Fin k → ℝ)) (hU_nhds : U ∈ 𝓝 τ0)
+    (hU_pos : U ⊆ section43TimeStrictPositiveRegion k)
+    (hS_cont : ContinuousAt S_real τ0)
+    (hS_contOn_U : ContinuousOn S_real U)
+    (hS_schwinger :
+      ∀ gs2 : Fin k → Section43CompactPositiveTimeSource1D,
+        tsupport ((section43TimeProductSource gs2).f : (Fin k → ℝ) → ℂ) ⊆ U →
+          (∫ ξ : Fin k → ℝ,
+              S_real ξ * (section43TimeProductSource gs2).f ξ) =
+            OS.S (n + k) (ZeroDiagonalSchwartz.ofClassical
+              ((section43OrderedPullbackTimeSpatialTensorCLM d n kappa1.1
+                  (section43TimeProductSource gs1).f).osConjTensorProduct
+                (section43OrderedPullbackTimeSpatialTensorCLM d k kappa2.1
+                  (section43TimeProductSource gs2).f))))
+    (hpairBVT :
+      ∀ gs2 : Fin k → Section43CompactPositiveTimeSource1D,
+        tsupport ((section43TimeProductSource gs2).f : (Fin k → ℝ) → ℂ) ⊆ U →
+          (∫ ξ : Fin k → ℝ,
+              bvt_W_pairing_descended_timeSpatialRightProductMultilinear
+                (d := d) OS lgc n k
+                (section43PositiveEnergyQuotientMap (d := d) n
+                  (section43NPointTimeSpatialTensor d n
+                    (section43TimeProductTensor
+                      (fun i : Fin n =>
+                        section43OneSidedLaplaceSchwartzRepresentative1D
+                          (gs1 i)))
+                    (SchwartzMap.fourierTransformCLM ℂ kappa1.1)))
+                (SchwartzMap.fourierTransformCLM ℂ kappa2.1)
+                (fun i : Fin k => section43ImagAxisPsiKernel (ξ i)) *
+              (section43TimeProductSource gs2).f ξ) =
+            osiiA0LocalCutoffSchwingerCLM OS χ hχ_disj
+              ((section43OrderedPullbackTimeSpatialTensorCLM d n kappa1.1
+                  (section43TimeProductSource gs1).f).osConjTensorProduct
+                (section43OrderedPullbackTimeSpatialTensorCLM d k kappa2.1
+                  (section43TimeProductSource gs2).f))) :
+    S_real τ0 =
+      bvt_W_pairing_descended_timeSpatialRightProductMultilinear
+        (d := d) OS lgc n k
+        (section43PositiveEnergyQuotientMap (d := d) n
+          (section43NPointTimeSpatialTensor d n
+            (section43TimeProductTensor
+              (fun i : Fin n =>
+                section43OneSidedLaplaceSchwartzRepresentative1D
+                  (gs1 i)))
+            (SchwartzMap.fourierTransformCLM ℂ kappa1.1)))
+        (SchwartzMap.fourierTransformCLM ℂ kappa2.1)
+        (fun i : Fin k => section43ImagAxisPsiKernel (τ0 i)) := by
+  refine
+    osiiA0LocalCutoffTimeShell_pairings_eq_bvt_imagAxis
+      (d := d) n k OS lgc gs1 kappa1 kappa2 χ hχ_disj
+      S_real τ0 hτ0 U hU_nhds hU_pos hS_cont hS_contOn_U ?_ hpairBVT
+  intro gs2 hgs2U
+  let F : SchwartzNPoint d (n + k) :=
+    (section43OrderedPullbackTimeSpatialTensorCLM d n kappa1.1
+        (section43TimeProductSource gs1).f).osConjTensorProduct
+      (section43OrderedPullbackTimeSpatialTensorCLM d k kappa2.1
+        (section43TimeProductSource gs2).f)
+  have hscalar :
+      (∫ ξ : Fin k → ℝ,
+          bvt_W_pairing_descended_timeSpatialRightProductMultilinear
+            (d := d) OS lgc n k
+            (section43PositiveEnergyQuotientMap (d := d) n
+              (section43NPointTimeSpatialTensor d n
+                (section43TimeProductTensor
+                  (fun i : Fin n =>
+                    section43OneSidedLaplaceSchwartzRepresentative1D
+                      (gs1 i)))
+                (SchwartzMap.fourierTransformCLM ℂ kappa1.1)))
+            (SchwartzMap.fourierTransformCLM ℂ kappa2.1)
+            (fun i : Fin k => section43ImagAxisPsiKernel (ξ i)) *
+          (section43TimeProductSource gs2).f ξ) =
+        OS.S (n + k) (ZeroDiagonalSchwartz.ofClassical F) := by
+    simpa [F] using
+      integral_bvt_timeSpatialRightProductMultilinear_imagAxis_eq_osScalar_explicitOrderedSources
+        (d := d) n k OS lgc gs1 kappa1 gs2 kappa2
+  calc
+    (∫ ξ : Fin k → ℝ, S_real ξ * (section43TimeProductSource gs2).f ξ)
+        = OS.S (n + k) (ZeroDiagonalSchwartz.ofClassical F) := by
+          simpa [F] using hS_schwinger gs2 hgs2U
+    _ =
+        (∫ ξ : Fin k → ℝ,
+          bvt_W_pairing_descended_timeSpatialRightProductMultilinear
+            (d := d) OS lgc n k
+            (section43PositiveEnergyQuotientMap (d := d) n
+              (section43NPointTimeSpatialTensor d n
+                (section43TimeProductTensor
+                  (fun i : Fin n =>
+                    section43OneSidedLaplaceSchwartzRepresentative1D
+                      (gs1 i)))
+                (SchwartzMap.fourierTransformCLM ℂ kappa1.1)))
+            (SchwartzMap.fourierTransformCLM ℂ kappa2.1)
+            (fun i : Fin k => section43ImagAxisPsiKernel (ξ i)) *
+          (section43TimeProductSource gs2).f ξ) := hscalar.symm
+    _ =
+        osiiA0LocalCutoffSchwingerCLM OS χ hχ_disj
+          ((section43OrderedPullbackTimeSpatialTensorCLM d n kappa1.1
+              (section43TimeProductSource gs1).f).osConjTensorProduct
+            (section43OrderedPullbackTimeSpatialTensorCLM d k kappa2.1
+              (section43TimeProductSource gs2).f)) := hpairBVT gs2 hgs2U
+
+/-- Local-continuity form of the Schwinger-pairing to BVT pointwise bridge.
+
+This is the direct consumer for the Lemma 5.1/MZ real representative: once the
+candidate scalar has the Schwinger product-source pairings on a local
+positive-time carrier, the local positive-orthant delta theorem identifies its
+point value with the BVT imaginary-axis kernel.  No global continuity on the
+whole strict positive orthant is required. -/
+theorem osiiTimeShell_schwinger_pairings_eq_bvt_imagAxis_of_local_continuousOn
+    (n k : ℕ) [Nonempty (Fin k)]
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (gs1 : Fin n → Section43CompactPositiveTimeSource1D)
+    (kappa1 : Section43SpatialCompactSource d n)
+    (kappa2 : Section43SpatialCompactSource d k)
+    (S_real : (Fin k → ℝ) → ℂ)
+    (τ0 : Fin k → ℝ) (hτ0 : ∀ i : Fin k, 0 < τ0 i)
+    (U : Set (Fin k → ℝ)) (hU_nhds : U ∈ 𝓝 τ0)
+    (hU_pos : U ⊆ section43TimeStrictPositiveRegion k)
+    (hS_cont : ContinuousAt S_real τ0)
+    (hS_contOn_U : ContinuousOn S_real U)
+    (hS_schwinger :
+      ∀ gs2 : Fin k → Section43CompactPositiveTimeSource1D,
+        tsupport ((section43TimeProductSource gs2).f : (Fin k → ℝ) → ℂ) ⊆ U →
+          (∫ ξ : Fin k → ℝ,
+              S_real ξ * (section43TimeProductSource gs2).f ξ) =
+            OS.S (n + k) (ZeroDiagonalSchwartz.ofClassical
+              ((section43OrderedPullbackTimeSpatialTensorCLM d n kappa1.1
+                  (section43TimeProductSource gs1).f).osConjTensorProduct
+                (section43OrderedPullbackTimeSpatialTensorCLM d k kappa2.1
+                  (section43TimeProductSource gs2).f)))) :
+    S_real τ0 =
+      bvt_W_pairing_descended_timeSpatialRightProductMultilinear
+        (d := d) OS lgc n k
+        (section43PositiveEnergyQuotientMap (d := d) n
+          (section43NPointTimeSpatialTensor d n
+            (section43TimeProductTensor
+              (fun i : Fin n =>
+                section43OneSidedLaplaceSchwartzRepresentative1D
+                  (gs1 i)))
+            (SchwartzMap.fourierTransformCLM ℂ kappa1.1)))
+        (SchwartzMap.fourierTransformCLM ℂ kappa2.1)
+        (fun i : Fin k => section43ImagAxisPsiKernel (τ0 i)) := by
+  let u : Section43PositiveEnergyComponent (d := d) n :=
+    section43PositiveEnergyQuotientMap (d := d) n
+      (section43NPointTimeSpatialTensor d n
+        (section43TimeProductTensor
+          (fun i : Fin n =>
+            section43OneSidedLaplaceSchwartzRepresentative1D
+              (gs1 i)))
+        (SchwartzMap.fourierTransformCLM ℂ kappa1.1))
+  let χsp : SchwartzMap (Section43SpatialSpace d k) ℂ :=
+    SchwartzMap.fourierTransformCLM ℂ kappa2.1
+  let KBVT : (Fin k → ℝ) → ℂ := fun ξ =>
+    bvt_W_pairing_descended_timeSpatialRightProductMultilinear
+      (d := d) OS lgc n k u χsp
+      (fun i : Fin k => section43ImagAxisPsiKernel (ξ i))
+  have hKBVT_contOn_pos :
+      ContinuousOn KBVT {τ : Fin k → ℝ | ∀ i : Fin k, 0 < τ i} := by
+    simpa [KBVT, u, χsp, section43TimeStrictPositiveRegion] using
+      continuousOn_bvt_W_pairing_descended_timeSpatialRightProductMultilinear_imagAxis
+        (d := d) OS lgc n k u χsp
+  have hKBVT_cont : ContinuousAt KBVT τ0 := by
+    exact hKBVT_contOn_pos.continuousAt
+      ((isOpen_section43TimeStrictPositiveRegion k).mem_nhds (by
+        simpa [section43TimeStrictPositiveRegion] using hτ0))
+  have hKBVT_contOn_U : ContinuousOn KBVT U := by
+    exact hKBVT_contOn_pos.mono (by
+      intro ξ hξ
+      simpa [section43TimeStrictPositiveRegion] using hU_pos hξ)
+  change S_real τ0 = KBVT τ0
+  refine
+    eq_of_local_positiveOrthant_productSource_pairings_eq_of_continuousOn
+      S_real KBVT τ0 hτ0 U hU_nhds hS_cont hKBVT_cont
+      hS_contOn_U hKBVT_contOn_U ?_
+  intro gs2 hgs2U
+  let F : SchwartzNPoint d (n + k) :=
+    (section43OrderedPullbackTimeSpatialTensorCLM d n kappa1.1
+        (section43TimeProductSource gs1).f).osConjTensorProduct
+      (section43OrderedPullbackTimeSpatialTensorCLM d k kappa2.1
+        (section43TimeProductSource gs2).f)
+  have hscalar :
+      (∫ ξ : Fin k → ℝ,
+          bvt_W_pairing_descended_timeSpatialRightProductMultilinear
+            (d := d) OS lgc n k
+            (section43PositiveEnergyQuotientMap (d := d) n
+              (section43NPointTimeSpatialTensor d n
+                (section43TimeProductTensor
+                  (fun i : Fin n =>
+                    section43OneSidedLaplaceSchwartzRepresentative1D
+                      (gs1 i)))
+                (SchwartzMap.fourierTransformCLM ℂ kappa1.1)))
+            (SchwartzMap.fourierTransformCLM ℂ kappa2.1)
+            (fun i : Fin k => section43ImagAxisPsiKernel (ξ i)) *
+          (section43TimeProductSource gs2).f ξ) =
+        OS.S (n + k) (ZeroDiagonalSchwartz.ofClassical F) := by
+    simpa [F] using
+      integral_bvt_timeSpatialRightProductMultilinear_imagAxis_eq_osScalar_explicitOrderedSources
+        (d := d) n k OS lgc gs1 kappa1 gs2 kappa2
+  calc
+    (∫ ξ : Fin k → ℝ, S_real ξ * (section43TimeProductSource gs2).f ξ)
+        = OS.S (n + k) (ZeroDiagonalSchwartz.ofClassical F) := by
+          simpa [F] using hS_schwinger gs2 hgs2U
+    _ =
+        (∫ ξ : Fin k → ℝ,
+          bvt_W_pairing_descended_timeSpatialRightProductMultilinear
+            (d := d) OS lgc n k
+            (section43PositiveEnergyQuotientMap (d := d) n
+              (section43NPointTimeSpatialTensor d n
+                (section43TimeProductTensor
+                  (fun i : Fin n =>
+                    section43OneSidedLaplaceSchwartzRepresentative1D
+                      (gs1 i)))
+                (SchwartzMap.fourierTransformCLM ℂ kappa1.1)))
+            (SchwartzMap.fourierTransformCLM ℂ kappa2.1)
+            (fun i : Fin k => section43ImagAxisPsiKernel (ξ i)) *
+          (section43TimeProductSource gs2).f ξ) := hscalar.symm
 
 /-- The checked OS-II `ψ_Z` time-shift bridge through the descended Section
 4.3 pairing.
@@ -2074,6 +3935,62 @@ theorem section43_schwinger_timeCLM_oneSidedLaplaceProduct_eq_of_same_leftShifte
         (PositiveTimeBorchersSequence.single r g hg_ord)
         q₁ q₂ (section43TimeProductSource gs).f
         (section43TimeProductSource gs).positive
+
+/-- Vacuum-left version of
+`section43_schwinger_timeCLM_oneSidedLaplaceProduct_eq_of_same_leftShifted_honest_kernel`.
+
+The kernel hypotheses are stated with the unshifted zero-point left factor:
+the common-time left shift is converted internally to the left-shifted
+interface and then removed by arity-zero triviality. -/
+theorem section43_schwinger_timeCLM_oneSidedLaplaceProduct_eq_of_same_vacuumLeft_honest_kernel
+    (OS : OsterwalderSchraderAxioms d)
+    {m : ℕ} [Nonempty (Fin m)]
+    {r : ℕ}
+    (a : ℝ) (ha : 0 ≤ a)
+    (f0 : SchwartzNPoint d 0)
+    (hf0_ord : tsupport (f0 : NPointDomain d 0 → ℂ) ⊆
+      OrderedPositiveTimeRegion d 0)
+    (g : SchwartzNPoint d r)
+    (hg_ord : tsupport (g : NPointDomain d r → ℂ) ⊆
+      OrderedPositiveTimeRegion d r)
+    (q₁ q₂ : Fin m)
+    (Z₁ Z₂ : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ]
+      ZeroDiagonalSchwartz d (0 + r))
+    (hZ₁ : ∀ ξ : Fin m → ℝ, ∀ hξ : ξ ∈ section43TimeStrictPositiveRegion m,
+      Z₁ (section43TimeImagAxisProductKernel ξ) =
+        ⟨f0.osConjTensorProduct
+            (timeShiftSchwartzNPoint (d := d)
+              (∑ p : Fin m, ξ p) g),
+          VanishesToInfiniteOrderOnCoincidence_osConjTensorProduct_timeShift_sum_of_strictPositive
+            (d := d) f0 hf0_ord g hg_ord ξ hξ⟩)
+    (hZ₂ : ∀ ξ : Fin m → ℝ, ∀ hξ : ξ ∈ section43TimeStrictPositiveRegion m,
+      Z₂ (section43TimeImagAxisProductKernel ξ) =
+        ⟨f0.osConjTensorProduct
+            (timeShiftSchwartzNPoint (d := d)
+              (∑ p : Fin m, ξ p) g),
+          VanishesToInfiniteOrderOnCoincidence_osConjTensorProduct_timeShift_sum_of_strictPositive
+            (d := d) f0 hf0_ord g hg_ord ξ hξ⟩) :
+    ∀ gs : Fin m → Section43CompactPositiveTimeSource1D,
+      OS.S (0 + r) (Z₁ (section43TimeProductTensor
+        (fun i : Fin m =>
+          section43OneSidedLaplaceSchwartzRepresentative1D (gs i)))) =
+        OS.S (0 + r) (Z₂ (section43TimeProductTensor
+          (fun i : Fin m =>
+            section43OneSidedLaplaceSchwartzRepresentative1D (gs i)))) := by
+  have hshift0 :
+      timeShiftSchwartzNPoint (d := d) a f0 = f0 :=
+    timeShiftSchwartzNPoint_zero_eq_local (d := d) a f0
+  refine
+    section43_schwinger_timeCLM_oneSidedLaplaceProduct_eq_of_same_leftShifted_honest_kernel
+      (d := d) OS a ha f0 hf0_ord g hg_ord q₁ q₂ Z₁ Z₂ ?_ ?_
+  · intro ξ hξ
+    rw [hZ₁ ξ hξ]
+    apply Subtype.ext
+    simp [hshift0]
+  · intro ξ hξ
+    rw [hZ₂ ξ hξ]
+    apply Subtype.ext
+    simp [hshift0]
 
 /-- Concentrated shifted-shell equality from concrete zero-diagonal time-shell
 CLMs.  This is the Schwinger-functional version of the OS-II product-source

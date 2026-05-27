@@ -195,9 +195,10 @@ theorem bvt_W_conjTensorProduct_eq_of_section43FrequencyProjection_eq_succRight
     _ = Tflat
           (physicsFourierFlatCLM
             (flattenSchwartzNPoint (d := d) (φ₁.conjTensorProduct ψ₁))) := by
-          simpa using
+          have h :=
             hTflat_bv
               (flattenSchwartzNPoint (d := d) (φ₁.conjTensorProduct ψ₁))
+          exact h
     _ = Tflat
           (physicsFourierFlatCLM
             (flattenSchwartzNPoint (d := d) (φ₂.conjTensorProduct ψ₂))) := by
@@ -205,9 +206,10 @@ theorem bvt_W_conjTensorProduct_eq_of_section43FrequencyProjection_eq_succRight
     _ = bvt_W OS lgc (n + (m + 1))
             (unflattenSchwartzNPoint (d := d)
               (flattenSchwartzNPoint (d := d) (φ₂.conjTensorProduct ψ₂))) := by
-          simpa using
+          have h :=
             (hTflat_bv
               (flattenSchwartzNPoint (d := d) (φ₂.conjTensorProduct ψ₂))).symm
+          exact h
     _ = bvt_W OS lgc (n + (m + 1)) (φ₂.conjTensorProduct ψ₂) := by
           rw [hflat₂]
 
