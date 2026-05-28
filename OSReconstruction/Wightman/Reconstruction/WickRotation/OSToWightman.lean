@@ -15,6 +15,9 @@ import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIAxi
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIAxisPairProductSourceBranchLimit
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIAxisPairCutoffBoundaryIntegral
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIAxisPairTimeShellCarrier
+import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIRegularizer
+import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIRegularizedPairing
+import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIRegularizedSourceCurrent
 import OSReconstruction.Wightman.Reconstruction.DenseCLM
 import OSReconstruction.SCV.DistributionalEOWCutoff
 import OSReconstruction.SCV.EuclideanWeylOpen
@@ -82,7 +85,12 @@ private theorem exists_acrOne_productTensor_witness {d : ℕ} [NeZero d]
   · by_cases hk1 : k = 1
     · subst k
       exact exists_acrOne_productTensor_witness_one (d := d) OS
-    · sorry
+    · -- OS II Chapters V--VI: construct the global ACR(1) product-kernel
+      -- witness from the Malgrange-Zerner `(A0)` representatives, the `(5.2)`
+      -- distributional-to-pointwise `(P0)` step, and the VI polynomial-growth
+      -- estimate.  The checked local A0/P0 and flat-coordinate payload
+      -- adapters are not yet the global factorization-independent witness.
+      sorry
 
 /- The formal dense-extension step above factors through two separate analytic
 inputs:

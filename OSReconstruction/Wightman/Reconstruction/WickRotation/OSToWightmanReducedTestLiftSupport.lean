@@ -502,6 +502,76 @@ theorem reducedDiffMapReal_permute_realDiffCoordCLE_symm_prependBasepointReal
     (congrFun (congrFun hperm_complex k) μ)
 
 omit [NeZero d] in
+/-- Passing from absolute real configurations to reduced differences commutes
+with an absolute permutation, producing the induced reduced real permutation.
+
+This is the coordinate algebra used in the adjacent-swap locality route when
+the absolute swap of neighboring fields is transported to reduced variables. -/
+theorem reducedDiffMapReal_permute_absolute
+    (m : ℕ) (σ : Equiv.Perm (Fin (m + 1)))
+    (x : NPointDomain d (m + 1)) :
+    BHW.reducedDiffMapReal (m + 1) d (fun k => x (σ k)) =
+      realPermOnReducedDiff (d := d) m σ
+        (BHW.reducedDiffMapReal (m + 1) d x) := by
+  haveI : NeZero (m + 1) := ⟨Nat.succ_ne_zero m⟩
+  let z : Fin (m + 1) → Fin (d + 1) → ℂ := fun k μ => (x k μ : ℂ)
+  have hred_complex :
+      BHW.reducedDiffMap (m + 1) d z =
+        fun k μ => (BHW.reducedDiffMapReal (m + 1) d x k μ : ℂ) := by
+    ext k μ
+    rw [BHW.reducedDiffMap_eq_successive_differences]
+    rw [BHW.reducedDiffMapReal_apply]
+    change ((x ⟨k.val + 1, by omega⟩ μ : ℂ) -
+        (x ⟨k.val, by omega⟩ μ : ℂ)) =
+      ((x ⟨k.val + 1, by omega⟩ μ -
+        x ⟨k.val, by omega⟩ μ : ℝ) : ℂ)
+    simp
+  have hperm_complex :
+      (fun k μ =>
+        (BHW.reducedDiffMapReal (m + 1) d
+          (fun k => x (σ k)) k μ : ℂ)) =
+        fun k μ =>
+          (realPermOnReducedDiff (d := d) m σ
+            (BHW.reducedDiffMapReal (m + 1) d x) k μ : ℂ) := by
+    calc
+      (fun k μ =>
+          (BHW.reducedDiffMapReal (m + 1) d
+            (fun k => x (σ k)) k μ : ℂ))
+          =
+        BHW.reducedDiffMap (m + 1) d (fun k μ => z (σ k) μ) := by
+          ext k μ
+          rw [BHW.reducedDiffMap_eq_successive_differences]
+          rw [BHW.reducedDiffMapReal_apply]
+          change
+            ((x (σ ⟨k.val + 1, by omega⟩) μ -
+                x (σ ⟨k.val, by omega⟩) μ : ℝ) : ℂ) =
+              (x (σ ⟨k.val + 1, by omega⟩) μ : ℂ) -
+                (x (σ ⟨k.val, by omega⟩) μ : ℂ)
+          simp
+      _ =
+        BHW.permOnReducedDiff (d := d) (n := m + 1) σ
+          (BHW.reducedDiffMap (m + 1) d z) := by
+          exact (BHW.permOnReducedDiff_reducedDiffMap
+            (d := d) (n := m + 1) σ z).symm
+      _ =
+        BHW.permOnReducedDiff (d := d) (n := m + 1) σ
+          (fun k μ => (BHW.reducedDiffMapReal (m + 1) d x k μ : ℂ)) := by
+          exact congrArg
+            (fun η =>
+              BHW.permOnReducedDiff (d := d) (n := m + 1) σ η)
+            hred_complex
+      _ =
+        fun k μ =>
+          (realPermOnReducedDiff (d := d) m σ
+            (BHW.reducedDiffMapReal (m + 1) d x) k μ : ℂ) := by
+          simpa using
+            (ofReal_realPermOnReducedDiff_eq
+              (d := d) m σ (BHW.reducedDiffMapReal (m + 1) d x)).symm
+  ext k μ
+  exact Complex.ofReal_injective
+    (congrFun (congrFun hperm_complex k) μ)
+
+omit [NeZero d] in
 /-- On the selected adjacent reduced difference, the induced real adjacent
 transposition acts by negation. -/
 theorem realPermOnReducedDiff_adjacentSwap_selected
@@ -1159,6 +1229,47 @@ theorem reducedFiberMarginal_comp_adjacentSwap_support_subset_edge
       (reducedFiberIntegral (d := d) m
         (f : NPointDomain d (m + 1) → ℂ))
       hmargin_support
+
+/-- If an absolute test has reduced support on the selected adjacent spacelike
+edge, then its adjacent-swapped absolute pullback has reduced support on the
+same edge. -/
+theorem absolute_adjacentSwap_reduced_support_subset_edge
+    (m : ℕ) (i : Fin (m + 1)) (hi : i.val + 1 < m + 1)
+    (f : NPointDomain d (m + 1) → ℂ)
+    (hf_support :
+      ∀ x, f x ≠ 0 →
+        BHW.reducedDiffMapReal (m + 1) d x ∈
+          reducedSpacelikeSwapEdge (d := d) m i ⟨i.val + 1, hi⟩) :
+    ∀ x,
+      f (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ≠ 0 →
+        BHW.reducedDiffMapReal (m + 1) d x ∈
+          reducedSpacelikeSwapEdge (d := d) m i ⟨i.val + 1, hi⟩ := by
+  intro x hx
+  let τ : Equiv.Perm (Fin (m + 1)) := Equiv.swap i ⟨i.val + 1, hi⟩
+  have hτ_edge :
+      realPermOnReducedDiff (d := d) m τ
+          (BHW.reducedDiffMapReal (m + 1) d x) ∈
+        reducedSpacelikeSwapEdge (d := d) m i ⟨i.val + 1, hi⟩ := by
+    have hred :=
+      hf_support (fun k => x (τ k)) (by simpa [τ] using hx)
+    have hperm :=
+      reducedDiffMapReal_permute_absolute (d := d) m τ x
+    simpa [τ] using hperm ▸ hred
+  have hback :=
+    realPermOnReducedDiff_adjacentSwap_mem_reducedSpacelikeSwapEdge
+      (d := d) m i hi
+      (realPermOnReducedDiff (d := d) m τ
+        (BHW.reducedDiffMapReal (m + 1) d x))
+      (by simpa [τ] using hτ_edge)
+  have hdouble :
+      realPermOnReducedDiff (d := d) m τ
+          (realPermOnReducedDiff (d := d) m τ
+            (BHW.reducedDiffMapReal (m + 1) d x)) =
+        BHW.reducedDiffMapReal (m + 1) d x := by
+    simpa [τ] using
+      realPermOnReducedDiff_symm_apply
+        (d := d) m τ (BHW.reducedDiffMapReal (m + 1) d x)
+  exact hdouble ▸ hback
 
 /-- Canonical reduced compact-edge boundary invariance under the induced
 adjacent reduced real transposition.

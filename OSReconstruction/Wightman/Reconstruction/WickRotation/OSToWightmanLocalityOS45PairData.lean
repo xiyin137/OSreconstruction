@@ -99,6 +99,56 @@ noncomputable def os45CompactFigure24WickPairingEq_of_sPrimeBranchData
   BHW.os45CompactFigure24WickPairingEq_of_pairData_canonical
     (d := d) hd OS lgc n i hi S.toPairData hsource_subset
 
+/-- A BHW/Jost pair carrier is already the direct adjacent EOW difference
+envelope on its real source patch.
+
+This is the checked local handoff from the book's two boundary restrictions to
+the Lean consumer: the envelope function is `Btau - Bord`, with the Wick and
+real trace identities inherited from the pair carrier. -/
+noncomputable def adjacentOSEOWDifferenceEnvelope_of_pairData
+    (hd : 2 ≤ d)
+    {OS : OsterwalderSchraderAxioms d}
+    {lgc : OSLinearGrowthCondition d OS}
+    {n : ℕ} {i : Fin n} {hi : i.val + 1 < n}
+    {V : Set (NPointDomain d n)}
+    (P : BHW.OS45SourcePatchBHWJostPairData
+      (d := d) hd OS lgc n i hi V) :
+    BHW.AdjacentOSEOWDifferenceEnvelope (d := d) OS lgc n P.τ V := by
+  exact
+    { U := P.U
+      U_open := P.U_open
+      U_connected := P.U_connected
+      H := P.difference
+      H_holo := P.difference_holo
+      wick_mem := P.wick_mem
+      real_mem := P.real_mem
+      wick_diff := by
+        intro x hx
+        exact P.difference_wick_trace hx
+      real_diff := by
+        intro x hx
+        exact P.difference_real_trace hx }
+
+/-- A local `S'_n` branch supplies the adjacent EOW difference envelope on the
+canonical OS45 real patch.
+
+This names the remaining mathematical blocker sharply: construct the local
+`S'_n` branch from the OS/Jost/Ruelle edge-of-the-wedge step at the spacelike
+point.  Once `S` exists, no further distributional or support wrapper is
+needed to obtain the local envelope. -/
+noncomputable def adjacentOSEOWDifferenceEnvelope_of_sPrimeBranchData
+    (hd : 2 ≤ d)
+    {OS : OsterwalderSchraderAxioms d}
+    {lgc : OSLinearGrowthCondition d OS}
+    {n : ℕ} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    {H : BHW.OS45BHWJostHullData (d := d) hd n i hi P}
+    (S : BHW.OS45BHWJostSPrimeBranchData hd OS lgc H) :
+    BHW.AdjacentOSEOWDifferenceEnvelope (d := d) OS lgc n P.τ P.V :=
+  BHW.adjacentOSEOWDifferenceEnvelope_of_pairData
+    (d := d) hd S.toPairData
+
 /-- The canonical source-patch version of
 `os45_BHWJostPairData_of_zeroHeight_pairingsCLM`. -/
 noncomputable def os45_BHWJostPairData_on_figure24SourcePatch_of_zeroHeight_pairingsCLM

@@ -1300,4 +1300,88 @@ theorem osiiFlatTotalTimeBranch_single_wickRotate_ordered_edge_eq_schwinger_time
         simpa [PositiveTimeBorchersSequence.single_toBorchersSequence] using
           OSInnerProduct_single_right_timeShift (d := d) OS f g T
 
+/-- Monograph Vol IV Ch 2 Step 4--5, flat-tube form: the explicit total-time
+semigroup branch is uniformly bounded on the positive-time-difference tube.
+
+This is the growth side of the OS-II scalar-product estimate after composing
+the one-variable right-half-plane bound with the total time-difference map. -/
+theorem exists_bound_osiiFlatTotalTimeBranch_tube
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {k : ℕ} [Nonempty (Fin k)]
+    (F G : PositiveTimeBorchersSequence d) :
+    ∃ C : ℝ, 0 ≤ C ∧
+      ∀ u : Fin (k * (d + 1)) → ℂ,
+        u ∈ SCV.TubeDomain (FlatPositiveTimeDiffReal k d) →
+          ‖osiiFlatTotalTimeBranch (d := d) (k := k) OS lgc F G u‖ ≤ C := by
+  rcases
+    exists_bound_OSInnerProductTimeShiftHolomorphicValueExpandBoth_rightHalfPlane
+      (d := d) OS lgc F G with
+    ⟨C, hC_nonneg, hC_bound⟩
+  refine ⟨C, hC_nonneg, ?_⟩
+  intro u hu
+  unfold osiiFlatTotalTimeBranch
+  exact hC_bound
+    (osiiFlatTotalTimeSum (k := k) (d := d) u)
+    (osiiFlatTotalTimeSum_mem_rightHalfPlane (d := d) hu)
+
+/-- Polynomial-growth version of
+`exists_bound_osiiFlatTotalTimeBranch_tube`.  The exponent is zero because the
+OS semigroup scalar-product estimate is uniform on the right half-plane. -/
+theorem exists_polynomial_bound_osiiFlatTotalTimeBranch_tube
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {k : ℕ} [Nonempty (Fin k)]
+    (F G : PositiveTimeBorchersSequence d) :
+    ∃ (C_bd : ℝ) (N : ℕ),
+      0 < C_bd ∧
+      ∀ u : Fin (k * (d + 1)) → ℂ,
+        u ∈ SCV.TubeDomain (FlatPositiveTimeDiffReal k d) →
+          ‖osiiFlatTotalTimeBranch (d := d) (k := k) OS lgc F G u‖ ≤
+            C_bd * (1 + ‖u‖) ^ N := by
+  rcases exists_bound_osiiFlatTotalTimeBranch_tube
+      (d := d) (k := k) OS lgc F G with
+    ⟨C, _hC_nonneg, hC_bound⟩
+  refine ⟨max C 1, 0, ?_, ?_⟩
+  · exact lt_of_lt_of_le zero_lt_one (le_max_right C 1)
+  · intro u hu
+    have hbound := hC_bound u hu
+    have hC_le : C ≤ max C 1 := le_max_left C 1
+    have hbound' :
+        ‖osiiFlatTotalTimeBranch (d := d) (k := k) OS lgc F G u‖ ≤ max C 1 :=
+      le_trans hbound hC_le
+    simpa using hbound'
+
+/-- ACR(1)-coordinate polynomial-growth form of the explicit total-time branch.
+This is the growth packet needed when the flat OS-II branch is pulled back by
+difference coordinates. -/
+theorem exists_polynomial_bound_osiiFlatTotalTimeBranch_toDiffFlat_acrOne
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {k : ℕ} [Nonempty (Fin k)]
+    (F G : PositiveTimeBorchersSequence d) :
+    ∃ (C_bd : ℝ) (N : ℕ),
+      0 < C_bd ∧
+      ∀ z : Fin k → Fin (d + 1) → ℂ,
+        z ∈ AnalyticContinuationRegion d k 1 →
+          ‖osiiFlatTotalTimeBranch (d := d) (k := k) OS lgc F G
+              (BHW.toDiffFlat k d z)‖ ≤
+            C_bd * (1 + ‖z‖) ^ N := by
+  rcases exists_bound_osiiFlatTotalTimeBranch_tube
+      (d := d) (k := k) OS lgc F G with
+    ⟨C, _hC_nonneg, hC_bound⟩
+  refine ⟨max C 1, 0, ?_, ?_⟩
+  · exact lt_of_lt_of_le zero_lt_one (le_max_right C 1)
+  · intro z hz
+    have hu :
+        BHW.toDiffFlat k d z ∈ SCV.TubeDomain (FlatPositiveTimeDiffReal k d) :=
+      (acr_one_iff_toDiffFlat_mem_tubeDomain_positiveTimeDiff z).mp hz
+    have hbound := hC_bound (BHW.toDiffFlat k d z) hu
+    have hC_le : C ≤ max C 1 := le_max_left C 1
+    have hbound' :
+        ‖osiiFlatTotalTimeBranch (d := d) (k := k) OS lgc F G
+            (BHW.toDiffFlat k d z)‖ ≤ max C 1 :=
+      le_trans hbound hC_le
+    simpa using hbound'
+
 end OSReconstruction

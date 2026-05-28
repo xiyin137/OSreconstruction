@@ -681,7 +681,15 @@ private theorem OSInnerProduct_translate_right_timeShift_eq_of_spatial
   exact OSInnerProduct_translate_eq_of_spatial
     (d := d) OS a ha0 F (timeShiftBorchers (d := d) t G) hleft' hright
 
-private theorem exists_norm_OSInnerProduct_right_timeShift_le_polynomial
+/-- Monograph Vol IV Ch 2 Step 4 (lines 1041-1135): the `OSLinearGrowthCondition`
+gives a polynomial bound for OS scalar products after a positive Euclidean
+time shift of the right factor.
+
+This is the checked scalar-product estimate used by the regularized
+`T_{k,ρ}` construction: after the smearing data have been packaged as
+positive-time Borchers vectors, the Schwinger linear-growth bound controls the
+shifted OS inner product by a fixed polynomial in the shift parameter. -/
+theorem exists_norm_OSInnerProduct_right_timeShift_le_polynomial
     (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
     (F G : PositiveTimeBorchersSequence d) :
     ∃ C : ℝ, 0 ≤ C ∧ ∀ t : ℝ, 1 ≤ t →
@@ -2080,7 +2088,13 @@ private theorem exists_norm_osTimeShiftLinear_le_polynomial_of_repr
       dsimp [C]
       ring
 
-private theorem exists_norm_osTimeShiftLinear_le_polynomial
+/-- Monograph Vol IV Ch 2 Step 4 (lines 1041-1135): the same
+linear-growth/multiple-reflection argument gives polynomial control of the OS
+time-shift operator on every honest OS quotient vector.
+
+This is the vector-norm side of the regularized `T_{k,ρ}` estimate, after the
+regularized left/right smearings have been represented as OS quotient vectors. -/
+theorem exists_norm_osTimeShiftLinear_le_polynomial
     (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
     (x : OSPreHilbertSpace OS) :
     ∃ C : ℝ, 0 < C ∧ ∀ t : ℝ, 1 ≤ t → ∀ ht : 0 < t,
@@ -2339,6 +2353,24 @@ theorem osTimeShiftHilbert_norm_le_one
   refine ContinuousLinearMap.opNorm_le_bound _ zero_le_one ?_
   intro x
   simpa [one_mul] using osTimeShiftHilbert_contraction (d := d) OS lgc t ht x
+
+/-- Monograph Vol IV Ch 2 Step 4 (lines 1092-1099): the completed positive
+Euclidean time-shift gives the scalar matrix-element bound used for the
+regularized `T_{k,ρ}` pairing vectors. -/
+theorem norm_inner_osTimeShiftHilbert_le_mul_norm
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    (t : ℝ) (ht : 0 < t) (x y : OSHilbertSpace OS) :
+    ‖@inner ℂ (OSHilbertSpace OS) inferInstance x
+        (osTimeShiftHilbert (d := d) OS lgc t ht y)‖ ≤ ‖x‖ * ‖y‖ := by
+  calc
+    ‖@inner ℂ (OSHilbertSpace OS) inferInstance x
+        (osTimeShiftHilbert (d := d) OS lgc t ht y)‖
+        ≤ ‖x‖ * ‖osTimeShiftHilbert (d := d) OS lgc t ht y‖ :=
+          norm_inner_le_norm x (osTimeShiftHilbert (d := d) OS lgc t ht y)
+    _ ≤ ‖x‖ * ‖y‖ := by
+      exact mul_le_mul_of_nonneg_left
+        (osTimeShiftHilbert_contraction (d := d) OS lgc t ht y)
+        (norm_nonneg x)
 
 /-- The spectrum of the completed OS time-shift is contained in `[0,1]`. -/
 theorem spectrum_osTimeShiftHilbert_subset_Icc
@@ -3379,7 +3411,11 @@ def OSInnerProductTimeShiftHolomorphicValue
     (((show OSPreHilbertSpace OS from (⟦F⟧)) : OSHilbertSpace OS))
     (((show OSPreHilbertSpace OS from (⟦G⟧)) : OSHilbertSpace OS)) z
 
-private theorem OSInnerProductTimeShiftHolomorphicValue_eq_inner_osTimeShiftHilbertComplex
+/-- Monograph Vol IV Ch 2 Step 4 (lines 1078-1099): the one-variable OS
+holomorphic matrix element is represented by the completed Hilbert-space
+scalar product against the complex Euclidean time-shift.  This is the concrete
+scalar-product identity used after the regularized `T_{k,ρ}` construction. -/
+theorem OSInnerProductTimeShiftHolomorphicValue_eq_inner_osTimeShiftHilbertComplex
     (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
     (F G : PositiveTimeBorchersSequence d) (z : ℂ) (hz : 0 < z.re) :
     OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc F G z =
@@ -3393,6 +3429,36 @@ private theorem OSInnerProductTimeShiftHolomorphicValue_eq_inner_osTimeShiftHilb
     (((show OSPreHilbertSpace OS from (⟦F⟧)) : OSHilbertSpace OS))
     (((show OSPreHilbertSpace OS from (⟦G⟧)) : OSHilbertSpace OS))
     z hz
+
+/-- Monograph Vol IV Ch 2 Step 4 (lines 1092-1099): the complex
+right-half-plane semigroup bound for the OS scalar-product branch. -/
+theorem norm_OSInnerProductTimeShiftHolomorphicValue_le
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    (F G : PositiveTimeBorchersSequence d) (z : ℂ) (hz : 0 < z.re) :
+    ‖OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc F G z‖ ≤
+      2 * ‖(((show OSPreHilbertSpace OS from (⟦F⟧)) : OSHilbertSpace OS))‖ *
+        ‖(((show OSPreHilbertSpace OS from (⟦G⟧)) : OSHilbertSpace OS))‖ := by
+  let xF : OSHilbertSpace OS :=
+    (((show OSPreHilbertSpace OS from (⟦F⟧)) : OSHilbertSpace OS))
+  let xG : OSHilbertSpace OS :=
+    (((show OSPreHilbertSpace OS from (⟦G⟧)) : OSHilbertSpace OS))
+  calc
+    ‖OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc F G z‖ =
+        ‖@inner ℂ (OSHilbertSpace OS) _
+          xF ((osTimeShiftHilbertComplex (d := d) OS lgc z) xG)‖ := by
+          rw [OSInnerProductTimeShiftHolomorphicValue_eq_inner_osTimeShiftHilbertComplex
+            (d := d) OS lgc F G z hz]
+    _ ≤ ‖xF‖ * ‖(osTimeShiftHilbertComplex (d := d) OS lgc z) xG‖ :=
+        norm_inner_le_norm xF ((osTimeShiftHilbertComplex (d := d) OS lgc z) xG)
+    _ ≤ ‖xF‖ * (‖osTimeShiftHilbertComplex (d := d) OS lgc z‖ * ‖xG‖) := by
+        gcongr
+        exact ContinuousLinearMap.le_opNorm
+          (osTimeShiftHilbertComplex (d := d) OS lgc z) xG
+    _ ≤ ‖xF‖ * (2 * ‖xG‖) := by
+        gcongr
+        exact osTimeShiftHilbertComplex_norm_le (d := d) OS lgc z hz
+    _ = 2 * ‖xF‖ * ‖xG‖ := by
+        ring
 
 /-- The one-variable OS time-shift holomorphic matrix element is exactly the
 off-diagonal spectral Laplace transform of the self-adjoint contraction
@@ -5796,6 +5862,65 @@ def OSInnerProductTimeShiftHolomorphicValueExpandBoth
           (F.ordered_tsupport n))
         (PositiveTimeBorchersSequence.single m (((G : BorchersSequence d).funcs m))
           (G.ordered_tsupport m))
+
+/-- Monograph Vol IV Ch 2 Step 4 (lines 1092-1099), recombined over the finite
+Borchers expansion: the total OS semigroup branch is uniformly bounded on the
+right half-plane by the finite sum of the scalar-product vector bounds. -/
+theorem exists_bound_OSInnerProductTimeShiftHolomorphicValueExpandBoth_rightHalfPlane
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    (F G : PositiveTimeBorchersSequence d) :
+    ∃ C : ℝ, 0 ≤ C ∧ ∀ z : ℂ, 0 < z.re →
+      ‖OSInnerProductTimeShiftHolomorphicValueExpandBoth (d := d) OS lgc F G z‖ ≤ C := by
+  classical
+  let I : Finset ℕ := Finset.range (((F : BorchersSequence d).bound) + 1)
+  let J : Finset ℕ := Finset.range (((G : BorchersSequence d).bound) + 1)
+  let Fsingle : ℕ → PositiveTimeBorchersSequence d := fun n =>
+    PositiveTimeBorchersSequence.single n (((F : BorchersSequence d).funcs n))
+      (F.ordered_tsupport n)
+  let Gsingle : ℕ → PositiveTimeBorchersSequence d := fun m =>
+    PositiveTimeBorchersSequence.single m (((G : BorchersSequence d).funcs m))
+      (G.ordered_tsupport m)
+  let Cterm : ℕ → ℕ → ℝ := fun n m =>
+    2 * ‖(((show OSPreHilbertSpace OS from (⟦Fsingle n⟧)) : OSHilbertSpace OS))‖ *
+      ‖(((show OSPreHilbertSpace OS from (⟦Gsingle m⟧)) : OSHilbertSpace OS))‖
+  refine ⟨∑ n ∈ I, ∑ m ∈ J, Cterm n m, ?_, ?_⟩
+  · exact Finset.sum_nonneg fun n _hn =>
+      Finset.sum_nonneg fun m _hm => by
+        dsimp [Cterm]
+        positivity
+  · intro z hz
+    unfold OSInnerProductTimeShiftHolomorphicValueExpandBoth
+    simp only [Finset.sum_apply]
+    change
+      ‖∑ n ∈ I, ∑ m ∈ J,
+          OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc
+            (Fsingle n) (Gsingle m) z‖ ≤
+        ∑ n ∈ I, ∑ m ∈ J, Cterm n m
+    calc
+      ‖∑ n ∈ I, ∑ m ∈ J,
+          OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc
+            (Fsingle n) (Gsingle m) z‖
+          ≤ ∑ n ∈ I,
+              ‖∑ m ∈ J,
+                OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc
+                  (Fsingle n) (Gsingle m) z‖ := by
+            exact norm_sum_le I fun n =>
+              ∑ m ∈ J,
+                OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc
+                  (Fsingle n) (Gsingle m) z
+      _ ≤ ∑ n ∈ I, ∑ m ∈ J,
+              ‖OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc
+                (Fsingle n) (Gsingle m) z‖ := by
+            exact Finset.sum_le_sum fun n _hn =>
+              norm_sum_le J fun m =>
+                OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc
+                  (Fsingle n) (Gsingle m) z
+      _ ≤ ∑ n ∈ I, ∑ m ∈ J, Cterm n m := by
+            exact Finset.sum_le_sum fun n _hn =>
+              Finset.sum_le_sum fun m _hm => by
+                simpa [Fsingle, Gsingle, Cterm] using
+                  norm_OSInnerProductTimeShiftHolomorphicValue_le
+                    (d := d) OS lgc (Fsingle n) (Gsingle m) z hz
 
 theorem differentiableOn_OSInnerProductTimeShiftHolomorphicValueExpandBoth
     (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
