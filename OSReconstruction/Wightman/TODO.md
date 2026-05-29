@@ -1,6 +1,6 @@
 # Wightman TODO: OS Reconstruction Remaining Work
 
-Last updated: 2026-05-10
+Last updated: 2026-05-29
 
 This file tracks the current OS reconstruction blockers on the
 `rtoereflectionpositivity` branch after syncing with `upstream/Anna`. It is
@@ -23,7 +23,7 @@ rg -n '^[[:space:]]*sorry([[:space:]]|$)' OSReconstruction --glob '*.lean'
 | `OSReconstruction/vNA` | 36 |
 | **Whole project** | **53** |
 
-Current axiom count in `OSReconstruction`: 12.
+Current axiom count in `OSReconstruction`: 11.
 
 ## Wightman Remaining `sorry`s
 
@@ -126,11 +126,16 @@ The modular chain is not currently consumed by the reconstruction files.
 
 Active axioms outside SCV include:
 - `GeneralResults/SNAGTheorem.lean`: `snag_theorem`
-- `GeneralResults/SchwartzFubini.lean`: `schwartz_clm_fubini_exchange`
 - `Wightman/WightmanAxioms.lean`: `schwartz_nuclear_extension`,
   `exists_continuousMultilinear_ofSeparatelyContinuous`
 - `Wightman/Reconstruction/WickRotation/BHWReducedExtension.lean`:
   `reduced_bargmann_hall_wightman_of_input`
+
+Recently discharged:
+- `GeneralResults/SchwartzFubini.lean`: `schwartz_clm_fubini_exchange` is now
+  a theorem. The proof uses bounded-parameter finite-partition exchange,
+  cube/annulus exhaustion of `Fin m -> ℝ`, Schwartz-seminorm tail bounds, and
+  completeness of Schwartz space to identify the global Bochner integral.
 
 ## Execution Order
 
