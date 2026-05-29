@@ -4,12 +4,11 @@ A Lean 4 formalization of the **Osterwalder-Schrader reconstruction theorem** an
 
 ## Current Axiom Inventory
 
-The tracked production tree currently contains **12 explicit axioms** (verified by `rg '^axiom\s+\w' OSReconstruction --glob '*.lean'`):
+The tracked production tree currently contains **11 explicit axioms** (verified by `rg '^axiom\s+\w' OSReconstruction --glob '*.lean'`):
 
-**Functional analysis / general analysis (3):**
+**Functional analysis / general analysis (2):**
 - `schwartz_nuclear_extension` in `Wightman/WightmanAxioms.lean` — **partially proved**: nuclearity of Schwartz space is now proved in the [`gaussian-field`](https://github.com/or-n/gaussian-field) library; the remaining gap is importing the instance and deriving the kernel theorem
 - `exists_continuousMultilinear_ofSeparatelyContinuous` in `Wightman/WightmanAxioms.lean` — **proved** in [`gaussian-field`](https://github.com/mrdouglasny/gaussian-field) (`GeneralResults/SeparatelyContMultilinear.lean`, extension branch); remaining gap is importing the theorem
-- `schwartz_clm_fubini_exchange` in `GeneralResults/SchwartzFubini.lean` — CLM-integral exchange for Schwartz-valued families (Fréchet Bochner)
 
 **SCV / tube domain (7):**
 - `bv_implies_fourier_support` in `SCV/VladimirovTillmann.lean` — growth + BV → spectral support in dual cone (Vladimirov 25.1)
@@ -26,7 +25,7 @@ The tracked production tree currently contains **12 explicit axioms** (verified 
 **Reconstruction bridge (1):**
 - `reduced_bargmann_hall_wightman_of_input` in `Wightman/Reconstruction/WickRotation/BHWReducedExtension.lean`
 
-Per the project's axiom discipline, new production axioms encode classical background infrastructure (SNAG, Bochner tube, Schwartz-Fubini, nuclearity, Vladimirov-style SCV/FA). QFT-specific consequences (Wightman / GNS / Ruelle / cluster claims) are kept as conditional inputs or discharged via proved theorems on the proof route, not added to the axiom inventory.
+Per the project's axiom discipline, new production axioms encode classical background infrastructure (SNAG, Bochner tube, nuclearity, Vladimirov-style SCV/FA). QFT-specific consequences (Wightman / GNS / Ruelle / cluster claims) are kept as conditional inputs or discharged via proved theorems on the proof route, not added to the axiom inventory. The former Schwartz-Fubini trust surface, `schwartz_clm_fubini_exchange`, is now proved in `GeneralResults/SchwartzFubini.lean`.
 
 ### Conditional theorems and inventoried frontier lemmas
 
