@@ -1405,6 +1405,90 @@ theorem adjacentReducedRuelleFiberMarginalLimit_of_canonicalBoundaryInvariant
         (d := d) OS lgc m i hi f ε
   exact Filter.Tendsto.congr' htransport.symm hcanonical
 
+/-- The production absolute-test adjacent Ruelle/Jost theorem descends to the
+fiber-marginal formulation.
+
+This is the basepoint/Fubini quotient direction: if the absolute lifted test
+has the adjacent reduced Ruelle boundary limit, then changing variables through
+real difference coordinates gives the same limit for its reduced fiber
+marginal. -/
+theorem adjacentReducedRuelleFiberMarginalLimit_of_distributional
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (hRuelle :
+      AdjacentReducedRuelleDistributionalLimit (d := d) OS lgc) :
+    AdjacentReducedRuelleFiberMarginalLimit (d := d) OS lgc := by
+  intro m i hi f hf_compact hsupport
+  let j : Fin (m + 1) := ⟨i.val + 1, hi⟩
+  let l : Filter ℝ := nhdsWithin 0 (Set.Ioi 0)
+  let Gperm : ℝ → NPointDomain d m → ℂ := fun ε ξ =>
+    bvt_F_reduced (d := d) OS lgc m
+      (fun k μ =>
+        (ξ k μ : ℂ) +
+          ε *
+            permutedCanonicalReducedDirectionC
+              (d := d) m (Equiv.swap i j) k μ *
+            Complex.I)
+  let Gcan : ℝ → NPointDomain d m → ℂ := fun ε ξ =>
+    bvt_F_reduced (d := d) OS lgc m
+      (fun k μ =>
+        (ξ k μ : ℂ) +
+          ε * canonicalReducedDirectionC (d := d) m k μ *
+            Complex.I)
+  have hperm_int :
+      ∀ᶠ (ε : ℝ) in l,
+        Integrable
+          (fun x : NPointDomain d (m + 1) =>
+            Gperm ε (BHW.reducedDiffMapReal (m + 1) d x) *
+              (f x)) volume := by
+    simpa [l, Gperm, j] using
+      bvt_F_reduced_permuted_integrable_eventually
+        (d := d) OS lgc m i j f
+  have hcan_int :
+      ∀ᶠ (ε : ℝ) in l,
+        Integrable
+          (fun x : NPointDomain d (m + 1) =>
+            Gcan ε (BHW.reducedDiffMapReal (m + 1) d x) *
+              (f x)) volume := by
+    simpa [l, Gcan] using
+      bvt_F_reduced_canonical_integrable_eventually
+        (d := d) OS lgc m f
+  have heq :
+      (fun ε : ℝ =>
+        (∫ x : NPointDomain d (m + 1),
+            Gperm ε (BHW.reducedDiffMapReal (m + 1) d x) * (f x)) -
+          ∫ x : NPointDomain d (m + 1),
+            Gcan ε (BHW.reducedDiffMapReal (m + 1) d x) * (f x))
+        =ᶠ[l]
+      (fun ε : ℝ =>
+        (∫ ξ : NPointDomain d m,
+            Gperm ε ξ *
+              reducedFiberIntegral (d := d) m
+                (f : NPointDomain d (m + 1) → ℂ) ξ) -
+          ∫ ξ : NPointDomain d m,
+            Gcan ε ξ *
+              reducedFiberIntegral (d := d) m
+                (f : NPointDomain d (m + 1) → ℂ) ξ) := by
+    filter_upwards [hperm_int, hcan_int] with ε hpermε hcanε
+    rw [integral_reducedFiberIntegral_eq (d := d) m
+        (f : NPointDomain d (m + 1) → ℂ) (Gperm ε) hpermε]
+    rw [integral_reducedFiberIntegral_eq (d := d) m
+        (f : NPointDomain d (m + 1) → ℂ) (Gcan ε) hcanε]
+  have habs :
+      Filter.Tendsto
+        (fun ε : ℝ =>
+          (∫ x : NPointDomain d (m + 1),
+              Gperm ε (BHW.reducedDiffMapReal (m + 1) d x) *
+                (f x)) -
+            ∫ x : NPointDomain d (m + 1),
+              Gcan ε (BHW.reducedDiffMapReal (m + 1) d x) *
+                (f x))
+        l (nhds 0) := by
+    simpa [AdjacentReducedRuelleDistributionalLimit, Gperm, Gcan, j, l]
+      using hRuelle m i hi f hf_compact hsupport
+  simpa [Gperm, Gcan, j, l] using
+    (Filter.Tendsto.congr' heq habs)
+
 /-- The fiber-marginal Ruelle/Jost theorem implies the production absolute-test
 adjacent reduced Ruelle/Jost theorem. -/
 theorem adjacentReducedRuelleDistributionalLimit_of_fiberMarginal

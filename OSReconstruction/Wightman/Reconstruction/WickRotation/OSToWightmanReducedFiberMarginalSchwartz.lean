@@ -1,4 +1,5 @@
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanReducedCanonicalBoundaryCLM
+import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanReducedNormalEOW
 import OSReconstruction.Wightman.SpectralEquivalence
 
 /-!
@@ -1890,6 +1891,262 @@ theorem reducedLocalAdjacentBoundaryCLMInvariant_of_local_branchDifference
         0 :=
     tendsto_nhds_unique hdiff_limit hlocal_limit
   simpa [ψτ, j] using sub_eq_zero.mp hzero
+
+/-- Collar-local reduced-normal sign-flip convergence supplies the local
+reduced boundary-CLM invariant.
+
+This is the active theorem-2 handoff before the final source-side analytic
+leaf: the local pointwise convergence is stated in frozen-spectator reduced
+normal coordinates, and the proof uses the reduced test lift only to import
+the already checked dominated-convergence/integrability package for the
+branch-difference pairing. -/
+theorem reducedLocalAdjacentBoundaryCLMInvariant_of_local_normalSignFlip_pointwise
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (χ : BHW.NormalizedBasepointCutoff d)
+    (hpointwise :
+      ∀ (m : ℕ) (i : Fin (m + 1)) (hi : i.val + 1 < m + 1)
+        (φ : SchwartzNPoint d m),
+        HasCompactSupport (φ : NPointDomain d m → ℂ) →
+        tsupport (φ : NPointDomain d m → ℂ) ⊆
+          reducedSpacelikeSwapEdge (d := d) m i ⟨i.val + 1, hi⟩ →
+        ∀ ξ ∈ tsupport (φ : NPointDomain d m → ℂ),
+          ∃ V : Set (NPointDomain d m),
+            IsOpen V ∧ ξ ∈ V ∧
+            ∀ ψ : SchwartzNPoint d m,
+              HasCompactSupport (ψ : NPointDomain d m → ℂ) →
+              tsupport (ψ : NPointDomain d m → ℂ) ⊆ V →
+              ∀ η, ψ η ≠ 0 →
+                Filter.Tendsto
+                  (fun ε : ℝ =>
+                    canonicalReducedBranch (d := d) OS lgc m ε
+                        (AdjacentNormal.reducedCoordInv
+                          (d := d) i ⟨i.val + 1, hi⟩
+                          (AdjacentNormal.reducedAdjacent_succ_ne i hi)
+                          (AdjacentNormal.reducedSignFlip
+                            (d := d) i ⟨i.val + 1, hi⟩
+                            (AdjacentNormal.reducedCoord
+                              (d := d) i ⟨i.val + 1, hi⟩ η))) -
+                      canonicalReducedBranch (d := d) OS lgc m ε
+                        (AdjacentNormal.reducedCoordInv
+                          (d := d) i ⟨i.val + 1, hi⟩
+                          (AdjacentNormal.reducedAdjacent_succ_ne i hi)
+                          (AdjacentNormal.reducedCoord
+                            (d := d) i ⟨i.val + 1, hi⟩ η)))
+                  (nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)) : Filter ℝ)
+                  (nhds 0)) :
+    ReducedLocalAdjacentBoundaryCLMInvariant (d := d) OS lgc χ := by
+  refine
+    reducedLocalAdjacentBoundaryCLMInvariant_of_local_branchDifference
+      (d := d) OS lgc χ ?_
+  intro m i hi φ hφ_compact hφ_tsupport ξ hξ
+  rcases hpointwise m i hi φ hφ_compact hφ_tsupport ξ hξ with
+    ⟨V, hV_open, hξV, hVpoint⟩
+  refine ⟨V, hV_open, hξV, ?_⟩
+  intro ψ hψ_compact hψ_tsupport
+  let j : Fin (m + 1) := ⟨i.val + 1, hi⟩
+  let l : Filter ℝ := nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ))
+  let χ0 : BHW.NormalizedBasepointCutoff d := BHW.normalizedCutoffOfBump d
+  let f : SchwartzNPoint d (m + 1) :=
+    BHW.reducedTestLift m d χ0.toSchwartz ψ
+  let Gperm : ℝ → NPointDomain d m → ℂ := fun ε ξ =>
+    bvt_F_reduced (d := d) OS lgc m
+      (fun k μ =>
+        (ξ k μ : ℂ) +
+          ε *
+            permutedCanonicalReducedDirectionC
+              (d := d) m (Equiv.swap i j) k μ *
+            Complex.I)
+  let Gcan : ℝ → NPointDomain d m → ℂ := fun ε ξ =>
+    bvt_F_reduced (d := d) OS lgc m
+      (fun k μ =>
+        (ξ k μ : ℂ) +
+          ε * canonicalReducedDirectionC (d := d) m k μ *
+            Complex.I)
+  have hpointwise_abs :
+      ∀ x, f x ≠ 0 →
+        Filter.Tendsto
+          (fun ε : ℝ =>
+            Gperm ε (BHW.reducedDiffMapReal (m + 1) d x) -
+              Gcan ε (BHW.reducedDiffMapReal (m + 1) d x))
+          l
+          (nhds 0) := by
+    intro x hx
+    let η : NPointDomain d m := BHW.reducedDiffMapReal (m + 1) d x
+    have hψ_ne : ψ η ≠ 0 := by
+      intro hψ_zero
+      apply hx
+      change
+        BHW.reducedTestLift m d χ0.toSchwartz ψ x = 0
+      rw [BHW.reducedTestLift_apply, mul_eq_zero]
+      exact Or.inr (by simpa [η] using hψ_zero)
+    let p : AdjacentNormal.ReducedSpace d m i j :=
+      AdjacentNormal.reducedCoord (d := d) i j η
+    let hij : i ≠ j := AdjacentNormal.reducedAdjacent_succ_ne i hi
+    have hnormal :
+        Filter.Tendsto
+          (fun ε : ℝ =>
+            @canonicalReducedBranch d _ OS lgc m ε
+                (AdjacentNormal.reducedCoordInv (d := d) i j hij
+                  (AdjacentNormal.reducedSignFlip (d := d) i j p)) -
+              @canonicalReducedBranch d _ OS lgc m ε
+                (AdjacentNormal.reducedCoordInv (d := d) i j hij p))
+          l
+          (nhds 0) := by
+      simpa [p, j, hij, η, l] using
+        hVpoint ψ hψ_compact hψ_tsupport η hψ_ne
+    have hp_inv :
+        AdjacentNormal.reducedCoordInv (d := d) i j hij p = η := by
+      simpa [p] using
+        AdjacentNormal.reducedCoordInv_left (d := d) i j hij η
+    have hsign_inv :
+        AdjacentNormal.reducedCoordInv (d := d) i j hij
+            (AdjacentNormal.reducedSignFlip (d := d) i j p) =
+          realPermOnReducedDiff (d := d) m (Equiv.swap i j) η := by
+      have h :=
+        AdjacentNormal.reducedCoordInv_reducedSignFlip_eq_realPerm_adjacentSwap
+          (d := d) i hi p
+      simpa [j, hij, hp_inv] using h
+    have hcanon :
+        Filter.Tendsto
+          (fun ε : ℝ =>
+            @canonicalReducedBranch d _ OS lgc m ε
+                (realPermOnReducedDiff (d := d) m (Equiv.swap i j) η) -
+              @canonicalReducedBranch d _ OS lgc m ε η)
+          l
+          (nhds 0) := by
+      simpa [j, hij, p, hp_inv, hsign_inv] using hnormal
+    refine Filter.Tendsto.congr' ?_ hcanon
+    filter_upwards with ε
+    have hbranch :
+        @adjacentReducedPermutedBranch d _ OS lgc m i j ε η =
+          @canonicalReducedBranch d _ OS lgc m ε
+            (realPermOnReducedDiff (d := d) m (Equiv.swap i j) η) := by
+      rw [adjacentReducedPermutedBranch_eq_canonicalAfterReducedSwapBranch
+          (d := d) OS lgc m i j ε η,
+        canonicalAfterReducedSwapBranch_eq_canonicalReducedBranch_realPerm
+          (d := d) OS lgc m i j ε η]
+    have hsub :=
+      congrArg
+        (fun z : ℂ => z - @canonicalReducedBranch d _ OS lgc m ε η)
+        hbranch
+    simpa [Gperm, Gcan, adjacentReducedPermutedBranch,
+      canonicalReducedBranch, η, j] using hsub.symm
+  have habs :
+      Filter.Tendsto
+        (fun ε : ℝ =>
+          (∫ x : NPointDomain d (m + 1),
+            Gperm ε (BHW.reducedDiffMapReal (m + 1) d x) * f x) -
+          ∫ x : NPointDomain d (m + 1),
+            Gcan ε (BHW.reducedDiffMapReal (m + 1) d x) * f x)
+        l
+        (nhds 0) := by
+    simpa [Gperm, Gcan, f, l, j] using
+      bvt_F_reduced_two_direction_integral_tendsto_zero_of_support_pointwise
+        (d := d) OS lgc m i j f hpointwise_abs
+  have hperm_int :
+      ∀ᶠ ε : ℝ in l,
+        Integrable
+          (fun x : NPointDomain d (m + 1) =>
+            Gperm ε (BHW.reducedDiffMapReal (m + 1) d x) * f x) volume := by
+    simpa [Gperm, f, l, j] using
+      bvt_F_reduced_permuted_integrable_eventually
+        (d := d) OS lgc m i j f
+  have hcan_int :
+      ∀ᶠ ε : ℝ in l,
+        Integrable
+          (fun x : NPointDomain d (m + 1) =>
+            Gcan ε (BHW.reducedDiffMapReal (m + 1) d x) * f x) volume := by
+    simpa [Gcan, f, l] using
+      bvt_F_reduced_canonical_integrable_eventually
+        (d := d) OS lgc m f
+  have htransport :
+      (fun ε : ℝ =>
+        (∫ η : NPointDomain d m,
+          canonicalAfterReducedSwapBranch (d := d) OS lgc m i j ε η *
+            ψ η) -
+        ∫ η : NPointDomain d m,
+          canonicalReducedBranch (d := d) OS lgc m ε η * ψ η)
+        =ᶠ[l]
+      (fun ε : ℝ =>
+        (∫ x : NPointDomain d (m + 1),
+          Gperm ε (BHW.reducedDiffMapReal (m + 1) d x) * f x) -
+        ∫ x : NPointDomain d (m + 1),
+          Gcan ε (BHW.reducedDiffMapReal (m + 1) d x) * f x) := by
+    filter_upwards [hperm_int, hcan_int] with ε hperm hcan
+    have hfirst_lift :
+        (∫ x : NPointDomain d (m + 1),
+          Gperm ε (BHW.reducedDiffMapReal (m + 1) d x) * f x) =
+        ∫ η : NPointDomain d m, Gperm ε η * ψ η := by
+      simpa [f] using
+        integral_reducedTestLift_eq_reduced
+          (d := d) m χ0 ψ (Gperm ε) hperm
+    have hsecond_lift :
+        (∫ x : NPointDomain d (m + 1),
+          Gcan ε (BHW.reducedDiffMapReal (m + 1) d x) * f x) =
+        ∫ η : NPointDomain d m, Gcan ε η * ψ η := by
+      simpa [f] using
+        integral_reducedTestLift_eq_reduced
+          (d := d) m χ0 ψ (Gcan ε) hcan
+    have hfirst_branch :
+        (∫ η : NPointDomain d m, Gperm ε η * ψ η) =
+        ∫ η : NPointDomain d m,
+          canonicalAfterReducedSwapBranch (d := d) OS lgc m i j ε η *
+            ψ η := by
+      refine MeasureTheory.integral_congr_ae ?_
+      filter_upwards with η
+      rw [← adjacentReducedPermutedBranch_eq_canonicalAfterReducedSwapBranch
+        (d := d) OS lgc m i j ε η]
+      rfl
+    have hsecond_branch :
+        (∫ η : NPointDomain d m, Gcan ε η * ψ η) =
+        ∫ η : NPointDomain d m,
+          canonicalReducedBranch (d := d) OS lgc m ε η * ψ η := by
+      rfl
+    rw [hfirst_lift, hsecond_lift, hfirst_branch, hsecond_branch]
+  exact Filter.Tendsto.congr' htransport.symm habs
+
+/-- Collar-local reduced-normal EOW branch data supplies the local reduced
+boundary-CLM invariant.
+
+This specializes the pointwise sign-flip handoff to the packaged local EOW
+data produced by the reduced-normal OS45 bridge. -/
+theorem reducedLocalAdjacentBoundaryCLMInvariant_of_local_normalCanonicalRayEOWBranchDataOn
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (χ : BHW.NormalizedBasepointCutoff d)
+    (hbranchData :
+      ∀ (m : ℕ) (i : Fin (m + 1)) (hi : i.val + 1 < m + 1)
+        (φ : SchwartzNPoint d m),
+        HasCompactSupport (φ : NPointDomain d m → ℂ) →
+        tsupport (φ : NPointDomain d m → ℂ) ⊆
+          reducedSpacelikeSwapEdge (d := d) m i ⟨i.val + 1, hi⟩ →
+        ∀ ξ ∈ tsupport (φ : NPointDomain d m → ℂ),
+          ∃ V : Set (NPointDomain d m),
+            IsOpen V ∧ ξ ∈ V ∧
+            ∀ ψ : SchwartzNPoint d m,
+              HasCompactSupport (ψ : NPointDomain d m → ℂ) →
+              tsupport (ψ : NPointDomain d m → ℂ) ⊆ V →
+              ∀ η, ψ η ≠ 0 →
+                Nonempty
+                  (AdjacentNormal.ReducedNormalCanonicalRayEOWBranchDataOn
+                    (d := d) OS lgc i hi
+                    (AdjacentNormal.reducedCoord
+                      (d := d) i ⟨i.val + 1, hi⟩ η))) :
+    ReducedLocalAdjacentBoundaryCLMInvariant (d := d) OS lgc χ := by
+  refine
+    reducedLocalAdjacentBoundaryCLMInvariant_of_local_normalSignFlip_pointwise
+      (d := d) OS lgc χ ?_
+  intro m i hi φ hφ_compact hφ_tsupport ξ hξ
+  rcases hbranchData m i hi φ hφ_compact hφ_tsupport ξ hξ with
+    ⟨V, hV_open, hξV, hVdata⟩
+  refine ⟨V, hV_open, hξV, ?_⟩
+  intro ψ hψ_compact hψ_tsupport η hη
+  rcases hVdata ψ hψ_compact hψ_tsupport η hη with ⟨Dη⟩
+  simpa using
+    AdjacentNormal.ReducedNormalCanonicalRayEOWBranchDataOn.signFlip_pointwise
+      (d := d) OS lgc i hi
+      (AdjacentNormal.reducedCoord (d := d) i ⟨i.val + 1, hi⟩ η) Dη
 
 /-- The local reduced CLM invariant supplies the local adjacent-boundary CLM
 packet used by the closed-support reduced Ruelle handoff. -/
