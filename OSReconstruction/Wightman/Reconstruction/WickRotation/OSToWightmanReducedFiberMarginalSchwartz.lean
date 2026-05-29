@@ -1600,6 +1600,64 @@ theorem reducedCanonicalAdjacentSwapBoundaryInvariantSchwartzClosedSupport_of_lo
   rw [integral_canonicalAfterReducedSwapBranch_adjacent_eq_canonicalReducedBranch_comp
     (d := d) OS lgc m i hi ε (φ : NPointDomain d m → ℂ)]
 
+/-- Local distributional branch-difference packets imply the closed-support
+reduced canonical adjacent-swap boundary invariant.
+
+This is the closed-support partition-of-unity handoff in the form produced by
+the OS-I `(4.14)` source-side argument: on each reduced spacelike collar, the
+two boundary approach integrals only have to have vanishing difference. -/
+theorem reducedCanonicalAdjacentSwapBoundaryInvariantSchwartzClosedSupport_of_local_branchDifference
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (hlocal :
+      ∀ (m : ℕ) (i : Fin (m + 1)) (hi : i.val + 1 < m + 1)
+        (φ : SchwartzNPoint d m),
+        HasCompactSupport (φ : NPointDomain d m → ℂ) →
+        tsupport (φ : NPointDomain d m → ℂ) ⊆
+          reducedSpacelikeSwapEdge (d := d) m i ⟨i.val + 1, hi⟩ →
+        ∀ ξ ∈ tsupport (φ : NPointDomain d m → ℂ),
+          ∃ V : Set (NPointDomain d m),
+            IsOpen V ∧ ξ ∈ V ∧
+            ∀ ψ : SchwartzNPoint d m,
+              HasCompactSupport (ψ : NPointDomain d m → ℂ) →
+              tsupport (ψ : NPointDomain d m → ℂ) ⊆ V →
+              Filter.Tendsto
+                (fun ε : ℝ =>
+                  (∫ η : NPointDomain d m,
+                    canonicalAfterReducedSwapBranch
+                        (d := d) OS lgc m i ⟨i.val + 1, hi⟩ ε η *
+                      ψ η) -
+                  ∫ η : NPointDomain d m,
+                    canonicalReducedBranch (d := d) OS lgc m ε η *
+                      ψ η)
+                (nhdsWithin 0 (Set.Ioi 0))
+                (nhds 0)) :
+    ReducedCanonicalAdjacentSwapBoundaryInvariantSchwartzClosedSupport
+      (d := d) OS lgc := by
+  intro m i hi φ hφ_compact hφ_tsupport
+  have hbranch :
+      Filter.Tendsto
+        (fun ε : ℝ =>
+          (∫ η : NPointDomain d m,
+            canonicalAfterReducedSwapBranch
+                (d := d) OS lgc m i ⟨i.val + 1, hi⟩ ε η *
+              φ η) -
+          ∫ η : NPointDomain d m,
+            canonicalReducedBranch (d := d) OS lgc m ε η * φ η)
+        (nhdsWithin 0 (Set.Ioi 0))
+        (nhds 0) := by
+    refine
+      reducedAfterSwap_tendsto_of_local_tsupport_cover
+        (d := d) OS lgc m i hi φ hφ_compact ?_
+    intro ξ hξ
+    rcases hlocal m i hi φ hφ_compact hφ_tsupport ξ hξ with
+      ⟨V, hV_open, hξV, hVdiff⟩
+    exact ⟨V, hV_open, hξV, hVdiff⟩
+  refine Filter.Tendsto.congr' ?_ hbranch
+  filter_upwards with ε
+  rw [integral_canonicalAfterReducedSwapBranch_adjacent_eq_canonicalReducedBranch_comp
+    (d := d) OS lgc m i hi ε (φ : NPointDomain d m → ℂ)]
+
 /-- Pointwise local same-boundary packets imply the closed-support reduced
 canonical adjacent-swap boundary invariant.
 
@@ -1709,6 +1767,184 @@ theorem reducedCanonicalAdjacentSwapBoundaryInvariantSchwartzClosedSupport_of_lo
   exact
     canonicalReducedBranch_tendsto_bvt_reducedWightmanCLM
       (d := d) OS lgc χ m ψ
+
+/-- Local reduced boundary-CLM invariance, in the form supplied by the
+mixed-tube/Jost/Ruelle boundary-value theorem.
+
+The statement is deliberately one level below theorem-2 locality: it only says
+that the descended reduced Wightman CLM is invariant under the induced adjacent
+real transposition on small collars of the closed reduced spacelike support. -/
+def ReducedLocalAdjacentBoundaryCLMInvariant
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (χ : BHW.NormalizedBasepointCutoff d) : Prop :=
+  ∀ (m : ℕ) (i : Fin (m + 1)) (hi : i.val + 1 < m + 1)
+    (φ : SchwartzNPoint d m),
+    HasCompactSupport (φ : NPointDomain d m → ℂ) →
+    tsupport (φ : NPointDomain d m → ℂ) ⊆
+      reducedSpacelikeSwapEdge (d := d) m i ⟨i.val + 1, hi⟩ →
+    ∀ ξ ∈ tsupport (φ : NPointDomain d m → ℂ),
+      ∃ V : Set (NPointDomain d m),
+        IsOpen V ∧ ξ ∈ V ∧
+        ∀ ψ : SchwartzNPoint d m,
+          HasCompactSupport (ψ : NPointDomain d m → ℂ) →
+          tsupport (ψ : NPointDomain d m → ℂ) ⊆ V →
+          bvt_reducedWightmanCLM (d := d) OS lgc χ m
+              (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
+                (realPermOnReducedDiffCLE (d := d) m
+                  (Equiv.swap i ⟨i.val + 1, hi⟩)) ψ) =
+            bvt_reducedWightmanCLM (d := d) OS lgc χ m ψ
+
+/-- The local distributional branch-difference theorem is exactly strong enough
+to supply the monograph-facing local reduced boundary-CLM invariant.
+
+This is the local endpoint-uniqueness step: the adjacent-after-swap branch has
+boundary value `bvt_reducedWightmanCLM` after the induced adjacent real
+permutation, the canonical branch has boundary value
+`bvt_reducedWightmanCLM`, and the local branch-difference limit forces those
+two CLM values to agree on every support collar. -/
+theorem reducedLocalAdjacentBoundaryCLMInvariant_of_local_branchDifference
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (χ : BHW.NormalizedBasepointCutoff d)
+    (hlocal :
+      ∀ (m : ℕ) (i : Fin (m + 1)) (hi : i.val + 1 < m + 1)
+        (φ : SchwartzNPoint d m),
+        HasCompactSupport (φ : NPointDomain d m → ℂ) →
+        tsupport (φ : NPointDomain d m → ℂ) ⊆
+          reducedSpacelikeSwapEdge (d := d) m i ⟨i.val + 1, hi⟩ →
+        ∀ ξ ∈ tsupport (φ : NPointDomain d m → ℂ),
+          ∃ V : Set (NPointDomain d m),
+            IsOpen V ∧ ξ ∈ V ∧
+            ∀ ψ : SchwartzNPoint d m,
+              HasCompactSupport (ψ : NPointDomain d m → ℂ) →
+              tsupport (ψ : NPointDomain d m → ℂ) ⊆ V →
+              Filter.Tendsto
+                (fun ε : ℝ =>
+                  (∫ η : NPointDomain d m,
+                    canonicalAfterReducedSwapBranch
+                        (d := d) OS lgc m i ⟨i.val + 1, hi⟩ ε η *
+                      ψ η) -
+                  ∫ η : NPointDomain d m,
+                    canonicalReducedBranch (d := d) OS lgc m ε η *
+                      ψ η)
+                (nhdsWithin 0 (Set.Ioi 0))
+                (nhds 0)) :
+    ReducedLocalAdjacentBoundaryCLMInvariant (d := d) OS lgc χ := by
+  intro m i hi φ hφ_compact hφ_tsupport ξ hξ
+  rcases hlocal m i hi φ hφ_compact hφ_tsupport ξ hξ with
+    ⟨V, hV_open, hξV, hVdiff⟩
+  refine ⟨V, hV_open, hξV, ?_⟩
+  intro ψ hψ_compact hψ_tsupport
+  let j : Fin (m + 1) := ⟨i.val + 1, hi⟩
+  let ψτ : SchwartzNPoint d m :=
+    SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
+      (realPermOnReducedDiffCLE (d := d) m (Equiv.swap i j)) ψ
+  have hafter :
+      Tendsto
+        (fun ε : ℝ =>
+          ∫ η : NPointDomain d m,
+            canonicalAfterReducedSwapBranch (d := d) OS lgc m i j ε η *
+              ψ η)
+        (nhdsWithin 0 (Set.Ioi 0))
+        (nhds (bvt_reducedWightmanCLM (d := d) OS lgc χ m ψτ)) := by
+    simpa [j, ψτ] using
+      canonicalAfterReducedSwapBranch_tendsto_bvt_reducedWightmanCLM_comp
+        (d := d) OS lgc χ m i hi ψ
+  have hcanon :
+      Tendsto
+        (fun ε : ℝ =>
+          ∫ η : NPointDomain d m,
+            canonicalReducedBranch (d := d) OS lgc m ε η * ψ η)
+        (nhdsWithin 0 (Set.Ioi 0))
+        (nhds (bvt_reducedWightmanCLM (d := d) OS lgc χ m ψ)) :=
+    canonicalReducedBranch_tendsto_bvt_reducedWightmanCLM
+      (d := d) OS lgc χ m ψ
+  have hdiff_limit :
+      Tendsto
+        (fun ε : ℝ =>
+          (∫ η : NPointDomain d m,
+            canonicalAfterReducedSwapBranch (d := d) OS lgc m i j ε η *
+              ψ η) -
+          ∫ η : NPointDomain d m,
+            canonicalReducedBranch (d := d) OS lgc m ε η * ψ η)
+        (nhdsWithin 0 (Set.Ioi 0))
+        (nhds
+          (bvt_reducedWightmanCLM (d := d) OS lgc χ m ψτ -
+            bvt_reducedWightmanCLM (d := d) OS lgc χ m ψ)) := by
+    exact hafter.sub hcanon
+  have hlocal_limit :
+      Tendsto
+        (fun ε : ℝ =>
+          (∫ η : NPointDomain d m,
+            canonicalAfterReducedSwapBranch (d := d) OS lgc m i j ε η *
+              ψ η) -
+          ∫ η : NPointDomain d m,
+            canonicalReducedBranch (d := d) OS lgc m ε η * ψ η)
+        (nhdsWithin 0 (Set.Ioi 0))
+        (nhds 0) := by
+    simpa [j] using hVdiff ψ hψ_compact hψ_tsupport
+  have hzero :
+      bvt_reducedWightmanCLM (d := d) OS lgc χ m ψτ -
+          bvt_reducedWightmanCLM (d := d) OS lgc χ m ψ =
+        0 :=
+    tendsto_nhds_unique hdiff_limit hlocal_limit
+  simpa [ψτ, j] using sub_eq_zero.mp hzero
+
+/-- The local reduced CLM invariant supplies the local adjacent-boundary CLM
+packet used by the closed-support reduced Ruelle handoff. -/
+theorem local_adjacentBoundaryCLM_of_reducedLocalAdjacentBoundaryCLMInvariant
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (χ : BHW.NormalizedBasepointCutoff d)
+    (hlocalCLM :
+      ReducedLocalAdjacentBoundaryCLMInvariant (d := d) OS lgc χ) :
+    ∀ (m : ℕ) (i : Fin (m + 1)) (hi : i.val + 1 < m + 1)
+      (φ : SchwartzNPoint d m),
+      HasCompactSupport (φ : NPointDomain d m → ℂ) →
+      tsupport (φ : NPointDomain d m → ℂ) ⊆
+        reducedSpacelikeSwapEdge (d := d) m i ⟨i.val + 1, hi⟩ →
+      ∀ ξ ∈ tsupport (φ : NPointDomain d m → ℂ),
+        ∃ V : Set (NPointDomain d m),
+          IsOpen V ∧ ξ ∈ V ∧
+          ∀ ψ : SchwartzNPoint d m,
+            HasCompactSupport (ψ : NPointDomain d m → ℂ) →
+            tsupport (ψ : NPointDomain d m → ℂ) ⊆ V →
+            Filter.Tendsto
+              (fun ε : ℝ =>
+                ∫ η : NPointDomain d m,
+                  canonicalAfterReducedSwapBranch
+                      (d := d) OS lgc m i ⟨i.val + 1, hi⟩ ε η *
+                    ψ η)
+              (nhdsWithin 0 (Set.Ioi 0))
+              (nhds (bvt_reducedWightmanCLM
+                (d := d) OS lgc χ m ψ)) := by
+  intro m i hi φ hφ_compact hφ_tsupport ξ hξ
+  rcases hlocalCLM m i hi φ hφ_compact hφ_tsupport ξ hξ with
+    ⟨V, hV_open, hξV, hV_clm⟩
+  refine ⟨V, hV_open, hξV, ?_⟩
+  intro ψ hψ_compact hψ_tsupport
+  have hboundary :=
+    canonicalAfterReducedSwapBranch_tendsto_bvt_reducedWightmanCLM_comp
+      (d := d) OS lgc χ m i hi ψ
+  have hclm := hV_clm ψ hψ_compact hψ_tsupport
+  simpa [hclm] using hboundary
+
+/-- The monograph-facing local reduced CLM invariant is sufficient for the
+closed-support reduced canonical adjacent-swap invariant. -/
+theorem reducedCanonicalAdjacentSwapBoundaryInvariantSchwartzClosedSupport_of_local_reducedBoundaryCLMInvariant
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (χ : BHW.NormalizedBasepointCutoff d)
+    (hlocalCLM :
+      ReducedLocalAdjacentBoundaryCLMInvariant (d := d) OS lgc χ) :
+    ReducedCanonicalAdjacentSwapBoundaryInvariantSchwartzClosedSupport
+      (d := d) OS lgc := by
+  exact
+    reducedCanonicalAdjacentSwapBoundaryInvariantSchwartzClosedSupport_of_local_adjacentBoundaryCLM
+      (d := d) OS lgc χ
+      (local_adjacentBoundaryCLM_of_reducedLocalAdjacentBoundaryCLMInvariant
+        (d := d) OS lgc χ hlocalCLM)
 
 /-- Closed-support reduced canonical adjacent-swap invariance gives the
 corresponding reduced boundary-CLM equality on the same closed-support tests.
@@ -2163,6 +2399,169 @@ theorem reducedCanonicalAdjacentSwapBoundaryInvariantSchwartz_of_fiberMarginal_w
     rw [hfirst, hsecond]
   exact Filter.Tendsto.congr' htransport hruelle
 
+theorem reducedCanonicalAdjacentSwapBoundaryInvariantSchwartzClosedSupport_of_fiberMarginal_withCutoff
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (χ : BHW.NormalizedBasepointCutoff d)
+    (hχ_compact :
+      HasCompactSupport (χ.toSchwartz : SpacetimeDim d → ℂ))
+    (hRuelle : AdjacentReducedRuelleFiberMarginalLimit (d := d) OS lgc) :
+    ReducedCanonicalAdjacentSwapBoundaryInvariantSchwartzClosedSupport
+      (d := d) OS lgc := by
+  intro m i hi φ hφ_compact hφ_tsupport
+  let j : Fin (m + 1) := ⟨i.val + 1, hi⟩
+  have hφ_support :
+      Function.support (φ : NPointDomain d m → ℂ) ⊆
+        reducedSpacelikeSwapEdge (d := d) m i j := by
+    intro ξ hξ
+    exact hφ_tsupport (subset_tsupport _ hξ)
+  let f : SchwartzNPoint d (m + 1) :=
+    BHW.reducedTestLift m d χ.toSchwartz φ
+  have hf_compact :
+      HasCompactSupport (f : NPointDomain d (m + 1) → ℂ) := by
+    simpa [f] using
+      reducedTestLift_hasCompactSupport
+        (d := d) χ.toSchwartz φ hχ_compact hφ_compact
+  have hf_support :
+      ∀ x, f.toFun x ≠ 0 →
+        BHW.reducedDiffMapReal (m + 1) d x ∈
+          reducedSpacelikeSwapEdge (d := d) m i j := by
+    simpa [f, j] using
+      reducedTestLift_reduced_support_subset
+        (d := d) i hi χ.toSchwartz φ hφ_support
+  have hruelle :
+      Filter.Tendsto
+        (fun ε : ℝ =>
+          (∫ ξ : NPointDomain d m,
+              bvt_F_reduced (d := d) OS lgc m
+                (fun k μ =>
+                  (ξ k μ : ℂ) +
+                    ε *
+                      permutedCanonicalReducedDirectionC
+                        (d := d) m (Equiv.swap i j) k μ *
+                      Complex.I) *
+                reducedFiberIntegral (d := d) m
+                  (f : NPointDomain d (m + 1) → ℂ) ξ) -
+            ∫ ξ : NPointDomain d m,
+              bvt_F_reduced (d := d) OS lgc m
+                (fun k μ =>
+                  (ξ k μ : ℂ) +
+                    ε * canonicalReducedDirectionC (d := d) m k μ *
+                      Complex.I) *
+                reducedFiberIntegral (d := d) m
+                  (f : NPointDomain d (m + 1) → ℂ) ξ)
+        (nhdsWithin 0 (Set.Ioi 0))
+        (nhds 0) := by
+    simpa [f, j] using hRuelle m i hi f hf_compact hf_support
+  have htransport :
+      (fun ε : ℝ =>
+          (∫ ξ : NPointDomain d m,
+              bvt_F_reduced (d := d) OS lgc m
+                (fun k μ =>
+                  (ξ k μ : ℂ) +
+                    ε *
+                      permutedCanonicalReducedDirectionC
+                        (d := d) m (Equiv.swap i j) k μ *
+                      Complex.I) *
+                reducedFiberIntegral (d := d) m
+                  (f : NPointDomain d (m + 1) → ℂ) ξ) -
+            ∫ ξ : NPointDomain d m,
+              bvt_F_reduced (d := d) OS lgc m
+                (fun k μ =>
+                  (ξ k μ : ℂ) +
+                    ε * canonicalReducedDirectionC (d := d) m k μ *
+                      Complex.I) *
+                reducedFiberIntegral (d := d) m
+                  (f : NPointDomain d (m + 1) → ℂ) ξ)
+        =ᶠ[nhdsWithin 0 (Set.Ioi 0)]
+      (fun ε : ℝ =>
+        (∫ ξ : NPointDomain d m,
+          canonicalReducedBranch (d := d) OS lgc m ε ξ *
+            (φ : NPointDomain d m → ℂ)
+              (realPermOnReducedDiff (d := d) m (Equiv.swap i j) ξ)) -
+        ∫ ξ : NPointDomain d m,
+          canonicalReducedBranch (d := d) OS lgc m ε ξ * φ ξ) := by
+    filter_upwards with ε
+    have hdiff :=
+      adjacentReducedFiberDifference_adjacent_eq_canonicalReducedBranch_comp_sub
+        (d := d) OS lgc m i hi f ε
+    have hmargin :
+        reducedFiberMarginal (d := d) m f =
+          (φ : NPointDomain d m → ℂ) := by
+      simpa [f] using
+        reducedFiberMarginal_reducedTestLift_eq
+          (d := d) m χ φ
+    have hfirst_raw :
+        (∫ ξ : NPointDomain d m,
+            bvt_F_reduced (d := d) OS lgc m
+              (fun k μ =>
+                (ξ k μ : ℂ) +
+                  ε *
+                    permutedCanonicalReducedDirectionC
+                      (d := d) m (Equiv.swap i j) k μ *
+                    Complex.I) *
+              reducedFiberIntegral (d := d) m
+                (f : NPointDomain d (m + 1) → ℂ) ξ) =
+          ∫ ξ : NPointDomain d m,
+            canonicalReducedBranch (d := d) OS lgc m ε ξ *
+              reducedFiberIntegral (d := d) m
+                (f : NPointDomain d (m + 1) → ℂ)
+                (realPermOnReducedDiff (d := d) m
+                  (Equiv.swap i j) ξ) := by
+      simpa [adjacentReducedFiberDifference, reducedFiberBranchDifference,
+        adjacentReducedPermutedBranch, canonicalReducedBranch,
+        reducedFiberMarginal, j]
+        using hdiff
+    have hfirst_rhs :
+        (∫ ξ : NPointDomain d m,
+            canonicalReducedBranch (d := d) OS lgc m ε ξ *
+              reducedFiberIntegral (d := d) m
+                (f : NPointDomain d (m + 1) → ℂ)
+                (realPermOnReducedDiff (d := d) m
+                  (Equiv.swap i j) ξ)) =
+          ∫ ξ : NPointDomain d m,
+            canonicalReducedBranch (d := d) OS lgc m ε ξ *
+              (φ : NPointDomain d m → ℂ)
+                (realPermOnReducedDiff (d := d) m
+                  (Equiv.swap i j) ξ) := by
+      refine MeasureTheory.integral_congr_ae ?_
+      filter_upwards with ξ
+      have hpoint :
+          reducedFiberIntegral (d := d) m
+              (f : NPointDomain d (m + 1) → ℂ)
+              (realPermOnReducedDiff (d := d) m
+                (Equiv.swap i j) ξ) =
+            (φ : NPointDomain d m → ℂ)
+              (realPermOnReducedDiff (d := d) m
+                (Equiv.swap i j) ξ) := by
+        simpa [reducedFiberMarginal] using
+          congrFun hmargin
+            (realPermOnReducedDiff (d := d) m (Equiv.swap i j) ξ)
+      rw [hpoint]
+    have hfirst := hfirst_raw.trans hfirst_rhs
+    have hsecond :
+        (∫ ξ : NPointDomain d m,
+            bvt_F_reduced (d := d) OS lgc m
+              (fun k μ =>
+                (ξ k μ : ℂ) +
+                  ε * canonicalReducedDirectionC (d := d) m k μ *
+                    Complex.I) *
+              reducedFiberIntegral (d := d) m
+                (f : NPointDomain d (m + 1) → ℂ) ξ) =
+          ∫ ξ : NPointDomain d m,
+            canonicalReducedBranch (d := d) OS lgc m ε ξ * φ ξ := by
+      refine MeasureTheory.integral_congr_ae ?_
+      filter_upwards with ξ
+      have hpoint :
+          reducedFiberIntegral (d := d) m
+              (f : NPointDomain d (m + 1) → ℂ) ξ =
+            (φ : NPointDomain d m → ℂ) ξ := by
+        simpa [reducedFiberMarginal] using congrFun hmargin ξ
+      rw [hpoint]
+      rfl
+    rw [hfirst, hsecond]
+  exact Filter.Tendsto.congr' htransport hruelle
+
 theorem reducedCanonicalAdjacentSwapBoundaryInvariantSchwartz_of_fiberMarginal
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS)
@@ -2172,6 +2571,29 @@ theorem reducedCanonicalAdjacentSwapBoundaryInvariantSchwartz_of_fiberMarginal
     reducedCanonicalAdjacentSwapBoundaryInvariantSchwartz_of_fiberMarginal_withCutoff
       (d := d) OS lgc (BHW.normalizedCutoffOfBump d)
       (BHW.normalizedCutoffOfBump_hasCompactSupport d) hRuelle
+
+theorem reducedCanonicalAdjacentSwapBoundaryInvariantSchwartzClosedSupport_of_fiberMarginal
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (hRuelle : AdjacentReducedRuelleFiberMarginalLimit (d := d) OS lgc) :
+    ReducedCanonicalAdjacentSwapBoundaryInvariantSchwartzClosedSupport
+      (d := d) OS lgc := by
+  exact
+    reducedCanonicalAdjacentSwapBoundaryInvariantSchwartzClosedSupport_of_fiberMarginal_withCutoff
+      (d := d) OS lgc (BHW.normalizedCutoffOfBump d)
+      (BHW.normalizedCutoffOfBump_hasCompactSupport d) hRuelle
+
+theorem reducedCanonicalAdjacentSwapBoundaryInvariantSchwartzClosedSupport_of_distributional
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (hRuelle : AdjacentReducedRuelleDistributionalLimit (d := d) OS lgc) :
+    ReducedCanonicalAdjacentSwapBoundaryInvariantSchwartzClosedSupport
+      (d := d) OS lgc := by
+  exact
+    reducedCanonicalAdjacentSwapBoundaryInvariantSchwartzClosedSupport_of_fiberMarginal
+      (d := d) OS lgc
+      (adjacentReducedRuelleFiberMarginalLimit_of_distributional
+        (d := d) OS lgc hRuelle)
 
 /-- The book-faithful Schwartz-test reduced canonical invariant closes the
 adjacent Wightman locality consumer used by theorem 2. -/

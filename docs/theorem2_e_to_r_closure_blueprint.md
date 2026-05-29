@@ -129,6 +129,42 @@ def ReducedRuelleDistributionalLimit
       (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0)
 ```
 
+Checkpoint, 2026-05-29: the current reduced-normal OS45 producer stack is a
+genuine consumer chain, but not yet the theorem-2 producer.  The checked theorem
+`adjacentReducedRuelleDistributionalLimit_of_selectedJostData_OS45NormalBranches_support`
+still requires, at every nonzero adjacent-spacelike support point, a concrete
+Figure-2-4 patch containing the zero-center reduced-normal representative plus
+the two canonical-ray branch representation formulas.  Those formulas are not
+coordinate tautologies: after undoing the OS45 quarter-turn, the vertical
+reduced-normal ray becomes the moving `sourceSide` configuration with both real
+and imaginary side shifts.  The source-side files now provide the coordinate,
+sheet-membership, integrability, and moving-test support substrate, but they
+explicitly do not select the OS-I `(4.14)` branch/source boundary-value transfer.
+
+The monograph cross-check therefore remains decisive: the next production leaf
+must be either the mixed-tube distributional boundary theorem giving local
+reduced boundary-CLM invariance, or the actual `(4.14)` branch/source transfer
+that supplies the two OS45 normal-ray representation formulas.  Do not close the
+frontier by assuming `AdjacentReducedRuelleDistributionalLimit`,
+`ReducedCanonicalAdjacentSwapBoundaryInvariantSchwartzClosedSupport`, or a
+renamed support-local packet; those are already downstream consumers.
+
+Scratch checkpoint, 2026-05-29: the checked file
+`test/proofideas_theorem2_reduced_normal_canonical_rays.lean` now records the
+exact residuals behind the two visible normal-ray representation assumptions:
+
+```lean
+proofideas_upperCanonicalRay_branch_rep_iff_extendF_residual
+proofideas_lowerCanonicalRay_branch_rep_iff_extendF_residual
+```
+
+These theorems unfold the upper and lower OS45 flat branches to their concrete
+`extendF` values after the quarter-turn and reduced-normal coordinate map.  The
+right-hand sides are not canonical reduced shells by coordinate simplification;
+they are precisely the `(4.14)` source-side transfer targets.  Thus the next
+production edit should enter that source-side transfer or the equivalent
+mixed-tube distributional boundary theorem, not another local packet consumer.
+
 The scratch theorem
 `proofideas_bvt_W_swap_pairing_of_spacelike_from_reduced_ruelle_distributional`
 checks that this exact reduced distributional producer closes the live
@@ -2467,6 +2503,76 @@ pairings.  At that later point `LocalOverlapAtZ0.flat_plus_minus`,
 `flat_realJost_EOW_pointed_seed_of_localZeroHeight_pairingsCLM` are allowed
 again.  They are forbidden inside `hOrd_fixed_selected`,
 `hAdj_fixed_selected`, `hOrd_side_current`, and `hAdj_side_current`.
+
+## 2026-05-29 Domain Check: Wick Seed Is Not The Overlap Seed
+
+Do not try to close the BoundaryValues locality sorry by applying
+`BHW.ruelleOverlap_extendF_pair_eqOn_of_distributional_wickSection_eq_on_realOpen`
+directly to the canonical Figure-2-4 Wick seed.
+
+The checked Figure-2-4 data gives:
+
+```lean
+P.V_wick :
+  ∀ x, x ∈ P.V →
+    (fun k => wickRotatePoint (x k)) ∈
+      adjacentOS45WickSeedDomain (d := d) (n := n) i hi 1
+```
+
+but the Ruelle-overlap reducer requires:
+
+```lean
+∀ x ∈ V,
+  (fun k => wickRotatePoint (x k)) ∈
+    BHW.ruelleOverlapDomain d n P.τ
+```
+
+These are different domains.  The Wick seed is an initial two-sector seed; the
+actual overlap seed is the horizontal/common-edge point, supplied locally by
+`BHW.os45Figure24_commonEdge_mem_initialSectorOverlap`.  The OS I Section 4.5
+work is precisely the branch continuation from the Wick seed to that common
+edge and then to the reduced boundary CLM.  Treating the two memberships as
+interchangeable is the same false shortcut as claiming every adjacent
+spacelike support point is already a PET/Jost point.
+
+The next honest Lean producer remains one of:
+
+```lean
+LocalReducedAdjacentBoundaryCLMInvariant
+ReducedCanonicalAdjacentSwapBoundaryInvariantSchwartzClosedSupport
+LocalEdgePairingOS45NormalBranchPacket
+```
+
+but it must be constructed from the mixed-tube/Jost-Ruelle boundary theorem or
+from the concrete OS I `(4.12)`--`(4.14)` source-side branch data.  A theorem
+that merely assumes the Ruelle overlap `EqOn` on the common edge is downstream
+bookkeeping and should not be counted as closing the E->R critical path.
+
+## 2026-05-29 Route Decision: Local-Edge Ruelle Route Is Legacy
+
+After the branch-difference bridge
+`reducedLocalAdjacentBoundaryCLMInvariant_of_local_branchDifference`, the active
+theorem-2 route is the axiom-light reduced local branch-difference path:
+
+```lean
+local reduced branch-difference on adjacent spacelike collars
+  -> ReducedLocalAdjacentBoundaryCLMInvariant
+  -> ReducedCanonicalAdjacentSwapBoundaryInvariantSchwartzClosedSupport
+  -> bvt_W_swap_pairing_of_spacelike
+```
+
+The older Route A through
+`AdjacentReducedRuelleDistributionalLimit` from OS45/Ruelle local-edge pairing
+is legacy for closure.  The checked Route-A theorems may remain as consumers
+and coordinate diagnostics, but they should not be used as the final producer
+for the BoundaryValues locality sorry, because that route can feed the old
+`BHW.localSPrime_twoSectorBranch_of_EOW_BHW` trust boundary downstream.
+
+Use OS45/Ruelle lemmas only when they provide concrete source-side or coordinate
+content for the local branch-difference theorem itself.  Do not close theorem 2
+by invoking `LocalEdgePairingOS45NormalBranchPacket`,
+`SelectedAdjacentDistributionalJostAnchorData`, or a renamed
+`AdjacentReducedRuelleDistributionalLimit` producer.
 
 ## Archive Pointers
 
