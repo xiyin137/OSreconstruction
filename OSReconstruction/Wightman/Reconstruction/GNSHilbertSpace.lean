@@ -5470,7 +5470,7 @@ private theorem gns_cluster_preHilbert (F G : BorchersSequence d)
     Proof: approximate ψ by pre-Hilbert ⟦G⟧ within δ. By unitarity,
     |⟨Φ, U(λa)(ψ - ⟦G⟧)⟩| ≤ ‖Φ‖ · δ. The cluster property for ⟦G⟧
     handles the main term, and Cauchy–Schwarz bounds the remaining error. -/
-private theorem gns_cluster_completion (Φ : PreHilbertSpace Wfn)
+theorem gns_cluster_completion (Φ : PreHilbertSpace Wfn)
     (ψ : GNSHilbertSpace Wfn)
     (a : SpacetimeDim d) (ha0 : a 0 = 0)
     (ha_nonzero : ∃ i : Fin d, a (Fin.succ i) ≠ 0) :

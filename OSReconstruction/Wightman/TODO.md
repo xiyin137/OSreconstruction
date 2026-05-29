@@ -2,8 +2,9 @@
 
 Last updated: 2026-05-10
 
-This file tracks the current OS reconstruction blockers on `upstream/Anna`.
-It is intentionally limited to live `sorry`s, active axioms,
+This file tracks the current OS reconstruction blockers on the
+`rtoereflectionpositivity` branch after syncing with `upstream/Anna`. It is
+intentionally limited to live `sorry`s, active axioms,
 and remaining project-level TODOs.
 
 ## Current Progress
@@ -52,7 +53,7 @@ space. The full-Schwartz Euclidean surface is intentionally not claimed.
 | Temperedness and linearity on zero-diagonal tests | Complete | `constructedSchwinger_tempered_zeroDiagonal` and `constructedZeroDiagonalSchwinger_linear` supply the exported `wightman_to_os_full` continuity/linearity fields. | No direct `sorry` for this goal under the current census. |
 | Euclidean symmetry and reality | Complete modulo BHW/SCV trust surfaces | `wickRotatedBoundaryPairing_symmetric`, `bhw_euclidean_reality_ae`, and `wickRotatedBoundaryPairing_reality` are proved in `SchwingerAxioms.lean`; these proofs are not visible from `Main.lean`. | No direct `sorry` for this goal; dependencies include the existing BHW/SCV trust surfaces. |
 | Reflection positivity | Complete modulo support packages | The Section 4.3 spectral/Laplace route is proved in `RToEReflectionPositivity.lean`, with exported compatibility wrappers in `RToESchwingerAxiomsCompatibility.lean`. | No direct `sorry` for this goal. |
-| Cluster / large-distance factorization | Partial | `bhw_pointwise_cluster_forwardTube` is proved using `distributional_cluster_lifts_to_tube`, and `wickRotatedBoundaryPairing_cluster` wraps the OPTR theorem. | 1 direct `sorry`: `W_analytic_cluster_integral` in `SchwingerAxioms.lean`; full arbitrary-zero-diagonal E4 still needs the OPTR-to-general bridge and SCV/Vladimirov axioms remain deferred. |
+| Cluster / large-distance factorization | Partial | `bhw_pointwise_cluster_forwardTube` is proved using `distributional_cluster_lifts_to_tube`; `wickRotatedBoundaryPairing_cluster` and the OPTR `schwinger_E4_cluster_OPTR_case` are routed through the Ruelle/AHR analytic cluster package. | 1 direct `sorry`: the dominator-integrability step in `W_analytic_cluster_integral_via_ruelle` (`RuelleClusterBound.lean:1076`); full arbitrary-zero-diagonal E4 still needs the OPTR-to-general bridge and SCV/Vladimirov axioms remain deferred. |
 
 ### Operator / GNS lane
 
@@ -139,7 +140,7 @@ Active axioms outside SCV include:
    blocker for the E->R `k = 2` route.
 3. Finish the two `OSToWightmanBoundaryValues.lean` blockers: locality and
    cluster transfer.
-4. Discharge the R->E cluster frontier in `SchwingerAxioms.lean`.
+4. Discharge the R->E cluster frontier in `RuelleClusterBound.lean`.
 5. Resolve the two `ComplexLieGroups` permutation blockers for the remaining
    `d = 1` branch.
 6. Defer Stone/GNS/nuclear-space/vNA modular work unless it directly blocks the

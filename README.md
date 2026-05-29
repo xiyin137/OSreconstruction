@@ -20,11 +20,11 @@ The tracked production tree currently contains **12 explicit axioms** (verified 
 - `tube_boundaryValue_realizes_dualCone_distribution` in `SCV/FourierSupportCone.lean` — BV realized by dual-cone distribution
 - `bochner_tube_extension` in `SCV/BochnerTubeTheorem.lean` — global Bochner tube extension theorem
 
+**SNAG / spectral (1):**
+- `snag_theorem` in `GeneralResults/SNAGTheorem.lean` — Stone-Naimark-Ambrose-Godement: every strongly-continuous unitary representation of a locally compact abelian group has a joint projection-valued spectral measure (Reed-Simon I VIII.12 / Mackey 1957). Vetted "Standard"; see `docs/cluster_axiom_vetting.md` entry 1.
+
 **Reconstruction bridge (1):**
 - `reduced_bargmann_hall_wightman_of_input` in `Wightman/Reconstruction/WickRotation/BHWReducedExtension.lean`
-
-**SNAG / spectral theorem (1):**
-- `snag_theorem` in `GeneralResults/SNAGTheorem.lean`
 
 Per the project's axiom discipline, new production axioms encode classical background infrastructure (SNAG, Bochner tube, Schwartz-Fubini, nuclearity, Vladimirov-style SCV/FA). QFT-specific consequences (Wightman / GNS / Ruelle / cluster claims) are kept as conditional inputs or discharged via proved theorems on the proof route, not added to the axiom inventory.
 
@@ -35,11 +35,41 @@ The R→E reflection-positivity route is now proved downstream in
 `RToESchwingerAxiomsCompatibility.lean`. `SchwingerAxioms.lean` remains
 upstream of that compatibility file to avoid an import cycle.
 
-The active R→E cluster frontier is the OPTR-supported
-`W_analytic_cluster_integral` theorem in
-`Wightman/Reconstruction/WickRotation/SchwingerAxioms.lean`. Its remaining
-work is the joint cluster / dominated-convergence assembly after the
-pointwise BHW cluster and zero-diagonal integrability reductions.
+The R→E cluster route (`W_analytic_cluster_integral`,
+`wickRotatedBoundaryPairing_cluster`, `schwinger_E4_cluster_OPTR_case`
+in `Wightman/Reconstruction/WickRotation/RuelleClusterBound.lean`)
+is a **conditional theorem**: it takes an explicit
+`RuelleAnalyticClusterHypotheses Wfn n m` parameter packaging the two
+textbook Ruelle 1962 / Araki-Hepp-Ruelle 1962 inputs (uniform polynomial
+bound + pointwise factorization on PET). Both fields are conditional
+inputs supplied at call sites — neither is discharged via production
+axiom on the QFT side.
+
+The L2 and L4 reductions
+(`gns_orthogonal_spatial_cobounded_decay_of` in
+`Wightman/Spectral/Ruelle/L2_NoZeroMomentumAtom.lean` and
+`ruelle_analytic_cluster_bound_of` in
+`Wightman/Spectral/Ruelle/L4_UniformPolynomialBound.lean`) are
+**conditional reductions** taking explicit `L2SpectralData` and
+`L4SpectralData` packets. They expose the textbook proof obligations
+as named hypothesis structures rather than as production axioms.
+
+**Active sorry (2026-05-10)**: the dominator-integrability step in
+`W_analytic_cluster_integral_via_ruelle` (`RuelleClusterBound.lean:1076`).
+The `RACH.bound` shape was repaired (boundary-distance regulator added)
+after a vacuity finding; the cluster proof's existing dominator no
+longer matches the new shape and requires IBP rework (Streater-Wightman
+§3.4 / Ruelle 1962). See `docs/ruelle_bound_vacuity_concern.md`.
+
+L5 (`OSReconstruction/Wightman/Spectral/Ruelle/L5_SpectralRiemannLebesgue.lean`)
+— pure measure-theoretic Riemann-Lebesgue for finite measures with AC
+spatial marginal — is now **fully proved** (`#print axioms
+spectral_riemann_lebesgue` shows only `[propext, Classical.choice,
+Quot.sound]`, no sorryAx, no project axioms beyond Mathlib).
+
+The Path A blueprint and L2 (no zero-momentum atom) reductions are
+parked in `Proofideas/` as architectural reference, not in production.
+
 The former `vladimirov_tillmann` axiom has been **proved as a theorem** from 3 of the SCV axioms above plus ~10K lines of Paley-Wiener-Schwartz proofs. See `docs/vladimirov_tillmann_summary.md` for details.
 
 Two former axioms — `semigroupGroup_bochner` and `laplaceFourier_measure_unique`
@@ -199,8 +229,8 @@ Current blocker map:
   sorry-free; symmetry and Euclidean reality are proved in `SchwingerAxioms.lean`.
 - R -> E reflection positivity is proved downstream in
   `RToEReflectionPositivity.lean` and `RToESchwingerAxiomsCompatibility.lean`.
-- The remaining theorem-level `R -> E` blocker is the cluster integral in
-  `SchwingerAxioms.lean`.
+- The remaining theorem-level `R -> E` blocker is the Ruelle/AHR cluster
+  dominator estimate in `RuelleClusterBound.lean`.
 - `BHWTranslation.lean` is now sorry-free on the active route.
 - `ForwardTubeLorentz.lean` is now sorry-free and no longer a blocker on the
   active Wick-rotation lane.
@@ -217,8 +247,8 @@ Current blocker map:
 - `R -> E`:
   `wightman_to_os_full` is wired and the zero-diagonal temperedness/linearity,
   symmetry, reality, and reflection-positivity surfaces are proved modulo
-  BHW/SCV trust surfaces. The remaining direct blocker is the cluster integral
-  / dominated-convergence assembly in `SchwingerAxioms.lean`.
+  BHW/SCV trust surfaces. The remaining direct blocker is the Ruelle/AHR
+  cluster dominator estimate in `RuelleClusterBound.lean`.
 
 Snapshot (2026-05-10, tracked live production tree):
 
@@ -246,10 +276,11 @@ flowchart TD
   M --> RE["wightman_to_os"]
   M --> ER["os_to_wightman"]
 
-  RE --> SA["WickRotation/SchwingerAxioms (1 cluster)"]
+  RE --> SA["WickRotation/SchwingerAxioms (0)"]
   SA --> RP["RToEReflectionPositivity / Compatibility (0)"]
   SA --> ST["WickRotation/SchwingerTemperedness (0)"]
   ST --> VT["SCV/VladimirovTillmann (3 axioms)"]
+  SA --> RC["WickRotation/RuelleClusterBound (1)"]
   SA --> BT["WickRotation/BHWTranslation (0)"]
   BT --> BR["WickRotation/BHWReducedExtension (1 axiom)"]
   BR --> BE["WickRotation/BHWExtension (0)"]
@@ -284,9 +315,10 @@ flowchart TD
 | `Wightman/Reconstruction/WickRotation/BHWTranslation.lean` | 0 | Route 1 translation-invariance chain proved |
 | `Wightman/Reconstruction/WickRotation/BHWReducedExtension.lean` | 0 + 1 axiom | deferred reduced BHW bridge theorem |
 | `Wightman/Reconstruction/WickRotation/SchwingerTemperedness.lean` | 0 | zero-diagonal continuity / integrability lane now sorry-free |
-| `Wightman/Reconstruction/WickRotation/SchwingerAxioms.lean` | 1 | OPTR-supported cluster integral |
+| `Wightman/Reconstruction/WickRotation/SchwingerAxioms.lean` | 0 | R -> E symmetry, reality, and wrappers |
 | `Wightman/Reconstruction/WickRotation/RToEReflectionPositivity.lean` | 0 | Section 4.3 reflection-positivity support |
 | `Wightman/Reconstruction/WickRotation/RToESchwingerAxiomsCompatibility.lean` | 0 | exported R -> E reflection-positivity wrappers |
+| `Wightman/Reconstruction/WickRotation/RuelleClusterBound.lean` | 1 | Ruelle/AHR cluster dominator estimate |
 | `Wightman/Reconstruction/WickRotation/OSToWightmanSemigroup.lean` | 0 | OS semigroup, spectral/Laplace bridge, one-variable holomorphic infrastructure |
 | `Wightman/Reconstruction/WickRotation/OSToWightman.lean` | 3 | older continuation support; no longer the smallest root blocker |
 | `Wightman/Reconstruction/WickRotation/K2VI1/Frontier.lean` | 1 | probe-side Euclidean reproduction input for the fixed-strip VI.1 route |
