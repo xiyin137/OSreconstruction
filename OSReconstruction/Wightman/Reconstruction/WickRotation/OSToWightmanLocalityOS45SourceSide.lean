@@ -264,6 +264,41 @@ theorem os45FlatCommonChartSourceSide_affine
       flattenCLEquivReal_apply, Pi.add_apply, hμ]
     ring_nf
 
+/-- The OS45 source-side path descends to reduced difference coordinates as an
+affine side-height ray.
+
+This is the quotient-coordinate form needed for the flat-to-reduced
+distributional descent: before any analytic boundary-value argument is used,
+the genuine OS45 side-height path has a fixed reduced base point and a fixed
+reduced side direction. -/
+theorem reducedDiffMap_os45FlatCommonChartSourceSide_affine
+    (ρperm : Equiv.Perm (Fin n))
+    (sgn ε : ℝ)
+    (η : BHW.OS45FlatCommonChartReal d n)
+    (u : NPointDomain d n) :
+    BHW.reducedDiffMap n d
+        (BHW.os45FlatCommonChartSourceSide d n ρperm sgn ε η u) =
+      BHW.reducedDiffMap n d
+          (BHW.os45FlatCommonChartSourceSide d n ρperm sgn 0 η u) +
+        (ε : ℂ) •
+          BHW.reducedDiffMap n d
+            (BHW.os45FlatCommonChartSourceSideDirection
+              (d := d) (n := n) ρperm sgn η) := by
+  rw [BHW.os45FlatCommonChartSourceSide_affine]
+  change
+    BHW.reducedDiffMap n d
+        (BHW.os45FlatCommonChartSourceSide d n ρperm sgn 0 η u +
+          (ε : ℂ) •
+            BHW.os45FlatCommonChartSourceSideDirection
+              (d := d) (n := n) ρperm sgn η) =
+      BHW.reducedDiffMap n d
+          (BHW.os45FlatCommonChartSourceSide d n ρperm sgn 0 η u) +
+        (ε : ℂ) •
+          BHW.reducedDiffMap n d
+            (BHW.os45FlatCommonChartSourceSideDirection
+              (d := d) (n := n) ρperm sgn η)
+  rw [map_add, map_smul]
+
 /-- At zero side height, the genuine OS45 source-side chart lands on the
 quarter-turned Wick carrier over the selected common-edge ordering. -/
 @[simp] theorem os45FlatCommonChartSourceSide_zero
@@ -294,6 +329,77 @@ quarter-turned Wick carrier over the selected common-edge ordering. -/
       BHW.os45CommonEdgeRealPoint, BHW.os45QuarterTurnConfig,
       BHW.os45QuarterTurnCLE_symm_apply, wickRotatePoint,
       flattenCLEquivReal_apply, BHW.unflattenCfg, hdiv, hmod, hμ]
+
+/-- Zero side-height, after passing to reduced difference coordinates. -/
+theorem reducedDiffMap_os45FlatCommonChartSourceSide_zero
+    (ρperm : Equiv.Perm (Fin n))
+    (sgn : ℝ)
+    (η : BHW.OS45FlatCommonChartReal d n)
+    (u : NPointDomain d n) :
+    BHW.reducedDiffMap n d
+        (BHW.os45FlatCommonChartSourceSide d n ρperm sgn 0 η u) =
+      BHW.reducedDiffMap n d
+        (BHW.os45QuarterTurnConfig (d := d) (n := n)
+          (fun k => wickRotatePoint (u (ρperm k)))) := by
+  rw [BHW.os45FlatCommonChartSourceSide_zero]
+
+omit [NeZero d] in
+/-- For the identity common-edge chart, the flat direction induced by the
+canonical absolute forward-cone direction descends to the canonical reduced
+imaginary direction.
+
+The right hand side is deliberately written as a reduced difference of the
+absolute canonical direction, so this OS45 coordinate file does not import the
+heavier reduced-boundary modules.  Downstream, this rewrites via
+`canonicalForwardConeDirection_reducedDiff_eq_canonicalReducedDirectionC`. -/
+theorem reducedDiffMap_os45FlatCommonChartSourceSideDirection_canonical_id
+    (m : ℕ) :
+    BHW.reducedDiffMap (m + 1) d
+        (BHW.os45FlatCommonChartSourceSideDirection
+          (d := d) (n := m + 1)
+          (1 : Equiv.Perm (Fin (m + 1))) (1 : ℝ)
+          (BHW.os45CommonEdgeFlatCLE d (m + 1)
+            (1 : Equiv.Perm (Fin (m + 1)))
+            (canonicalForwardConeDirection (d := d) (m + 1)))) =
+      fun k μ =>
+        BHW.reducedDiffMap (m + 1) d
+          (fun r ν =>
+            (canonicalForwardConeDirection (d := d) (m + 1) r ν : ℂ)) k μ *
+          Complex.I := by
+  ext k μ
+  rw [BHW.reducedDiffMap_eq_successive_differences,
+    BHW.reducedDiffMap_eq_successive_differences]
+  have hmod_succ :
+      (finProdFinEquiv
+        ((⟨k.val + 1, by omega⟩ : Fin (m + 1)), μ)).modNat = μ := by
+    change
+      (finProdFinEquiv.symm
+        (finProdFinEquiv
+          ((⟨k.val + 1, by omega⟩ : Fin (m + 1)), μ))).2 = μ
+    simp
+  have hmod_curr :
+      (finProdFinEquiv
+        ((⟨k.val, by omega⟩ : Fin (m + 1)), μ)).modNat = μ := by
+    change
+      (finProdFinEquiv.symm
+        (finProdFinEquiv
+          ((⟨k.val, by omega⟩ : Fin (m + 1)), μ))).2 = μ
+    simp
+  by_cases hμ : μ = 0
+  · subst μ
+    simp [BHW.os45FlatCommonChartSourceSideDirection,
+      BHW.os45CommonEdgeFlatCLE, BHW.os45CommonEdgeRealPoint,
+      BHW.os45QuarterTurnCLE_symm_apply, BHW.unflattenCfg,
+      flattenCLEquivReal_apply, canonicalForwardConeDirection,
+      hmod_succ, hmod_curr]
+    ring_nf
+    rw [Complex.I_sq]
+    ring_nf
+  · simp [BHW.os45FlatCommonChartSourceSideDirection,
+      BHW.os45CommonEdgeFlatCLE, BHW.os45CommonEdgeRealPoint,
+      BHW.os45QuarterTurnCLE_symm_apply, BHW.unflattenCfg,
+      flattenCLEquivReal_apply, canonicalForwardConeDirection, hμ,
+      hmod_succ, hmod_curr]
 
 omit [NeZero d] in
 /-- Applying the inverse OS45 quarter-turn to the horizontal common-edge real

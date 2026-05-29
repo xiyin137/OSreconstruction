@@ -53,9 +53,6 @@ theorem section43FixedLeftOrderedPullbackCutoffZeroCLM_regularizedKernel_eq_bvtT
             (d := d) f hf κ.1 η hη))
         S_real U)
     (hUK : Metric.closedBall (0 : Fin m → ℝ) (rho / 4) ⊆ U)
-    (hUG : ∀ x ∈ Function.support
-        (osiiStep4RegularizerGSchwartz m rho hrho : (Fin m → ℝ) → ℂ),
-      Metric.closedBall x (rho / 8) ⊆ U)
     {Window : Set (Fin m → ℝ)}
     (χs : Fin m → SchwartzMap ℝ ℂ)
     (hχ_pos : ∀ i : Fin m, tsupport ((χs i) : ℝ → ℂ) ⊆ Set.Ioi (0 : ℝ))
@@ -97,7 +94,7 @@ theorem section43FixedLeftOrderedPullbackCutoffZeroCLM_regularizedKernel_eq_bvtT
       (d := d) OS lgc n m u κ.1
   refine
     section43FixedLeftOrderedPullbackCutoffZeroCLM_regularizedKernel_eq_timeCLM_integral
-      (d := d) OS f hf κ.1 η hη hrho hRep hUK hUG
+      (d := d) OS f hf κ.1 η hη hrho hRep hUK
       T χs hχ_pos hχ_compact hχ_Window hχ_one ?_
   intro gs hgsWindow
   have hη_one_source :
@@ -157,9 +154,6 @@ theorem section43FixedLeftOrderedPullbackCutoffZeroCLM_regularizedKernel_eq_bvtT
             (d := d) f hf κ.1 η hη))
         S_real U)
     (hUK : Metric.closedBall (0 : Fin m → ℝ) (rho / 4) ⊆ U)
-    (hUG : ∀ x ∈ Function.support
-        (osiiStep4RegularizerGSchwartz m rho hrho : (Fin m → ℝ) → ℂ),
-      Metric.closedBall x (rho / 8) ⊆ U)
     {Window : Set (Fin m → ℝ)}
     (χs : Fin m → SchwartzMap ℝ ℂ)
     (hχ_pos : ∀ i : Fin m, tsupport ((χs i) : ℝ → ℂ) ⊆ Set.Ioi (0 : ℝ))
@@ -213,7 +207,7 @@ theorem section43FixedLeftOrderedPullbackCutoffZeroCLM_regularizedKernel_eq_bvtT
   exact
     section43FixedLeftOrderedPullbackCutoffZeroCLM_regularizedKernel_eq_bvtTimeCLM_integral
       (d := d) OS lgc u χA0 hχA0_disj f hf κ η hη hrho
-      hRep hUK hUG χs hχ_pos hχ_compact hχ_Window hχ_one
+      hRep hUK χs hχ_pos hχ_compact hχ_Window hχ_one
       hBVT_A0 hη_one_Window hχA0_one_product
 
 /-- Monograph Vol IV Ch 2 Step 4 (lines 1099-1135): once the regularized
@@ -255,9 +249,6 @@ theorem section43FixedLeftOrderedPullbackCutoffZeroCLM_regularizedKernel_bvtTime
             (d := d) f hf κ.1 η hη))
         S_real U)
     (hUK : Metric.closedBall (0 : Fin m → ℝ) (rho / 4) ⊆ U)
-    (hUG : ∀ x ∈ Function.support
-        (osiiStep4RegularizerGSchwartz m rho hrho : (Fin m → ℝ) → ℂ),
-      Metric.closedBall x (rho / 8) ⊆ U)
     {Window : Set (Fin m → ℝ)}
     (χs : Fin m → SchwartzMap ℝ ℂ)
     (hχ_pos : ∀ i : Fin m, tsupport ((χs i) : ℝ → ℂ) ⊆ Set.Ioi (0 : ℝ))
@@ -308,7 +299,7 @@ theorem section43FixedLeftOrderedPullbackCutoffZeroCLM_regularizedKernel_bvtTime
   have hsplit :=
     section43FixedLeftOrderedPullbackCutoffZeroCLM_regularizedKernel_eq_bvtTimeCLM_integral_of_products
       (d := d) OS lgc u χA0 hχA0_disj hχA0_time f hf κ η hη hrho
-      hRep hUK hUG χs hχ_pos hχ_compact hχ_Window hχ_one
+      hRep hUK χs hχ_pos hχ_compact hχ_Window hχ_one
       hBVT_A0_products hη_one_Window hχA0_one_product
   rw [hsplit]
   exact

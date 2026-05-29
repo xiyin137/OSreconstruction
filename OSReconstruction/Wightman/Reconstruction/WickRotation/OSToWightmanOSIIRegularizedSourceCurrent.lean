@@ -308,10 +308,7 @@ theorem section43FixedLeftOrderedPullbackCutoffZeroCLM_representedRegularizedKer
           (section43FixedLeftOrderedPullbackCutoffZeroCLM
             (d := d) f hf χ η hη))
         S_real U)
-    (hUK : Metric.closedBall (0 : Fin m → ℝ) (rho / 4) ⊆ U)
-    (hUG : ∀ x ∈ Function.support
-        (osiiStep4RegularizerGSchwartz m rho hrho : (Fin m → ℝ) → ℂ),
-      Metric.closedBall x (rho / 8) ⊆ U) :
+    (hUK : Metric.closedBall (0 : Fin m → ℝ) (rho / 4) ⊆ U) :
     (∫ τ : Fin m → ℝ,
         S_real τ * osiiStep4RegularizerKSchwartz m rho hrho τ) =
       ∫ x : Fin m → ℝ,
@@ -325,6 +322,14 @@ theorem section43FixedLeftOrderedPullbackCutoffZeroCLM_representedRegularizedKer
   have hsplit :=
     section43FixedLeftOrderedPullbackCutoffZeroCLM_regularizedKernel_eq_integral
       (d := d) OS f hf χ η hη hrho
+  have hUG :
+      ∀ x ∈ Function.support
+          (osiiStep4RegularizerGSchwartz m rho hrho : (Fin m → ℝ) → ℂ),
+        Metric.closedBall x (rho / 8) ⊆ U := by
+    intro x hx
+    exact
+      (osiiStep4RegularizerGSchwartz_closedBall_subset_K_closedBall
+        m hrho hx).trans hUK
   calc
     (∫ τ : Fin m → ℝ,
         S_real τ * osiiStep4RegularizerKSchwartz m rho hrho τ)
@@ -388,9 +393,6 @@ theorem section43FixedLeftOrderedPullbackCutoffZeroCLM_regularizedKernel_eq_time
             (d := d) f hf χ η hη))
         S_real U)
     (hUK : Metric.closedBall (0 : Fin m → ℝ) (rho / 4) ⊆ U)
-    (hUG : ∀ x ∈ Function.support
-        (osiiStep4RegularizerGSchwartz m rho hrho : (Fin m → ℝ) → ℂ),
-      Metric.closedBall x (rho / 8) ⊆ U)
     (T : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ)
     {Window : Set (Fin m → ℝ)}
     (χs : Fin m → SchwartzMap ℝ ℂ)
@@ -422,7 +424,15 @@ theorem section43FixedLeftOrderedPullbackCutoffZeroCLM_regularizedKernel_eq_time
           osiiStep4RegularizerGSchwartz m rho hrho x := by
   have hsplit :=
     section43FixedLeftOrderedPullbackCutoffZeroCLM_representedRegularizedKernel_A0_split
-      (d := d) OS f hf χ η hη hrho hRep hUK hUG
+      (d := d) OS f hf χ η hη hrho hRep hUK
+  have hUG :
+      ∀ x ∈ Function.support
+          (osiiStep4RegularizerGSchwartz m rho hrho : (Fin m → ℝ) → ℂ),
+        Metric.closedBall x (rho / 8) ⊆ U := by
+    intro x hx
+    exact
+      (osiiStep4RegularizerGSchwartz_closedBall_subset_K_closedBall
+        m hrho hx).trans hUK
   calc
     (∫ τ : Fin m → ℝ,
         S_real τ * osiiStep4RegularizerKSchwartz m rho hrho τ)

@@ -5,6 +5,7 @@ Authors: ModularPhysics Contributors
 -/
 import OSReconstruction.ComplexLieGroups.JostRuelleStep5
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanLocalityOS45BHWJostLocal
+import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanLocalityOS45SourceSideMoving
 
 /-!
 # Ruelle Overlap Surface for BHW Branches
@@ -50,6 +51,77 @@ theorem ruelleOverlap_subset_union
     BHW.ruelleOverlapDomain d n τ ⊆ BHW.ruelleUnionDomain d n τ := by
   intro z hz
   exact Or.inl hz.1
+
+/-- Adjacent Ruelle overlap domains are nonempty.
+
+This is the nonemptiness half of the adjacent Ruelle connectedness input used
+by the theorem-2 locality route.  The remaining geometric content is
+preconnectedness of this same overlap; once that is supplied, the next theorem
+turns it into the `IsConnected` hypothesis consumed by the local OS45/Ruelle
+branch packets. -/
+theorem ruelleOverlapDomain_adjacent_nonempty
+    {d n : ℕ} [NeZero d]
+    (i : Fin n) (hi : i.val + 1 < n) :
+    (BHW.ruelleOverlapDomain d n
+      (Equiv.swap i ⟨i.val + 1, hi⟩)).Nonempty := by
+  rcases BHW.permutedExtendedTubeSector_adjacent_overlap_nonempty
+      (d := d) (n := n) (π := 1) i hi with
+    ⟨z, hz_id, hz_swap⟩
+  refine ⟨z, ?_⟩
+  constructor
+  · simpa [BHW.permutedExtendedTubeSector] using hz_id
+  · simpa [BHW.ruelleOverlapDomain] using hz_swap
+
+/-- Adjacent Ruelle overlap connectedness reduced to preconnectedness.
+
+The explicit adjacent-overlap witness above supplies the point needed for
+`IsConnected`; future Ruelle-geometry work only has to prove that the overlap
+is preconnected. -/
+theorem ruelleOverlapDomain_adjacent_isConnected_of_isPreconnected
+    {d n : ℕ} [NeZero d]
+    (i : Fin n) (hi : i.val + 1 < n)
+    (hpre :
+      IsPreconnected
+        (BHW.ruelleOverlapDomain d n
+          (Equiv.swap i ⟨i.val + 1, hi⟩))) :
+    IsConnected
+      (BHW.ruelleOverlapDomain d n
+        (Equiv.swap i ⟨i.val + 1, hi⟩)) :=
+  ⟨BHW.ruelleOverlapDomain_adjacent_nonempty (d := d) (n := n) i hi, hpre⟩
+
+/-- Adjacent Ruelle overlap nonemptiness in the exact `permAct` shape consumed
+by the OS45/Ruelle branch-equality theorems. -/
+theorem extendedTube_permAct_adjacent_overlap_nonempty
+    {d n : ℕ} [NeZero d]
+    (i : Fin n) (hi : i.val + 1 < n) :
+    ({z : Fin n → Fin (d + 1) → ℂ |
+      z ∈ BHW.ExtendedTube d n ∧
+        BHW.permAct (d := d) (Equiv.swap i ⟨i.val + 1, hi⟩) z ∈
+          BHW.ExtendedTube d n}).Nonempty := by
+  rcases BHW.ruelleOverlapDomain_adjacent_nonempty
+      (d := d) (n := n) i hi with
+    ⟨z, hz⟩
+  refine ⟨z, ?_⟩
+  simpa [BHW.ruelleOverlapDomain, BHW.permutedExtendedTubeSector,
+    BHW.permAct] using hz
+
+/-- Consumer-shape adjacent Ruelle connectedness reduced to preconnectedness. -/
+theorem extendedTube_permAct_adjacent_overlap_isConnected_of_isPreconnected
+    {d n : ℕ} [NeZero d]
+    (i : Fin n) (hi : i.val + 1 < n)
+    (hpre :
+      IsPreconnected
+        {z : Fin n → Fin (d + 1) → ℂ |
+          z ∈ BHW.ExtendedTube d n ∧
+            BHW.permAct (d := d) (Equiv.swap i ⟨i.val + 1, hi⟩) z ∈
+              BHW.ExtendedTube d n}) :
+    IsConnected
+      {z : Fin n → Fin (d + 1) → ℂ |
+        z ∈ BHW.ExtendedTube d n ∧
+          BHW.permAct (d := d) (Equiv.swap i ⟨i.val + 1, hi⟩) z ∈
+            BHW.ExtendedTube d n} :=
+  ⟨BHW.extendedTube_permAct_adjacent_overlap_nonempty
+      (d := d) (n := n) i hi, hpre⟩
 
 theorem isOpen_ruelleOverlapDomain
     (d n : ℕ) (τ : Equiv.Perm (Fin n)) :
@@ -1471,6 +1543,452 @@ theorem os45_ruelle_commonEdge_boundary_hint_of_localEdgePairing
       exact image_eq_zero_of_notMem_tsupport
         (fun hx_ts => hxU (hρ_tsupport hx_ts))
     simp [hρ_zero]
+
+/-- Local edge pairing plus adjacent overlap connectedness identifies the two
+pulled real branches on any source window inside the Figure-2-4 patch.
+
+This is the pointwise common-edge form of
+`os45_ruelle_commonEdge_boundary_hint_of_localEdgePairing`: the local
+real-edge distributional equality first gives equality of the two `extendF`
+branches on the Ruelle overlap, and the checked OS45 common-edge coordinate
+rewrite turns that into source common-edge equality. -/
+theorem os45_sourceCommonEdge_eqOn_of_localEdgePairing
+    [NeZero d] (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {n : ℕ} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (hOverlap :
+      IsConnected
+        {z : Fin n → Fin (d + 1) → ℂ |
+          z ∈ BHW.ExtendedTube d n ∧
+            BHW.permAct (d := d) P.τ z ∈ BHW.ExtendedTube d n})
+    (Vedge : Set (NPointDomain d n))
+    (hVedge_open : IsOpen Vedge)
+    (hVedge_nonempty : Vedge.Nonempty)
+    (hVedge_ET :
+      ∀ x ∈ Vedge, BHW.realEmbed x ∈ BHW.ExtendedTube d n)
+    (hVedge_swapET :
+      ∀ x ∈ Vedge,
+        BHW.realEmbed (fun k => x (P.τ k)) ∈ BHW.ExtendedTube d n)
+    (hPairing :
+      ∀ φ : SchwartzNPoint d n,
+        HasCompactSupport (φ : NPointDomain d n → ℂ) →
+        tsupport (φ : NPointDomain d n → ℂ) ⊆ Vedge →
+        (∫ x : NPointDomain d n,
+            BHW.extendF (bvt_F OS lgc n)
+              (BHW.realEmbed (fun k => x (P.τ k))) * φ x)
+          =
+        ∫ x : NPointDomain d n,
+            BHW.extendF (bvt_F OS lgc n) (BHW.realEmbed x) * φ x)
+    {Usrc : Set (NPointDomain d n)}
+    (hUsrc_sub : Usrc ⊆ P.V) :
+    ∀ u ∈ Usrc,
+      BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+          (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+          (BHW.realEmbed
+            (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+              (1 : Equiv.Perm (Fin n)) u)) =
+        BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+          (1 : Equiv.Perm (Fin n))
+          (BHW.realEmbed
+            (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+              (1 : Equiv.Perm (Fin n)) u)) := by
+  intro u hu
+  let z : Fin n → Fin (d + 1) → ℂ :=
+    (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+      (BHW.realEmbed
+        (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+          (1 : Equiv.Perm (Fin n)) u))
+  have hz_overlap :
+      z ∈ BHW.ExtendedTube d n ∩
+        BHW.permutedExtendedTubeSector d n P.τ := by
+    simpa [z] using
+      BHW.os45Figure24_commonEdge_mem_initialSectorOverlap
+        (d := d) (n := n) (hd := hd) (P := P)
+        (subset_closure (hUsrc_sub hu))
+  have hz : z ∈ BHW.ExtendedTube d n := hz_overlap.1
+  have hτz :
+      BHW.permAct (d := d) P.τ z ∈ BHW.ExtendedTube d n := by
+    simpa [BHW.permutedExtendedTubeSector, BHW.permAct] using
+      hz_overlap.2
+  have hbranch_eq :
+      BHW.extendF (bvt_F OS lgc n)
+          (BHW.permAct (d := d) P.τ z) =
+        BHW.extendF (bvt_F OS lgc n) z := by
+    have hlocal :=
+      BHW.bvt_F_extendF_adjacent_overlap_of_localEdgePairing
+        (d := d) OS lgc n i hi
+        (by simpa [P.τ_eq] using hOverlap)
+        Vedge hVedge_open hVedge_nonempty
+        hVedge_ET
+        (by intro y hy; simpa [P.τ_eq] using hVedge_swapET y hy)
+        (by
+          intro φ hφ_compact hφ_tsupport
+          simpa [P.τ_eq] using hPairing φ hφ_compact hφ_tsupport)
+        z hz
+        (by simpa [P.τ_eq] using hτz)
+    simpa [P.τ_eq] using hlocal
+  have hAdj :
+      BHW.extendF (bvt_F OS lgc n)
+          (BHW.permAct (d := d) P.τ z) =
+        BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+          (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+          (BHW.realEmbed
+            (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+              (1 : Equiv.Perm (Fin n)) u)) := by
+    simpa [z] using
+      BHW.os45Figure24CommonEdge_permAct_extendF_eq_adjacentPulledRealBranch
+        (d := d) (n := n) hd OS lgc (P := P) u
+  have hOrd :
+      BHW.extendF (bvt_F OS lgc n) z =
+        BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+          (1 : Equiv.Perm (Fin n))
+          (BHW.realEmbed
+            (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+              (1 : Equiv.Perm (Fin n)) u)) := by
+    simp [BHW.os45PulledRealBranch, z]
+  calc
+    BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+        (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+        (BHW.realEmbed
+          (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+            (1 : Equiv.Perm (Fin n)) u))
+        = BHW.extendF (bvt_F OS lgc n)
+            (BHW.permAct (d := d) P.τ z) := hAdj.symm
+    _ = BHW.extendF (bvt_F OS lgc n) z := hbranch_eq
+    _ = BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+        (1 : Equiv.Perm (Fin n))
+        (BHW.realEmbed
+          (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+            (1 : Equiv.Perm (Fin n)) u)) := hOrd
+
+/-- Pointwise source common-edge equality gives the zero distributional
+representation of the horizontal adjacent-minus-ordinary branch difference on
+the same source window. -/
+theorem os45_sourceCommonEdge_representsZero_of_eqOn
+    [NeZero d]
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {n : ℕ} {i : Fin n} {hi : i.val + 1 < n}
+    {hd : 2 ≤ d}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    {U : Set (NPointDomain d n)}
+    (hsource :
+      ∀ u ∈ U,
+        BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+            (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u)) =
+          BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+            (1 : Equiv.Perm (Fin n))
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u))) :
+    SCV.RepresentsDistributionOn
+      (0 : SchwartzMap (NPointDomain d n) ℂ →L[ℂ] ℂ)
+      (fun u : NPointDomain d n =>
+        BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+            (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u)) -
+          BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+            (1 : Equiv.Perm (Fin n))
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u))) U := by
+  let Ghoriz : NPointDomain d n → ℂ := fun u =>
+    BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+        (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+        (BHW.realEmbed
+          (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+            (1 : Equiv.Perm (Fin n)) u)) -
+      BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+        (1 : Equiv.Perm (Fin n))
+        (BHW.realEmbed
+          (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+            (1 : Equiv.Perm (Fin n)) u))
+  change
+    SCV.RepresentsDistributionOn
+      (0 : SchwartzMap (NPointDomain d n) ℂ →L[ℂ] ℂ) Ghoriz U
+  have hpoint : ∀ u ∈ U, Ghoriz u = 0 := by
+    intro u hu
+    exact sub_eq_zero.mpr (hsource u hu)
+  intro φ hφU
+  calc
+    (0 : SchwartzMap (NPointDomain d n) ℂ →L[ℂ] ℂ) φ
+        = ∫ u : NPointDomain d n, (0 : ℂ) * φ u := by simp
+    _ = ∫ u : NPointDomain d n, Ghoriz u * φ u := by
+        exact
+          BHW.integral_eq_of_tsupport_subset_of_pointwise_on
+            (d := d) (n := n) U (fun _ => 0) Ghoriz φ hφU.2
+            (by
+              intro u hu
+              exact (hpoint u hu).symm)
+
+/-- Local edge pairing supplies the zero source common-edge representation on
+any source window contained in the Figure-2-4 patch. -/
+theorem os45_sourceCommonEdge_representsZero_of_localEdgePairing
+    [NeZero d] (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {n : ℕ} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (hOverlap :
+      IsConnected
+        {z : Fin n → Fin (d + 1) → ℂ |
+          z ∈ BHW.ExtendedTube d n ∧
+            BHW.permAct (d := d) P.τ z ∈ BHW.ExtendedTube d n})
+    (Vedge : Set (NPointDomain d n))
+    (hVedge_open : IsOpen Vedge)
+    (hVedge_nonempty : Vedge.Nonempty)
+    (hVedge_ET :
+      ∀ x ∈ Vedge, BHW.realEmbed x ∈ BHW.ExtendedTube d n)
+    (hVedge_swapET :
+      ∀ x ∈ Vedge,
+        BHW.realEmbed (fun k => x (P.τ k)) ∈ BHW.ExtendedTube d n)
+    (hPairing :
+      ∀ φ : SchwartzNPoint d n,
+        HasCompactSupport (φ : NPointDomain d n → ℂ) →
+        tsupport (φ : NPointDomain d n → ℂ) ⊆ Vedge →
+        (∫ x : NPointDomain d n,
+            BHW.extendF (bvt_F OS lgc n)
+              (BHW.realEmbed (fun k => x (P.τ k))) * φ x)
+          =
+        ∫ x : NPointDomain d n,
+            BHW.extendF (bvt_F OS lgc n) (BHW.realEmbed x) * φ x)
+    {Usrc : Set (NPointDomain d n)}
+    (hUsrc_sub : Usrc ⊆ P.V) :
+    SCV.RepresentsDistributionOn
+      (0 : SchwartzMap (NPointDomain d n) ℂ →L[ℂ] ℂ)
+      (fun u : NPointDomain d n =>
+        BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+            (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u)) -
+          BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+            (1 : Equiv.Perm (Fin n))
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u))) Usrc := by
+  refine
+    BHW.os45_sourceCommonEdge_representsZero_of_eqOn
+      (d := d) OS lgc ?_
+  exact
+    BHW.os45_sourceCommonEdge_eqOn_of_localEdgePairing
+      (d := d) hd OS lgc (P := P) hOverlap
+      Vedge hVedge_open hVedge_nonempty hVedge_ET hVedge_swapET
+      hPairing hUsrc_sub
+
+/-- Local adjacent edge pairing supplies the flat Figure-2-4 branch-difference
+limit.
+
+This is the OS-I `(4.14)` moving-source transfer with the common-edge equality
+no longer assumed as a separate input: the local real-edge distributional
+pairing and adjacent connected overlap first identify the two pulled real
+branches on the compact source carrier, and the checked source-side moving
+lemma turns that into the flat plus/minus branch difference. -/
+theorem OS45Figure24SourceCutoffData.tendsto_flatCommonChart_sideBranch_difference_zero_of_localEdgePairing
+    [NeZero d] (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {n : ℕ} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (D : BHW.OS45Figure24SourceCutoffData P)
+    (hOverlap :
+      IsConnected
+        {z : Fin n → Fin (d + 1) → ℂ |
+          z ∈ BHW.ExtendedTube d n ∧
+            BHW.permAct (d := d) P.τ z ∈ BHW.ExtendedTube d n})
+    (Vedge : Set (NPointDomain d n))
+    (hVedge_open : IsOpen Vedge)
+    (hVedge_nonempty : Vedge.Nonempty)
+    (hVedge_ET :
+      ∀ x ∈ Vedge, BHW.realEmbed x ∈ BHW.ExtendedTube d n)
+    (hVedge_swapET :
+      ∀ x ∈ Vedge,
+        BHW.realEmbed (fun k => x (P.τ k)) ∈ BHW.ExtendedTube d n)
+    (hPairing :
+      ∀ φ : SchwartzNPoint d n,
+        HasCompactSupport (φ : NPointDomain d n → ℂ) →
+        tsupport (φ : NPointDomain d n → ℂ) ⊆ Vedge →
+        (∫ x : NPointDomain d n,
+            BHW.extendF (bvt_F OS lgc n)
+              (BHW.realEmbed (fun k => x (P.τ k))) * φ x)
+          =
+        ∫ x : NPointDomain d n,
+            BHW.extendF (bvt_F OS lgc n) (BHW.realEmbed x) * φ x)
+    {Ωplus Ωminus : Set (Fin n → Fin (d + 1) → ℂ)}
+    (hΩplus_open : IsOpen Ωplus)
+    (hΩminus_open : IsOpen Ωminus)
+    (hFplus_cont :
+      ContinuousOn
+        (fun z : Fin n → Fin (d + 1) → ℂ =>
+          BHW.extendF (bvt_F OS lgc n) z) Ωplus)
+    (hFminus_cont :
+      ContinuousOn
+        (fun z : Fin n → Fin (d + 1) → ℂ =>
+          BHW.extendF (bvt_F OS lgc n)
+            (BHW.permAct (d := d)
+              (P.τ.symm * (1 : Equiv.Perm (Fin n))).symm z)) Ωminus)
+    {Usrc Ksrc : Set (NPointDomain d n)}
+    (hUsrc_open : IsOpen Usrc)
+    (hUsrc_sub_K : Usrc ⊆ Ksrc)
+    (hKsrc : IsCompact Ksrc)
+    (hKsrc_sub : Ksrc ⊆ P.V)
+    (η : BHW.OS45FlatCommonChartReal d n)
+    (hηC : η ∈ BHW.os45FlatCommonChartCone d n)
+    (h0_plus :
+      ∀ u ∈ Ksrc,
+        BHW.os45FlatCommonChartSourceSide d n
+          (1 : Equiv.Perm (Fin n)) (1 : ℝ) 0 η u ∈ Ωplus)
+    (h0_minus :
+      ∀ u ∈ Ksrc,
+        BHW.os45FlatCommonChartSourceSide d n
+          (1 : Equiv.Perm (Fin n)) (-1 : ℝ) 0 η u ∈ Ωminus)
+    (φ : SchwartzMap (BHW.OS45FlatCommonChartReal d n) ℂ)
+    (hφ_compact :
+      HasCompactSupport
+        (φ : BHW.OS45FlatCommonChartReal d n → ℂ))
+    (hφE :
+      tsupport (φ : BHW.OS45FlatCommonChartReal d n → ℂ) ⊆
+        BHW.os45FlatCommonChartEdgeSet d n P
+          (1 : Equiv.Perm (Fin n)))
+    (hφU :
+      tsupport (φ : BHW.OS45FlatCommonChartReal d n → ℂ) ⊆
+        BHW.os45CommonEdgeFlatCLE d n
+          (1 : Equiv.Perm (Fin n)) '' Usrc) :
+    Tendsto
+      (fun ε : ℝ =>
+        (∫ x : BHW.OS45FlatCommonChartReal d n,
+          BHW.os45FlatCommonChartBranch d n OS lgc
+            (1 : Equiv.Perm (Fin n))
+            (fun a =>
+              (x a : ℂ) +
+                ((((1 : ℝ) * ε) • η) a : ℂ) * Complex.I) *
+            φ x) -
+        ∫ x : BHW.OS45FlatCommonChartReal d n,
+          BHW.os45FlatCommonChartBranch d n OS lgc
+            (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+            (fun a =>
+              (x a : ℂ) +
+                ((((-1 : ℝ) * ε) • η) a : ℂ) * Complex.I) *
+            φ x)
+      (𝓝[Set.Ioi 0] (0 : ℝ))
+      (𝓝 0) := by
+  have hsource :
+      ∀ u ∈ Ksrc,
+        BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+            (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u)) =
+          BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+            (1 : Equiv.Perm (Fin n))
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u)) :=
+    BHW.os45_sourceCommonEdge_eqOn_of_localEdgePairing
+      (d := d) hd OS lgc (P := P) hOverlap
+      Vedge hVedge_open hVedge_nonempty hVedge_ET hVedge_swapET
+      hPairing hKsrc_sub
+  exact
+    BHW.OS45Figure24SourceCutoffData.tendsto_flatCommonChart_sideBranch_difference_zero_of_sourceCommonEdge
+      (d := d) OS lgc D
+      hΩplus_open hΩminus_open hFplus_cont hFminus_cont
+      hUsrc_open hUsrc_sub_K hKsrc η hηC h0_plus h0_minus
+      hsource φ hφ_compact hφE hφU
+
+/-- Local adjacent edge pairing gives the initial-sector equality seed with no
+extra Ruelle-neighborhood bookkeeping.
+
+The only analytic input here is the local real-edge pairing on `Vedge`; the
+source common-edge equality is produced pointwise by
+`os45_sourceCommonEdge_eqOn_of_localEdgePairing` and then fed directly into the
+checked flat common-chart EOW bridge. -/
+theorem os45_flat_seed_of_localEdgePairing_sourceCommonEdge
+    [NeZero d] (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {n : ℕ} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (hOverlap :
+      IsConnected
+        {z : Fin n → Fin (d + 1) → ℂ |
+          z ∈ BHW.ExtendedTube d n ∧
+            BHW.permAct (d := d) P.τ z ∈ BHW.ExtendedTube d n})
+    (Vedge : Set (NPointDomain d n))
+    (hVedge_open : IsOpen Vedge)
+    (hVedge_nonempty : Vedge.Nonempty)
+    (hVedge_ET :
+      ∀ x ∈ Vedge, BHW.realEmbed x ∈ BHW.ExtendedTube d n)
+    (hVedge_swapET :
+      ∀ x ∈ Vedge,
+        BHW.realEmbed (fun k => x (P.τ k)) ∈ BHW.ExtendedTube d n)
+    (hPairing :
+      ∀ φ : SchwartzNPoint d n,
+        HasCompactSupport (φ : NPointDomain d n → ℂ) →
+        tsupport (φ : NPointDomain d n → ℂ) ⊆ Vedge →
+        (∫ x : NPointDomain d n,
+            BHW.extendF (bvt_F OS lgc n)
+              (BHW.realEmbed (fun k => x (P.τ k))) * φ x)
+          =
+        ∫ x : NPointDomain d n,
+            BHW.extendF (bvt_F OS lgc n) (BHW.realEmbed x) * φ x)
+    {Usrc : Set (NPointDomain d n)}
+    (hUsrc_open : IsOpen Usrc)
+    (hUsrc_sub : Usrc ⊆ P.V)
+    (ys : Fin (BHW.os45FlatCommonChartDim d n) →
+      Fin (BHW.os45FlatCommonChartDim d n) → ℝ)
+    (hys_mem : ∀ j, ys j ∈ BHW.os45FlatCommonChartCone d n)
+    (hys_li : LinearIndependent ℝ ys)
+    (u0 : NPointDomain d n)
+    (hu0 : u0 ∈ Usrc) :
+    ∃ W : Set (Fin n → Fin (d + 1) → ℂ),
+      IsOpen W ∧
+      IsPreconnected W ∧
+      (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+        (BHW.unflattenCfg n d
+          (SCV.realEmbed
+            (BHW.os45CommonEdgeFlatCLE d n
+              (1 : Equiv.Perm (Fin n)) u0))) ∈ W ∧
+      W ⊆
+        BHW.ExtendedTube d n ∩
+          BHW.permutedExtendedTubeSector d n P.τ ∧
+      Set.EqOn
+        (BHW.extendF (bvt_F OS lgc n))
+        (fun z =>
+          BHW.extendF (bvt_F OS lgc n)
+            (BHW.permAct (d := d) P.τ z))
+        W := by
+  have hsource :
+      ∀ u ∈ Usrc,
+        BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+            (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u)) =
+          BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+            (1 : Equiv.Perm (Fin n))
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u)) :=
+    BHW.os45_sourceCommonEdge_eqOn_of_localEdgePairing
+      (d := d) hd OS lgc (P := P) hOverlap
+      Vedge hVedge_open hVedge_nonempty hVedge_ET hVedge_swapET
+      hPairing hUsrc_sub
+  exact
+    BHW.os45_BHWJost_initialSectorEqOn_open_of_flatCommonChart_sourceCommonEdge_eqOn
+      (d := d) hd OS lgc (P := P) hUsrc_open hUsrc_sub hsource
+      ys hys_mem hys_li u0 hu0
 
 /-- Local adjacent edge pairing plus adjacent overlap connectedness supplies the
 local initial-sector equality seed used by the Figure-2-4 flat common-chart

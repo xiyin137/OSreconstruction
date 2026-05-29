@@ -382,6 +382,54 @@ theorem osiiStep4RegularizerGReflectedTranslate_supportsInOpen_of_closedBall_sub
     (osiiStep4RegularizerGReflectedTranslate_tsupport_subset_closedBall
       m hrho x).trans hU⟩
 
+/-- The two `g_rho` support balls in the Step-4 split fit inside the original
+`k_rho` ball: if the outer integration center lies in the support of the
+second `g_rho`, then the support collar of the translated first `g_rho` is
+contained in the `rho/4` kernel collar. -/
+theorem osiiStep4RegularizerGSchwartz_closedBall_subset_K_closedBall
+    (m : ℕ) {rho : ℝ} (hrho : 0 < rho)
+    {x : Fin m → ℝ}
+    (hx : x ∈ Function.support
+      (osiiStep4RegularizerGSchwartz m rho hrho : (Fin m → ℝ) → ℂ)) :
+    Metric.closedBall x (rho / 8) ⊆
+      Metric.closedBall (0 : Fin m → ℝ) (rho / 4) := by
+  intro y hy
+  have hxG :
+      x ∈ Function.support (osiiStep4RegularizerG m rho hrho) := by
+    rw [Function.mem_support] at hx ⊢
+    intro hzero
+    apply hx
+    rw [osiiStep4RegularizerGSchwartz_apply, hzero]
+    norm_num
+  have hxball := osiiStep4RegularizerG_support_subset m hrho hxG
+  rw [Metric.mem_ball, dist_zero_right] at hxball
+  rw [Metric.mem_closedBall, dist_zero_right]
+  rw [Metric.mem_closedBall, dist_eq_norm] at hy
+  have hlt : ‖y‖ < rho / 4 := by
+    calc
+      ‖y‖ = ‖(y - x) + x‖ := by abel_nf
+      _ ≤ ‖y - x‖ + ‖x‖ := norm_add_le (y - x) x
+      _ < rho / 8 + rho / 8 := add_lt_add_of_le_of_lt hy hxball
+      _ = rho / 4 := by ring
+  exact le_of_lt hlt
+
+/-- A single `rho/4` source-current collar controls every translated
+`g_rho` test appearing in the OS-II Step-4 split. -/
+theorem osiiStep4RegularizerGReflectedTranslate_supportsInOpen_of_K_closedBall_subset
+    (m : ℕ) {rho : ℝ} (hrho : 0 < rho) {U : Set (Fin m → ℝ)}
+    (hU : Metric.closedBall (0 : Fin m → ℝ) (rho / 4) ⊆ U)
+    {x : Fin m → ℝ}
+    (hx : x ∈ Function.support
+      (osiiStep4RegularizerGSchwartz m rho hrho : (Fin m → ℝ) → ℂ)) :
+    SCV.SupportsInOpen
+      (osiiStep4RegularizerGReflectedTranslate m rho hrho x :
+        (Fin m → ℝ) → ℂ) U := by
+  exact
+    osiiStep4RegularizerGReflectedTranslate_supportsInOpen_of_closedBall_subset
+      m hrho x
+      ((osiiStep4RegularizerGSchwartz_closedBall_subset_K_closedBall
+        m hrho hx).trans hU)
+
 /-- The translated `g_rho` test varies continuously in the flat translation
 center after applying any continuous Schwartz functional.  This is the
 integrability input for the Step-4 `g_rho`-weighted BVT scalar. -/
@@ -413,6 +461,37 @@ theorem continuous_osiiStep4RegularizerGReflectedTranslate_apply
     simp [TE, osiiStep4RegularizerGReflectedTranslate, e]
   rw [hflat]
   exact hE.comp e.symm.continuous
+
+/-- Monograph Vol IV Ch 2 Step 4 (lines 1099-1135): for fixed regularization
+scale, the translated `g_rho` scalar family is bounded on the compact
+`g_rho` support.
+
+This is only the compactness half of the Step-4 bound.  The later OS
+linear-growth argument still has to replace this existential bound by a
+uniform polynomial estimate in `rho`. -/
+theorem exists_bound_osiiStep4RegularizerGReflectedTranslate_apply_on_support
+    (m : ℕ) {rho : ℝ} (hrho : 0 < rho)
+    (T : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ) :
+    ∃ B : ℝ, 0 ≤ B ∧
+      ∀ x ∈ Function.support
+          (osiiStep4RegularizerGSchwartz m rho hrho : (Fin m → ℝ) → ℂ),
+        ‖T (osiiStep4RegularizerGReflectedTranslate m rho hrho x)‖ ≤ B := by
+  let F : (Fin m → ℝ) → ℝ := fun x =>
+    ‖T (osiiStep4RegularizerGReflectedTranslate m rho hrho x)‖
+  have hF_cont : Continuous F :=
+    (continuous_osiiStep4RegularizerGReflectedTranslate_apply
+      m hrho T).norm
+  let K : Set (Fin m → ℝ) :=
+    tsupport (osiiStep4RegularizerGSchwartz m rho hrho :
+      (Fin m → ℝ) → ℂ)
+  have hK_compact : IsCompact K :=
+    (osiiStep4RegularizerGSchwartz_compact m hrho).isCompact
+  rcases hK_compact.bddAbove_image hF_cont.continuousOn with ⟨C, hC⟩
+  refine ⟨max C 0, le_max_right C 0, ?_⟩
+  intro x hx
+  have hxK : x ∈ K := subset_tsupport _ hx
+  have hFxC : F x ≤ C := hC ⟨x, hxK, rfl⟩
+  exact hFxC.trans (le_max_left C 0)
 
 /-- The `g_rho`-weighted translated-kernel pairing is integrable for every
 continuous Schwartz functional.  The compact support comes from the second

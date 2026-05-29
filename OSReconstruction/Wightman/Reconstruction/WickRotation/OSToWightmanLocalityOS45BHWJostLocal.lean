@@ -5820,6 +5820,291 @@ theorem os45_BHWJost_flatCommonChart_eqOn_open_of_continuousBoundaryOn
       hFplus hFminus bv hbv_cont hplus_bv hminus_bv x0 hx0
       hplus_nhds hminus_nhds
 
+/-- Transport a flat common-chart equality neighborhood back to the ambient
+initial-sector coordinates. -/
+theorem os45_BHWJost_initialSectorEqOn_open_of_flatCommonChart_eqOn_open
+    [NeZero d] (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {n : ℕ} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    {Wflat : Set (BHW.OS45FlatCommonChartSpace d n)}
+    (hWflat_open : IsOpen Wflat)
+    (hWflat_pre : IsPreconnected Wflat)
+    (x0 : BHW.OS45FlatCommonChartReal d n)
+    (hx0Wflat : SCV.realEmbed x0 ∈ Wflat)
+    (hWflat_sub :
+      Wflat ⊆
+        BHW.os45FlatCommonChartOmega d n
+          (1 : Equiv.Perm (Fin n)) ∩
+        BHW.os45FlatCommonChartOmega d n
+          (P.τ.symm * (1 : Equiv.Perm (Fin n))))
+    (hEqFlat :
+      Set.EqOn
+        (BHW.os45FlatCommonChartBranch d n OS lgc
+          (1 : Equiv.Perm (Fin n)))
+        (BHW.os45FlatCommonChartBranch d n OS lgc
+          (P.τ.symm * (1 : Equiv.Perm (Fin n))))
+        Wflat) :
+    ∃ W : Set (Fin n → Fin (d + 1) → ℂ),
+      IsOpen W ∧
+      IsPreconnected W ∧
+      (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+        (BHW.unflattenCfg n d (SCV.realEmbed x0)) ∈ W ∧
+      W ⊆
+        BHW.ExtendedTube d n ∩
+          BHW.permutedExtendedTubeSector d n P.τ ∧
+      Set.EqOn
+        (BHW.extendF (bvt_F OS lgc n))
+        (fun z =>
+          BHW.extendF (bvt_F OS lgc n)
+            (BHW.permAct (d := d) P.τ z))
+        W := by
+  classical
+  let Q : (Fin n → Fin (d + 1) → ℂ) ≃L[ℂ]
+      (Fin n → Fin (d + 1) → ℂ) :=
+    BHW.os45QuarterTurnCLE (d := d) (n := n)
+  let Φ : BHW.OS45FlatCommonChartSpace d n ≃L[ℂ]
+      (Fin n → Fin (d + 1) → ℂ) :=
+    (flattenCLEquiv n (d + 1)).symm.trans Q.symm
+  let W : Set (Fin n → Fin (d + 1) → ℂ) := Φ '' Wflat
+  have hW_open : IsOpen W := by
+    simpa [W] using Φ.toHomeomorph.isOpenMap Wflat hWflat_open
+  have hW_pre : IsPreconnected W := by
+    simpa [W] using hWflat_pre.image Φ Φ.continuous.continuousOn
+  have hΦ_unflatten :
+      ∀ w : BHW.OS45FlatCommonChartSpace d n,
+        BHW.unflattenCfg n d w = Q (Φ w) := by
+    intro w
+    symm
+    change
+      Q (Q.symm ((flattenCLEquiv n (d + 1)).symm w)) =
+        BHW.unflattenCfg n d w
+    rw [Q.apply_symm_apply]
+    ext k μ
+    simp [BHW.unflattenCfg]
+  have hseed_mem :
+      (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+        (BHW.unflattenCfg n d (SCV.realEmbed x0)) ∈ W := by
+    refine ⟨SCV.realEmbed x0, hx0Wflat, ?_⟩
+    have h := hΦ_unflatten (SCV.realEmbed x0)
+    change
+      Φ (SCV.realEmbed x0) =
+        Q.symm (BHW.unflattenCfg n d (SCV.realEmbed x0))
+    have hseed_eq :
+        Q.symm (BHW.unflattenCfg n d (SCV.realEmbed x0)) =
+          Φ (SCV.realEmbed x0) := by
+      rw [h, Q.symm_apply_apply]
+    exact hseed_eq.symm
+  have hW_sub :
+      W ⊆
+        BHW.ExtendedTube d n ∩
+          BHW.permutedExtendedTubeSector d n P.τ := by
+    rintro z ⟨w, hw, rfl⟩
+    have hdomains := hWflat_sub hw
+    have hplus := hdomains.1
+    have hminus := hdomains.2
+    have hflat := hΦ_unflatten w
+    change BHW.unflattenCfg n d w ∈
+      BHW.os45PulledRealBranchDomain (d := d) (n := n)
+        (1 : Equiv.Perm (Fin n)) at hplus
+    rw [hflat] at hplus
+    have hz_ET : Φ w ∈ BHW.ExtendedTube d n := by
+      change
+        BHW.permAct (d := d) (1 : Equiv.Perm (Fin n)).symm
+          (Q.symm (Q (Φ w))) ∈ BHW.ExtendedTube d n at hplus
+      simpa [BHW.permAct] using hplus
+    change BHW.unflattenCfg n d w ∈
+      BHW.os45PulledRealBranchDomain (d := d) (n := n)
+        (P.τ.symm * (1 : Equiv.Perm (Fin n))) at hminus
+    rw [hflat] at hminus
+    have hz_perm :
+        Φ w ∈ BHW.permutedExtendedTubeSector d n P.τ := by
+      change
+        BHW.permAct (d := d)
+          (P.τ.symm * (1 : Equiv.Perm (Fin n))).symm
+          (Q.symm (Q (Φ w))) ∈ BHW.ExtendedTube d n at hminus
+      simpa [BHW.permutedExtendedTubeSector, BHW.permAct, P.τ_eq]
+        using hminus
+    exact ⟨hz_ET, hz_perm⟩
+  have hEqOn :
+      Set.EqOn
+        (BHW.extendF (bvt_F OS lgc n))
+        (fun z =>
+          BHW.extendF (bvt_F OS lgc n)
+            (BHW.permAct (d := d) P.τ z))
+        W := by
+    rintro z ⟨w, hw, rfl⟩
+    have hflat := hΦ_unflatten w
+    have heq_flat := hEqFlat hw
+    have heq_pull :
+        BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+            (1 : Equiv.Perm (Fin n)) (Q (Φ w)) =
+          BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+            (P.τ.symm * (1 : Equiv.Perm (Fin n))) (Q (Φ w)) := by
+      simpa [BHW.os45FlatCommonChartBranch, hflat] using heq_flat
+    change
+      BHW.extendF (bvt_F OS lgc n)
+          (BHW.permAct (d := d) (1 : Equiv.Perm (Fin n)).symm
+            (Q.symm (Q (Φ w)))) =
+        BHW.extendF (bvt_F OS lgc n)
+          (BHW.permAct (d := d)
+            (P.τ.symm * (1 : Equiv.Perm (Fin n))).symm
+            (Q.symm (Q (Φ w)))) at heq_pull
+    simpa [BHW.permAct, P.τ_eq] using heq_pull
+  exact ⟨W, hW_open, hW_pre, hseed_mem, hW_sub, hEqOn⟩
+
+/-- A flat local EOW equality ball gives the ambient initial-sector equality
+seed at the same common-edge point. -/
+theorem os45_BHWJost_initialSectorEqOn_open_of_flatCommonChart_localEOWBall
+    [NeZero d] (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {n : ℕ} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (ys : Fin (BHW.os45FlatCommonChartDim d n) →
+      Fin (BHW.os45FlatCommonChartDim d n) → ℝ)
+    (hys_li : LinearIndependent ℝ ys)
+    (x0 : BHW.OS45FlatCommonChartReal d n)
+    (R0 : ℝ)
+    (hR0 : 0 < R0)
+    (hball_sub :
+      Metric.ball (0 : BHW.OS45FlatCommonChartSpace d n) R0 ⊆
+        (SCV.localEOWChart x0 ys) ⁻¹'
+          BHW.os45FlatCommonChartOmega d n
+            (1 : Equiv.Perm (Fin n)) ∩
+        (SCV.localEOWChart x0 ys) ⁻¹'
+          BHW.os45FlatCommonChartOmega d n
+            (P.τ.symm * (1 : Equiv.Perm (Fin n))))
+    (heq :
+      Set.EqOn
+        (fun w =>
+          BHW.os45FlatCommonChartBranch d n OS lgc
+            (1 : Equiv.Perm (Fin n))
+            (SCV.localEOWChart x0 ys w))
+        (fun w =>
+          BHW.os45FlatCommonChartBranch d n OS lgc
+            (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+            (SCV.localEOWChart x0 ys w))
+        (Metric.ball (0 : BHW.OS45FlatCommonChartSpace d n) R0)) :
+    ∃ W : Set (Fin n → Fin (d + 1) → ℂ),
+      IsOpen W ∧
+      IsPreconnected W ∧
+      (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+        (BHW.unflattenCfg n d (SCV.realEmbed x0)) ∈ W ∧
+      W ⊆
+        BHW.ExtendedTube d n ∩
+          BHW.permutedExtendedTubeSector d n P.τ ∧
+      Set.EqOn
+        (BHW.extendF (bvt_F OS lgc n))
+        (fun z =>
+          BHW.extendF (bvt_F OS lgc n)
+            (BHW.permAct (d := d) P.τ z))
+        W := by
+  classical
+  let A :=
+    SCV.localEOWComplexAffineEquiv x0 ys hys_li
+  let Wflat : Set (BHW.OS45FlatCommonChartSpace d n) :=
+    A '' Metric.ball (0 : BHW.OS45FlatCommonChartSpace d n) R0
+  have hWflat_open : IsOpen Wflat := by
+    simpa [Wflat, A] using
+      SCV.localEOWComplexAffineEquiv_image_open x0 ys hys_li
+        (Metric.isOpen_ball)
+  have hball_pre :
+      IsPreconnected
+        (Metric.ball (0 : BHW.OS45FlatCommonChartSpace d n) R0) :=
+    (convex_ball (0 : BHW.OS45FlatCommonChartSpace d n) R0).isPreconnected
+  have hWflat_pre : IsPreconnected Wflat := by
+    simpa [Wflat, A] using
+      hball_pre.image A A.continuous.continuousOn
+  have hx0Wflat : SCV.realEmbed x0 ∈ Wflat := by
+    refine ⟨0, Metric.mem_ball_self hR0, ?_⟩
+    simp [A, SCV.localEOWChart_zero]
+  have hWflat_sub :
+      Wflat ⊆
+        BHW.os45FlatCommonChartOmega d n
+          (1 : Equiv.Perm (Fin n)) ∩
+        BHW.os45FlatCommonChartOmega d n
+          (P.τ.symm * (1 : Equiv.Perm (Fin n))) := by
+    rintro z ⟨w, hw, rfl⟩
+    simpa [A] using hball_sub hw
+  have hEqFlat :
+      Set.EqOn
+        (BHW.os45FlatCommonChartBranch d n OS lgc
+          (1 : Equiv.Perm (Fin n)))
+        (BHW.os45FlatCommonChartBranch d n OS lgc
+          (P.τ.symm * (1 : Equiv.Perm (Fin n))))
+        Wflat := by
+    rintro z ⟨w, hw, rfl⟩
+    simpa [A] using heq hw
+  exact
+    BHW.os45_BHWJost_initialSectorEqOn_open_of_flatCommonChart_eqOn_open
+      (d := d) hd OS lgc (P := P)
+      hWflat_open hWflat_pre x0 hx0Wflat hWflat_sub hEqFlat
+
+/-- A local source representation of the zero horizontal common-edge
+difference gives the ambient initial-sector equality seed. -/
+theorem os45_BHWJost_initialSectorEqOn_open_of_flatCommonChart_sourceRepresentsOn
+    [NeZero d] (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {n : ℕ} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    {U : Set (NPointDomain d n)}
+    (hU_open : IsOpen U)
+    (hU_sub : U ⊆ P.V)
+    (hrep :
+      SCV.RepresentsDistributionOn
+        (0 : SchwartzMap (NPointDomain d n) ℂ →L[ℂ] ℂ)
+        (fun u : NPointDomain d n =>
+          BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+              (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+              (BHW.realEmbed
+                (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                  (1 : Equiv.Perm (Fin n)) u)) -
+            BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+              (1 : Equiv.Perm (Fin n))
+              (BHW.realEmbed
+                (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                  (1 : Equiv.Perm (Fin n)) u))) U)
+    (ys : Fin (BHW.os45FlatCommonChartDim d n) →
+      Fin (BHW.os45FlatCommonChartDim d n) → ℝ)
+    (hys_mem : ∀ j, ys j ∈ BHW.os45FlatCommonChartCone d n)
+    (hys_li : LinearIndependent ℝ ys)
+    (u0 : NPointDomain d n)
+    (hu0 : u0 ∈ U) :
+    ∃ W : Set (Fin n → Fin (d + 1) → ℂ),
+      IsOpen W ∧
+      IsPreconnected W ∧
+      (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+        (BHW.unflattenCfg n d
+          (SCV.realEmbed
+            (BHW.os45CommonEdgeFlatCLE d n
+              (1 : Equiv.Perm (Fin n)) u0))) ∈ W ∧
+      W ⊆
+        BHW.ExtendedTube d n ∩
+          BHW.permutedExtendedTubeSector d n P.τ ∧
+      Set.EqOn
+        (BHW.extendF (bvt_F OS lgc n))
+        (fun z =>
+          BHW.extendF (bvt_F OS lgc n)
+            (BHW.permAct (d := d) P.τ z))
+        W := by
+  classical
+  let x0 : BHW.OS45FlatCommonChartReal d n :=
+    BHW.os45CommonEdgeFlatCLE d n (1 : Equiv.Perm (Fin n)) u0
+  obtain ⟨R0, hR0, hball_sub, heq⟩ :=
+    BHW.os45_BHWJost_flatCommonChart_eqOn_localEOWBall_of_sourceRepresentsOn
+      (d := d) hd OS lgc (P := P) hU_open hU_sub hrep
+      ys hys_mem hys_li u0 hu0
+  simpa [x0] using
+    BHW.os45_BHWJost_initialSectorEqOn_open_of_flatCommonChart_localEOWBall
+      (d := d) hd OS lgc (P := P)
+      ys hys_li x0 R0 hR0 hball_sub heq
+
 /-- Local flat common-chart EOW equality, pulled back to the ambient
 ordinary/selected-adjacent initial-sector overlap.
 
