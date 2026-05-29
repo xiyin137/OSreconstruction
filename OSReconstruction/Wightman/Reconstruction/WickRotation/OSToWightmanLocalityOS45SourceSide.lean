@@ -401,6 +401,52 @@ theorem reducedDiffMap_os45FlatCommonChartSourceSideDirection_canonical_id
       flattenCLEquivReal_apply, canonicalForwardConeDirection, hμ,
       hmod_succ, hmod_curr]
 
+/-- The canonical absolute OS45 common-edge side-height is a valid flat
+forward-cone direction.
+
+This is the admissible side-height used for the OS-I Section 4.5 moving-source
+comparison.  Together with
+`reducedDiffMap_os45FlatCommonChartSourceSideDirection_canonical_id`, it records
+that the cone-valid absolute height descends to the canonical reduced imaginary
+direction. -/
+theorem os45CommonEdgeFlatCLE_canonicalForwardConeDirection_mem_cone
+    (m : ℕ) :
+    BHW.os45CommonEdgeFlatCLE d (m + 1)
+        (1 : Equiv.Perm (Fin (m + 1)))
+        (canonicalForwardConeDirection (d := d) (m + 1)) ∈
+      BHW.os45FlatCommonChartCone d (m + 1) := by
+  change BHW.unflattenCfgReal (m + 1) d
+      (BHW.os45CommonEdgeFlatCLE d (m + 1)
+        (1 : Equiv.Perm (Fin (m + 1)))
+        (canonicalForwardConeDirection (d := d) (m + 1))) ∈
+    BHW.ProductForwardConeReal d (m + 1)
+  have hflat :
+      BHW.unflattenCfgReal (m + 1) d
+          (BHW.os45CommonEdgeFlatCLE d (m + 1)
+            (1 : Equiv.Perm (Fin (m + 1)))
+            (canonicalForwardConeDirection (d := d) (m + 1))) =
+        BHW.os45CommonEdgeRealPoint (d := d) (n := m + 1)
+          (1 : Equiv.Perm (Fin (m + 1)))
+          (canonicalForwardConeDirection (d := d) (m + 1)) := by
+    ext k μ
+    simp [BHW.os45CommonEdgeFlatCLE, BHW.unflattenCfgReal,
+      flattenCLEquivReal_apply]
+  rw [hflat]
+  intro k
+  have hscale : 0 < (((k : ℕ) + 1 : ℝ) / 2) := by
+    positivity
+  have hcone :=
+    inOpenForwardCone_smul_pos
+      (BHW.safeBasepointVec_mem_forwardCone (d := d)) hscale
+  convert hcone using 1
+  ext μ
+  by_cases hμ : μ = 0
+  · subst μ
+    simp [BHW.os45CommonEdgeRealPoint, canonicalForwardConeDirection,
+      BHW.safeBasepointVec, Pi.smul_apply, smul_eq_mul]
+  · simp [BHW.os45CommonEdgeRealPoint, canonicalForwardConeDirection,
+      BHW.safeBasepointVec, Pi.smul_apply, smul_eq_mul, hμ]
+
 omit [NeZero d] in
 /-- Applying the inverse OS45 quarter-turn to the horizontal common-edge real
 point gives the zero-height Wick carrier.
