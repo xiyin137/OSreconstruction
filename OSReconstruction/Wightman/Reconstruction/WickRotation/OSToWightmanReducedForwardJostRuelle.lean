@@ -1443,6 +1443,132 @@ structure LocalEdgePairingOS45NormalAsymptoticBranchPacket
       (nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)) : Filter ℝ)
       (nhds 0)
 
+/-- Support-local OS45 edge-pairing packets feed the active reduced local CLM
+route directly.
+
+This is the theorem-2-facing Path 2 handoff: the local edge-pairing packet and
+the two asymptotic `(4.12)`--`(4.14)` source-side transfers supply the
+pointwise reduced-normal sign-flip convergence on every support collar, and the
+checked reduced local CLM consumer does the smearing.  The proof deliberately
+does not pass through `AdjacentReducedRuelleDistributionalLimit`. -/
+theorem reducedLocalAdjacentBoundaryCLMInvariant_of_localEdgePairing_OS45NormalBranches_asymptotic
+    (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (χ : BHW.NormalizedBasepointCutoff d)
+    (hOverlap :
+      ∀ (m : ℕ) (j : Fin (m + 1)) (hj : j.val + 1 < m + 1),
+        IsConnected
+          {z : Fin (m + 1) → Fin (d + 1) → ℂ |
+            z ∈ BHW.ExtendedTube d (m + 1) ∧
+              BHW.permAct (d := d)
+                (Equiv.swap j ⟨j.val + 1, hj⟩) z ∈
+                BHW.ExtendedTube d (m + 1)})
+    (hLocal :
+      ∀ (m : ℕ) (i : Fin (m + 1)) (hi : i.val + 1 < m + 1)
+        (φ : SchwartzNPoint d m),
+        HasCompactSupport (φ : NPointDomain d m → ℂ) →
+        tsupport (φ : NPointDomain d m → ℂ) ⊆
+          reducedSpacelikeSwapEdge (d := d) m i ⟨i.val + 1, hi⟩ →
+        ∀ ξ ∈ tsupport (φ : NPointDomain d m → ℂ),
+          ∃ V : Set (NPointDomain d m),
+            IsOpen V ∧ ξ ∈ V ∧
+            ∀ ψ : SchwartzNPoint d m,
+              HasCompactSupport (ψ : NPointDomain d m → ℂ) →
+              tsupport (ψ : NPointDomain d m → ℂ) ⊆ V →
+              ∀ η, ψ η ≠ 0 →
+                Nonempty
+                  (LocalEdgePairingOS45NormalAsymptoticBranchPacket
+                    (d := d) hd OS lgc hi
+                    (AdjacentNormal.reducedCoord (d := d)
+                      i ⟨i.val + 1, hi⟩ η))) :
+    ReducedLocalAdjacentBoundaryCLMInvariant (d := d) OS lgc χ := by
+  refine
+    reducedLocalAdjacentBoundaryCLMInvariant_of_local_normalSignFlip_pointwise
+      (d := d) OS lgc χ ?_
+  intro m i hi φ hφ_compact hφ_tsupport ξ hξ
+  rcases hLocal m i hi φ hφ_compact hφ_tsupport ξ hξ with
+    ⟨V, hV_open, hξV, hVlocal⟩
+  refine ⟨V, hV_open, hξV, ?_⟩
+  intro ψ hψ_compact hψ_tsupport η hη
+  let j : Fin (m + 1) := ⟨i.val + 1, hi⟩
+  let p : AdjacentNormal.ReducedSpace d m i j :=
+    AdjacentNormal.reducedCoord (d := d) i j η
+  rcases hVlocal ψ hψ_compact hψ_tsupport η hη with ⟨packet⟩
+  have hplus_transfer :
+      Filter.Tendsto
+        (fun ε : ℝ =>
+          BHW.os45FlatCommonChartBranch d (m + 1) OS lgc
+              (1 : Equiv.Perm (Fin (m + 1)))
+              (AdjacentNormal.reducedNormalToOS45CommonEdgeComplexCLM
+                (d := d) i hi
+                (AdjacentNormal.reducedNormalUpperCanonicalRay
+                  (d := d) i hi p ε)) -
+            canonicalReducedBranch (d := d) OS lgc m ε
+              (AdjacentNormal.reducedCoordInv (d := d)
+                i j (AdjacentNormal.reducedAdjacent_succ_ne i hi) p))
+        (nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)) : Filter ℝ)
+        (nhds 0) := by
+    refine Filter.Tendsto.congr' ?_ packet.hplus_source_transfer
+    filter_upwards with ε
+    have hcoord :=
+      AdjacentNormal.reducedNormalUpperCanonicalRay_branch_eq_sourceSide_moving
+        (d := d) OS lgc p ε
+    have hsub :=
+      congrArg
+        (fun z : ℂ =>
+          z -
+            canonicalReducedBranch (d := d) OS lgc m ε
+              (AdjacentNormal.reducedCoordInv (d := d)
+                i j (AdjacentNormal.reducedAdjacent_succ_ne i hi) p))
+        hcoord
+    simpa [p, j] using hsub.symm
+  have hminus_transfer :
+      Filter.Tendsto
+        (fun ε : ℝ =>
+          BHW.os45FlatCommonChartBranch d (m + 1) OS lgc
+              (packet.P.τ.symm * (1 : Equiv.Perm (Fin (m + 1))))
+              (AdjacentNormal.reducedNormalToOS45CommonEdgeComplexCLM
+                (d := d) i hi
+                (AdjacentNormal.reducedNormalLowerCanonicalRay
+                  (d := d) i hi p ε)) -
+            canonicalReducedBranch (d := d) OS lgc m ε
+              (AdjacentNormal.reducedCoordInv (d := d)
+                i j (AdjacentNormal.reducedAdjacent_succ_ne i hi)
+                (AdjacentNormal.reducedSignFlip (d := d) i j p)))
+        (nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)) : Filter ℝ)
+        (nhds 0) := by
+    refine Filter.Tendsto.congr' ?_ packet.hminus_source_transfer
+    filter_upwards with ε
+    have hcoord :=
+      AdjacentNormal.reducedNormalLowerCanonicalRay_branch_eq_sourceSide_moving
+        (d := d) OS lgc packet.P p ε
+    have hsub :=
+      congrArg
+        (fun z : ℂ =>
+          z -
+            canonicalReducedBranch (d := d) OS lgc m ε
+              (AdjacentNormal.reducedCoordInv (d := d)
+                i j (AdjacentNormal.reducedAdjacent_succ_ne i hi)
+                (AdjacentNormal.reducedSignFlip (d := d) i j p)))
+        hcoord
+    simpa [p, j] using hsub.symm
+  have hPOverlap :
+      IsConnected
+        {z : Fin (m + 1) → Fin (d + 1) → ℂ |
+          z ∈ BHW.ExtendedTube d (m + 1) ∧
+            BHW.permAct (d := d) packet.P.τ z ∈
+              BHW.ExtendedTube d (m + 1)} := by
+    have hconn := hOverlap m i hi
+    simpa [packet.P.τ_eq] using hconn
+  exact
+    AdjacentNormal.reducedNormalSignFlip_pointwise_of_localEdgePairing_asymptotic
+      (d := d) OS lgc packet.P hPOverlap
+      packet.Vedge packet.hVedge_open packet.hVedge_nonempty
+      packet.hVedge_ET packet.hVedge_swapET packet.hPairing p
+      (by simpa [p, j] using packet.hpP)
+      hplus_transfer hminus_transfer
+
 /-- Support-local OS45/Ruelle producer from concrete local edge pairing.
 
 This is the selected-data-free version of the preceding handoff.  At each
