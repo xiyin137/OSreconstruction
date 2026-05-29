@@ -10,6 +10,7 @@ import Mathlib.MeasureTheory.Integral.Pi
 import Mathlib.Topology.Algebra.Module.FiniteDimension
 import OSReconstruction.GeneralResults.DiffUnderIntegralSchwartz
 import OSReconstruction.GeneralResults.FinProductIntegral
+import OSReconstruction.SCV.SchwartzComplete
 import OSReconstruction.SCV.SchwartzPrependField
 
 /-!
@@ -47,32 +48,8 @@ noncomputable section
 
 variable {m : ℕ}
 
--- **Axiom: CLM-integral exchange for Schwartz-valued families.**
---
--- Given:
--- - T : continuous linear functional on Schwartz space
--- - g : continuous Schwartz-valued family with polynomial seminorm growth
--- - f : Schwartz test function
---
--- Conclusion: there exists a Schwartz function Φ (the Schwartz-valued integral)
--- such that Φ(ξ) = ∫ g(x)(ξ) f(x) dx pointwise, and T(Φ) = ∫ T(g(x)) f(x) dx.
---
--- The axiom constructs Φ rather than taking it as input, to avoid redundancy
--- and ensure coherence. The continuity hypothesis on g (in Schwartz topology)
--- ensures the Bochner integral is well-defined.
-axiom schwartz_clm_fubini_exchange {m : ℕ}
-    (T : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ)
-    (g : (Fin m → ℝ) → SchwartzMap (Fin m → ℝ) ℂ)
-    (f : SchwartzMap (Fin m → ℝ) ℂ)
-    -- Continuity of the Schwartz-valued family (ensures Bochner integrability)
-    (hg_cont : Continuous g)
-    -- Uniform seminorm bound (polynomial growth in x)
-    (hg_bound : ∀ (k n : ℕ), ∃ (C : ℝ) (N : ℕ), C > 0 ∧
-      ∀ (x : Fin m → ℝ),
-        SchwartzMap.seminorm ℝ k n (g x) ≤ C * (1 + ‖x‖) ^ N) :
-    ∃ (Φ : SchwartzMap (Fin m → ℝ) ℂ),
-      (∀ ξ : Fin m → ℝ, Φ ξ = ∫ x : Fin m → ℝ, g x ξ * f x) ∧
-      (T Φ = ∫ x : Fin m → ℝ, T (g x) * f x)
+-- Main CLM-integral exchange theorem is proved below after the bounded-set and
+-- exhaustion infrastructure.
 
 lemma integrable_schwartz_fubini_pointwise {m : ℕ}
     (g : (Fin m → ℝ) → SchwartzMap (Fin m → ℝ) ℂ)
@@ -342,6 +319,35 @@ lemma schwartz_seminorm_complex_eq_real {m : ℕ}
     (k n : ℕ) (ψ : SchwartzMap (Fin m → ℝ) ℂ) :
     SchwartzMap.seminorm ℂ k n ψ = SchwartzMap.seminorm ℝ k n ψ := rfl
 
+lemma schwartz_seminorm_real_complex_smul {m : ℕ}
+    (k n : ℕ) (c : ℂ) (ψ : SchwartzMap (Fin m → ℝ) ℂ) :
+    SchwartzMap.seminorm ℝ k n (c • ψ) =
+      ‖c‖ * SchwartzMap.seminorm ℝ k n ψ := by
+  rw [← schwartz_seminorm_complex_eq_real k n (c • ψ)]
+  rw [map_smul_eq_mul]
+  rw [schwartz_seminorm_complex_eq_real k n ψ]
+
+lemma continuous_finset_sup_schwartzSeminormFamily {m : ℕ}
+    (s : Finset (ℕ × ℕ)) :
+    Continuous fun ψ : SchwartzMap (Fin m → ℝ) ℂ =>
+      (s.sup (schwartzSeminormFamily ℝ (Fin m → ℝ) ℂ)) ψ := by
+  classical
+  induction s using Finset.induction_on with
+  | empty =>
+      simpa using
+        (continuous_const : Continuous fun _ : SchwartzMap (Fin m → ℝ) ℂ => (0 : ℝ))
+  | insert i s hi ih =>
+      have hi_cont :
+          Continuous fun ψ : SchwartzMap (Fin m → ℝ) ℂ =>
+            (schwartzSeminormFamily ℝ (Fin m → ℝ) ℂ i) ψ :=
+        (schwartz_withSeminorms ℝ (Fin m → ℝ) ℂ).continuous_seminorm i
+      have hmax :
+          Continuous fun ψ : SchwartzMap (Fin m → ℝ) ℂ =>
+            max ((schwartzSeminormFamily ℝ (Fin m → ℝ) ℂ i) ψ)
+              ((s.sup (schwartzSeminormFamily ℝ (Fin m → ℝ) ℂ)) ψ) :=
+        hi_cont.max ih
+      simpa [Finset.sup_insert, hi, Seminorm.sup_apply] using hmax
+
 lemma integrable_schwartz_fubini_finset_sum_seminorm_weight_complex {m : ℕ}
     (s : Finset (ℕ × ℕ))
     (g : (Fin m → ℝ) → SchwartzMap (Fin m → ℝ) ℂ)
@@ -411,6 +417,30 @@ lemma clm_weighted_kernel_norm_le_finset_sum {m : ℕ}
     _ = C * ((∑ i ∈ s, SchwartzMap.seminorm ℂ i.1 i.2 (g x)) * ‖f x‖) := by
           rw [← Finset.mul_sum]
           ring
+
+lemma clm_norm_le_combined_real_finset_sup {m : ℕ}
+    (T : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ)
+    (sT u : Finset (ℕ × ℕ)) (C : ℝ) (hC_nonneg : 0 ≤ C)
+    (hsT_sub : sT ⊆ u)
+    (hT : ∀ ψ : SchwartzMap (Fin m → ℝ) ℂ,
+      ‖T ψ‖ ≤ C * (sT.sup (schwartzSeminormFamily ℂ (Fin m → ℝ) ℂ)) ψ)
+    (ψ : SchwartzMap (Fin m → ℝ) ℂ) :
+    ‖T ψ‖ ≤ C * (u.sup (schwartzSeminormFamily ℝ (Fin m → ℝ) ℂ)) ψ := by
+  have hsup :
+      (sT.sup (schwartzSeminormFamily ℂ (Fin m → ℝ) ℂ)) ψ ≤
+        (u.sup (schwartzSeminormFamily ℝ (Fin m → ℝ) ℂ)) ψ := by
+    apply Seminorm.finset_sup_apply_le (apply_nonneg _ _)
+    intro i hi
+    obtain ⟨k, n⟩ := i
+    have hle :
+        SchwartzMap.seminorm ℝ k n ψ ≤
+          (u.sup (schwartzSeminormFamily ℝ (Fin m → ℝ) ℂ)) ψ :=
+      (Finset.le_sup
+        (f := schwartzSeminormFamily ℝ (Fin m → ℝ) ℂ)
+        (hsT_sub hi)) ψ
+    simpa [SchwartzMap.schwartzSeminormFamily_apply,
+      schwartz_seminorm_complex_eq_real] using hle
+  exact (hT ψ).trans (mul_le_mul_of_nonneg_left hsup hC_nonneg)
 
 lemma integrable_schwartz_fubini_clm_weighted_kernel {m : ℕ}
     (T : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ)
@@ -536,6 +566,747 @@ def boundedKernel {m : ℕ}
     (f : SchwartzMap (Fin m → ℝ) ℂ) :
     (Fin m → ℝ) → SchwartzMap (Fin m → ℝ) ℂ :=
   fun x => f x • g x
+
+lemma finset_sup_schwartzSeminorm_boundedKernel_le_sum {m : ℕ}
+    (s : Finset (ℕ × ℕ))
+    (g : (Fin m → ℝ) → SchwartzMap (Fin m → ℝ) ℂ)
+    (f : SchwartzMap (Fin m → ℝ) ℂ)
+    (x : Fin m → ℝ) :
+    (s.sup (schwartzSeminormFamily ℝ (Fin m → ℝ) ℂ))
+        (boundedKernel g f x) ≤
+      (∑ i ∈ s, SchwartzMap.seminorm ℝ i.1 i.2 (g x)) * ‖f x‖ := by
+  classical
+  have hsup_le :
+      (s.sup (schwartzSeminormFamily ℝ (Fin m → ℝ) ℂ))
+          (boundedKernel g f x) ≤
+        ∑ i ∈ s, SchwartzMap.seminorm ℝ i.1 i.2 (boundedKernel g f x) := by
+    calc
+      (s.sup (schwartzSeminormFamily ℝ (Fin m → ℝ) ℂ))
+          (boundedKernel g f x)
+          ≤ (∑ i ∈ s, schwartzSeminormFamily ℝ (Fin m → ℝ) ℂ i)
+              (boundedKernel g f x) :=
+            Seminorm.finset_sup_le_sum
+              (schwartzSeminormFamily ℝ (Fin m → ℝ) ℂ) s
+              (boundedKernel g f x)
+      _ = ∑ i ∈ s, (schwartzSeminormFamily ℝ (Fin m → ℝ) ℂ i)
+              (boundedKernel g f x) := by
+            let p := schwartzSeminormFamily ℝ (Fin m → ℝ) ℂ
+            let y := boundedKernel g f x
+            have hsum_apply :
+                ∀ t : Finset (ℕ × ℕ), (∑ i ∈ t, p i) y = ∑ i ∈ t, (p i) y := by
+              intro t
+              induction t using Finset.induction_on with
+              | empty =>
+                  simp
+              | insert a t ha ih =>
+                  simp [Finset.sum_insert, ha, ih]
+            exact hsum_apply s
+      _ = ∑ i ∈ s, SchwartzMap.seminorm ℝ i.1 i.2 (boundedKernel g f x) := by
+            apply Finset.sum_congr rfl
+            intro i _hi
+            cases i
+            rfl
+  have hsum_smul :
+      (∑ i ∈ s, SchwartzMap.seminorm ℝ i.1 i.2 (boundedKernel g f x)) =
+        ∑ i ∈ s, ‖f x‖ * SchwartzMap.seminorm ℝ i.1 i.2 (g x) := by
+    apply Finset.sum_congr rfl
+    intro i _hi
+    exact schwartz_seminorm_real_complex_smul i.1 i.2 (f x) (g x)
+  calc
+    (s.sup (schwartzSeminormFamily ℝ (Fin m → ℝ) ℂ))
+        (boundedKernel g f x)
+        ≤ ∑ i ∈ s, SchwartzMap.seminorm ℝ i.1 i.2 (boundedKernel g f x) := hsup_le
+    _ = ∑ i ∈ s, ‖f x‖ * SchwartzMap.seminorm ℝ i.1 i.2 (g x) := hsum_smul
+    _ = (∑ i ∈ s, SchwartzMap.seminorm ℝ i.1 i.2 (g x)) * ‖f x‖ := by
+          rw [← Finset.mul_sum]
+          ring
+
+lemma integrable_schwartz_fubini_finset_sup_boundedKernel {m : ℕ}
+    (s : Finset (ℕ × ℕ))
+    (g : (Fin m → ℝ) → SchwartzMap (Fin m → ℝ) ℂ)
+    (f : SchwartzMap (Fin m → ℝ) ℂ)
+    (hg_cont : Continuous g)
+    (hg_bound : ∀ (k n : ℕ), ∃ (C : ℝ) (N : ℕ), C > 0 ∧
+      ∀ x, SchwartzMap.seminorm ℝ k n (g x) ≤ C * (1 + ‖x‖) ^ N) :
+    Integrable fun x =>
+      (s.sup (schwartzSeminormFamily ℝ (Fin m → ℝ) ℂ))
+        (boundedKernel g f x) := by
+  refine Integrable.mono'
+    (integrable_schwartz_fubini_finset_sum_seminorm_weight
+      s g f hg_cont hg_bound)
+    ?_ ?_
+  · exact
+      (continuous_finset_sup_schwartzSeminormFamily s).comp
+        (f.continuous.smul hg_cont)
+      |>.aestronglyMeasurable
+  · exact Filter.Eventually.of_forall fun x => by
+      have hnonneg :
+          0 ≤ (s.sup (schwartzSeminormFamily ℝ (Fin m → ℝ) ℂ))
+            (boundedKernel g f x) :=
+        apply_nonneg _ _
+      simpa [Real.norm_eq_abs, abs_of_nonneg hnonneg] using
+        finset_sup_schwartzSeminorm_boundedKernel_le_sum s g f x
+
+lemma exists_finite_schwartzKernel_seminorm_cover {m : ℕ}
+    (K : Set (Fin m → ℝ))
+    (hK_bdd : Bornology.IsBounded K)
+    (g : (Fin m → ℝ) → SchwartzMap (Fin m → ℝ) ℂ)
+    (f : SchwartzMap (Fin m → ℝ) ℂ)
+    (hg_cont : Continuous g)
+    (s : Finset (ℕ × ℕ)) (η : ℝ) (hη : 0 < η) :
+    ∃ t : Finset (Fin m → ℝ),
+      K ⊆ ⋃ y ∈ t,
+        {x | (s.sup (schwartzSeminormFamily ℝ (Fin m → ℝ) ℂ))
+          (boundedKernel g f y - boundedKernel g f x) < η} := by
+  let F : (Fin m → ℝ) → SchwartzMap (Fin m → ℝ) ℂ := boundedKernel g f
+  let p : Seminorm ℝ (SchwartzMap (Fin m → ℝ) ℂ) :=
+    s.sup (schwartzSeminormFamily ℝ (Fin m → ℝ) ℂ)
+  let U : (Fin m → ℝ) → Set (Fin m → ℝ) :=
+    fun y => {x | p (F y - F x) < η}
+  have hF_cont : Continuous F := f.continuous.smul hg_cont
+  have hU_open : ∀ y, IsOpen (U y) := by
+    intro y
+    have hcont : Continuous fun x => p (F y - F x) :=
+      (continuous_finset_sup_schwartzSeminormFamily s).comp
+        (continuous_const.sub hF_cont)
+    exact isOpen_lt hcont continuous_const
+  have hcover_closure : closure K ⊆ ⋃ y, U y := by
+    intro x _hx
+    refine Set.mem_iUnion.mpr ⟨x, ?_⟩
+    simp [U, F, p, hη]
+  obtain ⟨t, ht⟩ :=
+    hK_bdd.isCompact_closure.elim_finite_subcover U hU_open hcover_closure
+  refine ⟨t, ?_⟩
+  exact (subset_closure.trans ht)
+
+lemma exists_finite_partition_schwartzKernel_seminorm_approx {m : ℕ}
+    (K : Set (Fin m → ℝ))
+    (hK_meas : MeasurableSet K)
+    (hK_bdd : Bornology.IsBounded K)
+    (g : (Fin m → ℝ) → SchwartzMap (Fin m → ℝ) ℂ)
+    (f : SchwartzMap (Fin m → ℝ) ℂ)
+    (hg_cont : Continuous g)
+    (s : Finset (ℕ × ℕ)) (η : ℝ) (hη : 0 < η) :
+    ∃ (ι : Type) (_ : Fintype ι) (A : ι → Set (Fin m → ℝ))
+      (ψ : ι → SchwartzMap (Fin m → ℝ) ℂ),
+      (∀ i, MeasurableSet (A i)) ∧
+      Set.univ.PairwiseDisjoint A ∧
+      K ⊆ ⋃ i, A i ∧
+      (∀ i, A i ⊆ K) ∧
+      (∀ i x, x ∈ A i →
+        (s.sup (schwartzSeminormFamily ℝ (Fin m → ℝ) ℂ))
+          (ψ i - boundedKernel g f x) < η) := by
+  classical
+  obtain ⟨t, ht_cover⟩ :=
+    exists_finite_schwartzKernel_seminorm_cover
+      K hK_bdd g f hg_cont s η hη
+  let center : Fin t.card → Fin m → ℝ :=
+    fun i => ((Finset.equivFin t).symm i).1
+  let F : (Fin m → ℝ) → SchwartzMap (Fin m → ℝ) ℂ := boundedKernel g f
+  let p : Seminorm ℝ (SchwartzMap (Fin m → ℝ) ℂ) :=
+    s.sup (schwartzSeminormFamily ℝ (Fin m → ℝ) ℂ)
+  let V : Fin t.card → Set (Fin m → ℝ) :=
+    fun i => {x | p (F (center i) - F x) < η}
+  let Vnat : ℕ → Set (Fin m → ℝ) :=
+    fun n => if h : n < t.card then V ⟨n, h⟩ else ∅
+  let A : Fin t.card → Set (Fin m → ℝ) :=
+    fun i => K ∩ disjointed Vnat i.1
+  let ψ : Fin t.card → SchwartzMap (Fin m → ℝ) ℂ :=
+    fun i => F (center i)
+  have hF_cont : Continuous F := f.continuous.smul hg_cont
+  have hV_open : ∀ i, IsOpen (V i) := by
+    intro i
+    have hcont : Continuous fun x => p (F (center i) - F x) :=
+      (continuous_finset_sup_schwartzSeminormFamily s).comp
+        (continuous_const.sub hF_cont)
+    exact isOpen_lt hcont continuous_const
+  have hV_meas : ∀ i, MeasurableSet (V i) :=
+    fun i => (hV_open i).measurableSet
+  have hVnat_meas : ∀ n, MeasurableSet (Vnat n) := by
+    intro n
+    by_cases hn : n < t.card
+    · simpa [Vnat, hn] using hV_meas ⟨n, hn⟩
+    · simp [Vnat, hn]
+  refine ⟨Fin t.card, inferInstance, A, ψ, ?_, ?_, ?_, ?_, ?_⟩
+  · intro i
+    exact hK_meas.inter (MeasurableSet.disjointed hVnat_meas i.1)
+  · intro i _hi j _hj hij
+    have hne : (i : ℕ) ≠ j := by
+      intro h
+      exact hij (Fin.ext h)
+    exact (disjoint_disjointed Vnat hne).mono
+      Set.inter_subset_right Set.inter_subset_right
+  · intro x hxK
+    have hxV : x ∈ ⋃ i : Fin t.card, V i := by
+      have hxcover := ht_cover hxK
+      rcases Set.mem_iUnion.mp hxcover with ⟨y, hycover⟩
+      rcases Set.mem_iUnion.mp hycover with ⟨hyt, hxU⟩
+      refine Set.mem_iUnion.mpr ⟨Finset.equivFin t ⟨y, hyt⟩, ?_⟩
+      simpa [V, F, p, center] using hxU
+    have hxVnat : x ∈ ⋃ n : ℕ, Vnat n := by
+      rcases Set.mem_iUnion.mp hxV with ⟨i, hxi⟩
+      exact Set.mem_iUnion.mpr ⟨i.1, by simpa [Vnat, i.2] using hxi⟩
+    have hxDnat : x ∈ ⋃ n : ℕ, disjointed Vnat n := by
+      simpa [iUnion_disjointed] using hxVnat
+    rcases Set.mem_iUnion.mp hxDnat with ⟨n, hxn⟩
+    have hxVn : x ∈ Vnat n := disjointed_subset Vnat n hxn
+    have hn : n < t.card := by
+      by_contra hn
+      simp [Vnat, hn] at hxVn
+    exact Set.mem_iUnion.mpr ⟨⟨n, hn⟩, ⟨hxK, hxn⟩⟩
+  · intro i x hx
+    exact hx.1
+  · intro i x hx
+    have hxV : x ∈ Vnat i.1 := disjointed_subset Vnat i.1 hx.2
+    simpa [ψ, Vnat, V, F, p, i.2] using hxV
+
+noncomputable def finitePartitionKernel {m : ℕ} {ι : Type*} [Fintype ι]
+    (A : ι → Set (Fin m → ℝ))
+    (ψ : ι → SchwartzMap (Fin m → ℝ) ℂ) :
+    (Fin m → ℝ) → SchwartzMap (Fin m → ℝ) ℂ :=
+  fun x => ∑ i, (A i).indicator (fun _ => (1 : ℂ)) x • ψ i
+
+lemma finitePartitionKernel_apply_of_mem {m : ℕ} {ι : Type*}
+    [Fintype ι] [DecidableEq ι]
+    {A : ι → Set (Fin m → ℝ)}
+    {ψ : ι → SchwartzMap (Fin m → ℝ) ℂ}
+    (hA_disj : Set.univ.PairwiseDisjoint A)
+    {i : ι} {x : Fin m → ℝ} (hx : x ∈ A i) :
+    finitePartitionKernel A ψ x = ψ i := by
+  classical
+  unfold finitePartitionKernel
+  rw [Finset.sum_eq_single i]
+  · simp [Set.indicator_of_mem hx]
+  · intro j _hj hji
+    have hdis : Disjoint (A j) (A i) :=
+      hA_disj (Set.mem_univ j) (Set.mem_univ i) hji
+    have hxj : x ∉ A j := hdis.notMem_of_mem_right hx
+    simp [Set.indicator_of_notMem hxj]
+  · intro hi
+    simp at hi
+
+lemma finitePartitionKernel_error_lt_of_mem {m : ℕ} {ι : Type*}
+    [Fintype ι] [DecidableEq ι]
+    {K : Set (Fin m → ℝ)}
+    {A : ι → Set (Fin m → ℝ)}
+    {ψ : ι → SchwartzMap (Fin m → ℝ) ℂ}
+    (hA_disj : Set.univ.PairwiseDisjoint A)
+    (hA_cover : K ⊆ ⋃ i, A i)
+    (g : (Fin m → ℝ) → SchwartzMap (Fin m → ℝ) ℂ)
+    (f : SchwartzMap (Fin m → ℝ) ℂ)
+    (s : Finset (ℕ × ℕ)) {η : ℝ}
+    (hcell : ∀ i x, x ∈ A i →
+      (s.sup (schwartzSeminormFamily ℝ (Fin m → ℝ) ℂ))
+        (ψ i - boundedKernel g f x) < η)
+    {x : Fin m → ℝ} (hxK : x ∈ K) :
+    (s.sup (schwartzSeminormFamily ℝ (Fin m → ℝ) ℂ))
+      (finitePartitionKernel A ψ x - boundedKernel g f x) < η := by
+  classical
+  rcases Set.mem_iUnion.mp (hA_cover hxK) with ⟨i, hxi⟩
+  rw [finitePartitionKernel_apply_of_mem hA_disj hxi]
+  exact hcell i x hxi
+
+lemma finitePartition_iUnion_eq {m : ℕ} {ι : Type*} [Fintype ι]
+    {K : Set (Fin m → ℝ)} {A : ι → Set (Fin m → ℝ)}
+    (hA_cover : K ⊆ ⋃ i, A i)
+    (hA_sub : ∀ i, A i ⊆ K) :
+    (⋃ i, A i) = K := by
+  ext x
+  constructor
+  · intro hx
+    rcases Set.mem_iUnion.mp hx with ⟨i, hxi⟩
+    exact hA_sub i hxi
+  · intro hx
+    exact hA_cover hx
+
+lemma setIntegral_finitePartition_eq_sum_of_integrableOn_cells {m : ℕ} {ι : Type*}
+    [Fintype ι]
+    {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+    {K : Set (Fin m → ℝ)} {A : ι → Set (Fin m → ℝ)}
+    (hA_meas : ∀ i, MeasurableSet (A i))
+    (hA_disj : Set.univ.PairwiseDisjoint A)
+    (hA_cover : K ⊆ ⋃ i, A i)
+    (hA_sub : ∀ i, A i ⊆ K)
+    {H : (Fin m → ℝ) → E}
+    (hH : ∀ i, IntegrableOn H (A i) volume) :
+    ∫ x in K, H x = ∑ i, ∫ x in A i, H x := by
+  have hUnion : (⋃ i, A i) = K :=
+    finitePartition_iUnion_eq hA_cover hA_sub
+  rw [← hUnion]
+  exact MeasureTheory.integral_iUnion_fintype
+    hA_meas
+    (fun i j hij => hA_disj (Set.mem_univ i) (Set.mem_univ j) hij)
+    hH
+
+lemma setIntegral_finitePartition_eq_sum {m : ℕ} {ι : Type*} [Fintype ι]
+    {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+    {K : Set (Fin m → ℝ)} {A : ι → Set (Fin m → ℝ)}
+    (hA_meas : ∀ i, MeasurableSet (A i))
+    (hA_disj : Set.univ.PairwiseDisjoint A)
+    (hA_cover : K ⊆ ⋃ i, A i)
+    (hA_sub : ∀ i, A i ⊆ K)
+    {H : (Fin m → ℝ) → E}
+    (hH : IntegrableOn H K volume) :
+    ∫ x in K, H x = ∑ i, ∫ x in A i, H x := by
+  have hUnion : (⋃ i, A i) = K :=
+    finitePartition_iUnion_eq hA_cover hA_sub
+  rw [← hUnion]
+  exact MeasureTheory.integral_iUnion_fintype
+    hA_meas
+    (fun i j hij => hA_disj (Set.mem_univ i) (Set.mem_univ j) hij)
+    (fun i => hH.mono_set (hA_sub i))
+
+lemma setIntegral_const_complex {m : ℕ}
+    (A : Set (Fin m → ℝ)) (c : ℂ) :
+    ∫ _x in A, c = ((volume A).toReal : ℂ) * c := by
+  rw [MeasureTheory.setIntegral_const, MeasureTheory.measureReal_def]
+  exact Complex.real_smul
+
+lemma measure_lt_top_of_subset_isBounded {m : ℕ}
+    {K A : Set (Fin m → ℝ)}
+    (hK_bdd : Bornology.IsBounded K) (hA_sub : A ⊆ K) :
+    volume A < ⊤ :=
+  lt_of_le_of_lt (MeasureTheory.measure_mono hA_sub) hK_bdd.measure_lt_top
+
+lemma integrableOn_const_of_subset_isBounded {m : ℕ}
+    {K A : Set (Fin m → ℝ)}
+    (hK_bdd : Bornology.IsBounded K) (hA_sub : A ⊆ K) (c : ℂ) :
+    IntegrableOn (fun _x : Fin m → ℝ => c) A volume :=
+  MeasureTheory.integrableOn_const
+    (hs := (measure_lt_top_of_subset_isBounded hK_bdd hA_sub).ne)
+
+lemma integrableOn_const_of_subset_isBounded' {m : ℕ}
+    {E : Type*} [NormedAddCommGroup E]
+    {K A : Set (Fin m → ℝ)}
+    (hK_bdd : Bornology.IsBounded K) (hA_sub : A ⊆ K) (c : E) :
+    IntegrableOn (fun _x : Fin m → ℝ => c) A volume :=
+  MeasureTheory.integrableOn_const
+    (hs := (measure_lt_top_of_subset_isBounded hK_bdd hA_sub).ne)
+
+lemma integral_clm_finitePartitionKernel {m : ℕ} {ι : Type*}
+    [Fintype ι] [DecidableEq ι]
+    {K : Set (Fin m → ℝ)} {A : ι → Set (Fin m → ℝ)}
+    (hK_bdd : Bornology.IsBounded K)
+    (hA_meas : ∀ i, MeasurableSet (A i))
+    (hA_disj : Set.univ.PairwiseDisjoint A)
+    (hA_cover : K ⊆ ⋃ i, A i)
+    (hA_sub : ∀ i, A i ⊆ K)
+    (T : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ)
+    (ψ : ι → SchwartzMap (Fin m → ℝ) ℂ) :
+    ∫ x in K, T (finitePartitionKernel A ψ x) =
+      ∑ i, ((volume (A i)).toReal : ℂ) * T (ψ i) := by
+  classical
+  have hcell_int :
+      ∀ i, IntegrableOn
+        (fun x => T (finitePartitionKernel A ψ x)) (A i) volume := by
+    intro i
+    refine (integrableOn_const_of_subset_isBounded hK_bdd (hA_sub i) (T (ψ i))).congr_fun_ae ?_
+    exact (MeasureTheory.ae_restrict_iff' (hA_meas i)).2 <|
+      Filter.Eventually.of_forall fun x hx =>
+        by simpa [finitePartitionKernel_apply_of_mem hA_disj hx]
+  calc
+    ∫ x in K, T (finitePartitionKernel A ψ x)
+        = ∑ i, ∫ x in A i, T (finitePartitionKernel A ψ x) :=
+          setIntegral_finitePartition_eq_sum_of_integrableOn_cells
+            hA_meas hA_disj hA_cover hA_sub hcell_int
+    _ = ∑ i, ∫ _x in A i, T (ψ i) := by
+          apply Finset.sum_congr rfl
+          intro i _hi
+          exact MeasureTheory.setIntegral_congr_ae (hA_meas i) <|
+            Filter.Eventually.of_forall fun x hx =>
+              by simpa [finitePartitionKernel_apply_of_mem hA_disj hx]
+    _ = ∑ i, ((volume (A i)).toReal : ℂ) * T (ψ i) := by
+          apply Finset.sum_congr rfl
+          intro i _hi
+          exact setIntegral_const_complex (A i) (T (ψ i))
+
+lemma integrableOn_clm_finitePartitionKernel {m : ℕ} {ι : Type*}
+    [Fintype ι] [DecidableEq ι]
+    {K : Set (Fin m → ℝ)} {A : ι → Set (Fin m → ℝ)}
+    (hK_bdd : Bornology.IsBounded K)
+    (hA_meas : ∀ i, MeasurableSet (A i))
+    (hA_disj : Set.univ.PairwiseDisjoint A)
+    (hA_cover : K ⊆ ⋃ i, A i)
+    (hA_sub : ∀ i, A i ⊆ K)
+    (T : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ)
+    (ψ : ι → SchwartzMap (Fin m → ℝ) ℂ) :
+    IntegrableOn (fun x => T (finitePartitionKernel A ψ x)) K volume := by
+  classical
+  have hcell_int :
+      ∀ i, IntegrableOn
+        (fun x => T (finitePartitionKernel A ψ x)) (A i) volume := by
+    intro i
+    refine (integrableOn_const_of_subset_isBounded hK_bdd (hA_sub i) (T (ψ i))).congr_fun_ae ?_
+    exact (MeasureTheory.ae_restrict_iff' (hA_meas i)).2 <|
+      Filter.Eventually.of_forall fun x hx =>
+        by simpa [finitePartitionKernel_apply_of_mem hA_disj hx]
+  have hUnion : (⋃ i, A i) = K :=
+    finitePartition_iUnion_eq hA_cover hA_sub
+  have hbi :
+      IntegrableOn (fun x => T (finitePartitionKernel A ψ x))
+        (⋃ i ∈ (Finset.univ : Finset ι), A i) volume := by
+    exact (MeasureTheory.integrableOn_finset_iUnion
+      (s := (Finset.univ : Finset ι)) (t := A)).2
+      (fun i _hi => hcell_int i)
+  simpa [hUnion] using hbi
+
+lemma integral_eval_finitePartitionKernel {m : ℕ} {ι : Type*}
+    [Fintype ι] [DecidableEq ι]
+    {K : Set (Fin m → ℝ)} {A : ι → Set (Fin m → ℝ)}
+    (hK_bdd : Bornology.IsBounded K)
+    (hA_meas : ∀ i, MeasurableSet (A i))
+    (hA_disj : Set.univ.PairwiseDisjoint A)
+    (hA_cover : K ⊆ ⋃ i, A i)
+    (hA_sub : ∀ i, A i ⊆ K)
+    (ψ : ι → SchwartzMap (Fin m → ℝ) ℂ)
+    (ξ : Fin m → ℝ) :
+    ∫ x in K, finitePartitionKernel A ψ x ξ =
+      ∑ i, ((volume (A i)).toReal : ℂ) * ψ i ξ := by
+  classical
+  have hcell_int :
+      ∀ i, IntegrableOn
+        (fun x => finitePartitionKernel A ψ x ξ) (A i) volume := by
+    intro i
+    refine (integrableOn_const_of_subset_isBounded hK_bdd (hA_sub i) (ψ i ξ)).congr_fun_ae ?_
+    exact (MeasureTheory.ae_restrict_iff' (hA_meas i)).2 <|
+      Filter.Eventually.of_forall fun x hx =>
+        by simpa [finitePartitionKernel_apply_of_mem hA_disj hx]
+  calc
+    ∫ x in K, finitePartitionKernel A ψ x ξ
+        = ∑ i, ∫ x in A i, finitePartitionKernel A ψ x ξ :=
+          setIntegral_finitePartition_eq_sum_of_integrableOn_cells
+            hA_meas hA_disj hA_cover hA_sub hcell_int
+    _ = ∑ i, ∫ _x in A i, ψ i ξ := by
+          apply Finset.sum_congr rfl
+          intro i _hi
+          exact MeasureTheory.setIntegral_congr_ae (hA_meas i) <|
+            Filter.Eventually.of_forall fun x hx =>
+              by simpa [finitePartitionKernel_apply_of_mem hA_disj hx]
+    _ = ∑ i, ((volume (A i)).toReal : ℂ) * ψ i ξ := by
+          apply Finset.sum_congr rfl
+          intro i _hi
+          exact setIntegral_const_complex (A i) (ψ i ξ)
+
+lemma integral_iteratedFDeriv_finitePartitionKernel {m : ℕ} {ι : Type*}
+    [Fintype ι] [DecidableEq ι]
+    {K : Set (Fin m → ℝ)} {A : ι → Set (Fin m → ℝ)}
+    (hK_bdd : Bornology.IsBounded K)
+    (hA_meas : ∀ i, MeasurableSet (A i))
+    (hA_disj : Set.univ.PairwiseDisjoint A)
+    (hA_cover : K ⊆ ⋃ i, A i)
+    (hA_sub : ∀ i, A i ⊆ K)
+    (ψ : ι → SchwartzMap (Fin m → ℝ) ℂ)
+    (n : ℕ) (ξ : Fin m → ℝ) :
+    ∫ x in K,
+        iteratedFDeriv ℝ n
+          (fun ζ : Fin m → ℝ => finitePartitionKernel A ψ x ζ) ξ
+      =
+      ∑ i, (volume (A i)).toReal •
+        iteratedFDeriv ℝ n (fun ζ : Fin m → ℝ => ψ i ζ) ξ := by
+  classical
+  have hcell_int :
+      ∀ i, IntegrableOn
+        (fun x =>
+          iteratedFDeriv ℝ n
+            (fun ζ : Fin m → ℝ => finitePartitionKernel A ψ x ζ) ξ)
+        (A i) volume := by
+    intro i
+    refine (integrableOn_const_of_subset_isBounded'
+      hK_bdd (hA_sub i)
+      (iteratedFDeriv ℝ n (fun ζ : Fin m → ℝ => ψ i ζ) ξ)).congr_fun_ae ?_
+    exact (MeasureTheory.ae_restrict_iff' (hA_meas i)).2 <|
+      Filter.Eventually.of_forall fun x hx => by
+        simp [finitePartitionKernel_apply_of_mem hA_disj hx]
+  calc
+    ∫ x in K,
+        iteratedFDeriv ℝ n
+          (fun ζ : Fin m → ℝ => finitePartitionKernel A ψ x ζ) ξ
+        =
+      ∑ i, ∫ x in A i,
+        iteratedFDeriv ℝ n
+          (fun ζ : Fin m → ℝ => finitePartitionKernel A ψ x ζ) ξ :=
+        setIntegral_finitePartition_eq_sum_of_integrableOn_cells
+          hA_meas hA_disj hA_cover hA_sub hcell_int
+    _ = ∑ i, ∫ _x in A i,
+        iteratedFDeriv ℝ n (fun ζ : Fin m → ℝ => ψ i ζ) ξ := by
+          apply Finset.sum_congr rfl
+          intro i _hi
+          exact MeasureTheory.setIntegral_congr_ae (hA_meas i) <|
+            Filter.Eventually.of_forall fun x hx => by
+              simp [finitePartitionKernel_apply_of_mem hA_disj hx]
+    _ = ∑ i, (volume (A i)).toReal •
+        iteratedFDeriv ℝ n (fun ζ : Fin m → ℝ => ψ i ζ) ξ := by
+          apply Finset.sum_congr rfl
+          intro i _hi
+          rw [MeasureTheory.setIntegral_const, MeasureTheory.measureReal_def]
+
+lemma finitePartitionApproximant_iteratedFDeriv_eq_integral {m : ℕ} {ι : Type*}
+    [Fintype ι] [DecidableEq ι]
+    {K : Set (Fin m → ℝ)} {A : ι → Set (Fin m → ℝ)}
+    (hK_bdd : Bornology.IsBounded K)
+    (hA_meas : ∀ i, MeasurableSet (A i))
+    (hA_disj : Set.univ.PairwiseDisjoint A)
+    (hA_cover : K ⊆ ⋃ i, A i)
+    (hA_sub : ∀ i, A i ⊆ K)
+    (ψ : ι → SchwartzMap (Fin m → ℝ) ℂ)
+    (n : ℕ) (ξ : Fin m → ℝ) :
+    iteratedFDeriv ℝ n
+        (fun ζ : Fin m → ℝ =>
+          (∑ i, ((volume (A i)).toReal : ℂ) • ψ i) ζ) ξ
+      =
+      ∫ x in K,
+        iteratedFDeriv ℝ n
+          (fun ζ : Fin m → ℝ => finitePartitionKernel A ψ x ζ) ξ := by
+  classical
+  rw [integral_iteratedFDeriv_finitePartitionKernel
+    hK_bdd hA_meas hA_disj hA_cover hA_sub ψ n ξ]
+  calc
+    iteratedFDeriv ℝ n
+        (fun ζ : Fin m → ℝ =>
+          (∑ i, ((volume (A i)).toReal : ℂ) • ψ i) ζ) ξ
+        =
+      iteratedFDeriv ℝ n
+        (fun ζ : Fin m → ℝ =>
+          ∑ i, (((volume (A i)).toReal : ℂ) • ψ i) ζ) ξ := by
+        congr 1
+        funext ζ
+        rw [SchwartzMap.sum_apply]
+    _ =
+      ∑ i,
+        iteratedFDeriv ℝ n
+          (fun ζ : Fin m → ℝ =>
+            (((volume (A i)).toReal : ℂ) • ψ i) ζ) ξ := by
+        exact iteratedFDeriv_fun_sum_apply (𝕜 := ℝ)
+          (u := (Finset.univ : Finset ι))
+          (f := fun i ζ =>
+            (((volume (A i)).toReal : ℂ) • ψ i) ζ)
+          (by
+            intro i _hi
+            simpa [SchwartzMap.smul_apply] using
+              ((ψ i).contDiffAt n (x := ξ)).const_smul
+                (((volume (A i)).toReal : ℂ)))
+    _ =
+      ∑ i, (volume (A i)).toReal •
+        iteratedFDeriv ℝ n (fun ζ : Fin m → ℝ => ψ i ζ) ξ := by
+        apply Finset.sum_congr rfl
+        intro i _hi
+        have hsmul :
+            iteratedFDeriv ℝ n
+              (fun ζ : Fin m → ℝ =>
+                (((volume (A i)).toReal : ℂ) • ψ i) ζ) ξ =
+            ((volume (A i)).toReal : ℂ) •
+              iteratedFDeriv ℝ n (fun ζ : Fin m → ℝ => ψ i ζ) ξ := by
+          simpa [SchwartzMap.smul_apply] using
+            (iteratedFDeriv_const_smul_apply (𝕜 := ℝ)
+              (a := ((volume (A i)).toReal : ℂ))
+              ((ψ i).contDiffAt n (x := ξ)))
+        exact hsmul.trans
+          ((RCLike.real_smul_eq_coe_smul (K := ℂ)
+            (volume (A i)).toReal
+            (iteratedFDeriv ℝ n (fun ζ : Fin m → ℝ => ψ i ζ) ξ)).symm)
+
+lemma integrableOn_iteratedFDeriv_finitePartitionKernel {m : ℕ} {ι : Type*}
+    [Fintype ι] [DecidableEq ι]
+    {K : Set (Fin m → ℝ)} {A : ι → Set (Fin m → ℝ)}
+    (hK_bdd : Bornology.IsBounded K)
+    (hA_meas : ∀ i, MeasurableSet (A i))
+    (hA_disj : Set.univ.PairwiseDisjoint A)
+    (hA_cover : K ⊆ ⋃ i, A i)
+    (hA_sub : ∀ i, A i ⊆ K)
+    (ψ : ι → SchwartzMap (Fin m → ℝ) ℂ)
+    (n : ℕ) (ξ : Fin m → ℝ) :
+    IntegrableOn
+      (fun x =>
+        iteratedFDeriv ℝ n
+          (fun ζ : Fin m → ℝ => finitePartitionKernel A ψ x ζ) ξ)
+      K volume := by
+  classical
+  have hcell_int :
+      ∀ i, IntegrableOn
+        (fun x =>
+          iteratedFDeriv ℝ n
+            (fun ζ : Fin m → ℝ => finitePartitionKernel A ψ x ζ) ξ)
+        (A i) volume := by
+    intro i
+    refine (integrableOn_const_of_subset_isBounded'
+      hK_bdd (hA_sub i)
+      (iteratedFDeriv ℝ n (fun ζ : Fin m → ℝ => ψ i ζ) ξ)).congr_fun_ae ?_
+    exact (MeasureTheory.ae_restrict_iff' (hA_meas i)).2 <|
+      Filter.Eventually.of_forall fun x hx => by
+        simp [finitePartitionKernel_apply_of_mem hA_disj hx]
+  have hUnion : (⋃ i, A i) = K :=
+    finitePartition_iUnion_eq hA_cover hA_sub
+  have hbi :
+      IntegrableOn
+        (fun x =>
+          iteratedFDeriv ℝ n
+            (fun ζ : Fin m → ℝ => finitePartitionKernel A ψ x ζ) ξ)
+        (⋃ i ∈ (Finset.univ : Finset ι), A i) volume := by
+    exact (MeasureTheory.integrableOn_finset_iUnion
+      (s := (Finset.univ : Finset ι)) (t := A)).2
+      (fun i _hi => hcell_int i)
+  simpa [hUnion] using hbi
+
+lemma boundedKernel_iteratedFDeriv_eq {m : ℕ}
+    (g : (Fin m → ℝ) → SchwartzMap (Fin m → ℝ) ℂ)
+    (f : SchwartzMap (Fin m → ℝ) ℂ)
+    (n : ℕ) (x ξ : Fin m → ℝ) :
+    iteratedFDeriv ℝ n
+        (fun ζ : Fin m → ℝ => boundedKernel g f x ζ) ξ =
+      f x • iteratedFDeriv ℝ n (fun ζ : Fin m → ℝ => g x ζ) ξ := by
+  simpa [boundedKernel, SchwartzMap.smul_apply] using
+    (iteratedFDeriv_const_smul_apply (𝕜 := ℝ)
+      (a := f x) ((g x).contDiffAt n (x := ξ)))
+
+lemma finitePartitionApproximant_apply_eq_integral {m : ℕ} {ι : Type*}
+    [Fintype ι] [DecidableEq ι]
+    {K : Set (Fin m → ℝ)} {A : ι → Set (Fin m → ℝ)}
+    (hK_bdd : Bornology.IsBounded K)
+    (hA_meas : ∀ i, MeasurableSet (A i))
+    (hA_disj : Set.univ.PairwiseDisjoint A)
+    (hA_cover : K ⊆ ⋃ i, A i)
+    (hA_sub : ∀ i, A i ⊆ K)
+    (ψ : ι → SchwartzMap (Fin m → ℝ) ℂ)
+    (ξ : Fin m → ℝ) :
+    (∑ i, ((volume (A i)).toReal : ℂ) • ψ i) ξ =
+      ∫ x in K, finitePartitionKernel A ψ x ξ := by
+  rw [integral_eval_finitePartitionKernel
+    hK_bdd hA_meas hA_disj hA_cover hA_sub ψ ξ]
+  rw [SchwartzMap.sum_apply]
+  simp only [SchwartzMap.smul_apply]
+  apply Finset.sum_congr rfl
+  intro i _hi
+  exact Complex.real_smul
+
+lemma clm_finitePartitionKernel_error_norm_le {m : ℕ} {ι : Type*}
+    [Fintype ι] [DecidableEq ι]
+    {K : Set (Fin m → ℝ)} {A : ι → Set (Fin m → ℝ)}
+    (hK_bdd : Bornology.IsBounded K)
+    (hA_meas : ∀ i, MeasurableSet (A i))
+    (hA_disj : Set.univ.PairwiseDisjoint A)
+    (hA_cover : K ⊆ ⋃ i, A i)
+    (hA_sub : ∀ i, A i ⊆ K)
+    (T : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ)
+    (ψ : ι → SchwartzMap (Fin m → ℝ) ℂ)
+    (g : (Fin m → ℝ) → SchwartzMap (Fin m → ℝ) ℂ)
+    (f : SchwartzMap (Fin m → ℝ) ℂ)
+    (hg_cont : Continuous g)
+    (hg_bound : ∀ (k n : ℕ), ∃ (C : ℝ) (N : ℕ), C > 0 ∧
+      ∀ x, SchwartzMap.seminorm ℝ k n (g x) ≤ C * (1 + ‖x‖) ^ N) :
+    ‖(∫ x in K, T (finitePartitionKernel A ψ x)) -
+        ∫ x in K, T (boundedKernel g f x)‖
+      ≤ ∫ x in K,
+          ‖T (finitePartitionKernel A ψ x - boundedKernel g f x)‖ := by
+  have hpiece_int :
+      IntegrableOn (fun x => T (finitePartitionKernel A ψ x)) K volume :=
+    integrableOn_clm_finitePartitionKernel
+      hK_bdd hA_meas hA_disj hA_cover hA_sub T ψ
+  have hkernel_int :
+      IntegrableOn (fun x => T (boundedKernel g f x)) K volume := by
+    simpa [boundedKernel] using
+      integrableOn_schwartz_fubini_clm_weighted_kernel
+        K T g f hg_cont hg_bound
+  have hpiece_int' := hpiece_int.integrable
+  have hkernel_int' := hkernel_int.integrable
+  calc
+    ‖(∫ x in K, T (finitePartitionKernel A ψ x)) -
+        ∫ x in K, T (boundedKernel g f x)‖
+        = ‖∫ x in K,
+            T (finitePartitionKernel A ψ x) - T (boundedKernel g f x)‖ := by
+          rw [MeasureTheory.integral_sub hpiece_int' hkernel_int']
+    _ = ‖∫ x in K,
+            T (finitePartitionKernel A ψ x - boundedKernel g f x)‖ := by
+          congr 1
+          exact MeasureTheory.integral_congr_ae <|
+            Filter.Eventually.of_forall fun x => by
+              simp [map_sub]
+    _ ≤ ∫ x in K,
+          ‖T (finitePartitionKernel A ψ x - boundedKernel g f x)‖ :=
+        MeasureTheory.norm_integral_le_integral_norm
+          (fun x => T (finitePartitionKernel A ψ x - boundedKernel g f x))
+
+lemma clm_finitePartitionKernel_error_norm_lt_of_uniform {m : ℕ} {ι : Type*}
+    [Fintype ι] [DecidableEq ι]
+    {K : Set (Fin m → ℝ)} {A : ι → Set (Fin m → ℝ)}
+    (hK_meas : MeasurableSet K)
+    (hK_bdd : Bornology.IsBounded K)
+    (hA_meas : ∀ i, MeasurableSet (A i))
+    (hA_disj : Set.univ.PairwiseDisjoint A)
+    (hA_cover : K ⊆ ⋃ i, A i)
+    (hA_sub : ∀ i, A i ⊆ K)
+    (T : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ)
+    (ψ : ι → SchwartzMap (Fin m → ℝ) ℂ)
+    (g : (Fin m → ℝ) → SchwartzMap (Fin m → ℝ) ℂ)
+    (f : SchwartzMap (Fin m → ℝ) ℂ)
+    (hg_cont : Continuous g)
+    (hg_bound : ∀ (k n : ℕ), ∃ (C : ℝ) (N : ℕ), C > 0 ∧
+      ∀ x, SchwartzMap.seminorm ℝ k n (g x) ≤ C * (1 + ‖x‖) ^ N)
+    (sT u : Finset (ℕ × ℕ)) (C η ε : ℝ)
+    (hC_pos : 0 < C)
+    (hsT_sub : sT ⊆ u)
+    (hT : ∀ φ : SchwartzMap (Fin m → ℝ) ℂ,
+      ‖T φ‖ ≤ C * (sT.sup (schwartzSeminormFamily ℂ (Fin m → ℝ) ℂ)) φ)
+    (hpoint : ∀ x ∈ K,
+      (u.sup (schwartzSeminormFamily ℝ (Fin m → ℝ) ℂ))
+        (finitePartitionKernel A ψ x - boundedKernel g f x) < η)
+    (hsmall : (volume K).toReal * (C * η) < ε) :
+    ‖(∫ x in K, T (finitePartitionKernel A ψ x)) -
+        ∫ x in K, T (boundedKernel g f x)‖ < ε := by
+  have hbase :=
+    clm_finitePartitionKernel_error_norm_le
+      hK_bdd hA_meas hA_disj hA_cover hA_sub
+      T ψ g f hg_cont hg_bound
+  have hpiece_int :
+      IntegrableOn (fun x => T (finitePartitionKernel A ψ x)) K volume :=
+    integrableOn_clm_finitePartitionKernel
+      hK_bdd hA_meas hA_disj hA_cover hA_sub T ψ
+  have hkernel_int :
+      IntegrableOn (fun x => T (boundedKernel g f x)) K volume := by
+    simpa [boundedKernel] using
+      integrableOn_schwartz_fubini_clm_weighted_kernel
+        K T g f hg_cont hg_bound
+  have hdiff_int :
+      Integrable
+        (fun x => T (finitePartitionKernel A ψ x - boundedKernel g f x))
+        (volume.restrict K) := by
+    refine (hpiece_int.sub hkernel_int).integrable.congr ?_
+    exact Filter.Eventually.of_forall fun x => by
+      simp [map_sub]
+  have hnorm_int :
+      Integrable
+        (fun x => ‖T (finitePartitionKernel A ψ x - boundedKernel g f x)‖)
+        (volume.restrict K) :=
+    hdiff_int.norm
+  haveI : IsFiniteMeasure (volume.restrict K) := by
+    rw [MeasureTheory.isFiniteMeasure_restrict]
+    exact ne_of_lt hK_bdd.measure_lt_top
+  have hconst_int :
+      Integrable (fun _x : Fin m → ℝ => C * η) (volume.restrict K) :=
+    MeasureTheory.integrable_const (C * η)
+  have hpoint_ae :
+      ∀ᵐ x ∂volume.restrict K,
+        ‖T (finitePartitionKernel A ψ x - boundedKernel g f x)‖ ≤ C * η := by
+    exact (MeasureTheory.ae_restrict_iff' hK_meas).2 <|
+      Filter.Eventually.of_forall fun x hxK => by
+        have hT_point :=
+          clm_norm_le_combined_real_finset_sup
+            T sT u C hC_pos.le hsT_sub hT
+            (finitePartitionKernel A ψ x - boundedKernel g f x)
+        exact hT_point.trans
+          (mul_le_mul_of_nonneg_left (le_of_lt (hpoint x hxK)) hC_pos.le)
+  have hintegral_le :
+      (∫ x in K,
+          ‖T (finitePartitionKernel A ψ x - boundedKernel g f x)‖)
+        ≤ ∫ _x in K, C * η :=
+    MeasureTheory.integral_mono_of_nonneg
+      (Filter.Eventually.of_forall fun _ => norm_nonneg _)
+      hconst_int
+      hpoint_ae
+  have hconst_eval :
+      (∫ _x in K, C * η) = (volume K).toReal * (C * η) := by
+    rw [MeasureTheory.integral_const, MeasureTheory.measureReal_restrict_apply_univ]
+    simp [MeasureTheory.measureReal_def, smul_eq_mul]
+  exact lt_of_le_of_lt (hbase.trans hintegral_le) (by simpa [hconst_eval] using hsmall)
 
 lemma isFiniteMeasure_restrict_of_isBounded {m : ℕ}
     (K : Set (Fin m → ℝ)) (hK_bdd : Bornology.IsBounded K) :
@@ -975,6 +1746,391 @@ theorem bounded_parameter_integral_scalar_is_schwartz {m : ℕ}
   · intro ξ
     rfl
 
+lemma finitePartition_error_iteratedFDeriv_eq_integral {m : ℕ} {ι : Type*}
+    [Fintype ι] [DecidableEq ι]
+    {K : Set (Fin m → ℝ)} {A : ι → Set (Fin m → ℝ)}
+    (hK_meas : MeasurableSet K)
+    (hK_bdd : Bornology.IsBounded K)
+    (hA_meas : ∀ i, MeasurableSet (A i))
+    (hA_disj : Set.univ.PairwiseDisjoint A)
+    (hA_cover : K ⊆ ⋃ i, A i)
+    (hA_sub : ∀ i, A i ⊆ K)
+    (ψ : ι → SchwartzMap (Fin m → ℝ) ℂ)
+    (g : (Fin m → ℝ) → SchwartzMap (Fin m → ℝ) ℂ)
+    (f : SchwartzMap (Fin m → ℝ) ℂ)
+    (hg_cont : Continuous g)
+    (hg_bound : ∀ (k n : ℕ), ∃ (C : ℝ) (N : ℕ), C > 0 ∧
+      ∀ x, SchwartzMap.seminorm ℝ k n (g x) ≤ C * (1 + ‖x‖) ^ N)
+    (ΦK : SchwartzMap (Fin m → ℝ) ℂ)
+    (hΦK : ∀ ξ, ΦK ξ = boundedParamIntegralScalar K g f ξ)
+    (n : ℕ) (ξ : Fin m → ℝ) :
+    iteratedFDeriv ℝ n
+        (fun ζ : Fin m → ℝ =>
+          ((∑ i, ((volume (A i)).toReal : ℂ) • ψ i) - ΦK) ζ) ξ
+      =
+      ∫ x in K,
+        iteratedFDeriv ℝ n
+          (fun ζ : Fin m → ℝ =>
+            (finitePartitionKernel A ψ x - boundedKernel g f x) ζ) ξ := by
+  classical
+  let Φ : SchwartzMap (Fin m → ℝ) ℂ :=
+    ∑ i, ((volume (A i)).toReal : ℂ) • ψ i
+  have hΦ_deriv :
+      iteratedFDeriv ℝ n (fun ζ : Fin m → ℝ => Φ ζ) ξ =
+        ∫ x in K,
+          iteratedFDeriv ℝ n
+            (fun ζ : Fin m → ℝ => finitePartitionKernel A ψ x ζ) ξ := by
+    simpa [Φ] using
+      finitePartitionApproximant_iteratedFDeriv_eq_integral
+        hK_bdd hA_meas hA_disj hA_cover hA_sub ψ n ξ
+  have hΦK_fun :
+      (fun ζ : Fin m → ℝ => ΦK ζ) = boundedParamIntegralScalar K g f :=
+    funext hΦK
+  have hΦK_deriv :
+      iteratedFDeriv ℝ n (fun ζ : Fin m → ℝ => ΦK ζ) ξ =
+        ∫ x in K,
+          iteratedFDeriv ℝ n
+            (fun ζ : Fin m → ℝ => boundedKernel g f x ζ) ξ := by
+    calc
+      iteratedFDeriv ℝ n (fun ζ : Fin m → ℝ => ΦK ζ) ξ
+          =
+        iteratedFDeriv ℝ n (boundedParamIntegralScalar K g f) ξ := by
+          rw [hΦK_fun]
+      _ = boundedParamIntegralDeriv K g f n ξ :=
+          boundedParamIntegralScalar_iteratedFDeriv_eq
+            K hK_meas hK_bdd g f hg_cont hg_bound n ξ
+      _ = ∫ x in K,
+            f x • iteratedFDeriv ℝ n (fun ζ : Fin m → ℝ => g x ζ) ξ := rfl
+      _ = ∫ x in K,
+            iteratedFDeriv ℝ n
+              (fun ζ : Fin m → ℝ => boundedKernel g f x ζ) ξ := by
+          apply MeasureTheory.integral_congr_ae
+          exact Filter.Eventually.of_forall fun x =>
+            (boundedKernel_iteratedFDeriv_eq g f n x ξ).symm
+  have hpiece_int :
+      Integrable
+        (fun x =>
+          iteratedFDeriv ℝ n
+            (fun ζ : Fin m → ℝ => finitePartitionKernel A ψ x ζ) ξ)
+        (volume.restrict K) :=
+    (integrableOn_iteratedFDeriv_finitePartitionKernel
+      hK_bdd hA_meas hA_disj hA_cover hA_sub ψ n ξ).integrable
+  have hkernel_int :
+      Integrable
+        (fun x =>
+          iteratedFDeriv ℝ n
+            (fun ζ : Fin m → ℝ => boundedKernel g f x ζ) ξ)
+        (volume.restrict K) := by
+    refine
+      (integrableOn_boundedParamIntegral_iterated_deriv_kernel
+        K g f hg_cont hg_bound n ξ).integrable.congr ?_
+    exact Filter.Eventually.of_forall fun x =>
+      (boundedKernel_iteratedFDeriv_eq g f n x ξ).symm
+  have hsub_left :
+      iteratedFDeriv ℝ n
+          (fun ζ : Fin m → ℝ => (Φ - ΦK) ζ) ξ =
+        iteratedFDeriv ℝ n (fun ζ : Fin m → ℝ => Φ ζ) ξ -
+          iteratedFDeriv ℝ n (fun ζ : Fin m → ℝ => ΦK ζ) ξ := by
+    simpa [SchwartzMap.sub_apply, Pi.sub_apply] using
+      (iteratedFDeriv_sub_apply (𝕜 := ℝ) (i := n)
+        (f := fun ζ : Fin m → ℝ => Φ ζ)
+        (g := fun ζ : Fin m → ℝ => ΦK ζ)
+        (Φ.contDiffAt n (x := ξ)) (ΦK.contDiffAt n (x := ξ)))
+  calc
+    iteratedFDeriv ℝ n
+        (fun ζ : Fin m → ℝ =>
+          ((∑ i, ((volume (A i)).toReal : ℂ) • ψ i) - ΦK) ζ) ξ
+        =
+      iteratedFDeriv ℝ n (fun ζ : Fin m → ℝ => Φ ζ) ξ -
+        iteratedFDeriv ℝ n (fun ζ : Fin m → ℝ => ΦK ζ) ξ := by
+        simpa [Φ] using hsub_left
+    _ =
+      (∫ x in K,
+        iteratedFDeriv ℝ n
+          (fun ζ : Fin m → ℝ => finitePartitionKernel A ψ x ζ) ξ) -
+        ∫ x in K,
+          iteratedFDeriv ℝ n
+            (fun ζ : Fin m → ℝ => boundedKernel g f x ζ) ξ := by
+        rw [hΦ_deriv, hΦK_deriv]
+    _ =
+      ∫ x in K,
+        (iteratedFDeriv ℝ n
+          (fun ζ : Fin m → ℝ => finitePartitionKernel A ψ x ζ) ξ -
+          iteratedFDeriv ℝ n
+            (fun ζ : Fin m → ℝ => boundedKernel g f x ζ) ξ) := by
+        rw [MeasureTheory.integral_sub hpiece_int hkernel_int]
+    _ =
+      ∫ x in K,
+        iteratedFDeriv ℝ n
+          (fun ζ : Fin m → ℝ =>
+            (finitePartitionKernel A ψ x - boundedKernel g f x) ζ) ξ := by
+        apply MeasureTheory.integral_congr_ae
+        exact Filter.Eventually.of_forall fun x => by
+          have hsub_point :=
+            iteratedFDeriv_sub_apply (𝕜 := ℝ) (i := n)
+              (f := fun ζ : Fin m → ℝ => finitePartitionKernel A ψ x ζ)
+              (g := fun ζ : Fin m → ℝ => boundedKernel g f x ζ)
+              ((finitePartitionKernel A ψ x).contDiffAt n (x := ξ))
+              ((boundedKernel g f x).contDiffAt n (x := ξ))
+          simpa [SchwartzMap.sub_apply, Pi.sub_apply] using hsub_point.symm
+
+lemma finitePartition_error_schwartzSeminorm_lt_of_uniform {m : ℕ} {ι : Type*}
+    [Fintype ι] [DecidableEq ι]
+    {K : Set (Fin m → ℝ)} {A : ι → Set (Fin m → ℝ)}
+    (hK_meas : MeasurableSet K)
+    (hK_bdd : Bornology.IsBounded K)
+    (hA_meas : ∀ i, MeasurableSet (A i))
+    (hA_disj : Set.univ.PairwiseDisjoint A)
+    (hA_cover : K ⊆ ⋃ i, A i)
+    (hA_sub : ∀ i, A i ⊆ K)
+    (ψ : ι → SchwartzMap (Fin m → ℝ) ℂ)
+    (g : (Fin m → ℝ) → SchwartzMap (Fin m → ℝ) ℂ)
+    (f : SchwartzMap (Fin m → ℝ) ℂ)
+    (hg_cont : Continuous g)
+    (hg_bound : ∀ (k n : ℕ), ∃ (C : ℝ) (N : ℕ), C > 0 ∧
+      ∀ x, SchwartzMap.seminorm ℝ k n (g x) ≤ C * (1 + ‖x‖) ^ N)
+    (ΦK : SchwartzMap (Fin m → ℝ) ℂ)
+    (hΦK : ∀ ξ, ΦK ξ = boundedParamIntegralScalar K g f ξ)
+    (k n : ℕ) (η ε : ℝ) (hη_nonneg : 0 ≤ η)
+    (hpoint : ∀ x ∈ K,
+      SchwartzMap.seminorm ℝ k n
+        (finitePartitionKernel A ψ x - boundedKernel g f x) < η)
+    (hsmall : (volume K).toReal * η < ε) :
+    SchwartzMap.seminorm ℝ k n
+        ((∑ i, ((volume (A i)).toReal : ℂ) • ψ i) - ΦK) < ε := by
+  classical
+  let Φ : SchwartzMap (Fin m → ℝ) ℂ :=
+    ∑ i, ((volume (A i)).toReal : ℂ) • ψ i
+  let M : ℝ := ∫ _x in K, η
+  haveI : IsFiniteMeasure (volume.restrict K) :=
+    isFiniteMeasure_restrict_of_isBounded K hK_bdd
+  have hconst_int : Integrable (fun _x : Fin m → ℝ => η) (volume.restrict K) :=
+    MeasureTheory.integrable_const η
+  have hM_nonneg : 0 ≤ M := by
+    exact MeasureTheory.integral_nonneg (μ := volume.restrict K) fun _x => hη_nonneg
+  have hM_eq : M = (volume K).toReal * η := by
+    dsimp [M]
+    rw [MeasureTheory.integral_const, MeasureTheory.measureReal_restrict_apply_univ]
+    simp [MeasureTheory.measureReal_def, smul_eq_mul]
+  have hseminorm_le :
+      SchwartzMap.seminorm ℝ k n (Φ - ΦK) ≤ M := by
+    refine SchwartzMap.seminorm_le_bound ℝ k n (Φ - ΦK) hM_nonneg ?_
+    intro ξ
+    have hderiv :
+        iteratedFDeriv ℝ n (fun ζ : Fin m → ℝ => (Φ - ΦK) ζ) ξ =
+          ∫ x in K,
+            iteratedFDeriv ℝ n
+              (fun ζ : Fin m → ℝ =>
+                (finitePartitionKernel A ψ x - boundedKernel g f x) ζ) ξ := by
+      simpa [Φ] using
+        finitePartition_error_iteratedFDeriv_eq_integral
+          hK_meas hK_bdd hA_meas hA_disj hA_cover hA_sub
+          ψ g f hg_cont hg_bound ΦK hΦK n ξ
+    let D : (Fin m → ℝ) →
+        ContinuousMultilinearMap ℝ (fun _ : Fin n => Fin m → ℝ) ℂ :=
+      fun x =>
+        iteratedFDeriv ℝ n
+          (fun ζ : Fin m → ℝ =>
+            (finitePartitionKernel A ψ x - boundedKernel g f x) ζ) ξ
+    have hmono :
+        (∫ x in K, ‖ξ‖ ^ k * ‖D x‖) ≤ ∫ _x in K, η := by
+      refine MeasureTheory.integral_mono_of_nonneg
+        (Filter.Eventually.of_forall fun _x => mul_nonneg
+          (pow_nonneg (norm_nonneg ξ) k) (norm_nonneg _))
+        hconst_int ?_
+      exact (MeasureTheory.ae_restrict_iff' hK_meas).2 <|
+        Filter.Eventually.of_forall fun x hxK => by
+          have hle :
+              ‖ξ‖ ^ k * ‖D x‖ ≤
+                SchwartzMap.seminorm ℝ k n
+                  (finitePartitionKernel A ψ x - boundedKernel g f x) :=
+            SchwartzMap.le_seminorm ℝ k n
+              (finitePartitionKernel A ψ x - boundedKernel g f x) ξ
+          exact hle.trans (le_of_lt (hpoint x hxK))
+    calc
+      ‖ξ‖ ^ k *
+          ‖iteratedFDeriv ℝ n (fun ζ : Fin m → ℝ => (Φ - ΦK) ζ) ξ‖
+          =
+        ‖ξ‖ ^ k * ‖∫ x in K, D x‖ := by
+          rw [hderiv]
+      _ ≤ ‖ξ‖ ^ k * ∫ x in K, ‖D x‖ :=
+          mul_le_mul_of_nonneg_left
+            (MeasureTheory.norm_integral_le_integral_norm
+              (μ := volume.restrict K) D)
+            (pow_nonneg (norm_nonneg ξ) k)
+      _ = ∫ x in K, ‖ξ‖ ^ k * ‖D x‖ := by
+          exact (MeasureTheory.integral_const_mul (μ := volume.restrict K)
+            (‖ξ‖ ^ k) (fun x => ‖D x‖)).symm
+      _ ≤ ∫ _x in K, η := hmono
+      _ = M := rfl
+  exact lt_of_le_of_lt (by simpa [Φ] using hseminorm_le)
+    (by simpa [hM_eq] using hsmall)
+
+lemma finitePartition_error_finsetSup_lt_of_uniform {m : ℕ} {ι : Type*}
+    [Fintype ι] [DecidableEq ι]
+    {K : Set (Fin m → ℝ)} {A : ι → Set (Fin m → ℝ)}
+    (hK_meas : MeasurableSet K)
+    (hK_bdd : Bornology.IsBounded K)
+    (hA_meas : ∀ i, MeasurableSet (A i))
+    (hA_disj : Set.univ.PairwiseDisjoint A)
+    (hA_cover : K ⊆ ⋃ i, A i)
+    (hA_sub : ∀ i, A i ⊆ K)
+    (ψ : ι → SchwartzMap (Fin m → ℝ) ℂ)
+    (g : (Fin m → ℝ) → SchwartzMap (Fin m → ℝ) ℂ)
+    (f : SchwartzMap (Fin m → ℝ) ℂ)
+    (hg_cont : Continuous g)
+    (hg_bound : ∀ (k n : ℕ), ∃ (C : ℝ) (N : ℕ), C > 0 ∧
+      ∀ x, SchwartzMap.seminorm ℝ k n (g x) ≤ C * (1 + ‖x‖) ^ N)
+    (ΦK : SchwartzMap (Fin m → ℝ) ℂ)
+    (hΦK : ∀ ξ, ΦK ξ = boundedParamIntegralScalar K g f ξ)
+    (s : Finset (ℕ × ℕ)) (η ε : ℝ)
+    (hη_nonneg : 0 ≤ η) (hε : 0 < ε)
+    (hpoint : ∀ x ∈ K,
+      (s.sup (schwartzSeminormFamily ℝ (Fin m → ℝ) ℂ))
+        (finitePartitionKernel A ψ x - boundedKernel g f x) < η)
+    (hsmall : (volume K).toReal * η < ε) :
+    (s.sup (schwartzSeminormFamily ℝ (Fin m → ℝ) ℂ))
+        ((∑ i, ((volume (A i)).toReal : ℂ) • ψ i) - ΦK) < ε := by
+  classical
+  refine Seminorm.finset_sup_apply_lt hε ?_
+  rintro ⟨k, n⟩ hkn
+  exact finitePartition_error_schwartzSeminorm_lt_of_uniform
+    hK_meas hK_bdd hA_meas hA_disj hA_cover hA_sub
+    ψ g f hg_cont hg_bound ΦK hΦK k n η ε hη_nonneg
+    (fun x hxK => by
+      have hle :
+          SchwartzMap.seminorm ℝ k n
+              (finitePartitionKernel A ψ x - boundedKernel g f x) ≤
+            (s.sup (schwartzSeminormFamily ℝ (Fin m → ℝ) ℂ))
+              (finitePartitionKernel A ψ x - boundedKernel g f x) := by
+        simpa [SchwartzMap.schwartzSeminormFamily_apply] using
+          (Seminorm.le_finset_sup_apply
+            (p := schwartzSeminormFamily ℝ (Fin m → ℝ) ℂ)
+            (s := s)
+            (x := finitePartitionKernel A ψ x - boundedKernel g f x)
+            hkn)
+      exact hle.trans_lt (hpoint x hxK))
+    hsmall
+
+lemma exists_finite_seminorm_kernel_approx {m : ℕ}
+    (K : Set (Fin m → ℝ))
+    (hK_meas : MeasurableSet K)
+    (hK_bdd : Bornology.IsBounded K)
+    (T : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ)
+    (g : (Fin m → ℝ) → SchwartzMap (Fin m → ℝ) ℂ)
+    (f : SchwartzMap (Fin m → ℝ) ℂ)
+    (hg_cont : Continuous g)
+    (hg_bound : ∀ (k n : ℕ), ∃ (C : ℝ) (N : ℕ), C > 0 ∧
+      ∀ x, SchwartzMap.seminorm ℝ k n (g x) ≤ C * (1 + ‖x‖) ^ N)
+    (ΦK : SchwartzMap (Fin m → ℝ) ℂ)
+    (hΦK : ∀ ξ, ΦK ξ = boundedParamIntegralScalar K g f ξ)
+    (s : Finset (ℕ × ℕ)) (ε : ℝ) (hε : 0 < ε) :
+    ∃ (Φ : SchwartzMap (Fin m → ℝ) ℂ) (I : ℂ),
+      (s.sup (schwartzSeminormFamily ℝ (Fin m → ℝ) ℂ)) (Φ - ΦK) < ε ∧
+      ‖I - ∫ x in K, T (f x • g x)‖ < ε ∧
+      T Φ = I := by
+  classical
+  obtain ⟨sT, C, hC_pos, hT⟩ :=
+    clm_norm_le_finite_schwartz_seminorms_complex T
+  let u : Finset (ℕ × ℕ) := s ∪ sT
+  let μK : ℝ := (volume K).toReal
+  let η : ℝ := ε / (2 * (μK + 1) * (C + 1))
+  have hμK_nonneg : 0 ≤ μK := ENNReal.toReal_nonneg
+  have hden_pos : 0 < 2 * (μK + 1) * (C + 1) := by
+    nlinarith [hμK_nonneg, hC_pos]
+  have hη_pos : 0 < η := by
+    exact div_pos hε hden_pos
+  have hη_nonneg : 0 ≤ η := hη_pos.le
+  have hbase_mul :
+      (μK + 1) * (C + 1) * η = ε / 2 := by
+    dsimp [η]
+    field_simp [hden_pos.ne']
+  have hsmall_seminorm : (volume K).toReal * η < ε := by
+    have hμ_le : μK ≤ (μK + 1) * (C + 1) := by
+      nlinarith [hμK_nonneg, hC_pos]
+    calc
+      (volume K).toReal * η = μK * η := rfl
+      _ ≤ ((μK + 1) * (C + 1)) * η :=
+          mul_le_mul_of_nonneg_right hμ_le hη_nonneg
+      _ = ε / 2 := hbase_mul
+      _ < ε := by linarith
+  have hsmall_scalar : (volume K).toReal * (C * η) < ε := by
+    have hμC_le : μK * C ≤ (μK + 1) * (C + 1) := by
+      nlinarith [hμK_nonneg, hC_pos]
+    calc
+      (volume K).toReal * (C * η) = (μK * C) * η := by ring
+      _ ≤ ((μK + 1) * (C + 1)) * η :=
+          mul_le_mul_of_nonneg_right hμC_le hη_nonneg
+      _ = ε / 2 := hbase_mul
+      _ < ε := by linarith
+  obtain ⟨ι, hι, A, ψ, hA_meas, hA_disj, hA_cover, hA_sub, hcell⟩ :=
+    exists_finite_partition_schwartzKernel_seminorm_approx
+      K hK_meas hK_bdd g f hg_cont u η hη_pos
+  letI : Fintype ι := hι
+  letI : DecidableEq ι := Classical.decEq ι
+  let c : ι → ℂ := fun i => ((volume (A i)).toReal : ℂ)
+  let Φ : SchwartzMap (Fin m → ℝ) ℂ := ∑ i, c i • ψ i
+  let I : ℂ := ∑ i, c i * T (ψ i)
+  have hs_sub : s ⊆ u := by
+    intro i hi
+    simp [u, hi]
+  have hsT_sub : sT ⊆ u := by
+    intro i hi
+    simp [u, hi]
+  have hpoint_u :
+      ∀ x ∈ K,
+        (u.sup (schwartzSeminormFamily ℝ (Fin m → ℝ) ℂ))
+          (finitePartitionKernel A ψ x - boundedKernel g f x) < η :=
+    fun x hxK =>
+      finitePartitionKernel_error_lt_of_mem
+        hA_disj hA_cover g f u hcell hxK
+  have hpoint_s :
+      ∀ x ∈ K,
+        (s.sup (schwartzSeminormFamily ℝ (Fin m → ℝ) ℂ))
+          (finitePartitionKernel A ψ x - boundedKernel g f x) < η := by
+    intro x hxK
+    have hle :
+        (s.sup (schwartzSeminormFamily ℝ (Fin m → ℝ) ℂ))
+            (finitePartitionKernel A ψ x - boundedKernel g f x) ≤
+          (u.sup (schwartzSeminormFamily ℝ (Fin m → ℝ) ℂ))
+            (finitePartitionKernel A ψ x - boundedKernel g f x) := by
+      refine Seminorm.finset_sup_apply_le (apply_nonneg _ _) ?_
+      intro i hi
+      exact
+        Seminorm.le_finset_sup_apply
+          (p := schwartzSeminormFamily ℝ (Fin m → ℝ) ℂ)
+          (s := u)
+          (x := finitePartitionKernel A ψ x - boundedKernel g f x)
+          (hs_sub hi)
+    exact hle.trans_lt (hpoint_u x hxK)
+  have hseminorm :
+      (s.sup (schwartzSeminormFamily ℝ (Fin m → ℝ) ℂ)) (Φ - ΦK) < ε := by
+    simpa [Φ, c] using
+      finitePartition_error_finsetSup_lt_of_uniform
+        hK_meas hK_bdd hA_meas hA_disj hA_cover hA_sub
+        ψ g f hg_cont hg_bound ΦK hΦK
+        s η ε hη_nonneg hε hpoint_s hsmall_seminorm
+  have hscalar_piece :
+      ‖(∫ x in K, T (finitePartitionKernel A ψ x)) -
+          ∫ x in K, T (boundedKernel g f x)‖ < ε :=
+    clm_finitePartitionKernel_error_norm_lt_of_uniform
+      hK_meas hK_bdd hA_meas hA_disj hA_cover hA_sub
+      T ψ g f hg_cont hg_bound sT u C η ε
+      hC_pos hsT_sub hT hpoint_u hsmall_scalar
+  have hI_piece :
+      I = ∫ x in K, T (finitePartitionKernel A ψ x) := by
+    dsimp [I, c]
+    exact (integral_clm_finitePartitionKernel
+      hK_bdd hA_meas hA_disj hA_cover hA_sub T ψ).symm
+  have hscalar :
+      ‖I - ∫ x in K, T (f x • g x)‖ < ε := by
+    simpa [hI_piece, boundedKernel] using hscalar_piece
+  have hstep : T Φ = I := by
+    simpa [Φ, I, c] using
+      clm_finset_weighted_sum_exchange
+        T (Finset.univ : Finset ι) c ψ
+  exact ⟨Φ, I, hseminorm, hscalar, hstep⟩
+
 def schwartzSeminormIndexBox (N : ℕ) : Finset (ℕ × ℕ) :=
   (Finset.range (N + 1)).product (Finset.range (N + 1))
 
@@ -1112,6 +2268,36 @@ theorem exists_bounded_kernel_approximants_of_finite_seminorm_approx {m : ℕ}
       lt_of_lt_of_le (hIn_bound N) (le_trans hε_le (le_of_lt hNδ_small))
     simpa [dist_eq_norm] using hsmall
 
+theorem exists_bounded_kernel_approximants {m : ℕ}
+    (K : Set (Fin m → ℝ))
+    (hK_meas : MeasurableSet K)
+    (hK_bdd : Bornology.IsBounded K)
+    (T : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ)
+    (g : (Fin m → ℝ) → SchwartzMap (Fin m → ℝ) ℂ)
+    (f : SchwartzMap (Fin m → ℝ) ℂ)
+    (hg_cont : Continuous g)
+    (hg_bound : ∀ (k n : ℕ), ∃ (C : ℝ) (N : ℕ), C > 0 ∧
+      ∀ x, SchwartzMap.seminorm ℝ k n (g x) ≤ C * (1 + ‖x‖) ^ N) :
+    ∃ (Φn : ℕ → SchwartzMap (Fin m → ℝ) ℂ) (In : ℕ → ℂ),
+      (∀ k n,
+        Filter.Tendsto
+          (fun N => SchwartzMap.seminorm ℝ k n
+            (Φn N -
+              Classical.choose
+                (bounded_parameter_integral_scalar_is_schwartz
+                  K hK_meas hK_bdd g f hg_cont hg_bound)))
+          Filter.atTop (nhds 0)) ∧
+      Filter.Tendsto In Filter.atTop
+        (nhds (∫ x in K, T (f x • g x))) ∧
+      ∀ N, T (Φn N) = In N := by
+  exact
+    exists_bounded_kernel_approximants_of_finite_seminorm_approx
+      K hK_meas hK_bdd T g f hg_cont hg_bound
+      (fun ΦK hΦK s ε hε =>
+        exists_finite_seminorm_kernel_approx
+          K hK_meas hK_bdd T g f hg_cont hg_bound
+          ΦK hΦK s ε hε)
+
 theorem bounded_parameter_integral_schwartz_clm_exchange_of_choose_approximants {m : ℕ}
     (K : Set (Fin m → ℝ))
     (hK_meas : MeasurableSet K)
@@ -1184,6 +2370,63 @@ theorem bounded_parameter_integral_schwartz_clm_exchange_of_exists_approximants 
       K hK_meas hK_bdd T g f hg_cont hg_bound
       Φn In hΦn hIn hstep
 
+theorem bounded_parameter_integral_schwartz_clm_exchange {m : ℕ}
+    (K : Set (Fin m → ℝ))
+    (hK_meas : MeasurableSet K)
+    (hK_bdd : Bornology.IsBounded K)
+    (T : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ)
+    (g : (Fin m → ℝ) → SchwartzMap (Fin m → ℝ) ℂ)
+    (f : SchwartzMap (Fin m → ℝ) ℂ)
+    (hg_cont : Continuous g)
+    (hg_bound : ∀ (k n : ℕ), ∃ (C : ℝ) (N : ℕ), C > 0 ∧
+      ∀ x, SchwartzMap.seminorm ℝ k n (g x) ≤ C * (1 + ‖x‖) ^ N) :
+    ∃ ΦK : SchwartzMap (Fin m → ℝ) ℂ,
+      (∀ ξ, ΦK ξ = boundedParamIntegralScalar K g f ξ) ∧
+      T ΦK = ∫ x in K, T (g x) * f x := by
+  exact
+    bounded_parameter_integral_schwartz_clm_exchange_of_exists_approximants
+      K hK_meas hK_bdd T g f hg_cont hg_bound
+      (exists_bounded_kernel_approximants
+        K hK_meas hK_bdd T g f hg_cont hg_bound)
+
+lemma bounded_parameter_integral_schwartzSeminorm_le {m : ℕ}
+    (K : Set (Fin m → ℝ))
+    (hK_meas : MeasurableSet K)
+    (hK_bdd : Bornology.IsBounded K)
+    (g : (Fin m → ℝ) → SchwartzMap (Fin m → ℝ) ℂ)
+    (f : SchwartzMap (Fin m → ℝ) ℂ)
+    (hg_cont : Continuous g)
+    (hg_bound : ∀ (k n : ℕ), ∃ (C : ℝ) (N : ℕ), C > 0 ∧
+      ∀ x, SchwartzMap.seminorm ℝ k n (g x) ≤ C * (1 + ‖x‖) ^ N)
+    (ΦK : SchwartzMap (Fin m → ℝ) ℂ)
+    (hΦK : ∀ ξ, ΦK ξ = boundedParamIntegralScalar K g f ξ)
+    (k n : ℕ) :
+    SchwartzMap.seminorm ℝ k n ΦK ≤
+      ∫ x in K, SchwartzMap.seminorm ℝ k n (g x) * ‖f x‖ := by
+  have hbound_nonneg :
+      0 ≤ ∫ x in K, SchwartzMap.seminorm ℝ k n (g x) * ‖f x‖ :=
+    MeasureTheory.integral_nonneg (μ := volume.restrict K) fun x =>
+      mul_nonneg (apply_nonneg _ _) (norm_nonneg _)
+  refine SchwartzMap.seminorm_le_bound ℝ k n ΦK hbound_nonneg ?_
+  intro ξ
+  have hΦK_fun :
+      (fun ζ : Fin m → ℝ => ΦK ζ) = boundedParamIntegralScalar K g f :=
+    funext hΦK
+  have hiter :
+      iteratedFDeriv ℝ n (fun ζ : Fin m → ℝ => ΦK ζ) ξ =
+        boundedParamIntegralDeriv K g f n ξ := by
+    calc
+      iteratedFDeriv ℝ n (fun ζ : Fin m → ℝ => ΦK ζ) ξ
+          =
+        iteratedFDeriv ℝ n (boundedParamIntegralScalar K g f) ξ := by
+          rw [hΦK_fun]
+      _ = boundedParamIntegralDeriv K g f n ξ :=
+          boundedParamIntegralScalar_iteratedFDeriv_eq
+            K hK_meas hK_bdd g f hg_cont hg_bound n ξ
+  rw [hiter]
+  exact boundedParamIntegralScalar_decay_bound
+    K hK_meas hK_bdd g f hg_cont hg_bound k n ξ
+
 def fubiniCube (m R : ℕ) : Set (Fin m → ℝ) :=
   {x | ∀ i, ‖x i‖ ≤ (R : ℝ)}
 
@@ -1231,6 +2474,11 @@ lemma integrableOn_iUnion_fubiniCube_of_integrable {m : ℕ}
     IntegrableOn F (⋃ R : ℕ, fubiniCube m R) volume := by
   simpa [iUnion_fubiniCube_eq_univ m] using hF
 
+lemma integrableOn_iUnion_fubiniCube_of_integrable_real {m : ℕ}
+    {F : (Fin m → ℝ) → ℝ} (hF : Integrable F) :
+    IntegrableOn F (⋃ R : ℕ, fubiniCube m R) volume := by
+  simpa [iUnion_fubiniCube_eq_univ m] using hF
+
 lemma tendsto_integral_fubiniCube_of_integrable {m : ℕ}
     {F : (Fin m → ℝ) → ℂ} (hF : Integrable F) :
     Filter.Tendsto
@@ -1253,6 +2501,383 @@ lemma tendsto_integral_fubiniCube_of_integrable {m : ℕ}
     rw [iUnion_fubiniCube_eq_univ m]
     rw [MeasureTheory.setIntegral_univ]
   simpa [hlim] using hconv
+
+lemma tendsto_integral_fubiniCube_of_integrable_real {m : ℕ}
+    {F : (Fin m → ℝ) → ℝ} (hF : Integrable F) :
+    Filter.Tendsto
+      (fun R : ℕ => ∫ x in fubiniCube m R, F x)
+      Filter.atTop
+      (nhds (∫ x, F x)) := by
+  have hmono : Monotone (fun R : ℕ => fubiniCube m R) := by
+    intro R S hRS
+    exact fubiniCube_mono m hRS
+  have hconv :=
+    MeasureTheory.tendsto_setIntegral_of_monotone
+      (f := F)
+      (μ := volume)
+      (s := fun R : ℕ => fubiniCube m R)
+      (hsm := fun R => measurableSet_fubiniCube m R)
+      hmono
+      (integrableOn_iUnion_fubiniCube_of_integrable_real (m := m) hF)
+  have hlim :
+      (∫ x in ⋃ R : ℕ, fubiniCube m R, F x) = ∫ x, F x := by
+    rw [iUnion_fubiniCube_eq_univ m]
+    rw [MeasureTheory.setIntegral_univ]
+  simpa [hlim] using hconv
+
+def fubiniAnnulus (m R S : ℕ) : Set (Fin m → ℝ) :=
+  fubiniCube m S \ fubiniCube m R
+
+lemma measurableSet_fubiniAnnulus (m R S : ℕ) :
+    MeasurableSet (fubiniAnnulus m R S) :=
+  (measurableSet_fubiniCube m S).diff (measurableSet_fubiniCube m R)
+
+lemma isBounded_fubiniAnnulus (m R S : ℕ) :
+    Bornology.IsBounded (fubiniAnnulus m R S) :=
+  (isBounded_fubiniCube m S).subset (by intro x hx; exact hx.1)
+
+noncomputable def fubiniTruncation {m : ℕ}
+    (T : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ)
+    (g : (Fin m → ℝ) → SchwartzMap (Fin m → ℝ) ℂ)
+    (f : SchwartzMap (Fin m → ℝ) ℂ)
+    (hg_cont : Continuous g)
+    (hg_bound : ∀ (k n : ℕ), ∃ (C : ℝ) (N : ℕ), C > 0 ∧
+      ∀ x, SchwartzMap.seminorm ℝ k n (g x) ≤ C * (1 + ‖x‖) ^ N)
+    (R : ℕ) : SchwartzMap (Fin m → ℝ) ℂ :=
+  Classical.choose
+    (bounded_parameter_integral_schwartz_clm_exchange
+      (fubiniCube m R) (measurableSet_fubiniCube m R) (isBounded_fubiniCube m R)
+      T g f hg_cont hg_bound)
+
+lemma fubiniTruncation_apply {m : ℕ}
+    (T : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ)
+    (g : (Fin m → ℝ) → SchwartzMap (Fin m → ℝ) ℂ)
+    (f : SchwartzMap (Fin m → ℝ) ℂ)
+    (hg_cont : Continuous g)
+    (hg_bound : ∀ (k n : ℕ), ∃ (C : ℝ) (N : ℕ), C > 0 ∧
+      ∀ x, SchwartzMap.seminorm ℝ k n (g x) ≤ C * (1 + ‖x‖) ^ N)
+    (R : ℕ) (ξ : Fin m → ℝ) :
+    fubiniTruncation T g f hg_cont hg_bound R ξ =
+      ∫ x in fubiniCube m R, g x ξ * f x := by
+  have hspec :=
+    Classical.choose_spec
+      (bounded_parameter_integral_schwartz_clm_exchange
+        (fubiniCube m R) (measurableSet_fubiniCube m R) (isBounded_fubiniCube m R)
+        T g f hg_cont hg_bound)
+  simpa [fubiniTruncation, boundedParamIntegralScalar] using hspec.1 ξ
+
+lemma fubiniTruncation_clm {m : ℕ}
+    (T : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ)
+    (g : (Fin m → ℝ) → SchwartzMap (Fin m → ℝ) ℂ)
+    (f : SchwartzMap (Fin m → ℝ) ℂ)
+    (hg_cont : Continuous g)
+    (hg_bound : ∀ (k n : ℕ), ∃ (C : ℝ) (N : ℕ), C > 0 ∧
+      ∀ x, SchwartzMap.seminorm ℝ k n (g x) ≤ C * (1 + ‖x‖) ^ N)
+    (R : ℕ) :
+    T (fubiniTruncation T g f hg_cont hg_bound R) =
+      ∫ x in fubiniCube m R, T (g x) * f x := by
+  have hspec :=
+    Classical.choose_spec
+      (bounded_parameter_integral_schwartz_clm_exchange
+        (fubiniCube m R) (measurableSet_fubiniCube m R) (isBounded_fubiniCube m R)
+        T g f hg_cont hg_bound)
+  simpa [fubiniTruncation] using hspec.2
+
+noncomputable def fubiniAnnulusIntegral {m : ℕ}
+    (g : (Fin m → ℝ) → SchwartzMap (Fin m → ℝ) ℂ)
+    (f : SchwartzMap (Fin m → ℝ) ℂ)
+    (hg_cont : Continuous g)
+    (hg_bound : ∀ (k n : ℕ), ∃ (C : ℝ) (N : ℕ), C > 0 ∧
+      ∀ x, SchwartzMap.seminorm ℝ k n (g x) ≤ C * (1 + ‖x‖) ^ N)
+    (R S : ℕ) : SchwartzMap (Fin m → ℝ) ℂ :=
+  Classical.choose
+    (bounded_parameter_integral_scalar_is_schwartz
+      (fubiniAnnulus m R S) (measurableSet_fubiniAnnulus m R S)
+      (isBounded_fubiniAnnulus m R S) g f hg_cont hg_bound)
+
+lemma fubiniAnnulusIntegral_apply {m : ℕ}
+    (g : (Fin m → ℝ) → SchwartzMap (Fin m → ℝ) ℂ)
+    (f : SchwartzMap (Fin m → ℝ) ℂ)
+    (hg_cont : Continuous g)
+    (hg_bound : ∀ (k n : ℕ), ∃ (C : ℝ) (N : ℕ), C > 0 ∧
+      ∀ x, SchwartzMap.seminorm ℝ k n (g x) ≤ C * (1 + ‖x‖) ^ N)
+    (R S : ℕ) (ξ : Fin m → ℝ) :
+    fubiniAnnulusIntegral g f hg_cont hg_bound R S ξ =
+      ∫ x in fubiniAnnulus m R S, g x ξ * f x := by
+  have hspec :=
+    Classical.choose_spec
+      (bounded_parameter_integral_scalar_is_schwartz
+        (fubiniAnnulus m R S) (measurableSet_fubiniAnnulus m R S)
+        (isBounded_fubiniAnnulus m R S) g f hg_cont hg_bound)
+  simpa [fubiniAnnulusIntegral, boundedParamIntegralScalar] using hspec ξ
+
+lemma fubiniTruncation_sub_eq_annulus {m : ℕ}
+    (T : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ)
+    (g : (Fin m → ℝ) → SchwartzMap (Fin m → ℝ) ℂ)
+    (f : SchwartzMap (Fin m → ℝ) ℂ)
+    (hg_cont : Continuous g)
+    (hg_bound : ∀ (k n : ℕ), ∃ (C : ℝ) (N : ℕ), C > 0 ∧
+      ∀ x, SchwartzMap.seminorm ℝ k n (g x) ≤ C * (1 + ‖x‖) ^ N)
+    {R S : ℕ} (hRS : R ≤ S) :
+    fubiniTruncation T g f hg_cont hg_bound S -
+      fubiniTruncation T g f hg_cont hg_bound R =
+    fubiniAnnulusIntegral g f hg_cont hg_bound R S := by
+  ext ξ
+  let F : (Fin m → ℝ) → ℂ := fun x => g x ξ * f x
+  have hF_int :
+      IntegrableOn F (fubiniCube m S) volume :=
+    integrableOn_schwartz_fubini_pointwise
+      (fubiniCube m S) g f hg_cont hg_bound ξ
+  have hdiff :
+      ∫ x in fubiniAnnulus m R S, F x ∂volume =
+        (∫ x in fubiniCube m S, F x ∂volume) -
+          (∫ x in fubiniCube m R, F x ∂volume) := by
+    simpa [fubiniAnnulus] using
+      (MeasureTheory.setIntegral_diff
+        (μ := volume)
+        (f := F)
+        (measurableSet_fubiniCube m R) hF_int (fubiniCube_mono m hRS))
+  calc
+    (fubiniTruncation T g f hg_cont hg_bound S -
+        fubiniTruncation T g f hg_cont hg_bound R) ξ
+        =
+      (∫ x in fubiniCube m S, F x) -
+        (∫ x in fubiniCube m R, F x) := by
+        simp [SchwartzMap.sub_apply, F,
+          fubiniTruncation_apply T g f hg_cont hg_bound]
+    _ = ∫ x in fubiniAnnulus m R S, F x := by
+        simpa using hdiff.symm
+    _ = fubiniAnnulusIntegral g f hg_cont hg_bound R S ξ := by
+        rw [fubiniAnnulusIntegral_apply]
+
+lemma fubiniTruncation_sub_seminorm_le_annulus {m : ℕ}
+    (T : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ)
+    (g : (Fin m → ℝ) → SchwartzMap (Fin m → ℝ) ℂ)
+    (f : SchwartzMap (Fin m → ℝ) ℂ)
+    (hg_cont : Continuous g)
+    (hg_bound : ∀ (k n : ℕ), ∃ (C : ℝ) (N : ℕ), C > 0 ∧
+      ∀ x, SchwartzMap.seminorm ℝ k n (g x) ≤ C * (1 + ‖x‖) ^ N)
+    {R S : ℕ} (hRS : R ≤ S) (k n : ℕ) :
+    SchwartzMap.seminorm ℝ k n
+        (fubiniTruncation T g f hg_cont hg_bound S -
+          fubiniTruncation T g f hg_cont hg_bound R)
+      ≤ ∫ x in fubiniAnnulus m R S,
+          SchwartzMap.seminorm ℝ k n (g x) * ‖f x‖ := by
+  rw [fubiniTruncation_sub_eq_annulus T g f hg_cont hg_bound hRS]
+  exact
+    bounded_parameter_integral_schwartzSeminorm_le
+      (fubiniAnnulus m R S) (measurableSet_fubiniAnnulus m R S)
+      (isBounded_fubiniAnnulus m R S) g f hg_cont hg_bound
+      (fubiniAnnulusIntegral g f hg_cont hg_bound R S)
+      (fubiniAnnulusIntegral_apply g f hg_cont hg_bound R S) k n
+
+lemma fubiniTruncation_sub_seminorm_le_compl {m : ℕ}
+    (T : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ)
+    (g : (Fin m → ℝ) → SchwartzMap (Fin m → ℝ) ℂ)
+    (f : SchwartzMap (Fin m → ℝ) ℂ)
+    (hg_cont : Continuous g)
+    (hg_bound : ∀ (k n : ℕ), ∃ (C : ℝ) (N : ℕ), C > 0 ∧
+      ∀ x, SchwartzMap.seminorm ℝ k n (g x) ≤ C * (1 + ‖x‖) ^ N)
+    {R S : ℕ} (hRS : R ≤ S) (k n : ℕ) :
+    SchwartzMap.seminorm ℝ k n
+        (fubiniTruncation T g f hg_cont hg_bound S -
+          fubiniTruncation T g f hg_cont hg_bound R)
+      ≤ ∫ x in (fubiniCube m R)ᶜ,
+          SchwartzMap.seminorm ℝ k n (g x) * ‖f x‖ := by
+  let W : (Fin m → ℝ) → ℝ :=
+    fun x => SchwartzMap.seminorm ℝ k n (g x) * ‖f x‖
+  have hW_int : Integrable W :=
+    integrable_schwartz_fubini_seminorm_weight g f hg_cont hg_bound k n
+  have hann_subset : fubiniAnnulus m R S ⊆ (fubiniCube m R)ᶜ := by
+    intro x hx
+    exact hx.2
+  have hmono :
+      ∫ x in fubiniAnnulus m R S, W x ≤
+        ∫ x in (fubiniCube m R)ᶜ, W x :=
+    MeasureTheory.setIntegral_mono_set
+      (hW_int.integrableOn)
+      (Filter.Eventually.of_forall fun x =>
+        mul_nonneg (apply_nonneg _ _) (norm_nonneg _))
+      (Filter.Eventually.of_forall fun x hx => hann_subset hx)
+  exact (fubiniTruncation_sub_seminorm_le_annulus
+    T g f hg_cont hg_bound hRS k n).trans hmono
+
+lemma tendsto_integral_compl_fubiniCube_of_integrable {m : ℕ}
+    {F : (Fin m → ℝ) → ℝ} (hF : Integrable F) :
+    Filter.Tendsto
+      (fun R : ℕ => ∫ x in (fubiniCube m R)ᶜ, F x)
+      Filter.atTop
+      (nhds 0) := by
+  have hcube :
+      Filter.Tendsto
+        (fun R : ℕ => ∫ x in fubiniCube m R, F x)
+        Filter.atTop
+        (nhds (∫ x, F x)) :=
+    tendsto_integral_fubiniCube_of_integrable_real (m := m) hF
+  have hrepr :
+      (fun R : ℕ => ∫ x in (fubiniCube m R)ᶜ, F x) =
+        fun R : ℕ => (∫ x, F x) - (∫ x in fubiniCube m R, F x) := by
+    funext R
+    have hdiff :
+        ∫ x in Set.univ \ fubiniCube m R, F x ∂volume =
+          (∫ x in (Set.univ : Set (Fin m → ℝ)), F x ∂volume) -
+            (∫ x in fubiniCube m R, F x ∂volume) :=
+      MeasureTheory.setIntegral_diff
+        (μ := volume)
+        (f := F)
+        (measurableSet_fubiniCube m R) hF.integrableOn (Set.subset_univ _)
+    simpa [Set.compl_eq_univ_diff, MeasureTheory.setIntegral_univ] using hdiff
+  rw [hrepr]
+  have hlim :=
+    (tendsto_const_nhds (x := ∫ x, F x)).sub hcube
+  simpa using hlim
+
+lemma cauchySeq_schwartz_of_seminorm {m : ℕ}
+    {u : ℕ → SchwartzMap (Fin m → ℝ) ℂ}
+    (h : ∀ k n ε, 0 < ε →
+      ∃ N, ∀ R ≥ N, ∀ S ≥ N,
+        SchwartzMap.seminorm ℝ k n (u R - u S) < ε) :
+    CauchySeq u := by
+  rw [cauchySeq_iff_tendsto, uniformity_eq_comap_nhds_zero, Filter.tendsto_comap_iff]
+  set_option backward.isDefEq.respectTransparency false in
+  rw [(schwartz_withSeminorms ℝ (Fin m → ℝ) ℂ).tendsto_nhds _ 0]
+  intro i ε hε
+  obtain ⟨k, n⟩ := i
+  obtain ⟨N, hN⟩ := h k n ε hε
+  rw [Filter.eventually_atTop_prod_self]
+  refine ⟨N, fun R S hR hS => ?_⟩
+  simpa [SchwartzMap.schwartzSeminormFamily_apply, sub_zero] using hN S hS R hR
+
+lemma cauchySeq_fubiniTruncation {m : ℕ}
+    (T : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ)
+    (g : (Fin m → ℝ) → SchwartzMap (Fin m → ℝ) ℂ)
+    (f : SchwartzMap (Fin m → ℝ) ℂ)
+    (hg_cont : Continuous g)
+    (hg_bound : ∀ (k n : ℕ), ∃ (C : ℝ) (N : ℕ), C > 0 ∧
+      ∀ x, SchwartzMap.seminorm ℝ k n (g x) ≤ C * (1 + ‖x‖) ^ N) :
+    CauchySeq (fubiniTruncation T g f hg_cont hg_bound) := by
+  refine cauchySeq_schwartz_of_seminorm ?_
+  intro k n ε hε
+  let W : (Fin m → ℝ) → ℝ :=
+    fun x => SchwartzMap.seminorm ℝ k n (g x) * ‖f x‖
+  have hW_int : Integrable W :=
+    integrable_schwartz_fubini_seminorm_weight g f hg_cont hg_bound k n
+  have htail :=
+    tendsto_integral_compl_fubiniCube_of_integrable (m := m) hW_int
+  have hev := (Metric.tendsto_nhds.mp htail) ε hε
+  rw [Filter.eventually_atTop] at hev
+  obtain ⟨N, hN⟩ := hev
+  refine ⟨N, fun R hR S hS => ?_⟩
+  have htail_lt : ∀ Q ≥ N, (∫ x in (fubiniCube m Q)ᶜ, W x) < ε := by
+    intro Q hQ
+    have hdist := hN Q hQ
+    have hnonneg :
+        0 ≤ ∫ x in (fubiniCube m Q)ᶜ, W x :=
+      MeasureTheory.integral_nonneg (μ := volume.restrict (fubiniCube m Q)ᶜ) fun x =>
+        mul_nonneg (apply_nonneg _ _) (norm_nonneg _)
+    simpa [Real.dist_eq, abs_of_nonneg hnonneg] using hdist
+  by_cases hRS : R ≤ S
+  · have hle :=
+      fubiniTruncation_sub_seminorm_le_compl
+        T g f hg_cont hg_bound hRS k n
+    have hle' :
+        SchwartzMap.seminorm ℝ k n
+            (fubiniTruncation T g f hg_cont hg_bound R -
+              fubiniTruncation T g f hg_cont hg_bound S)
+          ≤ ∫ x in (fubiniCube m R)ᶜ, W x := by
+      have hneg :
+          fubiniTruncation T g f hg_cont hg_bound R -
+              fubiniTruncation T g f hg_cont hg_bound S =
+            - (fubiniTruncation T g f hg_cont hg_bound S -
+              fubiniTruncation T g f hg_cont hg_bound R) := by
+        abel
+      rw [hneg, map_neg_eq_map]
+      exact hle
+    exact lt_of_le_of_lt hle' (htail_lt R hR)
+  · have hSR : S ≤ R := le_of_not_ge hRS
+    have hle :=
+      fubiniTruncation_sub_seminorm_le_compl
+        T g f hg_cont hg_bound hSR k n
+    exact lt_of_le_of_lt hle (htail_lt S hS)
+
+theorem schwartz_clm_fubini_exchange_aux {m : ℕ}
+    (T : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ)
+    (g : (Fin m → ℝ) → SchwartzMap (Fin m → ℝ) ℂ)
+    (f : SchwartzMap (Fin m → ℝ) ℂ)
+    (hg_cont : Continuous g)
+    (hg_bound : ∀ (k n : ℕ), ∃ (C : ℝ) (N : ℕ), C > 0 ∧
+      ∀ (x : Fin m → ℝ),
+        SchwartzMap.seminorm ℝ k n (g x) ≤ C * (1 + ‖x‖) ^ N) :
+    ∃ (Φ : SchwartzMap (Fin m → ℝ) ℂ),
+      (∀ ξ : Fin m → ℝ, Φ ξ = ∫ x : Fin m → ℝ, g x ξ * f x) ∧
+      (T Φ = ∫ x : Fin m → ℝ, T (g x) * f x) := by
+  let ΦR : ℕ → SchwartzMap (Fin m → ℝ) ℂ :=
+    fubiniTruncation T g f hg_cont hg_bound
+  have hΦR_cauchy : CauchySeq ΦR := by
+    simpa [ΦR] using cauchySeq_fubiniTruncation T g f hg_cont hg_bound
+  obtain ⟨Φ, hΦ_lim⟩ := cauchySeq_tendsto_of_complete hΦR_cauchy
+  refine ⟨Φ, ?_, ?_⟩
+  · intro ξ
+    have hev :
+        Continuous fun ψ : SchwartzMap (Fin m → ℝ) ℂ => ψ ξ := by
+      simpa using
+        (((BoundedContinuousFunction.evalCLM ℂ ξ).comp
+          (SchwartzMap.toBoundedContinuousFunctionCLM ℂ (Fin m → ℝ) ℂ)).continuous)
+    have hleft :
+        Filter.Tendsto (fun R : ℕ => ΦR R ξ) Filter.atTop (nhds (Φ ξ)) :=
+      hev.continuousAt.tendsto.comp hΦ_lim
+    have hleft_integral :
+        Filter.Tendsto
+          (fun R : ℕ => ∫ x in fubiniCube m R, g x ξ * f x)
+          Filter.atTop (nhds (Φ ξ)) :=
+      hleft.congr' <|
+        Filter.Eventually.of_forall fun R => by
+          simpa [ΦR] using
+            fubiniTruncation_apply T g f hg_cont hg_bound R ξ
+    have hright :
+        Filter.Tendsto
+          (fun R : ℕ => ∫ x in fubiniCube m R, g x ξ * f x)
+          Filter.atTop
+          (nhds (∫ x : Fin m → ℝ, g x ξ * f x)) :=
+      tendsto_integral_fubiniCube_of_integrable
+        (m := m) (integrable_schwartz_fubini_pointwise g f hg_cont hg_bound ξ)
+    exact tendsto_nhds_unique hleft_integral hright
+  · have hleft :
+        Filter.Tendsto
+          (fun R : ℕ => T (ΦR R))
+          Filter.atTop
+          (nhds (T Φ)) :=
+      T.continuous.continuousAt.tendsto.comp hΦ_lim
+    have hleft_integral :
+        Filter.Tendsto
+          (fun R : ℕ => ∫ x in fubiniCube m R, T (g x) * f x)
+          Filter.atTop
+          (nhds (T Φ)) :=
+      hleft.congr' <|
+        Filter.Eventually.of_forall fun R => by
+          simpa [ΦR] using
+            fubiniTruncation_clm T g f hg_cont hg_bound R
+    have hright :
+        Filter.Tendsto
+          (fun R : ℕ => ∫ x in fubiniCube m R, T (g x) * f x)
+          Filter.atTop
+          (nhds (∫ x : Fin m → ℝ, T (g x) * f x)) :=
+      tendsto_integral_fubiniCube_of_integrable
+        (m := m) (integrable_schwartz_fubini_clm_pairing T g f hg_cont hg_bound)
+    exact tendsto_nhds_unique hleft_integral hright
+
+theorem schwartz_clm_fubini_exchange {m : ℕ}
+    (T : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ)
+    (g : (Fin m → ℝ) → SchwartzMap (Fin m → ℝ) ℂ)
+    (f : SchwartzMap (Fin m → ℝ) ℂ)
+    (hg_cont : Continuous g)
+    (hg_bound : ∀ (k n : ℕ), ∃ (C : ℝ) (N : ℕ), C > 0 ∧
+      ∀ (x : Fin m → ℝ),
+        SchwartzMap.seminorm ℝ k n (g x) ≤ C * (1 + ‖x‖) ^ N) :
+    ∃ (Φ : SchwartzMap (Fin m → ℝ) ℂ),
+      (∀ ξ : Fin m → ℝ, Φ ξ = ∫ x : Fin m → ℝ, g x ξ * f x) ∧
+      (T Φ = ∫ x : Fin m → ℝ, T (g x) * f x) :=
+  schwartz_clm_fubini_exchange_aux T g f hg_cont hg_bound
 
 private def clmOfContinuousIsLinear
     {V : Type*} [AddCommMonoid V] [Module ℂ V] [TopologicalSpace V]

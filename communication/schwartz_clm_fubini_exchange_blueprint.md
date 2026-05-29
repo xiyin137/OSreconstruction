@@ -2,11 +2,11 @@
 
 ## Goal
 
-Discharge the axiom in
+Status: discharged. The former axiom in
 [`OSReconstruction/GeneralResults/SchwartzFubini.lean`](/Users/annamei/Documents/GitHub/OSreconstruction/OSReconstruction/GeneralResults/SchwartzFubini.lean):
 
 ```lean
-axiom schwartz_clm_fubini_exchange {m : ℕ}
+theorem schwartz_clm_fubini_exchange {m : ℕ}
     (T : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ)
     (g : (Fin m → ℝ) → SchwartzMap (Fin m → ℝ) ℂ)
     (f : SchwartzMap (Fin m → ℝ) ℂ)
@@ -1308,16 +1308,25 @@ all domination lemmas are already specialized to Schwartz seminorms.
 
 ### Proof Of The Blocker Theorem
 
-The blocker theorem should be proved by diagonalizing finite-seminorm
-approximations. The proof naturally splits into one analytic approximation lemma
-and one formal diagonalization theorem.
+Status: resolved in
+[`SchwartzFubini.lean`](/Users/annamei/Documents/GitHub/OSreconstruction/OSReconstruction/GeneralResults/SchwartzFubini.lean).
+The bounded-set approximation blocker now builds. The implemented path has two
+layers:
 
-#### Analytic Input
+1. A finite-seminorm approximation lemma, `exists_finite_seminorm_kernel_approx`.
+   This constructs one finite approximant for a chosen finite seminorm set `s`
+   and tolerance `ε`.
+2. The diagonalization theorem
+   `exists_bounded_kernel_approximants_of_finite_seminorm_approx`, which turns
+   the finite approximants into a sequence converging in every Schwartz seminorm.
 
-First prove the following finite-seminorm approximation lemma. This is the real
-analytic content: finite measurable partitions approximate the bounded kernel in
-the finite seminorm envelope and simultaneously approximate the scalar
-`T`-integral.
+The diagonal theorem is now instantiated by the unconditional
+`exists_bounded_kernel_approximants`, and the bounded-set CLM exchange is
+available as `bounded_parameter_integral_schwartz_clm_exchange`.
+
+#### Target Finite Lemma
+
+Status: implemented and building.
 
 ```lean
 lemma exists_finite_seminorm_kernel_approx {m : ℕ}
@@ -1339,31 +1348,41 @@ lemma exists_finite_seminorm_kernel_approx {m : ℕ}
       T Φ = I
 ```
 
-Proof of this finite lemma:
-
-The useful implementation route is not an abstract Bochner simple-function
-approximation. Instead, use compact uniform approximation on the bounded
-parameter set. Since the parameter space `Fin m → ℝ` is finite-dimensional,
-`hK_bdd` makes `closure K` compact. The map
+The current implementation has already built the compact finite-partition
+front-end needed for this theorem:
 
 ```lean
-F x := f x • g x
+lemma schwartz_seminorm_real_complex_smul
+lemma continuous_finset_sup_schwartzSeminormFamily
+lemma finset_sup_schwartzSeminorm_boundedKernel_le_sum
+lemma integrable_schwartz_fubini_finset_sup_boundedKernel
+lemma exists_finite_schwartzKernel_seminorm_cover
+lemma exists_finite_partition_schwartzKernel_seminorm_approx
+noncomputable def finitePartitionKernel
+lemma finitePartitionKernel_apply_of_mem
+lemma finitePartitionKernel_error_lt_of_mem
 ```
 
-is continuous into `SchwartzMap`, so every finite Schwartz-seminorm envelope is
-uniformly continuous on `closure K`.
+The compact finite-partition front-end is implemented, and the finite lemma now
+uses it directly. The previously remaining work is also implemented:
 
-#### Step A: choose the controlling seminorms
+- prove set-integral splitting over the finite measurable partition;
+- identify finite sums with the scalar integrals of `finitePartitionKernel`;
+- prove the finite approximant controls `ΦK` in the requested Schwartz
+  seminorm envelope;
+- prove the scalar `T` error estimate from the same partition.
 
-First extract a finite Schwartz-seminorm bound for `T`:
+#### Step A: Choose The Controlling Seminorms
+
+Start by extracting a finite Schwartz-seminorm bound for `T`:
 
 ```lean
 obtain ⟨sT, CT, hCT_pos, hT_bound⟩ :=
   clm_norm_le_finite_schwartz_seminorms_complex T
 ```
 
-For the scalar estimate we need to control `‖T ψ‖`, while for the Schwartz
-estimate we need the user-provided finite set `s`. Use the combined finite set:
+For the scalar estimate we need to control `‖T ψ‖`; for the Schwartz estimate we
+need the user-provided finite set `s`. Use the combined finite set:
 
 ```lean
 let u : Finset (ℕ × ℕ) := s ∪ sT
@@ -1375,99 +1394,127 @@ Because the complex and real Schwartz seminorms agree here,
 `schwartz_seminorm_complex_eq_real` lets `hT_bound` be applied after bounding by
 `p`.
 
-Choose a small positive local tolerance `η`. A safe choice is
+Choose a small positive local tolerance with slack. A convenient setup is:
 
 ```lean
-let M : ℝ := max 1 ((volume.restrict K) Set.univ).toReal
+let μK : ℝ := ((volume.restrict K) Set.univ).toReal
+let M : ℝ := max 1 μK
 let B : ℝ := max 1 CT
 let η : ℝ := ε / (2 * M * B)
 ```
 
-with helper facts:
+Prove:
 
 ```lean
 have hM_pos : 0 < M := lt_of_lt_of_le zero_lt_one (le_max_left _ _)
 have hB_pos : 0 < B := lt_of_lt_of_le zero_lt_one (le_max_left _ _)
 have hη_pos : 0 < η := by positivity
+have hμK_le_M : μK ≤ M := le_max_right _ _
+have hCT_le_B : CT ≤ B := le_max_right _ _
+have hMη_lt : M * η < ε := ...
+have hBMη_lt : B * M * η < ε := ...
 ```
 
-The constants can be made less compressed in Lean if `positivity` needs help.
-The only mathematical requirement is:
+The exact algebra can be made less compressed in Lean. The only needed
+consequences are:
 
 ```lean
-((volume.restrict K) Set.univ).toReal * η < ε
-CT * ((volume.restrict K) Set.univ).toReal * η < ε
+μK * η < ε
+CT * μK * η < ε
 ```
 
-#### Step B: finite partition approximation
+Use `isFiniteMeasure_restrict_of_isBounded K hK_bdd` when Lean needs finite
+measure facts for `μK`.
 
-Prove the following helper. This is the actual partition lemma needed for the
-blocker.
+#### Step B: Get The Finite Partition
+
+Apply the existing partition helper to `u` and `η`:
 
 ```lean
-lemma exists_finite_partition_schwartz_kernel_approx {m : ℕ}
-    (K : Set (Fin m → ℝ))
-    (hK_meas : MeasurableSet K)
-    (hK_bdd : Bornology.IsBounded K)
-    (g : (Fin m → ℝ) → SchwartzMap (Fin m → ℝ) ℂ)
-    (f : SchwartzMap (Fin m → ℝ) ℂ)
-    (hg_cont : Continuous g)
-    (u : Finset (ℕ × ℕ)) (η : ℝ) (hη : 0 < η) :
-    ∃ (ι : Type) (_ : Fintype ι) (A : ι → Set (Fin m → ℝ))
-      (ψ : ι → SchwartzMap (Fin m → ℝ) ℂ),
-      (∀ i, MeasurableSet (A i)) ∧
-      Set.PairwiseDisjoint Set.univ A ∧
-      K ⊆ ⋃ i, A i ∧
-      (∀ i, A i ⊆ K) ∧
-      (∀ i x, x ∈ A i →
-        (u.sup (schwartzSeminormFamily ℝ (Fin m → ℝ) ℂ))
-          (ψ i - f x • g x) < η)
+obtain ⟨ι, hι, A, ψ, hA_meas, hA_disj, hA_cover, hA_sub, hcell⟩ :=
+  exists_finite_partition_schwartzKernel_seminorm_approx
+    K hK_meas hK_bdd g f hg_cont u η hη_pos
 ```
 
-Proof of the helper:
+Then enter the local instance:
 
-1. Let `C := closure K`. Use `hK_bdd.isCompact_closure` or the available
-   finite-dimensional compactness API to get `hC : IsCompact C`.
-2. Define `F x := f x • g x`. Its continuity is:
+```lean
+letI := hι
+classical
+```
 
-   ```lean
-   have hF_cont : Continuous fun x => f x • g x :=
-     f.continuous.smul hg_cont
-   ```
+The pointwise error over `K` is now available from:
 
-3. For each `y ∈ C`, continuity of
+```lean
+have hp_piecewise_lt :
+    ∀ x ∈ K,
+      (u.sup (schwartzSeminormFamily ℝ (Fin m → ℝ) ℂ))
+        (finitePartitionKernel A ψ x - boundedKernel g f x) < η :=
+  fun x hxK =>
+    finitePartitionKernel_error_lt_of_mem
+      hA_disj hA_cover g f u hcell hxK
+```
 
-   ```lean
-   fun x => (u.sup (schwartzSeminormFamily ℝ (Fin m → ℝ) ℂ))
-     ((f y • g y) - (f x • g x))
-   ```
+The helper already gives measurable, disjoint cells contained in `K`. This is
+the right interface for set-integral bookkeeping.
 
-   gives an open neighborhood `U y` of `y` where this seminorm is `< η`.
-4. Compactness of `C` gives finitely many centers `y i` whose neighborhoods
-   cover `C`. Set `ψ i := f (y i) • g (y i)`.
-5. Turn the finite open cover into a disjoint measurable partition of `K`:
+#### Step C: Add Partition Set-Integral Wrappers
 
-   ```lean
-   A 0     := K ∩ U 0
-   A (j+1) := K ∩ U (j+1) \ ⋃ i ≤ j, U i
-   ```
+Before proving `exists_finite_seminorm_kernel_approx`, add reusable wrappers
+around `MeasureTheory.integral_biUnion_finset`.
 
-   In Lean, it is usually easier to index by a finite set `c : Finset α` from
-   the compactness subcover, define cells over `c.attach`, and use
-   `Finset.biUnion` for the previous cells. The cells are measurable because
-   `K` is measurable and each `U i` is open.
+First prove the partition union identity:
 
-This helper avoids needing a measurable-space or normed-space instance on
-`SchwartzMap`; it only uses continuity of finitely many real-valued seminorm
-functions.
+```lean
+lemma finitePartition_iUnion_eq {m : ℕ} {ι : Type*} [Fintype ι]
+    {K : Set (Fin m → ℝ)} {A : ι → Set (Fin m → ℝ)}
+    (hA_cover : K ⊆ ⋃ i, A i)
+    (hA_sub : ∀ i, A i ⊆ K) :
+    (⋃ i, A i) = K
+```
 
-#### Step C: build the finite approximant
+Then prove the main set-integral splitter:
+
+```lean
+lemma setIntegral_finitePartition_eq_sum
+    {m : ℕ} {ι : Type*} [Fintype ι]
+    {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+    {K : Set (Fin m → ℝ)} {A : ι → Set (Fin m → ℝ)}
+    (hA_meas : ∀ i, MeasurableSet (A i))
+    (hA_disj : Set.univ.PairwiseDisjoint A)
+    (hA_cover : K ⊆ ⋃ i, A i)
+    (hA_sub : ∀ i, A i ⊆ K)
+    {H : (Fin m → ℝ) → E}
+    (hH : IntegrableOn H K volume) :
+    ∫ x in K, H x = ∑ i, ∫ x in A i, H x
+```
+
+Implementation notes:
+
+- Use `finitePartition_iUnion_eq` to replace `K` by `⋃ i, A i`.
+- Use `MeasureTheory.integral_biUnion_finset (t := Finset.univ)`.
+- For cell integrability, use `hH.mono_set (hA_sub i)` or the closest available
+  integrability-on-subset lemma.
+- `hA_disj` has exactly the shape required by `integral_biUnion_finset` after
+  reducing to `Finset.univ`.
+
+Also add constant-integral helpers for finite cells:
+
+```lean
+lemma setIntegral_const_complex_of_subset_bounded
+    (hAi_sub : A i ⊆ K) :
+    ∫ x in A i, c = ((volume (A i)).toReal : ℂ) * c
+```
+
+The finite measure proof is by `hK_bdd.measure_lt_top` and `hAi_sub`; use the
+existing `hA_sub` and `hK_bdd` to show `volume (A i) < ∞`.
+
+#### Step D: Build The Finite Approximant
 
 After applying the partition helper to the combined finite set `u`, define:
 
 ```lean
-let μ := volume.restrict K
-let c : ι → ℂ := fun i => ((μ (A i)).toReal : ℂ)
+let c : ι → ℂ := fun i => ((volume (A i)).toReal : ℂ)
 let Φ : SchwartzMap (Fin m → ℝ) ℂ := ∑ i, c i • ψ i
 let I : ℂ := ∑ i, c i * T (ψ i)
 ```
@@ -1481,7 +1528,84 @@ have hstep : T Φ = I := by
 
 This is the third conjunct of `exists_finite_seminorm_kernel_approx`.
 
-#### Step D: prove the Schwartz-seminorm estimate
+Also prove these two representation lemmas locally:
+
+```lean
+have hI_piecewise :
+    I = ∫ x in K, T (finitePartitionKernel A ψ x) := ...
+
+have hΦ_eval :
+    ∀ ξ, Φ ξ = ∫ x in K, finitePartitionKernel A ψ x ξ := ...
+```
+
+Both are finite partition calculations:
+
+- split the integral over `K` into cells;
+- on `A i`, rewrite `finitePartitionKernel A ψ x` to `ψ i` using
+  `finitePartitionKernel_apply_of_mem hA_disj`;
+- evaluate the constant integral over `A i`;
+- fold the result back to the finite sum defining `Φ` or `I`.
+
+`hΦ_eval` is scalar-valued, so it avoids any Bochner integral into
+`SchwartzMap`.
+
+#### Step E: Prove The Scalar `T` Error Estimate
+
+Prove first:
+
+```lean
+have hscalar_le :
+    ‖I - ∫ x in K, T (boundedKernel g f x)‖
+      ≤ ∫ x in K,
+          ‖T (finitePartitionKernel A ψ x - boundedKernel g f x)‖
+```
+
+Recommended proof:
+
+1. Rewrite `I` using `hI_piecewise`.
+2. Use `integral_sub` to combine the two scalar integrals.
+3. Use linearity of `T` pointwise:
+
+   ```lean
+   T (finitePartitionKernel A ψ x) - T (boundedKernel g f x)
+     = T (finitePartitionKernel A ψ x - boundedKernel g f x)
+   ```
+
+4. Apply `norm_integral_le_integral_norm`.
+
+Then dominate the integrand by `u`:
+
+```lean
+have hT_point :
+    ∀ x ∈ K,
+      ‖T (finitePartitionKernel A ψ x - boundedKernel g f x)‖
+        ≤ CT *
+          (u.sup (schwartzSeminormFamily ℝ (Fin m → ℝ) ℂ))
+            (finitePartitionKernel A ψ x - boundedKernel g f x)
+```
+
+To prove this, start from `hT_bound` over complex seminorms, bound
+`sT.sup` by `u.sup`, and use `schwartz_seminorm_complex_eq_real`.
+
+Finally:
+
+```lean
+have hscalar_small :
+    ‖I - ∫ x in K, T (boundedKernel g f x)‖ < ε := by
+  calc
+    ‖I - ∫ x in K, T (boundedKernel g f x)‖
+        ≤ ∫ x in K, ‖T (finitePartitionKernel A ψ x - boundedKernel g f x)‖ := hscalar_le
+    _ ≤ ∫ x in K,
+          CT * (u.sup family) (finitePartitionKernel A ψ x - boundedKernel g f x) := ...
+    _ ≤ ∫ x in K, CT * η := ...
+    _ = CT * μK * η := ...
+    _ < ε := ...
+```
+
+The last strict inequality follows from the choice of `η`, `hCT_le_B`, and
+`hμK_le_M`.
+
+#### Step F: Prove The Schwartz-Seminorm Estimate
 
 For each individual seminorm index `(k,n) ∈ s`, prove:
 
@@ -1490,37 +1614,44 @@ lemma partition_approx_seminorm_le {k n : ℕ} (hkn : (k,n) ∈ s) :
     SchwartzMap.seminorm ℝ k n (Φ - ΦK)
       ≤ ∫ x in K,
           SchwartzMap.seminorm ℝ k n
-            ((piecewiseKernel A ψ x) - f x • g x)
+            (finitePartitionKernel A ψ x - boundedKernel g f x)
 ```
 
-Here `piecewiseKernel A ψ x` is the finite-valued function that equals `ψ i` on
-cell `A i`. This helper should be proved by unfolding the seminorm:
+This is the load-bearing proof. The intended route is:
 
-1. Use `boundedParamIntegralScalar_iteratedFDeriv_eq` to rewrite derivatives of
-   `ΦK`.
-2. Use linearity of `iteratedFDeriv` on the finite sum defining `Φ`.
-3. For each `ξ`, rewrite the derivative difference as a finite sum/integral
-   over the partition:
+1. Prove an iterated-derivative integral representation:
 
    ```lean
-   iteratedFDeriv ℝ n (fun ξ => (Φ - ΦK) ξ) ξ
-     =
-       ∑ i, ∫ x in A i,
-         iteratedFDeriv ℝ n
-           (fun ζ => (ψ i - f x • g x) ζ) ξ
+   have hderiv_error :
+       iteratedFDeriv ℝ n (fun ξ => (Φ - ΦK) ξ) ξ =
+         ∫ x in K,
+           iteratedFDeriv ℝ n
+             (fun ζ => (finitePartitionKernel A ψ x - boundedKernel g f x) ζ) ξ
    ```
 
-4. Apply `norm_sum_le`, `norm_integral_le_integral_norm`, and
-   `SchwartzMap.le_seminorm` to obtain:
+   Proof ingredients:
+
+   - use linearity of `iteratedFDeriv` on finite sums for `Φ`;
+   - use `boundedParamIntegralScalar_iteratedFDeriv_eq` for `ΦK`;
+   - split the `Φ` side over the finite partition using
+     `finitePartitionKernel_apply_of_mem`;
+   - split the `ΦK` side using `boundedParamIntegralDeriv` and the partition
+     integral wrapper;
+   - recombine by `integral_sub`.
+
+   This is the hardest remaining local lemma. Keep it separate if the proof
+   grows.
+
+2. Apply `norm_integral_le_integral_norm` and `SchwartzMap.le_seminorm`:
 
    ```lean
    ‖ξ‖ ^ k * ‖...‖
      ≤ ∫ x in K,
          SchwartzMap.seminorm ℝ k n
-           (piecewiseKernel A ψ x - f x • g x)
+           (finitePartitionKernel A ψ x - boundedKernel g f x)
    ```
 
-5. Package the pointwise-in-`ξ` bound back into
+3. Package the pointwise-in-`ξ` estimate back into
    `SchwartzMap.seminorm ℝ k n`.
 
 Then pass from individual seminorms to the finite supremum:
@@ -1530,12 +1661,13 @@ have hp_le :
     (s.sup (schwartzSeminormFamily ℝ (Fin m → ℝ) ℂ)) (Φ - ΦK)
       ≤ ∫ x in K,
           (s.sup (schwartzSeminormFamily ℝ (Fin m → ℝ) ℂ))
-            (piecewiseKernel A ψ x - f x • g x) := by
+            (finitePartitionKernel A ψ x - boundedKernel g f x) := by
   exact Seminorm.finset_sup_apply_le ?nonneg fun kn hkn =>
     partition_approx_seminorm_le K hK_meas ... hkn
 ```
 
-The partition helper gives the pointwise bound by `η`, so:
+Then bound `s.sup` by `u.sup`, use `hp_piecewise_lt`, and integrate the
+constant:
 
 ```lean
 have hp_small :
@@ -1543,78 +1675,16 @@ have hp_small :
       < ε := by
   calc
     (s.sup family) (Φ - ΦK)
-        ≤ ∫ x in K, (s.sup family) (piecewiseKernel A ψ x - f x • g x) := hp_le
-    _ ≤ ∫ x in K, η := integral_mono_of_forall ...
-    _ = ((volume.restrict K) Set.univ).toReal * η := by simp [μ]
-    _ < ε := hη_chosen_for_s
+        ≤ ∫ x in K, (s.sup family)
+            (finitePartitionKernel A ψ x - boundedKernel g f x) := hp_le
+    _ ≤ ∫ x in K, (u.sup family)
+            (finitePartitionKernel A ψ x - boundedKernel g f x) := ...
+    _ ≤ ∫ x in K, η := ...
+    _ = μK * η := ...
+    _ < ε := ...
 ```
 
-If the combined seminorm `u` was used in the partition helper, first bound
-`s.sup family ≤ u.sup family` by `Finset.le_sup` and `Finset.mem_union_left`.
-
-#### Step E: prove the scalar estimate
-
-The scalar estimate is parallel, but easier because `T` is already linear and
-continuous:
-
-```lean
-have hscalar_le :
-    ‖I - ∫ x in K, T (f x • g x)‖
-      ≤ ∫ x in K,
-          ‖T (piecewiseKernel A ψ x - f x • g x)‖
-```
-
-Proof:
-
-1. Rewrite `I` as the integral over the partition:
-
-   ```lean
-   I = ∑ i, ∫ x in A i, T (ψ i)
-   ```
-
-2. Rewrite the target integral as the sum over the partition:
-
-   ```lean
-   ∫ x in K, T (f x • g x)
-     = ∑ i, ∫ x in A i, T (f x • g x)
-   ```
-
-3. Subtract the sums and use linearity:
-
-   ```lean
-   I - ∫ x in K, T (f x • g x)
-     = ∑ i, ∫ x in A i, T (ψ i - f x • g x)
-   ```
-
-4. Apply `norm_sum_le` and `norm_integral_le_integral_norm`.
-
-Now dominate the integrand using `hT_bound`. Since `sT ⊆ u`,
-
-```lean
-have hT_point (x) :
-    ‖T (piecewiseKernel A ψ x - f x • g x)‖
-      ≤ CT *
-        (u.sup (schwartzSeminormFamily ℝ (Fin m → ℝ) ℂ))
-          (piecewiseKernel A ψ x - f x • g x)
-```
-
-The partition helper bounds the `u`-sup by `η`; therefore:
-
-```lean
-have hscalar_small :
-    ‖I - ∫ x in K, T (f x • g x)‖ < ε := by
-  calc
-    ‖I - ∫ x in K, T (f x • g x)‖
-        ≤ ∫ x in K, ‖T (piecewiseKernel A ψ x - f x • g x)‖ := hscalar_le
-    _ ≤ ∫ x in K,
-          CT * (u.sup family) (piecewiseKernel A ψ x - f x • g x) :=
-        integral_mono_of_forall ...
-    _ ≤ ∫ x in K, CT * η := integral_mono_of_forall ...
-    _ = CT * ((volume.restrict K) Set.univ).toReal * η := by ring_nf
-    _ < ε := hη_chosen_for_T
-```
-
-#### Step F: finish the finite lemma
+#### Step G: Finish The Finite Lemma
 
 Return:
 
@@ -1622,16 +1692,49 @@ Return:
 exact ⟨Φ, I, hp_small, hscalar_small, hstep⟩
 ```
 
-The finite lemma should be implemented before the unconditional blocker theorem.
-It is the only place where finite partitions and integral-over-partition
-bookkeeping are needed.
+After this theorem is proved, instantiate the existing diagonal theorem:
+
+```lean
+have happrox :=
+  exists_bounded_kernel_approximants_of_finite_seminorm_approx
+    K hK_meas hK_bdd T g f hg_cont hg_bound
+    (fun ΦK hΦK s ε hε =>
+      exists_finite_seminorm_kernel_approx
+        K hK_meas hK_bdd T g f hg_cont hg_bound ΦK hΦK s ε hε)
+```
+
+Then pass `happrox` to
+`bounded_parameter_integral_schwartz_clm_exchange_of_exists_approximants`.
+
+#### Resolved Obstacle
+
+Step F is resolved. The load-bearing identity is implemented as
+`finitePartition_error_iteratedFDeriv_eq_integral`:
+
+```lean
+iteratedFDeriv ℝ n (fun ξ => (Φ - ΦK) ξ) ξ =
+  ∫ x in K,
+    iteratedFDeriv ℝ n
+      (fun ζ => (finitePartitionKernel A ψ x - boundedKernel g f x) ζ) ξ
+```
+
+The follow-on estimates are implemented as
+`finitePartition_error_schwartzSeminorm_lt_of_uniform` and
+`finitePartition_error_finsetSup_lt_of_uniform`. These feed
+`exists_finite_seminorm_kernel_approx`, which feeds the diagonal theorem.
+
+The global exhaustion step is also implemented. The proof now constructs
+truncations over `fubiniCube m R`, proves they are Cauchy in the Schwartz
+topology by complement-tail seminorm estimates, uses the completeness instance
+from `OSReconstruction.SCV.SchwartzComplete`, and identifies the pointwise and
+`T` limits by scalar cube-exhaustion convergence.
 
 #### Diagonalization Code
 
-Status: the diagonal/limit part is now implemented and builds in
+Status: the diagonal/limit part is implemented and builds in
 [`SchwartzFubini.lean`](/Users/annamei/Documents/GitHub/OSreconstruction/OSReconstruction/GeneralResults/SchwartzFubini.lean:978).
-The implementation deliberately keeps the unresolved analytic input as an
-explicit hypothesis `hfinite`; it does not add a new axiom.
+The lower-level theorem still accepts `hfinite` as an explicit hypothesis, but
+it is now instantiated by `exists_bounded_kernel_approximants`.
 
 The implemented theorem is:
 
@@ -2030,18 +2133,39 @@ Implement and verify in this order:
    `bounded_parameter_integral_schwartz_clm_exchange_of_choose_approximants`,
    and `bounded_parameter_integral_schwartz_clm_exchange_of_exists_approximants`.
 25. Done: prove `isFiniteMeasure_restrict_of_isBounded`.
-26. Next: construct simple/finite approximants for `x ↦ f x • g x` on bounded
-   `K` and prove Schwartz-topology convergence to `ΦK`.
-27. Next: prove the measurable bounded-kernel domination/exchange helper for
-   simple-function approximation on `K`.
-28. Next: prove `bounded_parameter_integral_schwartz_clm_exchange`, with the
+26. Done: prove finite-seminorm support for the bounded kernel:
+   `schwartz_seminorm_real_complex_smul`,
+   `continuous_finset_sup_schwartzSeminormFamily`,
+   `finset_sup_schwartzSeminorm_boundedKernel_le_sum`, and
+   `integrable_schwartz_fubini_finset_sup_boundedKernel`.
+27. Done: prove compact finite-cover and measurable finite-partition helpers:
+   `exists_finite_schwartzKernel_seminorm_cover`,
+   `exists_finite_partition_schwartzKernel_seminorm_approx`,
+   `finitePartitionKernel`, `finitePartitionKernel_apply_of_mem`, and
+   `finitePartitionKernel_error_lt_of_mem`.
+28. Done: prove finite-partition set-integral wrappers:
+   `finitePartition_iUnion_eq`, `setIntegral_finitePartition_eq_sum`, and
+   constant-integral-over-cell lemmas.
+29. Done: prove the scalar representation lemmas for the finite approximant:
+   `I = ∫ x in K, T (finitePartitionKernel A ψ x)` and
+   `Φ ξ = ∫ x in K, finitePartitionKernel A ψ x ξ`.
+30. Done: prove the scalar `T` error estimate for
+   `exists_finite_seminorm_kernel_approx`.
+31. Done: prove the load-bearing iterated-derivative identity for
+   `Φ - ΦK` against `finitePartitionKernel A ψ x - boundedKernel g f x`.
+32. Done: prove the Schwartz-seminorm estimate and finish
+   `exists_finite_seminorm_kernel_approx`.
+33. Done: instantiate
+   `exists_bounded_kernel_approximants_of_finite_seminorm_approx` with
+   `exists_finite_seminorm_kernel_approx`.
+34. Done: prove `bounded_parameter_integral_schwartz_clm_exchange`, with the
    `T` exchange justified by the same simple-function approximation/limit used
    to construct `ΦK`.
-29. Next: prove the tail estimate `seminorm_fubini_tail_le`.
-30. Next: prove the Cauchy property for `Φ_R`.
-31. Next: identify the limit `Φ` pointwise.
-32. Next: pass the `T` exchange to the limit.
-33. Final: replace the axiom with a theorem.
+35. Done: prove the cube-annulus and complement-tail seminorm estimates.
+36. Done: prove the Cauchy property for `Φ_R`.
+37. Done: identify the limit `Φ` pointwise.
+38. Done: pass the `T` exchange to the limit.
+39. Done: replace the axiom with a theorem.
 
 ## Important Technical Notes
 
