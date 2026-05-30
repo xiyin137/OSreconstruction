@@ -4114,6 +4114,52 @@ theorem OS45Figure24SourceCutoffData.sideZeroDiagonal_sourcePairings_tendstoUnif
     exact (hε η hη).2.symm
   exact ⟨hord_plus, hadj_plus, hord_minus, hadj_minus⟩
 
+/-- OS-I `(4.14)` source-side cross comparison for the actual side tests.
+
+The ordinary `+` side and the genuine adjacent `(4.12)` `-` side pairings have
+the same Schwinger limit, hence their difference tends uniformly to zero.  This
+is the source-variable integral comparison used before the flat side-branch
+pullback; it contains no common-boundary CLM, `Hdiff`, or selected-Jost input.
+-/
+theorem OS45Figure24SourceCutoffData.sourceSide_ordinaryPlus_adjacentMinus_difference_tendstoUniformlyOn_zero
+    [NeZero d] {hd : 2 ≤ d} {n : ℕ}
+    {i : Fin n} {hi : i.val + 1 < n}
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (D : BHW.OS45Figure24SourceCutoffData P)
+    (Kη : Set (BHW.OS45FlatCommonChartReal d n))
+    (hKη : IsCompact Kη)
+    (hKηC : Kη ⊆ BHW.os45FlatCommonChartCone d n)
+    (φ : SchwartzMap (BHW.OS45FlatCommonChartReal d n) ℂ)
+    (hφ_compact : HasCompactSupport
+      (φ : BHW.OS45FlatCommonChartReal d n → ℂ))
+    (hφE :
+      tsupport (φ : BHW.OS45FlatCommonChartReal d n → ℂ) ⊆
+        BHW.os45FlatCommonChartEdgeSet d n P
+          (1 : Equiv.Perm (Fin n))) :
+    TendstoUniformlyOn
+      (fun ε η =>
+        (∫ u : NPointDomain d n,
+          bvt_F OS lgc n (fun k => wickRotatePoint (u k)) *
+            ((((D.toSideZeroDiagonalCLM
+              (1 : Equiv.Perm (Fin n)) (1 : ℝ) ε η φ).1 :
+                SchwartzNPoint d n) : NPointDomain d n → ℂ) u)) -
+        ∫ u : NPointDomain d n,
+          bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k))) *
+            ((((D.toSideZeroDiagonalCLM
+              (1 : Equiv.Perm (Fin n)) (-1 : ℝ) ε η φ).1 :
+                SchwartzNPoint d n) : NPointDomain d n → ℂ) u))
+      (fun _ : BHW.OS45FlatCommonChartReal d n => 0)
+      (𝓝[Set.Ioi 0] (0 : ℝ)) Kη := by
+  rcases
+      D.sideZeroDiagonal_sourcePairings_tendstoUniformlyOn_schwinger
+        OS lgc Kη hKη hKηC φ hφ_compact hφE with
+    ⟨hord_plus, _hadj_plus, _hord_minus, hadj_minus⟩
+  have hdiff := hord_plus.sub hadj_minus
+  simpa using hdiff
+
 /-- Canonical chosen source-test family for a Figure-2-4 patch.  The
 noncomputable choice is exactly the same cutoff choice used by
 `os45_BHWJost_flatCommonChart_schwingerCLM`. -/
