@@ -4248,9 +4248,9 @@ ordinary branch, the concrete deterministic adjacent branch
 `extendF ∘ permAct P.τ`, and both common-edge traces are supplied by the checked
 Figure-2-4 initial-overlap chart.  The remaining analytic payload is now the
 paper's actual `(4.12)` seed-to-Wick compact-test transport for that concrete
-adjacent branch; after that pairing is supplied, the proof extracts the OS-I
-source common-edge equality and uses the zero germ as the horizontal-difference
-packet. -/
+adjacent branch; after that pairing is supplied, the proof packages the genuine
+horizontal difference germ `Fadj - Ford`, whose Wick-section pairing vanishes and
+whose common-edge trace is adjacent-minus-ordinary. -/
 theorem os45CommonEdge_localHdiffGerm_of_initialOverlap_adjacentBranch
     [NeZero d] (hd : 2 ≤ d)
     (OS : OsterwalderSchraderAxioms d)
@@ -4361,32 +4361,78 @@ theorem os45CommonEdge_localHdiffGerm_of_initialOverlap_adjacentBranch
               image_eq_zero_of_notMem_tsupport
                 (fun hφ_supp => hu (hφU hφ_supp))
             simp [hφ_zero]
-  have hsource_eq :
-      ∀ u ∈ U,
+  let Hdiff : (Fin n → Fin (d + 1) → ℂ) → ℂ := fun z => Fadj z - Ford z
+  have hHdiff_holo : DifferentiableOn ℂ Hdiff Ucx :=
+    hFadj_holo.sub hFord_holo
+  refine
+    ⟨Ucx, hUcx_open, hUcx_connected, hwick_mem, hcommon_mem,
+      Hdiff, hHdiff_holo, ?_, ?_⟩
+  · intro φ hφ_compact hφU
+    let wick : NPointDomain d n → Fin n → Fin (d + 1) → ℂ :=
+      fun u => fun k => wickRotatePoint (u k)
+    have hwick_cont : Continuous wick := by
+      simpa [wick] using BHW.continuous_wickRotateRealConfig (d := d) (n := n)
+    have hFadj_cont :
+        ContinuousOn (fun u : NPointDomain d n => Fadj (wick u)) U := by
+      exact hFadj_holo.continuousOn.comp hwick_cont.continuousOn
+        (by intro u hu; simpa [wick] using hwick_mem u hu)
+    have hFord_cont :
+        ContinuousOn (fun u : NPointDomain d n => Ford (wick u)) U := by
+      exact hFord_holo.continuousOn.comp hwick_cont.continuousOn
+        (by intro u hu; simpa [wick] using hwick_mem u hu)
+    have hFadj_int :
+        Integrable
+          (fun u : NPointDomain d n => Fadj (wick u) * φ u) :=
+      SCV.integrable_continuousOn_mul_schwartz_of_supportsInOpen
+        (H := fun u : NPointDomain d n => Fadj (wick u))
+        (ψ := φ) (U := U) hU_open hFadj_cont
+        ⟨hφ_compact, hφU⟩
+    have hFord_int :
+        Integrable
+          (fun u : NPointDomain d n => Ford (wick u) * φ u) :=
+      SCV.integrable_continuousOn_mul_schwartz_of_supportsInOpen
+        (H := fun u : NPointDomain d n => Ford (wick u))
+        (ψ := φ) (U := U) hU_open hFord_cont
+        ⟨hφ_compact, hφU⟩
+    calc
+      ∫ u : NPointDomain d n, Hdiff (fun k => wickRotatePoint (u k)) * φ u
+          =
+        ∫ u : NPointDomain d n,
+          Fadj (wick u) * φ u - Ford (wick u) * φ u := by
+            refine MeasureTheory.integral_congr_ae
+              (Filter.Eventually.of_forall ?_)
+            intro u
+            simp [Hdiff, wick, sub_mul]
+      _ =
+        (∫ u : NPointDomain d n, Fadj (wick u) * φ u) -
+          ∫ u : NPointDomain d n, Ford (wick u) * φ u :=
+            MeasureTheory.integral_sub hFadj_int hFord_int
+      _ = 0 := by
+            rw [hwick_pairing φ hφ_compact hφU]
+            exact sub_self _
+  · intro u hu
+    change
+      Fadj
+        ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+          (BHW.realEmbed
+            (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+              (1 : Equiv.Perm (Fin n)) u))) -
+        Ford
+          ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u))) =
         BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
             (P.τ.symm * (1 : Equiv.Perm (Fin n)))
             (BHW.realEmbed
               (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
-                (1 : Equiv.Perm (Fin n)) u)) =
+                (1 : Equiv.Perm (Fin n)) u)) -
           BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
             (1 : Equiv.Perm (Fin n))
             (BHW.realEmbed
               (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
-                (1 : Equiv.Perm (Fin n)) u)) :=
-    BHW.os45CommonEdge_pulledRealBranches_eqOn_of_wickPairings
-      (d := d) hd OS lgc (P := P)
-      hU_open hU_connected.nonempty hUcx_open hUcx_connected
-      hwick_mem hcommon_mem Ford Fadj hFord_holo hFadj_holo
-      hwick_pairing hFord_common hFadj_common
-  refine
-    ⟨Ucx, hUcx_open, hUcx_connected, hwick_mem, hcommon_mem,
-      fun _ => (0 : ℂ), ?_, ?_, ?_⟩
-  · exact differentiableOn_const (c := (0 : ℂ))
-  · intro φ _hφ_compact _hφU
-    simp
-  · intro u hu
-    rw [hsource_eq u hu]
-    simp
+                (1 : Equiv.Perm (Fin n)) u))
+    rw [hFadj_common u hu, hFord_common u hu]
 
 /-- Legacy selected-data adapter for the local Figure-2-4 common-edge
 holomorphic difference germ.
