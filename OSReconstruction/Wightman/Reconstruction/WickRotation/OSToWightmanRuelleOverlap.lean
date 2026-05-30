@@ -2070,7 +2070,15 @@ theorem os45_flat_seed_of_localEdgePairing
         hPairing hUsrc_sub)
       ys hys_mem hys_li u0 hu0
 
-/-- Local adjacent edge pairing implies the local OS45 Hdiff germ. -/
+/-- Local adjacent edge pairing implies the local OS45 Hdiff germ.
+
+Route guard: this is a legacy Hdiff producer for theorem-2 closure.  It is
+useful as a checked diagnostic for the OS45 local-edge route, but it should not
+be used to feed the active reduced local CLM path into `BoundaryValues`, because
+its current proof depends on the older local `S'_n` BHW/Jost trust boundary.
+The active lower-trust path should continue from the flat source-side
+branch-difference theorem toward the reduced local branch-difference/CLM
+producer without passing through this Hdiff route. -/
 theorem os45_hdiff_of_localEdgePairing
     [NeZero d] (hd : 2 ≤ d)
     (OS : OsterwalderSchraderAxioms d)
