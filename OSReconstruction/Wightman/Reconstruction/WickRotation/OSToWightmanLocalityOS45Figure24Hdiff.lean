@@ -3345,6 +3345,107 @@ private theorem OS45BHWJostHullData.OS412SeedWindow_pointedChart
       simpa [A, PointedMetricBranchChart.carrier, p0, hC0_ball] using hz)
   · simpa [A, p0] using hC0_trace
 
+private theorem OS45BHWJostHullData.OS412SeedWindow_pointedChart_extendFPermActModel
+    [NeZero d]
+    {hd : 2 ≤ d} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData (d := d) hd n i hi}
+    (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {x : NPointDomain d n} (hx : x ∈ P.V) :
+    ∃ A : OS45PointedChart d n,
+      A.center =
+        BHW.permAct (d := d) P.τ (fun k => wickRotatePoint (x k)) ∧
+      A.center ∈ A.carrier ∧
+      A.carrier ⊆
+        (({z : Fin n → Fin (d + 1) → ℂ |
+            BHW.permAct (d := d) P.τ z ∈ BHW.ForwardTube d n} ∩ H.ΩJ) ∩
+          (BHW.ExtendedTube d n ∩
+            BHW.permutedExtendedTubeSector d n P.τ)) ∧
+      Set.EqOn A.branch
+        (fun z : Fin n → Fin (d + 1) → ℂ =>
+          BHW.extendF (bvt_F OS lgc n)
+            (BHW.permAct (d := d) P.τ z)) A.carrier ∧
+      A.branch A.center =
+        bvt_F OS lgc n (fun k => wickRotatePoint (x (P.τ k))) := by
+  classical
+  rcases H.OS412SeedWindow_pointedChart OS lgc hx with
+    ⟨A, hA_center, hA_mem, hA_sub, hA_raw, hA_trace⟩
+  have hF_holo :
+      DifferentiableOn ℂ (bvt_F OS lgc n) (BHW.ForwardTube d n) := by
+    simpa [BHW_forwardTube_eq (d := d) (n := n)] using
+      bvt_F_holomorphic (d := d) OS lgc n
+  have hF_lorentz :
+      ∀ (Λ : LorentzLieGroup.RestrictedLorentzGroup d)
+        (z : Fin n → Fin (d + 1) → ℂ), z ∈ BHW.ForwardTube d n →
+        bvt_F OS lgc n
+          (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * z k ν) =
+        bvt_F OS lgc n z := by
+    intro Λ z hz
+    exact bvt_F_restrictedLorentzInvariant_forwardTube
+      (d := d) OS lgc n Λ z
+      ((BHW_forwardTube_eq (d := d) (n := n)) ▸ hz)
+  refine ⟨A, hA_center, hA_mem, hA_sub, ?_, hA_trace⟩
+  intro z hz
+  have hz_forward :
+      BHW.permAct (d := d) P.τ z ∈ BHW.ForwardTube d n :=
+    (hA_sub hz).1.1
+  have hext :
+      BHW.extendF (bvt_F OS lgc n)
+          (BHW.permAct (d := d) P.τ z) =
+        bvt_F OS lgc n (BHW.permAct (d := d) P.τ z) :=
+    BHW.extendF_eq_on_forwardTube n (bvt_F OS lgc n)
+      hF_holo hF_lorentz
+      (BHW.permAct (d := d) P.τ z) hz_forward
+  exact (hA_raw hz).trans hext.symm
+
+private theorem OS45BHWJostHullData.OS412SeedWindow_localOverlapAtZ0_adjacentModel
+    [NeZero d]
+    {hd : 2 ≤ d} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData (d := d) hd n i hi}
+    (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {x : NPointDomain d n} (hx : x ∈ P.V)
+    {Aadj : OS45PointedChart d n}
+    (hzAadj :
+      BHW.permAct (d := d) P.τ (fun k => wickRotatePoint (x k)) ∈
+        Aadj.carrier)
+    (hAadj_model :
+      Set.EqOn Aadj.branch
+        (fun z : Fin n → Fin (d + 1) → ℂ =>
+          BHW.extendF (bvt_F OS lgc n)
+            (BHW.permAct (d := d) P.τ z)) Aadj.carrier) :
+    ∃ rawLocal : OS45PointedChart d n,
+      rawLocal.center =
+        BHW.permAct (d := d) P.τ (fun k => wickRotatePoint (x k)) ∧
+      BHW.permAct (d := d) P.τ (fun k => wickRotatePoint (x k)) ∈
+        rawLocal.carrier ∧
+      Set.EqOn rawLocal.branch
+        (fun z : Fin n → Fin (d + 1) → ℂ =>
+          BHW.extendF (bvt_F OS lgc n)
+            (BHW.permAct (d := d) P.τ z)) rawLocal.carrier ∧
+      Nonempty (LocalOverlapAtZ0 (P := P) hd OS lgc
+        (BHW.permAct (d := d) P.τ (fun k => wickRotatePoint (x k)))
+        Aadj rawLocal) := by
+  classical
+  rcases H.OS412SeedWindow_pointedChart_extendFPermActModel OS lgc hx with
+    ⟨rawLocal, hraw_center, hraw_mem_center, _hraw_sub, hraw_model,
+      _hraw_trace⟩
+  have hzRaw :
+      BHW.permAct (d := d) P.τ (fun k => wickRotatePoint (x k)) ∈
+        rawLocal.carrier := by
+    rw [← hraw_center]
+    exact hraw_mem_center
+  refine ⟨rawLocal, hraw_center, hzRaw, hraw_model, ⟨?_⟩⟩
+  exact
+    localOverlapAtZ0_adjacent_of_commonModel
+      (d := d) hd OS lgc (P := P)
+      (z0 := BHW.permAct (d := d) P.τ
+        (fun k => wickRotatePoint (x k)))
+      (A0 := Aadj) (B0 := rawLocal) (rawLocal := rawLocal)
+      hzAadj hzRaw hzRaw hAadj_model hraw_model hraw_model
+
 private theorem OS45BHWJostHullData.ordinaryWick_pointedChartInWindow
     [NeZero d]
     {hd : 2 ≤ d} {i : Fin n} {hi : i.val + 1 < n}
