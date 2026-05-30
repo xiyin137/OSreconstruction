@@ -10701,8 +10701,10 @@ For a compact connected source window whose closure stays inside the canonical
 Figure-2-4 patch, the ordinary branch is the concrete BHW extension on the
 initial-sector-overlap chart, while the adjacent endpoint branch is
 `extendF ∘ permAct P.τ` on the same chart.  This closes the ordinary trace and
-adjacent common-edge trace portions of the active Hdiff packet; the remaining
-analytic payload is exactly the adjacent `(4.12)` Wick transport on this chart.
+adjacent common-edge trace portions of the active Hdiff packet.  It also
+records the genuine `(4.12)` seed trace at `permAct P.τ (wick u)`, leaving the
+remaining analytic payload as the seed-to-ordinary-Wick transport on this
+chart.
 -/
 theorem os45CommonEdge_initialSectorOverlap_traces_except_adjacentWick
     [NeZero d] (hd : 2 ≤ d)
@@ -10754,7 +10756,11 @@ theorem os45CommonEdge_initialSectorOverlap_traces_except_adjacentWick
             (P.τ.symm * (1 : Equiv.Perm (Fin n)))
             (BHW.realEmbed
               (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
-                (1 : Equiv.Perm (Fin n)) u))) := by
+                (1 : Equiv.Perm (Fin n)) u))) ∧
+      (∀ u ∈ U,
+        Fadj (BHW.permAct (d := d) P.τ
+            (fun k => wickRotatePoint (u k))) =
+          bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k)))) := by
   classical
   rcases
       BHW.os45Figure24_initialSectorOverlap_chartNeighborhood
@@ -10769,7 +10775,7 @@ theorem os45CommonEdge_initialSectorOverlap_traces_except_adjacentWick
         (BHW.permAct (d := d) P.τ z)
   refine
     ⟨Ucx, Ford, Fadj, hUcx_open, hUcx_connected, hwick_mem, hcommon_mem,
-      hUcx_sub, ?_, ?_, ?_, ?_, ?_⟩
+      hUcx_sub, ?_, ?_, ?_, ?_, ?_, ?_⟩
   · exact
       (BHW.differentiableOn_extendF_bvt_F_extendedTube
         (d := d) OS lgc n).mono (by
@@ -10810,6 +10816,60 @@ theorem os45CommonEdge_initialSectorOverlap_traces_except_adjacentWick
     simpa [Fadj] using
       BHW.os45Figure24CommonEdge_permAct_extendF_eq_adjacentPulledRealBranch
         (d := d) (n := n) hd OS lgc (P := P) u
+  · intro u hu
+    have huP : u ∈ P.V := hU_closure (subset_closure hu)
+    have hF_holo :
+        DifferentiableOn ℂ (bvt_F OS lgc n) (BHW.ForwardTube d n) := by
+      simpa [BHW_forwardTube_eq (d := d) (n := n)] using
+        bvt_F_holomorphic (d := d) OS lgc n
+    have hF_lorentz :
+        ∀ (Λ : RestrictedLorentzGroup d)
+          (z : Fin n → Fin (d + 1) → ℂ), z ∈ BHW.ForwardTube d n →
+          bvt_F OS lgc n
+            (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * z k ν) =
+          bvt_F OS lgc n z := by
+      intro Λ z hz
+      exact bvt_F_restrictedLorentzInvariant_forwardTube
+        (d := d) OS lgc n Λ z
+        ((BHW_forwardTube_eq (d := d) (n := n)) ▸ hz)
+    have hforward :
+        (fun k => wickRotatePoint (u k)) ∈ BHW.ForwardTube d n :=
+      BHW.os45Figure24_ordinaryWick_mem_forwardTube
+        (d := d) (n := n) (hd := hd) (P := P) huP
+    have hext :
+        BHW.extendF (bvt_F OS lgc n)
+            (fun k => wickRotatePoint (u k)) =
+          bvt_F OS lgc n (fun k => wickRotatePoint (u k)) :=
+      BHW.extendF_eq_on_forwardTube n (bvt_F OS lgc n)
+        hF_holo hF_lorentz (fun k => wickRotatePoint (u k)) hforward
+    have hperm :
+        bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k))) =
+          bvt_F OS lgc n (fun k => wickRotatePoint (u k)) := by
+      simpa [BHW.permAct] using
+        bvt_F_perm (d := d) OS lgc n P.τ
+          (fun k => wickRotatePoint (u k))
+    have hdouble :
+        BHW.permAct (d := d) P.τ
+            (BHW.permAct (d := d) P.τ
+              (fun k => wickRotatePoint (u k))) =
+          fun k => wickRotatePoint (u k) := by
+      ext k μ
+      simp [BHW.permAct, P.τ_eq]
+    calc
+      Fadj (BHW.permAct (d := d) P.τ
+            (fun k => wickRotatePoint (u k)))
+          =
+        BHW.extendF (bvt_F OS lgc n)
+          (BHW.permAct (d := d) P.τ
+            (BHW.permAct (d := d) P.τ
+              (fun k => wickRotatePoint (u k)))) := by
+          rfl
+      _ = BHW.extendF (bvt_F OS lgc n)
+            (fun k => wickRotatePoint (u k)) := by
+          rw [hdouble]
+      _ = bvt_F OS lgc n (fun k => wickRotatePoint (u k)) := hext
+      _ = bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k))) :=
+          hperm.symm
 
 /-- Branch-trace form of the OS I §4.5 common-edge equality.
 

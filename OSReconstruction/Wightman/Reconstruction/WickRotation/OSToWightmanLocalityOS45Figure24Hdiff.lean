@@ -4318,7 +4318,8 @@ theorem os45CommonEdge_localHdiffGerm_of_initialOverlap_adjacentBranch
         (U := U) hU_compact hU_connected hU_closure with
     ⟨Ucx, Ford, _Fadj0, hUcx_open, hUcx_connected, hwick_mem,
       hcommon_mem, _hUcx_sub, hFord_holo, _hFadj0_holo, hFord_wick,
-      hFord_common, _hFadj0_common⟩
+      hFord_common, hFadj0_tail⟩
+  rcases hFadj0_tail with ⟨_hFadj0_common, _hFadj0_seed_trace⟩
   refine ⟨Ucx, hUcx_open, hUcx_connected, hwick_mem, hcommon_mem, ?_⟩
   intro Fadj hFadj_holo hFadj_wick hFadj_common
   have hU_sub : U ⊆ P.V := fun u hu => hU_closure (subset_closure hu)
