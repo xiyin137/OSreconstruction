@@ -144,6 +144,58 @@ theorem OS45Figure24SourceCutoffData.toZeroDiagonalCLM_flatPullback_support
       BHW.tsupport_comp_os45CommonEdgeFlatCLE_symm_subset_edgeSet
         (d := d) (n := n) (P := P) ρperm ψ0 hψ0V
 
+/-- Pulling a source test to the flat common-edge chart and then applying the
+Figure-2-4 cutoff-pullback recovers the original source test, provided the
+source test is supported inside the cutoff-one source patch.
+
+This is the carrier-normalization leaf needed to turn flat common-edge
+compact-test statements back into the arbitrary source-test form used by the
+transported Wick pairing.  It is only cutoff algebra and support transport; it
+does not assert any branch equality or boundary-value limit. -/
+theorem OS45Figure24SourceCutoffData.toSchwartzNPointCLM_flatPullback_eq
+    {hd : 2 ≤ d} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (D : BHW.OS45Figure24SourceCutoffData P)
+    (ρperm : Equiv.Perm (Fin n))
+    (ψ : SchwartzNPoint d n)
+    (hψV : tsupport (ψ : NPointDomain d n → ℂ) ⊆ P.V) :
+    D.toSchwartzNPointCLM ρperm
+        ((SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
+          (BHW.os45CommonEdgeFlatCLE d n ρperm).symm) ψ) =
+      ψ := by
+  ext x
+  by_cases hx : x ∈ tsupport (ψ : NPointDomain d n → ℂ)
+  · have hxV : x ∈ P.V := hψV hx
+    simp [BHW.OS45Figure24SourceCutoffData.toSchwartzNPointCLM_apply,
+      SchwartzMap.compCLMOfContinuousLinearEquiv_apply,
+      D.χ_eq_one_on_V x hxV]
+  · have hψx : (ψ : NPointDomain d n → ℂ) x = 0 :=
+      image_eq_zero_of_notMem_tsupport hx
+    simp [BHW.OS45Figure24SourceCutoffData.toSchwartzNPointCLM_apply,
+      SchwartzMap.compCLMOfContinuousLinearEquiv_apply, hψx]
+
+/-- Zero-diagonal packaging of
+`OS45Figure24SourceCutoffData.toSchwartzNPointCLM_flatPullback_eq`.
+
+The equality is stated after forgetting the zero-diagonal subtype because the
+target transported Wick pairing is a source-Schwartz pairing. -/
+theorem OS45Figure24SourceCutoffData.toZeroDiagonalCLM_flatPullback_eq
+    {hd : 2 ≤ d} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (D : BHW.OS45Figure24SourceCutoffData P)
+    (ρperm : Equiv.Perm (Fin n))
+    (ψ : SchwartzNPoint d n)
+    (hψV : tsupport (ψ : NPointDomain d n → ℂ) ⊆ P.V) :
+    ((D.toZeroDiagonalCLM ρperm
+        ((SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
+          (BHW.os45CommonEdgeFlatCLE d n ρperm).symm) ψ)).1 :
+        SchwartzNPoint d n) =
+      ψ := by
+  simpa [BHW.OS45Figure24SourceCutoffData.toZeroDiagonalCLM] using
+    D.toSchwartzNPointCLM_flatPullback_eq ρperm ψ hψV
+
 /-- Signed side-height branch integral pulled to source variables and unfolded
 to the exact `extendF` value on the OS45 source-side configuration, without the
 Figure-2-4 cutoff specialization.
