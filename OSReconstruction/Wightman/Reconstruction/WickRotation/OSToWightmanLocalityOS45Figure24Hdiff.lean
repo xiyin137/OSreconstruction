@@ -3449,6 +3449,23 @@ private structure CommonEdgeOrdAdjOverlapData
         (BHW.realEmbed
           (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
             (1 : Equiv.Perm (Fin n)) x))
+  Aord_model :
+    OrdModelAtZ0 d n
+      ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+        (BHW.realEmbed
+          (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+            (1 : Equiv.Perm (Fin n)) x)))
+      (BHW.extendF (bvt_F OS lgc n)) Aord
+  Aadj_mem :
+    ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+      (BHW.realEmbed
+        (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+          (1 : Equiv.Perm (Fin n)) x))) ∈ Aadj.carrier
+  Aadj_model :
+    Set.EqOn Aadj.branch
+      (fun z : Fin n → Fin (d + 1) → ℂ =>
+        BHW.extendF (bvt_F OS lgc n)
+          (BHW.permAct (d := d) P.τ z)) Aadj.carrier
   overlap :
     LocalOverlapAtZ0 (P := P) hd OS lgc
       ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
@@ -3535,6 +3552,9 @@ private def OS45BHWJostHullData.commonEdge_ordinary_adjacent_localOverlapAtZ0InW
       Aadj := Aadj
       Aord_center := hAord_spec.1
       Aadj_center := hAadj_center
+      Aord_model := hAord_spec.2.1
+      Aadj_mem := hzAadj
+      Aadj_model := hAadj_spec.2.2.1
       overlap := hoverlap
       Aord_trace := hAord_spec.2.2
       Aadj_trace := hAadj_spec.2.2.2 }
@@ -3607,6 +3627,126 @@ private theorem OS45BHWJostHullData.commonEdgeDifference_pointedChartInWindow
     exact hC0_eq (by
       simpa [A, PointedMetricBranchChart.carrier, p0, hC0_ball] using hz)
   · simpa [A, p0] using hC0_trace
+
+private theorem OS45BHWJostHullData.commonEdgeDifference_localZero_of_flatCrossingInWindow
+    [NeZero d]
+    {hd : 2 ≤ d} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData (d := d) hd n i hi}
+    (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {x : NPointDomain d n} (hx : x ∈ P.V)
+    {W : Set (Fin n → Fin (d + 1) → ℂ)}
+    (hW_open : IsOpen W)
+    (hcommonW :
+      (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+        (BHW.realEmbed
+          (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+            (1 : Equiv.Perm (Fin n)) x)) ∈ W)
+    {Cplus Cminus : OS45PointedChart d n}
+    (hflat :
+      FlatCrossingAtZ0 (P := P) hd OS lgc
+        ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+          (BHW.realEmbed
+            (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+              (1 : Equiv.Perm (Fin n)) x)))
+        Cplus Cminus) :
+    ∃ Aord Aadj Adiff : OS45PointedChart d n,
+      Aord.center =
+        (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+          (BHW.realEmbed
+            (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+              (1 : Equiv.Perm (Fin n)) x)) ∧
+      Aadj.center =
+        (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+          (BHW.realEmbed
+            (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+              (1 : Equiv.Perm (Fin n)) x)) ∧
+      Adiff.center =
+        (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+          (BHW.realEmbed
+            (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+              (1 : Equiv.Perm (Fin n)) x)) ∧
+      ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+        (BHW.realEmbed
+          (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+            (1 : Equiv.Perm (Fin n)) x))) ∈
+        Adiff.carrier ∩ (Aord.carrier ∩ Aadj.carrier) ∧
+      IsOpen (Adiff.carrier ∩ (Aord.carrier ∩ Aadj.carrier)) ∧
+      Set.EqOn Adiff.branch (fun _ => 0)
+        (Adiff.carrier ∩ (Aord.carrier ∩ Aadj.carrier)) ∧
+      Adiff.branch Adiff.center = 0 := by
+  classical
+  let z0 : Fin n → Fin (d + 1) → ℂ :=
+    (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+      (BHW.realEmbed
+        (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+          (1 : Equiv.Perm (Fin n)) x))
+  let D :=
+    H.commonEdge_ordinary_adjacent_localOverlapAtZ0InWindow
+      OS lgc hx hW_open hcommonW hflat
+  let hdiff :=
+    H.commonEdgeDifference_pointedChartInWindow
+      OS lgc hx hW_open hcommonW
+  let Adiff : OS45PointedChart d n := Classical.choose hdiff
+  have hAdiff_spec := Classical.choose_spec hdiff
+  have hAdiff_center : Adiff.center = z0 := by
+    simpa [Adiff, z0] using hAdiff_spec.1
+  have hzAdiff : z0 ∈ Adiff.carrier := by
+    rw [← hAdiff_center]
+    simpa [Adiff] using hAdiff_spec.2.1
+  have hAord_center : D.Aord.center = z0 := by
+    simpa [D, z0] using D.Aord_center
+  have hAadj_center : D.Aadj.center = z0 := by
+    simpa [D, z0] using D.Aadj_center
+  have hlocal_overlap :
+      Set.EqOn D.Aord.branch D.Aadj.branch
+        (D.Aord.carrier ∩ D.Aadj.carrier) :=
+    LocalOverlapAtZ0.eqOn_inter (d := d) hd OS lgc
+      (P := P) D.overlap
+  have hzero_on :
+      Set.EqOn Adiff.branch (fun _ => 0)
+        (Adiff.carrier ∩ (D.Aord.carrier ∩ D.Aadj.carrier)) := by
+    intro z hz
+    have hdiff_model := hAdiff_spec.2.2.2.1 hz.1
+    have hord_model := D.Aord_model.eq_ord hz.2.1
+    have hadj_model := D.Aadj_model hz.2.2
+    have hover := hlocal_overlap ⟨hz.2.1, hz.2.2⟩
+    have hadj_model' :
+        BHW.extendF (bvt_F OS lgc n)
+            (BHW.permAct (d := d) P.τ z) =
+          D.Aadj.branch z := by
+      simpa using hadj_model.symm
+    have hord_model' :
+        BHW.extendF (bvt_F OS lgc n) z = D.Aord.branch z := by
+      simpa using hord_model.symm
+    calc
+      Adiff.branch z =
+          BHW.extendF (bvt_F OS lgc n)
+              (BHW.permAct (d := d) P.τ z) -
+            BHW.extendF (bvt_F OS lgc n) z := hdiff_model
+      _ = D.Aadj.branch z - D.Aord.branch z := by
+            rw [hadj_model', hord_model']
+      _ = 0 := by
+            rw [← hover]
+            simp
+  have hcenter_mem :
+      z0 ∈ Adiff.carrier ∩ (D.Aord.carrier ∩ D.Aadj.carrier) :=
+    ⟨hzAdiff, D.Aord_model.z0_mem, D.Aadj_mem⟩
+  have hzero_center : Adiff.branch Adiff.center = 0 := by
+    have hmem :
+        Adiff.center ∈
+          Adiff.carrier ∩ (D.Aord.carrier ∩ D.Aadj.carrier) := by
+      rw [hAdiff_center]
+      exact hcenter_mem
+    simpa using hzero_on hmem
+  refine ⟨D.Aord, D.Aadj, Adiff, ?_, ?_, ?_, ?_, ?_, hzero_on, hzero_center⟩
+  · simpa [z0] using hAord_center
+  · simpa [z0] using hAadj_center
+  · simpa [z0] using hAdiff_center
+  · simpa [z0] using hcenter_mem
+  · exact Adiff.carrier_open.inter
+      (D.Aord.carrier_open.inter D.Aadj.carrier_open)
 
 /-- Selected-data adapter for the local Figure-2-4 common-edge holomorphic
 difference germ.
