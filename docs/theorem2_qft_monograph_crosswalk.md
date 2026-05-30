@@ -21,22 +21,27 @@ Relevant monograph proof nodes:
   equality is first proved on the mixed analytic edge and then passed to
   boundary distributions; compact smearing is handled afterward.
 
-Lean map:
+Lean map, updated after the branch-difference/CLM bridge work:
 
-- The downstream theorem-2 algebra is already in place:
+- The active theorem-2 algebra is now:
 
 ```lean
-ReducedCanonicalAdjacentSwapBoundaryInvariantSchwartz
-  -> AdjacentReducedRuelleFiberMarginalLimit
-  -> AdjacentReducedRuelleDistributionalLimit
+local reduced branch-difference / sign-flip data
+  -> ReducedLocalAdjacentBoundaryCLMInvariant
+  -> ReducedCanonicalAdjacentSwapBoundaryInvariantSchwartzClosedSupport
   -> bvt_W_swap_pairing_of_spacelike
 ```
 
-- The most faithful remaining Lean target is the boundary-CLM invariant already
-  consumed by:
+- The older Route A through `AdjacentReducedRuelleDistributionalLimit` is now a
+  diagnostic/regression route only.  It should not be used as the theorem-2
+  producer because it can pull the old `BHW.localSPrime_twoSectorBranch_of_EOW_BHW`
+  trust boundary downstream.
+
+- The most faithful remaining Lean target is still the local boundary-CLM
+  invariant already consumed by:
 
 ```lean
-reducedCanonicalAdjacentSwapBoundaryInvariantSchwartz_of_boundaryCLM_invariant
+reducedCanonicalAdjacentSwapBoundaryInvariantSchwartzClosedSupport_of_local_reducedBoundaryCLMInvariant
 ```
 
 Namely, for compact reduced Schwartz tests supported in the selected adjacent
@@ -146,9 +151,14 @@ surface consumed by production is:
 
 This is exactly the `hinv` input of
 `reducedCanonicalAdjacentSwapBoundaryInvariantSchwartz_of_boundaryCLM_invariant`.
-Once it is proved, the already-checked chain closes theorem-2 adjacent
-locality through
-`bvt_W_swap_pairing_of_spacelike_from_canonicalBoundaryInvariantSchwartz`.
+Once the local invariant is proved, the already-checked chain closes theorem-2
+adjacent locality through
+`bvt_W_swap_pairing_of_spacelike_from_closedSupportCanonicalInvariant`.
+
+Do not replace this step by an unconditional
+`AdjacentReducedRuelleDistributionalLimit` producer.  That route is retained as
+a checked consumer/diagnostic path, not as the current axiom-light theorem-2
+closure.
 
 The recently checked pointwise reduced-edge consumers remain useful only as
 sufficient reductions for settings where pointwise boundary limits are actually
@@ -169,7 +179,7 @@ lake env lean -DmaxHeartbeats=1200000 test/proofideas_theorem2_local_reduced_clm
 # exit 0
 ```
 
-This file proves the downstream assembly:
+This file proved the downstream assembly for the older diagnostic formulation:
 
 ```lean
 ProofIdeas.LocalReducedAdjacentBoundaryCLMInvariant OS lgc χ
@@ -177,10 +187,12 @@ ProofIdeas.LocalReducedAdjacentBoundaryCLMInvariant OS lgc χ
   -> bvt_W adjacent-swap locality
 ```
 
-The scratch should remain diagnostic, not a production wrapper.  It identifies
-the real mathematical leaf: prove the local reduced CLM invariant from the
-Jost/Ruelle mixed-tube distributional boundary theorem.  The current Gemini
-Deep Research sanity check for this exact theorem shape is:
+The scratch should remain diagnostic, not a production wrapper.  The real
+mathematical leaf has since been sharpened: prove the local reduced
+branch-difference/sign-flip input on adjacent spacelike collars, feed it to
+`ReducedLocalAdjacentBoundaryCLMInvariant`, and then use the checked
+closed-support reduced boundary route.  The current Gemini Deep Research sanity
+check for the older mixed-tube theorem shape is:
 
 ```text
 v1_ChdZcVVYYXRMMkM3NmFfdU1QcmNITnNBNBIXWXFVWGF0TDJDNzZhX3VNUHJjSE5zQTQ
