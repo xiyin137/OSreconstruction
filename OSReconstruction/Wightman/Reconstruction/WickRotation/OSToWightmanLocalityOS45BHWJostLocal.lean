@@ -10695,6 +10695,122 @@ theorem os45CommonEdge_complexWickSeed_eqOn_of_E3
         (fun hφ_supp => hu (hφU hφ_supp))
     simp [hφ_zero]
 
+/-- Initial-overlap branch traces on the checked Figure-2-4 common chart.
+
+For a compact connected source window whose closure stays inside the canonical
+Figure-2-4 patch, the ordinary branch is the concrete BHW extension on the
+initial-sector-overlap chart, while the adjacent endpoint branch is
+`extendF ∘ permAct P.τ` on the same chart.  This closes the ordinary trace and
+adjacent common-edge trace portions of the active Hdiff packet; the remaining
+analytic payload is exactly the adjacent `(4.12)` Wick transport on this chart.
+-/
+theorem os45CommonEdge_initialSectorOverlap_traces_except_adjacentWick
+    [NeZero d] (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {n : ℕ} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    {U : Set (NPointDomain d n)}
+    (hU_compact : IsCompact (closure U))
+    (hU_connected : IsConnected U)
+    (hU_closure : closure U ⊆ P.V) :
+    ∃ (Ucx : Set (Fin n → Fin (d + 1) → ℂ))
+      (Ford Fadj : (Fin n → Fin (d + 1) → ℂ) → ℂ),
+      IsOpen Ucx ∧
+      IsConnected Ucx ∧
+      (∀ u ∈ U, (fun k => wickRotatePoint (u k)) ∈ Ucx) ∧
+      (∀ u ∈ U,
+        (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+          (BHW.realEmbed
+            (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+              (1 : Equiv.Perm (Fin n)) u)) ∈ Ucx) ∧
+      Ucx ⊆
+        BHW.ExtendedTube d n ∩
+          BHW.permutedExtendedTubeSector d n P.τ ∧
+      DifferentiableOn ℂ Ford Ucx ∧
+      DifferentiableOn ℂ Fadj Ucx ∧
+      (∀ u ∈ U,
+        Ford (fun k => wickRotatePoint (u k)) =
+          bvt_F OS lgc n (fun k => wickRotatePoint (u k))) ∧
+      (∀ u ∈ U,
+        Ford
+          ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u))) =
+          BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+            (1 : Equiv.Perm (Fin n))
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u))) ∧
+      (∀ u ∈ U,
+        Fadj
+          ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u))) =
+          BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+            (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u))) := by
+  classical
+  rcases
+      BHW.os45Figure24_initialSectorOverlap_chartNeighborhood
+        (d := d) (n := n) (hd := hd) (P := P)
+        hU_compact hU_connected hU_closure with
+    ⟨Ucx, hUcx_open, hUcx_connected, hwick_mem, hcommon_mem, hUcx_sub⟩
+  let Ford : (Fin n → Fin (d + 1) → ℂ) → ℂ :=
+    BHW.extendF (bvt_F OS lgc n)
+  let Fadj : (Fin n → Fin (d + 1) → ℂ) → ℂ :=
+    fun z =>
+      BHW.extendF (bvt_F OS lgc n)
+        (BHW.permAct (d := d) P.τ z)
+  refine
+    ⟨Ucx, Ford, Fadj, hUcx_open, hUcx_connected, hwick_mem, hcommon_mem,
+      hUcx_sub, ?_, ?_, ?_, ?_, ?_⟩
+  · exact
+      (BHW.differentiableOn_extendF_bvt_F_extendedTube
+        (d := d) OS lgc n).mono (by
+          intro z hz
+          exact (hUcx_sub hz).1)
+  · exact
+      (BHW.differentiableOn_extendF_bvt_F_permAct_preimageExtendedTube
+        (d := d) OS lgc n P.τ).mono (by
+          intro z hz
+          simpa [BHW.permutedExtendedTubeSector] using (hUcx_sub hz).2)
+  · intro u hu
+    have huP : u ∈ P.V := hU_closure (subset_closure hu)
+    have hF_holo :
+        DifferentiableOn ℂ (bvt_F OS lgc n) (BHW.ForwardTube d n) := by
+      simpa [BHW_forwardTube_eq (d := d) (n := n)] using
+        bvt_F_holomorphic (d := d) OS lgc n
+    have hF_lorentz :
+        ∀ (Λ : RestrictedLorentzGroup d)
+          (z : Fin n → Fin (d + 1) → ℂ), z ∈ BHW.ForwardTube d n →
+          bvt_F OS lgc n
+            (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * z k ν) =
+          bvt_F OS lgc n z := by
+      intro Λ z hz
+      exact bvt_F_restrictedLorentzInvariant_forwardTube
+        (d := d) OS lgc n Λ z
+        ((BHW_forwardTube_eq (d := d) (n := n)) ▸ hz)
+    have hforward :
+        (fun k => wickRotatePoint (u k)) ∈ BHW.ForwardTube d n :=
+      BHW.os45Figure24_ordinaryWick_mem_forwardTube
+        (d := d) (n := n) (hd := hd) (P := P) huP
+    exact
+      BHW.extendF_eq_on_forwardTube n (bvt_F OS lgc n)
+        hF_holo hF_lorentz
+        (fun k => wickRotatePoint (u k)) hforward
+  · intro u _hu
+    simp [Ford, BHW.os45PulledRealBranch]
+  · intro u _hu
+    simpa [Fadj] using
+      BHW.os45Figure24CommonEdge_permAct_extendF_eq_adjacentPulledRealBranch
+        (d := d) (n := n) hd OS lgc (P := P) u
+
 /-- Branch-trace form of the OS I §4.5 common-edge equality.
 
 Once the ordinary `(4.1)` branch and the genuine adjacent `(4.12)` branch live
