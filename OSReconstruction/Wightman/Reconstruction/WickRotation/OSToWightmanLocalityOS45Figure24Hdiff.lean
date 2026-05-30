@@ -4248,8 +4248,9 @@ This is a Path-2 proof-body assembly step, not a new theorem-2 input gate.  The
 ordinary branch, its Wick trace, and the ordinary/adjacent common-edge trace
 bookkeeping are supplied by the checked Figure-2-4 initial-overlap chart.  The
 only remaining analytic payload is the actual adjacent `(4.12)` branch on that
-chart and its two traces.  The proof first extracts the OS-I source
-common-edge equality from those branch traces, then uses the zero germ as the
+chart, its Wick-section compact-test pairing with the ordinary branch, and its
+common-edge trace.  The proof first extracts the OS-I source common-edge
+equality from that source-side branch transfer, then uses the zero germ as the
 horizontal-difference packet. -/
 theorem os45CommonEdge_localHdiffGerm_of_initialOverlap_adjacentBranch
     [NeZero d] (hd : 2 ≤ d)
@@ -4274,9 +4275,13 @@ theorem os45CommonEdge_localHdiffGerm_of_initialOverlap_adjacentBranch
               (1 : Equiv.Perm (Fin n)) u)) ∈ Ucx) ∧
       ∀ Fadj : (Fin n → Fin (d + 1) → ℂ) → ℂ,
         DifferentiableOn ℂ Fadj Ucx →
-        (∀ u ∈ U,
-          Fadj (fun k => wickRotatePoint (u k)) =
-            bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k)))) →
+        (∀ φ : SchwartzNPoint d n,
+          HasCompactSupport (φ : NPointDomain d n → ℂ) →
+          tsupport (φ : NPointDomain d n → ℂ) ⊆ U →
+          ∫ u : NPointDomain d n,
+            Fadj (fun k => wickRotatePoint (u k)) * φ u =
+          ∫ u : NPointDomain d n,
+            bvt_F OS lgc n (fun k => wickRotatePoint (u k)) * φ u) →
         (∀ u ∈ U,
           Fadj
             ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
@@ -4321,8 +4326,33 @@ theorem os45CommonEdge_localHdiffGerm_of_initialOverlap_adjacentBranch
       hFord_common, hFadj0_tail⟩
   rcases hFadj0_tail with ⟨_hFadj0_common, _hFadj0_seed_trace⟩
   refine ⟨Ucx, hUcx_open, hUcx_connected, hwick_mem, hcommon_mem, ?_⟩
-  intro Fadj hFadj_holo hFadj_wick hFadj_common
-  have hU_sub : U ⊆ P.V := fun u hu => hU_closure (subset_closure hu)
+  intro Fadj hFadj_holo hsource_pairing hFadj_common
+  have hwick_pairing :
+      ∀ φ : SchwartzNPoint d n,
+        HasCompactSupport (φ : NPointDomain d n → ℂ) →
+        tsupport (φ : NPointDomain d n → ℂ) ⊆ U →
+        ∫ u : NPointDomain d n,
+          Fadj (fun k => wickRotatePoint (u k)) * φ u =
+        ∫ u : NPointDomain d n,
+          Ford (fun k => wickRotatePoint (u k)) * φ u := by
+    intro φ hφ_compact hφU
+    calc
+      ∫ u : NPointDomain d n,
+          Fadj (fun k => wickRotatePoint (u k)) * φ u =
+        ∫ u : NPointDomain d n,
+          bvt_F OS lgc n (fun k => wickRotatePoint (u k)) * φ u :=
+          hsource_pairing φ hφ_compact hφU
+      _ =
+        ∫ u : NPointDomain d n,
+          Ford (fun k => wickRotatePoint (u k)) * φ u := by
+          refine MeasureTheory.integral_congr_ae (Filter.Eventually.of_forall ?_)
+          intro u
+          by_cases hu : u ∈ U
+          · exact congrArg (fun c : ℂ => c * φ u) (hFord_wick u hu).symm
+          · have hφ_zero : φ u = 0 :=
+              image_eq_zero_of_notMem_tsupport
+                (fun hφ_supp => hu (hφU hφ_supp))
+            simp [hφ_zero]
   have hsource_eq :
       ∀ u ∈ U,
         BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
@@ -4335,12 +4365,11 @@ theorem os45CommonEdge_localHdiffGerm_of_initialOverlap_adjacentBranch
             (BHW.realEmbed
               (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
                 (1 : Equiv.Perm (Fin n)) u)) :=
-    BHW.os45CommonEdge_pulledRealBranches_eqOn_of_E3_branchTraces
+    BHW.os45CommonEdge_pulledRealBranches_eqOn_of_wickPairings
       (d := d) hd OS lgc (P := P)
-      hU_open hU_connected.nonempty hU_sub
-      hUcx_open hUcx_connected hwick_mem hcommon_mem
-      Ford Fadj hFord_holo hFadj_holo
-      hFord_wick hFadj_wick hFord_common hFadj_common
+      hU_open hU_connected.nonempty hUcx_open hUcx_connected
+      hwick_mem hcommon_mem Ford Fadj hFord_holo hFadj_holo
+      hwick_pairing hFord_common hFadj_common
   refine ⟨fun _ => (0 : ℂ), ?_, ?_, ?_⟩
   · exact differentiableOn_const (c := (0 : ℂ))
   · intro φ _hφ_compact _hφU
