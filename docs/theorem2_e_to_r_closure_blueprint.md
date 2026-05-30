@@ -2574,6 +2574,28 @@ by invoking `LocalEdgePairingOS45NormalBranchPacket`,
 `SelectedAdjacentDistributionalJostAnchorData`, or a renamed
 `AdjacentReducedRuelleDistributionalLimit` producer.
 
+## 2026-05-30 Path 2 Input Shape: Source Transfer First
+
+For Claude's Route-A/Path-2 question, the committed route decision is:
+OS-I `(4.12)`--`(4.14)` should enter Lean through the source-side common-edge
+branch transfer, in zero-difference source representation form.
+
+The checked consumer chain is:
+
+```lean
+source-side common-edge equality / RepresentsDistributionOn 0
+  -> local moving-source Hdiff package
+  -> ReducedLocalAdjacentBoundaryCLMInvariant
+  -> ReducedCanonicalAdjacentSwapBoundaryInvariantSchwartzClosedSupport
+  -> bvt_W_swap_pairing_of_spacelike
+```
+
+`Hdiff` is the Lean transport envelope after the source transfer has been
+proved.  Reduced sign-flip pointwise is downstream reduced-normal bookkeeping.
+Do not add a further input gate between these carriers.  The next production
+leaf is the concrete OS-I source-variable construction of the zero source
+representation for the deterministic adjacent branch.
+
 ## Archive Pointers
 
 Use these as references, not as the active control plane:
