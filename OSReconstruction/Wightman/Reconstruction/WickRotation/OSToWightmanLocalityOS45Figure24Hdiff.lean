@@ -2482,6 +2482,101 @@ private inductive LocalOverlapAtZ0
       (hB_plus : OrdModelAtZ0 d n z0 (BHW.extendF (bvt_F OS lgc n)) B0) :
       LocalOverlapAtZ0 hd OS lgc z0 A0 B0
 
+private def localOverlapAtZ0_ordinary_of_ordModels
+    [NeZero d] (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {n : ℕ} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData (d := d) hd n i hi}
+    {z0 : Fin n → Fin (d + 1) → ℂ}
+    {A0 B0 : OS45PointedChart d n}
+    (hA : OrdModelAtZ0 d n z0 (BHW.extendF (bvt_F OS lgc n)) A0)
+    (hB : OrdModelAtZ0 d n z0 (BHW.extendF (bvt_F OS lgc n)) B0) :
+    LocalOverlapAtZ0 (P := P) hd OS lgc z0 A0 B0 :=
+  LocalOverlapAtZ0.ordinary hA hB A0 hA
+
+private def localOverlapAtZ0_adjacent_of_commonModel
+    [NeZero d] (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {n : ℕ} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData (d := d) hd n i hi}
+    {z0 : Fin n → Fin (d + 1) → ℂ}
+    {A0 B0 rawLocal : OS45PointedChart d n}
+    {model : (Fin n → Fin (d + 1) → ℂ) → ℂ}
+    (hzA : z0 ∈ A0.carrier)
+    (hzB : z0 ∈ B0.carrier)
+    (hzRaw : z0 ∈ rawLocal.carrier)
+    (hA_model : Set.EqOn A0.branch model A0.carrier)
+    (hB_model : Set.EqOn B0.branch model B0.carrier)
+    (hRaw_model : Set.EqOn rawLocal.branch model rawLocal.carrier) :
+    LocalOverlapAtZ0 (P := P) hd OS lgc z0 A0 B0 := by
+  let hA_adj : RawRetargetAtZ0 d n z0 A0 rawLocal :=
+    { z0_mem := hzA
+      edge_to_raw :=
+        pointed_seed_edge_of_common_model
+          A0.carrier_open rawLocal.carrier_open hzA hzRaw
+          hA_model hRaw_model }
+  let hB_adj : RawRetargetAtZ0 d n z0 B0 rawLocal :=
+    { z0_mem := hzB
+      edge_to_raw :=
+        pointed_seed_edge_of_common_model
+          B0.carrier_open rawLocal.carrier_open hzB hzRaw
+          hB_model hRaw_model }
+  exact LocalOverlapAtZ0.adjacent rawLocal hA_adj hB_adj hzRaw
+
+private def localOverlapAtZ0_flat_plus_minus_of_models
+    [NeZero d] (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {n : ℕ} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData (d := d) hd n i hi}
+    {z0 : Fin n → Fin (d + 1) → ℂ}
+    {A0 B0 Cplus Cminus : OS45PointedChart d n}
+    (hflat : FlatCrossingAtZ0 (P := P) hd OS lgc z0 Cplus Cminus)
+    (hA_plus :
+      OrdModelAtZ0 d n z0 (BHW.extendF (bvt_F OS lgc n)) A0)
+    (hzB : z0 ∈ B0.carrier)
+    (hB_minus :
+      Set.EqOn B0.branch
+        (fun z =>
+          BHW.extendF (bvt_F OS lgc n)
+            (BHW.permAct (d := d) P.τ z)) B0.carrier) :
+    LocalOverlapAtZ0 (P := P) hd OS lgc z0 A0 B0 := by
+  let hB_flat : FlatMinusAtZ0 d n z0 B0 Cminus :=
+    { z0_mem := hzB
+      to_Cminus_edge :=
+        pointed_seed_edge_of_common_model
+          B0.carrier_open Cminus.carrier_open hzB hflat.z0_mem_minus
+          hB_minus hflat.minus_model }
+  exact LocalOverlapAtZ0.flat_plus_minus Cplus Cminus hflat hA_plus hB_flat
+
+private def localOverlapAtZ0_flat_minus_plus_of_models
+    [NeZero d] (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {n : ℕ} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData (d := d) hd n i hi}
+    {z0 : Fin n → Fin (d + 1) → ℂ}
+    {A0 B0 Cplus Cminus : OS45PointedChart d n}
+    (hflat : FlatCrossingAtZ0 (P := P) hd OS lgc z0 Cplus Cminus)
+    (hzA : z0 ∈ A0.carrier)
+    (hA_minus :
+      Set.EqOn A0.branch
+        (fun z =>
+          BHW.extendF (bvt_F OS lgc n)
+            (BHW.permAct (d := d) P.τ z)) A0.carrier)
+    (hB_plus :
+      OrdModelAtZ0 d n z0 (BHW.extendF (bvt_F OS lgc n)) B0) :
+    LocalOverlapAtZ0 (P := P) hd OS lgc z0 A0 B0 := by
+  let hA_flat : FlatMinusAtZ0 d n z0 A0 Cminus :=
+    { z0_mem := hzA
+      to_Cminus_edge :=
+        pointed_seed_edge_of_common_model
+          A0.carrier_open Cminus.carrier_open hzA hflat.z0_mem_minus
+          hA_minus hflat.minus_model }
+  exact LocalOverlapAtZ0.flat_minus_plus Cplus Cminus hflat hA_flat hB_plus
+
 private theorem os45_pointed_gallery_pair_one_one
     {d n : ℕ} {z0 : Fin n → Fin (d + 1) → ℂ}
     (A B C : OS45PointedChart d n)
@@ -3193,6 +3288,47 @@ private theorem OS45BHWJostHullData.ordinaryCommonEdge_pointedChartInWindow
       simpa [A, PointedMetricBranchChart.carrier, p0, hC0_ball] using hz)
   · simpa [A, p0] using hC0_trace
 
+private theorem OS45BHWJostHullData.ordinaryCommonEdge_ordModelAtZ0InWindow
+    [NeZero d]
+    {hd : 2 ≤ d} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData (d := d) hd n i hi}
+    (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {x : NPointDomain d n} (hx : x ∈ P.V)
+    {W : Set (Fin n → Fin (d + 1) → ℂ)}
+    (hW_open : IsOpen W)
+    (hcommonW :
+      (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+        (BHW.realEmbed
+          (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+            (1 : Equiv.Perm (Fin n)) x)) ∈ W) :
+    ∃ A : OS45PointedChart d n,
+      A.center =
+        (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+          (BHW.realEmbed
+            (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+              (1 : Equiv.Perm (Fin n)) x)) ∧
+      OrdModelAtZ0 d n
+        ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+          (BHW.realEmbed
+            (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+              (1 : Equiv.Perm (Fin n)) x)))
+        (BHW.extendF (bvt_F OS lgc n)) A ∧
+      A.branch A.center =
+        BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+          (1 : Equiv.Perm (Fin n))
+          (BHW.realEmbed
+            (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+              (1 : Equiv.Perm (Fin n)) x)) := by
+  rcases H.ordinaryCommonEdge_pointedChartInWindow
+      OS lgc hx hW_open hcommonW with
+    ⟨A, hcenter, hmem, _hsub, heq, htrace⟩
+  refine ⟨A, hcenter, ?_, htrace⟩
+  exact
+    { z0_mem := by simpa [hcenter] using hmem
+      eq_ord := heq }
+
 private theorem OS45BHWJostHullData.adjacentCommonEdge_pointedChartInWindow
     [NeZero d]
     {hd : 2 ≤ d} {i : Fin n} {hi : i.val + 1 < n}
@@ -3254,6 +3390,154 @@ private theorem OS45BHWJostHullData.adjacentCommonEdge_pointedChartInWindow
     exact hC0_eq (by
       simpa [A, PointedMetricBranchChart.carrier, p0, hC0_ball] using hz)
   · simpa [A, p0] using hC0_trace
+
+private theorem OS45BHWJostHullData.adjacentCommonEdge_minusModelAtZ0InWindow
+    [NeZero d]
+    {hd : 2 ≤ d} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData (d := d) hd n i hi}
+    (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {x : NPointDomain d n} (hx : x ∈ P.V)
+    {W : Set (Fin n → Fin (d + 1) → ℂ)}
+    (hW_open : IsOpen W)
+    (hcommonW :
+      (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+        (BHW.realEmbed
+          (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+            (1 : Equiv.Perm (Fin n)) x)) ∈ W) :
+    ∃ A : OS45PointedChart d n,
+      A.center =
+        (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+          (BHW.realEmbed
+            (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+              (1 : Equiv.Perm (Fin n)) x)) ∧
+      A.center ∈ A.carrier ∧
+      Set.EqOn A.branch
+        (fun z : Fin n → Fin (d + 1) → ℂ =>
+          BHW.extendF (bvt_F OS lgc n)
+            (BHW.permAct (d := d) P.τ z)) A.carrier ∧
+      A.branch A.center =
+        BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+          (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+          (BHW.realEmbed
+            (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+              (1 : Equiv.Perm (Fin n)) x)) := by
+  rcases H.adjacentCommonEdge_pointedChartInWindow
+      OS lgc hx hW_open hcommonW with
+    ⟨A, hcenter, hmem, _hsub, heq, htrace⟩
+  exact ⟨A, hcenter, hmem, heq, htrace⟩
+
+private structure CommonEdgeOrdAdjOverlapData
+    [NeZero d] (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {n : ℕ} {i : Fin n} {hi : i.val + 1 < n}
+    (P : BHW.OS45Figure24CanonicalSourcePatchData (d := d) hd n i hi)
+    (x : NPointDomain d n) where
+  Aord : OS45PointedChart d n
+  Aadj : OS45PointedChart d n
+  Aord_center :
+    Aord.center =
+      (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+        (BHW.realEmbed
+          (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+            (1 : Equiv.Perm (Fin n)) x))
+  Aadj_center :
+    Aadj.center =
+      (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+        (BHW.realEmbed
+          (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+            (1 : Equiv.Perm (Fin n)) x))
+  overlap :
+    LocalOverlapAtZ0 (P := P) hd OS lgc
+      ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+        (BHW.realEmbed
+          (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+            (1 : Equiv.Perm (Fin n)) x)))
+      Aord Aadj
+  Aord_trace :
+    Aord.branch Aord.center =
+      BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+        (1 : Equiv.Perm (Fin n))
+        (BHW.realEmbed
+          (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+            (1 : Equiv.Perm (Fin n)) x))
+  Aadj_trace :
+    Aadj.branch Aadj.center =
+      BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+        (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+        (BHW.realEmbed
+          (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+            (1 : Equiv.Perm (Fin n)) x))
+
+private def OS45BHWJostHullData.commonEdge_ordinary_adjacent_localOverlapAtZ0InWindow
+    [NeZero d]
+    {hd : 2 ≤ d} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData (d := d) hd n i hi}
+    (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {x : NPointDomain d n} (hx : x ∈ P.V)
+    {W : Set (Fin n → Fin (d + 1) → ℂ)}
+    (hW_open : IsOpen W)
+    (hcommonW :
+      (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+        (BHW.realEmbed
+          (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+            (1 : Equiv.Perm (Fin n)) x)) ∈ W)
+    {Cplus Cminus : OS45PointedChart d n}
+    (hflat :
+      FlatCrossingAtZ0 (P := P) hd OS lgc
+        ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+          (BHW.realEmbed
+            (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+              (1 : Equiv.Perm (Fin n)) x)))
+        Cplus Cminus) :
+    CommonEdgeOrdAdjOverlapData (d := d) hd OS lgc P x := by
+  classical
+  let hord :=
+    H.ordinaryCommonEdge_ordModelAtZ0InWindow
+      OS lgc hx hW_open hcommonW
+  let Aord : OS45PointedChart d n := Classical.choose hord
+  have hAord_spec := Classical.choose_spec hord
+  let hadj :=
+    H.adjacentCommonEdge_minusModelAtZ0InWindow
+      OS lgc hx hW_open hcommonW
+  let Aadj : OS45PointedChart d n := Classical.choose hadj
+  have hAadj_spec := Classical.choose_spec hadj
+  have hAadj_center :
+      Aadj.center =
+        ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+          (BHW.realEmbed
+            (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+              (1 : Equiv.Perm (Fin n)) x))) := by
+    simpa [Aadj] using hAadj_spec.1
+  have hzAadj :
+      ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+        (BHW.realEmbed
+          (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+            (1 : Equiv.Perm (Fin n)) x))) ∈ Aadj.carrier := by
+    rw [← hAadj_center]
+    simpa [Aadj] using hAadj_spec.2.1
+  have hoverlap :
+      LocalOverlapAtZ0 (P := P) hd OS lgc
+        ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+          (BHW.realEmbed
+            (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+              (1 : Equiv.Perm (Fin n)) x)))
+        Aord Aadj :=
+    localOverlapAtZ0_flat_plus_minus_of_models
+      (d := d) hd OS lgc (P := P) hflat hAord_spec.2.1
+      hzAadj hAadj_spec.2.2.1
+  exact
+    { Aord := Aord
+      Aadj := Aadj
+      Aord_center := hAord_spec.1
+      Aadj_center := hAadj_center
+      overlap := hoverlap
+      Aord_trace := hAord_spec.2.2
+      Aadj_trace := hAadj_spec.2.2.2 }
 
 private theorem OS45BHWJostHullData.commonEdgeDifference_pointedChartInWindow
     [NeZero d]
