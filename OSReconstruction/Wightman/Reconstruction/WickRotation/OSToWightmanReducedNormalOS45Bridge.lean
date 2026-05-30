@@ -3019,6 +3019,394 @@ def reducedNormalCanonicalRayEOWBranchDataOn_of_OS45SourcePatch
   · simpa [Fplus, L, σ0, q] using hplus_rep
   · simpa [Fminus, L, σadj, σ0, q] using hminus_rep
 
+omit [NeZero d] in
+/-- The cone-valid absolute OS45 height and the reduced-normal canonical height
+have the same adjacent common-edge differences.  Equivalently, their mismatch
+is only a common source translation, which disappears after quotienting by
+reduced differences. -/
+theorem os45CommonEdgeRealPoint_canonicalForward_diff_eq_reducedNormalCanonical
+    {m : ℕ} {i : Fin (m + 1)} {hi : i.val + 1 < m + 1}
+    (k : Fin (m + 1 - 1)) (μ : Fin (d + 1)) :
+    BHW.os45CommonEdgeRealPoint (d := d) (n := m + 1)
+        (1 : Equiv.Perm (Fin (m + 1)))
+        (canonicalForwardConeDirection (d := d) (m + 1))
+        ⟨k.val + 1, by omega⟩ μ -
+      BHW.os45CommonEdgeRealPoint (d := d) (n := m + 1)
+        (1 : Equiv.Perm (Fin (m + 1)))
+        (canonicalForwardConeDirection (d := d) (m + 1))
+        ⟨k.val, by omega⟩ μ =
+    BHW.os45CommonEdgeRealPoint (d := d) (n := m + 1)
+        (1 : Equiv.Perm (Fin (m + 1)))
+        (reducedNormalAbsoluteSectionCLM (d := d) i hi
+          (reducedNormalFlatCanonicalDirection (d := d) i hi))
+        ⟨k.val + 1, by omega⟩ μ -
+      BHW.os45CommonEdgeRealPoint (d := d) (n := m + 1)
+        (1 : Equiv.Perm (Fin (m + 1)))
+        (reducedNormalAbsoluteSectionCLM (d := d) i hi
+          (reducedNormalFlatCanonicalDirection (d := d) i hi))
+        ⟨k.val, by omega⟩ μ := by
+  have hred :
+      reducedNormalAbsoluteSectionCLM (d := d) i hi
+            (reducedNormalFlatCanonicalDirection (d := d) i hi)
+            ⟨k.val + 1, by omega⟩ μ -
+          reducedNormalAbsoluteSectionCLM (d := d) i hi
+            (reducedNormalFlatCanonicalDirection (d := d) i hi)
+            ⟨k.val, by omega⟩ μ =
+        canonicalReducedDirection (d := d) m k μ := by
+    have hleft :=
+      reducedCoordInv_left (d := d) i ⟨i.val + 1, hi⟩
+        (reducedAdjacent_succ_ne i hi)
+        (canonicalReducedDirection (d := d) m)
+    have h := congrFun (congrFun hleft k) μ
+    simpa [reducedNormalAbsoluteSectionCLM_apply,
+      reducedNormalFlatCanonicalDirection, reducedCoordInv, reducedCoordCLE,
+      BHW.reducedDiffMapReal_apply] using h
+  have hcan :
+      canonicalForwardConeDirection (d := d) (m + 1)
+            ⟨k.val + 1, by omega⟩ μ -
+          canonicalForwardConeDirection (d := d) (m + 1)
+            ⟨k.val, by omega⟩ μ =
+        canonicalReducedDirection (d := d) m k μ := by
+    by_cases hμ : μ = (0 : Fin (d + 1))
+    · subst μ
+      simp [canonicalForwardConeDirection, canonicalReducedDirection,
+        BHW.safeBasepointVec]
+    · simp [canonicalForwardConeDirection, canonicalReducedDirection,
+        BHW.safeBasepointVec, hμ]
+  by_cases hμ : μ = (0 : Fin (d + 1))
+  · subst μ
+    simp [BHW.os45CommonEdgeRealPoint]
+    calc
+      canonicalForwardConeDirection (d := d) (m + 1)
+              ⟨k.val + 1, by omega⟩ 0 / 2 -
+            canonicalForwardConeDirection (d := d) (m + 1)
+              ⟨k.val, by omega⟩ 0 / 2 =
+          (canonicalForwardConeDirection (d := d) (m + 1)
+                ⟨k.val + 1, by omega⟩ 0 -
+              canonicalForwardConeDirection (d := d) (m + 1)
+                ⟨k.val, by omega⟩ 0) / 2 := by ring
+      _ = canonicalReducedDirection (d := d) m k 0 / 2 := by
+        rw [hcan]
+      _ =
+          (reducedNormalAbsoluteSectionCLM (d := d) i hi
+                (reducedNormalFlatCanonicalDirection (d := d) i hi)
+                ⟨k.val + 1, by omega⟩ 0 -
+              reducedNormalAbsoluteSectionCLM (d := d) i hi
+                (reducedNormalFlatCanonicalDirection (d := d) i hi)
+                ⟨k.val, by omega⟩ 0) / 2 := by
+        rw [hred]
+      _ =
+          reducedNormalAbsoluteSectionCLM (d := d) i hi
+                (reducedNormalFlatCanonicalDirection (d := d) i hi)
+                ⟨k.val + 1, by omega⟩ 0 / 2 -
+          reducedNormalAbsoluteSectionCLM (d := d) i hi
+                (reducedNormalFlatCanonicalDirection (d := d) i hi)
+                ⟨k.val, by omega⟩ 0 / 2 := by ring
+  · simpa [BHW.os45CommonEdgeRealPoint, hμ] using hcan.trans hred.symm
+
+/-- Replacing the reduced-normal side-height by the cone-valid canonical OS45
+height preserves the upper moving source-side ray after quotienting by reduced
+differences.
+
+This is the coordinate bridge left after selecting the correct side-height for
+OS-I Section 4.5: the analytic branch value still has to be transported through
+the reduced extension/uniqueness step, but no further coordinate correction is
+needed. -/
+theorem reducedDiffMap_coneHeight_sourceSide_eq_upperCanonicalRay
+    {m : ℕ} {i : Fin (m + 1)} {hi : i.val + 1 < m + 1}
+    (σ : Equiv.Perm (Fin (m + 1)))
+    (p : ReducedSpace d m i ⟨i.val + 1, hi⟩) (ε : ℝ) :
+    let ηc : BHW.OS45FlatCommonChartReal d (m + 1) :=
+      BHW.os45CommonEdgeFlatCLE d (m + 1)
+        (1 : Equiv.Perm (Fin (m + 1)))
+        (canonicalForwardConeDirection (d := d) (m + 1))
+    let x0 : BHW.OS45FlatCommonChartReal d (m + 1) :=
+      reducedNormalToOS45CommonEdgeFlatCLM (d := d) i hi
+        (reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩ p)
+    let uε : NPointDomain d (m + 1) :=
+      (BHW.os45CommonEdgeFlatCLE d (m + 1)
+        (1 : Equiv.Perm (Fin (m + 1)))).symm (x0 - ε • ηc)
+    BHW.reducedDiffMap (m + 1) d
+        (BHW.permAct (d := d) σ
+          (BHW.os45FlatCommonChartSourceSide d (m + 1)
+            (1 : Equiv.Perm (Fin (m + 1))) (1 : ℝ) ε ηc uε)) =
+      BHW.reducedDiffMap (m + 1) d
+        (BHW.permAct (d := d) σ
+          ((BHW.os45QuarterTurnCLE (d := d) (n := m + 1)).symm
+            (BHW.unflattenCfg (m + 1) d
+              (reducedNormalToOS45CommonEdgeComplexCLM
+                (d := d) i hi
+                (reducedNormalUpperCanonicalRay (d := d) i hi p ε))))) := by
+  intro ηc x0 uε
+  haveI : NeZero (m + 1) := ⟨Nat.succ_ne_zero m⟩
+  let zsrc : Fin (m + 1) → Fin (d + 1) → ℂ :=
+    BHW.os45FlatCommonChartSourceSide d (m + 1)
+      (1 : Equiv.Perm (Fin (m + 1))) (1 : ℝ) ε ηc uε
+  let zcan : Fin (m + 1) → Fin (d + 1) → ℂ :=
+    (BHW.os45QuarterTurnCLE (d := d) (n := m + 1)).symm
+      (BHW.unflattenCfg (m + 1) d
+        (reducedNormalToOS45CommonEdgeComplexCLM
+          (d := d) i hi
+          (reducedNormalUpperCanonicalRay (d := d) i hi p ε)))
+  have hbase :
+      BHW.reducedDiffMap (m + 1) d zsrc =
+        BHW.reducedDiffMap (m + 1) d zcan := by
+    rw [show zcan =
+        (BHW.os45QuarterTurnCLE (d := d) (n := m + 1)).symm
+          (BHW.unflattenCfg (m + 1) d
+            (fun a =>
+              (x0 a : ℂ) +
+                (ε : ℂ) *
+                  (reducedNormalToOS45CommonEdgeFlatCLM
+                    (d := d) i hi
+                    (reducedNormalFlatCanonicalDirection (d := d) i hi) a : ℂ) *
+                  Complex.I)) by
+      simp [zcan, x0, reducedNormalToOS45CommonEdgeComplexCLM_upperRay]]
+    ext k μ
+    rw [BHW.reducedDiffMap_eq_successive_differences,
+      BHW.reducedDiffMap_eq_successive_differences]
+    have hdiv_succ :
+        (finProdFinEquiv
+          ((⟨k.val + 1, by omega⟩ : Fin (m + 1)), μ)).divNat =
+          (⟨k.val + 1, by omega⟩ : Fin (m + 1)) := by
+      change
+        (finProdFinEquiv.symm
+          (finProdFinEquiv
+            ((⟨k.val + 1, by omega⟩ : Fin (m + 1)), μ))).1 =
+          (⟨k.val + 1, by omega⟩ : Fin (m + 1))
+      simp
+    have hmod_succ :
+        (finProdFinEquiv
+          ((⟨k.val + 1, by omega⟩ : Fin (m + 1)), μ)).modNat = μ := by
+      change
+        (finProdFinEquiv.symm
+          (finProdFinEquiv
+            ((⟨k.val + 1, by omega⟩ : Fin (m + 1)), μ))).2 = μ
+      simp
+    have hdiv_curr :
+        (finProdFinEquiv
+          ((⟨k.val, by omega⟩ : Fin (m + 1)), μ)).divNat =
+          (⟨k.val, by omega⟩ : Fin (m + 1)) := by
+      change
+        (finProdFinEquiv.symm
+          (finProdFinEquiv
+            ((⟨k.val, by omega⟩ : Fin (m + 1)), μ))).1 =
+          (⟨k.val, by omega⟩ : Fin (m + 1))
+      simp
+    have hmod_curr :
+        (finProdFinEquiv
+          ((⟨k.val, by omega⟩ : Fin (m + 1)), μ)).modNat = μ := by
+      change
+        (finProdFinEquiv.symm
+          (finProdFinEquiv
+            ((⟨k.val, by omega⟩ : Fin (m + 1)), μ))).2 = μ
+      simp
+    have hη :
+        (BHW.os45CommonEdgeRealPoint (d := d) (n := m + 1)
+            (1 : Equiv.Perm (Fin (m + 1)))
+            (canonicalForwardConeDirection (d := d) (m + 1))
+            ⟨k.val + 1, by omega⟩ μ : ℂ) -
+          BHW.os45CommonEdgeRealPoint (d := d) (n := m + 1)
+            (1 : Equiv.Perm (Fin (m + 1)))
+            (canonicalForwardConeDirection (d := d) (m + 1))
+            ⟨k.val, by omega⟩ μ =
+        (BHW.os45CommonEdgeRealPoint (d := d) (n := m + 1)
+            (1 : Equiv.Perm (Fin (m + 1)))
+            (reducedNormalAbsoluteSectionCLM (d := d) i hi
+              (reducedNormalFlatCanonicalDirection (d := d) i hi))
+            ⟨k.val + 1, by omega⟩ μ : ℂ) -
+          BHW.os45CommonEdgeRealPoint (d := d) (n := m + 1)
+            (1 : Equiv.Perm (Fin (m + 1)))
+            (reducedNormalAbsoluteSectionCLM (d := d) i hi
+              (reducedNormalFlatCanonicalDirection (d := d) i hi))
+            ⟨k.val, by omega⟩ μ := by
+      exact_mod_cast
+        os45CommonEdgeRealPoint_canonicalForward_diff_eq_reducedNormalCanonical
+          (d := d) (i := i) (hi := hi) k μ
+    by_cases hμ : μ = (0 : Fin (d + 1))
+    · subst μ
+      simp [BHW.os45CommonEdgeRealPoint] at hη
+      simp [zsrc, BHW.os45FlatCommonChartSourceSide, uε, x0, ηc,
+        BHW.unflattenCfg, BHW.os45QuarterTurnCLE_symm_apply,
+        BHW.os45CommonEdgeFlatCLE, BHW.os45CommonEdgeRealPoint,
+        flattenCLEquivReal_apply, sub_eq_add_neg, Pi.add_apply,
+        Pi.neg_apply, Pi.smul_apply, smul_eq_mul, hdiv_succ, hmod_succ,
+        hdiv_curr, hmod_curr]
+      ring_nf at hη ⊢
+      linear_combination ((Complex.I + Complex.I ^ 2) * (ε : ℂ)) * hη
+    · simp [zsrc, BHW.os45FlatCommonChartSourceSide, uε, x0, ηc,
+        BHW.unflattenCfg, BHW.os45QuarterTurnCLE_symm_apply,
+        BHW.os45CommonEdgeFlatCLE, BHW.os45CommonEdgeRealPoint,
+        flattenCLEquivReal_apply, sub_eq_add_neg, Pi.add_apply,
+        Pi.neg_apply, Pi.smul_apply, smul_eq_mul, hμ, hdiv_succ,
+        hmod_succ, hdiv_curr, hmod_curr]
+      simp [BHW.os45CommonEdgeRealPoint, hμ] at hη
+      ring_nf at hη ⊢
+      linear_combination (Complex.I * (ε : ℂ)) * hη
+  calc
+    BHW.reducedDiffMap (m + 1) d (BHW.permAct (d := d) σ zsrc) =
+        BHW.permOnReducedDiff (d := d) (n := m + 1) σ
+          (BHW.reducedDiffMap (m + 1) d zsrc) := by
+      simpa [zsrc, BHW.permAct] using
+        (BHW.permOnReducedDiff_reducedDiffMap
+          (d := d) (n := m + 1) σ zsrc).symm
+    _ = BHW.permOnReducedDiff (d := d) (n := m + 1) σ
+          (BHW.reducedDiffMap (m + 1) d zcan) := by
+      rw [hbase]
+    _ = BHW.reducedDiffMap (m + 1) d (BHW.permAct (d := d) σ zcan) := by
+      simpa [zcan, BHW.permAct] using
+        (BHW.permOnReducedDiff_reducedDiffMap
+          (d := d) (n := m + 1) σ zcan)
+
+/-- Replacing the reduced-normal side-height by the cone-valid canonical OS45
+height preserves the lower moving source-side ray after quotienting by reduced
+differences, including after the selected adjacent branch permutation. -/
+theorem reducedDiffMap_coneHeight_sourceSide_eq_lowerCanonicalRay
+    {m : ℕ} {i : Fin (m + 1)} {hi : i.val + 1 < m + 1}
+    (σ : Equiv.Perm (Fin (m + 1)))
+    (p : ReducedSpace d m i ⟨i.val + 1, hi⟩) (ε : ℝ) :
+    let ηc : BHW.OS45FlatCommonChartReal d (m + 1) :=
+      BHW.os45CommonEdgeFlatCLE d (m + 1)
+        (1 : Equiv.Perm (Fin (m + 1)))
+        (canonicalForwardConeDirection (d := d) (m + 1))
+    let x0 : BHW.OS45FlatCommonChartReal d (m + 1) :=
+      reducedNormalToOS45CommonEdgeFlatCLM (d := d) i hi
+        (reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩ p)
+    let uε : NPointDomain d (m + 1) :=
+      (BHW.os45CommonEdgeFlatCLE d (m + 1)
+        (1 : Equiv.Perm (Fin (m + 1)))).symm (x0 + ε • ηc)
+    BHW.reducedDiffMap (m + 1) d
+        (BHW.permAct (d := d) σ
+          (BHW.os45FlatCommonChartSourceSide d (m + 1)
+            (1 : Equiv.Perm (Fin (m + 1))) (-1 : ℝ) ε ηc uε)) =
+      BHW.reducedDiffMap (m + 1) d
+        (BHW.permAct (d := d) σ
+          ((BHW.os45QuarterTurnCLE (d := d) (n := m + 1)).symm
+            (BHW.unflattenCfg (m + 1) d
+              (reducedNormalToOS45CommonEdgeComplexCLM
+                (d := d) i hi
+                (reducedNormalLowerCanonicalRay (d := d) i hi p ε))))) := by
+  intro ηc x0 uε
+  haveI : NeZero (m + 1) := ⟨Nat.succ_ne_zero m⟩
+  let zsrc : Fin (m + 1) → Fin (d + 1) → ℂ :=
+    BHW.os45FlatCommonChartSourceSide d (m + 1)
+      (1 : Equiv.Perm (Fin (m + 1))) (-1 : ℝ) ε ηc uε
+  let zcan : Fin (m + 1) → Fin (d + 1) → ℂ :=
+    (BHW.os45QuarterTurnCLE (d := d) (n := m + 1)).symm
+      (BHW.unflattenCfg (m + 1) d
+        (reducedNormalToOS45CommonEdgeComplexCLM
+          (d := d) i hi
+          (reducedNormalLowerCanonicalRay (d := d) i hi p ε)))
+  have hbase :
+      BHW.reducedDiffMap (m + 1) d zsrc =
+        BHW.reducedDiffMap (m + 1) d zcan := by
+    rw [show zcan =
+        (BHW.os45QuarterTurnCLE (d := d) (n := m + 1)).symm
+          (BHW.unflattenCfg (m + 1) d
+            (fun a =>
+              (x0 a : ℂ) -
+                (ε : ℂ) *
+                  (reducedNormalToOS45CommonEdgeFlatCLM
+                    (d := d) i hi
+                    (reducedNormalFlatCanonicalDirection (d := d) i hi) a : ℂ) *
+                  Complex.I)) by
+      simp [zcan, x0, reducedNormalToOS45CommonEdgeComplexCLM_lowerRay]]
+    ext k μ
+    rw [BHW.reducedDiffMap_eq_successive_differences,
+      BHW.reducedDiffMap_eq_successive_differences]
+    have hdiv_succ :
+        (finProdFinEquiv
+          ((⟨k.val + 1, by omega⟩ : Fin (m + 1)), μ)).divNat =
+          (⟨k.val + 1, by omega⟩ : Fin (m + 1)) := by
+      change
+        (finProdFinEquiv.symm
+          (finProdFinEquiv
+            ((⟨k.val + 1, by omega⟩ : Fin (m + 1)), μ))).1 =
+          (⟨k.val + 1, by omega⟩ : Fin (m + 1))
+      simp
+    have hmod_succ :
+        (finProdFinEquiv
+          ((⟨k.val + 1, by omega⟩ : Fin (m + 1)), μ)).modNat = μ := by
+      change
+        (finProdFinEquiv.symm
+          (finProdFinEquiv
+            ((⟨k.val + 1, by omega⟩ : Fin (m + 1)), μ))).2 = μ
+      simp
+    have hdiv_curr :
+        (finProdFinEquiv
+          ((⟨k.val, by omega⟩ : Fin (m + 1)), μ)).divNat =
+          (⟨k.val, by omega⟩ : Fin (m + 1)) := by
+      change
+        (finProdFinEquiv.symm
+          (finProdFinEquiv
+            ((⟨k.val, by omega⟩ : Fin (m + 1)), μ))).1 =
+          (⟨k.val, by omega⟩ : Fin (m + 1))
+      simp
+    have hmod_curr :
+        (finProdFinEquiv
+          ((⟨k.val, by omega⟩ : Fin (m + 1)), μ)).modNat = μ := by
+      change
+        (finProdFinEquiv.symm
+          (finProdFinEquiv
+            ((⟨k.val, by omega⟩ : Fin (m + 1)), μ))).2 = μ
+      simp
+    have hη :
+        (BHW.os45CommonEdgeRealPoint (d := d) (n := m + 1)
+            (1 : Equiv.Perm (Fin (m + 1)))
+            (canonicalForwardConeDirection (d := d) (m + 1))
+            ⟨k.val + 1, by omega⟩ μ : ℂ) -
+          BHW.os45CommonEdgeRealPoint (d := d) (n := m + 1)
+            (1 : Equiv.Perm (Fin (m + 1)))
+            (canonicalForwardConeDirection (d := d) (m + 1))
+            ⟨k.val, by omega⟩ μ =
+        (BHW.os45CommonEdgeRealPoint (d := d) (n := m + 1)
+            (1 : Equiv.Perm (Fin (m + 1)))
+            (reducedNormalAbsoluteSectionCLM (d := d) i hi
+              (reducedNormalFlatCanonicalDirection (d := d) i hi))
+            ⟨k.val + 1, by omega⟩ μ : ℂ) -
+          BHW.os45CommonEdgeRealPoint (d := d) (n := m + 1)
+            (1 : Equiv.Perm (Fin (m + 1)))
+            (reducedNormalAbsoluteSectionCLM (d := d) i hi
+              (reducedNormalFlatCanonicalDirection (d := d) i hi))
+            ⟨k.val, by omega⟩ μ := by
+      exact_mod_cast
+        os45CommonEdgeRealPoint_canonicalForward_diff_eq_reducedNormalCanonical
+          (d := d) (i := i) (hi := hi) k μ
+    by_cases hμ : μ = (0 : Fin (d + 1))
+    · subst μ
+      simp [BHW.os45CommonEdgeRealPoint] at hη
+      simp [zsrc, BHW.os45FlatCommonChartSourceSide, uε, x0, ηc,
+        BHW.unflattenCfg, BHW.os45QuarterTurnCLE_symm_apply,
+        BHW.os45CommonEdgeFlatCLE, BHW.os45CommonEdgeRealPoint,
+        flattenCLEquivReal_apply, sub_eq_add_neg, Pi.add_apply,
+        Pi.neg_apply, Pi.smul_apply, smul_eq_mul, hdiv_succ, hmod_succ,
+        hdiv_curr, hmod_curr]
+      ring_nf at hη ⊢
+      linear_combination (-((Complex.I + Complex.I ^ 2) * (ε : ℂ))) * hη
+    · simp [zsrc, BHW.os45FlatCommonChartSourceSide, uε, x0, ηc,
+        BHW.unflattenCfg, BHW.os45QuarterTurnCLE_symm_apply,
+        BHW.os45CommonEdgeFlatCLE, BHW.os45CommonEdgeRealPoint,
+        flattenCLEquivReal_apply, sub_eq_add_neg, Pi.add_apply,
+        Pi.neg_apply, Pi.smul_apply, smul_eq_mul, hμ, hdiv_succ,
+        hmod_succ, hdiv_curr, hmod_curr]
+      simp [BHW.os45CommonEdgeRealPoint, hμ] at hη
+      ring_nf at hη ⊢
+      linear_combination (-(Complex.I * (ε : ℂ))) * hη
+  calc
+    BHW.reducedDiffMap (m + 1) d (BHW.permAct (d := d) σ zsrc) =
+        BHW.permOnReducedDiff (d := d) (n := m + 1) σ
+          (BHW.reducedDiffMap (m + 1) d zsrc) := by
+      simpa [zsrc, BHW.permAct] using
+        (BHW.permOnReducedDiff_reducedDiffMap
+          (d := d) (n := m + 1) σ zsrc).symm
+    _ = BHW.permOnReducedDiff (d := d) (n := m + 1) σ
+          (BHW.reducedDiffMap (m + 1) d zcan) := by
+      rw [hbase]
+    _ = BHW.reducedDiffMap (m + 1) d (BHW.permAct (d := d) σ zcan) := by
+      simpa [zcan, BHW.permAct] using
+        (BHW.permOnReducedDiff_reducedDiffMap
+          (d := d) (n := m + 1) σ zcan)
+
 end AdjacentNormal
 
 end OSReconstruction
