@@ -632,12 +632,13 @@ theorem adjacentReducedRuelleDistributionalLimit_of_normalSignFlip_pointwise
 /-
 Route note: the `AdjacentReducedRuelleDistributionalLimit` producers below are
 kept as checked legacy consumers and diagnostics.  The theorem-2 boundary-value
-frontier should use the reduced local CLM path whose active OS-I input is the
-moving-source `Hdiff` / horizontal branch-difference packet.  The
-`sourceRepresentsOn` and reduced sign-flip formulations are downstream views of
-that packet, not replacement theorem-2 gates:
-`Hdiff` branch difference -> `ReducedLocalAdjacentBoundaryCLMInvariant` ->
-closed-support reduced canonical swap invariance -> Wightman swap locality.
+frontier should use the reduced local CLM path whose paper-facing OS-I input is
+the source-side branch-transfer / common-edge source equality.  The `Hdiff`
+branch-difference germ is the Lean carrier built from that equality, and the
+reduced sign-flip formulation is downstream reduced-normal bookkeeping:
+source equality -> `Hdiff` branch difference ->
+`ReducedLocalAdjacentBoundaryCLMInvariant` -> closed-support reduced canonical
+swap invariance -> Wightman swap locality.
 In particular, do not use the selected/local-edge Ruelle path here as the final
 producer for `bvt_W_swap_pairing_of_spacelike`, since that can route the old
 `BHW.localSPrime_twoSectorBranch_of_EOW_BHW` trust boundary downstream.

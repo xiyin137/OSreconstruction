@@ -355,13 +355,16 @@ branch-difference / boundary-transfer argument, not by any finite-height
 canonical-shell equality.
 
 Active route:
+OS-I source-side branch transfer / common-edge source equality ->
 local moving-source `Hdiff` / horizontal branch-difference packet ->
 `ReducedLocalAdjacentBoundaryCLMInvariant` ->
 closed-support reduced canonical swap invariance -> this boundary-value
 locality statement.
 
-The `sourceRepresentsOn` and reduced sign-flip formulations are downstream
-views of this branch-difference input, not replacement theorem-2 gates.
+The paper-facing input shape is the source-side branch-transfer equality.  The
+`Hdiff` germ is the Lean transport envelope built from that equality, while the
+reduced sign-flip formulation is downstream reduced-normal bookkeeping rather
+than a replacement theorem-2 gate.
 
 The older Route A through `AdjacentReducedRuelleDistributionalLimit` is kept as
 a checked diagnostic route only.  Do not close this frontier by feeding the
