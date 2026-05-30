@@ -1319,6 +1319,104 @@ private noncomputable def flat_realJost_EOW_pointed_seed_of_localZeroHeight_pair
       A.carrier_open B.carrier_open hWflat.1 hzA hzB hWflat.2.2.1
       hA_model hB_model hWflat.2.2.2.2)
 
+private noncomputable def flat_realJost_EOW_pointed_seed_of_local414_integrals
+    [NeZero d] (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {n : ℕ} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData (d := d) hd n i hi}
+    {E : Set (BHW.OS45FlatCommonChartReal d n)}
+    (hE_open : IsOpen E)
+    (hE_sub :
+      E ⊆ BHW.os45FlatCommonChartEdgeSet d n P
+        (1 : Equiv.Perm (Fin n)))
+    (x0 : BHW.OS45FlatCommonChartReal d n)
+    (hx0 : x0 ∈ E)
+    (bvIn bvOut : BHW.OS45FlatCommonChartReal d n → ℂ)
+    (hbvIn_cont : ContinuousOn bvIn E)
+    (hbvOut_cont : ContinuousOn bvOut E)
+    (hsideIn_bvIn :
+      ∀ x ∈ E,
+        Filter.Tendsto
+          (BHW.os45FlatCommonChartBranch d n OS lgc
+            (1 : Equiv.Perm (Fin n)))
+          (nhdsWithin (SCV.realEmbed x)
+            (BHW.os45FlatCommonChartOmega d n
+              (1 : Equiv.Perm (Fin n))))
+          (nhds (bvIn x)))
+    (hsideOut_bvOut :
+      ∀ x ∈ E,
+        Filter.Tendsto
+          (BHW.os45FlatCommonChartBranch d n OS lgc
+            (P.τ.symm * (1 : Equiv.Perm (Fin n))))
+          (nhdsWithin (SCV.realEmbed x)
+            (BHW.os45FlatCommonChartOmega d n
+              (P.τ.symm * (1 : Equiv.Perm (Fin n)))))
+          (nhds (bvOut x)))
+    (h414_integrals :
+      ∀ φ : SchwartzMap (BHW.OS45FlatCommonChartReal d n) ℂ,
+        HasCompactSupport
+          (φ : BHW.OS45FlatCommonChartReal d n → ℂ) →
+        tsupport (φ : BHW.OS45FlatCommonChartReal d n → ℂ) ⊆ E →
+        (∫ x : BHW.OS45FlatCommonChartReal d n, bvOut x * φ x) =
+          ∫ x : BHW.OS45FlatCommonChartReal d n, bvIn x * φ x)
+    (A B : PointedMetricBranchChart (Fin n → Fin (d + 1) → ℂ) ℂ)
+    (hzA :
+      (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+        (BHW.unflattenCfg n d (SCV.realEmbed x0)) ∈ A.carrier)
+    (hzB :
+      (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+        (BHW.unflattenCfg n d (SCV.realEmbed x0)) ∈ B.carrier)
+    (hA_model :
+      Set.EqOn A.branch (BHW.extendF (bvt_F OS lgc n)) A.carrier)
+    (hB_model :
+      Set.EqOn B.branch
+        (fun z =>
+          BHW.extendF (bvt_F OS lgc n)
+            (BHW.permAct (d := d) P.τ z)) B.carrier) :
+    PointedSeedEdge
+      ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+        (BHW.unflattenCfg n d (SCV.realEmbed x0)))
+      A.carrier B.carrier A.branch B.branch := by
+  have h414_bv_eq : Set.EqOn bvOut bvIn E :=
+    SCV.eqOn_open_of_compactSupport_schwartz_integral_eq_of_continuousOn
+      hE_open hbvOut_cont hbvIn_cont h414_integrals
+  have hsideOut_bvIn :
+      ∀ x ∈ E,
+        Filter.Tendsto
+          (BHW.os45FlatCommonChartBranch d n OS lgc
+            (P.τ.symm * (1 : Equiv.Perm (Fin n))))
+          (nhdsWithin (SCV.realEmbed x)
+            (BHW.os45FlatCommonChartOmega d n
+              (P.τ.symm * (1 : Equiv.Perm (Fin n)))))
+          (nhds (bvIn x)) := by
+    intro x hx
+    simpa [h414_bv_eq hx] using hsideOut_bvOut x hx
+  let hflat :
+      ∃ W : Set (Fin n → Fin (d + 1) → ℂ),
+        IsOpen W ∧
+        IsPreconnected W ∧
+        (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+          (BHW.unflattenCfg n d (SCV.realEmbed x0)) ∈ W ∧
+        W ⊆
+          BHW.ExtendedTube d n ∩
+            BHW.permutedExtendedTubeSector d n P.τ ∧
+        Set.EqOn
+          (BHW.extendF (bvt_F OS lgc n))
+          (fun z =>
+            BHW.extendF (bvt_F OS lgc n)
+              (BHW.permAct (d := d) P.τ z))
+          W :=
+    BHW.os45_BHWJost_initialSectorEqOn_open_of_flatCommonChart_continuousBoundaryOn
+      (d := d) hd OS lgc (P := P) hE_open hE_sub
+      bvIn hbvIn_cont hsideIn_bvIn hsideOut_bvIn x0 hx0
+  let Wflat := Classical.choose hflat
+  let hWflat := Classical.choose_spec hflat
+  exact pointed_seed_edge_of_exists
+    (pointed_seed_of_ambient_eqOn_models
+      A.carrier_open B.carrier_open hWflat.1 hzA hzB hWflat.2.2.1
+      hA_model hB_model hWflat.2.2.2.2)
+
 private theorem zeroHeight_pairings_eq_common_of_sideLimits
     {ι α : Type*} {l : Filter ι} [NeBot l]
     {K : Set α} (hK_nonempty : K.Nonempty)
