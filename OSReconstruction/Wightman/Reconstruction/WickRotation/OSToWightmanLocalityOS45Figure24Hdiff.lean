@@ -3534,6 +3534,98 @@ private theorem OS45BHWJostHullData.OS412SeedWindow_adjacentModel_trace_at_seed_
         (fun k => wickRotatePoint (x k))
   exact hseed.trans hperm
 
+/-- Fixed-chart compact-test form of the raw `(4.12)` adjacent seed
+normalization.
+
+If a local adjacent chart modeled by `extendF ∘ permAct P.τ` covers the
+selected adjacent Wick seeds over a source window, then its compact-test
+pairing on those seeds is the ordinary Wick pairing.  This is the local
+piece consumed by the later finite source-side branch-transfer partition. -/
+private theorem OS45BHWJostHullData.OS412SeedWindow_adjacentModel_permActWick_pairing_eq_ordinaryWick
+    [NeZero d]
+    {hd : 2 ≤ d} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData (d := d) hd n i hi}
+    (_H : BHW.OS45BHWJostHullData (d := d) hd n i hi P)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {U : Set (NPointDomain d n)}
+    (hU_sub : U ⊆ P.V)
+    {Aadj : OS45PointedChart d n}
+    (hAadj_mem :
+      ∀ u ∈ U,
+        BHW.permAct (d := d) P.τ (fun k => wickRotatePoint (u k)) ∈
+          Aadj.carrier)
+    (hAadj_model :
+      Set.EqOn Aadj.branch
+        (fun z : Fin n → Fin (d + 1) → ℂ =>
+          BHW.extendF (bvt_F OS lgc n)
+            (BHW.permAct (d := d) P.τ z)) Aadj.carrier)
+    (φ : SchwartzNPoint d n)
+    (hφU : tsupport (φ : NPointDomain d n → ℂ) ⊆ U) :
+    ∫ u : NPointDomain d n,
+        Aadj.branch
+          (BHW.permAct (d := d) P.τ
+            (fun k => wickRotatePoint (u k))) * φ u =
+      ∫ u : NPointDomain d n,
+        bvt_F OS lgc n (fun k => wickRotatePoint (u k)) * φ u := by
+  classical
+  have hF_holo :
+      DifferentiableOn ℂ (bvt_F OS lgc n) (BHW.ForwardTube d n) := by
+    simpa [BHW_forwardTube_eq (d := d) (n := n)] using
+      bvt_F_holomorphic (d := d) OS lgc n
+  have hF_lorentz :
+      ∀ (Λ : LorentzLieGroup.RestrictedLorentzGroup d)
+        (z : Fin n → Fin (d + 1) → ℂ), z ∈ BHW.ForwardTube d n →
+        bvt_F OS lgc n
+          (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * z k ν) =
+        bvt_F OS lgc n z := by
+    intro Λ z hz
+    exact bvt_F_restrictedLorentzInvariant_forwardTube
+      (d := d) OS lgc n Λ z
+      ((BHW_forwardTube_eq (d := d) (n := n)) ▸ hz)
+  refine MeasureTheory.integral_congr_ae (Filter.Eventually.of_forall ?_)
+  intro u
+  by_cases hu : u ∈ U
+  · let z : Fin n → Fin (d + 1) → ℂ :=
+      BHW.permAct (d := d) P.τ (fun k => wickRotatePoint (u k))
+    have hzA : z ∈ Aadj.carrier := by
+      simpa [z] using hAadj_mem u hu
+    have hmodel :
+        Aadj.branch z =
+          BHW.extendF (bvt_F OS lgc n)
+            (BHW.permAct (d := d) P.τ z) :=
+      hAadj_model hzA
+    have hdouble :
+        BHW.permAct (d := d) P.τ z =
+          fun k => wickRotatePoint (u k) := by
+      ext k μ
+      simp [z, BHW.permAct, P.τ_eq]
+    have hforward :
+        (fun k => wickRotatePoint (u k)) ∈ BHW.ForwardTube d n :=
+      BHW.os45Figure24_ordinaryWick_mem_forwardTube
+        (d := d) (n := n) (hd := hd) (P := P) (hU_sub hu)
+    have hext :
+        BHW.extendF (bvt_F OS lgc n)
+            (fun k => wickRotatePoint (u k)) =
+          bvt_F OS lgc n (fun k => wickRotatePoint (u k)) :=
+      BHW.extendF_eq_on_forwardTube n (bvt_F OS lgc n)
+        hF_holo hF_lorentz (fun k => wickRotatePoint (u k)) hforward
+    have hpoint :
+        Aadj.branch z =
+          bvt_F OS lgc n (fun k => wickRotatePoint (u k)) := by
+      calc
+        Aadj.branch z =
+            BHW.extendF (bvt_F OS lgc n)
+              (BHW.permAct (d := d) P.τ z) := hmodel
+        _ = BHW.extendF (bvt_F OS lgc n)
+              (fun k => wickRotatePoint (u k)) := by rw [hdouble]
+        _ = bvt_F OS lgc n (fun k => wickRotatePoint (u k)) := hext
+    exact congrArg (fun c : ℂ => c * φ u) hpoint
+  · have hφ_zero : φ u = 0 :=
+      image_eq_zero_of_notMem_tsupport
+        (fun hφ_supp => hu (hφU hφ_supp))
+    simp [hφ_zero]
+
 private theorem OS45BHWJostHullData.ordinaryWick_pointedChartInWindow
     [NeZero d]
     {hd : 2 ≤ d} {i : Fin n} {hi : i.val + 1 < n}
