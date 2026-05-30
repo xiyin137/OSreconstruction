@@ -7,10 +7,9 @@ import OSReconstruction.SCV.IdentityTheorem
 /-!
 # OS45 Figure 2-4 Hdiff Producer
 
-This downstream companion is the Lean entry point for the direct
-`os45CommonEdge_localFigure24DifferenceGerm_of_OSI45` proof.  It contains only
-proof-local algebra and the eventual Hdiff producer; it does not wrap an
-assumed difference germ or common-boundary CLM.
+This downstream companion contains the proof-local algebra for the direct
+OS-I Figure-2-4 Hdiff proof body.  The selected-Jost/Ruelle adapter at the end
+is kept under an explicit legacy name only; it is not the theorem-2 producer.
 -/
 
 noncomputable section
@@ -297,11 +296,11 @@ private theorem ordinary41_moving_boundaryValue_extendF
 
 /-- Fixed-test boundary value for the genuine raw OS-I `(4.12)` seed.
 
-This is one of the two real side-height leaves used inside the eventual
-`os45CommonEdge_localFigure24DifferenceGerm_of_OSI45` producer.  It proves the
-raw adjacent seed limit directly from the selected OS boundary-value theorem
-and the source-label change of variables; it does not introduce a transported
-adjacent branch, `Wadj`, `Hdiff`, or a common-boundary packet. -/
+This is one of the two real side-height leaves used by the direct OS-I
+Figure-2-4 Hdiff proof body.  It proves the raw adjacent seed limit directly
+from the selected OS boundary-value theorem and the source-label change of
+variables; it does not introduce a transported adjacent branch, `Wadj`,
+`Hdiff`, or a common-boundary packet. -/
 private theorem raw412_fixed_test_boundaryValue
     [NeZero d]
     (OS : OsterwalderSchraderAxioms d)
@@ -4389,21 +4388,15 @@ theorem os45CommonEdge_localHdiffGerm_of_initialOverlap_adjacentBranch
     rw [hsource_eq u hu]
     simp
 
-/-- Selected-data adapter for the local Figure-2-4 common-edge holomorphic
-difference germ.
+/-- Legacy selected-data adapter for the local Figure-2-4 common-edge
+holomorphic difference germ.
 
-This is the Stage-A producer consumed by
-`os45CommonEdge_localHorizontalDifference_representsZero_of_germ`.  The proof
-now delegates the selected Jost/Ruelle and post-seed Hdiff construction to the
-checked companion theorem `os45_hdiff_of_selectedJostData`, keeping this
-frontier file as the public entry point.
-
-Route guard: because this adapter requires selected Jost/Ruelle data, it is a
-legacy/diagnostic route for theorem-2 closure.  The active boundary-value
-frontier should consume concrete local Hdiff/source-representation packets via
-the reduced local CLM path, and should not use this adapter to feed the old
-local `S'_n` trust boundary into `bvt_W_swap_pairing_of_spacelike`. -/
-theorem os45CommonEdge_localFigure24DifferenceGerm_of_OSI45
+Route guard: this adapter requires selected Jost/Ruelle data and delegates to
+`os45_hdiff_of_selectedJostData`.  It is retained only as a checked diagnostic
+surface.  The theorem-2/E-to-R frontier must use the direct OS-I
+`(4.12)`--`(4.14)` moving-source Hdiff proof body instead of this route, so the
+name deliberately includes `selectedJostData_legacy`. -/
+theorem os45CommonEdge_localFigure24DifferenceGerm_of_selectedJostData_legacy
     [NeZero d] (hd : 2 ≤ d)
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS)
