@@ -132,6 +132,181 @@ namespace OSReconstruction
 
 variable {d : ℕ} [NeZero d]
 
+/-- On the extended tube, the absolute BHW extension selected from `bvt_F`
+agrees with any reduced PET extension of the reduced selected witness after
+quotienting by successive differences.
+
+This is the source-side OS-I transfer engine used later by the adjacent normal
+route: once a concrete source-side point is known to lie in the extended tube,
+its branch value is transported to reduced coordinates by the same reduced PET
+extension that controls the canonical reduced ray. -/
+theorem extendF_bvt_F_eq_reducedExtension_on_extendedTube
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (m : ℕ)
+    (Fred : BHW.ReducedBHWExtensionData (d := d) (n := m + 1)
+      (bvt_F_reduced (d := d) OS lgc m))
+    (z : Fin (m + 1) → Fin (d + 1) → ℂ)
+    (hz : z ∈ BHW.ExtendedTube d (m + 1)) :
+    BHW.extendF (bvt_F OS lgc (m + 1)) z =
+      Fred.toFun (BHW.reducedDiffMap (m + 1) d z) := by
+  haveI : NeZero (m + 1) := ⟨Nat.succ_ne_zero m⟩
+  obtain ⟨Λ, w, hw, hzw⟩ := Set.mem_iUnion.mp hz
+  have hF_cinv :
+      ∀ (Γ : ComplexLorentzGroup d)
+        (y : Fin (m + 1) → Fin (d + 1) → ℂ),
+        y ∈ BHW.ForwardTube d (m + 1) →
+        BHW.complexLorentzAction Γ y ∈ BHW.ForwardTube d (m + 1) →
+        bvt_F OS lgc (m + 1) (BHW.complexLorentzAction Γ y) =
+          bvt_F OS lgc (m + 1) y := by
+    intro Γ y hy hΓy
+    exact bvt_F_complexLorentzInvariant_forwardTube
+      (d := d) OS lgc (m + 1) Γ y
+      ((BHW_forwardTube_eq (d := d) (n := m + 1)) ▸ hy)
+      ((BHW_forwardTube_eq (d := d) (n := m + 1)) ▸ hΓy)
+  have hext :
+      BHW.extendF (bvt_F OS lgc (m + 1)) z =
+        bvt_F OS lgc (m + 1) w := by
+    simp only [BHW.extendF]
+    have hex : ∃ (w' : Fin (m + 1) → Fin (d + 1) → ℂ),
+        w' ∈ BHW.ForwardTube d (m + 1) ∧
+          ∃ (Γ : ComplexLorentzGroup d),
+            z = BHW.complexLorentzAction Γ w' :=
+      ⟨w, hw, Λ, hzw⟩
+    rw [dif_pos hex]
+    rcases hex.choose_spec with ⟨hwc, _Γc, hzc⟩
+    exact BHW.extendF_preimage_eq_of_cinv
+      (d := d) (n := m + 1) (bvt_F OS lgc (m + 1)) hF_cinv
+      hwc hw (hzc.symm.trans hzw)
+  have hred_w_forward :
+      BHW.reducedDiffMap (m + 1) d w ∈ BHW.ReducedForwardTubeN d m := by
+    have hw_pft : w ∈ BHW.PermutedForwardTube d (m + 1) 1 := by
+      simpa [BHW.PermutedForwardTube] using hw
+    have hpft :=
+      BHW.reducedDiffMap_mem_reducedPermutedForwardTube_of_mem_permutedForwardTube
+        (d := d) (n := m + 1) (1 : Equiv.Perm (Fin (m + 1))) hw_pft
+    rw [BHW.mem_reducedPermutedForwardTube, BHW.permOnReducedDiff_one] at hpft
+    simpa [BHW.ReducedForwardTubeN] using hpft
+  have hred_w_pet :
+      BHW.reducedDiffMap (m + 1) d w ∈
+        BHW.reducedPermutedExtendedTube d (m + 1) := by
+    simpa [BHW.ReducedPermutedExtendedTubeN] using
+      reducedForwardTubeN_subset_reducedPermutedExtendedTubeN
+        (d := d) m hred_w_forward
+  have hz_pet : z ∈ BHW.PermutedExtendedTube d (m + 1) :=
+    BHW.extendedTube_subset_permutedExtendedTube hz
+  have hred_z_pet :
+      BHW.reducedDiffMap (m + 1) d z ∈
+        BHW.reducedPermutedExtendedTube d (m + 1) :=
+    ⟨z, hz_pet, rfl⟩
+  have hred_eq :
+      BHW.reducedDiffMap (m + 1) d z =
+        BHW.complexLorentzAction Λ (BHW.reducedDiffMap (m + 1) d w) := by
+    rw [hzw]
+    exact BHW.reducedDiffMap_action (d := d) (n := m + 1) Λ w
+  have hred_action_pet :
+      BHW.complexLorentzAction Λ (BHW.reducedDiffMap (m + 1) d w) ∈
+        BHW.reducedPermutedExtendedTube d (m + 1) := by
+    rw [← hred_eq]
+    exact hred_z_pet
+  have hFred_lor :
+      Fred.toFun (BHW.reducedDiffMap (m + 1) d z) =
+        Fred.toFun (BHW.reducedDiffMap (m + 1) d w) := by
+    calc
+      Fred.toFun (BHW.reducedDiffMap (m + 1) d z)
+          = Fred.toFun
+              (BHW.complexLorentzAction Λ
+                (BHW.reducedDiffMap (m + 1) d w)) := by
+              rw [hred_eq]
+      _ = Fred.toFun (BHW.reducedDiffMap (m + 1) d w) :=
+              Fred.lorentz_invariant Λ (BHW.reducedDiffMap (m + 1) d w)
+                hred_w_pet hred_action_pet
+  have hw_factor :
+      bvt_F OS lgc (m + 1) w =
+        Fred.toFun (BHW.reducedDiffMap (m + 1) d w) := by
+    calc
+      bvt_F OS lgc (m + 1) w
+          = bvt_F_reduced (d := d) OS lgc m
+              (BHW.reducedDiffMap (m + 1) d w) :=
+              bvt_F_eq_bvt_F_reduced_reducedDiffMap
+                (d := d) OS lgc m w
+      _ = Fred.toFun (BHW.reducedDiffMap (m + 1) d w) :=
+              (Fred.agrees_on_reducedForwardTube _ hred_w_forward).symm
+  calc
+    BHW.extendF (bvt_F OS lgc (m + 1)) z
+        = bvt_F OS lgc (m + 1) w := hext
+    _ = Fred.toFun (BHW.reducedDiffMap (m + 1) d w) := hw_factor
+    _ = Fred.toFun (BHW.reducedDiffMap (m + 1) d z) := hFred_lor.symm
+
+/-- If a moving absolute source-side path is eventually on the extended tube and
+its reduced differences are the canonical reduced ray, then its `extendF`
+boundary branch is asymptotic to the canonical reduced branch.
+
+This is the reusable OS-I `(4.12)`--`(4.14)` value-transport step after the
+coordinate normal form has identified the source-side reduced differences. -/
+theorem tendsto_extendF_bvt_F_sub_canonicalReducedBranch_of_eventually_reducedDiff_eq
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (m : ℕ)
+    (Fred : BHW.ReducedBHWExtensionData (d := d) (n := m + 1)
+      (bvt_F_reduced (d := d) OS lgc m))
+    (ξ : NPointDomain d m)
+    (z : ℝ → Fin (m + 1) → Fin (d + 1) → ℂ)
+    (hET :
+      ∀ᶠ ε : ℝ in nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)),
+        z ε ∈ BHW.ExtendedTube d (m + 1))
+    (hred :
+      ∀ᶠ ε : ℝ in nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)),
+        BHW.reducedDiffMap (m + 1) d (z ε) =
+          fun k μ =>
+            (ξ k μ : ℂ) +
+              ε * canonicalReducedDirectionC (d := d) m k μ * Complex.I) :
+    Filter.Tendsto
+      (fun ε : ℝ =>
+        BHW.extendF (bvt_F OS lgc (m + 1)) (z ε) -
+          canonicalReducedBranch (d := d) OS lgc m ε ξ)
+      (nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)) : Filter ℝ)
+      (nhds 0) := by
+  let l : Filter ℝ := nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ))
+  have hzero :
+      (fun ε : ℝ =>
+        BHW.extendF (bvt_F OS lgc (m + 1)) (z ε) -
+          canonicalReducedBranch (d := d) OS lgc m ε ξ) =ᶠ[l]
+        fun _ : ℝ => (0 : ℂ) := by
+    filter_upwards [self_mem_nhdsWithin, hET, hred] with ε hε hεET hεred
+    have hext :=
+      extendF_bvt_F_eq_reducedExtension_on_extendedTube
+        (d := d) OS lgc m Fred (z ε) hεET
+    have hcan :=
+      bvt_F_reduced_canonicalApproach_eq_reducedExtension
+        (d := d) OS lgc m Fred ξ hε
+    calc
+      BHW.extendF (bvt_F OS lgc (m + 1)) (z ε) -
+          canonicalReducedBranch (d := d) OS lgc m ε ξ
+          =
+        Fred.toFun (BHW.reducedDiffMap (m + 1) d (z ε)) -
+          bvt_F_reduced (d := d) OS lgc m
+            (fun k μ =>
+              (ξ k μ : ℂ) +
+                ε * canonicalReducedDirectionC (d := d) m k μ * Complex.I) := by
+          rw [hext]
+          rfl
+      _ =
+        Fred.toFun
+            (fun k μ =>
+              (ξ k μ : ℂ) +
+                ε * canonicalReducedDirectionC (d := d) m k μ * Complex.I) -
+          bvt_F_reduced (d := d) OS lgc m
+            (fun k μ =>
+              (ξ k μ : ℂ) +
+                ε * canonicalReducedDirectionC (d := d) m k μ * Complex.I) := by
+          rw [hεred]
+          rfl
+      _ = 0 := by
+          rw [hcan]
+          ring
+  exact Filter.Tendsto.congr' hzero.symm tendsto_const_nhds
+
 /-- The canonical OS45 flat source-side direction becomes the canonical reduced
 imaginary direction after quotienting by reduced differences. -/
 theorem reducedDiffMap_os45FlatCommonChartSourceSideDirection_canonical_id_eq
