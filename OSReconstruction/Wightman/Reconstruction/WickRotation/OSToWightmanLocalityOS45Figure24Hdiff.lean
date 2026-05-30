@@ -2770,6 +2770,283 @@ private theorem localOverlapAtZ0_galleryPair
           (edge_common hB_plus.z0_mem hflat.z0_mem_plus
             hB_plus.eq_ord hflat.plus_model)
 
+private theorem LocalOverlapAtZ0.eqOn_inter
+    [NeZero d] (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {n : ℕ} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData (d := d) hd n i hi}
+    {z0 : Fin n → Fin (d + 1) → ℂ}
+    {A0 B0 : OS45PointedChart d n}
+    (hcase : LocalOverlapAtZ0 (P := P) hd OS lgc z0 A0 B0) :
+    Set.EqOn A0.branch B0.branch (A0.carrier ∩ B0.carrier) := by
+  obtain ⟨G, hleft0, hright0⟩ :=
+    localOverlapAtZ0_galleryPair
+      (d := d) hd OS lgc (P := P) hcase
+  have hseed := G.endpoint_seed
+  have hseed_AB :
+      ∃ W : Set (Fin n → Fin (d + 1) → ℂ),
+        IsOpen W ∧ z0 ∈ W ∧
+          W ⊆ A0.carrier ∩ B0.carrier ∧
+          Set.EqOn A0.branch B0.branch W := by
+    rcases hseed with ⟨W, hW_open, hzW, hW_sub, hW_eq⟩
+    refine ⟨W, hW_open, hzW, ?_, ?_⟩
+    · intro z hz
+      exact ⟨by simpa [hleft0] using (hW_sub hz).1,
+        by simpa [hright0] using (hW_sub hz).2⟩
+    · intro z hz
+      simpa [hleft0, hright0] using hW_eq hz
+  exact PointedMetricBranchChart.eqOn_inter_of_seed A0 B0 hseed_AB
+
+private theorem fixed_sourceSide_integral_refined_chart_partition_tendsto_of_localOverlaps
+    {d n : ℕ} [NeZero d] {hd : 2 ≤ d}
+    {i : Fin n} {hi : i.val + 1 < n}
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    {α β : Type*} [Fintype α] [Fintype β]
+    (ρperm : Equiv.Perm (Fin n)) (sgn : ℝ)
+    (η : BHW.OS45FlatCommonChartReal d n)
+    (Astatic Amoving :
+      PointedMetricBranchChart (Fin n → Fin (d + 1) → ℂ) ℂ)
+    (Bstatic : α →
+      PointedMetricBranchChart (Fin n → Fin (d + 1) → ℂ) ℂ)
+    (Bmoving : β →
+      PointedMetricBranchChart (Fin n → Fin (d + 1) → ℂ) ℂ)
+    (staticApproach : NPointDomain d n → Fin n → Fin (d + 1) → ℂ)
+    (hstatic_cont : Continuous staticApproach)
+    (w : SchwartzNPoint d n)
+    (hw_comp : HasCompactSupport (w : NPointDomain d n → ℂ))
+    (hw_vanish : VanishesToInfiniteOrderOnCoincidence w)
+    (Ustatic : α → Set (NPointDomain d n))
+    (Umoving : β → Set (NPointDomain d n))
+    (hUstatic_open : ∀ c, IsOpen (Ustatic c))
+    (hUmoving_open : ∀ c, IsOpen (Umoving c))
+    (hstatic_cover :
+      tsupport (w : NPointDomain d n → ℂ) ⊆ ⋃ c, Ustatic c)
+    (hmoving_cover :
+      tsupport (w : NPointDomain d n → ℂ) ⊆ ⋃ c, Umoving c)
+    (hstatic_zero :
+      ∀ c, ∀ u ∈ Ustatic c,
+        staticApproach u ∈ Astatic.carrier ∩ (Bstatic c).carrier)
+    (hmoving_zero :
+      ∀ c, ∀ u ∈ Umoving c,
+        BHW.os45FlatCommonChartSourceSide d n ρperm sgn 0 η u ∈
+          Amoving.carrier ∩ (Bmoving c).carrier)
+    (zstatic : α → Fin n → Fin (d + 1) → ℂ)
+    (zmoving : β → Fin n → Fin (d + 1) → ℂ)
+    (hstatic_overlap :
+      ∀ c, LocalOverlapAtZ0 (P := P) hd OS lgc
+        (zstatic c) Astatic (Bstatic c))
+    (hmoving_overlap :
+      ∀ c, LocalOverlapAtZ0 (P := P) hd OS lgc
+        (zmoving c) Amoving (Bmoving c))
+    (hlocal :
+      ∀ (cs : α) (cm : β) (piece : SchwartzNPoint d n),
+        HasCompactSupport (piece : NPointDomain d n → ℂ) →
+        VanishesToInfiniteOrderOnCoincidence piece →
+        tsupport (piece : NPointDomain d n → ℂ) ⊆
+          tsupport (w : NPointDomain d n → ℂ) →
+        tsupport (piece : NPointDomain d n → ℂ) ⊆
+          Ustatic cs ∩ Umoving cm →
+        Tendsto
+          (fun ε : ℝ =>
+            ∫ u : NPointDomain d n,
+              (Bmoving cm).branch
+                (BHW.os45FlatCommonChartSourceSide
+                  d n ρperm sgn ε η u) *
+              (piece : NPointDomain d n → ℂ) u)
+          (𝓝[Set.Ioi 0] (0 : ℝ))
+          (𝓝
+            (∫ u : NPointDomain d n,
+              (Bstatic cs).branch (staticApproach u) *
+              (piece : NPointDomain d n → ℂ) u))) :
+    Tendsto
+      (fun ε : ℝ =>
+        ∫ u : NPointDomain d n,
+          Amoving.branch
+            (BHW.os45FlatCommonChartSourceSide d n ρperm sgn ε η u) *
+          (w : NPointDomain d n → ℂ) u)
+      (𝓝[Set.Ioi 0] (0 : ℝ))
+      (𝓝
+        (∫ u : NPointDomain d n,
+          Astatic.branch (staticApproach u) *
+          (w : NPointDomain d n → ℂ) u)) := by
+  exact
+    fixed_sourceSide_integral_refined_chart_partition_tendsto_of_local
+      (d := d) (n := n) ρperm sgn η Astatic Amoving
+      Bstatic Bmoving staticApproach hstatic_cont w hw_comp hw_vanish
+      Ustatic Umoving hUstatic_open hUmoving_open
+      hstatic_cover hmoving_cover hstatic_zero hmoving_zero
+      (fun c =>
+        LocalOverlapAtZ0.eqOn_inter
+          (d := d) hd OS lgc (P := P) (hstatic_overlap c))
+      (fun c =>
+        LocalOverlapAtZ0.eqOn_inter
+          (d := d) hd OS lgc (P := P) (hmoving_overlap c))
+      hlocal
+
+private theorem fixed_sourceSide_integral_refined_chart_partition_tendsto_of_commonAnchorOverlaps
+    {d n : ℕ} [NeZero d] {hd : 2 ≤ d}
+    {i : Fin n} {hi : i.val + 1 < n}
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    {α β : Type*} [Fintype α] [Fintype β]
+    (ρperm : Equiv.Perm (Fin n)) (sgn : ℝ)
+    (η : BHW.OS45FlatCommonChartReal d n)
+    (A : PointedMetricBranchChart (Fin n → Fin (d + 1) → ℂ) ℂ)
+    (Bstatic : α →
+      PointedMetricBranchChart (Fin n → Fin (d + 1) → ℂ) ℂ)
+    (Bmoving : β →
+      PointedMetricBranchChart (Fin n → Fin (d + 1) → ℂ) ℂ)
+    (w : SchwartzNPoint d n)
+    (hw_comp : HasCompactSupport (w : NPointDomain d n → ℂ))
+    (hw_vanish : VanishesToInfiniteOrderOnCoincidence w)
+    (Ustatic : α → Set (NPointDomain d n))
+    (Umoving : β → Set (NPointDomain d n))
+    (hUstatic_open : ∀ c, IsOpen (Ustatic c))
+    (hUmoving_open : ∀ c, IsOpen (Umoving c))
+    (hstatic_cover :
+      tsupport (w : NPointDomain d n → ℂ) ⊆ ⋃ c, Ustatic c)
+    (hmoving_cover :
+      tsupport (w : NPointDomain d n → ℂ) ⊆ ⋃ c, Umoving c)
+    (hstatic_zero :
+      ∀ c, ∀ u ∈ Ustatic c,
+        BHW.os45FlatCommonChartSourceSide d n ρperm sgn 0 η u ∈
+          A.carrier ∩ (Bstatic c).carrier)
+    (hmoving_zero :
+      ∀ c, ∀ u ∈ Umoving c,
+        BHW.os45FlatCommonChartSourceSide d n ρperm sgn 0 η u ∈
+          A.carrier ∩ (Bmoving c).carrier)
+    (zstatic : α → Fin n → Fin (d + 1) → ℂ)
+    (zmoving : β → Fin n → Fin (d + 1) → ℂ)
+    (hstatic_overlap :
+      ∀ c, LocalOverlapAtZ0 (P := P) hd OS lgc
+        (zstatic c) A (Bstatic c))
+    (hmoving_overlap :
+      ∀ c, LocalOverlapAtZ0 (P := P) hd OS lgc
+        (zmoving c) A (Bmoving c)) :
+    Tendsto
+      (fun ε : ℝ =>
+        ∫ u : NPointDomain d n,
+          A.branch
+            (BHW.os45FlatCommonChartSourceSide d n ρperm sgn ε η u) *
+          (w : NPointDomain d n → ℂ) u)
+      (𝓝[Set.Ioi 0] (0 : ℝ))
+      (𝓝
+        (∫ u : NPointDomain d n,
+          A.branch
+            (BHW.os45FlatCommonChartSourceSide d n ρperm sgn 0 η u) *
+          (w : NPointDomain d n → ℂ) u)) := by
+  let staticApproach : NPointDomain d n → Fin n → Fin (d + 1) → ℂ :=
+    fun u => BHW.os45FlatCommonChartSourceSide d n ρperm sgn 0 η u
+  have hstatic_cont : Continuous staticApproach := by
+    simpa [staticApproach] using
+      BHW.continuous_os45FlatCommonChartSourceSide_fixed_eps
+        (d := d) (n := n) ρperm sgn (0 : ℝ) η
+  refine
+    fixed_sourceSide_integral_refined_chart_partition_tendsto_of_localOverlaps
+      (d := d) (n := n) OS lgc (P := P)
+      ρperm sgn η A A Bstatic Bmoving staticApproach hstatic_cont
+      w hw_comp hw_vanish Ustatic Umoving hUstatic_open hUmoving_open
+      hstatic_cover hmoving_cover hstatic_zero hmoving_zero
+      zstatic zmoving hstatic_overlap hmoving_overlap ?_
+  intro cs cm piece hpiece_comp _hpiece_vanish _hpiece_base hpiece_sub
+  let l : Filter ℝ := 𝓝[Set.Ioi 0] (0 : ℝ)
+  let F : (Fin n → Fin (d + 1) → ℂ) → ℂ := (Bmoving cm).branch
+  have h0 :
+      ∀ u ∈ tsupport (piece : NPointDomain d n → ℂ),
+        BHW.os45FlatCommonChartSourceSide d n ρperm sgn 0 η u ∈
+          (Bmoving cm).carrier := by
+    intro u hu
+    exact (hmoving_zero cm u (hpiece_sub hu).2).2
+  have hsupp :
+      ∀ᶠ _ε in l, ∀ u ∉ tsupport (piece : NPointDomain d n → ℂ),
+        ((piece - piece : SchwartzNPoint d n) :
+          NPointDomain d n → ℂ) u = 0 := by
+    filter_upwards with ε u hu
+    simp
+  have hseminorm :
+      Tendsto
+        (fun _ε : ℝ =>
+          SchwartzMap.seminorm ℝ 0 0
+            (piece - piece : SchwartzNPoint d n))
+        l (𝓝 0) := by
+    have hzero :
+        (fun _ε : ℝ =>
+          SchwartzMap.seminorm ℝ 0 0
+            (piece - piece : SchwartzNPoint d n)) =
+          fun _ε : ℝ => (0 : ℝ) := by
+      funext ε
+      simp
+    rw [hzero]
+    exact tendsto_const_nhds
+  have hmove :
+      Tendsto
+        (fun ε : ℝ =>
+          ∫ u : NPointDomain d n,
+            (Bmoving cm).branch
+              (BHW.os45FlatCommonChartSourceSide d n ρperm sgn ε η u) *
+            (piece : NPointDomain d n → ℂ) u)
+        l
+        (𝓝
+          (∫ u : NPointDomain d n,
+            (Bmoving cm).branch
+              (BHW.os45FlatCommonChartSourceSide d n ρperm sgn 0 η u) *
+            (piece : NPointDomain d n → ℂ) u)) := by
+    exact
+      BHW.tendsto_integral_comp_os45FlatCommonChartSourceSide_mul_moving_of_commonCompactSupport
+        (d := d) (n := n) ρperm sgn η
+        (Bmoving cm).carrier_open (Bmoving cm).holo.continuousOn
+        hpiece_comp.isCompact h0
+        (tendsto_id :
+          Tendsto (fun ε : ℝ => ε) l (𝓝[Set.Ioi 0] (0 : ℝ)))
+        (fun u hu => hu) hsupp hseminorm
+  have htarget :
+      (∫ u : NPointDomain d n,
+        (Bmoving cm).branch
+          (BHW.os45FlatCommonChartSourceSide d n ρperm sgn 0 η u) *
+        (piece : NPointDomain d n → ℂ) u) =
+      ∫ u : NPointDomain d n,
+        (Bstatic cs).branch
+          (BHW.os45FlatCommonChartSourceSide d n ρperm sgn 0 η u) *
+        (piece : NPointDomain d n → ℂ) u := by
+    apply integral_congr_ae
+    filter_upwards with u
+    by_cases hu :
+        u ∈ tsupport (piece : NPointDomain d n → ℂ)
+    · let z : Fin n → Fin (d + 1) → ℂ :=
+        BHW.os45FlatCommonChartSourceSide d n ρperm sgn 0 η u
+      have hz_static :
+          z ∈ A.carrier ∩ (Bstatic cs).carrier := by
+        simpa [z] using hstatic_zero cs u (hpiece_sub hu).1
+      have hz_moving :
+          z ∈ A.carrier ∩ (Bmoving cm).carrier := by
+        simpa [z] using hmoving_zero cm u (hpiece_sub hu).2
+      have hstatic_eq :=
+        (LocalOverlapAtZ0.eqOn_inter
+          (d := d) hd OS lgc (P := P)
+          (hstatic_overlap cs)) hz_static
+      have hmoving_eq :=
+        (LocalOverlapAtZ0.eqOn_inter
+          (d := d) hd OS lgc (P := P)
+          (hmoving_overlap cm)) hz_moving
+      have hbranch :
+          (Bmoving cm).branch z = (Bstatic cs).branch z :=
+        hmoving_eq.symm.trans hstatic_eq
+      simpa [z] using
+        congrArg (fun c : ℂ =>
+          c * (piece : NPointDomain d n → ℂ) u) hbranch
+    · have hpiece_zero :
+          (piece : NPointDomain d n → ℂ) u = 0 :=
+        image_eq_zero_of_notMem_tsupport hu
+      simp [hpiece_zero]
+  rw [htarget] at hmove
+  simpa [l, F, staticApproach] using hmove
+
 private theorem OS45BHWJostHullData.OS412SeedWindow_pointedChart
     [NeZero d]
     {hd : 2 ≤ d} {i : Fin n} {hi : i.val + 1 < n}
