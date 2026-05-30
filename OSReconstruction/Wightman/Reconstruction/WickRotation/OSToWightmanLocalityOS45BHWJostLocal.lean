@@ -11842,6 +11842,108 @@ noncomputable def OS45BHWJostSPrimeBranchData.of_extendF_overlapEq
       simpa [B, Ford, Fadj, hzET] using hEq
     · simp [B, Fadj, hzET]
 
+/-- Construct the local `S'_n` branch from a concrete local EOW seed and
+connectedness of the true two-sector overlap.
+
+The proof is the strict, axiom-free replacement for the legacy local BHW
+constructor on this OS45 surface: the seed supplies equality on a complex-open
+piece of `T'_n ∩ τ T'_n`; the product identity theorem propagates that equality
+over the connected overlap; `of_extendF_overlapEq` then performs the explicit
+two-open gluing on `H.ΩJ = T'_n ∪ τ T'_n`. -/
+noncomputable def OS45BHWJostSPrimeBranchData.of_localEOWSeedAt_overlapConnected
+    [NeZero d] {hd : 2 ≤ d}
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    {H : BHW.OS45BHWJostHullData (d := d) hd n i hi P}
+    (zseed : Fin n → Fin (d + 1) → ℂ)
+    (hOverlap_connected :
+      IsConnected
+        (BHW.ExtendedTube d n ∩
+          BHW.permutedExtendedTubeSector d n P.τ))
+    (hEOW_seed :
+      ∃ W : Set (Fin n → Fin (d + 1) → ℂ),
+        IsOpen W ∧ IsPreconnected W ∧
+        zseed ∈ W ∧
+        W ⊆ BHW.localSPrimeTwoSectorHull d n P.τ H.zbase ∩
+          BHW.ExtendedTube d n ∩
+          BHW.permutedExtendedTubeSector d n P.τ ∧
+        Set.EqOn
+          (BHW.extendF (bvt_F OS lgc n))
+          (fun z =>
+            BHW.extendF (bvt_F OS lgc n)
+              (BHW.permAct (d := d) P.τ z))
+          W) :
+    BHW.OS45BHWJostSPrimeBranchData hd OS lgc H := by
+  classical
+  let W : Set (Fin n → Fin (d + 1) → ℂ) := Classical.choose hEOW_seed
+  have hW_spec := Classical.choose_spec hEOW_seed
+  have hW_open : IsOpen W := hW_spec.1
+  have hzseedW : zseed ∈ W := hW_spec.2.2.1
+  have hW_sub :
+      W ⊆ BHW.localSPrimeTwoSectorHull d n P.τ H.zbase ∩
+        BHW.ExtendedTube d n ∩
+        BHW.permutedExtendedTubeSector d n P.τ :=
+    hW_spec.2.2.2.1
+  have hW_eq :
+      Set.EqOn
+        (BHW.extendF (bvt_F OS lgc n))
+        (fun z =>
+          BHW.extendF (bvt_F OS lgc n)
+            (BHW.permAct (d := d) P.τ z))
+        W :=
+    hW_spec.2.2.2.2
+  let Ford : (Fin n → Fin (d + 1) → ℂ) → ℂ :=
+    BHW.extendF (bvt_F OS lgc n)
+  let Fadj : (Fin n → Fin (d + 1) → ℂ) → ℂ :=
+    fun z =>
+      BHW.extendF (bvt_F OS lgc n)
+        (BHW.permAct (d := d) P.τ z)
+  have hsector_open :
+      IsOpen (BHW.permutedExtendedTubeSector d n P.τ) :=
+    BHW.isOpen_permutedExtendedTubeSector (d := d) (n := n) P.τ
+  have hOverlap_open :
+      IsOpen
+        (BHW.ExtendedTube d n ∩
+          BHW.permutedExtendedTubeSector d n P.τ) :=
+    BHW.isOpen_extendedTube.inter hsector_open
+  have hW_ne : W.Nonempty := ⟨zseed, hzseedW⟩
+  have hW_overlap :
+      W ⊆ BHW.ExtendedTube d n ∩
+        BHW.permutedExtendedTubeSector d n P.τ := by
+    intro z hz
+    have hzall := hW_sub hz
+    exact ⟨hzall.1.2, hzall.2⟩
+  have hFord_holo :
+      DifferentiableOn ℂ Ford
+        (BHW.ExtendedTube d n ∩
+          BHW.permutedExtendedTubeSector d n P.τ) :=
+    (BHW.differentiableOn_extendF_bvt_F_extendedTube
+      (d := d) OS lgc n).mono (by intro z hz; exact hz.1)
+  have hFadj_holo :
+      DifferentiableOn ℂ Fadj
+        (BHW.ExtendedTube d n ∩
+          BHW.permutedExtendedTubeSector d n P.τ) :=
+    (BHW.differentiableOn_extendF_bvt_F_permAct_preimageExtendedTube
+      (d := d) OS lgc n P.τ).mono (by intro z hz; exact hz.2)
+  have hseed_eq : Set.EqOn Ford Fadj W := by
+    intro z hz
+    simpa [Ford, Fadj] using hW_eq hz
+  have hOverlap_eq : Set.EqOn Ford Fadj
+      (BHW.ExtendedTube d n ∩
+        BHW.permutedExtendedTubeSector d n P.τ) :=
+    identity_theorem_product_of_eqOn_open
+      hOverlap_open hOverlap_connected hW_open hW_ne hW_overlap
+      hFord_holo hFadj_holo hseed_eq
+  exact
+    BHW.OS45BHWJostSPrimeBranchData.of_extendF_overlapEq
+      (d := d) OS lgc (P := P) (H := H)
+      (by
+        intro z hz
+        simpa [Ford, Fadj] using hOverlap_eq hz)
+
 /-- The selected adjacent initial sector has unchanged intersection with the
 selected local hull component. -/
 theorem OS45BHWJostHullData.permutedExtendedTubeSector_inter_ΩJ_eq

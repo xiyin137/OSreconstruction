@@ -81,6 +81,64 @@ noncomputable def os45_BHWJostPairData_of_zeroHeight_pairingsCLM
       (d := d) hd OS lgc H zseed hzseed hseed
   exact S.toPairData
 
+/-- Zero-height common-edge EOW pairings produce the OS45 source-patch
+BHW/Jost pair carrier, using only connectedness of the true two-sector overlap.
+
+This is the axiom-free replacement surface for
+`os45_BHWJostPairData_of_zeroHeight_pairingsCLM`: the local EOW seed is first
+propagated across `T'_n ∩ τT'_n` by the product identity theorem, then the two
+initial-sector branches are glued explicitly on the stored local hull. -/
+noncomputable def os45_BHWJostPairData_of_zeroHeight_pairingsCLM_overlapConnected
+    (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {n : ℕ} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (hOverlap_connected :
+      IsConnected
+        (BHW.ExtendedTube d n ∩
+          BHW.permutedExtendedTubeSector d n P.τ))
+    (T : SchwartzMap (BHW.OS45FlatCommonChartReal d n) ℂ →L[ℂ] ℂ)
+    (hzero_plus :
+      ∀ φ : SchwartzMap (BHW.OS45FlatCommonChartReal d n) ℂ,
+        HasCompactSupport
+          (φ : BHW.OS45FlatCommonChartReal d n → ℂ) →
+        tsupport (φ : BHW.OS45FlatCommonChartReal d n → ℂ) ⊆
+          BHW.os45FlatCommonChartEdgeSet d n P
+            (1 : Equiv.Perm (Fin n)) →
+        (∫ x : BHW.OS45FlatCommonChartReal d n,
+          BHW.os45FlatCommonChartBranch d n OS lgc
+            (1 : Equiv.Perm (Fin n))
+            (fun a => (x a : ℂ)) * φ x)
+        = T φ)
+    (hzero_minus :
+      ∀ φ : SchwartzMap (BHW.OS45FlatCommonChartReal d n) ℂ,
+        HasCompactSupport
+          (φ : BHW.OS45FlatCommonChartReal d n → ℂ) →
+        tsupport (φ : BHW.OS45FlatCommonChartReal d n → ℂ) ⊆
+          BHW.os45FlatCommonChartEdgeSet d n P
+            (1 : Equiv.Perm (Fin n)) →
+        (∫ x : BHW.OS45FlatCommonChartReal d n,
+          BHW.os45FlatCommonChartBranch d n OS lgc
+            (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+            (fun a => (x a : ℂ)) * φ x)
+        = T φ) :
+    BHW.OS45SourcePatchBHWJostPairData
+      (d := d) hd OS lgc n i hi P.V := by
+  let H : BHW.OS45BHWJostHullData (d := d) hd n i hi P :=
+    BHW.os45_BHWJostHullData_of_figure24 (d := d) hd i hi P
+  let zseed : Fin n → Fin (d + 1) → ℂ :=
+    BHW.os45Figure24CommonEdgeSPrimeSeed d n P
+  have hseed :=
+    BHW.os45_BHWJost_localSPrimeEOWSeedAt_commonEdge_of_zeroHeight_pairingsCLM
+      (d := d) hd OS lgc H T hzero_plus hzero_minus
+  let S : BHW.OS45BHWJostSPrimeBranchData hd OS lgc H :=
+    BHW.OS45BHWJostSPrimeBranchData.of_localEOWSeedAt_overlapConnected
+      (d := d) OS lgc (P := P) (H := H)
+      zseed hOverlap_connected hseed
+  exact S.toPairData
+
 /-- Local `S'_n` branch data whose real patch contains the canonical
 Figure-2-4 source patch produces the compact Wick-pairing packet. -/
 noncomputable def os45CompactFigure24WickPairingEq_of_sPrimeBranchData
@@ -245,5 +303,59 @@ noncomputable def os45CompactFigure24WickPairingEq_of_zeroHeight_pairingsCLM
     (d := d) hd OS lgc n i hi
     (BHW.os45_BHWJostPairData_on_figure24SourcePatch_of_zeroHeight_pairingsCLM
       (d := d) hd OS lgc n i hi T hzero_plus hzero_minus)
+
+/-- Zero-height common-edge EOW pairings produce the compact Figure-2-4
+Wick-pairing packet through the axiom-free connected-overlap local-hull
+constructor.
+
+Compared with `os45CompactFigure24WickPairingEq_of_zeroHeight_pairingsCLM`,
+this version makes the genuine geometric input explicit and does not route
+through `localSPrime_twoSectorBranch_of_EOW_BHW`. -/
+noncomputable def os45CompactFigure24WickPairingEq_of_zeroHeight_pairingsCLM_overlapConnected
+    (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {n : ℕ} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (hsource_subset :
+      BHW.os45Figure24SourcePatch (d := d) (n := n) i hi ⊆ P.V)
+    (hOverlap_connected :
+      IsConnected
+        (BHW.ExtendedTube d n ∩
+          BHW.permutedExtendedTubeSector d n P.τ))
+    (T : SchwartzMap (BHW.OS45FlatCommonChartReal d n) ℂ →L[ℂ] ℂ)
+    (hzero_plus :
+      ∀ φ : SchwartzMap (BHW.OS45FlatCommonChartReal d n) ℂ,
+        HasCompactSupport
+          (φ : BHW.OS45FlatCommonChartReal d n → ℂ) →
+        tsupport (φ : BHW.OS45FlatCommonChartReal d n → ℂ) ⊆
+          BHW.os45FlatCommonChartEdgeSet d n P
+            (1 : Equiv.Perm (Fin n)) →
+        (∫ x : BHW.OS45FlatCommonChartReal d n,
+          BHW.os45FlatCommonChartBranch d n OS lgc
+            (1 : Equiv.Perm (Fin n))
+            (fun a => (x a : ℂ)) * φ x)
+        = T φ)
+    (hzero_minus :
+      ∀ φ : SchwartzMap (BHW.OS45FlatCommonChartReal d n) ℂ,
+        HasCompactSupport
+          (φ : BHW.OS45FlatCommonChartReal d n → ℂ) →
+        tsupport (φ : BHW.OS45FlatCommonChartReal d n → ℂ) ⊆
+          BHW.os45FlatCommonChartEdgeSet d n P
+            (1 : Equiv.Perm (Fin n)) →
+        (∫ x : BHW.OS45FlatCommonChartReal d n,
+          BHW.os45FlatCommonChartBranch d n OS lgc
+            (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+            (fun a => (x a : ℂ)) * φ x)
+        = T φ) :
+    BHW.OS45CompactFigure24WickPairingEq
+      (d := d) n i hi OS lgc :=
+  BHW.os45CompactFigure24WickPairingEq_of_pairData_canonical
+    (d := d) hd OS lgc n i hi
+    (BHW.os45_BHWJostPairData_of_zeroHeight_pairingsCLM_overlapConnected
+      (d := d) hd OS lgc (P := P) hOverlap_connected T
+      hzero_plus hzero_minus)
+    hsource_subset
 
 end BHW
