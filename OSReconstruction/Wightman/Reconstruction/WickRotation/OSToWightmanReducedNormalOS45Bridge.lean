@@ -4609,6 +4609,238 @@ theorem reducedDiffMap_coneHeight_sourceSide_eq_lowerCanonicalRay
         (BHW.permOnReducedDiff_reducedDiffMap
           (d := d) (n := m + 1) σ zcan)
 
+set_option maxHeartbeats 1200000 in
+/-- The deterministic upper OS45 source-side ray selected by the cone-valid
+canonical height is eventually on the extended tube.
+
+This is the Figure-2-4 sheet-membership half of the OS-I `(4.12)`--`(4.14)`
+source transfer: once the reduced-normal base point is represented inside the
+source patch, the local wedge gives a uniform collar in the selected branch
+domain, and the source-side normal form converts that branch-domain membership
+to extended-tube membership. -/
+theorem eventually_sourceSide_coneHeight_upper_mem_extendedTube
+    {m : ℕ} {i : Fin (m + 1)} {hi : i.val + 1 < m + 1}
+    {hd : 2 ≤ d}
+    (P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd (m + 1) i hi)
+    (p : ReducedSpace d m i ⟨i.val + 1, hi⟩)
+    (hpP :
+      coordInv (d := d) i ⟨i.val + 1, hi⟩
+          (reducedAdjacent_succ_ne i hi)
+          ((0 : SpacetimeDim d), p) ∈ P.V) :
+    ∀ᶠ ε : ℝ in nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)),
+      let ηc : BHW.OS45FlatCommonChartReal d (m + 1) :=
+        BHW.os45CommonEdgeFlatCLE d (m + 1)
+          (1 : Equiv.Perm (Fin (m + 1)))
+          (canonicalForwardConeDirection (d := d) (m + 1))
+      let x0 : BHW.OS45FlatCommonChartReal d (m + 1) :=
+        reducedNormalToOS45CommonEdgeFlatCLM (d := d) i hi
+          (reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩ p)
+      let uε : NPointDomain d (m + 1) :=
+        (BHW.os45CommonEdgeFlatCLE d (m + 1)
+          (1 : Equiv.Perm (Fin (m + 1)))).symm (x0 - ε • ηc)
+      BHW.os45FlatCommonChartSourceSide d (m + 1)
+          (1 : Equiv.Perm (Fin (m + 1))) (1 : ℝ) ε ηc uε ∈
+        BHW.ExtendedTube d (m + 1) := by
+  classical
+  let ηc : BHW.OS45FlatCommonChartReal d (m + 1) :=
+    BHW.os45CommonEdgeFlatCLE d (m + 1)
+      (1 : Equiv.Perm (Fin (m + 1)))
+      (canonicalForwardConeDirection (d := d) (m + 1))
+  let x0 : BHW.OS45FlatCommonChartReal d (m + 1) :=
+    reducedNormalToOS45CommonEdgeFlatCLM (d := d) i hi
+      (reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩ p)
+  have hpPatch :
+      reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩ p ∈
+        reducedNormalOS45SourcePatchPreimage (d := d) i hi P :=
+    (reducedNormalFlatten_mem_reducedNormalOS45SourcePatchPreimage_iff
+      (d := d) i hi P p).2 hpP
+  have hx0_edge :
+      x0 ∈ BHW.os45FlatCommonChartEdgeSet d (m + 1) P
+        (1 : Equiv.Perm (Fin (m + 1))) := by
+    simpa [x0] using
+      (reducedNormalToOS45CommonEdgeFlatCLM_mem_edgeSet_iff
+        (d := d) i hi P
+        (reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩ p)).2 hpPatch
+  have hηc_cone :
+      ηc ∈ BHW.os45FlatCommonChartCone d (m + 1) := by
+    simpa [ηc] using
+      BHW.os45CommonEdgeFlatCLE_canonicalForwardConeDirection_mem_cone
+        (d := d) m
+  have hK_sub :
+      ({x0} : Set (BHW.OS45FlatCommonChartReal d (m + 1))) ⊆
+        BHW.os45FlatCommonChartEdgeSet d (m + 1) P
+          (1 : Equiv.Perm (Fin (m + 1))) := by
+    intro x hx
+    rw [Set.mem_singleton_iff] at hx
+    subst x
+    exact hx0_edge
+  have hKη_sub :
+      ({ηc} : Set (BHW.OS45FlatCommonChartReal d (m + 1))) ⊆
+        BHW.os45FlatCommonChartCone d (m + 1) := by
+    intro η hη
+    rw [Set.mem_singleton_iff] at hη
+    subst η
+    exact hηc_cone
+  obtain ⟨r, hr_pos, hside⟩ :=
+    BHW.os45_BHWJost_flatCommonChart_localWedge_of_figure24
+      (d := d) hd (P := P)
+      ({x0} : Set (BHW.OS45FlatCommonChartReal d (m + 1)))
+      isCompact_singleton hK_sub
+      ({ηc} : Set (BHW.OS45FlatCommonChartReal d (m + 1)))
+      isCompact_singleton hKη_sub
+  have hsmall :
+      ∀ᶠ ε : ℝ in nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)),
+        ε < r := by
+    exact nhdsWithin_le_nhds (Iio_mem_nhds hr_pos)
+  filter_upwards [self_mem_nhdsWithin, hsmall] with ε hε_pos hε_lt
+  let uε : NPointDomain d (m + 1) :=
+    (BHW.os45CommonEdgeFlatCLE d (m + 1)
+      (1 : Equiv.Perm (Fin (m + 1)))).symm (x0 - ε • ηc)
+  have homega :
+      (fun a => (x0 a : ℂ) + (ε : ℂ) * (ηc a : ℂ) * Complex.I) ∈
+        BHW.os45FlatCommonChartOmega d (m + 1)
+          (1 : Equiv.Perm (Fin (m + 1))) :=
+    (hside x0 (by simp) ηc (by simp) ε hε_pos hε_lt).1
+  have hflat_eq :
+      (fun a =>
+          ((BHW.os45CommonEdgeFlatCLE d (m + 1)
+                (1 : Equiv.Perm (Fin (m + 1))) uε +
+              ((1 : ℝ) * ε) • ηc) a : ℂ) +
+            ((((1 : ℝ) * ε) • ηc) a : ℂ) * Complex.I) =
+        fun a => (x0 a : ℂ) + (ε : ℂ) * (ηc a : ℂ) * Complex.I := by
+    funext a
+    simp [uε, sub_eq_add_neg, Pi.add_apply, Pi.smul_apply, smul_eq_mul]
+  have hflat :
+      (fun a =>
+          ((BHW.os45CommonEdgeFlatCLE d (m + 1)
+                (1 : Equiv.Perm (Fin (m + 1))) uε +
+              ((1 : ℝ) * ε) • ηc) a : ℂ) +
+            ((((1 : ℝ) * ε) • ηc) a : ℂ) * Complex.I) ∈
+        BHW.os45FlatCommonChartOmega d (m + 1)
+          (1 : Equiv.Perm (Fin (m + 1))) := by
+    rw [hflat_eq]
+    exact homega
+  have hET :=
+    (BHW.os45FlatCommonChartSourceSide_mem_extendedTube_iff
+      d (m + 1) (1 : Equiv.Perm (Fin (m + 1)))
+      (1 : Equiv.Perm (Fin (m + 1))) (1 : ℝ) ε ηc uε).1 hflat
+  simpa [ηc, x0, uε] using hET
+
+set_option maxHeartbeats 1200000 in
+/-- The deterministic lower OS45 source-side ray selected by the cone-valid
+canonical height is eventually on the extended tube after the adjacent branch
+label is applied. -/
+theorem eventually_sourceSide_coneHeight_lower_mem_extendedTube
+    {m : ℕ} {i : Fin (m + 1)} {hi : i.val + 1 < m + 1}
+    {hd : 2 ≤ d}
+    (P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd (m + 1) i hi)
+    (p : ReducedSpace d m i ⟨i.val + 1, hi⟩)
+    (hpP :
+      coordInv (d := d) i ⟨i.val + 1, hi⟩
+          (reducedAdjacent_succ_ne i hi)
+          ((0 : SpacetimeDim d), p) ∈ P.V) :
+    ∀ᶠ ε : ℝ in nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)),
+      let ηc : BHW.OS45FlatCommonChartReal d (m + 1) :=
+        BHW.os45CommonEdgeFlatCLE d (m + 1)
+          (1 : Equiv.Perm (Fin (m + 1)))
+          (canonicalForwardConeDirection (d := d) (m + 1))
+      let x0 : BHW.OS45FlatCommonChartReal d (m + 1) :=
+        reducedNormalToOS45CommonEdgeFlatCLM (d := d) i hi
+          (reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩ p)
+      let uε : NPointDomain d (m + 1) :=
+        (BHW.os45CommonEdgeFlatCLE d (m + 1)
+          (1 : Equiv.Perm (Fin (m + 1)))).symm (x0 + ε • ηc)
+      BHW.permAct (d := d)
+          ((P.τ.symm * (1 : Equiv.Perm (Fin (m + 1)))).symm)
+          (BHW.os45FlatCommonChartSourceSide d (m + 1)
+            (1 : Equiv.Perm (Fin (m + 1))) (-1 : ℝ) ε ηc uε) ∈
+        BHW.ExtendedTube d (m + 1) := by
+  classical
+  let ηc : BHW.OS45FlatCommonChartReal d (m + 1) :=
+    BHW.os45CommonEdgeFlatCLE d (m + 1)
+      (1 : Equiv.Perm (Fin (m + 1)))
+      (canonicalForwardConeDirection (d := d) (m + 1))
+  let x0 : BHW.OS45FlatCommonChartReal d (m + 1) :=
+    reducedNormalToOS45CommonEdgeFlatCLM (d := d) i hi
+      (reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩ p)
+  have hpPatch :
+      reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩ p ∈
+        reducedNormalOS45SourcePatchPreimage (d := d) i hi P :=
+    (reducedNormalFlatten_mem_reducedNormalOS45SourcePatchPreimage_iff
+      (d := d) i hi P p).2 hpP
+  have hx0_edge :
+      x0 ∈ BHW.os45FlatCommonChartEdgeSet d (m + 1) P
+        (1 : Equiv.Perm (Fin (m + 1))) := by
+    simpa [x0] using
+      (reducedNormalToOS45CommonEdgeFlatCLM_mem_edgeSet_iff
+        (d := d) i hi P
+        (reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩ p)).2 hpPatch
+  have hηc_cone :
+      ηc ∈ BHW.os45FlatCommonChartCone d (m + 1) := by
+    simpa [ηc] using
+      BHW.os45CommonEdgeFlatCLE_canonicalForwardConeDirection_mem_cone
+        (d := d) m
+  have hK_sub :
+      ({x0} : Set (BHW.OS45FlatCommonChartReal d (m + 1))) ⊆
+        BHW.os45FlatCommonChartEdgeSet d (m + 1) P
+          (1 : Equiv.Perm (Fin (m + 1))) := by
+    intro x hx
+    rw [Set.mem_singleton_iff] at hx
+    subst x
+    exact hx0_edge
+  have hKη_sub :
+      ({ηc} : Set (BHW.OS45FlatCommonChartReal d (m + 1))) ⊆
+        BHW.os45FlatCommonChartCone d (m + 1) := by
+    intro η hη
+    rw [Set.mem_singleton_iff] at hη
+    subst η
+    exact hηc_cone
+  obtain ⟨r, hr_pos, hside⟩ :=
+    BHW.os45_BHWJost_flatCommonChart_localWedge_of_figure24
+      (d := d) hd (P := P)
+      ({x0} : Set (BHW.OS45FlatCommonChartReal d (m + 1)))
+      isCompact_singleton hK_sub
+      ({ηc} : Set (BHW.OS45FlatCommonChartReal d (m + 1)))
+      isCompact_singleton hKη_sub
+  have hsmall :
+      ∀ᶠ ε : ℝ in nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)),
+        ε < r := by
+    exact nhdsWithin_le_nhds (Iio_mem_nhds hr_pos)
+  filter_upwards [self_mem_nhdsWithin, hsmall] with ε hε_pos hε_lt
+  let uε : NPointDomain d (m + 1) :=
+    (BHW.os45CommonEdgeFlatCLE d (m + 1)
+      (1 : Equiv.Perm (Fin (m + 1)))).symm (x0 + ε • ηc)
+  have homega :
+      (fun a => (x0 a : ℂ) - (ε : ℂ) * (ηc a : ℂ) * Complex.I) ∈
+        BHW.os45FlatCommonChartOmega d (m + 1)
+          (P.τ.symm * (1 : Equiv.Perm (Fin (m + 1)))) :=
+    (hside x0 (by simp) ηc (by simp) ε hε_pos hε_lt).2
+  have hflat_eq :
+      (fun a =>
+          ((BHW.os45CommonEdgeFlatCLE d (m + 1)
+                (1 : Equiv.Perm (Fin (m + 1))) uε +
+              ((-1 : ℝ) * ε) • ηc) a : ℂ) +
+            ((((-1 : ℝ) * ε) • ηc) a : ℂ) * Complex.I) =
+        fun a => (x0 a : ℂ) - (ε : ℂ) * (ηc a : ℂ) * Complex.I := by
+    funext a
+    simp [uε, sub_eq_add_neg, Pi.add_apply, Pi.smul_apply, smul_eq_mul]
+  have hflat :
+      (fun a =>
+          ((BHW.os45CommonEdgeFlatCLE d (m + 1)
+                (1 : Equiv.Perm (Fin (m + 1))) uε +
+              ((-1 : ℝ) * ε) • ηc) a : ℂ) +
+            ((((-1 : ℝ) * ε) • ηc) a : ℂ) * Complex.I) ∈
+        BHW.os45FlatCommonChartOmega d (m + 1)
+          (P.τ.symm * (1 : Equiv.Perm (Fin (m + 1)))) := by
+    rw [hflat_eq]
+    exact homega
+  exact
+    (BHW.os45FlatCommonChartSourceSide_mem_extendedTube_iff
+      d (m + 1) (P.τ.symm * (1 : Equiv.Perm (Fin (m + 1))))
+      (1 : Equiv.Perm (Fin (m + 1))) (-1 : ℝ) ε ηc uε).1 hflat
+
 end AdjacentNormal
 
 end OSReconstruction
