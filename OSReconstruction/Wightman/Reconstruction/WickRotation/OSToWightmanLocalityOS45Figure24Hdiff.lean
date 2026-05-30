@@ -435,6 +435,189 @@ private theorem raw412_moving_boundaryValue
     simp [Lτ, BHW.permuteSchwartz]
   simpa [hlim] using hbvt.congr' hfun
 
+/-- Fixed-test boundary value for the genuine raw OS-I `(4.12)` seed, in the
+`extendF` model used by the adjacent branch charts.
+
+This is the adjacent analogue of
+`ordinary41_fixed_test_boundaryValue_extendF`: it removes the temporary
+`bvt_F` presentation from `raw412_fixed_test_boundaryValue` once the selected
+permuted point is known to lie in the forward tube.  The statement is still the
+raw `(4.12)` source selector; it does not introduce an `Hdiff` carrier or any
+locality conclusion. -/
+private theorem raw412_fixed_test_boundaryValue_extendF
+    [NeZero d]
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (τ : Equiv.Perm (Fin n))
+    (ψ : SchwartzNPoint d n)
+    (η : Fin n → Fin (d + 1) → ℝ)
+    (hητ : (fun k μ => η (τ k) μ) ∈ ForwardConeAbs d n) :
+    Filter.Tendsto
+      (fun ε : ℝ => ∫ x : NPointDomain d n,
+        BHW.extendF (bvt_F OS lgc n)
+          (BHW.permAct (d := d) τ
+            (fun k μ =>
+              (x k μ : ℂ) + (ε : ℂ) * (η k μ : ℂ) * Complex.I)) *
+        ψ x)
+      (nhdsWithin 0 (Set.Ioi 0))
+      (nhds
+        (bvt_W OS lgc n
+          (BHW.permuteSchwartz (d := d) τ.symm ψ))) := by
+  let ητ : Fin n → Fin (d + 1) → ℝ := fun k μ => η (τ k) μ
+  have hbvt :=
+    raw412_fixed_test_boundaryValue (d := d) OS lgc τ ψ η
+      (by simpa [ητ] using hητ)
+  refine hbvt.congr' ?_
+  have hF_holo :
+      DifferentiableOn ℂ (bvt_F OS lgc n) (BHW.ForwardTube d n) := by
+    simpa [BHW_forwardTube_eq (d := d) (n := n)] using
+      bvt_F_holomorphic (d := d) OS lgc n
+  have hF_real_inv :
+      ∀ (Λ : LorentzLieGroup.RestrictedLorentzGroup d)
+        (z : Fin n → Fin (d + 1) → ℂ), z ∈ BHW.ForwardTube d n →
+        bvt_F OS lgc n
+          (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * z k ν) =
+          bvt_F OS lgc n z := by
+    intro Λ z hz
+    have hΛz : BHW.complexLorentzAction (ComplexLorentzGroup.ofReal Λ) z ∈
+        BHW.ForwardTube d n :=
+      BHW.ofReal_preserves_forwardTube Λ z hz
+    have hcinv :=
+      bvt_F_complexLorentzInvariant_forwardTube
+        (d := d) OS lgc n (ComplexLorentzGroup.ofReal Λ) z
+        ((BHW_forwardTube_eq (d := d) (n := n)) ▸ hz)
+        ((BHW_forwardTube_eq (d := d) (n := n)) ▸ hΛz)
+    simpa [BHW.complexLorentzAction] using hcinv
+  filter_upwards [self_mem_nhdsWithin] with ε hε
+  apply integral_congr_ae
+  refine Filter.Eventually.of_forall ?_
+  intro x
+  have hscaled_abs : ε • ητ ∈ ForwardConeAbs d n :=
+    forwardConeAbs_smul d n ε hε ητ (by simpa [ητ] using hητ)
+  have hz :
+      BHW.permAct (d := d) τ
+        (fun k μ =>
+          (x k μ : ℂ) + (ε : ℂ) * (η k μ : ℂ) * Complex.I) ∈
+        BHW.ForwardTube d n := by
+    have hz_root :
+        BHW.permAct (d := d) τ
+          (fun k μ =>
+            (x k μ : ℂ) + (ε : ℂ) * (η k μ : ℂ) * Complex.I) ∈
+          _root_.ForwardTube d n := by
+      rw [_root_.forwardTube_eq_imPreimage, Set.mem_setOf_eq]
+      convert hscaled_abs using 1
+      ext k μ
+      simp [BHW.permAct, ητ, Pi.smul_apply, Complex.add_im,
+        Complex.ofReal_im, Complex.mul_im, Complex.ofReal_re,
+        Complex.I_re, Complex.I_im]
+    simpa [BHW_forwardTube_eq (d := d) (n := n)] using hz_root
+  have hext :
+      BHW.extendF (bvt_F OS lgc n)
+          (BHW.permAct (d := d) τ
+            (fun k μ =>
+              (x k μ : ℂ) + (ε : ℂ) * (η k μ : ℂ) * Complex.I)) =
+        bvt_F OS lgc n
+          (BHW.permAct (d := d) τ
+            (fun k μ =>
+              (x k μ : ℂ) + (ε : ℂ) * (η k μ : ℂ) * Complex.I)) :=
+    BHW.extendF_eq_on_forwardTube n (bvt_F OS lgc n)
+      hF_holo hF_real_inv _ hz
+  exact congrArg (fun c : ℂ => c * ψ x) hext.symm
+
+/-- Moving-test boundary value for the genuine raw OS-I `(4.12)` seed, in the
+`extendF` model used by the adjacent branch charts. -/
+private theorem raw412_moving_boundaryValue_extendF
+    [NeZero d]
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (τ : Equiv.Perm (Fin n))
+    (η : Fin n → Fin (d + 1) → ℝ)
+    (hητ : (fun k μ => η (τ k) μ) ∈ ForwardConeAbs d n)
+    {α : Type*} {l : Filter α} [l.IsCountablyGenerated]
+    (εseq : α → ℝ)
+    (hεseq : Filter.Tendsto εseq l (nhdsWithin 0 (Set.Ioi 0)))
+    {fseq : α → SchwartzNPoint d n}
+    {f0 : SchwartzNPoint d n}
+    (hfseq : Filter.Tendsto fseq l (nhds f0)) :
+    Filter.Tendsto
+      (fun a : α => ∫ x : NPointDomain d n,
+        BHW.extendF (bvt_F OS lgc n)
+          (BHW.permAct (d := d) τ
+            (fun k μ =>
+              (x k μ : ℂ) + (εseq a : ℂ) *
+                (η k μ : ℂ) * Complex.I)) *
+        fseq a x)
+      l
+      (nhds
+        (bvt_W OS lgc n
+          (BHW.permuteSchwartz (d := d) τ.symm f0))) := by
+  let ητ : Fin n → Fin (d + 1) → ℝ := fun k μ => η (τ k) μ
+  have hbvt :=
+    raw412_moving_boundaryValue (d := d) OS lgc τ η
+      (by simpa [ητ] using hητ) εseq hεseq hfseq
+  refine hbvt.congr' ?_
+  have hF_holo :
+      DifferentiableOn ℂ (bvt_F OS lgc n) (BHW.ForwardTube d n) := by
+    simpa [BHW_forwardTube_eq (d := d) (n := n)] using
+      bvt_F_holomorphic (d := d) OS lgc n
+  have hF_real_inv :
+      ∀ (Λ : LorentzLieGroup.RestrictedLorentzGroup d)
+        (z : Fin n → Fin (d + 1) → ℂ), z ∈ BHW.ForwardTube d n →
+        bvt_F OS lgc n
+          (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * z k ν) =
+          bvt_F OS lgc n z := by
+    intro Λ z hz
+    have hΛz : BHW.complexLorentzAction (ComplexLorentzGroup.ofReal Λ) z ∈
+        BHW.ForwardTube d n :=
+      BHW.ofReal_preserves_forwardTube Λ z hz
+    have hcinv :=
+      bvt_F_complexLorentzInvariant_forwardTube
+        (d := d) OS lgc n (ComplexLorentzGroup.ofReal Λ) z
+        ((BHW_forwardTube_eq (d := d) (n := n)) ▸ hz)
+        ((BHW_forwardTube_eq (d := d) (n := n)) ▸ hΛz)
+    simpa [BHW.complexLorentzAction] using hcinv
+  have hpos : ∀ᶠ a in l, εseq a ∈ Set.Ioi (0 : ℝ) :=
+    hεseq.eventually self_mem_nhdsWithin
+  filter_upwards [hpos] with a ha
+  apply integral_congr_ae
+  refine Filter.Eventually.of_forall ?_
+  intro x
+  have hscaled_abs : εseq a • ητ ∈ ForwardConeAbs d n :=
+    forwardConeAbs_smul d n (εseq a) ha ητ (by simpa [ητ] using hητ)
+  have hz :
+      BHW.permAct (d := d) τ
+        (fun k μ =>
+          (x k μ : ℂ) + (εseq a : ℂ) *
+            (η k μ : ℂ) * Complex.I) ∈
+        BHW.ForwardTube d n := by
+    have hz_root :
+        BHW.permAct (d := d) τ
+          (fun k μ =>
+            (x k μ : ℂ) + (εseq a : ℂ) *
+              (η k μ : ℂ) * Complex.I) ∈
+          _root_.ForwardTube d n := by
+      rw [_root_.forwardTube_eq_imPreimage, Set.mem_setOf_eq]
+      convert hscaled_abs using 1
+      ext k μ
+      simp [BHW.permAct, ητ, Pi.smul_apply, Complex.add_im,
+        Complex.ofReal_im, Complex.mul_im, Complex.ofReal_re,
+        Complex.I_re, Complex.I_im]
+    simpa [BHW_forwardTube_eq (d := d) (n := n)] using hz_root
+  have hext :
+      BHW.extendF (bvt_F OS lgc n)
+          (BHW.permAct (d := d) τ
+            (fun k μ =>
+              (x k μ : ℂ) + (εseq a : ℂ) *
+                (η k μ : ℂ) * Complex.I)) =
+        bvt_F OS lgc n
+          (BHW.permAct (d := d) τ
+            (fun k μ =>
+              (x k μ : ℂ) + (εseq a : ℂ) *
+                (η k μ : ℂ) * Complex.I)) :=
+    BHW.extendF_eq_on_forwardTube n (bvt_F OS lgc n)
+      hF_holo hF_real_inv _ hz
+  exact congrArg (fun c : ℂ => c * fseq a x) hext.symm
+
 /-- Multiplying a zero-diagonal Schwartz test by a Schwartz scalar factor
 preserves infinite-order vanishing on the coincidence locus.
 
