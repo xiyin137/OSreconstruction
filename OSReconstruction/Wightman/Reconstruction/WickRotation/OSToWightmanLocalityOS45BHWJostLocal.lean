@@ -4160,6 +4160,55 @@ theorem OS45Figure24SourceCutoffData.sourceSide_ordinaryPlus_adjacentMinus_diffe
   have hdiff := hord_plus.sub hadj_minus
   simpa using hdiff
 
+/-- Fixed-side-height form of the OS-I `(4.14)` source-current comparison.
+
+The uniform compact-direction theorem above is the production workhorse; this
+specialization records the exact single cone direction used by the
+reduced-normal canonical-ray transfer.  It is still the source-variable current
+statement: it does not replace the remaining branch/source-side transport from
+these currents to the deterministic `extendF` side branches. -/
+theorem OS45Figure24SourceCutoffData.sourceSide_ordinaryPlus_adjacentMinus_difference_tendsto_zero
+    [NeZero d] {hd : 2 ≤ d} {n : ℕ}
+    {i : Fin n} {hi : i.val + 1 < n}
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (D : BHW.OS45Figure24SourceCutoffData P)
+    (η : BHW.OS45FlatCommonChartReal d n)
+    (hηC : η ∈ BHW.os45FlatCommonChartCone d n)
+    (φ : SchwartzMap (BHW.OS45FlatCommonChartReal d n) ℂ)
+    (hφ_compact : HasCompactSupport
+      (φ : BHW.OS45FlatCommonChartReal d n → ℂ))
+    (hφE :
+      tsupport (φ : BHW.OS45FlatCommonChartReal d n → ℂ) ⊆
+        BHW.os45FlatCommonChartEdgeSet d n P
+          (1 : Equiv.Perm (Fin n))) :
+    Tendsto
+      (fun ε : ℝ =>
+        (∫ u : NPointDomain d n,
+          bvt_F OS lgc n (fun k => wickRotatePoint (u k)) *
+            ((((D.toSideZeroDiagonalCLM
+              (1 : Equiv.Perm (Fin n)) (1 : ℝ) ε η φ).1 :
+                SchwartzNPoint d n) : NPointDomain d n → ℂ) u)) -
+        ∫ u : NPointDomain d n,
+          bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k))) *
+            ((((D.toSideZeroDiagonalCLM
+              (1 : Equiv.Perm (Fin n)) (-1 : ℝ) ε η φ).1 :
+                SchwartzNPoint d n) : NPointDomain d n → ℂ) u))
+      (𝓝[Set.Ioi 0] (0 : ℝ))
+      (𝓝 0) := by
+  have hKηC :
+      ({η} : Set (BHW.OS45FlatCommonChartReal d n)) ⊆
+        BHW.os45FlatCommonChartCone d n := by
+    intro ξ hξ
+    simpa [Set.mem_singleton_iff.mp hξ] using hηC
+  have hunif :=
+    D.sourceSide_ordinaryPlus_adjacentMinus_difference_tendstoUniformlyOn_zero
+      OS lgc ({η} : Set (BHW.OS45FlatCommonChartReal d n))
+      isCompact_singleton hKηC φ hφ_compact hφE
+  exact hunif.tendsto_at (by simp)
+
 /-- Canonical chosen source-test family for a Figure-2-4 patch.  The
 noncomputable choice is exactly the same cutoff choice used by
 `os45_BHWJost_flatCommonChart_schwingerCLM`. -/
