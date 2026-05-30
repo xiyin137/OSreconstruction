@@ -4325,6 +4325,154 @@ theorem os45CommonEdge_localHdiffGerm_of_initialOverlap_adjacentBranch
       (Ucx := Ucx) Ford Fadj hFord_holo hFadj_holo
       hFord_wick hFadj_wick hFord_common hFadj_common
 
+private theorem os45CommonEdge_permActInitialSectorOverlap_rawAdjacentCorridor_traces
+    [NeZero d] (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {n : ℕ} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    {U : Set (NPointDomain d n)}
+    (hU_compact : IsCompact (closure U))
+    (hU_connected : IsConnected U)
+    (hU_closure : closure U ⊆ P.V) :
+    ∃ (Ucx : Set (Fin n → Fin (d + 1) → ℂ))
+      (Fadj : (Fin n → Fin (d + 1) → ℂ) → ℂ),
+      IsOpen Ucx ∧
+      IsConnected Ucx ∧
+      (∀ u ∈ U,
+        BHW.permAct (d := d) P.τ (fun k => wickRotatePoint (u k)) ∈ Ucx) ∧
+      (∀ u ∈ U,
+        BHW.permAct (d := d) P.τ
+          ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u))) ∈ Ucx) ∧
+      Ucx ⊆
+        BHW.ExtendedTube d n ∩
+          BHW.permutedExtendedTubeSector d n P.τ ∧
+      DifferentiableOn ℂ Fadj Ucx ∧
+      Set.EqOn Fadj
+        (fun z : Fin n → Fin (d + 1) → ℂ =>
+          BHW.extendF (bvt_F OS lgc n)
+            (BHW.permAct (d := d) P.τ z)) Ucx ∧
+      (∀ u ∈ U,
+        Fadj (BHW.permAct (d := d) P.τ
+            (fun k => wickRotatePoint (u k))) =
+          bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k)))) ∧
+      (∀ u ∈ U,
+        Fadj
+          (BHW.permAct (d := d) P.τ
+            ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+              (BHW.realEmbed
+                (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                  (1 : Equiv.Perm (Fin n)) u)))) =
+          BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+            (1 : Equiv.Perm (Fin n))
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u))) := by
+  classical
+  rcases
+      BHW.os45Figure24_permActInitialSectorOverlap_chartNeighborhood
+        (d := d) (n := n) (hd := hd) (P := P)
+        hU_compact hU_connected hU_closure with
+    ⟨Ucx, hUcx_open, hUcx_connected, hseed_mem, hcommon_mem, hUcx_sub⟩
+  let Fadj : (Fin n → Fin (d + 1) → ℂ) → ℂ :=
+    fun z =>
+      BHW.extendF (bvt_F OS lgc n)
+        (BHW.permAct (d := d) P.τ z)
+  refine
+    ⟨Ucx, Fadj, hUcx_open, hUcx_connected, hseed_mem, hcommon_mem,
+      hUcx_sub, ?_, ?_, ?_, ?_⟩
+  · exact
+      (BHW.differentiableOn_extendF_bvt_F_permAct_preimageExtendedTube
+        (d := d) OS lgc n P.τ).mono (by
+          intro z hz
+          simpa [BHW.permutedExtendedTubeSector] using (hUcx_sub hz).2)
+  · intro z _hz
+    rfl
+  · intro u hu
+    have huP : u ∈ P.V := hU_closure (subset_closure hu)
+    have hF_holo :
+        DifferentiableOn ℂ (bvt_F OS lgc n) (BHW.ForwardTube d n) := by
+      simpa [BHW_forwardTube_eq (d := d) (n := n)] using
+        bvt_F_holomorphic (d := d) OS lgc n
+    have hF_lorentz :
+        ∀ (Λ : LorentzLieGroup.RestrictedLorentzGroup d)
+          (z : Fin n → Fin (d + 1) → ℂ), z ∈ BHW.ForwardTube d n →
+          bvt_F OS lgc n
+            (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * z k ν) =
+          bvt_F OS lgc n z := by
+      intro Λ z hz
+      exact bvt_F_restrictedLorentzInvariant_forwardTube
+        (d := d) OS lgc n Λ z
+        ((BHW_forwardTube_eq (d := d) (n := n)) ▸ hz)
+    have hforward :
+        (fun k => wickRotatePoint (u k)) ∈ BHW.ForwardTube d n :=
+      BHW.os45Figure24_ordinaryWick_mem_forwardTube
+        (d := d) (n := n) (hd := hd) (P := P) huP
+    have hdouble :
+        BHW.permAct (d := d) P.τ
+            (BHW.permAct (d := d) P.τ
+              (fun k => wickRotatePoint (u k))) =
+          fun k => wickRotatePoint (u k) := by
+      ext k μ
+      simp [BHW.permAct, P.τ_eq]
+    have hperm :
+        bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k))) =
+          bvt_F OS lgc n (fun k => wickRotatePoint (u k)) := by
+      simpa [BHW.permAct] using
+        bvt_F_perm (d := d) OS lgc n P.τ
+          (fun k => wickRotatePoint (u k))
+    calc
+      Fadj (BHW.permAct (d := d) P.τ
+          (fun k => wickRotatePoint (u k))) =
+          BHW.extendF (bvt_F OS lgc n)
+            (BHW.permAct (d := d) P.τ
+              (BHW.permAct (d := d) P.τ
+                (fun k => wickRotatePoint (u k)))) := rfl
+      _ = BHW.extendF (bvt_F OS lgc n)
+            (fun k => wickRotatePoint (u k)) := by
+            rw [hdouble]
+      _ = bvt_F OS lgc n (fun k => wickRotatePoint (u k)) :=
+            BHW.extendF_eq_on_forwardTube n (bvt_F OS lgc n)
+              hF_holo hF_lorentz (fun k => wickRotatePoint (u k))
+              hforward
+      _ = bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k))) :=
+            hperm.symm
+  · intro u _hu
+    let p0 : Fin n → Fin (d + 1) → ℂ :=
+      (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+        (BHW.realEmbed
+          (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+            (1 : Equiv.Perm (Fin n)) u))
+    change Fadj (BHW.permAct (d := d) P.τ p0) =
+      BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+        (1 : Equiv.Perm (Fin n))
+        (BHW.realEmbed
+          (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+            (1 : Equiv.Perm (Fin n)) u))
+    have hdouble_common :
+        BHW.permAct (d := d) P.τ
+            (BHW.permAct (d := d) P.τ p0) =
+          p0 := by
+      ext k μ
+      simp [p0, BHW.permAct, P.τ_eq]
+    calc
+      Fadj (BHW.permAct (d := d) P.τ p0) =
+          BHW.extendF (bvt_F OS lgc n)
+            (BHW.permAct (d := d) P.τ
+              (BHW.permAct (d := d) P.τ p0)) := rfl
+      _ = BHW.extendF (bvt_F OS lgc n) p0 := by
+            rw [hdouble_common]
+      _ = BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+            (1 : Equiv.Perm (Fin n))
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u)) := by
+            simp [BHW.os45PulledRealBranch, p0]
+
 /-- Selected-data adapter for the local Figure-2-4 common-edge holomorphic
 difference germ.
 
