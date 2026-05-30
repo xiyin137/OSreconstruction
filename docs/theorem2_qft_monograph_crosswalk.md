@@ -21,6 +21,32 @@ Relevant monograph proof nodes:
   equality is first proved on the mixed analytic edge and then passed to
   boundary distributions; compact smearing is handled afterward.
 
+2026-05-30 current leaf:
+
+- The relevant monograph proof body is part (b), lines 1356-1374 of the local
+  reference copy: Jost real edges, equality of the two holomorphic functions by
+  Euclidean permutation symmetry plus the identity theorem, distributional EOW,
+  then partition-of-unity smearing over Jost neighborhoods.
+- In Lean, the next non-wrapper input should be the Wick-section compact-test
+  transport for the deterministic adjacent branch:
+
+```lean
+∀ φ : SchwartzNPoint d n,
+  HasCompactSupport (φ : NPointDomain d n → ℂ) →
+  tsupport (φ : NPointDomain d n → ℂ) ⊆ U →
+  ∫ u : NPointDomain d n,
+    extendF (bvt_F OS lgc n)
+      (permAct P.τ (fun k => wickRotatePoint (u k))) * φ u =
+  ∫ u : NPointDomain d n,
+    bvt_F OS lgc n (fun k => wickRotatePoint (u k)) * φ u
+```
+
+- This is the proof body consumed by
+  `BHW.os45CommonEdge_sourceRepresentsZero_of_initialOverlap_adjacentBranch`.
+  The source-side zero representation remains the paper-facing Path-2 input;
+  `Hdiff` is the Lean envelope, and the reduced sign-flip form is downstream
+  bookkeeping.
+
 Lean map, updated after the Path 2 source-transfer audit:
 
 - The active theorem-2 algebra is now:
