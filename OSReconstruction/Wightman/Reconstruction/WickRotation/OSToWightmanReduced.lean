@@ -3223,12 +3223,16 @@ theorem compact_canonicalShell_swap_tendsto_of_reduced_pair_tendsto
             bvt_F OS lgc n (canonicalShell (d := d) n x ε) * (f x) := by
             rw [hchange ε]
 
-/-- Adjacent-only reduced Ruelle/Jost producer for theorem 2.
+/-- Legacy adjacent-only reduced Ruelle/Jost diagnostic surface.
 
-This is the honest remaining analytic theorem after the algebraic reduced
-transport and compact-density layers: for compact tests supported on the
-adjacent reduced spacelike edge, the canonical and adjacent-swapped reduced
-positive-height approaches have the same distributional boundary limit. -/
+This was the earlier Route A analytic handoff: for compact tests supported on
+the adjacent reduced spacelike edge, the canonical and adjacent-swapped reduced
+positive-height approaches have the same distributional boundary limit.
+
+The active theorem-2 producer is now the Path 2 source-side branch-transfer /
+local reduced boundary-CLM route.  Do not use this surface as the live
+theorem-2 input when it would route selected/local-edge data or the old
+`BHW.localSPrime_twoSectorBranch_of_EOW_BHW` trust boundary downstream. -/
 def AdjacentReducedRuelleDistributionalLimit
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) : Prop :=
@@ -3259,8 +3263,13 @@ def AdjacentReducedRuelleDistributionalLimit
       (nhdsWithin 0 (Set.Ioi 0))
       (nhds 0)
 
-/-- The adjacent reduced Ruelle/Jost producer closes the live theorem-2
-adjacent locality statement. -/
+/-- Legacy Route A adapter from the adjacent reduced Ruelle/Jost diagnostic
+surface to adjacent locality.
+
+This remains checked infrastructure for regression comparison.  The live
+theorem-2 path should instead pass through source-side zero representation,
+`ReducedLocalAdjacentBoundaryCLMInvariant`, and the closed-support reduced
+canonical swap invariant. -/
 theorem bvt_W_swap_pairing_of_spacelike_from_adjacent_reduced_ruelle_distributional
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS)
