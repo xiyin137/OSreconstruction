@@ -361,10 +361,13 @@ local moving-source `Hdiff` / horizontal branch-difference packet ->
 closed-support reduced canonical swap invariance -> this boundary-value
 locality statement.
 
-The paper-facing input shape is the source-side branch-transfer equality.  The
-`Hdiff` germ is the Lean transport envelope built from that equality, while the
-reduced sign-flip formulation is downstream reduced-normal bookkeeping rather
-than a replacement theorem-2 gate.
+The paper-facing input shape is the source-side branch-transfer equality, in the
+local `RepresentsDistributionOn 0` / zero-difference source form.  The `Hdiff`
+germ is the Lean transport envelope built from that equality, while the reduced
+sign-flip formulation is downstream reduced-normal bookkeeping rather than a
+replacement theorem-2 gate.  In particular, the next proof-body leaf is the
+OS-I `(4.12)`--`(4.14)` source transfer that produces this zero source
+representation, not another gate between the existing carriers.
 
 The older Route A through `AdjacentReducedRuelleDistributionalLimit` is kept as
 a checked diagnostic route only.  Do not close this frontier by feeding the
