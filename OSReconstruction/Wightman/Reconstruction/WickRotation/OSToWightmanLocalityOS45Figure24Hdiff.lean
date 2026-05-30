@@ -3496,6 +3496,44 @@ private theorem OS45BHWJostHullData.OS412SeedWindow_adjacentModel_trace_at_seed
     _ = bvt_F OS lgc n (fun k => wickRotatePoint (x (P.τ k))) :=
       hraw_trace
 
+/-- The same raw `(4.12)` seed trace, normalized to the ordinary Wick value.
+
+This is the value targeted by the source-side compact-test transport: the
+selected adjacent seed chart is still the genuine raw `(4.12)` element, but at
+its seed the OS permutation symmetry rewrites the trace as the ordinary Wick
+boundary value. -/
+private theorem OS45BHWJostHullData.OS412SeedWindow_adjacentModel_trace_at_seed_ordinaryWick
+    [NeZero d]
+    {hd : 2 ≤ d} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData (d := d) hd n i hi}
+    (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {x : NPointDomain d n} (hx : x ∈ P.V)
+    {Aadj : OS45PointedChart d n}
+    (hzAadj :
+      BHW.permAct (d := d) P.τ (fun k => wickRotatePoint (x k)) ∈
+        Aadj.carrier)
+    (hAadj_model :
+      Set.EqOn Aadj.branch
+        (fun z : Fin n → Fin (d + 1) → ℂ =>
+          BHW.extendF (bvt_F OS lgc n)
+            (BHW.permAct (d := d) P.τ z)) Aadj.carrier) :
+    Aadj.branch
+        (BHW.permAct (d := d) P.τ (fun k => wickRotatePoint (x k))) =
+      bvt_F OS lgc n (fun k => wickRotatePoint (x k)) := by
+  classical
+  have hseed :=
+    H.OS412SeedWindow_adjacentModel_trace_at_seed
+      OS lgc hx hzAadj hAadj_model
+  have hperm :
+      bvt_F OS lgc n (fun k => wickRotatePoint (x (P.τ k))) =
+        bvt_F OS lgc n (fun k => wickRotatePoint (x k)) := by
+    simpa [BHW.permAct] using
+      bvt_F_perm (d := d) OS lgc n P.τ
+        (fun k => wickRotatePoint (x k))
+  exact hseed.trans hperm
+
 private theorem OS45BHWJostHullData.ordinaryWick_pointedChartInWindow
     [NeZero d]
     {hd : 2 ≤ d} {i : Fin n} {hi : i.val + 1 < n}
