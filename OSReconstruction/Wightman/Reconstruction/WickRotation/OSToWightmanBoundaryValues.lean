@@ -369,6 +369,12 @@ replacement theorem-2 gate.  In particular, the next proof-body leaf is the
 OS-I `(4.12)`--`(4.14)` source transfer that produces this zero source
 representation, not another gate between the existing carriers.
 
+Do not replace that source-transfer proof body with a direct cone-height
+source-side ray to fixed canonical reduced branch shortcut: the OS45
+moving-source/quarter-turn contribution is part of the Hdiff/source
+representation argument and does not disappear as a standalone coordinate
+identity.
+
 The older Route A through `AdjacentReducedRuelleDistributionalLimit` is kept as
 a checked diagnostic route only.  Do not close this frontier by feeding the
 selected/local-edge Ruelle producer downstream, since that can reintroduce the
