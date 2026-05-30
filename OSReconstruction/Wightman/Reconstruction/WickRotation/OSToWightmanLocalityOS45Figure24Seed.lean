@@ -238,4 +238,101 @@ theorem initialSectorOverlap_endpointMetricBall_of_joinedIn
       hU_open hbU hW_open hbW with ⟨r, hr_pos, hr_sub⟩
   exact ⟨U, r, hU_open, hU_connected, haU, hbU, hU_sub, hr_pos, hr_sub⟩
 
+/-- The genuine adjacent `(4.12)` Wick seed is connected, inside the two-sheet
+Figure-2-4 initial overlap, to the permuted horizontal common-edge endpoint.
+
+This composes the three checked corridor fragments: adjacent Wick to the
+rotated adjacent lift, along the lift, and then through the Lorentz connector
+to the permuted ordinary identity-path endpoint.  It is still carrier geometry;
+it does not assert any equality of branch values. -/
+theorem os45Figure24_joined_adjacentWick_to_permActCommonEdge_initialSectorOverlap
+    [NeZero d]
+    {hd : 2 ≤ d} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    {x : NPointDomain d n} (hx : x ∈ P.V) :
+    JoinedIn
+      (BHW.ExtendedTube d n ∩ BHW.permutedExtendedTubeSector d n P.τ)
+      (fun k => wickRotatePoint (x (P.τ k)))
+      (BHW.permAct (d := d) P.τ
+        ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+          (BHW.realEmbed
+            (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+              (1 : Equiv.Perm (Fin n)) x)))) := by
+  classical
+  have h01 :
+      JoinedIn
+        (BHW.ExtendedTube d n ∩ BHW.permutedExtendedTubeSector d n P.τ)
+        (fun k => wickRotatePoint (x (P.τ k)))
+        (BHW.os45Figure24AdjacentLift
+          (d := d) (n := n) hd P.τ x (0 : unitInterval)) :=
+    BHW.os45Figure24_joined_adjacentWick_to_adjLift0_initialSectorOverlap
+      (d := d) (n := n) hd P x hx
+  have h12 :
+      JoinedIn
+        (BHW.ExtendedTube d n ∩ BHW.permutedExtendedTubeSector d n P.τ)
+        (BHW.os45Figure24AdjacentLift
+          (d := d) (n := n) hd P.τ x (0 : unitInterval))
+        (BHW.os45Figure24AdjacentLift
+          (d := d) (n := n) hd P.τ x (1 : unitInterval)) :=
+    BHW.os45Figure24_joined_adjLift0_to_adjLift1_initialSectorOverlap
+      (d := d) (n := n) hd P x hx
+  have h23 :
+      JoinedIn
+        (BHW.ExtendedTube d n ∩ BHW.permutedExtendedTubeSector d n P.τ)
+        (BHW.os45Figure24AdjacentLift
+          (d := d) (n := n) hd P.τ x (1 : unitInterval))
+        (BHW.permAct (d := d) P.τ
+          ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) x)))) := by
+    simpa [BHW.os45Figure24IdentityPath_one (d := d) (n := n) x] using
+      BHW.os45Figure24_joined_adjLift_to_permActIdentityPath_initialSectorOverlap
+        (d := d) (n := n) hd P hx (1 : unitInterval)
+  exact h01.trans (h12.trans h23)
+
+/-- Endpoint collar for the composed `(4.12)` seed-to-common-edge corridor.
+
+Given any open neighborhood of the permuted horizontal common-edge endpoint,
+shrink to a metric ball inside that neighborhood and inside a connected carrier
+which still contains the genuine adjacent Wick seed.  This is the local carrier
+needed before transporting the adjacent branch value to the horizontal edge. -/
+theorem os45Figure24_adjacentWick_to_permActCommonEdge_endpointMetricBall
+    [NeZero d]
+    {hd : 2 ≤ d} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    {x : NPointDomain d n} (hx : x ∈ P.V)
+    {W : Set (Fin n → Fin (d + 1) → ℂ)}
+    (hW_open : IsOpen W)
+    (hcommonW :
+      BHW.permAct (d := d) P.τ
+        ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+          (BHW.realEmbed
+            (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+              (1 : Equiv.Perm (Fin n)) x))) ∈ W) :
+    ∃ (U : Set (Fin n → Fin (d + 1) → ℂ)) (r : ℝ),
+      IsOpen U ∧ IsConnected U ∧
+      (fun k => wickRotatePoint (x (P.τ k))) ∈ U ∧
+      BHW.permAct (d := d) P.τ
+        ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+          (BHW.realEmbed
+            (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+              (1 : Equiv.Perm (Fin n)) x))) ∈ U ∧
+      U ⊆ BHW.ExtendedTube d n ∩
+        BHW.permutedExtendedTubeSector d n P.τ ∧
+      0 < r ∧
+      Metric.ball
+        (BHW.permAct (d := d) P.τ
+          ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) x)))) r ⊆ U ∩ W := by
+  exact
+    BHW.initialSectorOverlap_endpointMetricBall_of_joinedIn P.τ
+      (BHW.os45Figure24_joined_adjacentWick_to_permActCommonEdge_initialSectorOverlap
+        (d := d) (n := n) (hd := hd) (P := P) hx)
+      hW_open hcommonW
+
 end BHW
