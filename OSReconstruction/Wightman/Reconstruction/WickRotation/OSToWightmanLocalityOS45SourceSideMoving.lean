@@ -477,6 +477,169 @@ theorem OS45Figure24SourceCutoffData.tendsto_sourceSide_extendF_sideZeroDiagonal
         hφ0K hsupp_minus hseminorm_minus
     simpa [F, φ0] using h
 
+/-- Reverse endpoint form of the concrete Figure-2-4 source-side moving-test
+bookkeeping.
+
+If the actual signed source-side branch difference tends to zero, then the
+zero-height source-side pairings agree.  This is the limit-uniqueness direction
+needed in the OS-I `(4.12)`--`(4.14)` proof body; it does not assume a
+common-boundary representation or identify the finite-height branch difference
+with the OS source currents. -/
+theorem OS45Figure24SourceCutoffData.zeroHeightPairing_of_tendsto_sourceSide_extendF_difference_zero
+    {hd : 2 ≤ d}
+    {i : Fin n} {hi : i.val + 1 < n}
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (D : BHW.OS45Figure24SourceCutoffData P)
+    {Ωplus Ωminus : Set (Fin n → Fin (d + 1) → ℂ)}
+    (hΩplus_open : IsOpen Ωplus)
+    (hΩminus_open : IsOpen Ωminus)
+    (hFplus_cont :
+      ContinuousOn
+        (fun z : Fin n → Fin (d + 1) → ℂ =>
+          BHW.extendF (bvt_F OS lgc n) z) Ωplus)
+    (hFminus_cont :
+      ContinuousOn
+        (fun z : Fin n → Fin (d + 1) → ℂ =>
+          BHW.extendF (bvt_F OS lgc n)
+            (BHW.permAct (d := d)
+              (P.τ.symm * (1 : Equiv.Perm (Fin n))).symm z)) Ωminus)
+    {Usrc Ksrc : Set (NPointDomain d n)}
+    (hUsrc_open : IsOpen Usrc)
+    (hUsrc_sub_K : Usrc ⊆ Ksrc)
+    (hKsrc : IsCompact Ksrc)
+    (η : BHW.OS45FlatCommonChartReal d n)
+    (h0_plus :
+      ∀ u ∈ Ksrc,
+        BHW.os45FlatCommonChartSourceSide d n
+          (1 : Equiv.Perm (Fin n)) (1 : ℝ) 0 η u ∈ Ωplus)
+    (h0_minus :
+      ∀ u ∈ Ksrc,
+        BHW.os45FlatCommonChartSourceSide d n
+          (1 : Equiv.Perm (Fin n)) (-1 : ℝ) 0 η u ∈ Ωminus)
+    (φ : SchwartzMap (BHW.OS45FlatCommonChartReal d n) ℂ)
+    (hφ_compact :
+      HasCompactSupport
+        (φ : BHW.OS45FlatCommonChartReal d n → ℂ))
+    (hφU :
+      tsupport (φ : BHW.OS45FlatCommonChartReal d n → ℂ) ⊆
+        BHW.os45CommonEdgeFlatCLE d n
+          (1 : Equiv.Perm (Fin n)) '' Usrc)
+    (hside :
+      Tendsto
+        (fun ε : ℝ =>
+          (∫ u : NPointDomain d n,
+            BHW.extendF (bvt_F OS lgc n)
+              (BHW.os45FlatCommonChartSourceSide d n
+                (1 : Equiv.Perm (Fin n)) (1 : ℝ) ε η u) *
+              ((((D.toSideZeroDiagonalCLM
+                (1 : Equiv.Perm (Fin n)) (1 : ℝ) ε η φ).1 :
+                  SchwartzNPoint d n) : NPointDomain d n → ℂ) u)) -
+          ∫ u : NPointDomain d n,
+            BHW.extendF (bvt_F OS lgc n)
+              (BHW.permAct (d := d)
+                (P.τ.symm * (1 : Equiv.Perm (Fin n))).symm
+                (BHW.os45FlatCommonChartSourceSide d n
+                  (1 : Equiv.Perm (Fin n)) (-1 : ℝ) ε η u)) *
+              ((((D.toSideZeroDiagonalCLM
+                (1 : Equiv.Perm (Fin n)) (-1 : ℝ) ε η φ).1 :
+                  SchwartzNPoint d n) : NPointDomain d n → ℂ) u))
+        (𝓝[Set.Ioi 0] (0 : ℝ))
+        (𝓝 0)) :
+    (∫ u : NPointDomain d n,
+      BHW.extendF (bvt_F OS lgc n)
+        (BHW.os45FlatCommonChartSourceSide d n
+          (1 : Equiv.Perm (Fin n)) (1 : ℝ) 0 η u) *
+        ((((D.toZeroDiagonalCLM
+          (1 : Equiv.Perm (Fin n)) φ).1 : SchwartzNPoint d n) :
+            NPointDomain d n → ℂ) u)) =
+      ∫ u : NPointDomain d n,
+        BHW.extendF (bvt_F OS lgc n)
+          (BHW.permAct (d := d)
+            (P.τ.symm * (1 : Equiv.Perm (Fin n))).symm
+            (BHW.os45FlatCommonChartSourceSide d n
+              (1 : Equiv.Perm (Fin n)) (-1 : ℝ) 0 η u)) *
+          ((((D.toZeroDiagonalCLM
+            (1 : Equiv.Perm (Fin n)) φ).1 : SchwartzNPoint d n) :
+              NPointDomain d n → ℂ) u) := by
+  let A : ℝ → ℂ := fun ε =>
+    ∫ u : NPointDomain d n,
+      BHW.extendF (bvt_F OS lgc n)
+        (BHW.os45FlatCommonChartSourceSide d n
+          (1 : Equiv.Perm (Fin n)) (1 : ℝ) ε η u) *
+        ((((D.toSideZeroDiagonalCLM
+          (1 : Equiv.Perm (Fin n)) (1 : ℝ) ε η φ).1 :
+            SchwartzNPoint d n) : NPointDomain d n → ℂ) u)
+  let B : ℝ → ℂ := fun ε =>
+    ∫ u : NPointDomain d n,
+      BHW.extendF (bvt_F OS lgc n)
+        (BHW.permAct (d := d)
+          (P.τ.symm * (1 : Equiv.Perm (Fin n))).symm
+          (BHW.os45FlatCommonChartSourceSide d n
+            (1 : Equiv.Perm (Fin n)) (-1 : ℝ) ε η u)) *
+        ((((D.toSideZeroDiagonalCLM
+          (1 : Equiv.Perm (Fin n)) (-1 : ℝ) ε η φ).1 :
+            SchwartzNPoint d n) : NPointDomain d n → ℂ) u)
+  let A0 : ℂ :=
+    ∫ u : NPointDomain d n,
+      BHW.extendF (bvt_F OS lgc n)
+        (BHW.os45FlatCommonChartSourceSide d n
+          (1 : Equiv.Perm (Fin n)) (1 : ℝ) 0 η u) *
+        ((((D.toZeroDiagonalCLM
+          (1 : Equiv.Perm (Fin n)) φ).1 : SchwartzNPoint d n) :
+            NPointDomain d n → ℂ) u)
+  let B0 : ℂ :=
+    ∫ u : NPointDomain d n,
+      BHW.extendF (bvt_F OS lgc n)
+        (BHW.permAct (d := d)
+          (P.τ.symm * (1 : Equiv.Perm (Fin n))).symm
+          (BHW.os45FlatCommonChartSourceSide d n
+            (1 : Equiv.Perm (Fin n)) (-1 : ℝ) 0 η u)) *
+        ((((D.toZeroDiagonalCLM
+          (1 : Equiv.Perm (Fin n)) φ).1 : SchwartzNPoint d n) :
+            NPointDomain d n → ℂ) u)
+  have h0_minus_plus :
+      ∀ u ∈ Ksrc,
+        BHW.os45FlatCommonChartSourceSide d n
+          (1 : Equiv.Perm (Fin n)) (-1 : ℝ) 0 η u ∈ Ωplus := by
+    intro u hu
+    simpa using h0_plus u hu
+  have h0_plus_minus :
+      ∀ u ∈ Ksrc,
+        BHW.os45FlatCommonChartSourceSide d n
+          (1 : Equiv.Perm (Fin n)) (1 : ℝ) 0 η u ∈ Ωminus := by
+    intro u hu
+    simpa using h0_minus u hu
+  have hplus_pair :=
+    D.tendsto_sourceSide_extendF_sideZeroDiagonalCLM_pair
+      (d := d) OS lgc (1 : Equiv.Perm (Fin n))
+      hΩplus_open hFplus_cont hUsrc_open hUsrc_sub_K hKsrc
+      η h0_plus h0_minus_plus φ hφ_compact hφU
+  have hminus_pair :=
+    D.tendsto_sourceSide_extendF_sideZeroDiagonalCLM_pair
+      (d := d) OS lgc (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+      hΩminus_open hFminus_cont hUsrc_open hUsrc_sub_K hKsrc
+      η h0_plus_minus h0_minus φ hφ_compact hφU
+  have hdiff :
+      Tendsto (fun ε : ℝ => A ε - B ε)
+        (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 (A0 - B0)) := by
+    have hplus :
+        Tendsto A (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 A0) := by
+      simpa [A, A0] using hplus_pair.1
+    have hminus :
+        Tendsto B (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 B0) := by
+      simpa [B, B0] using hminus_pair.2
+    exact hplus.sub hminus
+  have hside' :
+      Tendsto (fun ε : ℝ => A ε - B ε)
+        (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) := by
+    simpa [A, B] using hside
+  have hzero : A0 - B0 = 0 :=
+    tendsto_nhds_unique hdiff hside'
+  exact sub_eq_zero.mp hzero
+
 /-- Difference form of the concrete Figure-2-4 source-side moving-test
 transfer from a zero-height pairing equality.
 
