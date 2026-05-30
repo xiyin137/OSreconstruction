@@ -353,6 +353,17 @@ This sorry is the direct boundary-distributional adjacent-swap locality
 statement on the OS route.  It should be supplied by the OS Section 4.5
 branch-difference / boundary-transfer argument, not by any finite-height
 canonical-shell equality.
+
+Active route:
+local reduced branch/sign-flip data ->
+`ReducedLocalAdjacentBoundaryCLMInvariant` ->
+closed-support reduced canonical swap invariance -> this boundary-value
+locality statement.
+
+The older Route A through `AdjacentReducedRuelleDistributionalLimit` is kept as
+a checked diagnostic route only.  Do not close this frontier by feeding the
+selected/local-edge Ruelle producer downstream, since that can reintroduce the
+old `BHW.localSPrime_twoSectorBranch_of_EOW_BHW` trust boundary.
 -/
 private theorem bvt_W_swap_pairing_of_spacelike
     (OS : OsterwalderSchraderAxioms d)
