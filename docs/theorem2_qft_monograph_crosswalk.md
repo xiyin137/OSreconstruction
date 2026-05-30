@@ -21,12 +21,14 @@ Relevant monograph proof nodes:
   equality is first proved on the mixed analytic edge and then passed to
   boundary distributions; compact smearing is handled afterward.
 
-Lean map, updated after the branch-difference/CLM bridge work:
+Lean map, updated after the Path 2 source-transfer audit:
 
 - The active theorem-2 algebra is now:
 
 ```lean
-local reduced branch-difference / sign-flip data
+local source-side common-edge zero representation
+  -> local moving-source Hdiff / horizontal branch-difference carrier
+  -> reduced-normal sign-flip bookkeeping
   -> ReducedLocalAdjacentBoundaryCLMInvariant
   -> ReducedCanonicalAdjacentSwapBoundaryInvariantSchwartzClosedSupport
   -> bvt_W_swap_pairing_of_spacelike
@@ -37,7 +39,21 @@ local reduced branch-difference / sign-flip data
   producer because it can pull the old `BHW.localSPrime_twoSectorBranch_of_EOW_BHW`
   trust boundary downstream.
 
-- The most faithful remaining Lean target is still the local boundary-CLM
+- The paper-facing Path 2 input is the local source-side common-edge branch
+  transfer, formalized in Lean as a zero distributional representation:
+
+```lean
+SCV.RepresentsDistributionOn
+  (0 : SchwartzMap (NPointDomain d n) ℂ →L[ℂ] ℂ)
+  (fun u =>
+    adjacentPulledRealBranch u - ordinaryPulledRealBranch u) U
+```
+
+  `Hdiff` is the Lean transport envelope after this source transfer is proved.
+  The reduced sign-flip statement is downstream reduced-normal bookkeeping, not
+  the OS-paper-facing input.
+
+- The most faithful consumed Lean target remains the local boundary-CLM
   invariant already consumed by:
 
 ```lean
@@ -158,7 +174,9 @@ adjacent locality through
 Do not replace this step by an unconditional
 `AdjacentReducedRuelleDistributionalLimit` producer.  That route is retained as
 a checked consumer/diagnostic path, not as the current axiom-light theorem-2
-closure.
+closure.  The current Path 2 input is the source-side common-edge zero
+representation above; any `Hdiff` or sign-flip form should be introduced only
+as a direct consumer of that representation.
 
 The recently checked pointwise reduced-edge consumers remain useful only as
 sufficient reductions for settings where pointwise boundary limits are actually
