@@ -10626,6 +10626,43 @@ theorem os45CommonEdge_wickTraces_eqOn_of_E3
     SCV.eqOn_open_of_compactSupport_schwartz_integral_eq_of_continuousOn
       (U := U) hU_open hGadj_cont hGord_cont hint
 
+/-- A Wick-side compact-test seed promotes to equality on any connected
+complex chart.
+
+This is the OS-I §4.5 source-transfer form closest to the paper: the two
+candidate local branches need only have equal Wick-section pairings on a
+nonempty real source window.  Pointwise Wick trace normalizations are a useful
+way to produce this hypothesis, but they are not built into the continuation
+step itself. -/
+theorem os45CommonEdge_complexWickSeed_eqOn_of_wickPairings
+    [NeZero d]
+    {n : ℕ}
+    {U : Set (NPointDomain d n)}
+    (hU_open : IsOpen U)
+    (hU_nonempty : U.Nonempty)
+    {Ucx : Set (Fin n → Fin (d + 1) → ℂ)}
+    (hUcx_open : IsOpen Ucx)
+    (hUcx_connected : IsConnected Ucx)
+    (hwick_mem :
+      ∀ u ∈ U, (fun k => wickRotatePoint (u k)) ∈ Ucx)
+    (Ford Fadj : (Fin n → Fin (d + 1) → ℂ) → ℂ)
+    (hFord_holo : DifferentiableOn ℂ Ford Ucx)
+    (hFadj_holo : DifferentiableOn ℂ Fadj Ucx)
+    (hwick_pairing :
+      ∀ φ : SchwartzNPoint d n,
+        HasCompactSupport (φ : NPointDomain d n → ℂ) →
+        tsupport (φ : NPointDomain d n → ℂ) ⊆ U →
+        ∫ u : NPointDomain d n,
+          Fadj (fun k => wickRotatePoint (u k)) * φ u =
+        ∫ u : NPointDomain d n,
+          Ford (fun k => wickRotatePoint (u k)) * φ u) :
+    Set.EqOn Fadj Ford Ucx := by
+  exact
+    eqOn_openConnected_of_distributional_wickSection_eq_on_realOpen
+      (d := d) (n := n)
+      Ucx U hUcx_open hUcx_connected hU_open hU_nonempty
+      hwick_mem Fadj Ford hFadj_holo hFord_holo hwick_pairing
+
 /-- A Wick-side E3 seed promotes to equality on any connected complex chart
 once the two local analytic germs have the ordinary `(4.1)` and genuine
 adjacent `(4.12)` Wick traces.
@@ -10671,10 +10708,10 @@ theorem os45CommonEdge_complexWickSeed_eqOn_of_E3
     BHW.os45CommonEdge_wickTraces_eqOn_of_E3
       (d := d) hd OS lgc (P := P) hU_open hU_sub
   refine
-    eqOn_openConnected_of_distributional_wickSection_eq_on_realOpen
+    BHW.os45CommonEdge_complexWickSeed_eqOn_of_wickPairings
       (d := d) (n := n)
-      Ucx U hUcx_open hUcx_connected hU_open hU_nonempty
-      hwick_mem Fadj Ford hFadj_holo hFord_holo ?_
+      hU_open hU_nonempty hUcx_open hUcx_connected hwick_mem
+      Ford Fadj hFord_holo hFadj_holo ?_
   intro φ _hφ_compact hφU
   refine MeasureTheory.integral_congr_ae (Filter.Eventually.of_forall ?_)
   intro u
