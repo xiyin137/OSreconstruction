@@ -4747,6 +4747,64 @@ theorem os45CommonEdge_localHdiffGerm_of_initialOverlap_adjacentBranch
                 (1 : Equiv.Perm (Fin n)) u))
     rw [hFadj_common u hu, hFord_common u hu]
 
+/-- The active source-representation handoff from the concrete OS-I adjacent
+branch transport.
+
+Once the `(4.12)` seed-to-Wick compact-test transport has supplied the
+deterministic adjacent branch pairing used by
+`os45CommonEdge_localHdiffGerm_of_initialOverlap_adjacentBranch`, the checked
+horizontal difference germ immediately represents the zero source
+distribution on the same collar.  This keeps the theorem-2 Path 2 input in the
+paper-facing `RepresentsDistributionOn 0` form and leaves the remaining
+analytic leaf as exactly the transported Wick pairing hypothesis below. -/
+theorem os45CommonEdge_sourceRepresentsZero_of_initialOverlap_adjacentBranch
+    [NeZero d] (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {n : ℕ} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    {U : Set (NPointDomain d n)}
+    (hU_open : IsOpen U)
+    (hU_compact : IsCompact (closure U))
+    (hU_connected : IsConnected U)
+    (hU_closure : closure U ⊆ P.V)
+    (htransported_wick_pairing :
+      ∀ φ : SchwartzNPoint d n,
+        HasCompactSupport (φ : NPointDomain d n → ℂ) →
+        tsupport (φ : NPointDomain d n → ℂ) ⊆ U →
+        ∫ u : NPointDomain d n,
+          BHW.extendF (bvt_F OS lgc n)
+            (BHW.permAct (d := d) P.τ
+              (fun k => wickRotatePoint (u k))) * φ u =
+        ∫ u : NPointDomain d n,
+          bvt_F OS lgc n (fun k => wickRotatePoint (u k)) * φ u) :
+    SCV.RepresentsDistributionOn
+      (0 : SchwartzMap (NPointDomain d n) ℂ →L[ℂ] ℂ)
+      (fun u : NPointDomain d n =>
+        BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+            (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u)) -
+          BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+            (1 : Equiv.Perm (Fin n))
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u))) U := by
+  classical
+  rcases
+      BHW.os45CommonEdge_localHdiffGerm_of_initialOverlap_adjacentBranch
+        (d := d) hd OS lgc (P := P) hU_open hU_compact
+        hU_connected hU_closure htransported_wick_pairing with
+    ⟨Ucx, hUcx_open, hUcx_connected, hwick_mem, hcommon_mem,
+      Hdiff, hHdiff_holo, hwick_pairing_zero, hcommon_trace⟩
+  exact
+    BHW.os45CommonEdge_localHorizontalDifference_representsZero_of_germ
+      (d := d) hd OS lgc (P := P) U hU_open
+      hU_connected.nonempty Ucx Hdiff hUcx_open hUcx_connected
+      hwick_mem hcommon_mem hHdiff_holo hwick_pairing_zero hcommon_trace
+
 /-- Legacy selected-data adapter for the local Figure-2-4 common-edge
 holomorphic difference germ.
 
