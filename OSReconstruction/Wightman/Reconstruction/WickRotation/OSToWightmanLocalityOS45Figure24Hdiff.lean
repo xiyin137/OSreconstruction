@@ -3047,14 +3047,20 @@ private theorem OS45BHWJostHullData.commonEdgeDifference_pointedChartInWindow
       simpa [A, PointedMetricBranchChart.carrier, p0, hC0_ball] using hz)
   · simpa [A, p0] using hC0_trace
 
-/-- Direct OS I §4.5 producer for the local Figure-2-4 common-edge
-holomorphic difference germ.
+/-- Selected-data adapter for the local Figure-2-4 common-edge holomorphic
+difference germ.
 
 This is the Stage-A producer consumed by
 `os45CommonEdge_localHorizontalDifference_representsZero_of_germ`.  The proof
 now delegates the selected Jost/Ruelle and post-seed Hdiff construction to the
 checked companion theorem `os45_hdiff_of_selectedJostData`, keeping this
-frontier file as the public entry point. -/
+frontier file as the public entry point.
+
+Route guard: because this adapter requires selected Jost/Ruelle data, it is a
+legacy/diagnostic route for theorem-2 closure.  The active boundary-value
+frontier should consume concrete local Hdiff/source-representation packets via
+the reduced local CLM path, and should not use this adapter to feed the old
+local `S'_n` trust boundary into `bvt_W_swap_pairing_of_spacelike`. -/
 theorem os45CommonEdge_localFigure24DifferenceGerm_of_OSI45
     [NeZero d] (hd : 2 ≤ d)
     (OS : OsterwalderSchraderAxioms d)
