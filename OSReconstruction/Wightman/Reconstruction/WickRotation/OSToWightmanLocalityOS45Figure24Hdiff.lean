@@ -3904,6 +3904,90 @@ private theorem OS45BHWJostHullData.commonEdgeDifference_localZero_of_flatCrossi
   · exact Adiff.carrier_open.inter
       (D.Aord.carrier_open.inter D.Aadj.carrier_open)
 
+/-- Initial-overlap ordinary branch data plus a genuine adjacent `(4.12)`
+branch give the active local horizontal difference germ.
+
+This is a Path-2 proof-body assembly step, not a new theorem-2 input gate.  The
+ordinary branch, its Wick trace, and the ordinary/adjacent common-edge trace
+bookkeeping are supplied by the checked Figure-2-4 initial-overlap chart.  The
+only remaining analytic payload is the actual adjacent `(4.12)` branch on that
+chart and its two traces. -/
+theorem os45CommonEdge_localHdiffGerm_of_initialOverlap_adjacentBranch
+    [NeZero d] (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {n : ℕ} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    {U : Set (NPointDomain d n)}
+    (hU_compact : IsCompact (closure U))
+    (hU_connected : IsConnected U)
+    (hU_closure : closure U ⊆ P.V) :
+    ∃ Ucx : Set (Fin n → Fin (d + 1) → ℂ),
+      IsOpen Ucx ∧
+      IsConnected Ucx ∧
+      (∀ u ∈ U, (fun k => wickRotatePoint (u k)) ∈ Ucx) ∧
+      (∀ u ∈ U,
+        (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+          (BHW.realEmbed
+            (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+              (1 : Equiv.Perm (Fin n)) u)) ∈ Ucx) ∧
+      ∀ Fadj : (Fin n → Fin (d + 1) → ℂ) → ℂ,
+        DifferentiableOn ℂ Fadj Ucx →
+        (∀ u ∈ U,
+          Fadj (fun k => wickRotatePoint (u k)) =
+            bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k)))) →
+        (∀ u ∈ U,
+          Fadj
+            ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+              (BHW.realEmbed
+                (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                  (1 : Equiv.Perm (Fin n)) u))) =
+            BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+              (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+              (BHW.realEmbed
+                (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                  (1 : Equiv.Perm (Fin n)) u))) →
+        ∃ Hdiff : (Fin n → Fin (d + 1) → ℂ) → ℂ,
+          DifferentiableOn ℂ Hdiff Ucx ∧
+          (∀ φ : SchwartzNPoint d n,
+            HasCompactSupport (φ : NPointDomain d n → ℂ) →
+            tsupport (φ : NPointDomain d n → ℂ) ⊆ U →
+            ∫ u : NPointDomain d n,
+              Hdiff (fun k => wickRotatePoint (u k)) * φ u = 0) ∧
+          (∀ u ∈ U,
+            Hdiff
+              ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+                (BHW.realEmbed
+                  (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                    (1 : Equiv.Perm (Fin n)) u))) =
+              BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                  (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+                  (BHW.realEmbed
+                    (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                      (1 : Equiv.Perm (Fin n)) u)) -
+                BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                  (1 : Equiv.Perm (Fin n))
+                  (BHW.realEmbed
+                    (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                      (1 : Equiv.Perm (Fin n)) u))) := by
+  classical
+  rcases
+      BHW.os45CommonEdge_initialSectorOverlap_traces_except_adjacentWick
+        (d := d) hd OS lgc (P := P)
+        (U := U) hU_compact hU_connected hU_closure with
+    ⟨Ucx, Ford, _Fadj0, hUcx_open, hUcx_connected, hwick_mem,
+      hcommon_mem, _hUcx_sub, hFord_holo, _hFadj0_holo, hFord_wick,
+      hFord_common, _hFadj0_common⟩
+  refine ⟨Ucx, hUcx_open, hUcx_connected, hwick_mem, hcommon_mem, ?_⟩
+  intro Fadj hFadj_holo hFadj_wick hFadj_common
+  have hU_sub : U ⊆ P.V := fun u hu => hU_closure (subset_closure hu)
+  exact
+    BHW.os45CommonEdge_HdiffGerm_data_of_E3_branchTraces
+      (d := d) hd OS lgc (P := P) hU_sub
+      (Ucx := Ucx) Ford Fadj hFord_holo hFadj_holo
+      hFord_wick hFadj_wick hFord_common hFadj_common
+
 /-- Selected-data adapter for the local Figure-2-4 common-edge holomorphic
 difference germ.
 
