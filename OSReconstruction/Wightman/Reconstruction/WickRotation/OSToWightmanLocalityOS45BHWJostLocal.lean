@@ -11141,10 +11141,11 @@ compact-test pairing of their difference.  The common-edge trace hypotheses
 then identify the horizontal value of `Fadj - Ford` with the
 adjacent-minus-ordinary pulled real branches.
 
-This is a proof-body step for the active Path 2 `Hdiff` input shape: it
-discharges the `wick_pairing_zero` and `common_trace` fields from concrete
-branch traces, leaving only the actual OS-I branch construction/gluing as the
-remaining analytic work. -/
+This is a proof-body adapter after the OS-I source-side branch transfer has
+chosen concrete branch traces.  It discharges the internal `Hdiff`
+`wick_pairing_zero` and `common_trace` fields from those traces; the
+paper-facing input remains the source/common-edge branch equality rather than
+`Hdiff` itself. -/
 theorem os45CommonEdge_HdiffGerm_data_of_E3_branchTraces
     [NeZero d] (hd : 2 ≤ d)
     (OS : OsterwalderSchraderAxioms d)

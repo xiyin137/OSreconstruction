@@ -2231,10 +2231,10 @@ theorem reducedNormalSignFlip_pointwise_of_OS45HdiffGerm_sourceSide_asymptotic
 /-- Local source-representation packets on adjacent spacelike collars supply the
 reduced local boundary-CLM invariant.
 
-This is the CLM-facing Hdiff handoff.  The remaining analytic leaf is now
-exactly local OS45 source data on each reduced-normal collar: a Figure-2-4
-source window carrying the zero horizontal common-edge representation, together
-with the two OS-I `(4.12)`--`(4.14)` side-to-canonical ray transfers. -/
+This is the paper-facing Path-2 handoff.  The remaining analytic leaf is local
+OS45 source data on each reduced-normal collar: a Figure-2-4 source window
+carrying the zero horizontal common-edge representation, together with the two
+OS-I `(4.12)`--`(4.14)` side-to-canonical ray transfers. -/
 theorem reducedLocalAdjacentBoundaryCLMInvariant_of_local_OS45SourceRepresentsOn_asymptotic
     (hd : 2 ≤ d)
     (OS : OsterwalderSchraderAxioms d)
@@ -2373,10 +2373,9 @@ theorem reducedLocalAdjacentBoundaryCLMInvariant_of_local_OS45SourceRepresentsOn
 /-- Local proof-local Hdiff germs on adjacent spacelike collars supply the
 reduced local boundary-CLM invariant.
 
-This is the active Path-2 version of the OS45 handoff.  It exposes the
-remaining OS-I §4.5 payload as a genuine local holomorphic horizontal
-difference germ plus the two side-to-canonical ray transfers, then uses the
-checked reduced-normal sign-flip and reduced local CLM machinery. -/
+This is the Hdiff-carrier compatibility handoff.  It is useful once the
+source-side branch transfer has already produced a local horizontal difference
+germ, but it is not the OS-paper-facing input shape. -/
 theorem reducedLocalAdjacentBoundaryCLMInvariant_of_local_OS45HdiffGerm_asymptotic
     (hd : 2 ≤ d)
     (OS : OsterwalderSchraderAxioms d)
