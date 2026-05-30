@@ -3446,6 +3446,57 @@ private theorem OS45BHWJostHullData.OS412SeedWindow_localOverlapAtZ0_adjacentMod
       (A0 := Aadj) (B0 := rawLocal) (rawLocal := rawLocal)
       hzAadj hzRaw hzRaw hAadj_model hraw_model hraw_model
 
+private theorem OS45BHWJostHullData.OS412SeedWindow_adjacentModel_trace_at_seed
+    [NeZero d]
+    {hd : 2 ≤ d} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData (d := d) hd n i hi}
+    (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {x : NPointDomain d n} (hx : x ∈ P.V)
+    {Aadj : OS45PointedChart d n}
+    (hzAadj :
+      BHW.permAct (d := d) P.τ (fun k => wickRotatePoint (x k)) ∈
+        Aadj.carrier)
+    (hAadj_model :
+      Set.EqOn Aadj.branch
+        (fun z : Fin n → Fin (d + 1) → ℂ =>
+          BHW.extendF (bvt_F OS lgc n)
+            (BHW.permAct (d := d) P.τ z)) Aadj.carrier) :
+    Aadj.branch
+        (BHW.permAct (d := d) P.τ (fun k => wickRotatePoint (x k))) =
+      bvt_F OS lgc n (fun k => wickRotatePoint (x (P.τ k))) := by
+  classical
+  let z0 : Fin n → Fin (d + 1) → ℂ :=
+    BHW.permAct (d := d) P.τ (fun k => wickRotatePoint (x k))
+  rcases H.OS412SeedWindow_pointedChart_extendFPermActModel OS lgc hx with
+    ⟨rawLocal, hraw_center, hraw_mem_center, _hraw_sub, hraw_model,
+      hraw_trace⟩
+  have hraw_center_z0 : rawLocal.center = z0 := by
+    simpa [z0] using hraw_center
+  have hzRaw : z0 ∈ rawLocal.carrier := by
+    rw [← hraw_center_z0]
+    exact hraw_mem_center
+  have hover :
+      LocalOverlapAtZ0 (P := P) hd OS lgc z0 Aadj rawLocal :=
+    localOverlapAtZ0_adjacent_of_commonModel
+      (d := d) hd OS lgc (P := P)
+      (z0 := z0) (A0 := Aadj) (B0 := rawLocal) (rawLocal := rawLocal)
+      (by simpa [z0] using hzAadj) hzRaw hzRaw
+      hAadj_model hraw_model hraw_model
+  have heqOn :
+      Set.EqOn Aadj.branch rawLocal.branch
+        (Aadj.carrier ∩ rawLocal.carrier) :=
+    LocalOverlapAtZ0.eqOn_inter (d := d) hd OS lgc
+      (P := P) hover
+  have heq : Aadj.branch z0 = rawLocal.branch z0 :=
+    heqOn ⟨by simpa [z0] using hzAadj, hzRaw⟩
+  calc
+    Aadj.branch z0 = rawLocal.branch z0 := heq
+    _ = rawLocal.branch rawLocal.center := by rw [← hraw_center_z0]
+    _ = bvt_F OS lgc n (fun k => wickRotatePoint (x (P.τ k))) :=
+      hraw_trace
+
 private theorem OS45BHWJostHullData.ordinaryWick_pointedChartInWindow
     [NeZero d]
     {hd : 2 ≤ d} {i : Fin n} {hi : i.val + 1 < n}
