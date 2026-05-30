@@ -30,6 +30,14 @@ noncomputable def selectedAdjacentDistributionalJostAnchorData_of_canonical_comm
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS)
     (n : ℕ)
+    (hOverlap :
+      ∀ (i : Fin n) (hi : i.val + 1 < n),
+        IsConnected
+          {z : Fin n → Fin (d + 1) → ℂ |
+            z ∈ BHW.ExtendedTube d n ∧
+              BHW.permAct (d := d)
+                (Equiv.swap i ⟨i.val + 1, hi⟩) z ∈
+                BHW.ExtendedTube d n})
     (hrep :
       ∀ (i : Fin n) (hi : i.val + 1 < n),
         let P :=
@@ -59,9 +67,25 @@ noncomputable def selectedAdjacentDistributionalJostAnchorData_of_canonical_comm
   have hzero :=
     BHW.os45FlatCommonChart_zeroHeight_pairings_eq_ordinaryEdgeCLM_of_sourceRepresents
       (d := d) hd OS lgc (P := P) (hrep i hi)
+  have hsource_subset :
+      BHW.os45Figure24SourcePatch (d := d) (n := n) i hi ⊆ P.V := by
+    have hPsource :
+        BHW.os45Figure24SourcePatch (d := d) (n := n) i hi = P.V := by
+      simpa [P] using
+        BHW.os45Figure24SourcePatch_eq_canonical (d := d) hd n i hi
+    intro u hu
+    simpa [hPsource] using hu
+  have hOverlapP :
+      IsConnected
+        (BHW.ExtendedTube d n ∩
+          BHW.permutedExtendedTubeSector d n P.τ) := by
+    simpa [BHW.permutedExtendedTubeSector, BHW.permAct, P.τ_eq,
+      Set.mem_inter_iff] using
+      hOverlap i hi
   exact
-    BHW.os45CompactFigure24WickPairingEq_of_zeroHeight_pairingsCLM
-      (d := d) hd OS lgc n i hi
+    BHW.os45CompactFigure24WickPairingEq_of_zeroHeight_pairingsCLM_overlapConnected
+      (d := d) hd OS lgc (n := n) (i := i) (hi := hi) (P := P)
+      hsource_subset hOverlapP
       (BHW.os45FlatCommonChart_ordinaryEdgeCLM hd OS lgc P)
       hzero.1 hzero.2
 
@@ -79,6 +103,14 @@ noncomputable def selectedAdjacentDistributionalJostAnchorData_of_canonical_sour
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS)
     (n : ℕ)
+    (hOverlap :
+      ∀ (i : Fin n) (hi : i.val + 1 < n),
+        IsConnected
+          {z : Fin n → Fin (d + 1) → ℂ |
+            z ∈ BHW.ExtendedTube d n ∧
+              BHW.permAct (d := d)
+                (Equiv.swap i ⟨i.val + 1, hi⟩) z ∈
+                BHW.ExtendedTube d n})
     (hsource :
       ∀ (i : Fin n) (hi : i.val + 1 < n),
         let P :=
@@ -98,7 +130,7 @@ noncomputable def selectedAdjacentDistributionalJostAnchorData_of_canonical_sour
     SelectedAdjacentDistributionalJostAnchorData OS lgc n := by
   refine
     BHW.selectedAdjacentDistributionalJostAnchorData_of_canonical_commonEdge_representsZero
-      (d := d) hd OS lgc n ?_
+      (d := d) hd OS lgc n hOverlap ?_
   intro i hi
   let P :=
     BHW.os45_adjacent_identity_canonicalSourcePatch
@@ -154,9 +186,25 @@ noncomputable def os45CompactFigure24WickPairingEq_of_selectedJostData
   let hzero :=
     BHW.os45FlatCommonChart_zeroHeight_pairings_eq_ordinaryEdgeCLM_of_sourceRepresents
       (d := d) hd OS lgc (P := P) hrep
+  have hsource_subset :
+      BHW.os45Figure24SourcePatch (d := d) (n := n) i hi ⊆ P.V := by
+    have hPsource :
+        BHW.os45Figure24SourcePatch (d := d) (n := n) i hi = P.V := by
+      simpa [P] using
+        BHW.os45Figure24SourcePatch_eq_canonical (d := d) hd n i hi
+    intro u hu
+    simpa [hPsource] using hu
+  have hOverlapP :
+      IsConnected
+        (BHW.ExtendedTube d n ∩
+          BHW.permutedExtendedTubeSector d n P.τ) := by
+    simpa [BHW.permutedExtendedTubeSector, BHW.permAct, P.τ_eq,
+      Set.mem_inter_iff] using
+      hOverlap i hi
   exact
-    BHW.os45CompactFigure24WickPairingEq_of_zeroHeight_pairingsCLM
-      (d := d) hd OS lgc n i hi
+    BHW.os45CompactFigure24WickPairingEq_of_zeroHeight_pairingsCLM_overlapConnected
+      (d := d) hd OS lgc (n := n) (i := i) (hi := hi) (P := P)
+      hsource_subset hOverlapP
       (BHW.os45FlatCommonChart_ordinaryEdgeCLM hd OS lgc P)
       hzero.1 hzero.2
 
