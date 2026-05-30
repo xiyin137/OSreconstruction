@@ -2,6 +2,7 @@ import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanLocalit
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanLocalityOS45SourceSideMoving
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBoundaryValuesBase
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanRuelleOverlap
+import OSReconstruction.SCV.IdentityTheorem
 
 /-!
 # OS45 Figure 2-4 Hdiff Producer
@@ -3829,6 +3830,12 @@ private theorem OS45BHWJostHullData.commonEdgeDifference_localZero_of_flatCrossi
             (1 : Equiv.Perm (Fin n)) x))) ∈
         Adiff.carrier ∩ (Aord.carrier ∩ Aadj.carrier) ∧
       IsOpen (Adiff.carrier ∩ (Aord.carrier ∩ Aadj.carrier)) ∧
+      Adiff.carrier ⊆ W ∧
+      Set.EqOn Adiff.branch
+        (fun z : Fin n → Fin (d + 1) → ℂ =>
+          BHW.extendF (bvt_F OS lgc n)
+              (BHW.permAct (d := d) P.τ z) -
+            BHW.extendF (bvt_F OS lgc n) z) Adiff.carrier ∧
       Set.EqOn Adiff.branch (fun _ => 0)
         (Adiff.carrier ∩ (Aord.carrier ∩ Aadj.carrier)) ∧
       Adiff.branch Adiff.center = 0 := by
@@ -3896,13 +3903,191 @@ private theorem OS45BHWJostHullData.commonEdgeDifference_localZero_of_flatCrossi
       rw [hAdiff_center]
       exact hcenter_mem
     simpa using hzero_on hmem
-  refine ⟨D.Aord, D.Aadj, Adiff, ?_, ?_, ?_, ?_, ?_, hzero_on, hzero_center⟩
+  refine
+    ⟨D.Aord, D.Aadj, Adiff, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
+      hzero_on, hzero_center⟩
   · simpa [z0] using hAord_center
   · simpa [z0] using hAadj_center
   · simpa [z0] using hAdiff_center
   · simpa [z0] using hcenter_mem
   · exact Adiff.carrier_open.inter
       (D.Aord.carrier_open.inter D.Aadj.carrier_open)
+  · intro z hz
+    exact (hAdiff_spec.2.2.1 hz).2
+  · exact hAdiff_spec.2.2.2.1
+
+/-- Source-side common-edge equality supplies the local horizontal-difference
+germ on the Figure-2-4 initial-overlap chart.
+
+This is a Path-2 proof-body step, not another public theorem-2 input gate.  The
+OS-I `(4.12)`--`(4.14)` source equality first builds a flat crossing, the
+checked common-edge overlap selects an open zero seed for the concrete
+`extendF ∘ permAct - extendF` difference, and the SCV identity theorem
+propagates that zero to the whole connected initial-overlap carrier. -/
+theorem OS45BHWJostHullData.os45CommonEdge_localHdiffGerm_of_sourceCommonEdge_eqOn
+    [NeZero d]
+    {hd : 2 ≤ d} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData (d := d) hd n i hi}
+    (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {U : Set (NPointDomain d n)}
+    (hU_open : IsOpen U)
+    (hU_compact : IsCompact (closure U))
+    (hU_connected : IsConnected U)
+    (hU_closure : closure U ⊆ P.V)
+    (hsource_eq :
+      ∀ u ∈ U,
+        BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+            (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u)) =
+          BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+            (1 : Equiv.Perm (Fin n))
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u))) :
+    ∃ Ucx : Set (Fin n → Fin (d + 1) → ℂ),
+      IsOpen Ucx ∧
+      IsConnected Ucx ∧
+      (∀ u ∈ U, (fun k => wickRotatePoint (u k)) ∈ Ucx) ∧
+      (∀ u ∈ U,
+        (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+          (BHW.realEmbed
+            (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+              (1 : Equiv.Perm (Fin n)) u)) ∈ Ucx) ∧
+      ∃ Hdiff : (Fin n → Fin (d + 1) → ℂ) → ℂ,
+        DifferentiableOn ℂ Hdiff Ucx ∧
+        (∀ φ : SchwartzNPoint d n,
+          HasCompactSupport (φ : NPointDomain d n → ℂ) →
+          tsupport (φ : NPointDomain d n → ℂ) ⊆ U →
+          ∫ u : NPointDomain d n,
+            Hdiff (fun k => wickRotatePoint (u k)) * φ u = 0) ∧
+        (∀ u ∈ U,
+          Hdiff
+            ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+              (BHW.realEmbed
+                (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                  (1 : Equiv.Perm (Fin n)) u))) =
+            BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+                (BHW.realEmbed
+                  (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                    (1 : Equiv.Perm (Fin n)) u)) -
+              BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                (1 : Equiv.Perm (Fin n))
+                (BHW.realEmbed
+                  (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                    (1 : Equiv.Perm (Fin n)) u))) := by
+  classical
+  rcases
+      BHW.os45Figure24_initialSectorOverlap_chartNeighborhood
+        (d := d) (n := n) (hd := hd) (P := P)
+        hU_compact hU_connected hU_closure with
+    ⟨Ucx, hUcx_open, hUcx_connected, hwick_mem, hcommon_mem, hUcx_sub⟩
+  let Hdiff : (Fin n → Fin (d + 1) → ℂ) → ℂ :=
+    fun z =>
+      BHW.extendF (bvt_F OS lgc n)
+          (BHW.permAct (d := d) P.τ z) -
+        BHW.extendF (bvt_F OS lgc n) z
+  have hHdiff_holo : DifferentiableOn ℂ Hdiff Ucx := by
+    have hFord :
+        DifferentiableOn ℂ (BHW.extendF (bvt_F OS lgc n)) Ucx :=
+      (BHW.differentiableOn_extendF_bvt_F_extendedTube
+        (d := d) OS lgc n).mono (by
+          intro z hz
+          exact (hUcx_sub hz).1)
+    have hFadj :
+        DifferentiableOn ℂ
+          (fun z : Fin n → Fin (d + 1) → ℂ =>
+            BHW.extendF (bvt_F OS lgc n)
+              (BHW.permAct (d := d) P.τ z)) Ucx :=
+      (BHW.differentiableOn_extendF_bvt_F_permAct_preimageExtendedTube
+        (d := d) OS lgc n P.τ).mono (by
+          intro z hz
+          simpa [BHW.permutedExtendedTubeSector] using (hUcx_sub hz).2)
+    exact hFadj.sub hFord
+  rcases hU_connected.nonempty with ⟨u0, hu0⟩
+  have hU_sub : U ⊆ P.V := fun u hu => hU_closure (subset_closure hu)
+  let z0 : Fin n → Fin (d + 1) → ℂ :=
+    (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+      (BHW.realEmbed
+        (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+          (1 : Equiv.Perm (Fin n)) u0))
+  have hu0P : u0 ∈ P.V := hU_sub hu0
+  have hz0Ucx : z0 ∈ Ucx := by
+    simpa [z0] using hcommon_mem u0 hu0
+  let CplusData :=
+    H.ordinaryCommonEdge_ordModelAtZ0InWindow
+      OS lgc hu0P hUcx_open hz0Ucx
+  let Cplus : OS45PointedChart d n := Classical.choose CplusData
+  have hCplus_spec := Classical.choose_spec CplusData
+  let CminusData :=
+    H.adjacentCommonEdge_minusModelAtZ0InWindow
+      OS lgc hu0P hUcx_open hz0Ucx
+  let Cminus : OS45PointedChart d n := Classical.choose CminusData
+  have hCminus_spec := Classical.choose_spec CminusData
+  have hzCminus : z0 ∈ Cminus.carrier := by
+    rw [show z0 = Cminus.center by
+      simpa [z0, Cminus] using hCminus_spec.1.symm]
+    exact hCminus_spec.2.1
+  have hflat :
+      FlatCrossingAtZ0 (P := P) hd OS lgc z0 Cplus Cminus := by
+    simpa [z0, Cplus, Cminus] using
+      flatCrossingAtZ0_of_sourceCommonEdge_eqOn
+        (d := d) (n := n) hd OS lgc
+        hU_open hU_sub hsource_eq u0 hu0
+        (Cplus := Cplus) (Cminus := Cminus)
+        hCplus_spec.2.1.z0_mem hzCminus
+        hCplus_spec.2.1.eq_ord hCminus_spec.2.2.1
+  rcases
+      H.commonEdgeDifference_localZero_of_flatCrossingInWindow
+        OS lgc hu0P hUcx_open hz0Ucx hflat with
+    ⟨Aord, Aadj, Adiff, _hAord_center, _hAadj_center, _hAdiff_center,
+      hseed_mem, hseed_open, hAdiff_sub, hAdiff_model, hAdiff_zero,
+      _hzero_center⟩
+  let S : Set (Fin n → Fin (d + 1) → ℂ) :=
+    Adiff.carrier ∩ (Aord.carrier ∩ Aadj.carrier)
+  have hS_ne : S.Nonempty := by
+    exact ⟨z0, by simpa [S, z0] using hseed_mem⟩
+  have hS_sub : S ⊆ Ucx := by
+    intro z hz
+    exact hAdiff_sub hz.1
+  have hHdiff_zero_seed : Set.EqOn Hdiff (fun _ => 0) S := by
+    intro z hz
+    calc
+      Hdiff z = Adiff.branch z := by
+        exact (hAdiff_model hz.1).symm
+      _ = 0 := hAdiff_zero (by simpa [S] using hz)
+  have hHdiff_zero : Set.EqOn Hdiff (fun _ => 0) Ucx :=
+    identity_theorem_product_of_eqOn_open
+      hUcx_open hUcx_connected hseed_open hS_ne hS_sub
+      hHdiff_holo (differentiableOn_const (c := (0 : ℂ)))
+      hHdiff_zero_seed
+  refine
+    ⟨Ucx, hUcx_open, hUcx_connected, hwick_mem, hcommon_mem,
+      Hdiff, hHdiff_holo, ?_, ?_⟩
+  · intro φ hφ_compact hφU
+    calc
+      ∫ u : NPointDomain d n,
+          Hdiff (fun k => wickRotatePoint (u k)) * φ u
+          = ∫ u : NPointDomain d n, (0 : ℂ) * φ u := by
+            refine MeasureTheory.integral_congr_ae
+              (Filter.Eventually.of_forall ?_)
+            intro u
+            by_cases hu : u ∈ U
+            · simp [hHdiff_zero (hwick_mem u hu)]
+            · have hφ_zero : φ u = 0 :=
+                image_eq_zero_of_notMem_tsupport
+                  (fun hφ_supp => hu (hφU hφ_supp))
+              simp [hφ_zero]
+      _ = 0 := by simp
+  · intro u hu
+    dsimp [Hdiff]
+    rw [BHW.os45Figure24CommonEdge_permAct_extendF_eq_adjacentPulledRealBranch
+      (d := d) (n := n) hd OS lgc (P := P) u]
+    simp [BHW.os45PulledRealBranch]
 
 /-- Initial-overlap ordinary branch data plus a genuine adjacent `(4.12)`
 branch give the active local horizontal difference germ.
