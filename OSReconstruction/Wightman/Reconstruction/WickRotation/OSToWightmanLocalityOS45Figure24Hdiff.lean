@@ -4985,6 +4985,65 @@ theorem os45CommonEdge_sourceRepresentsZero_of_initialOverlap_adjacentBranch
       hU_connected.nonempty Ucx Hdiff hUcx_open hUcx_connected
       hwick_mem hcommon_mem hHdiff_holo hwick_pairing_zero hcommon_trace
 
+/-- Compact Figure-2-4 edge equality supplies the active source-zero
+representation on a local initial-overlap collar.
+
+This is only the checked Path-2 handoff from the monograph compact Jost-edge
+packet to the source-side zero representation consumed downstream.  It keeps
+the remaining mathematical input visible as `OS45CompactFigure24WickPairingEq`;
+the producer of that compact packet is still the OS-I `(4.12)`--`(4.14)`
+branch/source construction. -/
+theorem os45CommonEdge_sourceRepresentsZero_of_compactFigure24WickPairingEq
+    [NeZero d] (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {n : ℕ} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (hOverlap :
+      IsConnected
+        {z : Fin n → Fin (d + 1) → ℂ |
+          z ∈ BHW.ExtendedTube d n ∧
+            BHW.permAct (d := d) P.τ z ∈ BHW.ExtendedTube d n})
+    (hCompact :
+      BHW.OS45CompactFigure24WickPairingEq (d := d) n i hi OS lgc)
+    {U : Set (NPointDomain d n)}
+    (hU_open : IsOpen U)
+    (hU_compact : IsCompact (closure U))
+    (hU_connected : IsConnected U)
+    (hU_closure : closure U ⊆ P.V) :
+    SCV.RepresentsDistributionOn
+      (0 : SchwartzMap (NPointDomain d n) ℂ →L[ℂ] ℂ)
+      (fun u : NPointDomain d n =>
+        BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+            (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u)) -
+          BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+            (1 : Equiv.Perm (Fin n))
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u))) U := by
+  classical
+  have hU_sub : U ⊆ P.V := fun u hu => hU_closure (subset_closure hu)
+  have htransported :
+      ∀ φ : SchwartzNPoint d n,
+        HasCompactSupport (φ : NPointDomain d n → ℂ) →
+        tsupport (φ : NPointDomain d n → ℂ) ⊆ U →
+        ∫ u : NPointDomain d n,
+          BHW.extendF (bvt_F OS lgc n)
+            (BHW.permAct (d := d) P.τ
+              (fun k => wickRotatePoint (u k))) * φ u =
+        ∫ u : NPointDomain d n,
+          bvt_F OS lgc n (fun k => wickRotatePoint (u k)) * φ u :=
+    BHW.os45CommonEdge_transported_wick_pairing_of_compactFigure24WickPairingEq
+      (d := d) hd OS lgc (P := P) hOverlap hCompact hU_sub
+  exact
+    BHW.os45CommonEdge_sourceRepresentsZero_of_initialOverlap_adjacentBranch
+      (d := d) hd OS lgc (P := P) hU_open hU_compact
+      hU_connected hU_closure htransported
+
 /-- Legacy selected-data adapter for the local Figure-2-4 common-edge
 holomorphic difference germ.
 
