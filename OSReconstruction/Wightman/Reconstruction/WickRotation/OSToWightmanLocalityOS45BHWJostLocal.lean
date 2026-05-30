@@ -10773,6 +10773,11 @@ theorem os45CommonEdge_initialSectorOverlap_traces_except_adjacentWick
         Ford (fun k => wickRotatePoint (u k)) =
           bvt_F OS lgc n (fun k => wickRotatePoint (u k))) ∧
       (∀ u ∈ U,
+        Fadj (fun k => wickRotatePoint (u k)) =
+          BHW.extendF (bvt_F OS lgc n)
+            (BHW.permAct (d := d) P.τ
+              (fun k => wickRotatePoint (u k)))) ∧
+      (∀ u ∈ U,
         Ford
           ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
             (BHW.realEmbed
@@ -10812,7 +10817,7 @@ theorem os45CommonEdge_initialSectorOverlap_traces_except_adjacentWick
         (BHW.permAct (d := d) P.τ z)
   refine
     ⟨Ucx, Ford, Fadj, hUcx_open, hUcx_connected, hwick_mem, hcommon_mem,
-      hUcx_sub, ?_, ?_, ?_, ?_, ?_, ?_⟩
+      hUcx_sub, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
   · exact
       (BHW.differentiableOn_extendF_bvt_F_extendedTube
         (d := d) OS lgc n).mono (by
@@ -10847,6 +10852,8 @@ theorem os45CommonEdge_initialSectorOverlap_traces_except_adjacentWick
       BHW.extendF_eq_on_forwardTube n (bvt_F OS lgc n)
         hF_holo hF_lorentz
         (fun k => wickRotatePoint (u k)) hforward
+  · intro _u _hu
+    rfl
   · intro u _hu
     simp [Ford, BHW.os45PulledRealBranch]
   · intro u _hu
