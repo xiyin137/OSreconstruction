@@ -1573,13 +1573,18 @@ theorem reducedLocalAdjacentBoundaryCLMInvariant_of_localEdgePairing_OS45NormalB
       (by simpa [p, j] using packet.hpP)
       hplus_transfer hminus_transfer
 
-/-- Support-local OS45/Ruelle producer from concrete local edge pairing.
+/-- Legacy support-local OS45/Ruelle producer from concrete local edge pairing.
 
-This is the selected-data-free version of the preceding handoff.  At each
+This is the selected-data-free version of the older Ruelle handoff.  At each
 nonzero support point the local edge-pairing packet supplies the OS45 common
 edge equality, and the checked reduced-normal bridge turns it into canonical-ray
 EOW data; the existing supportwise DCT theorem then integrates the resulting
-pointwise sign-flip limit. -/
+pointwise sign-flip limit.
+
+Route guard: the theorem-2/E-to-R frontier now uses the Path 2 source-side
+zero-representation / reduced-local-CLM route.  This Ruelle producer remains
+checked infrastructure for diagnostics and regression comparison, not an active
+theorem-2 input. -/
 theorem adjacentReducedRuelleDistributionalLimit_of_localEdgePairing_OS45NormalBranches_support
     (hd : 2 ≤ d)
     (OS : OsterwalderSchraderAxioms d)
@@ -1666,14 +1671,18 @@ theorem adjacentReducedRuelleDistributionalLimit_of_localEdgePairing_OS45NormalB
       (by simpa [p, ξ, j] using packet.hpP)
       hplus_rep hminus_rep
 
-/-- Support-local OS45/Ruelle producer from concrete local edge pairing and
+/-- Legacy support-local OS45/Ruelle producer from concrete local edge pairing and
 asymptotic source-side branch transfer.
 
-This is the theorem-2-facing form of the reduced Ruelle handoff.  The local
-pairing window gives the common-edge/Ruelle seed; the source-side moving
-families are only required to converge to the two canonical reduced branch
-representatives, and the checked reduced-normal bridge supplies the pointwise
-sign-flip limit integrated below. -/
+The local pairing window gives the common-edge/Ruelle seed; the source-side
+moving families are only required to converge to the two canonical reduced
+branch representatives, and the checked reduced-normal bridge supplies the
+pointwise sign-flip limit integrated below.
+
+Route guard: despite the source-side hypotheses, this theorem concludes the
+legacy `AdjacentReducedRuelleDistributionalLimit` surface.  It should not be
+used to close theorem 2 when the axiom-light Path 2
+`ReducedLocalAdjacentBoundaryCLMInvariant` route is available. -/
 theorem adjacentReducedRuelleDistributionalLimit_of_localEdgePairing_OS45NormalBranches_asymptotic_support
     (hd : 2 ≤ d)
     (OS : OsterwalderSchraderAxioms d)

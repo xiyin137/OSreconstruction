@@ -105,7 +105,12 @@ formalized in Mathlib.  Authorized by Xi on 2026-05-11 after Gemini/Claude
 audits rejected the non-Lorentz-invariant version and verified the corrected
 proper-complex-Lorentz-invariant statement, including the local repo checks
 `BHW.lorentz_perm_commute` and
-`BHW.permutedExtendedTubeSector_complexLorentzAction_iff`. -/
+`BHW.permutedExtendedTubeSector_complexLorentzAction_iff`.
+
+Route guard: this axiom is no longer on the theorem-2/E-to-R closure path.
+Path 2 must produce the OS-I source-side zero representation / local Hdiff
+packet directly.  Consumers of this axiom are legacy diagnostics unless a
+separate proof supplies the same `S'_n` branch data without using this axiom. -/
 axiom localSPrime_twoSectorBranch_of_EOW_BHW
     {d : ℕ} [NeZero d] (hd : 2 ≤ d)
     {n : ℕ} (τ : Equiv.Perm (Fin n))
@@ -11471,9 +11476,13 @@ theorem os45CommonEdge_localHorizontalDifference_representsZero_of_germ
             (d := d) (n := n) U Ghoriz (fun _ => 0) φ hφU.2
             hpoint).symm
 
-/-- The single local `S'_n` reference branch produced on the checked OS45
-BHW/Jost hull.  The two restriction fields are exactly the ordinary initial
-formula and the selected adjacent initial formula. -/
+/-- The single local `S'_n` reference branch on the checked OS45 BHW/Jost hull.
+
+The two restriction fields are exactly the ordinary initial formula and the
+selected adjacent initial formula.  This structure is safe as a neutral carrier
+for an independently produced single branch, but the local producer below that
+uses `localSPrime_twoSectorBranch_of_EOW_BHW` is legacy/diagnostic and must not
+be used as the theorem-2 Path 2 input. -/
 structure OS45BHWJostSPrimeBranchData
     [NeZero d] (hd : 2 ≤ d)
     (OS : OsterwalderSchraderAxioms d)
@@ -11503,7 +11512,12 @@ uses only the two restriction fields of the supplied `S'_n` branch: at the
 ordinary Wick section the point lies in both the ordinary extended tube and the
 selected adjacent permuted sector, so the two restrictions identify
 `extendF (bvt_F) (permAct τ (wick u))` with the ordinary Wick boundary value in
-compact-test pairings. -/
+compact-test pairings.
+
+Route guard: this theorem is an axiom-light consumer only when its input branch
+data is produced by the active OS-I source-transfer proof.  Supplying `S` from
+`os45_BHWJost_SPrimeBranchData_of_localSPrimeEOWSeedAt` re-enters the legacy
+BHWJost/S-prime route. -/
 theorem OS45BHWJostSPrimeBranchData.transported_wick_pairing
     [NeZero d] {hd : 2 ≤ d}
     (OS : OsterwalderSchraderAxioms d)
@@ -11583,10 +11597,15 @@ theorem OS45BHWJostSPrimeBranchData.transported_wick_pairing
       image_eq_zero_of_notMem_tsupport (fun hφ_supp => hu (hφU hφ_supp))
     simp [hφ_zero]
 
-/-- Once a local EOW seed has been produced at an actual point of the
+/-- Legacy diagnostic producer for a single `S'_n` reference branch.
+
+Once a local EOW seed has been produced at an actual point of the
 two-sector `S'_n` overlap, the authorized neutral local BHW theorem
 mechanically produces the single reference branch on the checked OS45 local
-hull. -/
+hull.
+
+This constructor calls `localSPrime_twoSectorBranch_of_EOW_BHW`, so it is not
+part of the active theorem-2 Path 2 closure. -/
 noncomputable def os45_BHWJost_SPrimeBranchData_of_localSPrimeEOWSeedAt
     [NeZero d] (hd : 2 ≤ d)
     (OS : OsterwalderSchraderAxioms d)
