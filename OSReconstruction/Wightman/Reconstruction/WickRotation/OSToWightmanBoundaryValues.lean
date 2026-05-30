@@ -355,10 +355,13 @@ branch-difference / boundary-transfer argument, not by any finite-height
 canonical-shell equality.
 
 Active route:
-local reduced branch/sign-flip data ->
+local moving-source `Hdiff` / horizontal branch-difference packet ->
 `ReducedLocalAdjacentBoundaryCLMInvariant` ->
 closed-support reduced canonical swap invariance -> this boundary-value
 locality statement.
+
+The `sourceRepresentsOn` and reduced sign-flip formulations are downstream
+views of this branch-difference input, not replacement theorem-2 gates.
 
 The older Route A through `AdjacentReducedRuelleDistributionalLimit` is kept as
 a checked diagnostic route only.  Do not close this frontier by feeding the
