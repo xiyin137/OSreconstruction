@@ -11445,6 +11445,95 @@ structure OS45BHWJostSPrimeBranchData
           (BHW.permAct (d := d) P.τ z))
       (BHW.permutedExtendedTubeSector d n P.τ ∩ H.ΩJ)
 
+/-- A genuine single `S'_n` branch supplies the OS-I `(4.12)` seed-to-Wick
+compact-test transport for the deterministic adjacent branch.
+
+This is the exact `htransported_wick_pairing` input used by
+`os45CommonEdge_localHdiffGerm_of_initialOverlap_adjacentBranch`.  The proof
+uses only the two restriction fields of the supplied `S'_n` branch: at the
+ordinary Wick section the point lies in both the ordinary extended tube and the
+selected adjacent permuted sector, so the two restrictions identify
+`extendF (bvt_F) (permAct τ (wick u))` with the ordinary Wick boundary value in
+compact-test pairings. -/
+theorem OS45BHWJostSPrimeBranchData.transported_wick_pairing
+    [NeZero d] {hd : 2 ≤ d}
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    {H : BHW.OS45BHWJostHullData (d := d) hd n i hi P}
+    (S : BHW.OS45BHWJostSPrimeBranchData hd OS lgc H)
+    {U : Set (NPointDomain d n)}
+    (hU_sub : U ⊆ P.V) :
+    ∀ φ : SchwartzNPoint d n,
+      HasCompactSupport (φ : NPointDomain d n → ℂ) →
+      tsupport (φ : NPointDomain d n → ℂ) ⊆ U →
+      ∫ u : NPointDomain d n,
+        BHW.extendF (bvt_F OS lgc n)
+          (BHW.permAct (d := d) P.τ
+            (fun k => wickRotatePoint (u k))) * φ u =
+      ∫ u : NPointDomain d n,
+        bvt_F OS lgc n (fun k => wickRotatePoint (u k)) * φ u := by
+  classical
+  intro φ _hφ_compact hφU
+  refine MeasureTheory.integral_congr_ae (Filter.Eventually.of_forall ?_)
+  intro u
+  by_cases hu : u ∈ U
+  · have huP : u ∈ P.V := hU_sub hu
+    let z : Fin n → Fin (d + 1) → ℂ := fun k => wickRotatePoint (u k)
+    have hz_adj_sector : z ∈ BHW.permutedExtendedTubeSector d n P.τ := by
+      have hET :
+          BHW.permAct (d := d) P.τ z ∈ BHW.ExtendedTube d n := by
+        simpa [z] using
+          BHW.os45Figure24_adjacentWick_mem_extendedTube
+            (d := d) (n := n) (hd := hd) (P := P) huP
+      simpa [BHW.permutedExtendedTubeSector, z] using hET
+    have hz_hull : z ∈ H.ΩJ := by
+      simpa [z] using H.ordinaryWick_mem u huP
+    have hS_adj :
+        S.B z =
+          BHW.extendF (bvt_F OS lgc n)
+            (BHW.permAct (d := d) P.τ z) :=
+      S.eq_adjacent ⟨hz_adj_sector, hz_hull⟩
+    have hz_ET : z ∈ BHW.ExtendedTube d n :=
+      H.ordinaryWick_mem_extendedTube u huP
+    have hS_ord :
+        S.B z = BHW.extendF (bvt_F OS lgc n) z :=
+      S.eq_ordinary ⟨hz_ET, hz_hull⟩
+    have hF_holo :
+        DifferentiableOn ℂ (bvt_F OS lgc n) (BHW.ForwardTube d n) := by
+      simpa [BHW_forwardTube_eq (d := d) (n := n)] using
+        bvt_F_holomorphic (d := d) OS lgc n
+    have hF_lorentz :
+        ∀ (Λ : LorentzLieGroup.RestrictedLorentzGroup d)
+          (w : Fin n → Fin (d + 1) → ℂ), w ∈ BHW.ForwardTube d n →
+          bvt_F OS lgc n
+            (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * w k ν) =
+          bvt_F OS lgc n w := by
+      intro Λ w hw
+      exact bvt_F_restrictedLorentzInvariant_forwardTube
+        (d := d) OS lgc n Λ w
+        ((BHW_forwardTube_eq (d := d) (n := n)) ▸ hw)
+    have hz_forward : z ∈ BHW.ForwardTube d n := by
+      simpa [z] using
+        BHW.os45Figure24_ordinaryWick_mem_forwardTube
+          (d := d) (n := n) (hd := hd) (P := P) huP
+    have hext :
+        BHW.extendF (bvt_F OS lgc n) z =
+          bvt_F OS lgc n z :=
+      BHW.extendF_eq_on_forwardTube n (bvt_F OS lgc n)
+        hF_holo hF_lorentz z hz_forward
+    have hpoint :
+        BHW.extendF (bvt_F OS lgc n)
+            (BHW.permAct (d := d) P.τ z) =
+          bvt_F OS lgc n z :=
+      hS_adj.symm.trans (hS_ord.trans hext)
+    exact congrArg (fun c : ℂ => c * φ u) hpoint
+  · have hφ_zero : φ u = 0 :=
+      image_eq_zero_of_notMem_tsupport (fun hφ_supp => hu (hφU hφ_supp))
+    simp [hφ_zero]
+
 /-- Once a local EOW seed has been produced at an actual point of the
 two-sector `S'_n` overlap, the authorized neutral local BHW theorem
 mechanically produces the single reference branch on the checked OS45 local
