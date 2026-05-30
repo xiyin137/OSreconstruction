@@ -1064,6 +1064,73 @@ private theorem PointedMetricBranchChart.eqOn_inter_of_seed
       hW_eq
   simpa [PointedMetricBranchChart.carrier] using hfull
 
+private theorem PointedMetricBranchChart.eventually_integral_eq_os45FlatCommonChartSourceSide_of_seed
+    [NeZero d]
+    (ρperm : Equiv.Perm (Fin n))
+    (sgn : ℝ)
+    (η : BHW.OS45FlatCommonChartReal d n)
+    {z0 : Fin n → Fin (d + 1) → ℂ}
+    (A B : PointedMetricBranchChart (Fin n → Fin (d + 1) → ℂ) ℂ)
+    (hseed :
+      ∃ W : Set (Fin n → Fin (d + 1) → ℂ),
+        IsOpen W ∧ z0 ∈ W ∧
+          W ⊆ A.carrier ∩ B.carrier ∧ Set.EqOn A.branch B.branch W)
+    {K : Set (NPointDomain d n)}
+    (hK : IsCompact K)
+    (hA0 :
+      ∀ u ∈ K,
+        BHW.os45FlatCommonChartSourceSide d n ρperm sgn 0 η u ∈
+          A.carrier)
+    (hB0 :
+      ∀ u ∈ K,
+        BHW.os45FlatCommonChartSourceSide d n ρperm sgn 0 η u ∈
+          B.carrier)
+    (φ : SchwartzNPoint d n)
+    (hφK : tsupport (φ : NPointDomain d n → ℂ) ⊆ K) :
+    ∀ᶠ eps in 𝓝[Set.Ioi 0] (0 : ℝ),
+      (∫ u : NPointDomain d n,
+        A.branch
+            (BHW.os45FlatCommonChartSourceSide d n ρperm sgn eps η u) *
+          (φ : NPointDomain d n → ℂ) u) =
+        ∫ u : NPointDomain d n,
+          B.branch
+              (BHW.os45FlatCommonChartSourceSide d n ρperm sgn eps η u) *
+            (φ : NPointDomain d n → ℂ) u := by
+  have hEq :
+      Set.EqOn A.branch B.branch (A.carrier ∩ B.carrier) :=
+    PointedMetricBranchChart.eqOn_inter_of_seed
+      (z0 := z0) A B hseed
+  have hAevent :
+      ∀ᶠ eps in 𝓝[Set.Ioi 0] (0 : ℝ),
+        ∀ u ∈ K,
+          BHW.os45FlatCommonChartSourceSide d n ρperm sgn eps η u ∈
+            A.carrier :=
+    BHW.eventually_forall_os45FlatCommonChartSourceSide_mem_of_compact
+      (d := d) (n := n) ρperm sgn η hK A.carrier_open hA0
+  have hBevent :
+      ∀ᶠ eps in 𝓝[Set.Ioi 0] (0 : ℝ),
+        ∀ u ∈ K,
+          BHW.os45FlatCommonChartSourceSide d n ρperm sgn eps η u ∈
+            B.carrier :=
+    BHW.eventually_forall_os45FlatCommonChartSourceSide_mem_of_compact
+      (d := d) (n := n) ρperm sgn η hK B.carrier_open hB0
+  filter_upwards [hAevent, hBevent] with eps hAeps hBeps
+  apply integral_congr_ae
+  refine Filter.Eventually.of_forall ?_
+  intro u
+  by_cases hu : u ∈ K
+  · have hz :
+        BHW.os45FlatCommonChartSourceSide d n ρperm sgn eps η u ∈
+          A.carrier ∩ B.carrier :=
+      ⟨hAeps u hu, hBeps u hu⟩
+    exact
+      congrArg
+        (fun c : ℂ => c * (φ : NPointDomain d n → ℂ) u)
+        (hEq hz)
+  · have hφ_zero : (φ : NPointDomain d n → ℂ) u = 0 :=
+      image_eq_zero_of_notMem_tsupport (fun huφ => hu (hφK huφ))
+    simp [hφ_zero]
+
 private theorem PointedMetricBranchChart.sub_eqOn_inter_of_two_seeds
     {p q : ℕ} {z0 : Fin p → Fin q → ℂ}
     (A B : PointedMetricBranchChart (Fin p → Fin q → ℂ) ℂ)
