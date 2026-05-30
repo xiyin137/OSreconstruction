@@ -199,6 +199,100 @@ theorem reducedDiffMap_os45FlatCommonChartSourceSide_canonical_id_affine
   rw [reducedDiffMap_os45FlatCommonChartSourceSideDirection_canonical_id_eq
     (d := d) m]
 
+omit [NeZero d] in
+/-- The reduced-test lift has the source-collar support required after pulling
+it to OS45 flat common-edge coordinates.
+
+This is the concrete test-admissibility bridge for the active Path 2 source
+transfer: a reduced collar test is first lifted to an absolute source test, and
+then pulled back to the flat Figure-2-4 common chart.  The resulting flat test
+is compactly supported and supported over the chosen source window. -/
+theorem flatCommonChartPullback_reducedTestLift_support
+    {m : ℕ}
+    (ρperm : Equiv.Perm (Fin (m + 1)))
+    (χ : SchwartzMap (SpacetimeDim d) ℂ)
+    (ψ : SchwartzNPoint d m)
+    (hχ_compact : HasCompactSupport (χ : SpacetimeDim d → ℂ))
+    (hψ_compact : HasCompactSupport (ψ : NPointDomain d m → ℂ))
+    {U : Set (NPointDomain d (m + 1))}
+    (hU :
+      tsupport
+          ((BHW.reducedTestLift m d χ ψ : SchwartzNPoint d (m + 1)) :
+            NPointDomain d (m + 1) → ℂ) ⊆ U) :
+    HasCompactSupport
+        (((SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
+            (BHW.os45CommonEdgeFlatCLE d (m + 1) ρperm).symm)
+          (BHW.reducedTestLift m d χ ψ : SchwartzNPoint d (m + 1))) :
+          BHW.OS45FlatCommonChartReal d (m + 1) → ℂ) ∧
+      tsupport
+        (((SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
+            (BHW.os45CommonEdgeFlatCLE d (m + 1) ρperm).symm)
+          (BHW.reducedTestLift m d χ ψ : SchwartzNPoint d (m + 1))) :
+          BHW.OS45FlatCommonChartReal d (m + 1) → ℂ) ⊆
+        BHW.os45CommonEdgeFlatCLE d (m + 1) ρperm '' U := by
+  let f : SchwartzNPoint d (m + 1) := BHW.reducedTestLift m d χ ψ
+  have hf_compact : HasCompactSupport (f : NPointDomain d (m + 1) → ℂ) := by
+    simpa [f] using
+      reducedTestLift_hasCompactSupport
+        (d := d) χ ψ hχ_compact hψ_compact
+  constructor
+  · simpa [f] using
+      BHW.hasCompactSupport_comp_os45CommonEdgeFlatCLE_symm
+        (d := d) (n := m + 1) ρperm f hf_compact
+  · simpa [f] using
+      BHW.tsupport_comp_os45CommonEdgeFlatCLE_symm_subset_image
+        (d := d) (n := m + 1) ρperm f hU
+
+/-- Source-side support package for the flat pullback of a reduced-test lift.
+
+This is the support packet used when applying the OS45 moving-source theorem to
+the lifted reduced collar test: if the absolute lift is supported in a source
+window `U ⊆ P.V`, then its flat common-chart pullback is compactly supported,
+lies on the Figure-2-4 flat edge, and lies over the source window image. -/
+theorem flatCommonChartPullback_reducedTestLift_sourceSideSupport
+    {m : ℕ} {hd : 2 ≤ d} {i : Fin (m + 1)}
+    {hi : i.val + 1 < m + 1}
+    (P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd (m + 1) i hi)
+    (ρperm : Equiv.Perm (Fin (m + 1)))
+    (χ : SchwartzMap (SpacetimeDim d) ℂ)
+    (ψ : SchwartzNPoint d m)
+    (hχ_compact : HasCompactSupport (χ : SpacetimeDim d → ℂ))
+    (hψ_compact : HasCompactSupport (ψ : NPointDomain d m → ℂ))
+    {U : Set (NPointDomain d (m + 1))}
+    (hU :
+      tsupport
+          ((BHW.reducedTestLift m d χ ψ : SchwartzNPoint d (m + 1)) :
+            NPointDomain d (m + 1) → ℂ) ⊆ U)
+    (hUP : U ⊆ P.V) :
+    HasCompactSupport
+        (((SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
+            (BHW.os45CommonEdgeFlatCLE d (m + 1) ρperm).symm)
+          (BHW.reducedTestLift m d χ ψ : SchwartzNPoint d (m + 1))) :
+          BHW.OS45FlatCommonChartReal d (m + 1) → ℂ) ∧
+      tsupport
+        (((SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
+            (BHW.os45CommonEdgeFlatCLE d (m + 1) ρperm).symm)
+          (BHW.reducedTestLift m d χ ψ : SchwartzNPoint d (m + 1))) :
+          BHW.OS45FlatCommonChartReal d (m + 1) → ℂ) ⊆
+        BHW.os45FlatCommonChartEdgeSet d (m + 1) P ρperm ∧
+      tsupport
+        (((SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
+            (BHW.os45CommonEdgeFlatCLE d (m + 1) ρperm).symm)
+          (BHW.reducedTestLift m d χ ψ : SchwartzNPoint d (m + 1))) :
+          BHW.OS45FlatCommonChartReal d (m + 1) → ℂ) ⊆
+        BHW.os45CommonEdgeFlatCLE d (m + 1) ρperm '' U := by
+  let f : SchwartzNPoint d (m + 1) := BHW.reducedTestLift m d χ ψ
+  have hsupport :=
+    flatCommonChartPullback_reducedTestLift_support
+      (d := d) ρperm χ ψ hχ_compact hψ_compact hU
+  refine ⟨hsupport.1, ?_, hsupport.2⟩
+  have hV : tsupport (f : NPointDomain d (m + 1) → ℂ) ⊆ P.V :=
+    hU.trans hUP
+  simpa [f] using
+    BHW.tsupport_comp_os45CommonEdgeFlatCLE_symm_subset_edgeSet
+      (d := d) (n := m + 1) (P := P) ρperm f hV
+
 namespace AdjacentNormal
 
 omit [NeZero d] in

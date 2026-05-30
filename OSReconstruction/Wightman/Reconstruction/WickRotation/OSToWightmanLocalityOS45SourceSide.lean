@@ -70,6 +70,32 @@ theorem tsupport_comp_os45CommonEdgeFlatCLE_symm_subset_edgeSet
     (BHW.os45CommonEdgeFlatCLE_mem_edgeSet_iff d n P ρperm
       (e.symm x)).mpr hxP
 
+omit [NeZero d] in
+/-- Support transport through the inverse OS45 common-edge flat chart.
+
+This is the source-collar side of the reduced-test lift bridge: once the
+absolute source test is supported in a source window `U`, its flat
+common-chart pullback is supported in the corresponding flat image of `U`. -/
+theorem tsupport_comp_os45CommonEdgeFlatCLE_symm_subset_image
+    (ρperm : Equiv.Perm (Fin n))
+    (ψ : SchwartzNPoint d n)
+    {U : Set (NPointDomain d n)}
+    (hψU : tsupport (ψ : NPointDomain d n → ℂ) ⊆ U) :
+    tsupport
+      (((SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
+          (BHW.os45CommonEdgeFlatCLE d n ρperm).symm) ψ) :
+        BHW.OS45FlatCommonChartReal d n → ℂ) ⊆
+      BHW.os45CommonEdgeFlatCLE d n ρperm '' U := by
+  intro x hx
+  let e := BHW.os45CommonEdgeFlatCLE d n ρperm
+  have hxpre : e.symm x ∈ tsupport (ψ : NPointDomain d n → ℂ) := by
+    have hpre :=
+      tsupport_comp_subset_preimage
+        (ψ : NPointDomain d n → ℂ) e.symm.continuous
+    simpa [e, SchwartzMap.compCLMOfContinuousLinearEquiv_apply] using
+      hpre hx
+  exact ⟨e.symm x, hψU hxpre, by simp [e]⟩
+
 /-- Support packet for the auxiliary fixed flat test used in the OS45
 `sourceSide` scalar-cancellation argument.
 
