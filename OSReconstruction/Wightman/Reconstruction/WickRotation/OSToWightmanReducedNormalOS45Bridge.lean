@@ -332,11 +332,7 @@ theorem tendsto_extendF_bvt_F_sub_canonicalReducedBranch_of_reducedDiff_tendsto
       Filter.Tendsto
         (fun ε : ℝ => BHW.reducedDiffMap (m + 1) d (z ε))
         (nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)) : Filter ℝ)
-        (nhds (fun k μ => (ξ k μ : ℂ))))
-    (hred_pet :
-      ∀ᶠ ε : ℝ in nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)),
-        BHW.reducedDiffMap (m + 1) d (z ε) ∈
-          BHW.ReducedPermutedExtendedTubeN d m) :
+        (nhds (fun k μ => (ξ k μ : ℂ)))) :
     Filter.Tendsto
       (fun ε : ℝ =>
         BHW.extendF (bvt_F OS lgc (m + 1)) (z ε) -
@@ -378,6 +374,13 @@ theorem tendsto_extendF_bvt_F_sub_canonicalReducedBranch_of_reducedDiff_tendsto
       Filter.Tendsto
         (fun ε : ℝ => BHW.reducedDiffMap (m + 1) d (z ε)) l
         (nhdsWithin ξC (BHW.ReducedPermutedExtendedTubeN d m)) := by
+    have hred_pet :
+        ∀ᶠ ε : ℝ in l,
+          BHW.reducedDiffMap (m + 1) d (z ε) ∈
+            BHW.ReducedPermutedExtendedTubeN d m := by
+      filter_upwards [hET] with ε hεET
+      exact
+        ⟨z ε, BHW.extendedTube_subset_permutedExtendedTube hεET, rfl⟩
     exact tendsto_nhdsWithin_iff.mpr ⟨by simpa [ξC] using hred_tendsto, hred_pet⟩
   have hcan_within :
       Filter.Tendsto ζcan l
