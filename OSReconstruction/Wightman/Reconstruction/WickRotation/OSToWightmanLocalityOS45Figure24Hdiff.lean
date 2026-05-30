@@ -4248,7 +4248,9 @@ This is a Path-2 proof-body assembly step, not a new theorem-2 input gate.  The
 ordinary branch, its Wick trace, and the ordinary/adjacent common-edge trace
 bookkeeping are supplied by the checked Figure-2-4 initial-overlap chart.  The
 only remaining analytic payload is the actual adjacent `(4.12)` branch on that
-chart and its two traces. -/
+chart and its two traces.  The proof first extracts the OS-I source
+common-edge equality from those branch traces, then uses the zero germ as the
+horizontal-difference packet. -/
 theorem os45CommonEdge_localHdiffGerm_of_initialOverlap_adjacentBranch
     [NeZero d] (hd : 2 ≤ d)
     (OS : OsterwalderSchraderAxioms d)
@@ -4257,6 +4259,7 @@ theorem os45CommonEdge_localHdiffGerm_of_initialOverlap_adjacentBranch
     {P : BHW.OS45Figure24CanonicalSourcePatchData
       (d := d) hd n i hi}
     {U : Set (NPointDomain d n)}
+    (hU_open : IsOpen U)
     (hU_compact : IsCompact (closure U))
     (hU_connected : IsConnected U)
     (hU_closure : closure U ⊆ P.V) :
@@ -4319,11 +4322,31 @@ theorem os45CommonEdge_localHdiffGerm_of_initialOverlap_adjacentBranch
   refine ⟨Ucx, hUcx_open, hUcx_connected, hwick_mem, hcommon_mem, ?_⟩
   intro Fadj hFadj_holo hFadj_wick hFadj_common
   have hU_sub : U ⊆ P.V := fun u hu => hU_closure (subset_closure hu)
-  exact
-    BHW.os45CommonEdge_HdiffGerm_data_of_E3_branchTraces
-      (d := d) hd OS lgc (P := P) hU_sub
-      (Ucx := Ucx) Ford Fadj hFord_holo hFadj_holo
+  have hsource_eq :
+      ∀ u ∈ U,
+        BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+            (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u)) =
+          BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+            (1 : Equiv.Perm (Fin n))
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u)) :=
+    BHW.os45CommonEdge_pulledRealBranches_eqOn_of_E3_branchTraces
+      (d := d) hd OS lgc (P := P)
+      hU_open hU_connected.nonempty hU_sub
+      hUcx_open hUcx_connected hwick_mem hcommon_mem
+      Ford Fadj hFord_holo hFadj_holo
       hFord_wick hFadj_wick hFord_common hFadj_common
+  refine ⟨fun _ => (0 : ℂ), ?_, ?_, ?_⟩
+  · exact differentiableOn_const (c := (0 : ℂ))
+  · intro φ _hφ_compact _hφU
+    simp
+  · intro u hu
+    rw [hsource_eq u hu]
+    simp
 
 /-- Selected-data adapter for the local Figure-2-4 common-edge holomorphic
 difference germ.
