@@ -10695,6 +10695,144 @@ theorem os45CommonEdge_complexWickSeed_eqOn_of_E3
         (fun hφ_supp => hu (hφU hφ_supp))
     simp [hφ_zero]
 
+/-- Branch-trace form of the local Figure-2-4 horizontal difference germ.
+
+Given the ordinary `(4.1)` local branch and the genuine adjacent `(4.12)`
+local branch on the same complex chart, E3 supplies the Wick-side
+compact-test pairing of their difference.  The common-edge trace hypotheses
+then identify the horizontal value of `Fadj - Ford` with the
+adjacent-minus-ordinary pulled real branches.
+
+This is a proof-body step for the active Path 2 `Hdiff` input shape: it
+discharges the `wick_pairing_zero` and `common_trace` fields from concrete
+branch traces, leaving only the actual OS-I branch construction/gluing as the
+remaining analytic work. -/
+theorem os45CommonEdge_HdiffGerm_data_of_E3_branchTraces
+    [NeZero d] (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {n : ℕ} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    {U : Set (NPointDomain d n)}
+    (hU_sub : U ⊆ P.V)
+    {Ucx : Set (Fin n → Fin (d + 1) → ℂ)}
+    (Ford Fadj : (Fin n → Fin (d + 1) → ℂ) → ℂ)
+    (hFord_holo : DifferentiableOn ℂ Ford Ucx)
+    (hFadj_holo : DifferentiableOn ℂ Fadj Ucx)
+    (hFord_wick :
+      ∀ u ∈ U,
+        Ford (fun k => wickRotatePoint (u k)) =
+          bvt_F OS lgc n (fun k => wickRotatePoint (u k)))
+    (hFadj_wick :
+      ∀ u ∈ U,
+        Fadj (fun k => wickRotatePoint (u k)) =
+          bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k))))
+    (hFord_common :
+      ∀ u ∈ U,
+        Ford
+          ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u))) =
+          BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+            (1 : Equiv.Perm (Fin n))
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u)))
+    (hFadj_common :
+      ∀ u ∈ U,
+        Fadj
+          ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u))) =
+          BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+            (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u))) :
+    ∃ Hdiff : (Fin n → Fin (d + 1) → ℂ) → ℂ,
+      DifferentiableOn ℂ Hdiff Ucx ∧
+      (∀ φ : SchwartzNPoint d n,
+        HasCompactSupport (φ : NPointDomain d n → ℂ) →
+        tsupport (φ : NPointDomain d n → ℂ) ⊆ U →
+        ∫ u : NPointDomain d n,
+          Hdiff (fun k => wickRotatePoint (u k)) * φ u = 0) ∧
+      (∀ u ∈ U,
+        Hdiff
+          ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u))) =
+          BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+              (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+              (BHW.realEmbed
+                (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                  (1 : Equiv.Perm (Fin n)) u)) -
+            BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+              (1 : Equiv.Perm (Fin n))
+              (BHW.realEmbed
+                (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                  (1 : Equiv.Perm (Fin n)) u))) := by
+  classical
+  refine ⟨fun z => Fadj z - Ford z, ?_, ?_, ?_⟩
+  · exact hFadj_holo.sub hFord_holo
+  · intro φ hφ_compact hφU
+    have hφP : tsupport (φ : NPointDomain d n → ℂ) ⊆ P.V :=
+      fun u hu => hU_sub (hφU hu)
+    have hzero :=
+      BHW.os45CommonEdge_wickDifference_integral_zero_of_E3
+        (d := d) hd OS lgc (P := P) φ hφ_compact hφP
+    calc
+      ∫ u : NPointDomain d n,
+          (Fadj (fun k => wickRotatePoint (u k)) -
+              Ford (fun k => wickRotatePoint (u k))) * φ u
+          =
+        ∫ u : NPointDomain d n,
+          (bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k))) -
+              bvt_F OS lgc n (fun k => wickRotatePoint (u k))) * φ u := by
+          refine MeasureTheory.integral_congr_ae
+            (Filter.Eventually.of_forall ?_)
+          intro u
+          by_cases hu : u ∈ U
+          · change
+              (Fadj (fun k => wickRotatePoint (u k)) -
+                  Ford (fun k => wickRotatePoint (u k))) * φ u =
+                (bvt_F OS lgc n
+                    (fun k => wickRotatePoint (u (P.τ k))) -
+                  bvt_F OS lgc n
+                    (fun k => wickRotatePoint (u k))) * φ u
+            rw [hFadj_wick u hu, hFord_wick u hu]
+          · have hφ_zero : φ u = 0 :=
+              image_eq_zero_of_notMem_tsupport
+                (fun hφ_supp => hu (hφU hφ_supp))
+            simp [hφ_zero]
+      _ = 0 := hzero
+  · intro u hu
+    change
+      Fadj
+          ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u))) -
+        Ford
+          ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u))) =
+        BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+            (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u)) -
+          BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+            (1 : Equiv.Perm (Fin n))
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u))
+    rw [hFadj_common u hu, hFord_common u hu]
+
 /-- A local Figure-2-4 holomorphic difference germ whose Wick trace has zero
 distributional pairing represents the zero distribution on the horizontal
 common edge.  This is the checked identity-theorem reducer; the actual OS I
