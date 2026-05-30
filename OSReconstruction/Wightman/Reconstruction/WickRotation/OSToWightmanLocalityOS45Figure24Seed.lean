@@ -80,6 +80,74 @@ theorem OS45BHWJostHullData.OS412SeedWindow_initialSectorOverlap_metricBallChart
     ⟨C0, C0branch, r, hr_pos, hC0_ball, hcenter, hC0_open,
       hC0_pre, by simpa [W] using hC0_sub, hC0_holo, hC0_eq, hC0_trace⟩
 
+/-- The same raw OS I `(4.12)` seed chart, stated at the actual adjacent Wick
+point.
+
+The upstream adjacent analytic element is seeded at
+`fun k => wickRotatePoint (x (P.τ k))`.  This theorem keeps that point explicit
+and records both OS-normalized values at the seed.  It is still only the seed
+chart, not the later seed-to-ordinary-Wick transport. -/
+theorem OS45BHWJostHullData.OS412AdjacentWick_initialSectorOverlap_metricBallChart
+    [NeZero d]
+    {hd : 2 ≤ d} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {x : NPointDomain d n} (hx : x ∈ P.V) :
+    ∃ (C0 : Set (Fin n → Fin (d + 1) → ℂ))
+      (C0branch : (Fin n → Fin (d + 1) → ℂ) → ℂ)
+      (r : ℝ),
+      0 < r ∧
+      C0 =
+        Metric.ball
+          (fun k => wickRotatePoint (x (P.τ k))) r ∧
+      (fun k => wickRotatePoint (x (P.τ k))) ∈ C0 ∧
+      IsOpen C0 ∧
+      IsPreconnected C0 ∧
+      C0 ⊆
+        (({z : Fin n → Fin (d + 1) → ℂ |
+            BHW.permAct (d := d) P.τ z ∈ BHW.ForwardTube d n} ∩ H.ΩJ) ∩
+          (BHW.ExtendedTube d n ∩
+            BHW.permutedExtendedTubeSector d n P.τ)) ∧
+      DifferentiableOn ℂ C0branch C0 ∧
+      Set.EqOn C0branch
+        (fun z : Fin n → Fin (d + 1) → ℂ =>
+          bvt_F OS lgc n (BHW.permAct (d := d) P.τ z)) C0 ∧
+      C0branch (fun k => wickRotatePoint (x (P.τ k))) =
+        bvt_F OS lgc n (fun k => wickRotatePoint (x k)) ∧
+      C0branch (fun k => wickRotatePoint (x (P.τ k))) =
+        bvt_F OS lgc n (fun k => wickRotatePoint (x (P.τ k))) := by
+  classical
+  rcases H.OS412SeedWindow_initialSectorOverlap_metricBallChart
+      OS lgc hx with
+    ⟨C0, C0branch, r, hr_pos, hC0_ball, hcenter, hC0_open,
+      hC0_pre, hC0_sub, hC0_holo, hC0_eq, hC0_trace⟩
+  have hseed_eq :
+      BHW.permAct (d := d) P.τ (fun k => wickRotatePoint (x k)) =
+        fun k => wickRotatePoint (x (P.τ k)) :=
+    BHW.os45Figure24_permAct_ordinaryWick_eq_adjacentWick
+      (d := d) (n := n) (hd := hd) (P := P) x
+  have htrace_adj :
+      C0branch (fun k => wickRotatePoint (x (P.τ k))) =
+        bvt_F OS lgc n (fun k => wickRotatePoint (x (P.τ k))) := by
+    rw [← hseed_eq]
+    exact hC0_trace
+  have hperm :
+      bvt_F OS lgc n (fun k => wickRotatePoint (x (P.τ k))) =
+        bvt_F OS lgc n (fun k => wickRotatePoint (x k)) := by
+    simpa [BHW.permAct] using
+      bvt_F_perm (d := d) OS lgc n P.τ
+        (fun k => wickRotatePoint (x k))
+  exact
+    ⟨C0, C0branch, r, hr_pos, by
+      rw [← hseed_eq]
+      exact hC0_ball, by
+      rw [← hseed_eq]
+      exact hcenter, hC0_open, hC0_pre, hC0_sub, hC0_holo, hC0_eq,
+      htrace_adj.trans hperm, htrace_adj⟩
+
 /-- The genuine raw `(4.12)` seed point and the ordinary Wick point are
 contained in one connected open carrier inside the checked local hull. -/
 theorem OS45BHWJostHullData.OS412Seed_ordinaryWick_connectedNeighborhood
