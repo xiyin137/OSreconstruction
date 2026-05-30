@@ -411,12 +411,13 @@ theorem tendsto_flatCommonChart_sideBranch_difference_zero_reducedTestLift_of_so
 
 /-- Hdiff-germ form of the reduced-test OS45 moving-source comparison.
 
-This is the source-side input shape closest to OS I `(4.12)`--`(4.14)`: the
-local holomorphic difference germ has zero Wick-side compact-test boundary
-value and its horizontal common-edge trace is the adjacent-minus-ordinary
-source branch.  The identity theorem first turns that into pointwise
-common-edge equality on the source carrier, and the checked moving-source
-proof then gives the flat side-branch limit for the lifted reduced test. -/
+This is the Lean carrier used immediately after the OS-I `(4.12)`--`(4.14)`
+source-side branch transfer has been produced.  The local holomorphic
+difference germ has zero Wick-side compact-test boundary value and its
+horizontal common-edge trace is the adjacent-minus-ordinary source branch.  The
+identity theorem first turns that into pointwise common-edge equality on the
+source carrier, and the checked moving-source proof then gives the flat
+side-branch limit for the lifted reduced test. -/
 theorem tendsto_flatCommonChart_sideBranch_difference_zero_reducedTestLift_of_HdiffGerm
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS)
@@ -2053,11 +2054,12 @@ theorem reducedNormalSignFlip_pointwise_of_OS45HdiffGerm_asymptotic
 asymptotic reduced-normal sign-flip comparison from source-side moving
 transfers.
 
-This is the source-side form of
-`reducedNormalSignFlip_pointwise_of_OS45HdiffGerm_asymptotic`: the OS-I
-`(4.12)`--`(4.14)` transfer is stated for the moving source-side `extendF`
-branches, and the checked coordinate identities convert those branches to the
-flat OS45 branch values along the reduced-normal canonical rays. -/
+This is the Hdiff-carrier form of
+`reducedNormalSignFlip_pointwise_of_OS45HdiffGerm_asymptotic`: once the OS-I
+`(4.12)`--`(4.14)` source-side branch transfer has supplied the moving
+source-side `extendF` comparison, the checked coordinate identities convert
+those branches to the flat OS45 branch values along the reduced-normal
+canonical rays. -/
 theorem reducedNormalSignFlip_pointwise_of_OS45HdiffGerm_sourceSide_asymptotic
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS)
@@ -2556,10 +2558,11 @@ theorem reducedLocalAdjacentBoundaryCLMInvariant_of_local_OS45HdiffGerm_asymptot
 /-- Local proof-local Hdiff germs with source-side moving transfers supply the
 reduced local boundary-CLM invariant.
 
-This is the source-side Path-2 consumer: the local analytic packet is stated in
-the OS-I `(4.12)`--`(4.14)` moving-source form, and the checked reduced-normal
-coordinate bridge converts it to the branch-difference/sign-flip handoff used
-by the reduced CLM machinery. -/
+This is the Path-2 consumer for the Hdiff carrier: after the paper-facing
+source-side branch transfer has been packaged as a local moving-source
+horizontal difference germ, the checked reduced-normal coordinate bridge
+converts it to the branch-difference/sign-flip handoff used by the reduced CLM
+machinery. -/
 theorem reducedLocalAdjacentBoundaryCLMInvariant_of_local_OS45HdiffGerm_sourceSide_asymptotic
     (hd : 2 ≤ d)
     (OS : OsterwalderSchraderAxioms d)
