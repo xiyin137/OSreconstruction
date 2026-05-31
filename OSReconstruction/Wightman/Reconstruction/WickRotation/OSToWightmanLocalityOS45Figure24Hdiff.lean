@@ -5849,18 +5849,42 @@ theorem OS45BHWJostHullData.os45CommonEdge_sourceRepresentsZero_of_OS412_sourceS
       have htransport :
           Tendsto (fun ε : ℝ => Fext ε - Fcur ε)
             (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) := by
-        /-
-          Active OS-I `(4.12)`--`(4.14)` transport body.
+        have hzero_pairing :
+            (∫ u : NPointDomain d n,
+              BHW.extendF (bvt_F OS lgc n)
+                (BHW.os45FlatCommonChartSourceSide d n
+                  (1 : Equiv.Perm (Fin n)) (1 : ℝ) 0 η u) *
+                ((((D.toZeroDiagonalCLM
+                  (1 : Equiv.Perm (Fin n)) φ).1 : SchwartzNPoint d n) :
+                    NPointDomain d n → ℂ) u)) =
+              ∫ u : NPointDomain d n,
+                BHW.extendF (bvt_F OS lgc n)
+                  (BHW.permAct (d := d)
+                    (P.τ.symm * (1 : Equiv.Perm (Fin n))).symm
+                    (BHW.os45FlatCommonChartSourceSide d n
+                      (1 : Equiv.Perm (Fin n)) (-1 : ℝ) 0 η u)) *
+                  ((((D.toZeroDiagonalCLM
+                    (1 : Equiv.Perm (Fin n)) φ).1 : SchwartzNPoint d n) :
+                      NPointDomain d n → ℂ) u) := by
+          /-
+            Active OS-I `(4.12)`--`(4.14)` compact-test leaf.
 
-          The endpoint equality shortcut above would require pointwise
-          common-edge equality before the EOW/partition argument has produced
-          it.  The remaining task is instead the compact-test source-side
-          transport: cover the source support by local pointed charts, use the
-          OS-I Jost/EOW seed equality on each chart, and combine the fixed-test
-          partition limit with the moving-test error estimates for
-          `D.toSideZeroDiagonalCLM`.
-        -/
-        exact ?os45_OS412_sourceSide_boundary_transport_compact_test
+            All moving-test and source-current bookkeeping has now been paid
+            below.  The remaining mathematical input is the zero-height
+            common-edge pairing equality: prove, by the local Jost/EOW
+            partition on the Figure-2-4 real edge, that the ordinary and
+            adjacent deterministic boundary branches have the same compact
+            source pairing against `D.toZeroDiagonalCLM`.
+          -/
+          exact ?os45_OS412_zeroHeight_commonEdge_pairing_from_Jost_EOW_partition
+        have hFext_zero :
+            Tendsto Fext (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) := by
+          simpa [Fext] using
+            D.tendsto_sourceSide_extendF_difference_zero_of_zeroHeightPairing
+              (d := d) OS lgc hΩplus_open hΩminus_open
+              hFplus_cont hFminus_cont hU_open subset_closure hU_compact
+              η h0_plus h0_minus φ hφ_compact hφU hzero_pairing
+        simpa using hFext_zero.sub hsource_current
       have hsum := htransport.add hsource_current
       simpa [sub_eq_add_neg] using hsum
     simpa [Fext] using hside_ext
