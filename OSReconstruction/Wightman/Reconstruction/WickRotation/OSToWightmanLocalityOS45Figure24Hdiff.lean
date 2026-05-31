@@ -6043,13 +6043,105 @@ theorem OS45BHWJostHullData.os45CommonEdge_sourceRepresentsZero_of_OS412_sourceS
                   (D.toSchwartzNPointCLM
                     (1 : Equiv.Perm (Fin n)) φ :
                       NPointDomain d n → ℂ) u := by
-          /-
-            Active OS-I `(4.12)`--`(4.14)` compact common-edge leaf.  This is
-            the paper-facing Jost-edge equality/EOW/compact-test smearing step:
-            the ordinary and deterministic adjacent pulled-real common-edge
-            source pairings agree on this local collar.
-          -/
-          skip
+          have hAdj :=
+            BHW.os45FlatCommonChart_adjacentCommonBoundary_integral_eq_sourcePullback
+              (d := d) hd OS lgc (P := P) D φ hφ_compact hφE
+          have hOrd :=
+            BHW.os45FlatCommonChart_ordinaryCommonBoundary_integral_eq_sourcePullback
+              (d := d) hd OS lgc (P := P) D φ hφ_compact hφE
+          have hflat_common :
+              (∫ x : BHW.OS45FlatCommonChartReal d n,
+                BHW.os45FlatCommonChartBranch d n OS lgc
+                    (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+                    (fun a => (x a : ℂ)) * φ x) =
+                ∫ x : BHW.OS45FlatCommonChartReal d n,
+                  BHW.os45FlatCommonChartBranch d n OS lgc
+                      (1 : Equiv.Perm (Fin n))
+                      (fun a => (x a : ℂ)) * φ x := by
+            have hord_CLM :
+                (∫ x : BHW.OS45FlatCommonChartReal d n,
+                  BHW.os45FlatCommonChartBranch d n OS lgc
+                      (1 : Equiv.Perm (Fin n))
+                      (fun a => (x a : ℂ)) * φ x) =
+                  BHW.os45FlatCommonChart_ordinaryEdgeCLM hd OS lgc P φ :=
+              BHW.os45FlatCommonChart_plus_zeroHeight_pairing_eq_CLM_of_localRepresents
+                (d := d) hd OS lgc (P := P)
+                (BHW.os45FlatCommonChart_ordinaryEdgeCLM hd OS lgc P)
+                (BHW.os45FlatCommonChart_ordinaryEdgeCLM_represents hd OS lgc)
+                φ hφ_compact hφE
+            have hadj_CLM :
+                (∫ x : BHW.OS45FlatCommonChartReal d n,
+                  BHW.os45FlatCommonChartBranch d n OS lgc
+                      (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+                      (fun a => (x a : ℂ)) * φ x) =
+                  BHW.os45FlatCommonChart_ordinaryEdgeCLM hd OS lgc P φ := by
+              /-
+                Active OS-I `(4.12)`--`(4.14)` compact common-edge leaf.
+                The ordinary side is already the checked OS `(4.1)` edge CLM;
+                the remaining payload is the adjacent raw `(4.12)` branch
+                transport/EOW smearing that identifies its zero-height pairing
+                with that same ordinary edge CLM on this flattened source
+                collar.
+              -/
+              skip
+            exact hadj_CLM.trans hord_CLM.symm
+          have hJ_ne :
+              (BHW.os45CommonEdgeFlatJacobianAbs n : ℂ) ≠ 0 := by
+            exact Complex.ofReal_ne_zero.mpr
+              (ne_of_gt (BHW.os45CommonEdgeFlatJacobianAbs_pos n))
+          have hscaled :
+              (BHW.os45CommonEdgeFlatJacobianAbs n : ℂ) *
+                  (∫ u : NPointDomain d n,
+                    BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                        (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+                        (BHW.realEmbed
+                          (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                            (1 : Equiv.Perm (Fin n)) u)) *
+                      (D.toSchwartzNPointCLM
+                        (1 : Equiv.Perm (Fin n)) φ :
+                          NPointDomain d n → ℂ) u) =
+                (BHW.os45CommonEdgeFlatJacobianAbs n : ℂ) *
+                  ∫ u : NPointDomain d n,
+                    BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                        (1 : Equiv.Perm (Fin n))
+                        (BHW.realEmbed
+                          (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                            (1 : Equiv.Perm (Fin n)) u)) *
+                      (D.toSchwartzNPointCLM
+                        (1 : Equiv.Perm (Fin n)) φ :
+                          NPointDomain d n → ℂ) u := by
+            calc
+              (BHW.os45CommonEdgeFlatJacobianAbs n : ℂ) *
+                  (∫ u : NPointDomain d n,
+                    BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                        (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+                        (BHW.realEmbed
+                          (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                            (1 : Equiv.Perm (Fin n)) u)) *
+                      (D.toSchwartzNPointCLM
+                        (1 : Equiv.Perm (Fin n)) φ :
+                          NPointDomain d n → ℂ) u) =
+                  ∫ x : BHW.OS45FlatCommonChartReal d n,
+                    BHW.os45FlatCommonChartBranch d n OS lgc
+                        (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+                        (fun a => (x a : ℂ)) * φ x := hAdj.symm
+              _ =
+                  ∫ x : BHW.OS45FlatCommonChartReal d n,
+                    BHW.os45FlatCommonChartBranch d n OS lgc
+                        (1 : Equiv.Perm (Fin n))
+                        (fun a => (x a : ℂ)) * φ x := hflat_common
+              _ =
+                  (BHW.os45CommonEdgeFlatJacobianAbs n : ℂ) *
+                    ∫ u : NPointDomain d n,
+                      BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                          (1 : Equiv.Perm (Fin n))
+                          (BHW.realEmbed
+                            (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                              (1 : Equiv.Perm (Fin n)) u)) *
+                        (D.toSchwartzNPointCLM
+                          (1 : Equiv.Perm (Fin n)) φ :
+                            NPointDomain d n → ℂ) u := hOrd
+          exact mul_left_cancel₀ hJ_ne hscaled
         calc
           Lplus =
               ∫ u : NPointDomain d n,
