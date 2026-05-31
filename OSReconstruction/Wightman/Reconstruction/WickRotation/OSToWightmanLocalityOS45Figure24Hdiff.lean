@@ -6010,6 +6010,13 @@ theorem OS45BHWJostHullData.os45CommonEdge_sourceRepresentsZero_of_OS412_sourceS
               that the ordinary `(4.1)` and retained adjacent `(4.12)`
               boundary distributions have equal pairings against the same
               compact flat test.
+
+              The available source-current comparison `hsource_current`
+              controls the Wick-section `bvt_F` currents.  What is still
+              missing is the OS-I §4.5 boundary transport from those currents
+              to the deterministic zero-height flat branches below, i.e. the
+              compact-test Jost-edge/EOW production step rather than another
+              side-height or endpoint normalization.
             -/
             exact ?os45_OS414_flat_commonEdge_pairing_from_Jost_EOW_partition
           have hAdj :=
