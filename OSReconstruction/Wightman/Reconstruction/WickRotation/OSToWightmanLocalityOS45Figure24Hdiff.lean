@@ -5942,14 +5942,181 @@ theorem OS45BHWJostHullData.os45CommonEdge_sourceRepresentsZero_of_OS412_sourceS
         /-
         The irreducible OS-I `(4.12)`--`(4.14)` compact common-edge
         transport: the ordinary and adjacent zero-height Figure-2-4 endpoint
-        pairings agree on the selected Jost edge.  This is the monograph
-        identity-theorem/EOW smearing leaf; the checked side-height DCT above
-        only reduces the moving branch-difference limit to this equality.
+        pairings are first rewritten to the corresponding pulled-real source
+        pairings.  The remaining leaf is exactly the monograph part-(b)
+        identity-theorem/EOW smearing statement on the local Jost collar.
         -/
-        fail_if_success
-          exact
-            (BHW.os45CommonEdge_adjacentWick_sourcePairing_eq_ordinaryWick
-              (d := d) OS lgc D φ hφEdge)
+        have hLplus_source :
+            Lplus =
+              ∫ u : NPointDomain d n,
+                BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                    (1 : Equiv.Perm (Fin n))
+                    (BHW.realEmbed
+                      (BHW.os45CommonEdgeRealPoint
+                        (d := d) (n := n)
+                        (1 : Equiv.Perm (Fin n)) u)) *
+                  (D.toSchwartzNPointCLM
+                    (1 : Equiv.Perm (Fin n)) φ :
+                      NPointDomain d n → ℂ) u := by
+          dsimp [Lplus]
+          refine MeasureTheory.integral_congr_ae (Filter.Eventually.of_forall ?_)
+          intro u
+          let z0 : Fin n → Fin (d + 1) → ℂ :=
+            (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+              (BHW.realEmbed
+                (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                  (1 : Equiv.Perm (Fin n)) u))
+          have hsource_zero :
+              BHW.os45FlatCommonChartSourceSide d n
+                  (1 : Equiv.Perm (Fin n)) (1 : ℝ) 0 η u = z0 := by
+            simpa [z0] using
+              BHW.os45FlatCommonChartSourceSide_zero_eq_commonEdge
+                (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) (1 : ℝ) η u
+          have hord :
+              BHW.extendF (bvt_F OS lgc n) z0 =
+                BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                  (1 : Equiv.Perm (Fin n))
+                  (BHW.realEmbed
+                    (BHW.os45CommonEdgeRealPoint
+                      (d := d) (n := n)
+                      (1 : Equiv.Perm (Fin n)) u)) := by
+            simp [BHW.os45PulledRealBranch, z0]
+          change
+            BHW.extendF (bvt_F OS lgc n)
+                (BHW.permAct (d := d)
+                  (1 : Equiv.Perm (Fin n)).symm
+                  (BHW.os45FlatCommonChartSourceSide d n
+                    (1 : Equiv.Perm (Fin n)) (1 : ℝ) 0 η u)) *
+                (D.toSchwartzNPointCLM
+                  (1 : Equiv.Perm (Fin n)) φ :
+                    NPointDomain d n → ℂ) u =
+              BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                  (1 : Equiv.Perm (Fin n))
+                  (BHW.realEmbed
+                    (BHW.os45CommonEdgeRealPoint
+                      (d := d) (n := n)
+                      (1 : Equiv.Perm (Fin n)) u)) *
+                (D.toSchwartzNPointCLM
+                  (1 : Equiv.Perm (Fin n)) φ :
+                    NPointDomain d n → ℂ) u
+          rw [hsource_zero]
+          simpa using congrArg (fun c : ℂ =>
+            c *
+              (D.toSchwartzNPointCLM
+                (1 : Equiv.Perm (Fin n)) φ :
+                  NPointDomain d n → ℂ) u) hord
+        have hLminus_source :
+            Lminus =
+              ∫ u : NPointDomain d n,
+                BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                    (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+                    (BHW.realEmbed
+                      (BHW.os45CommonEdgeRealPoint
+                        (d := d) (n := n)
+                        (1 : Equiv.Perm (Fin n)) u)) *
+                  (D.toSchwartzNPointCLM
+                    (1 : Equiv.Perm (Fin n)) φ :
+                      NPointDomain d n → ℂ) u := by
+          dsimp [Lminus]
+          refine MeasureTheory.integral_congr_ae (Filter.Eventually.of_forall ?_)
+          intro u
+          let z0 : Fin n → Fin (d + 1) → ℂ :=
+            (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+              (BHW.realEmbed
+                (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                  (1 : Equiv.Perm (Fin n)) u))
+          have hsource_zero :
+              BHW.os45FlatCommonChartSourceSide d n
+                  (1 : Equiv.Perm (Fin n)) (-1 : ℝ) 0 η u = z0 := by
+            simpa [z0] using
+              BHW.os45FlatCommonChartSourceSide_zero_eq_commonEdge
+                (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) (-1 : ℝ) η u
+          have hadj :
+              BHW.extendF (bvt_F OS lgc n)
+                  (BHW.permAct (d := d) P.τ z0) =
+                BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                  (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+                  (BHW.realEmbed
+                    (BHW.os45CommonEdgeRealPoint
+                      (d := d) (n := n)
+                      (1 : Equiv.Perm (Fin n)) u)) := by
+            simpa [z0] using
+              BHW.os45Figure24CommonEdge_permAct_extendF_eq_adjacentPulledRealBranch
+                (d := d) (n := n) hd OS lgc (P := P) u
+          change
+            BHW.extendF (bvt_F OS lgc n)
+                (BHW.permAct (d := d) σminus.symm
+                  (BHW.os45FlatCommonChartSourceSide d n
+                    (1 : Equiv.Perm (Fin n)) (-1 : ℝ) 0 η u)) *
+                (D.toSchwartzNPointCLM
+                  (1 : Equiv.Perm (Fin n)) φ :
+                    NPointDomain d n → ℂ) u =
+              BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                  (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+                  (BHW.realEmbed
+                    (BHW.os45CommonEdgeRealPoint
+                      (d := d) (n := n)
+                      (1 : Equiv.Perm (Fin n)) u)) *
+                (D.toSchwartzNPointCLM
+                  (1 : Equiv.Perm (Fin n)) φ :
+                    NPointDomain d n → ℂ) u
+          rw [hsource_zero]
+          simpa [σminus] using congrArg (fun c : ℂ =>
+            c *
+              (D.toSchwartzNPointCLM
+                (1 : Equiv.Perm (Fin n)) φ :
+                  NPointDomain d n → ℂ) u) hadj
+        have hsource_pairings :
+            (∫ u : NPointDomain d n,
+              BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                  (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+                  (BHW.realEmbed
+                    (BHW.os45CommonEdgeRealPoint
+                      (d := d) (n := n)
+                      (1 : Equiv.Perm (Fin n)) u)) *
+                (D.toSchwartzNPointCLM
+                  (1 : Equiv.Perm (Fin n)) φ :
+                    NPointDomain d n → ℂ) u) =
+              ∫ u : NPointDomain d n,
+                BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                    (1 : Equiv.Perm (Fin n))
+                    (BHW.realEmbed
+                      (BHW.os45CommonEdgeRealPoint
+                        (d := d) (n := n)
+                        (1 : Equiv.Perm (Fin n)) u)) *
+                  (D.toSchwartzNPointCLM
+                    (1 : Equiv.Perm (Fin n)) φ :
+                      NPointDomain d n → ℂ) u := by
+          fail_if_success
+            exact
+              (BHW.os45CommonEdge_adjacentWick_sourcePairing_eq_ordinaryWick
+                (d := d) OS lgc D φ hφEdge)
+        calc
+          Lplus =
+              ∫ u : NPointDomain d n,
+                BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                    (1 : Equiv.Perm (Fin n))
+                    (BHW.realEmbed
+                      (BHW.os45CommonEdgeRealPoint
+                        (d := d) (n := n)
+                        (1 : Equiv.Perm (Fin n)) u)) *
+                  (D.toSchwartzNPointCLM
+                    (1 : Equiv.Perm (Fin n)) φ :
+                      NPointDomain d n → ℂ) u := hLplus_source
+          _ =
+              ∫ u : NPointDomain d n,
+                BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                    (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+                    (BHW.realEmbed
+                      (BHW.os45CommonEdgeRealPoint
+                        (d := d) (n := n)
+                        (1 : Equiv.Perm (Fin n)) u)) *
+                  (D.toSchwartzNPointCLM
+                    (1 : Equiv.Perm (Fin n)) φ :
+                      NPointDomain d n → ℂ) u := hsource_pairings.symm
+          _ = Lminus := hLminus_source.symm
       have htarget :
           Tendsto (fun ε : ℝ => Abranch ε - Bbranch ε) l (𝓝 0) := by
         have hdiff := hbranch_pair_Lplus.sub hbranch_pair_Lminus
