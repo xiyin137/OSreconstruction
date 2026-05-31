@@ -5300,6 +5300,136 @@ theorem OS45BHWJostHullData.os45CommonEdge_sourceRepresentsZero_of_sourcePairing
       bvIn bvOut hbvIn_cont hbvOut_cont hsideIn_bvIn
       hsideOut_bvOut (by simpa [E] using h414_integrals)
 
+/-- Production entry for the OS-I `(4.12)` source-patch Wick transport.
+
+This is the actual theorem-2 leaf, opened as a proof body rather than another
+consumer gate.  The checked Euclidean OS symmetry gives the adjacent Wick
+boundary pairing on the right-hand side of `hOS412_transport` below.  The
+remaining proof body is the OS-I/Jost/EOW transport that identifies that
+boundary pairing with the deterministic adjacent BHW branch
+`extendF (bvt_F) ∘ permAct P.τ` on the ordinary Wick section.
+-/
+theorem os45CommonEdge_transported_wick_pairing_of_OS412_sourcePatch
+    [NeZero d] (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {n : ℕ} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (φ : SchwartzNPoint d n)
+    (hφ_compact : HasCompactSupport (φ : NPointDomain d n → ℂ))
+    (hφU : tsupport (φ : NPointDomain d n → ℂ) ⊆ P.V) :
+    ∫ u : NPointDomain d n,
+        BHW.extendF (bvt_F OS lgc n)
+          (BHW.permAct (d := d) P.τ
+            (fun k => wickRotatePoint (u k))) * φ u =
+      ∫ u : NPointDomain d n,
+        bvt_F OS lgc n (fun k => wickRotatePoint (u k)) * φ u := by
+  classical
+  have hswap_ordered :
+      ∀ x ∈ P.V,
+        (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+          EuclideanOrderedPositiveTimeSector (d := d) (n := n)
+            ((Equiv.swap i ⟨i.val + 1, hi⟩).symm *
+              (1 : Equiv.Perm (Fin n))) := by
+    intro x hx
+    simpa [P.τ_eq] using P.V_swap_ordered x hx
+  have hwick_perm_pair :
+      (∫ u : NPointDomain d n,
+        bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k))) * φ u) =
+        ∫ u : NPointDomain d n,
+          bvt_F OS lgc n (fun k => wickRotatePoint (u k)) * φ u := by
+    have hpair :=
+      BHW.os45_adjacent_euclideanEdge_pairing_eq_on_timeSector
+        (d := d) OS lgc n i hi P.V P.V_jost
+        (1 : Equiv.Perm (Fin n)) P.V_ordered hswap_ordered φ hφU
+    simpa [P.τ_eq] using hpair
+  have hOS412_transport :
+      (∫ u : NPointDomain d n,
+        BHW.extendF (bvt_F OS lgc n)
+          (BHW.permAct (d := d) P.τ
+            (fun k => wickRotatePoint (u k))) * φ u) =
+        ∫ u : NPointDomain d n,
+          bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k))) * φ u := by
+    let Ford : (Fin n → Fin (d + 1) → ℂ) → ℂ :=
+      BHW.extendF (bvt_F OS lgc n)
+    let Fadj : (Fin n → Fin (d + 1) → ℂ) → ℂ := fun z =>
+      BHW.extendF (bvt_F OS lgc n)
+        (BHW.permAct (d := d) P.τ z)
+    have hF_holo :
+        DifferentiableOn ℂ (bvt_F OS lgc n) (BHW.ForwardTube d n) := by
+      simpa [BHW_forwardTube_eq (d := d) (n := n)] using
+        bvt_F_holomorphic (d := d) OS lgc n
+    have hF_lorentz :
+        ∀ (Λ : LorentzLieGroup.RestrictedLorentzGroup d)
+          (z : Fin n → Fin (d + 1) → ℂ), z ∈ BHW.ForwardTube d n →
+          bvt_F OS lgc n
+            (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * z k ν) =
+          bvt_F OS lgc n z := by
+      intro Λ z hz
+      exact bvt_F_restrictedLorentzInvariant_forwardTube
+        (d := d) OS lgc n Λ z
+        ((BHW_forwardTube_eq (d := d) (n := n)) ▸ hz)
+    have hOverlap_eq :
+        ∀ z : Fin n → Fin (d + 1) → ℂ,
+          z ∈ BHW.ExtendedTube d n →
+          BHW.permAct (d := d) P.τ z ∈ BHW.ExtendedTube d n →
+          BHW.extendF (bvt_F OS lgc n)
+              (BHW.permAct (d := d) P.τ z) =
+            BHW.extendF (bvt_F OS lgc n) z := by
+      intro z hz hτz
+      /-
+      Remaining OS-I `(4.12)`--`(4.14)` subgap:
+      construct the local Jost/EOW branch transport proving this overlap
+      equality for the ordinary and adjacent Figure-2-4 sheets.  Existing
+      checked consumers obtain it from a compact source-edge pairing packet;
+      the missing production body is the packet itself, not the Wick-section
+      domain normalization below.
+      -/
+    refine MeasureTheory.integral_congr_ae (Filter.Eventually.of_forall ?_)
+    intro u
+    by_cases hu : u ∈ tsupport (φ : NPointDomain d n → ℂ)
+    · have huP : u ∈ P.V := hφU hu
+      let z : Fin n → Fin (d + 1) → ℂ := fun k => wickRotatePoint (u k)
+      have hforward : z ∈ BHW.ForwardTube d n :=
+        BHW.os45Figure24_ordinaryWick_mem_forwardTube
+          (d := d) (n := n) (hd := hd) (P := P) huP
+      have hz_ET : z ∈ BHW.ExtendedTube d n :=
+        BHW.forwardTube_subset_extendedTube hforward
+      have hτz_ET :
+          BHW.permAct (d := d) P.τ z ∈ BHW.ExtendedTube d n := by
+        simpa [z] using
+          BHW.os45Figure24_adjacentWick_mem_extendedTube
+            (d := d) (n := n) (hd := hd) (P := P) huP
+      have hoverlap := hOverlap_eq z hz_ET hτz_ET
+      have hext :
+          BHW.extendF (bvt_F OS lgc n) z =
+            bvt_F OS lgc n z :=
+        BHW.extendF_eq_on_forwardTube n (bvt_F OS lgc n)
+          hF_holo hF_lorentz z hforward
+      have hperm :
+          bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k))) =
+            bvt_F OS lgc n z := by
+        simpa [z, BHW.permAct] using
+          bvt_F_perm (d := d) OS lgc n P.τ z
+      have hpoint :
+          BHW.extendF (bvt_F OS lgc n)
+              (BHW.permAct (d := d) P.τ
+                (fun k => wickRotatePoint (u k))) =
+            bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k))) := by
+        simpa [z] using (hoverlap.trans hext).trans hperm.symm
+      exact congrArg (fun c : ℂ => c * φ u) hpoint
+    · have hφ_zero : φ u = 0 :=
+        image_eq_zero_of_notMem_tsupport hu
+      simp [hφ_zero]
+    /-
+    The `Ford`/`Fadj` names above intentionally keep the classical branch
+    comparison visible in the proof state.  The actual unproved payload is the
+    local overlap equality `hOverlap_eq`; the remaining lines are only the
+    checked Wick-section support and forward-tube endpoint normalizations.
+    -/
+  exact hOS412_transport.trans hwick_perm_pair
+
 /-- Compact Jost-edge equality supplies the active transported Wick pairing.
 
 This is the monograph part-(b) bridge in local Figure-2-4 form: once the

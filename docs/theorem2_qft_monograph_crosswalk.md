@@ -315,6 +315,79 @@ partition of unity.  Treating every point of `reducedSpacelikeSwapEdge` as
 having a pointwise boundary value would be stronger than the classical
 argument and is not the route to the live production `sorry`.
 
+## OS-I Source-Transfer Production Body (2026-05-30)
+
+Claude's update-3 branch-difference bridge does not change the first
+mathematical object produced by the OS proof.  In OS I Section 4.5 and in
+Proposition `os-boundary-package-consequences` part (b), the proof first
+produces equality of the two boundary distributions on a local real Jost edge,
+then smears on Jost neighborhoods.  In the present Lean surface the closest
+first input is therefore the source-side common-edge compact-test equality
+
+```lean
+∀ φ,
+  HasCompactSupport (φ : BHW.OS45FlatCommonChartReal d n → ℂ) →
+  tsupport (φ : BHW.OS45FlatCommonChartReal d n → ℂ) ⊆
+    BHW.os45CommonEdgeFlatCLE d n (1 : Equiv.Perm (Fin n)) '' U →
+  ∫ u,
+    BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+        (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+        (BHW.realEmbed
+          (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+            (1 : Equiv.Perm (Fin n)) u)) *
+      (D.toSchwartzNPointCLM (1 : Equiv.Perm (Fin n)) φ :
+        NPointDomain d n → ℂ) u
+    =
+  ∫ u,
+    BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+        (1 : Equiv.Perm (Fin n))
+        (BHW.realEmbed
+          (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+            (1 : Equiv.Perm (Fin n)) u)) *
+      (D.toSchwartzNPointCLM (1 : Equiv.Perm (Fin n)) φ :
+        NPointDomain d n → ℂ) u
+```
+
+This is the input consumed by
+`BHW.OS45BHWJostHullData.os45CommonEdge_sourceRepresentsZero_of_sourcePairings`.
+The `RepresentsDistributionOn 0` statement is the immediate local distribution
+envelope after the source-to-flat change of variables.  The `Hdiff` germ is the
+holomorphic transport envelope after this equality has been produced.  The
+reduced sign-flip statements are downstream normal-coordinate bookkeeping.
+
+The checked pieces around this leaf are:
+
+- `BHW.os45CommonEdge_adjacentWick_sourcePairing_eq_ordinaryWick` proves the
+  Wick-section/Schwinger pairing equality by Euclidean permutation symmetry.
+- `BHW.OS45Figure24SourceCutoffData.sourcePairing_of_tendsto_sourceSide_extendF_difference_zero`
+  converts a finite-height side-branch transport limit into the pulled-real
+  source-pairing equality above.
+- `BHW.OS45Figure24SourceCutoffData.tendsto_sourceSide_extendF_difference_zero_of_sourceRepresentsOn`
+  runs in the opposite direction once the source-zero representation has
+  already been supplied; it is a consumer, not a producer.
+- `BHW.os45CommonEdge_transported_wick_pairing_of_compactFigure24WickPairingEq`
+  and
+  `BHW.os45CommonEdge_sourceRepresentsZero_of_initialOverlap_adjacentBranch`
+  are checked downstream bridges from a compact Jost-edge packet / transported
+  Wick pairing.
+
+The missing OS-I production body is consequently not another conversion among
+these gates.  It must construct, for the local Figure-2-4 source collar, the
+finite-height branch/source transport that identifies the side-branch boundary
+pairings with the OS source-current pairings.  Equivalently, it must produce the
+pulled-real source-pairing equality displayed above directly from the local
+Jost edge and distributional edge-of-the-wedge argument, then let the checked
+source-representation/Hdiff/reduced-normal chain run.
+
+Route choice for future proof work:
+
+- pursue source-side common-edge compact-test equality / source-zero
+  representation as the active Path 2 input;
+- keep `Hdiff` as the Lean envelope after that input;
+- keep reduced sign-flip pointwise statements downstream;
+- keep the older `AdjacentReducedRuelleDistributionalLimit` and
+  `BHW.localSPrime_twoSectorBranch_of_EOW_BHW` route legacy/diagnostic.
+
 ## Current Scratch Bridge (2026-05-27)
 
 Checked scratch:
