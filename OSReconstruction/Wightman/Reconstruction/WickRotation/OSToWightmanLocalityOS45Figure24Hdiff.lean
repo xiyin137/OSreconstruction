@@ -6142,7 +6142,75 @@ theorem OS45BHWJostHullData.os45CommonEdge_sourceRepresentsZero_of_OS412_sourceS
                                             NPointDomain d n → ℂ) v))
                                   (𝓝[Set.Ioi 0] (0 : ℝ))
                                   (𝓝 0) := by
-                              exact ?os45_OS412_finite_height_branch_source_transport
+                              let Lplus0 : ℂ :=
+                                ∫ v : NPointDomain d n,
+                                  BHW.extendF (bvt_F OS lgc n)
+                                    (BHW.os45FlatCommonChartSourceSide d n
+                                      (1 : Equiv.Perm (Fin n)) (1 : ℝ)
+                                      0 η v) *
+                                    ((((D.toZeroDiagonalCLM
+                                      (1 : Equiv.Perm (Fin n)) θ).1 :
+                                        SchwartzNPoint d n) :
+                                          NPointDomain d n → ℂ) v)
+                              have h0_minus_plus :
+                                  ∀ v ∈ closure U,
+                                    BHW.os45FlatCommonChartSourceSide d n
+                                      (1 : Equiv.Perm (Fin n)) (-1 : ℝ)
+                                      0 η v ∈ Ωplus := by
+                                intro v hv
+                                simpa using h0_plus v hv
+                              have hplus_branch :
+                                  Tendsto
+                                    (fun ε : ℝ =>
+                                      ∫ v : NPointDomain d n,
+                                        BHW.extendF (bvt_F OS lgc n)
+                                          (BHW.os45FlatCommonChartSourceSide d n
+                                            (1 : Equiv.Perm (Fin n)) (1 : ℝ)
+                                            ε η v) *
+                                          ((((D.toSideZeroDiagonalCLM
+                                            (1 : Equiv.Perm (Fin n)) (1 : ℝ)
+                                            ε η θ).1 : SchwartzNPoint d n) :
+                                              NPointDomain d n → ℂ) v))
+                                    (𝓝[Set.Ioi 0] (0 : ℝ))
+                                    (𝓝 Lplus0) := by
+                                have hpair :=
+                                  D.tendsto_sourceSide_extendF_sideZeroDiagonalCLM_pair
+                                    (d := d) OS lgc
+                                    (1 : Equiv.Perm (Fin n))
+                                    hΩplus_open
+                                    (by
+                                      simpa [BHW.permAct] using hFplus_cont)
+                                    hU_open subset_closure hU_compact
+                                    η h0_plus h0_minus_plus θ hθ_compact hθE
+                                simpa [Lplus0, BHW.permAct] using hpair.1
+                              have hminus_branch :
+                                  Tendsto
+                                    (fun ε : ℝ =>
+                                      ∫ v : NPointDomain d n,
+                                        BHW.extendF (bvt_F OS lgc n)
+                                          (BHW.permAct (d := d)
+                                            (P.τ.symm *
+                                              (1 : Equiv.Perm (Fin n))).symm
+                                            (BHW.os45FlatCommonChartSourceSide d n
+                                              (1 : Equiv.Perm (Fin n))
+                                              (-1 : ℝ) ε η v)) *
+                                          ((((D.toSideZeroDiagonalCLM
+                                            (1 : Equiv.Perm (Fin n)) (-1 : ℝ)
+                                            ε η θ).1 : SchwartzNPoint d n) :
+                                              NPointDomain d n → ℂ) v))
+                                    (𝓝[Set.Ioi 0] (0 : ℝ))
+                                    (𝓝 Lplus0) := by
+                                /-
+                                  OS-I `(4.12)`--`(4.14)` residual transfer.
+                                  Moving-source continuity alone only gives the
+                                  adjacent zero-height limit, which is the
+                                  equality this block is producing.  The missing
+                                  input is the analytic continuation transport
+                                  from the adjacent finite-height branch to the
+                                  ordinary zero-height compact-test pairing.
+                                -/
+                                exact ?os45_OS412_adjacent_minus_sourceSide_tends_ordinary_zeroHeight
+                              simpa using hplus_branch.sub hminus_branch
                             exact
                               D.tendsto_flatCommonChart_sideBranch_difference_zero_of_sourceSideDifference
                                 (d := d) (hd := hd) OS lgc η hηC
