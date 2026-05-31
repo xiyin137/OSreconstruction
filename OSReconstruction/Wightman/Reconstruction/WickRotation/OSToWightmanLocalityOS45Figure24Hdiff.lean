@@ -5968,18 +5968,120 @@ theorem OS45BHWJostHullData.os45CommonEdge_sourceRepresentsZero_of_OS412_sourceS
                       ∫ v : NPointDomain d n,
                         bvt_F OS lgc n
                           (fun k => wickRotatePoint (v (P.τ k))) * ψ v := by
-                    /-
-                      OS-I `(4.12)` Wick-section transport leaf.
+                    have hbranch_to_raw_seed_pointwise :
+                        ∀ v ∈ U,
+                          BHW.extendF (bvt_F OS lgc n)
+                            (BHW.permAct (d := d) P.τ
+                              (fun k => wickRotatePoint (v k))) =
+                          bvt_F OS lgc n
+                            (fun k => wickRotatePoint (v (P.τ k))) := by
+                      intro v hv
+                      let zOrd : Fin n → Fin (d + 1) → ℂ :=
+                        fun k => wickRotatePoint (v k)
+                      let zSeed : Fin n → Fin (d + 1) → ℂ :=
+                        BHW.permAct (d := d) P.τ zOrd
+                      have hvP : v ∈ P.V := hU_sub hv
+                      have hzOrd_Ucx : zOrd ∈ Ucx := by
+                        simpa [zOrd] using hwick_mem v hv
+                      have hzOrd_ET : zOrd ∈ BHW.ExtendedTube d n :=
+                        (hUcx_sub hzOrd_Ucx).1
+                      have hτzOrd_ET :
+                          BHW.permAct (d := d) P.τ zOrd ∈
+                            BHW.ExtendedTube d n := by
+                        simpa [BHW.permutedExtendedTubeSector] using
+                          (hUcx_sub hzOrd_Ucx).2
+                      have hjoined :
+                          JoinedIn H.ΩJ zSeed zOrd := by
+                        simpa [zSeed, zOrd] using
+                          H.OS412Seed_joinedIn_ordinaryWick v hvP
+                      rcases H.OS412Seed_ordinaryWick_connectedNeighborhood
+                          hvP with
+                        ⟨Ωsw, hΩsw_open, hΩsw_connected, hseedΩsw,
+                          hwickΩsw, hΩsw_sub⟩
+                      rcases
+                          H.OS412SeedWindow_initialSectorOverlap_deterministicAdjBranch_metricBallChart
+                            OS lgc hvP with
+                        ⟨C0, C0branch, r, hr_pos, hC0_ball, hseedC0,
+                          hC0_open, hC0_pre, hC0_sub, hC0_holo,
+                          hC0_model, hC0_trace⟩
+                      have hseed_trace :
+                          Fadj zSeed =
+                            bvt_F OS lgc n
+                              (fun k => wickRotatePoint (v (P.τ k))) := by
+                        simpa [zSeed, zOrd] using _hFadj_seed_trace v hv
+                      have hF_holo :
+                          DifferentiableOn ℂ (bvt_F OS lgc n)
+                            (BHW.ForwardTube d n) := by
+                        simpa [BHW_forwardTube_eq (d := d) (n := n)] using
+                          bvt_F_holomorphic (d := d) OS lgc n
+                      have hF_lorentz :
+                          ∀ (Λ : LorentzLieGroup.RestrictedLorentzGroup d)
+                            (z : Fin n → Fin (d + 1) → ℂ),
+                              z ∈ BHW.ForwardTube d n →
+                            bvt_F OS lgc n
+                              (fun k μ =>
+                                ∑ ν, (Λ.val.val μ ν : ℂ) * z k ν) =
+                            bvt_F OS lgc n z := by
+                        intro Λ z hz
+                        exact bvt_F_restrictedLorentzInvariant_forwardTube
+                          (d := d) OS lgc n Λ z
+                          ((BHW_forwardTube_eq (d := d) (n := n)) ▸ hz)
+                      have hzOrd_forward : zOrd ∈ BHW.ForwardTube d n := by
+                        simpa [zOrd] using
+                          BHW.os45Figure24_ordinaryWick_mem_forwardTube
+                            (d := d) (n := n) (hd := hd) (P := P) hvP
+                      have hext_zOrd :
+                          BHW.extendF (bvt_F OS lgc n) zOrd =
+                            bvt_F OS lgc n zOrd :=
+                        BHW.extendF_eq_on_forwardTube n (bvt_F OS lgc n)
+                          hF_holo hF_lorentz zOrd hzOrd_forward
+                      have hperm_trace :
+                          bvt_F OS lgc n
+                              (fun k => wickRotatePoint (v (P.τ k))) =
+                            bvt_F OS lgc n zOrd := by
+                        simpa [zOrd, BHW.permAct] using
+                          bvt_F_perm (d := d) OS lgc n P.τ zOrd
+                      have hoverlap_transport :
+                          BHW.extendF (bvt_F OS lgc n)
+                              (BHW.permAct (d := d) P.τ zOrd) =
+                            BHW.extendF (bvt_F OS lgc n) zOrd := by
+                        /-
+                          OS-I `(4.12)` pointwise overlap transport.
 
-                      Euclidean symmetry now supplies the raw seed pairing
-                      equality `hraw_seed_pairing`.  The irreducible
-                      remaining step is the analytic transport of the
-                      deterministic adjacent `extendF` branch on
-                      `permAct P.τ (wick v)` to the raw `(4.12)` seed
-                      boundary value `bvt_F (wick (v ∘ P.τ))`, against a
-                      compact test supported in the Jost source collar.
-                    -/
-                    exact ?os45_OS412_extendF_adjacentWick_to_rawSeed_compact_test
+                          The concrete seed chart `C0` identifies the
+                          deterministic adjacent branch at `zSeed`; the
+                          connected carrier `Ωsw` and `hjoined` are the
+                          checked Figure-2-4 corridor from that raw seed to
+                          the ordinary Wick endpoint `zOrd`.  What remains is
+                          the classical Jost/EOW identity-theorem step:
+                          equality of the ordinary and adjacent branches on
+                          the local overlap, evaluated at this Wick point.
+                        -/
+                        exact ?os45_OS412_overlap_branch_eq_at_ordinary_wick
+                      calc
+                        BHW.extendF (bvt_F OS lgc n)
+                            (BHW.permAct (d := d) P.τ
+                              (fun k => wickRotatePoint (v k))) =
+                          BHW.extendF (bvt_F OS lgc n)
+                            (BHW.permAct (d := d) P.τ zOrd) := by
+                            rfl
+                        _ = BHW.extendF (bvt_F OS lgc n) zOrd :=
+                          hoverlap_transport
+                        _ = bvt_F OS lgc n zOrd := hext_zOrd
+                        _ =
+                          bvt_F OS lgc n
+                            (fun k => wickRotatePoint (v (P.τ k))) :=
+                              hperm_trace.symm
+                    refine MeasureTheory.integral_congr_ae
+                      (Filter.Eventually.of_forall ?_)
+                    intro v
+                    by_cases hv : v ∈ U
+                    · exact congrArg (fun c : ℂ => c * ψ v)
+                        (hbranch_to_raw_seed_pointwise v hv)
+                    · have hψ_zero : ψ v = 0 :=
+                        image_eq_zero_of_notMem_tsupport
+                          (fun hψ_supp => hv (hψU hψ_supp))
+                      simp [hψ_zero]
                   exact hbranch_to_raw_seed.trans hraw_seed_pairing
                 calc
                   ∫ v : NPointDomain d n,
