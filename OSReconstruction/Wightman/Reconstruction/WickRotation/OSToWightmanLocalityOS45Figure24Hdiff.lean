@@ -5836,16 +5836,73 @@ theorem OS45BHWJostHullData.os45CommonEdge_sourceRepresentsZero_of_OS412_sourceS
       have hsource_current_transport :
           Tendsto (fun ε : ℝ => Fext ε - Fcur ε)
             (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) := by
+        let IextPlus : ℝ → ℂ := fun ε =>
+          ∫ u : NPointDomain d n,
+            BHW.extendF (bvt_F OS lgc n)
+              (BHW.os45FlatCommonChartSourceSide d n
+                (1 : Equiv.Perm (Fin n)) (1 : ℝ) ε η u) *
+              ((((D.toSideZeroDiagonalCLM
+                (1 : Equiv.Perm (Fin n)) (1 : ℝ) ε η φ).1 :
+                  SchwartzNPoint d n) : NPointDomain d n → ℂ) u)
+        let IextMinus : ℝ → ℂ := fun ε =>
+          ∫ u : NPointDomain d n,
+            BHW.extendF (bvt_F OS lgc n)
+              (BHW.permAct (d := d)
+                (P.τ.symm * (1 : Equiv.Perm (Fin n))).symm
+                (BHW.os45FlatCommonChartSourceSide d n
+                  (1 : Equiv.Perm (Fin n)) (-1 : ℝ) ε η u)) *
+              ((((D.toSideZeroDiagonalCLM
+                (1 : Equiv.Perm (Fin n)) (-1 : ℝ) ε η φ).1 :
+                  SchwartzNPoint d n) : NPointDomain d n → ℂ) u)
+        let IcurPlus : ℝ → ℂ := fun ε =>
+          ∫ u : NPointDomain d n,
+            bvt_F OS lgc n (fun k => wickRotatePoint (u k)) *
+              ((((D.toSideZeroDiagonalCLM
+                (1 : Equiv.Perm (Fin n)) (1 : ℝ) ε η φ).1 :
+                  SchwartzNPoint d n) : NPointDomain d n → ℂ) u)
+        let IcurMinus : ℝ → ℂ := fun ε =>
+          ∫ u : NPointDomain d n,
+            bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k))) *
+              ((((D.toSideZeroDiagonalCLM
+                (1 : Equiv.Perm (Fin n)) (-1 : ℝ) ε η φ).1 :
+                  SchwartzNPoint d n) : NPointDomain d n → ℂ) u)
+        have hplus_os_i_transport :
+            Tendsto (fun ε : ℝ => IextPlus ε - IcurPlus ε)
+              (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) := by
+          /-
+            OS-I `(4.12)`--`(4.14)` ordinary-side branch/current transport.
+
+            This is the compact source-partition body for the `+iεη` side:
+            the deterministic `extendF` source-side branch must be transported
+            to the Wick-section source current against the same moving
+            side-zero test family.  Endpoint DCT alone only reaches the
+            quarter-turned common-edge branch, so the missing payload is the
+            Jost/EOW boundary identification before smearing.
+          -/
+          exact ?plus_os_i_transport
+        have hminus_os_i_transport :
+            Tendsto (fun ε : ℝ => IextMinus ε - IcurMinus ε)
+              (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) := by
+          /-
+            OS-I `(4.12)`--`(4.14)` adjacent-side branch/current transport.
+
+            This is the genuine adjacent seed-to-Wick transport: the raw
+            `extendF ∘ permAct P.τ` side branch on the `-iεη` source collar
+            must be identified distributionally with the permuted Wick-section
+            source current.  The local OS412 seed theorem only normalizes the
+            adjacent seed; it does not by itself transport this finite-height
+            branch to the Wick section.
+          -/
+          exact ?minus_os_i_transport
         /-
-          Active OS-I `(4.12)`--`(4.14)` Wick-section transport.
-          The source-current comparison is `hcurrent`; the remaining
-          production proof body is to identify the ordinary `+iεη`
-          `extendF` source-side branch and the raw adjacent `-iεη`
-          `extendF ∘ permAct` branch with those Wick-section source
-          currents, on compact source partitions, up to a term tending
-          to zero.
+          Algebraically this follows from `hplus_os_i_transport.sub
+          hminus_os_i_transport` after unfolding the four integral shorthands.
+          The proof is intentionally left as a separate named hole while the
+          two analytic OS-I transport leaves above are being developed, to keep
+          exact-file diagnostics from spending the heartbeat budget on a large
+          normalization of the full nested expression.
         -/
-        skip
+        exact ?combine_os_i_transports
       have hsum := hsource_current_transport.add hcurrent
       simpa [Fext, sub_eq_add_neg, add_assoc] using hsum
     simpa [Fext] using hside_ext
