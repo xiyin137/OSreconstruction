@@ -5021,6 +5021,92 @@ theorem OS45BHWJostHullData.os45CommonEdge_localHdiffGerm_of_local414_integrals
       (d := d) (n := n) hd OS lgc (P := P) u]
     simp [BHW.os45PulledRealBranch]
 
+/-- Local `(4.14)` compact-test boundary equality supplies the paper-facing
+source-zero representation on the Figure-2-4 initial-overlap collar.
+
+This is the direct Path-2 handoff from the actual OS-I local boundary packet to
+`RepresentsDistributionOn 0`.  It deliberately leaves the remaining analytic
+payload visible as `h414_integrals`; no compact Jost packet, selected-data
+adapter, or deterministic transported Wick shortcut is used here. -/
+theorem OS45BHWJostHullData.os45CommonEdge_sourceRepresentsZero_of_local414_integrals
+    [NeZero d]
+    {hd : 2 ≤ d} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData (d := d) hd n i hi}
+    (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {U : Set (NPointDomain d n)}
+    (hU_open : IsOpen U)
+    (hU_compact : IsCompact (closure U))
+    (hU_connected : IsConnected U)
+    (hU_closure : closure U ⊆ P.V)
+    (bvIn bvOut : BHW.OS45FlatCommonChartReal d n → ℂ)
+    (hbvIn_cont :
+      ContinuousOn bvIn
+        (BHW.os45CommonEdgeFlatCLE d n
+          (1 : Equiv.Perm (Fin n)) '' U))
+    (hbvOut_cont :
+      ContinuousOn bvOut
+        (BHW.os45CommonEdgeFlatCLE d n
+          (1 : Equiv.Perm (Fin n)) '' U))
+    (hsideIn_bvIn :
+      ∀ x ∈
+          BHW.os45CommonEdgeFlatCLE d n
+            (1 : Equiv.Perm (Fin n)) '' U,
+        Filter.Tendsto
+          (BHW.os45FlatCommonChartBranch d n OS lgc
+            (1 : Equiv.Perm (Fin n)))
+          (nhdsWithin (SCV.realEmbed x)
+            (BHW.os45FlatCommonChartOmega d n
+              (1 : Equiv.Perm (Fin n))))
+          (nhds (bvIn x)))
+    (hsideOut_bvOut :
+      ∀ x ∈
+          BHW.os45CommonEdgeFlatCLE d n
+            (1 : Equiv.Perm (Fin n)) '' U,
+        Filter.Tendsto
+          (BHW.os45FlatCommonChartBranch d n OS lgc
+            (P.τ.symm * (1 : Equiv.Perm (Fin n))))
+          (nhdsWithin (SCV.realEmbed x)
+            (BHW.os45FlatCommonChartOmega d n
+              (P.τ.symm * (1 : Equiv.Perm (Fin n)))))
+          (nhds (bvOut x)))
+    (h414_integrals :
+      ∀ φ : SchwartzMap (BHW.OS45FlatCommonChartReal d n) ℂ,
+        HasCompactSupport
+          (φ : BHW.OS45FlatCommonChartReal d n → ℂ) →
+        tsupport (φ : BHW.OS45FlatCommonChartReal d n → ℂ) ⊆
+          BHW.os45CommonEdgeFlatCLE d n
+            (1 : Equiv.Perm (Fin n)) '' U →
+        (∫ x : BHW.OS45FlatCommonChartReal d n, bvOut x * φ x) =
+          ∫ x : BHW.OS45FlatCommonChartReal d n, bvIn x * φ x) :
+    SCV.RepresentsDistributionOn
+      (0 : SchwartzMap (NPointDomain d n) ℂ →L[ℂ] ℂ)
+      (fun u : NPointDomain d n =>
+        BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+            (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u)) -
+          BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+            (1 : Equiv.Perm (Fin n))
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u))) U := by
+  classical
+  rcases
+      H.os45CommonEdge_localHdiffGerm_of_local414_integrals
+        OS lgc hU_open hU_compact hU_connected hU_closure
+        bvIn bvOut hbvIn_cont hbvOut_cont hsideIn_bvIn
+        hsideOut_bvOut h414_integrals with
+    ⟨Ucx, hUcx_open, hUcx_connected, hwick_mem, hcommon_mem,
+      Hdiff, hHdiff_holo, hwick_pairing_zero, hcommon_trace⟩
+  exact
+    BHW.os45CommonEdge_localHorizontalDifference_representsZero_of_germ
+      (d := d) hd OS lgc (P := P) U hU_open
+      hU_connected.nonempty Ucx Hdiff hUcx_open hUcx_connected
+      hwick_mem hcommon_mem hHdiff_holo hwick_pairing_zero hcommon_trace
+
 /-- Compact Jost-edge equality supplies the active transported Wick pairing.
 
 This is the monograph part-(b) bridge in local Figure-2-4 form: once the
