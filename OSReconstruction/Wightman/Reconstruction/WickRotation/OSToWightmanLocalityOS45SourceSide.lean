@@ -567,6 +567,47 @@ theorem os45FlatCommonChartSourceSide_zero_eq_commonEdge
   rw [BHW.os45FlatCommonChartSourceSide_zero,
     BHW.os45QuarterTurnCLE_symm_realEmbed_commonEdge_eq_wick]
 
+/-- At zero side height, the identity common-edge source-side endpoint is the
+terminal point of the Figure-2-4 identity path.
+
+This is the coordinate bridge needed by the OS-I `(4.12)`--`(4.14)` transport
+body: the source-side endpoint is not the raw Wick section, but the `t = 1`
+endpoint of the checked horizontal Figure-2-4 path. -/
+theorem os45FlatCommonChartSourceSide_zero_eq_identityPath_one
+    (sgn : ℝ)
+    (η : BHW.OS45FlatCommonChartReal d n)
+    (u : NPointDomain d n) :
+    BHW.os45FlatCommonChartSourceSide d n
+        (1 : Equiv.Perm (Fin n)) sgn 0 η u =
+      BHW.os45Figure24IdentityPath (d := d) (n := n)
+        u (1 : unitInterval) := by
+  rw [BHW.os45FlatCommonChartSourceSide_zero_eq_commonEdge]
+  simpa using
+    (BHW.os45Figure24IdentityPath_one (d := d) (n := n) u).symm
+
+/-- Finite side height is the terminal Figure-2-4 identity-path endpoint plus
+the explicit OS45 side direction.
+
+This keeps the live branch/source transport target in the correct coordinates:
+the analytic work starts at the `t = 1` Figure-2-4 endpoint and moves along the
+signed side-height direction, rather than pretending the source-side ray is a
+vertical Wick boundary ray from a real source point. -/
+theorem os45FlatCommonChartSourceSide_id_eq_identityPath_one_add_direction
+    (sgn ε : ℝ)
+    (η : BHW.OS45FlatCommonChartReal d n)
+    (u : NPointDomain d n) :
+    BHW.os45FlatCommonChartSourceSide d n
+        (1 : Equiv.Perm (Fin n)) sgn ε η u =
+      BHW.os45Figure24IdentityPath (d := d) (n := n)
+          u (1 : unitInterval) +
+        (ε : ℂ) •
+          BHW.os45FlatCommonChartSourceSideDirection
+            (d := d) (n := n)
+            (1 : Equiv.Perm (Fin n)) sgn η := by
+  rw [BHW.os45FlatCommonChartSourceSide_affine,
+    BHW.os45FlatCommonChartSourceSide_zero_eq_identityPath_one]
+  rfl
+
 /-- Zero-height source-side endpoint after applying an additional branch
 permutation.  This is the adjacent endpoint carrier coordinate identity used
 before the pairing-level OS-I normalization. -/
