@@ -6059,7 +6059,15 @@ theorem OS45BHWJostHullData.os45CommonEdge_sourceRepresentsZero_of_OS412_sourceS
                                 (P.τ.symm * (1 : Equiv.Perm (Fin n)))
                                 (fun a => (x a : ℂ)) * θ x) =
                               T θ) := by
-                        exact ?os45_OS412_compact_test_source_partition
+                        constructor
+                        · intro θ hθ_compact hθE
+                          exact
+                            BHW.os45FlatCommonChart_plus_zeroHeight_pairing_eq_CLM_of_localRepresents
+                              (d := d) hd OS lgc (P := P) T
+                              (BHW.os45FlatCommonChart_ordinaryEdgeCLM_represents
+                                hd OS lgc)
+                              θ hθ_compact (hθE.trans hE_sub)
+                        · exact ?os45_OS412_adjacent_compact_test_source_partition
                       obtain ⟨W0, hW0_open, _hW0_pre, hz0W0,
                           _hW0_sub, hW0_eq⟩ :=
                         BHW.os45_BHWJost_initialSectorEqOn_open_of_flatCommonChart_localZeroHeight_pairingsCLM
