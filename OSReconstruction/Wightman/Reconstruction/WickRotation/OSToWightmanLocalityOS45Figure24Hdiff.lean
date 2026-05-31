@@ -6089,10 +6089,67 @@ theorem OS45BHWJostHullData.os45CommonEdge_sourceRepresentsZero_of_OS412_sourceS
                   (D.toSchwartzNPointCLM
                     (1 : Equiv.Perm (Fin n)) φ :
                       NPointDomain d n → ℂ) u := by
-          fail_if_success
-            exact
-              (BHW.os45CommonEdge_adjacentWick_sourcePairing_eq_ordinaryWick
-                (d := d) OS lgc D φ hφEdge)
+          have hordinary_transport :
+              (∫ u : NPointDomain d n,
+                BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                    (1 : Equiv.Perm (Fin n))
+                    (BHW.realEmbed
+                      (BHW.os45CommonEdgeRealPoint
+                        (d := d) (n := n)
+                        (1 : Equiv.Perm (Fin n)) u)) *
+                  (D.toSchwartzNPointCLM
+                    (1 : Equiv.Perm (Fin n)) φ :
+                      NPointDomain d n → ℂ) u) =
+                ∫ u : NPointDomain d n,
+                  bvt_F OS lgc n (fun k => wickRotatePoint (u k)) *
+                    (D.toSchwartzNPointCLM
+                      (1 : Equiv.Perm (Fin n)) φ :
+                        NPointDomain d n → ℂ) u := by
+            /-
+            OS-I `(4.12)`--`(4.14)` ordinary Wick-section transport.
+            The source-side zero-height endpoint is the inverse quarter-turn
+            of the Figure-2-4 common edge; the missing analytic step is to
+            transport this compact-test pairing back to the Wick section.
+            -/
+            skip
+          have hadjacent_transport :
+              (∫ u : NPointDomain d n,
+                BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                    (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+                    (BHW.realEmbed
+                      (BHW.os45CommonEdgeRealPoint
+                        (d := d) (n := n)
+                        (1 : Equiv.Perm (Fin n)) u)) *
+                  (D.toSchwartzNPointCLM
+                    (1 : Equiv.Perm (Fin n)) φ :
+                      NPointDomain d n → ℂ) u) =
+                ∫ u : NPointDomain d n,
+                  bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k))) *
+                    (D.toSchwartzNPointCLM
+                      (1 : Equiv.Perm (Fin n)) φ :
+                        NPointDomain d n → ℂ) u := by
+            /-
+            OS-I `(4.12)` adjacent Wick-section transport for the
+            deterministic `extendF ∘ permAct P.τ` sheet.  This is the
+            classical Jost/EOW identity-theorem step, before the already
+            checked OS source-current equality below is used.
+            -/
+            skip
+          have hOS_source :
+              (∫ u : NPointDomain d n,
+                bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k))) *
+                  (D.toSchwartzNPointCLM
+                    (1 : Equiv.Perm (Fin n)) φ :
+                      NPointDomain d n → ℂ) u) =
+                ∫ u : NPointDomain d n,
+                  bvt_F OS lgc n (fun k => wickRotatePoint (u k)) *
+                    (D.toSchwartzNPointCLM
+                      (1 : Equiv.Perm (Fin n)) φ :
+                        NPointDomain d n → ℂ) u :=
+            BHW.os45CommonEdge_adjacentWick_sourcePairing_eq_ordinaryWick
+              (d := d) OS lgc D φ hφEdge
+          exact hadjacent_transport.trans
+            (hOS_source.trans hordinary_transport.symm)
         calc
           Lplus =
               ∫ u : NPointDomain d n,
