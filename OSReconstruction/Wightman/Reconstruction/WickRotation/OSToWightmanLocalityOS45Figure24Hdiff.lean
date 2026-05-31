@@ -5447,15 +5447,83 @@ theorem OS45BHWJostHullData.os45CommonEdge_sourceRepresentsZero_of_OS412_sourceS
           (𝓝[Set.Ioi 0] (0 : ℝ))
           (𝓝 0) := by
       have _hchecked_source_comparison := hsource_currents
-      /-
-      Remaining OS-I production leaf:
-      use the `(4.12)` Wick-section/source transport to replace the ordinary
-      plus and adjacent minus source-current pairings in `hsource_currents` by
-      the two `extendF` side-sheet pairings above, at finite positive height.
-      The already checked `hsource_currents` statement is exactly the
-      Schwinger-limit source comparison; what is missing here is the
-      branch/source identification, not another consumer gate.
-      -/
+      let l : Filter ℝ := 𝓝[Set.Ioi 0] (0 : ℝ)
+      let Abranch : ℝ → ℂ := fun ε =>
+        ∫ u : NPointDomain d n,
+          BHW.extendF (bvt_F OS lgc n)
+            (BHW.os45FlatCommonChartSourceSide d n
+              (1 : Equiv.Perm (Fin n)) (1 : ℝ) ε η u) *
+            ((((D.toSideZeroDiagonalCLM
+              (1 : Equiv.Perm (Fin n)) (1 : ℝ) ε η φ).1 :
+                SchwartzNPoint d n) : NPointDomain d n → ℂ) u)
+      let Acurrent : ℝ → ℂ := fun ε =>
+        ∫ u : NPointDomain d n,
+          bvt_F OS lgc n (fun k => wickRotatePoint (u k)) *
+            ((((D.toSideZeroDiagonalCLM
+              (1 : Equiv.Perm (Fin n)) (1 : ℝ) ε η φ).1 :
+                SchwartzNPoint d n) : NPointDomain d n → ℂ) u)
+      let Bbranch : ℝ → ℂ := fun ε =>
+        ∫ u : NPointDomain d n,
+          BHW.extendF (bvt_F OS lgc n)
+            (BHW.permAct (d := d)
+              (P.τ.symm * (1 : Equiv.Perm (Fin n))).symm
+              (BHW.os45FlatCommonChartSourceSide d n
+                (1 : Equiv.Perm (Fin n)) (-1 : ℝ) ε η u)) *
+            ((((D.toSideZeroDiagonalCLM
+              (1 : Equiv.Perm (Fin n)) (-1 : ℝ) ε η φ).1 :
+                SchwartzNPoint d n) : NPointDomain d n → ℂ) u)
+      let Bcurrent : ℝ → ℂ := fun ε =>
+        ∫ u : NPointDomain d n,
+          bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k))) *
+            ((((D.toSideZeroDiagonalCLM
+              (1 : Equiv.Perm (Fin n)) (-1 : ℝ) ε η φ).1 :
+                SchwartzNPoint d n) : NPointDomain d n → ℂ) u)
+      have hsource' :
+          Tendsto (fun ε : ℝ => Acurrent ε - Bcurrent ε) l
+            (𝓝 0) := by
+        simpa [l, Acurrent, Bcurrent] using hsource_currents
+      have hplus_transport :
+          Tendsto (fun ε : ℝ => Abranch ε - Acurrent ε) l
+            (𝓝 0) := by
+        /-
+        OS-I `(4.14)` ordinary-side transport leaf:
+        replace the ordinary Schwinger source-current pairing
+        `bvt_F (wick u)` by the deterministic `extendF` side-sheet
+        pairing along `os45FlatCommonChartSourceSide ... +εη`.
+        This is a genuine finite positive-height branch/source statement,
+        not a support or endpoint normalization.
+        -/
+        fail_if_success exact hsource_currents
+      have hminus_transport :
+          Tendsto (fun ε : ℝ => Bbranch ε - Bcurrent ε) l
+            (𝓝 0) := by
+        /-
+        OS-I `(4.12)` adjacent-side transport leaf:
+        replace the adjacent Schwinger source-current pairing
+        `bvt_F (wick (u ∘ P.τ))` by the deterministic adjacent
+        `extendF ∘ permAct` side-sheet pairing along the negative
+        source-side ray.  This is the seed-to-side Wick-section
+        transport still missing from the production route.
+        -/
+        fail_if_success exact hsource_currents
+      have hminus_transport_neg :
+          Tendsto (fun ε : ℝ => Bcurrent ε - Bbranch ε) l
+            (𝓝 0) := by
+        have h := hminus_transport.neg
+        simpa [sub_eq_add_neg, add_comm] using h
+      have hsum :
+          Tendsto
+            (fun ε : ℝ =>
+              (Abranch ε - Acurrent ε) +
+                (Acurrent ε - Bcurrent ε) +
+                (Bcurrent ε - Bbranch ε)) l (𝓝 0) := by
+        simpa using (hplus_transport.add hsource').add hminus_transport_neg
+      have htarget :
+          Tendsto (fun ε : ℝ => Abranch ε - Bbranch ε) l (𝓝 0) := by
+        refine Tendsto.congr' ?_ hsum
+        filter_upwards with ε
+        ring
+      simpa [l, Abranch, Bbranch] using htarget
     have hside :
         Tendsto
           (fun ε : ℝ =>
