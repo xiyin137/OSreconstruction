@@ -5939,16 +5939,94 @@ theorem OS45BHWJostHullData.os45CommonEdge_sourceRepresentsZero_of_OS412_sourceS
       have hbranch_pair_Lminus : Tendsto Bbranch l (𝓝 Lminus) := by
         simpa [l, Bbranch, Lminus, σminus] using hbranch_pair_minus
       have hzero_height_common : Lplus = Lminus := by
-        /-
-        The irreducible OS-I `(4.12)`--`(4.14)` compact common-edge
-        transport.  This is the monograph part-(b) identity-theorem/EOW
-        smearing statement on the local Jost collar: the ordinary zero-height
-        endpoint pairing and the deterministic adjacent zero-height endpoint
-        pairing have the same compact-test boundary value.  This deliberately
-        does not split the leaf into two endpoint-to-Wick transports; those
-        would be stronger than the OS-I argument supplies at this stage.
-        -/
-        skip
+        have hφ0U :
+            tsupport
+                ((((D.toZeroDiagonalCLM
+                  (1 : Equiv.Perm (Fin n)) φ).1 :
+                    SchwartzNPoint d n) : NPointDomain d n → ℂ)) ⊆ U := by
+          simpa [BHW.OS45Figure24SourceCutoffData.toZeroDiagonalCLM] using
+            D.toSchwartzNPointCLM_tsupport_subset_image
+              (1 : Equiv.Perm (Fin n)) φ (by simpa [E] using hφE)
+        have hcommon_pointwise :
+            ∀ u ∈ U,
+              BHW.extendF (bvt_F OS lgc n)
+                  (BHW.permAct (d := d)
+                    (1 : Equiv.Perm (Fin n)).symm
+                    (BHW.os45FlatCommonChartSourceSide d n
+                      (1 : Equiv.Perm (Fin n)) (1 : ℝ) 0 η u)) =
+                BHW.extendF (bvt_F OS lgc n)
+                  (BHW.permAct (d := d) σminus.symm
+                    (BHW.os45FlatCommonChartSourceSide d n
+                      (1 : Equiv.Perm (Fin n)) (-1 : ℝ) 0 η u)) := by
+          have hsource_eq :
+              ∀ u ∈ U,
+                BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                    (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+                    (BHW.realEmbed
+                      (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                        (1 : Equiv.Perm (Fin n)) u)) =
+                  BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                    (1 : Equiv.Perm (Fin n))
+                    (BHW.realEmbed
+                      (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                        (1 : Equiv.Perm (Fin n)) u)) := by
+            /-
+              The irreducible OS-I `(4.12)`--`(4.14)` common-edge transport.
+              This is the monograph part-(b) unsmeared Jost/EOW equality in
+              pulled-real branch coordinates: the ordinary zero-height
+              Figure-2-4 endpoint and the deterministic adjacent zero-height
+              endpoint have the same boundary value at each source point of the
+              compact collar.  The endpoint-coordinate and integral equalities
+              below are only bookkeeping and compact-test smearing of this
+              pointwise common-edge statement.
+            -/
+            skip
+          intro u hu
+          have hleft :
+              BHW.extendF (bvt_F OS lgc n)
+                  (BHW.permAct (d := d)
+                    (1 : Equiv.Perm (Fin n)).symm
+                    (BHW.os45FlatCommonChartSourceSide d n
+                      (1 : Equiv.Perm (Fin n)) (1 : ℝ) 0 η u)) =
+                BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                  (1 : Equiv.Perm (Fin n))
+                  (BHW.realEmbed
+                    (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                      (1 : Equiv.Perm (Fin n)) u)) := by
+            rw [BHW.os45FlatCommonChartSourceSide_zero_eq_commonEdge]
+            simp [BHW.os45PulledRealBranch]
+          have hright :
+              BHW.extendF (bvt_F OS lgc n)
+                  (BHW.permAct (d := d) σminus.symm
+                    (BHW.os45FlatCommonChartSourceSide d n
+                      (1 : Equiv.Perm (Fin n)) (-1 : ℝ) 0 η u)) =
+                BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                  (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+                  (BHW.realEmbed
+                    (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                      (1 : Equiv.Perm (Fin n)) u)) := by
+            rw [BHW.os45FlatCommonChartSourceSide_zero_eq_commonEdge]
+            simpa [σminus] using
+              BHW.os45Figure24CommonEdge_permAct_extendF_eq_adjacentPulledRealBranch
+                (d := d) (n := n) hd OS lgc (P := P) u
+          exact hleft.trans ((hsource_eq u hu).symm.trans hright.symm)
+        refine MeasureTheory.integral_congr_ae (Filter.Eventually.of_forall ?_)
+        intro u
+        by_cases hu : u ∈ U
+        · exact congrArg
+            (fun c : ℂ =>
+              c *
+                ((((D.toZeroDiagonalCLM
+                  (1 : Equiv.Perm (Fin n)) φ).1 :
+                    SchwartzNPoint d n) : NPointDomain d n → ℂ) u))
+            (hcommon_pointwise u hu)
+        · have hφ0_zero :
+              ((((D.toZeroDiagonalCLM
+                (1 : Equiv.Perm (Fin n)) φ).1 :
+                  SchwartzNPoint d n) : NPointDomain d n → ℂ) u) = 0 :=
+            image_eq_zero_of_notMem_tsupport
+              (fun hu_supp => hu (hφ0U hu_supp))
+          simp [hφ0_zero]
       have htarget :
           Tendsto (fun ε : ℝ => Abranch ε - Bbranch ε) l (𝓝 0) := by
         have hdiff := hbranch_pair_Lplus.sub hbranch_pair_Lminus
