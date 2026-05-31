@@ -5866,7 +5866,85 @@ theorem OS45BHWJostHullData.os45CommonEdge_sourceRepresentsZero_of_OS412_sourceS
                   ((((D.toZeroDiagonalCLM
                     (1 : Equiv.Perm (Fin n)) φ).1 :
                       SchwartzNPoint d n) : NPointDomain d n → ℂ) u) := by
-          exact ?zero_height_OS414_common_edge_pairing
+          let φ0 : SchwartzNPoint d n :=
+            ((D.toZeroDiagonalCLM
+              (1 : Equiv.Perm (Fin n)) φ).1 : SchwartzNPoint d n)
+          have hφ0U : tsupport (φ0 : NPointDomain d n → ℂ) ⊆ U := by
+            simpa [φ0, BHW.OS45Figure24SourceCutoffData.toZeroDiagonalCLM] using
+              D.toSchwartzNPointCLM_tsupport_subset_image
+                (1 : Equiv.Perm (Fin n)) φ hφU
+          have hzero_edge_pointwise :
+              ∀ u ∈ U,
+                BHW.extendF (bvt_F OS lgc n)
+                  (BHW.os45FlatCommonChartSourceSide d n
+                    (1 : Equiv.Perm (Fin n)) (1 : ℝ) 0 η u) =
+                BHW.extendF (bvt_F OS lgc n)
+                  (BHW.permAct (d := d)
+                    (P.τ.symm * (1 : Equiv.Perm (Fin n))).symm
+                    (BHW.os45FlatCommonChartSourceSide d n
+                      (1 : Equiv.Perm (Fin n)) (-1 : ℝ) 0 η u)) := by
+            intro u hu
+            have hsource_edge :
+                BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                    (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+                    (BHW.realEmbed
+                      (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                        (1 : Equiv.Perm (Fin n)) u)) =
+                  BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                    (1 : Equiv.Perm (Fin n))
+                    (BHW.realEmbed
+                      (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                        (1 : Equiv.Perm (Fin n)) u)) := by
+              /-
+                OS-I `(4.14)` Jost-edge equality, pointwise on the compact
+                source support.  This is the remaining paper step: transport
+                the raw `(4.12)` adjacent analytic element through the
+                Figure-2-4 corridor to the horizontal common edge and identify
+                it with the ordinary boundary branch there.
+              -/
+              exact ?os45_OS414_source_common_edge_branch_eq
+            have hperm_common :
+                BHW.extendF (bvt_F OS lgc n)
+                    (BHW.permAct (d := d) P.τ
+                      ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+                        (BHW.realEmbed
+                          (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                            (1 : Equiv.Perm (Fin n)) u)))) =
+                  BHW.extendF (bvt_F OS lgc n)
+                    ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+                      (BHW.realEmbed
+                        (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                          (1 : Equiv.Perm (Fin n)) u))) :=
+              (BHW.os45_sourceCommonEdge_branch_eq_iff_permAct_extendF_commonEdge_eq
+                (d := d) (n := n) hd OS lgc (P := P) u).mp hsource_edge
+            rw [BHW.os45FlatCommonChartSourceSide_zero_eq_commonEdge,
+              BHW.os45FlatCommonChartSourceSide_zero_eq_commonEdge]
+            simpa [P.τ_eq] using hperm_common.symm
+          have hzero_integral :
+              (∫ u : NPointDomain d n,
+                BHW.extendF (bvt_F OS lgc n)
+                  (BHW.os45FlatCommonChartSourceSide d n
+                    (1 : Equiv.Perm (Fin n)) (1 : ℝ) 0 η u) *
+                  (φ0 : NPointDomain d n → ℂ) u) =
+                ∫ u : NPointDomain d n,
+                  BHW.extendF (bvt_F OS lgc n)
+                    (BHW.permAct (d := d)
+                      (P.τ.symm * (1 : Equiv.Perm (Fin n))).symm
+                      (BHW.os45FlatCommonChartSourceSide d n
+                        (1 : Equiv.Perm (Fin n)) (-1 : ℝ) 0 η u)) *
+                    (φ0 : NPointDomain d n → ℂ) u := by
+            refine MeasureTheory.integral_congr_ae
+              (Filter.Eventually.of_forall ?_)
+            intro u
+            by_cases hu : u ∈ U
+            · exact congrArg (fun c : ℂ =>
+                c * (φ0 : NPointDomain d n → ℂ) u)
+                (hzero_edge_pointwise u hu)
+            · have hφ0_zero : (φ0 : NPointDomain d n → ℂ) u = 0 :=
+                image_eq_zero_of_notMem_tsupport
+                  (fun hφ_supp => hu (hφ0U hφ_supp))
+              simp [hφ0_zero]
+          simpa [φ0] using hzero_integral
         have hbranch_zero :
             Tendsto Fext (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) := by
           simpa [Fext] using
