@@ -5910,7 +5910,7 @@ theorem OS45BHWJostHullData.os45CommonEdge_sourceRepresentsZero_of_OS412_sourceS
               rcases htail with ⟨hUcx_connected, htail⟩
               rcases htail with ⟨hwick_mem, htail⟩
               rcases htail with ⟨hcommon_mem, htail⟩
-              rcases htail with ⟨_hUcx_sub, htail⟩
+              rcases htail with ⟨hUcx_sub, htail⟩
               rcases htail with ⟨hFord_holo, htail⟩
               rcases htail with ⟨hFadj_holo, htail⟩
               rcases htail with ⟨hFord_wick, htail⟩
@@ -5933,7 +5933,87 @@ theorem OS45BHWJostHullData.os45CommonEdge_sourceRepresentsZero_of_OS412_sourceS
                           (fun k => wickRotatePoint (v k))) * ψ v =
                     ∫ v : NPointDomain d n,
                       bvt_F OS lgc n (fun k => wickRotatePoint (v k)) * ψ v := by
-                  exact ?os45_OS412_compact_wick_section_transport
+                  have hInitialOverlap_eq :
+                      Set.EqOn
+                        (BHW.extendF (bvt_F OS lgc n))
+                        (fun z =>
+                          BHW.extendF (bvt_F OS lgc n)
+                            (BHW.permAct (d := d) P.τ z))
+                        Ucx := by
+                    have hLocalEOW_seed :
+                        ∃ W : Set (Fin n → Fin (d + 1) → ℂ),
+                          IsOpen W ∧ W.Nonempty ∧ W ⊆ Ucx ∧
+                          Set.EqOn
+                            (BHW.extendF (bvt_F OS lgc n))
+                            (fun z =>
+                              BHW.extendF (bvt_F OS lgc n)
+                                (BHW.permAct (d := d) P.τ z))
+                            W := by
+                      exact ?os45_OS412_local_EOW_seed_on_initial_overlap
+                    rcases hLocalEOW_seed with
+                      ⟨W, hW_open, hW_ne, hW_sub, hW_eq⟩
+                    have hOrd_holo :
+                        DifferentiableOn ℂ
+                          (BHW.extendF (bvt_F OS lgc n)) Ucx :=
+                      (BHW.differentiableOn_extendF_bvt_F_extendedTube
+                        (d := d) OS lgc n).mono (by
+                          intro z hz
+                          exact (hUcx_sub hz).1)
+                    have hAdj_holo :
+                        DifferentiableOn ℂ
+                          (fun z : Fin n → Fin (d + 1) → ℂ =>
+                            BHW.extendF (bvt_F OS lgc n)
+                              (BHW.permAct (d := d) P.τ z)) Ucx :=
+                      (BHW.differentiableOn_extendF_bvt_F_permAct_preimageExtendedTube
+                        (d := d) OS lgc n P.τ).mono (by
+                          intro z hz
+                          simpa [BHW.permutedExtendedTubeSector] using
+                            (hUcx_sub hz).2)
+                    exact
+                      identity_theorem_product_of_eqOn_open
+                        hUcx_open hUcx_connected hW_open hW_ne hW_sub
+                        hOrd_holo hAdj_holo hW_eq
+                  have hF_holo :
+                      DifferentiableOn ℂ (bvt_F OS lgc n)
+                        (BHW.ForwardTube d n) := by
+                    simpa [BHW_forwardTube_eq (d := d) (n := n)] using
+                      bvt_F_holomorphic (d := d) OS lgc n
+                  have hF_lorentz :
+                      ∀ (Λ : LorentzLieGroup.RestrictedLorentzGroup d)
+                        (z : Fin n → Fin (d + 1) → ℂ),
+                        z ∈ BHW.ForwardTube d n →
+                        bvt_F OS lgc n
+                          (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * z k ν) =
+                        bvt_F OS lgc n z := by
+                    intro Λ z hz
+                    exact bvt_F_restrictedLorentzInvariant_forwardTube
+                      (d := d) OS lgc n Λ z
+                      ((BHW_forwardTube_eq (d := d) (n := n)) ▸ hz)
+                  refine MeasureTheory.integral_congr_ae
+                    (Filter.Eventually.of_forall ?_)
+                  intro v
+                  by_cases hv : v ∈ U
+                  · let z : Fin n → Fin (d + 1) → ℂ :=
+                      fun k => wickRotatePoint (v k)
+                    have hvP : v ∈ P.V := hU_sub hv
+                    have hzUcx : z ∈ Ucx := by
+                      simpa [z] using hwick_mem v hv
+                    have hEq := hInitialOverlap_eq hzUcx
+                    have hz_forward : z ∈ BHW.ForwardTube d n := by
+                      simpa [z] using
+                        BHW.os45Figure24_ordinaryWick_mem_forwardTube
+                          (d := d) (n := n) (hd := hd) (P := P) hvP
+                    have hext :
+                        BHW.extendF (bvt_F OS lgc n) z =
+                          bvt_F OS lgc n z :=
+                      BHW.extendF_eq_on_forwardTube n (bvt_F OS lgc n)
+                        hF_holo hF_lorentz z hz_forward
+                    exact congrArg (fun c : ℂ => c * ψ v)
+                      (hEq.symm.trans hext)
+                  · have hψ_zero : ψ v = 0 :=
+                      image_eq_zero_of_notMem_tsupport
+                        (fun hψ_supp => hv (hψU hψ_supp))
+                    simp [hψ_zero]
                 calc
                   ∫ v : NPointDomain d n,
                       Fadj (fun k => wickRotatePoint (v k)) * ψ v =
