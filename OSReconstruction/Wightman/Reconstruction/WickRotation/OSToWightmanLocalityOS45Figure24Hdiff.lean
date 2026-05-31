@@ -5831,23 +5831,19 @@ theorem OS45BHWJostHullData.os45CommonEdge_sourceRepresentsZero_of_OS412_sourceS
       simpa [Fcur] using
         D.sourceSide_ordinaryPlus_adjacentMinus_difference_tendsto_zero
           (d := d) OS lgc η hηC φ hφ_compact hφE
-    have htransport :
-        Tendsto (fun ε : ℝ => Fext ε - Fcur ε)
-          (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) := by
-    /-
-      Active OS-I leaf.  This is the finite-height branch/source transport:
-      compare the deterministic ordinary/adjacent `extendF` side branches with
-      the OS-I source-current branches already proved in
-      `sourceSide_ordinaryPlus_adjacentMinus_difference_tendsto_zero`.
-    -/
+    have hside_ext :
+        Tendsto Fext (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) := by
+      /-
+        Active OS-I `(4.12)`--`(4.14)` leaf.  This is now the bare
+        deterministic source-side branch comparison: prove that the ordinary
+        `+` side branch and the genuine adjacent `-` side branch have zero
+        compact-test difference after the side-zero-diagonal pullback.  The
+        source-current analogue is `hcurrent`; the remaining work is the
+        Wick-section transport/partition body that identifies the deterministic
+        side branches with that OS-I source comparison.
+      -/
       skip
-    have hsum :
-        Tendsto (fun ε : ℝ => (Fext ε - Fcur ε) + Fcur ε)
-          (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 (0 + 0)) :=
-      htransport.add hcurrent
-    have hside : Tendsto Fext (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) := by
-      simpa [sub_eq_add_neg, add_assoc] using hsum
-    simpa [Fext] using hside
+    simpa [Fext] using hside_ext
   exact
     H.os45CommonEdge_sourceRepresentsZero_of_sourcePairings
       OS lgc hU_open hU_compact hU_connected hU_closure
