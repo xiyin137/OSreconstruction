@@ -1681,6 +1681,208 @@ theorem OS45Figure24SourceCutoffData.tendsto_flatCommonChart_sideBranch_differen
   rw [hplus_pull, hminus_pull]
   ring
 
+/-- Zero-height flat common-edge pairing extracted from a finite-height
+side-branch comparison.
+
+This is the non-circular OS-I `(4.14)` limit-selection step: once the ordinary
+plus and genuine adjacent minus flat side-branch integrals have difference
+tending to zero along a cone direction, side-continuity identifies the two
+zero-height common-edge pairings.  The lemma does not assume a common-boundary
+CLM, `Hdiff`, source representation, or pointwise common-edge equality. -/
+theorem OS45Figure24SourceCutoffData.zeroHeightPairing_of_tendsto_flatCommonChart_sideBranch_difference_zero
+    {hd : 2 ≤ d}
+    {i : Fin n} {hi : i.val + 1 < n}
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (_D : BHW.OS45Figure24SourceCutoffData P)
+    (η : BHW.OS45FlatCommonChartReal d n)
+    (hηC : η ∈ BHW.os45FlatCommonChartCone d n)
+    (φ : SchwartzMap (BHW.OS45FlatCommonChartReal d n) ℂ)
+    (hφ_compact :
+      HasCompactSupport
+        (φ : BHW.OS45FlatCommonChartReal d n → ℂ))
+    (hφE :
+      tsupport (φ : BHW.OS45FlatCommonChartReal d n → ℂ) ⊆
+        BHW.os45FlatCommonChartEdgeSet d n P
+          (1 : Equiv.Perm (Fin n)))
+    (hside :
+      Tendsto
+        (fun ε : ℝ =>
+          (∫ x : BHW.OS45FlatCommonChartReal d n,
+            BHW.os45FlatCommonChartBranch d n OS lgc
+              (1 : Equiv.Perm (Fin n))
+              (fun a =>
+                (x a : ℂ) +
+                  ((((1 : ℝ) * ε) • η) a : ℂ) * Complex.I) *
+              φ x) -
+          ∫ x : BHW.OS45FlatCommonChartReal d n,
+            BHW.os45FlatCommonChartBranch d n OS lgc
+              (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+              (fun a =>
+                (x a : ℂ) +
+                  ((((-1 : ℝ) * ε) • η) a : ℂ) * Complex.I) *
+              φ x)
+        (𝓝[Set.Ioi 0] (0 : ℝ))
+        (𝓝 0)) :
+    (∫ x : BHW.OS45FlatCommonChartReal d n,
+      BHW.os45FlatCommonChartBranch d n OS lgc
+        (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+        (fun a => (x a : ℂ)) * φ x) =
+      ∫ x : BHW.OS45FlatCommonChartReal d n,
+        BHW.os45FlatCommonChartBranch d n OS lgc
+          (1 : Equiv.Perm (Fin n))
+          (fun a => (x a : ℂ)) * φ x := by
+  classical
+  let Kη : Set (BHW.OS45FlatCommonChartReal d n) := {η}
+  have hKη : IsCompact Kη := isCompact_singleton
+  have hKηC : Kη ⊆ BHW.os45FlatCommonChartCone d n := by
+    intro η' hη'
+    have hηeq : η' = η := by
+      simpa [Kη] using hη'
+    simpa [hηeq] using hηC
+  let Plus : ℝ → BHW.OS45FlatCommonChartReal d n → ℂ := fun ε η' =>
+    ∫ x : BHW.OS45FlatCommonChartReal d n,
+      BHW.os45FlatCommonChartBranch d n OS lgc
+        (1 : Equiv.Perm (Fin n))
+        (fun a => (x a : ℂ) +
+          (ε : ℂ) * (η' a : ℂ) * Complex.I) * φ x
+  let Minus : ℝ → BHW.OS45FlatCommonChartReal d n → ℂ := fun ε η' =>
+    ∫ x : BHW.OS45FlatCommonChartReal d n,
+      BHW.os45FlatCommonChartBranch d n OS lgc
+        (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+        (fun a => (x a : ℂ) -
+          (ε : ℂ) * (η' a : ℂ) * Complex.I) * φ x
+  let Plus0 : ℂ :=
+    ∫ x : BHW.OS45FlatCommonChartReal d n,
+      BHW.os45FlatCommonChartBranch d n OS lgc
+        (1 : Equiv.Perm (Fin n))
+        (fun a => (x a : ℂ)) * φ x
+  let Minus0 : ℂ :=
+    ∫ x : BHW.OS45FlatCommonChartReal d n,
+      BHW.os45FlatCommonChartBranch d n OS lgc
+        (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+        (fun a => (x a : ℂ)) * φ x
+  have hPlus_zero :
+      TendstoUniformlyOn Plus
+        (fun _ : BHW.OS45FlatCommonChartReal d n => Plus0)
+        (𝓝[Set.Ioi 0] (0 : ℝ)) Kη := by
+    have hF_cont :
+        ContinuousOn
+          (BHW.os45FlatCommonChartBranch d n OS lgc
+            (1 : Equiv.Perm (Fin n)))
+          (BHW.os45FlatCommonChartOmega d n
+            (1 : Equiv.Perm (Fin n))) :=
+      (BHW.differentiableOn_os45FlatCommonChartBranch
+        d n OS lgc (1 : Equiv.Perm (Fin n))).continuousOn
+    have hside_local :
+        ∀ K : Set (BHW.OS45FlatCommonChartReal d n), IsCompact K →
+          K ⊆ BHW.os45FlatCommonChartEdgeSet d n P
+            (1 : Equiv.Perm (Fin n)) →
+          ∀ Kη : Set (BHW.OS45FlatCommonChartReal d n), IsCompact Kη →
+            Kη ⊆ BHW.os45FlatCommonChartCone d n →
+            ∃ r : ℝ, 0 < r ∧
+              ∀ x ∈ K, ∀ η' ∈ Kη, ∀ ε : ℝ, 0 < ε → ε < r →
+                (fun a => (x a : ℂ) +
+                  ((1 : ℝ) : ℂ) * (ε : ℂ) *
+                    (η' a : ℂ) * Complex.I) ∈
+                  BHW.os45FlatCommonChartOmega d n
+                    (1 : Equiv.Perm (Fin n)) := by
+      intro K hK hKE Kη' hKη' hKη'C
+      obtain ⟨r, hr_pos, hr_mem⟩ :=
+        BHW.os45_BHWJost_flatCommonChart_localWedge_of_figure24
+          (d := d) hd (P := P) K hK hKE Kη' hKη' hKη'C
+      refine ⟨r, hr_pos, ?_⟩
+      intro x hx η' hη' ε hε_pos hε_lt
+      simpa [one_mul] using (hr_mem x hx η' hη' ε hε_pos hε_lt).1
+    simpa [Plus, Plus0, one_mul] using
+      SCV.tendstoUniformlyOn_sideIntegral_of_zeroHeight_pairing
+        (m := BHW.os45FlatCommonChartDim d n)
+        (E := BHW.os45FlatCommonChartEdgeSet d n P
+          (1 : Equiv.Perm (Fin n)))
+        (C := BHW.os45FlatCommonChartCone d n)
+        (Ωc := BHW.os45FlatCommonChartOmega d n
+          (1 : Equiv.Perm (Fin n)))
+        (BHW.isOpen_os45FlatCommonChartOmega d n
+          (1 : Equiv.Perm (Fin n)))
+        (BHW.os45FlatCommonChartBranch d n OS lgc
+          (1 : Equiv.Perm (Fin n)))
+        hF_cont
+        (BHW.os45FlatCommonChart_real_mem_omega_id (d := d) hd (P := P))
+        (1 : ℝ) hside_local
+        Kη hKη hKηC φ hφ_compact hφE Plus0 (by rfl)
+  have hMinus_zero :
+      TendstoUniformlyOn Minus
+        (fun _ : BHW.OS45FlatCommonChartReal d n => Minus0)
+        (𝓝[Set.Ioi 0] (0 : ℝ)) Kη := by
+    have hF_cont :
+        ContinuousOn
+          (BHW.os45FlatCommonChartBranch d n OS lgc
+            (P.τ.symm * (1 : Equiv.Perm (Fin n))))
+          (BHW.os45FlatCommonChartOmega d n
+            (P.τ.symm * (1 : Equiv.Perm (Fin n)))) :=
+      (BHW.differentiableOn_os45FlatCommonChartBranch
+        d n OS lgc
+          (P.τ.symm * (1 : Equiv.Perm (Fin n)))).continuousOn
+    have hside_local :
+        ∀ K : Set (BHW.OS45FlatCommonChartReal d n), IsCompact K →
+          K ⊆ BHW.os45FlatCommonChartEdgeSet d n P
+            (1 : Equiv.Perm (Fin n)) →
+          ∀ Kη : Set (BHW.OS45FlatCommonChartReal d n), IsCompact Kη →
+            Kη ⊆ BHW.os45FlatCommonChartCone d n →
+            ∃ r : ℝ, 0 < r ∧
+              ∀ x ∈ K, ∀ η' ∈ Kη, ∀ ε : ℝ, 0 < ε → ε < r →
+                (fun a => (x a : ℂ) +
+                  ((-1 : ℝ) : ℂ) * (ε : ℂ) *
+                    (η' a : ℂ) * Complex.I) ∈
+                  BHW.os45FlatCommonChartOmega d n
+                    (P.τ.symm * (1 : Equiv.Perm (Fin n))) := by
+      intro K hK hKE Kη' hKη' hKη'C
+      obtain ⟨r, hr_pos, hr_mem⟩ :=
+        BHW.os45_BHWJost_flatCommonChart_localWedge_of_figure24
+          (d := d) hd (P := P) K hK hKE Kη' hKη' hKη'C
+      refine ⟨r, hr_pos, ?_⟩
+      intro x hx η' hη' ε hε_pos hε_lt
+      simpa [sub_eq_add_neg, neg_mul, one_mul] using
+        (hr_mem x hx η' hη' ε hε_pos hε_lt).2
+    simpa [Minus, Minus0, sub_eq_add_neg, neg_mul, one_mul] using
+      SCV.tendstoUniformlyOn_sideIntegral_of_zeroHeight_pairing
+        (m := BHW.os45FlatCommonChartDim d n)
+        (E := BHW.os45FlatCommonChartEdgeSet d n P
+          (1 : Equiv.Perm (Fin n)))
+        (C := BHW.os45FlatCommonChartCone d n)
+        (Ωc := BHW.os45FlatCommonChartOmega d n
+          (P.τ.symm * (1 : Equiv.Perm (Fin n))))
+        (BHW.isOpen_os45FlatCommonChartOmega d n
+          (P.τ.symm * (1 : Equiv.Perm (Fin n))))
+        (BHW.os45FlatCommonChartBranch d n OS lgc
+          (P.τ.symm * (1 : Equiv.Perm (Fin n))))
+        hF_cont
+        (BHW.os45FlatCommonChart_real_mem_omega_adjacent
+          (d := d) hd (P := P))
+        (-1 : ℝ) hside_local
+        Kη hKη hKηC φ hφ_compact hφE Minus0 (by rfl)
+  have hPlus_eta :
+      Tendsto (fun ε : ℝ => Plus ε η)
+        (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 Plus0) :=
+    hPlus_zero.tendsto_at (by simp [Kη])
+  have hMinus_eta :
+      Tendsto (fun ε : ℝ => Minus ε η)
+        (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 Minus0) :=
+    hMinus_zero.tendsto_at (by simp [Kη])
+  have hdiff_zero :
+      Tendsto (fun ε : ℝ => Plus ε η - Minus ε η)
+        (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 (Plus0 - Minus0)) :=
+    hPlus_eta.sub hMinus_eta
+  have hside' :
+      Tendsto (fun ε : ℝ => Plus ε η - Minus ε η)
+        (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) := by
+    simpa [Plus, Minus, one_mul, neg_mul, sub_eq_add_neg, mul_assoc] using hside
+  have hzero : Plus0 - Minus0 = 0 :=
+    tendsto_nhds_unique hdiff_zero hside'
+  exact (sub_eq_zero.mp hzero).symm
+
 /-- Flat side-branch form of the zero-height source-pairing comparison.
 
 This connects the OS-I `(4.14)` pairing leaf to the flat side branches.  The
