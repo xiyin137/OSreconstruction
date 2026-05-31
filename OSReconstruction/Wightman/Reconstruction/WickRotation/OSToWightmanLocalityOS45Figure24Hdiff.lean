@@ -5879,7 +5879,59 @@ theorem OS45BHWJostHullData.os45CommonEdge_sourceRepresentsZero_of_OS412_sourceS
             quarter-turned common-edge branch, so the missing payload is the
             Jost/EOW boundary identification before smearing.
           -/
-          exact ?plus_os_i_transport
+          let endpointPlus : ℂ :=
+            ∫ u : NPointDomain d n,
+              BHW.extendF (bvt_F OS lgc n)
+                (BHW.os45FlatCommonChartSourceSide d n
+                  (1 : Equiv.Perm (Fin n)) (1 : ℝ) 0 η u) *
+                ((((D.toZeroDiagonalCLM
+                  (1 : Equiv.Perm (Fin n)) φ).1 :
+                    SchwartzNPoint d n) : NPointDomain d n → ℂ) u)
+          let S0 : ℂ :=
+            OS.S n (D.toZeroDiagonalCLM (1 : Equiv.Perm (Fin n)) φ)
+          have h0_minus_in_plus :
+              ∀ u ∈ closure U,
+                BHW.os45FlatCommonChartSourceSide d n
+                  (1 : Equiv.Perm (Fin n)) (-1 : ℝ) 0 η u ∈ Ωplus := by
+            intro u hu
+            simpa using h0_plus u hu
+          have hbranch_plus_limit :
+              Tendsto IextPlus (𝓝[Set.Ioi 0] (0 : ℝ))
+                (𝓝 endpointPlus) := by
+            have hpair :=
+              D.tendsto_sourceSide_extendF_sideZeroDiagonalCLM_pair
+                (d := d) OS lgc (1 : Equiv.Perm (Fin n))
+                hΩplus_open (by simpa using hFplus_cont)
+                hU_open subset_closure hU_compact η
+                h0_plus h0_minus_in_plus φ hφ_compact hφU
+            simpa [IextPlus, endpointPlus, BHW.permAct] using hpair.1
+          have hKηC :
+              ({η} : Set (BHW.OS45FlatCommonChartReal d n)) ⊆
+                BHW.os45FlatCommonChartCone d n := by
+            intro ξ hξ
+            simpa [Set.mem_singleton_iff.mp hξ] using hηC
+          have hcurrent_plus_limit :
+              Tendsto IcurPlus (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 S0) := by
+            have hsource :=
+              D.sideZeroDiagonal_sourcePairings_tendstoUniformlyOn_schwinger
+                OS lgc ({η} : Set (BHW.OS45FlatCommonChartReal d n))
+                isCompact_singleton hKηC φ hφ_compact hφE
+            have h := hsource.1.tendsto_at (x := η) (by simp)
+            simpa [IcurPlus, S0] using h
+          have hendpoint_plus_eow :
+              endpointPlus = S0 := by
+            /-
+              Monograph part-(b) ordinary side of the OS-I source transport.
+              This is the local EOW/Jost statement identifying the zero-height
+              ordinary source-side branch pairing with the Wick/Schwinger
+              current for the cutoff-pulled test.
+            -/
+            exact ?plus_endpoint_eow_pairing
+          have hdiff :=
+            hbranch_plus_limit.sub hcurrent_plus_limit
+          have htarget : endpointPlus - S0 = 0 := by
+            simp [hendpoint_plus_eow]
+          simpa [htarget] using hdiff
         have hminus_os_i_transport :
             Tendsto (fun ε : ℝ => IextMinus ε - IcurMinus ε)
               (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) := by
@@ -5893,16 +5945,72 @@ theorem OS45BHWJostHullData.os45CommonEdge_sourceRepresentsZero_of_OS412_sourceS
             adjacent seed; it does not by itself transport this finite-height
             branch to the Wick section.
           -/
-          exact ?minus_os_i_transport
-        /-
-          Algebraically this follows from `hplus_os_i_transport.sub
-          hminus_os_i_transport` after unfolding the four integral shorthands.
-          The proof is intentionally left as a separate named hole while the
-          two analytic OS-I transport leaves above are being developed, to keep
-          exact-file diagnostics from spending the heartbeat budget on a large
-          normalization of the full nested expression.
-        -/
-        exact ?combine_os_i_transports
+          let endpointMinus : ℂ :=
+            ∫ u : NPointDomain d n,
+              BHW.extendF (bvt_F OS lgc n)
+                (BHW.permAct (d := d)
+                  (P.τ.symm * (1 : Equiv.Perm (Fin n))).symm
+                  (BHW.os45FlatCommonChartSourceSide d n
+                    (1 : Equiv.Perm (Fin n)) (-1 : ℝ) 0 η u)) *
+                ((((D.toZeroDiagonalCLM
+                  (1 : Equiv.Perm (Fin n)) φ).1 :
+                    SchwartzNPoint d n) : NPointDomain d n → ℂ) u)
+          let S0 : ℂ :=
+            OS.S n (D.toZeroDiagonalCLM (1 : Equiv.Perm (Fin n)) φ)
+          have h0_plus_in_minus :
+              ∀ u ∈ closure U,
+                BHW.os45FlatCommonChartSourceSide d n
+                  (1 : Equiv.Perm (Fin n)) (1 : ℝ) 0 η u ∈ Ωminus := by
+            intro u hu
+            simpa using h0_minus u hu
+          have hbranch_minus_limit :
+              Tendsto IextMinus (𝓝[Set.Ioi 0] (0 : ℝ))
+                (𝓝 endpointMinus) := by
+            have hpair :=
+              D.tendsto_sourceSide_extendF_sideZeroDiagonalCLM_pair
+                (d := d) OS lgc
+                (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+                hΩminus_open (by simpa using hFminus_cont)
+                hU_open subset_closure hU_compact η
+                h0_plus_in_minus h0_minus φ hφ_compact hφU
+            simpa [IextMinus, endpointMinus] using hpair.2
+          have hKηC :
+              ({η} : Set (BHW.OS45FlatCommonChartReal d n)) ⊆
+                BHW.os45FlatCommonChartCone d n := by
+            intro ξ hξ
+            simpa [Set.mem_singleton_iff.mp hξ] using hηC
+          have hcurrent_minus_limit :
+              Tendsto IcurMinus (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 S0) := by
+            have hsource :=
+              D.sideZeroDiagonal_sourcePairings_tendstoUniformlyOn_schwinger
+                OS lgc ({η} : Set (BHW.OS45FlatCommonChartReal d n))
+                isCompact_singleton hKηC φ hφ_compact hφE
+            have h := hsource.2.2.2.tendsto_at (x := η) (by simp)
+            simpa [IcurMinus, S0] using h
+          have hendpoint_minus_eow :
+              endpointMinus = S0 := by
+            /-
+              Monograph part-(b) adjacent side of the OS-I source transport.
+              This is the raw `(4.12)` adjacent zero-height branch pairing,
+              after the Figure-2-4 source-side pullback, identified with the
+              same Wick/Schwinger current.
+            -/
+            exact ?minus_endpoint_eow_pairing
+          have hdiff :=
+            hbranch_minus_limit.sub hcurrent_minus_limit
+          have htarget : endpointMinus - S0 = 0 := by
+            simp [hendpoint_minus_eow]
+          simpa [htarget] using hdiff
+        have hpoint :
+            (fun ε : ℝ => Fext ε - Fcur ε) =
+              fun ε : ℝ =>
+                (IextPlus ε - IcurPlus ε) -
+                  (IextMinus ε - IcurMinus ε) := by
+          funext ε
+          dsimp [Fext, Fcur, IextPlus, IextMinus, IcurPlus, IcurMinus]
+          ring
+        rw [hpoint]
+        simpa using hplus_os_i_transport.sub hminus_os_i_transport
       have hsum := hsource_current_transport.add hcurrent
       simpa [Fext, sub_eq_add_neg, add_assoc] using hsum
     simpa [Fext] using hside_ext
