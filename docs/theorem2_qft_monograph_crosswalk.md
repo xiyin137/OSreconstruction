@@ -112,6 +112,43 @@ finite-height branch/current comparison
   Wick/Schwinger boundary distribution before smearing.  Producing more
   Path-2 input gates would not shrink this leaf.
 
+2026-05-30 overlap-pair carrier audit:
+
+- The active input form is still the source-side common-edge zero
+  representation / compact Wick-section transport.  The `Hdiff` statement is
+  the Lean envelope after that transport, and the reduced sign-flip statement
+  remains downstream reduced-normal bookkeeping.
+- A tempting construction is to put the two explicit branches on the common
+  overlap
+
+```lean
+{z | z ∈ BHW.ExtendedTube d n ∧
+     BHW.permAct (d := d) τ z ∈ BHW.ExtendedTube d n}
+```
+
+  with `Bord z = extendF (bvt_F OS lgc n) z` and
+  `Btau z = extendF (bvt_F OS lgc n) (permAct τ z)`.  This supplies the
+  ordinary holomorphy, adjacent holomorphy, real source traces, and the
+  ordinary Wick trace, but it does **not** supply the adjacent Wick trace.
+- The missing field is precisely
+
+```lean
+extendF (bvt_F OS lgc n)
+  (permAct τ (fun k => wickRotatePoint (u k)))
+=
+bvt_F OS lgc n (fun k => wickRotatePoint (u (τ k)))
+```
+
+  or its compact-test version.  This point is not normalized by
+  `extendF_eq_on_forwardTube`: the transported adjacent Wick point is the
+  OS-I `(4.12)` seed that must be carried to the Wick section by the
+  Jost/EOW argument.
+- Therefore an overlap-pair carrier constructor would only repackage the same
+  theorem-2 leaf unless it proves this adjacent Wick trace.  Do not add it as
+  another Path-2 gate.  The next proof body should attack the trace/transport
+  equation directly via the monograph part-(b) Jost real-edge equality,
+  identity theorem, distributional EOW, and compact-test smearing.
+
 Lean map, updated after the Path 2 source-transfer audit:
 
 - The active theorem-2 algebra is now:
