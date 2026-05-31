@@ -6067,7 +6067,110 @@ theorem OS45BHWJostHullData.os45CommonEdge_sourceRepresentsZero_of_OS412_sourceS
                               (BHW.os45FlatCommonChart_ordinaryEdgeCLM_represents
                                 hd OS lgc)
                               θ hθ_compact (hθE.trans hE_sub)
-                        · exact ?os45_OS412_adjacent_compact_test_source_partition
+                        · intro θ hθ_compact hθE
+                          have hθEdge :
+                              tsupport
+                                (θ : BHW.OS45FlatCommonChartReal d n → ℂ) ⊆
+                                BHW.os45FlatCommonChartEdgeSet d n P
+                                  (1 : Equiv.Perm (Fin n)) :=
+                            hθE.trans hE_sub
+                          have hflat_side :
+                              Tendsto
+                                (fun ε : ℝ =>
+                                  (∫ x : BHW.OS45FlatCommonChartReal d n,
+                                    BHW.os45FlatCommonChartBranch d n OS lgc
+                                      (1 : Equiv.Perm (Fin n))
+                                      (fun a =>
+                                        (x a : ℂ) +
+                                          ((((1 : ℝ) * ε) • η) a : ℂ) *
+                                            Complex.I) *
+                                      θ x) -
+                                  ∫ x : BHW.OS45FlatCommonChartReal d n,
+                                    BHW.os45FlatCommonChartBranch d n OS lgc
+                                      (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+                                      (fun a =>
+                                        (x a : ℂ) +
+                                          ((((-1 : ℝ) * ε) • η) a : ℂ) *
+                                            Complex.I) *
+                                      θ x)
+                                (𝓝[Set.Ioi 0] (0 : ℝ))
+                                (𝓝 0) := by
+                            have hsource_current_θ :
+                                Tendsto
+                                  (fun ε : ℝ =>
+                                    (∫ v : NPointDomain d n,
+                                      bvt_F OS lgc n
+                                          (fun k => wickRotatePoint (v k)) *
+                                        ((((D.toSideZeroDiagonalCLM
+                                          (1 : Equiv.Perm (Fin n)) (1 : ℝ)
+                                          ε η θ).1 : SchwartzNPoint d n) :
+                                            NPointDomain d n → ℂ) v)) -
+                                    ∫ v : NPointDomain d n,
+                                      bvt_F OS lgc n
+                                          (fun k => wickRotatePoint (v (P.τ k))) *
+                                        ((((D.toSideZeroDiagonalCLM
+                                          (1 : Equiv.Perm (Fin n)) (-1 : ℝ)
+                                          ε η θ).1 : SchwartzNPoint d n) :
+                                            NPointDomain d n → ℂ) v))
+                                  (𝓝[Set.Ioi 0] (0 : ℝ))
+                                  (𝓝 0) :=
+                              D.sourceSide_ordinaryPlus_adjacentMinus_difference_tendsto_zero
+                                OS lgc η hηC θ hθ_compact hθEdge
+                            have hsource_branch :
+                                Tendsto
+                                  (fun ε : ℝ =>
+                                    (∫ v : NPointDomain d n,
+                                      BHW.extendF (bvt_F OS lgc n)
+                                        (BHW.os45FlatCommonChartSourceSide d n
+                                          (1 : Equiv.Perm (Fin n)) (1 : ℝ)
+                                          ε η v) *
+                                        ((((D.toSideZeroDiagonalCLM
+                                          (1 : Equiv.Perm (Fin n)) (1 : ℝ)
+                                          ε η θ).1 : SchwartzNPoint d n) :
+                                            NPointDomain d n → ℂ) v)) -
+                                    ∫ v : NPointDomain d n,
+                                      BHW.extendF (bvt_F OS lgc n)
+                                        (BHW.permAct (d := d)
+                                          (P.τ.symm *
+                                            (1 : Equiv.Perm (Fin n))).symm
+                                          (BHW.os45FlatCommonChartSourceSide d n
+                                            (1 : Equiv.Perm (Fin n))
+                                            (-1 : ℝ) ε η v)) *
+                                        ((((D.toSideZeroDiagonalCLM
+                                          (1 : Equiv.Perm (Fin n)) (-1 : ℝ)
+                                          ε η θ).1 : SchwartzNPoint d n) :
+                                            NPointDomain d n → ℂ) v))
+                                  (𝓝[Set.Ioi 0] (0 : ℝ))
+                                  (𝓝 0) := by
+                              exact ?os45_OS412_finite_height_branch_source_transport
+                            exact
+                              D.tendsto_flatCommonChart_sideBranch_difference_zero_of_sourceSideDifference
+                                (d := d) (hd := hd) OS lgc η hηC
+                                θ hθ_compact hθEdge hsource_branch
+                          have hminus_eq_plus :
+                              (∫ x : BHW.OS45FlatCommonChartReal d n,
+                                BHW.os45FlatCommonChartBranch d n OS lgc
+                                  (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+                                  (fun a => (x a : ℂ)) * θ x) =
+                                ∫ x : BHW.OS45FlatCommonChartReal d n,
+                                  BHW.os45FlatCommonChartBranch d n OS lgc
+                                    (1 : Equiv.Perm (Fin n))
+                                    (fun a => (x a : ℂ)) * θ x :=
+                            D.zeroHeightPairing_of_tendsto_flatCommonChart_sideBranch_difference_zero
+                              (d := d) (hd := hd) OS lgc η hηC
+                              θ hθ_compact hθEdge hflat_side
+                          have hplus_eq_T :
+                              (∫ x : BHW.OS45FlatCommonChartReal d n,
+                                BHW.os45FlatCommonChartBranch d n OS lgc
+                                  (1 : Equiv.Perm (Fin n))
+                                  (fun a => (x a : ℂ)) * θ x) =
+                                T θ :=
+                            BHW.os45FlatCommonChart_plus_zeroHeight_pairing_eq_CLM_of_localRepresents
+                              (d := d) hd OS lgc (P := P) T
+                              (BHW.os45FlatCommonChart_ordinaryEdgeCLM_represents
+                                hd OS lgc)
+                              θ hθ_compact hθEdge
+                          exact hminus_eq_plus.trans hplus_eq_T
                       obtain ⟨W0, hW0_open, _hW0_pre, hz0W0,
                           _hW0_sub, hW0_eq⟩ :=
                         BHW.os45_BHWJost_initialSectorEqOn_open_of_flatCommonChart_localZeroHeight_pairingsCLM
