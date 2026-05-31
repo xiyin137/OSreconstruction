@@ -87,6 +87,31 @@ BHW.OS45Figure24SourceCutoffData
   Once that finite-height branch/current comparison is proved, the existing
   reverse endpoint theorem supplies the zero-height common-edge pairings.
 
+2026-05-30 endpoint audit after the Claude recommendation:
+
+- Checked local scratch
+  `test/proofideas_os45_source_branch_current_transport.lean` with:
+
+```lean
+BHW.proofideas_branch_current_transport_iff_zeroHeight_schwinger
+```
+
+- The theorem proves that, once the neutral moving-test endpoint limits are
+  available, the ordinary `+` and adjacent `-` finite-height branch/current
+  transport limits are equivalent to the two zero-height common-edge branch
+  pairings being equal to the Schwinger CLM:
+
+```text
+finite-height branch/current comparison
+  <-> zero-height flat common-edge pairing = OS.S on both sides
+```
+
+- This rules out the endpoint/DCT shortcut as a theorem-2 producer.  The
+  remaining mathematical body is exactly the monograph part-(b) Jost/EOW
+  common-boundary statement that identifies the flat common real edge with the
+  Wick/Schwinger boundary distribution before smearing.  Producing more
+  Path-2 input gates would not shrink this leaf.
+
 Lean map, updated after the Path 2 source-transfer audit:
 
 - The active theorem-2 algebra is now:
