@@ -5933,16 +5933,54 @@ theorem OS45BHWJostHullData.os45CommonEdge_sourceRepresentsZero_of_OS412_sourceS
                           (fun k => wickRotatePoint (v k))) * ψ v =
                     ∫ v : NPointDomain d n,
                       bvt_F OS lgc n (fun k => wickRotatePoint (v k)) * ψ v := by
-                  /-
-                    OS-I `(4.12)` Wick-section transport leaf.
+                  have hψP :
+                      tsupport (ψ : NPointDomain d n → ℂ) ⊆ P.V := by
+                    intro v hv
+                    exact hU_sub (hψU hv)
+                  have hV_swap_ordered :
+                      ∀ x ∈ P.V,
+                        (fun k =>
+                            x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+                          EuclideanOrderedPositiveTimeSector
+                            (d := d) (n := n)
+                            ((Equiv.swap i ⟨i.val + 1, hi⟩).symm *
+                              (1 : Equiv.Perm (Fin n))) := by
+                    intro x hx
+                    simpa [P.τ_eq] using P.V_swap_ordered x hx
+                  have hraw_seed_pairing :
+                      ∫ v : NPointDomain d n,
+                        bvt_F OS lgc n
+                          (fun k => wickRotatePoint (v (P.τ k))) * ψ v =
+                      ∫ v : NPointDomain d n,
+                        bvt_F OS lgc n
+                          (fun k => wickRotatePoint (v k)) * ψ v := by
+                    have hpair_swap :=
+                      BHW.os45_adjacent_euclideanEdge_pairing_eq_on_timeSector
+                        (d := d) OS lgc n i hi P.V P.V_jost
+                        (1 : Equiv.Perm (Fin n)) P.V_ordered
+                        hV_swap_ordered ψ hψP
+                    simpa [P.τ_eq] using hpair_swap
+                  have hbranch_to_raw_seed :
+                      ∫ v : NPointDomain d n,
+                        BHW.extendF (bvt_F OS lgc n)
+                          (BHW.permAct (d := d) P.τ
+                            (fun k => wickRotatePoint (v k))) * ψ v =
+                      ∫ v : NPointDomain d n,
+                        bvt_F OS lgc n
+                          (fun k => wickRotatePoint (v (P.τ k))) * ψ v := by
+                    /-
+                      OS-I `(4.12)` Wick-section transport leaf.
 
-                    The raw seed trace already identifies the adjacent
-                    `(4.12)` branch at `permAct P.τ (wick v)`.  What remains is
-                    the compact-test transport of the same concrete branch
-                    back to the ordinary Wick section `wick v`; trying to
-                    obtain this by a flat zero-height EOW seed is circular.
-                  -/
-                  exact ?os45_OS412_wick_section_transport_compact_test
+                      Euclidean symmetry now supplies the raw seed pairing
+                      equality `hraw_seed_pairing`.  The irreducible
+                      remaining step is the analytic transport of the
+                      deterministic adjacent `extendF` branch on
+                      `permAct P.τ (wick v)` to the raw `(4.12)` seed
+                      boundary value `bvt_F (wick (v ∘ P.τ))`, against a
+                      compact test supported in the Jost source collar.
+                    -/
+                    exact ?os45_OS412_extendF_adjacentWick_to_rawSeed_compact_test
+                  exact hbranch_to_raw_seed.trans hraw_seed_pairing
                 calc
                   ∫ v : NPointDomain d n,
                       Fadj (fun k => wickRotatePoint (v k)) * ψ v =
