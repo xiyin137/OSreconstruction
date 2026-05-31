@@ -47,6 +47,46 @@ Relevant monograph proof nodes:
   `Hdiff` is the Lean envelope, and the reduced sign-flip form is downstream
   bookkeeping.
 
+2026-05-30 Claude recommendation reconciliation:
+
+- Route A through `AdjacentReducedRuelleDistributionalLimit` is formally
+  legacy/diagnostic for theorem 2.  It must not be used as the active producer
+  when supplied through `BHW.localSPrime_twoSectorBranch_of_EOW_BHW`.
+- The active monograph node is Proposition
+  `os-boundary-package-consequences` part (b): Jost real-edge equality,
+  distributional EOW, then compact smearing by Jost-neighborhood partition.
+- The Lean chain after the current leaf is already present:
+
+```text
+finite-height source-side branch/current transport
+  -> D.zeroHeightPairing_of_tendsto_sourceSide_extendF_difference_zero
+  -> os45CompactFigure24WickPairingEq_of_zeroHeight_pairingsCLM_overlapConnected
+  -> os45CommonEdge_transported_wick_pairing_of_compactFigure24WickPairingEq
+  -> os45CommonEdge_sourceRepresentsZero_of_compactFigure24WickPairingEq
+```
+
+- Therefore the remaining non-wrapper lemma is not another input gate.  It is
+  the OS-I `(4.12)`-`(4.14)` finite-height Wick-section transport that compares
+  the actual branch integrals
+
+```lean
+∫ u,
+  extendF (bvt_F OS lgc n)
+    (os45FlatCommonChartSourceSide d n 1 1 ε η u) *
+    D.toSideZeroDiagonalCLM 1 1 ε η φ u
+```
+
+  and the adjacent `-` analogue with the OS source-current integrals already
+  controlled by
+
+```lean
+BHW.OS45Figure24SourceCutoffData
+  .sourceSide_ordinaryPlus_adjacentMinus_difference_tendsto_zero
+```
+
+  Once that finite-height branch/current comparison is proved, the existing
+  reverse endpoint theorem supplies the zero-height common-edge pairings.
+
 Lean map, updated after the Path 2 source-transfer audit:
 
 - The active theorem-2 algebra is now:
