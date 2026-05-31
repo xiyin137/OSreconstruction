@@ -7843,6 +7843,27 @@ theorem OS45BHWJostHullData.ordinaryWick_not_mem_OS412SeedWindow
     (BHW.permutedForwardTube_forces_perm_one
       (d := d) (n := n) P.τ hFT hPFT)
 
+/-- The deterministic adjacent Wick endpoint
+`permAct P.τ (wick x)` is not an ordinary forward-tube point.
+
+This is the precise Wick-side obstruction behind the OS-I `(4.12)` transport
+leaf: the adjacent branch value
+`extendF (bvt_F OS lgc n) (permAct P.τ (wick x))` cannot be normalized by the
+ordinary forward-tube identity `extendF_eq_on_forwardTube`.  It must be
+transported through the local OS-I/Jost argument. -/
+theorem OS45BHWJostHullData.permAct_ordinaryWick_not_mem_forwardTube
+    [NeZero d]
+    {hd : 2 ≤ d} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P) :
+    ∀ x, x ∈ P.V →
+      BHW.permAct (d := d) P.τ (fun k => wickRotatePoint (x k)) ∉
+        BHW.ForwardTube d n := by
+  intro x hx hforward
+  exact H.ordinaryWick_not_mem_OS412SeedWindow x hx
+    ⟨hforward, H.ordinaryWick_mem x hx⟩
+
 /-- The concrete OS I `(4.12)` seed window is open. -/
 theorem OS45BHWJostHullData.OS412SeedWindow_open
     [NeZero d]
