@@ -5949,7 +5949,129 @@ theorem OS45BHWJostHullData.os45CommonEdge_sourceRepresentsZero_of_OS412_sourceS
                               BHW.extendF (bvt_F OS lgc n)
                                 (BHW.permAct (d := d) P.τ z))
                             W := by
-                      exact ?os45_OS412_local_EOW_seed_on_initial_overlap
+                      let e :=
+                        BHW.os45CommonEdgeFlatCLE d n
+                          (1 : Equiv.Perm (Fin n))
+                      let E : Set (BHW.OS45FlatCommonChartReal d n) :=
+                        e '' U
+                      let x0 : BHW.OS45FlatCommonChartReal d n := e u
+                      let z0 : Fin n → Fin (d + 1) → ℂ :=
+                        (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+                          (BHW.unflattenCfg n d (SCV.realEmbed x0))
+                      have hE_open : IsOpen E := by
+                        simpa [E, e] using
+                          e.toHomeomorph.isOpenMap U hU_open
+                      have hE_sub :
+                          E ⊆ BHW.os45FlatCommonChartEdgeSet d n P
+                            (1 : Equiv.Perm (Fin n)) := by
+                        rintro x ⟨v, hvU, rfl⟩
+                        exact
+                          (BHW.os45CommonEdgeFlatCLE_mem_edgeSet_iff
+                            d n P (1 : Equiv.Perm (Fin n)) v).mpr
+                            (hU_sub hvU)
+                      have hx0 : x0 ∈ E := ⟨u, hu, rfl⟩
+                      have hz0_common :
+                          z0 =
+                            (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+                              (BHW.realEmbed
+                                (BHW.os45CommonEdgeRealPoint
+                                  (d := d) (n := n)
+                                  (1 : Equiv.Perm (Fin n)) u)) := by
+                        have hcommon_eq_flat :
+                            (BHW.os45QuarterTurnCLE
+                                (d := d) (n := n)).symm
+                              (BHW.realEmbed
+                                (BHW.os45CommonEdgeRealPoint
+                                  (d := d) (n := n)
+                                  (1 : Equiv.Perm (Fin n)) u)) =
+                            z0 := by
+                          have hsource_zero :=
+                            BHW.os45FlatCommonChartSourceSide_zero_eq_commonEdge
+                              (d := d) (n := n)
+                              (1 : Equiv.Perm (Fin n)) (1 : ℝ)
+                              (0 : BHW.OS45FlatCommonChartReal d n) u
+                          calc
+                            (BHW.os45QuarterTurnCLE
+                                (d := d) (n := n)).symm
+                                (BHW.realEmbed
+                                  (BHW.os45CommonEdgeRealPoint
+                                    (d := d) (n := n)
+                                    (1 : Equiv.Perm (Fin n)) u))
+                                =
+                              BHW.os45FlatCommonChartSourceSide d n
+                                (1 : Equiv.Perm (Fin n)) (1 : ℝ) 0
+                                (0 : BHW.OS45FlatCommonChartReal d n) u :=
+                                  hsource_zero.symm
+                            _ = z0 := by
+                                  change
+                                    BHW.os45FlatCommonChartSourceSide d n
+                                      (1 : Equiv.Perm (Fin n)) (1 : ℝ) 0
+                                      (0 : BHW.OS45FlatCommonChartReal d n) u =
+                                      (BHW.os45QuarterTurnCLE
+                                          (d := d) (n := n)).symm
+                                        (BHW.unflattenCfg n d
+                                          (SCV.realEmbed x0))
+                                  have hreal :
+                                      SCV.realEmbed x0 =
+                                        (fun a :
+                                            Fin (BHW.os45FlatCommonChartDim d n) =>
+                                          ((x0) a : ℂ)) := rfl
+                                  rw [hreal]
+                                  ext k μ
+                                  simp [BHW.os45FlatCommonChartSourceSide,
+                                    e, x0]
+                        exact hcommon_eq_flat.symm
+                      have hz0Ucx : z0 ∈ Ucx := by
+                        rw [hz0_common]
+                        exact hcommon_mem u hu
+                      have hm : 0 < BHW.os45FlatCommonChartDim d n :=
+                        BHW.os45FlatCommonChartDim_pos_of_adjacent d n hi
+                      obtain ⟨hCone_open, _hCone_convex, _hCone_zero,
+                          _hCone_smul, hCone_nonempty⟩ :=
+                        BHW.os45FlatCommonChartCone_eowReady d n
+                      obtain ⟨ys, hys_mem, hys_li⟩ :=
+                        open_set_contains_basis hm
+                          (BHW.os45FlatCommonChartCone d n)
+                          hCone_open hCone_nonempty
+                      let T : SchwartzMap
+                          (BHW.OS45FlatCommonChartReal d n) ℂ →L[ℂ] ℂ :=
+                        BHW.os45FlatCommonChart_ordinaryEdgeCLM hd OS lgc P
+                      have hzero_pairings :
+                          (∀ θ : SchwartzMap
+                              (BHW.OS45FlatCommonChartReal d n) ℂ,
+                            HasCompactSupport
+                              (θ : BHW.OS45FlatCommonChartReal d n → ℂ) →
+                            tsupport
+                              (θ : BHW.OS45FlatCommonChartReal d n → ℂ) ⊆ E →
+                            (∫ x : BHW.OS45FlatCommonChartReal d n,
+                              BHW.os45FlatCommonChartBranch d n OS lgc
+                                (1 : Equiv.Perm (Fin n))
+                                (fun a => (x a : ℂ)) * θ x) =
+                              T θ) ∧
+                          (∀ θ : SchwartzMap
+                              (BHW.OS45FlatCommonChartReal d n) ℂ,
+                            HasCompactSupport
+                              (θ : BHW.OS45FlatCommonChartReal d n → ℂ) →
+                            tsupport
+                              (θ : BHW.OS45FlatCommonChartReal d n → ℂ) ⊆ E →
+                            (∫ x : BHW.OS45FlatCommonChartReal d n,
+                              BHW.os45FlatCommonChartBranch d n OS lgc
+                                (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+                                (fun a => (x a : ℂ)) * θ x) =
+                              T θ) := by
+                        exact ?os45_OS412_compact_test_source_partition
+                      obtain ⟨W0, hW0_open, _hW0_pre, hz0W0,
+                          _hW0_sub, hW0_eq⟩ :=
+                        BHW.os45_BHWJost_initialSectorEqOn_open_of_flatCommonChart_localZeroHeight_pairingsCLM
+                          (d := d) hd OS lgc (P := P)
+                          hE_open hE_sub ys hys_mem hys_li x0 hx0 T
+                          hzero_pairings.1 hzero_pairings.2
+                      refine ⟨W0 ∩ Ucx, hW0_open.inter hUcx_open,
+                        ⟨z0, hz0W0, hz0Ucx⟩, ?_, ?_⟩
+                      · intro z hz
+                        exact hz.2
+                      · intro z hz
+                        exact hW0_eq hz.1
                     rcases hLocalEOW_seed with
                       ⟨W, hW_open, hW_ne, hW_sub, hW_eq⟩
                     have hOrd_holo :
