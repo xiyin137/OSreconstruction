@@ -5816,22 +5816,23 @@ theorem OS45BHWJostHullData.os45CommonEdge_sourceRepresentsZero_of_OS412_sourceS
           ((((D.toSideZeroDiagonalCLM
             (1 : Equiv.Perm (Fin n)) (-1 : ℝ) ε η φ).1 :
               SchwartzNPoint d n) : NPointDomain d n → ℂ) u)
+    let Fcur : ℝ → ℂ := fun ε =>
+      (∫ u : NPointDomain d n,
+        bvt_F OS lgc n (fun k => wickRotatePoint (u k)) *
+          ((((D.toSideZeroDiagonalCLM
+            (1 : Equiv.Perm (Fin n)) (1 : ℝ) ε η φ).1 :
+              SchwartzNPoint d n) : NPointDomain d n → ℂ) u)) -
+      ∫ u : NPointDomain d n,
+        bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k))) *
+          ((((D.toSideZeroDiagonalCLM
+            (1 : Equiv.Perm (Fin n)) (-1 : ℝ) ε η φ).1 :
+              SchwartzNPoint d n) : NPointDomain d n → ℂ) u)
     have hside_ext :
         Tendsto Fext (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) := by
       have hsource_current :
-          Tendsto
-            (fun ε : ℝ =>
-              (∫ u : NPointDomain d n,
-                bvt_F OS lgc n (fun k => wickRotatePoint (u k)) *
-                  ((((D.toSideZeroDiagonalCLM
-                    (1 : Equiv.Perm (Fin n)) (1 : ℝ) ε η φ).1 :
-                      SchwartzNPoint d n) : NPointDomain d n → ℂ) u)) -
-              ∫ u : NPointDomain d n,
-                bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k))) *
-                  ((((D.toSideZeroDiagonalCLM
-                    (1 : Equiv.Perm (Fin n)) (-1 : ℝ) ε η φ).1 :
-                      SchwartzNPoint d n) : NPointDomain d n → ℂ) u))
-            (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) :=
+          Tendsto Fcur (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) := by
+        dsimp only [Fcur]
+        exact
         D.sourceSide_ordinaryPlus_adjacentMinus_difference_tendsto_zero
           OS lgc η hηC φ hφ_compact hφE
       /-
@@ -5840,11 +5841,43 @@ theorem OS45BHWJostHullData.os45CommonEdge_sourceRepresentsZero_of_OS412_sourceS
         The source-current side of the paper proof is already formalized in
         `hsource_current`: Euclidean permutation symmetry makes the ordinary
         plus and adjacent minus source tests have the same Schwinger limit.
-        The remaining production step is to identify, for small positive side
-        height, those source-current pairings with the deterministic
-        `extendF` source-side branch pairings in `Fext`.
+        The remaining production step is not finite-height eventual equality:
+        it is the boundary-value transport saying that the deterministic
+        source-side branch pairings in `Fext` and the Wick-section source
+        currents in `Fcur` have asymptotically the same compact-test limit.
       -/
-      refine Tendsto.congr' ?source_side_branch_transport hsource_current
+      have htransport :
+          Tendsto (fun ε : ℝ => Fext ε - Fcur ε)
+            (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) := by
+        have hzero_pairing :
+            (∫ u : NPointDomain d n,
+              BHW.extendF (bvt_F OS lgc n)
+                (BHW.os45FlatCommonChartSourceSide d n
+                  (1 : Equiv.Perm (Fin n)) (1 : ℝ) 0 η u) *
+                ((((D.toZeroDiagonalCLM
+                  (1 : Equiv.Perm (Fin n)) φ).1 :
+                    SchwartzNPoint d n) : NPointDomain d n → ℂ) u)) =
+              ∫ u : NPointDomain d n,
+                BHW.extendF (bvt_F OS lgc n)
+                  (BHW.permAct (d := d)
+                    (P.τ.symm * (1 : Equiv.Perm (Fin n))).symm
+                    (BHW.os45FlatCommonChartSourceSide d n
+                      (1 : Equiv.Perm (Fin n)) (-1 : ℝ) 0 η u)) *
+                  ((((D.toZeroDiagonalCLM
+                    (1 : Equiv.Perm (Fin n)) φ).1 :
+                      SchwartzNPoint d n) : NPointDomain d n → ℂ) u) := by
+          exact ?zero_height_OS414_common_edge_pairing
+        have hbranch_zero :
+            Tendsto Fext (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) := by
+          simpa [Fext] using
+            D.tendsto_sourceSide_extendF_difference_zero_of_zeroHeightPairing
+              (d := d) OS lgc hΩplus_open hΩminus_open
+              hFplus_cont hFminus_cont hU_open subset_closure hU_compact
+              η h0_plus h0_minus φ hφ_compact hφU hzero_pairing
+        have hdiff := hbranch_zero.sub hsource_current
+        simpa using hdiff
+      have hsum := htransport.add hsource_current
+      simpa [sub_eq_add_neg] using hsum
     simpa [Fext] using hside_ext
   exact
     H.os45CommonEdge_sourceRepresentsZero_of_sourcePairings
