@@ -5485,27 +5485,202 @@ theorem OS45BHWJostHullData.os45CommonEdge_sourceRepresentsZero_of_OS412_sourceS
       have hplus_transport :
           Tendsto (fun ε : ℝ => Abranch ε - Acurrent ε) l
             (𝓝 0) := by
-        /-
-        OS-I `(4.14)` ordinary-side transport leaf:
-        replace the ordinary Schwinger source-current pairing
-        `bvt_F (wick u)` by the deterministic `extendF` side-sheet
-        pairing along `os45FlatCommonChartSourceSide ... +εη`.
-        This is a genuine finite positive-height branch/source statement,
-        not a support or endpoint normalization.
-        -/
-        fail_if_success exact hsource_currents
+        let L : ℂ :=
+          OS.S n (D.toZeroDiagonalCLM (1 : Equiv.Perm (Fin n)) φ)
+        let A0 : ℂ :=
+          ∫ u : NPointDomain d n,
+            BHW.extendF (bvt_F OS lgc n)
+              (BHW.os45FlatCommonChartSourceSide d n
+                (1 : Equiv.Perm (Fin n)) (1 : ℝ) 0 η u) *
+              ((((D.toZeroDiagonalCLM
+                (1 : Equiv.Perm (Fin n)) φ).1 : SchwartzNPoint d n) :
+                  NPointDomain d n → ℂ) u)
+        have hKηC :
+            ({η} : Set (BHW.OS45FlatCommonChartReal d n)) ⊆
+              BHW.os45FlatCommonChartCone d n := by
+          intro ξ hξ
+          simpa [Set.mem_singleton_iff.mp hξ] using hηC
+        have hη_singleton :
+            η ∈ ({η} : Set (BHW.OS45FlatCommonChartReal d n)) := by
+          simp
+        rcases
+            D.sideZeroDiagonal_sourcePairings_tendstoUniformlyOn_schwinger
+              OS lgc ({η} : Set (BHW.OS45FlatCommonChartReal d n))
+              isCompact_singleton hKηC φ hφ_compact hφEdge with
+          ⟨hord_plus, _hadj_plus, _hord_minus, _hadj_minus⟩
+        have hAcurrent_lim : Tendsto Acurrent l (𝓝 L) := by
+          have h := hord_plus.tendsto_at hη_singleton
+          simpa [l, Acurrent, L] using h
+        have hΩ_open : IsOpen (BHW.ExtendedTube d n) :=
+          BHW.isOpen_extendedTube
+        have hF_cont :
+            ContinuousOn
+              (fun z : Fin n → Fin (d + 1) → ℂ =>
+                BHW.extendF (bvt_F OS lgc n) z)
+              (BHW.ExtendedTube d n) := by
+          simpa using
+            (BHW.differentiableOn_extendF_bvt_F_extendedTube
+              (d := d) OS lgc n).continuousOn
+        have h0_plus :
+            ∀ u ∈ closure U,
+              BHW.os45FlatCommonChartSourceSide d n
+                (1 : Equiv.Perm (Fin n)) (1 : ℝ) 0 η u ∈
+                  BHW.ExtendedTube d n := by
+          intro u hu
+          rw [BHW.os45FlatCommonChartSourceSide_zero_eq_identityPath_one]
+          exact
+            BHW.forwardTube_subset_extendedTube
+              (BHW.os45Figure24IdentityPath_mem_forwardTube
+                (d := d) (n := n) (P.V_ordered u (hU_closure hu))
+                (1 : unitInterval))
+        have h0_minus :
+            ∀ u ∈ closure U,
+              BHW.os45FlatCommonChartSourceSide d n
+                (1 : Equiv.Perm (Fin n)) (-1 : ℝ) 0 η u ∈
+                  BHW.ExtendedTube d n := by
+          intro u hu
+          rw [BHW.os45FlatCommonChartSourceSide_zero_eq_identityPath_one]
+          exact
+            BHW.forwardTube_subset_extendedTube
+              (BHW.os45Figure24IdentityPath_mem_forwardTube
+                (d := d) (n := n) (P.V_ordered u (hU_closure hu))
+                (1 : unitInterval))
+        have hφU :
+            tsupport (φ : BHW.OS45FlatCommonChartReal d n → ℂ) ⊆
+              BHW.os45CommonEdgeFlatCLE d n
+                (1 : Equiv.Perm (Fin n)) '' U := by
+          simpa [E, e] using hφE
+        have hpair :=
+          D.tendsto_sourceSide_extendF_sideZeroDiagonalCLM_pair
+            (d := d) OS lgc (1 : Equiv.Perm (Fin n))
+            hΩ_open hF_cont hU_open subset_closure hU_compact η
+            h0_plus h0_minus φ hφ_compact hφU
+        have hAbranch_lim : Tendsto Abranch l (𝓝 A0) := by
+          simpa [l, Abranch, A0] using hpair.1
+        have hA0_eq_L : A0 = L := by
+          /-
+          OS-I horizontal Wick-section transport leaf:
+          the zero-height `sourceSide` endpoint is the `t = 1`
+          Figure-2-4 identity-path endpoint, so this equality is the
+          remaining ordinary-side transport from the Wick section to that
+          common-edge endpoint, smeared by the cutoff-pulled test.
+          -/
+          fail_if_success exact hsource_currents
+        have hlim :
+            Tendsto (fun ε : ℝ => Abranch ε - Acurrent ε) l
+              (𝓝 (A0 - L)) :=
+          hAbranch_lim.sub hAcurrent_lim
+        have hzero : A0 - L = 0 := by
+          simp [hA0_eq_L]
+        simpa [hzero] using hlim
       have hminus_transport :
           Tendsto (fun ε : ℝ => Bbranch ε - Bcurrent ε) l
             (𝓝 0) := by
-        /-
-        OS-I `(4.12)` adjacent-side transport leaf:
-        replace the adjacent Schwinger source-current pairing
-        `bvt_F (wick (u ∘ P.τ))` by the deterministic adjacent
-        `extendF ∘ permAct` side-sheet pairing along the negative
-        source-side ray.  This is the seed-to-side Wick-section
-        transport still missing from the production route.
-        -/
-        fail_if_success exact hsource_currents
+        let L : ℂ :=
+          OS.S n (D.toZeroDiagonalCLM (1 : Equiv.Perm (Fin n)) φ)
+        let σ : Equiv.Perm (Fin n) :=
+          P.τ.symm * (1 : Equiv.Perm (Fin n))
+        let Ωminus : Set (Fin n → Fin (d + 1) → ℂ) :=
+          {z | BHW.permAct (d := d) σ.symm z ∈
+            BHW.ExtendedTube d n}
+        let B0 : ℂ :=
+          ∫ u : NPointDomain d n,
+            BHW.extendF (bvt_F OS lgc n)
+              (BHW.permAct (d := d) σ.symm
+                (BHW.os45FlatCommonChartSourceSide d n
+                  (1 : Equiv.Perm (Fin n)) (-1 : ℝ) 0 η u)) *
+              ((((D.toZeroDiagonalCLM
+                (1 : Equiv.Perm (Fin n)) φ).1 : SchwartzNPoint d n) :
+                  NPointDomain d n → ℂ) u)
+        have hKηC :
+            ({η} : Set (BHW.OS45FlatCommonChartReal d n)) ⊆
+              BHW.os45FlatCommonChartCone d n := by
+          intro ξ hξ
+          simpa [Set.mem_singleton_iff.mp hξ] using hηC
+        have hη_singleton :
+            η ∈ ({η} : Set (BHW.OS45FlatCommonChartReal d n)) := by
+          simp
+        rcases
+            D.sideZeroDiagonal_sourcePairings_tendstoUniformlyOn_schwinger
+              OS lgc ({η} : Set (BHW.OS45FlatCommonChartReal d n))
+              isCompact_singleton hKηC φ hφ_compact hφEdge with
+          ⟨_hord_plus, _hadj_plus, _hord_minus, hadj_minus⟩
+        have hBcurrent_lim : Tendsto Bcurrent l (𝓝 L) := by
+          have h := hadj_minus.tendsto_at hη_singleton
+          simpa [l, Bcurrent, L] using h
+        have hΩ_open : IsOpen Ωminus := by
+          simpa [Ωminus] using
+            BHW.isOpen_permAct_preimage_extendedTube
+              (d := d) (n := n) σ.symm
+        have hF_cont :
+            ContinuousOn
+              (fun z : Fin n → Fin (d + 1) → ℂ =>
+                BHW.extendF (bvt_F OS lgc n)
+                  (BHW.permAct (d := d) σ.symm z))
+              Ωminus := by
+          simpa [Ωminus] using
+            (BHW.differentiableOn_extendF_bvt_F_permAct_preimageExtendedTube
+              (d := d) OS lgc n σ.symm).continuousOn
+        have h0_plus :
+            ∀ u ∈ closure U,
+              BHW.os45FlatCommonChartSourceSide d n
+                (1 : Equiv.Perm (Fin n)) (1 : ℝ) 0 η u ∈ Ωminus := by
+          intro u hu
+          change
+            BHW.permAct (d := d) σ.symm
+              (BHW.os45FlatCommonChartSourceSide d n
+                (1 : Equiv.Perm (Fin n)) (1 : ℝ) 0 η u) ∈
+              BHW.ExtendedTube d n
+          rw [BHW.os45FlatCommonChartSourceSide_zero_eq_identityPath_one]
+          have huclP : u ∈ closure P.V := subset_closure (hU_closure hu)
+          have h :=
+            (BHW.os45Figure24_permActIdentityPath_mem_initialSectorOverlap
+              (d := d) (n := n) (hd := hd) (P := P) huclP
+              (1 : unitInterval)).1
+          simpa [σ] using h
+        have h0_minus :
+            ∀ u ∈ closure U,
+              BHW.os45FlatCommonChartSourceSide d n
+                (1 : Equiv.Perm (Fin n)) (-1 : ℝ) 0 η u ∈ Ωminus := by
+          intro u hu
+          change
+            BHW.permAct (d := d) σ.symm
+              (BHW.os45FlatCommonChartSourceSide d n
+                (1 : Equiv.Perm (Fin n)) (-1 : ℝ) 0 η u) ∈
+              BHW.ExtendedTube d n
+          rw [BHW.os45FlatCommonChartSourceSide_zero_eq_identityPath_one]
+          have huclP : u ∈ closure P.V := subset_closure (hU_closure hu)
+          have h :=
+            (BHW.os45Figure24_permActIdentityPath_mem_initialSectorOverlap
+              (d := d) (n := n) (hd := hd) (P := P) huclP
+              (1 : unitInterval)).1
+          simpa [σ] using h
+        have hφU :
+            tsupport (φ : BHW.OS45FlatCommonChartReal d n → ℂ) ⊆
+              BHW.os45CommonEdgeFlatCLE d n
+                (1 : Equiv.Perm (Fin n)) '' U := by
+          simpa [E, e] using hφE
+        have hpair :=
+          D.tendsto_sourceSide_extendF_sideZeroDiagonalCLM_pair
+            (d := d) OS lgc σ hΩ_open hF_cont hU_open subset_closure
+            hU_compact η h0_plus h0_minus φ hφ_compact hφU
+        have hBbranch_lim : Tendsto Bbranch l (𝓝 B0) := by
+          simpa [l, Bbranch, B0, σ] using hpair.2
+        have hB0_eq_L : B0 = L := by
+          /-
+          OS-I adjacent horizontal transport leaf: after the checked
+          adjacent carrier geometry and source-current limit, the remaining
+          payload is the zero-height `permAct τ` identity-path endpoint
+          equality against the Schwinger limit.
+          -/
+          fail_if_success exact hsource_currents
+        have hlim :
+            Tendsto (fun ε : ℝ => Bbranch ε - Bcurrent ε) l
+              (𝓝 (B0 - L)) :=
+          hBbranch_lim.sub hBcurrent_lim
+        have hzero : B0 - L = 0 := by
+          simp [hB0_eq_L]
+        simpa [hzero] using hlim
       have hminus_transport_neg :
           Tendsto (fun ε : ℝ => Bcurrent ε - Bbranch ε) l
             (𝓝 0) := by
