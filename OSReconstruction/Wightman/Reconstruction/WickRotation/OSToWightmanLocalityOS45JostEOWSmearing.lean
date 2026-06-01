@@ -631,29 +631,51 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
                       BHW.permAct (d := d) P.τ z ∈ BHW.ForwardTube d n} ∩
                         H.ΩJ) :=
                 H.differentiableOn_OS412SeedBranch OS lgc
-            /-
-              Exact remaining Vladimirov/BHW tempered-BV uniqueness leaf.
-
-              The deterministic adjacent seed is now proved to lie in the
-              true initial-sector overlap (`hzAdj_initialOverlap`).  On this
-              overlap there are two concrete holomorphic germs:
-
-              * `extendF (bvt_F OS lgc n)` on the ordinary extended tube;
-              * `z ↦ bvt_F OS lgc n (permAct P.τ z)` on the OS-I `(4.12)`
-                preimage-forward-tube seed window.
-
-              The target has been reduced only by the checked permutation
-              normalization `hseedBranch_value`: the remaining mathematical
-              content is exactly the Vladimirov tempered-BV uniqueness
-              comparison of these two germs at `zAdj`, using OS polynomial
-              growth and equality of their tempered boundary distributions on
-              the local Figure-2-4 collar.  The local holomorphy handles are
-              `hExt_holo_near` and `hSeed_holo_near`; the absent producer is
-              the BHW-to-flat-tube tempered boundary package plus its boundary
-              distribution equality.
-            -/
-            exact
-              ?os45_vladimirov_tempered_BV_initial_overlap_branch_eq_at_adjacent_wick
+              let Fedge : (Fin n → Fin (d + 1) → ℂ) → ℂ :=
+                BHW.extendF (bvt_F OS lgc n)
+              let Gedge : (Fin n → Fin (d + 1) → ℂ) → ℂ := fun z =>
+                bvt_F OS lgc n (BHW.permAct (d := d) P.τ z)
+              let Cedge : Set (Fin n → Fin (d + 1) → ℝ) :=
+                ?os45_vladimirov_local_edge_cone
+              have hCedge_open : IsOpen Cedge :=
+                ?os45_vladimirov_local_edge_cone_open
+              have hCedge_conv : Convex ℝ Cedge :=
+                ?os45_vladimirov_local_edge_cone_convex
+              have hCedge_cone : IsCone Cedge :=
+                ?os45_vladimirov_local_edge_cone_isCone
+              have hCedge_salient : IsSalientCone Cedge :=
+                ?os45_vladimirov_local_edge_cone_salient
+              have hCedge_ne : Cedge.Nonempty :=
+                ?os45_vladimirov_local_edge_cone_nonempty
+              have hCedge_tube_sub_ext :
+                  TubeDomainSetPi Cedge ⊆ BHW.ExtendedTube d n :=
+                ?os45_vladimirov_local_edge_tube_subset_extendedTube
+              have hCedge_tube_sub_seed :
+                  TubeDomainSetPi Cedge ⊆
+                    ({z : Fin n → Fin (d + 1) → ℂ |
+                      BHW.permAct (d := d) P.τ z ∈ BHW.ForwardTube d n} ∩
+                        H.ΩJ) :=
+                ?os45_vladimirov_local_edge_tube_subset_OS412_seedWindow
+              have hFedge_holo :
+                  DifferentiableOn ℂ Fedge (TubeDomainSetPi Cedge) := by
+                simpa [Fedge] using hExt_holo_near.mono hCedge_tube_sub_ext
+              have hGedge_holo :
+                  DifferentiableOn ℂ Gedge (TubeDomainSetPi Cedge) := by
+                simpa [Gedge] using hSeed_holo_near.mono hCedge_tube_sub_seed
+              have hVladimirov_unique :
+                  Set.EqOn Fedge Gedge (TubeDomainSetPi Cedge) :=
+                tube_holomorphic_unique_from_bv Cedge
+                  hCedge_open hCedge_conv hCedge_cone hCedge_salient
+                  hCedge_ne Fedge Gedge hFedge_holo hGedge_holo
+                  ?os45_vladimirov_local_edge_difference_integrable
+                  ?os45_vladimirov_local_edge_extendF_integrable
+                  ?os45_vladimirov_local_edge_seedBranch_integrable
+                  ?os45_vladimirov_common_tempered_boundary_clm
+                  ?os45_vladimirov_extendF_boundary_value_on_edge
+                  ?os45_vladimirov_seedBranch_boundary_value_on_edge
+              have hzAdj_tube : zAdj ∈ TubeDomainSetPi Cedge :=
+                ?os45_vladimirov_adjacent_wick_mem_local_edge_tube
+              simpa [Fedge, Gedge] using hVladimirov_unique hzAdj_tube
             exact hoverlap_branch_eq.trans hseedBranch_value
           exact hFadj_to_extendF.trans hdeterministic_adjacent_trace
         have hbranches_eq :
