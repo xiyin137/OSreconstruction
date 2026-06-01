@@ -1,5 +1,4 @@
 import OSReconstruction.SCV.VladimirovTillmann
-import OSReconstruction.SCV.LocalBoundaryRecovery
 import OSReconstruction.SCV.IdentityTheorem
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanLocalityOS45Figure24Seed
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanLocalityOS45SourceSideMoving
@@ -330,67 +329,115 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
               (BHW.os45FlatCommonChart_ordinaryEdgeCLM_represents
                 hd OS lgc)
               ψ hψ_compact (hψE.trans hE_sub)
-        have hzero_minus :
-            ∀ ψ : SchwartzMap (BHW.OS45FlatCommonChartReal d n) ℂ,
-              HasCompactSupport
-                (ψ : BHW.OS45FlatCommonChartReal d n → ℂ) →
-              tsupport (ψ : BHW.OS45FlatCommonChartReal d n → ℂ) ⊆ E →
-              (∫ x : BHW.OS45FlatCommonChartReal d n,
-                BHW.os45FlatCommonChartBranch d n OS lgc
-                  (P.τ.symm * (1 : Equiv.Perm (Fin n)))
-                  (fun a => (x a : ℂ)) * ψ x)
-              = Tlocal ψ := by
-          intro ψ hψ_compact hψE
-          let FminusFlat : BHW.OS45FlatCommonChartSpace d n → ℂ :=
-            BHW.os45FlatCommonChartBranch d n OS lgc
-              (P.τ.symm * (1 : Equiv.Perm (Fin n)))
-          have hC_cone :
-              ∀ t : ℝ, 0 < t →
-                ∀ y ∈ Cedge, t • y ∈ Cedge := by
-            intro t ht y hy
-            exact hC_smul t y ht hy
-          have hFminus_tube :
-              DifferentiableOn ℂ FminusFlat (SCV.TubeDomain Cedge) := by
-            have hTube_subset_adjacentOmega :
-                SCV.TubeDomain Cedge ⊆
-                  BHW.os45FlatCommonChartOmega d n
-                    (P.τ.symm * (1 : Equiv.Perm (Fin n))) := by
-              /-
-                This is the first honest Vladimirov/BHW interface gap exposed
-                by trying the existing SCV recovery API directly.  The checked
-                BHW geometry supplies only compact, edge-window local wedges
-                via `os45_BHWJost_flatCommonChart_localWedge_of_figure24`;
-                `fourierLaplace_boundary_recovery_on_open_of_tempered` is a
-                global tube-domain theorem, so it asks for the much stronger
-                inclusion `TubeDomain Cedge ⊆ Ωminus`.
-              -/
-              exact ?os45_vladimirov_tubeDomain_subset_adjacentOmega
-            exact hFminus_holo.mono hTube_subset_adjacentOmega
-          have hTminus :
-              SCV.HasFourierLaplaceReprTempered Cedge FminusFlat := by
-            exact ?os45_vladimirov_adjacent_temperedBV_package
-          have hdist_common :
-              ∀ ψ : SchwartzMap (BHW.OS45FlatCommonChartReal d n) ℂ,
-                hTminus.dist ψ = Tlocal ψ := by
-            exact ?os45_vladimirov_adjacent_temperedDist_eq_ordinaryEdgeCLM
-          have hcontE :
-              ∀ x ∈ E, ContinuousWithinAt FminusFlat
-                (SCV.TubeDomain Cedge) (SCV.realEmbed x) := by
-            exact ?os45_vladimirov_adjacent_boundary_continuity_on_edge
-          have hrecover :=
-            SCV.fourierLaplace_boundary_recovery_on_open_of_tempered
-              (m := BHW.os45FlatCommonChartDim d n)
-              (C := Cedge) hC_open hC_convex hC_ne hC_cone
-              hFminus_tube hTminus E hE_open hcontE
-          calc
+        have hzero_minus_phi :
             (∫ x : BHW.OS45FlatCommonChartReal d n,
               BHW.os45FlatCommonChartBranch d n OS lgc
                 (P.τ.symm * (1 : Equiv.Perm (Fin n)))
-                (fun a => (x a : ℂ)) * ψ x)
-                = hTminus.dist ψ := by
-                  simpa [FminusFlat, SCV.realEmbed] using
-                    (hrecover ψ hψE hψ_compact).symm
-            _ = Tlocal ψ := hdist_common ψ
+                (fun a => (x a : ℂ)) * φ x)
+            = Tlocal φ := by
+          have hφEdge' :
+              tsupport
+                  (φ : BHW.OS45FlatCommonChartReal d n → ℂ) ⊆
+                BHW.os45FlatCommonChartEdgeSet d n P
+                  (1 : Equiv.Perm (Fin n)) :=
+            hφE'.trans hE_sub
+          have hη_singleton :
+              ({η} : Set (BHW.OS45FlatCommonChartReal d n)) ⊆ Cedge := by
+            intro ξ hξ
+            simpa [Cedge, Set.mem_singleton_iff.mp hξ] using hηC
+          let Minus : ℝ → ℂ := fun ε =>
+            ∫ x : BHW.OS45FlatCommonChartReal d n,
+              BHW.os45FlatCommonChartBranch d n OS lgc
+                (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+                (fun a => (x a : ℂ) -
+                  (ε : ℂ) * (η a : ℂ) * Complex.I) * φ x
+          have hminus_zeroHeight_limit :
+              Tendsto Minus (𝓝[Set.Ioi 0] (0 : ℝ))
+                (𝓝
+                  (∫ x : BHW.OS45FlatCommonChartReal d n,
+                    BHW.os45FlatCommonChartBranch d n OS lgc
+                      (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+                      (fun a => (x a : ℂ)) * φ x)) := by
+            have hF_cont :
+                ContinuousOn
+                  (BHW.os45FlatCommonChartBranch d n OS lgc
+                    (P.τ.symm * (1 : Equiv.Perm (Fin n))))
+                  (BHW.os45FlatCommonChartOmega d n
+                    (P.τ.symm * (1 : Equiv.Perm (Fin n)))) :=
+              (BHW.differentiableOn_os45FlatCommonChartBranch
+                d n OS lgc
+                (P.τ.symm * (1 : Equiv.Perm (Fin n)))).continuousOn
+            have hside :
+                ∀ K : Set (BHW.OS45FlatCommonChartReal d n),
+                  IsCompact K →
+                  K ⊆ BHW.os45FlatCommonChartEdgeSet d n P
+                    (1 : Equiv.Perm (Fin n)) →
+                  ∀ Kη : Set (BHW.OS45FlatCommonChartReal d n),
+                    IsCompact Kη →
+                    Kη ⊆ BHW.os45FlatCommonChartCone d n →
+                    ∃ r : ℝ, 0 < r ∧
+                      ∀ x ∈ K, ∀ η ∈ Kη, ∀ ε : ℝ,
+                        0 < ε → ε < r →
+                        (fun a => (x a : ℂ) +
+                          ((-1 : ℝ) : ℂ) * (ε : ℂ) *
+                            (η a : ℂ) * Complex.I) ∈
+                          BHW.os45FlatCommonChartOmega d n
+                            (P.τ.symm *
+                              (1 : Equiv.Perm (Fin n))) := by
+              intro K hK hKE Kη hKη hKηC
+              obtain ⟨r, hr_pos, hr_mem⟩ :=
+                BHW.os45_BHWJost_flatCommonChart_localWedge_of_figure24
+                  (d := d) hd (P := P) K hK hKE Kη hKη hKηC
+              refine ⟨r, hr_pos, ?_⟩
+              intro x hx η hη ε hε_pos hε_lt
+              have hmem := (hr_mem x hx η hη ε hε_pos hε_lt).2
+              simpa [sub_eq_add_neg, neg_mul, one_mul] using hmem
+            have hunif :=
+              SCV.tendstoUniformlyOn_sideIntegral_of_zeroHeight_pairing
+                (m := BHW.os45FlatCommonChartDim d n)
+                (E := BHW.os45FlatCommonChartEdgeSet d n P
+                  (1 : Equiv.Perm (Fin n)))
+                (C := BHW.os45FlatCommonChartCone d n)
+                (Ωc := BHW.os45FlatCommonChartOmega d n
+                  (P.τ.symm * (1 : Equiv.Perm (Fin n))))
+                (BHW.isOpen_os45FlatCommonChartOmega d n
+                  (P.τ.symm * (1 : Equiv.Perm (Fin n))))
+                (BHW.os45FlatCommonChartBranch d n OS lgc
+                  (P.τ.symm * (1 : Equiv.Perm (Fin n))))
+                hF_cont
+                (BHW.os45FlatCommonChart_real_mem_omega_adjacent
+                  (d := d) hd (P := P))
+                (-1 : ℝ) hside
+                ({η} : Set (BHW.OS45FlatCommonChartReal d n))
+                isCompact_singleton (by simpa [Cedge] using hη_singleton)
+                φ hφ_compact hφEdge'
+                (∫ x : BHW.OS45FlatCommonChartReal d n,
+                  BHW.os45FlatCommonChartBranch d n OS lgc
+                    (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+                    (fun a => (x a : ℂ)) * φ x)
+                rfl
+            have hη_mem :
+                η ∈ ({η} : Set (BHW.OS45FlatCommonChartReal d n)) := by
+              simp
+            simpa [Minus, sub_eq_add_neg, neg_mul, one_mul] using
+              hunif.tendsto_at hη_mem
+          have hminus_vladimirov_to_Tlocal :
+              Tendsto Minus (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 (Tlocal φ)) := by
+            /-
+              Genuine local Vladimirov/BHW producer input.
+
+              The previous global attempt asked for
+              `SCV.TubeDomain Cedge ⊆ Ωminus`, but the Figure-2-4 geometry
+              only supplies compact local wedges.  The actual OS-I
+              `(4.12)`--`(4.14)` payload is this compact-test boundary-value
+              transport for the current compact test: the adjacent one-sided
+              flat branch has the same boundary CLM `Tlocal` as the ordinary
+              branch on this support window.
+            -/
+            exact ?os45_vladimirov_adjacent_sideBoundaryValue_to_ordinaryCLM
+          exact
+            tendsto_nhds_unique hminus_zeroHeight_limit
+              hminus_vladimirov_to_Tlocal
         have hflat_zero :
             (∫ x : BHW.OS45FlatCommonChartReal d n,
               BHW.os45FlatCommonChartBranch d n OS lgc
@@ -401,7 +448,7 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
                   (1 : Equiv.Perm (Fin n))
                   (fun a => (x a : ℂ)) * φ x := by
           exact
-            (hzero_minus φ hφ_compact hφE').trans
+            hzero_minus_phi.trans
               (hzero_plus φ hφ_compact hφE').symm
         have hsource_integrals :
             (∫ u : NPointDomain d n,
