@@ -341,8 +341,81 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
             (D.toSchwartzNPointCLM
               (1 : Equiv.Perm (Fin n)) φ :
                 NPointDomain d n → ℂ) u) hadj
+      have hsource_eq :
+          ∀ u ∈ U,
+            BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+                (BHW.realEmbed
+                  (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                    (1 : Equiv.Perm (Fin n)) u)) =
+              BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                (1 : Equiv.Perm (Fin n))
+                (BHW.realEmbed
+                  (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                    (1 : Equiv.Perm (Fin n)) u)) := by
+        rcases
+            BHW.os45CommonEdge_initialSectorOverlap_traces_except_adjacentWick
+              (d := d) hd OS lgc (P := P)
+              (U := U) hU_compact hU_connected hU_closure with
+          ⟨Ucx, Ford, Fadj, hUcx_open, hUcx_connected, hwick_mem,
+            hcommon_mem, _hUcx_sub, hFord_holo, hFadj_holo,
+            hFord_wick, hFadj_wick_extendF, hFord_common, hFadj_common,
+            hFadj_seed_trace⟩
+        exact
+          BHW.os45CommonEdge_pulledRealBranches_eqOn_of_E3_branchTraces
+            (d := d) hd OS lgc (P := P)
+            hU_open hU_connected.nonempty hU_sub hUcx_open hUcx_connected
+            hwick_mem hcommon_mem Ford Fadj hFord_holo hFadj_holo
+            hFord_wick
+            (by
+              intro u hu
+              calc
+                Fadj (fun k => wickRotatePoint (u k)) =
+                  BHW.extendF (bvt_F OS lgc n)
+                    (BHW.permAct (d := d) P.τ
+                      (fun k => wickRotatePoint (u k))) := by
+                    exact hFadj_wick_extendF u hu
+                _ =
+                  Fadj
+                    (BHW.permAct (d := d) P.τ
+                      (fun k => wickRotatePoint (u k))) := by
+                    -- OS-I (4.12): transport the deterministic adjacent
+                    -- `extendF` branch from the seed point to the local
+                    -- adjacent branch on the common overlap chart.
+                    exact
+                      ?os_i_section45_adjacent_seed_to_wick_branch_transport
+                _ =
+                  bvt_F OS lgc n
+                    (fun k => wickRotatePoint (u (P.τ k))) := by
+                    exact hFadj_seed_trace u hu)
+            hFord_common hFadj_common
       have hAadj_eq_Acommon : AadjCommon = Acommon := by
-        exact ?os_i_section45_common_edge_source_pairing_eq
+        dsimp [AadjCommon, Acommon]
+        refine MeasureTheory.integral_congr_ae
+          (Filter.Eventually.of_forall ?_)
+        intro u
+        by_cases hu : u ∈ U
+        · exact congrArg (fun c : ℂ =>
+            c *
+              (D.toSchwartzNPointCLM
+                (1 : Equiv.Perm (Fin n)) φ :
+                  NPointDomain d n → ℂ) u) (hsource_eq u hu)
+        · have hφ0U :
+              tsupport
+                ((D.toSchwartzNPointCLM
+                    (1 : Equiv.Perm (Fin n)) φ :
+                      SchwartzNPoint d n) : NPointDomain d n → ℂ) ⊆
+                U := by
+            simpa [BHW.OS45Figure24SourceCutoffData.toZeroDiagonalCLM] using
+              D.toSchwartzNPointCLM_tsupport_subset_image
+                (1 : Equiv.Perm (Fin n)) φ hφU
+          have hφ0_zero :
+              ((D.toSchwartzNPointCLM
+                  (1 : Equiv.Perm (Fin n)) φ :
+                    SchwartzNPoint d n) : NPointDomain d n → ℂ) u = 0 :=
+            image_eq_zero_of_notMem_tsupport
+              (fun hφ0_supp => hu (hφ0U hφ0_supp))
+          simp [hφ0_zero]
       change Aplus0 = Aminus0
       exact hAplus_common.trans
         (hAminus_common.trans hAadj_eq_Acommon).symm
