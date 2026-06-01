@@ -200,18 +200,59 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
                 (fun k => wickRotatePoint (u k))) * ψ u) =
             ∫ u : NPointDomain d n,
               bvt_F OS lgc n (fun k => wickRotatePoint (u k)) * ψ u := by
-      /-
-        Vladimirov/BHW transported Wick pairing leaf.
+      intro ψ _hψ_compact hψU
+      have hpoint_on_U :
+          ∀ u ∈ U,
+            BHW.extendF (bvt_F OS lgc n)
+                (BHW.permAct (d := d) P.τ
+                  (fun k => wickRotatePoint (u k))) =
+              bvt_F OS lgc n (fun k => wickRotatePoint (u k)) := by
+        intro u hu
+        have huP : u ∈ P.V := hU_sub hu
+        let z0 : Fin n → Fin (d + 1) → ℂ :=
+          BHW.permAct (d := d) P.τ (fun k => wickRotatePoint (u k))
+        have hz0_ET : z0 ∈ BHW.ExtendedTube d n := by
+          simpa [z0] using
+            BHW.os45Figure24_adjacentWick_mem_extendedTube
+              (d := d) (n := n) (hd := hd) (P := P) huP
+        have hz0_seed :
+            z0 ∈
+              ({z : Fin n → Fin (d + 1) → ℂ |
+                  BHW.permAct (d := d) P.τ z ∈ BHW.ForwardTube d n} ∩
+                H.ΩJ) := by
+          simpa [z0] using
+            H.permAct_ordinaryWick_mem_OS412SeedWindow u huP
+        have hseed_eval :
+            bvt_F OS lgc n (BHW.permAct (d := d) P.τ z0) =
+              bvt_F OS lgc n (fun k => wickRotatePoint (u k)) := by
+          simpa [z0] using
+            BHW.os45Figure24_OS412SeedBranch_permAct_ordinaryWick_eq_ordinaryWick
+              (d := d) (n := n) (hd := hd) (P := P) OS lgc u
+        have hvladimirov_endpoint :
+            BHW.extendF (bvt_F OS lgc n) z0 =
+              bvt_F OS lgc n (BHW.permAct (d := d) P.τ z0) := by
+          /-
+            Vladimirov/BHW endpoint uniqueness leaf.
 
-        This is the canonical OS-I `(4.12)` source-side branch transfer:
-        the deterministic adjacent BHW branch `extendF ∘ permAct P.τ`
-        and the ordinary Wick-section boundary value have the same tempered
-        distributional boundary value on the local Figure-2-4 Wick collar.
-        The proof should instantiate the existing SCV/Vladimirov uniqueness
-        package with the initial-overlap BHW branch and the OS source-current
-        boundary-value data; no Route-A `S'_n` axiom is involved.
-      -/
-      exact ?vladimirov_bhw_adjacent_wick_temperedBV_transport
+            At the corrected OS-I `(4.12)` seed point `z0`, both the
+            deterministic BHW branch `extendF (bvt_F)` and the raw seed branch
+            `z ↦ bvt_F (permAct P.τ z)` are holomorphic in a local
+            two-sector collar.  The missing producer is the tempered
+            boundary-value uniqueness argument which shows that these two
+            branches have the same distributional boundary value on the local
+            Figure-2-4 Jost edge.  The facts `hz0_ET` and `hz0_seed` are the
+            concrete domain carriers needed for that instantiation.
+          -/
+          exact ?vladimirov_bhw_seed_endpoint_transport
+        exact hvladimirov_endpoint.trans hseed_eval
+      refine MeasureTheory.integral_congr_ae (Filter.Eventually.of_forall ?_)
+      intro u
+      by_cases hu : u ∈ U
+      · exact congrArg (fun c : ℂ => c * ψ u) (hpoint_on_U u hu)
+      · have hψ_zero : ψ u = 0 :=
+          image_eq_zero_of_notMem_tsupport
+            (fun hψ_supp => hu (hψU hψ_supp))
+        simp [hψ_zero]
     have hrep :
         SCV.RepresentsDistributionOn
           (0 : SchwartzMap (NPointDomain d n) ℂ →L[ℂ] ℂ)
