@@ -223,8 +223,63 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
     have htransport :
         Tendsto (fun ε : ℝ => Side ε - Raw ε)
           (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) := by
-      exact
-        ?vladimirov_bhw_source_current_to_sourceSide_temperedBV_residual
+      let OrdinaryResidual : ℝ → ℂ := fun ε =>
+        (∫ u : NPointDomain d n,
+          BHW.extendF (bvt_F OS lgc n)
+            (BHW.os45FlatCommonChartSourceSide d n
+              (1 : Equiv.Perm (Fin n)) (1 : ℝ) ε η u) *
+            ((((D.toSideZeroDiagonalCLM
+              (1 : Equiv.Perm (Fin n)) (1 : ℝ) ε η φ).1 :
+                SchwartzNPoint d n) : NPointDomain d n → ℂ) u)) -
+        ∫ u : NPointDomain d n,
+          bvt_F OS lgc n (fun k => wickRotatePoint (u k)) *
+            ((((D.toSideZeroDiagonalCLM
+              (1 : Equiv.Perm (Fin n)) (1 : ℝ) ε η φ).1 :
+                SchwartzNPoint d n) : NPointDomain d n → ℂ) u)
+      let AdjacentResidual : ℝ → ℂ := fun ε =>
+        (∫ u : NPointDomain d n,
+          BHW.extendF (bvt_F OS lgc n)
+            (BHW.permAct (d := d)
+              (P.τ.symm * (1 : Equiv.Perm (Fin n))).symm
+              (BHW.os45FlatCommonChartSourceSide d n
+                (1 : Equiv.Perm (Fin n)) (-1 : ℝ) ε η u)) *
+            ((((D.toSideZeroDiagonalCLM
+              (1 : Equiv.Perm (Fin n)) (-1 : ℝ) ε η φ).1 :
+                SchwartzNPoint d n) : NPointDomain d n → ℂ) u)) -
+        ∫ u : NPointDomain d n,
+          bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k))) *
+            ((((D.toSideZeroDiagonalCLM
+              (1 : Equiv.Perm (Fin n)) (-1 : ℝ) ε η φ).1 :
+                SchwartzNPoint d n) : NPointDomain d n → ℂ) u)
+      have hdecompose :
+          (fun ε : ℝ => Side ε - Raw ε) =
+            fun ε : ℝ => OrdinaryResidual ε - AdjacentResidual ε := by
+        funext ε
+        dsimp [Side, Raw, OrdinaryResidual, AdjacentResidual]
+        ring
+      have hresidual_packet :
+          Tendsto OrdinaryResidual
+              (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) ∧
+            Tendsto AdjacentResidual
+              (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) := by
+        /-
+          Vladimirov/BHW tempered-boundary-value uniqueness packet.
+
+          The two conjuncts are the literal ordinary and adjacent halves of
+          the source-side residual.  Closing this packet requires the OS-I
+          §4.5 mixed-tube argument: polynomial-growth tempered boundary
+          values for the deterministic BHW `extendF` source-side branches,
+          the matching OS source-current boundary values on the Wick section,
+          and uniqueness of those tempered boundary values on the local Jost
+          collar.  The adjacent half cannot be replaced by a forward-tube
+          endpoint shortcut; it is the same Vladimirov mechanism transported
+          through the BHW adjacent sector.
+        -/
+        exact
+          ?vladimirov_bhw_sourceSide_temperedBV_uniqueness_packet
+      rcases hresidual_packet with ⟨hOrdinary, hAdjacent⟩
+      have hdiff := hOrdinary.sub hAdjacent
+      simpa [hdecompose] using hdiff
     have hsum := htransport.add hraw
     have hside : Tendsto Side (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) := by
       simpa only [Pi.add_apply, sub_add_cancel, zero_add] using hsum
