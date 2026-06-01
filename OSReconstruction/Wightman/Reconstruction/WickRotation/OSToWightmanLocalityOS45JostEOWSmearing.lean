@@ -1,3 +1,4 @@
+import OSReconstruction.SCV.VladimirovTillmann
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanLocalityOS45SourceSideMoving
 
 /-!
@@ -243,7 +244,85 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
             Figure-2-4 Jost edge.  The facts `hz0_ET` and `hz0_seed` are the
             concrete domain carriers needed for that instantiation.
           -/
-          exact ?vladimirov_bhw_seed_endpoint_transport
+          let Fdet : (Fin n → Fin (d + 1) → ℂ) → ℂ :=
+            fun z => BHW.extendF (bvt_F OS lgc n) z
+          let Fseed : (Fin n → Fin (d + 1) → ℂ) → ℂ :=
+            fun z => bvt_F OS lgc n (BHW.permAct (d := d) P.τ z)
+          let Cseed : Set (Fin n → Fin (d + 1) → ℝ) :=
+            ?os45_vladimirov_local_tube_cone
+          let Wseed :
+              SchwartzMap (Fin n → Fin (d + 1) → ℝ) ℂ →L[ℂ] ℂ :=
+            ?os45_vladimirov_common_tempered_bv
+          have hz0_tube : z0 ∈ TubeDomainSetPi Cseed :=
+            ?os45_vladimirov_seed_mem_local_tube
+          have hC_open : IsOpen Cseed :=
+            ?os45_vladimirov_local_tube_open
+          have hC_conv : Convex ℝ Cseed :=
+            ?os45_vladimirov_local_tube_convex
+          have hC_cone : IsCone Cseed :=
+            ?os45_vladimirov_local_tube_conic
+          have hC_salient : IsSalientCone Cseed :=
+            ?os45_vladimirov_local_tube_salient
+          have hC_nonempty : Cseed.Nonempty :=
+            ?os45_vladimirov_local_tube_nonempty
+          have hFdet_holo :
+              DifferentiableOn ℂ Fdet (TubeDomainSetPi Cseed) :=
+            ?os45_vladimirov_extendF_holomorphic_on_local_tube
+          have hFseed_holo :
+              DifferentiableOn ℂ Fseed (TubeDomainSetPi Cseed) :=
+            ?os45_vladimirov_seed_branch_holomorphic_on_local_tube
+          have hFG_int :
+              ∀ y : Fin n → Fin (d + 1) → ℝ, y ∈ Cseed →
+                ∀ ψ : SchwartzMap (Fin n → Fin (d + 1) → ℝ) ℂ,
+                  Integrable (fun x : Fin n → Fin (d + 1) → ℝ =>
+                    (Fdet (fun k μ =>
+                        (x k μ : ℂ) + (y k μ : ℂ) * Complex.I) -
+                      Fseed (fun k μ =>
+                        (x k μ : ℂ) + (y k μ : ℂ) * Complex.I)) * ψ x) :=
+            ?os45_vladimirov_difference_integrable_on_local_tube
+          have hFdet_int :
+              ∀ y : Fin n → Fin (d + 1) → ℝ, y ∈ Cseed →
+                ∀ ψ : SchwartzMap (Fin n → Fin (d + 1) → ℝ) ℂ,
+                  Integrable (fun x : Fin n → Fin (d + 1) → ℝ =>
+                    Fdet (fun k μ =>
+                        (x k μ : ℂ) + (y k μ : ℂ) * Complex.I) * ψ x) :=
+            ?os45_vladimirov_extendF_integrable_on_local_tube
+          have hFseed_int :
+              ∀ y : Fin n → Fin (d + 1) → ℝ, y ∈ Cseed →
+                ∀ ψ : SchwartzMap (Fin n → Fin (d + 1) → ℝ) ℂ,
+                  Integrable (fun x : Fin n → Fin (d + 1) → ℝ =>
+                    Fseed (fun k μ =>
+                        (x k μ : ℂ) + (y k μ : ℂ) * Complex.I) * ψ x) :=
+            ?os45_vladimirov_seed_branch_integrable_on_local_tube
+          have hFdet_bv :
+              ∀ η : Fin n → Fin (d + 1) → ℝ, η ∈ Cseed →
+                ∀ φ : SchwartzMap (Fin n → Fin (d + 1) → ℝ) ℂ,
+                  Filter.Tendsto
+                    (fun ε : ℝ =>
+                      ∫ x : Fin n → Fin (d + 1) → ℝ,
+                        Fdet (fun k μ =>
+                            (x k μ : ℂ) + (ε : ℂ) *
+                              (η k μ : ℂ) * Complex.I) * φ x)
+                    (nhdsWithin 0 (Set.Ioi 0)) (nhds (Wseed φ)) :=
+            ?os45_vladimirov_extendF_boundary_value_on_jost_edge
+          have hFseed_bv :
+              ∀ η : Fin n → Fin (d + 1) → ℝ, η ∈ Cseed →
+                ∀ φ : SchwartzMap (Fin n → Fin (d + 1) → ℝ) ℂ,
+                  Filter.Tendsto
+                    (fun ε : ℝ =>
+                      ∫ x : Fin n → Fin (d + 1) → ℝ,
+                        Fseed (fun k μ =>
+                            (x k μ : ℂ) + (ε : ℂ) *
+                              (η k μ : ℂ) * Complex.I) * φ x)
+                    (nhdsWithin 0 (Set.Ioi 0)) (nhds (Wseed φ)) :=
+            ?os45_vladimirov_seed_branch_boundary_value_on_jost_edge
+          have hunique :
+              Set.EqOn Fdet Fseed (TubeDomainSetPi Cseed) :=
+            tube_holomorphic_unique_from_bv
+              Cseed hC_open hC_conv hC_cone hC_salient hC_nonempty
+              Fdet Fseed hFdet_holo hFseed_holo hFG_int hFdet_int
+              hFseed_int Wseed hFdet_bv hFseed_bv
+          exact hunique hz0_tube
         exact hvladimirov_endpoint.trans hseed_eval
       refine MeasureTheory.integral_congr_ae (Filter.Eventually.of_forall ?_)
       intro u
