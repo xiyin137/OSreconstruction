@@ -435,20 +435,155 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
                   (1 : Equiv.Perm (Fin n)) u)) *
             (φ0 : NPointDomain d n → ℂ) u
       have hzero_height_boundary_distribution : A0 - B0 = 0 := by
-        /-
-          Exact remaining OS-I §4.5 / Vladimirov-BHW leaf.
+        let Aord : ℂ :=
+          ∫ u : NPointDomain d n,
+            BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                (1 : Equiv.Perm (Fin n))
+                (BHW.realEmbed
+                  (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                    (1 : Equiv.Perm (Fin n)) u)) *
+              (φ0 : NPointDomain d n → ℂ) u
+        have hA0_eq_Aord : A0 = Aord := by
+          refine MeasureTheory.integral_congr_ae (Filter.Eventually.of_forall ?_)
+          intro u
+          by_cases hu : u ∈ U
+          · have huP : u ∈ P.V := hU_sub hu
+            have hsource_zero :
+                BHW.os45FlatCommonChartSourceSide d n
+                    (1 : Equiv.Perm (Fin n)) (1 : ℝ) 0 η u =
+                  (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+                    (BHW.realEmbed
+                      (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                        (1 : Equiv.Perm (Fin n)) u)) := by
+              exact
+                BHW.os45FlatCommonChartSourceSide_zero_eq_commonEdge
+                  (d := d) (n := n)
+                  (1 : Equiv.Perm (Fin n)) (1 : ℝ) η u
+            have hcommon_ext_eq_bvt :
+                BHW.extendF (bvt_F OS lgc n)
+                    ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+                      (BHW.realEmbed
+                        (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                          (1 : Equiv.Perm (Fin n)) u))) =
+                  bvt_F OS lgc n
+                    ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+                      (BHW.realEmbed
+                        (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                          (1 : Equiv.Perm (Fin n)) u))) :=
+              BHW.os45Figure24CommonEdge_ordinary_extendF_eq_bvt_F
+                (d := d) (n := n) hd OS lgc (P := P) huP
+            have hordinary_pulled :
+                BHW.extendF (bvt_F OS lgc n)
+                    ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+                      (BHW.realEmbed
+                        (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                          (1 : Equiv.Perm (Fin n)) u))) =
+                  BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                    (1 : Equiv.Perm (Fin n))
+                    (BHW.realEmbed
+                      (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                        (1 : Equiv.Perm (Fin n)) u)) := by
+              rcases
+                  BHW.os45Figure24Path_endpoint_extendF_eq_ordinaryPulledRealBranch
+                    (d := d) (n := n) hd OS lgc (P := P)
+                    (u := u) (subset_closure huP) with
+                ⟨Γ, _hΓ_cont, _hΓ_zero, hΓ_one, _hΓ_ET, hΓ_trace⟩
+              rw [← hΓ_one]
+              exact hΓ_trace
+            have hpoint :
+                bvt_F OS lgc n
+                    (BHW.os45FlatCommonChartSourceSide d n
+                      (1 : Equiv.Perm (Fin n)) (1 : ℝ) 0 η u) =
+                  BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                    (1 : Equiv.Perm (Fin n))
+                    (BHW.realEmbed
+                      (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                        (1 : Equiv.Perm (Fin n)) u)) := by
+              calc
+                bvt_F OS lgc n
+                    (BHW.os45FlatCommonChartSourceSide d n
+                      (1 : Equiv.Perm (Fin n)) (1 : ℝ) 0 η u)
+                    =
+                  bvt_F OS lgc n
+                    ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+                      (BHW.realEmbed
+                        (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                          (1 : Equiv.Perm (Fin n)) u))) := by
+                    rw [hsource_zero]
+                _ =
+                  BHW.extendF (bvt_F OS lgc n)
+                    ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+                      (BHW.realEmbed
+                        (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                          (1 : Equiv.Perm (Fin n)) u))) := hcommon_ext_eq_bvt.symm
+                _ =
+                  BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                    (1 : Equiv.Perm (Fin n))
+                    (BHW.realEmbed
+                      (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                        (1 : Equiv.Perm (Fin n)) u)) := hordinary_pulled
+            simpa [A0, Aord] using
+              congrArg (fun c : ℂ => c * (φ0 : NPointDomain d n → ℂ) u) hpoint
+          · have hnot : u ∉ tsupport (φ0 : NPointDomain d n → ℂ) := fun hut =>
+              hu (hφ0U hut)
+            have hzero : (φ0 : NPointDomain d n → ℂ) u = 0 :=
+              image_eq_zero_of_notMem_tsupport hnot
+            simp [hzero]
+        rcases
+            BHW.os45CommonEdge_initialSectorOverlap_traces_except_adjacentWick
+              (d := d) hd OS lgc (P := P) (U := U)
+              hU_compact hU_connected hU_closure with
+          ⟨Ucx, Ford, Fadj, hUcx_open, hUcx_connected, hwick_mem, hcommon_mem,
+            _hUcx_sub, hFord_holo, hFadj_holo, hFord_wick, _hFadj_seed,
+            hFord_common, hFadj_common, hFadj_seed_trace⟩
+        have hFadj_wick :
+            ∀ u ∈ U,
+              Fadj (fun k => wickRotatePoint (u k)) =
+                bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k))) := by
+          /-
+            Exact remaining Vladimirov/BHW trace leaf.
 
-          The finite side-height collar transport has now been reduced, inside
-          this proof body, to equality of the two zero-height common-boundary
-          distributions paired with the cutoff-pulled test `φ0`: the ordinary
-          quarter-turned `bvt_F` endpoint and the selected adjacent pulled-real
-          endpoint.  The missing mathematical payload is to construct the local
-          tempered boundary-value package on the OS45 BHW collar, identify this
-          common boundary distribution with the raw Wick-section source current
-          on compact tests, and apply the local Vladimirov/EOW uniqueness
-          argument from OS-I `(4.12)`--`(4.14)`.
-        -/
-        exact ?os45_vladimirov_bhw_zeroHeight_boundary_distribution
+            The initial-overlap packet above supplies the deterministic adjacent
+            branch `Fadj = extendF (bvt_F) ∘ permAct P.τ` on the connected OS45
+            collar and the genuine `(4.12)` seed trace
+            `hFadj_seed_trace` at `permAct P.τ (wick u)`.  What remains is the
+            local tempered-boundary-value uniqueness transport from that
+            `(4.12)` seed branch to the ordinary Wick-section point
+            `wick u`, using OS polynomial growth and equality of the tempered
+            boundary distributions on compact source tests.
+          -/
+          exact ?os45_vladimirov_tempered_BV_adjacent_wick_trace
+        have hbranches_eq :
+            ∀ u ∈ U,
+              BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                  (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+                  (BHW.realEmbed
+                    (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                      (1 : Equiv.Perm (Fin n)) u)) =
+                BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                  (1 : Equiv.Perm (Fin n))
+                  (BHW.realEmbed
+                    (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                      (1 : Equiv.Perm (Fin n)) u)) :=
+          BHW.os45CommonEdge_pulledRealBranches_eqOn_of_E3_branchTraces
+            (d := d) hd OS lgc (P := P)
+            hU_open hU_connected.nonempty hU_sub
+            hUcx_open hUcx_connected hwick_mem hcommon_mem
+            Ford Fadj hFord_holo hFadj_holo hFord_wick hFadj_wick
+            hFord_common hFadj_common
+        have hB0_eq_Aord : B0 = Aord := by
+          refine MeasureTheory.integral_congr_ae (Filter.Eventually.of_forall ?_)
+          intro u
+          by_cases hu : u ∈ U
+          · simpa [B0, Aord] using
+              congrArg (fun c : ℂ => c * (φ0 : NPointDomain d n → ℂ) u)
+                (hbranches_eq u hu)
+          · have hnot : u ∉ tsupport (φ0 : NPointDomain d n → ℂ) := fun hut =>
+              hu (hφ0U hut)
+            have hzero : (φ0 : NPointDomain d n → ℂ) u = 0 :=
+              image_eq_zero_of_notMem_tsupport hnot
+            simp [hzero]
+        exact sub_eq_zero.mpr (hA0_eq_Aord.trans hB0_eq_Aord.symm)
       have hExt_to_zeroHeight :
           Tendsto Ext (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 (A0 - B0)) := by
         have hpair :=
