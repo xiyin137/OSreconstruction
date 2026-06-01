@@ -6002,23 +6002,37 @@ theorem OS45BHWJostHullData.os45CommonEdge_sourceRepresentsZero_of_OS412_sourceS
                   BHW.os45FlatCommonChartBranch d n OS lgc
                     (1 : Equiv.Perm (Fin n))
                     (fun a => (x a : ℂ)) * φ x := by
-            /-
-              Active OS-I `(4.14)` compact-test leaf.
+            have hplus_schwinger :
+                (∫ x : BHW.OS45FlatCommonChartReal d n,
+                  BHW.os45FlatCommonChartBranch d n OS lgc
+                    (1 : Equiv.Perm (Fin n))
+                    (fun a => (x a : ℂ)) * φ x) =
+                  BHW.os45FlatCommonChart_ordinaryEdgeCLM hd OS lgc P φ :=
+              BHW.os45FlatCommonChart_plus_zeroHeight_pairing_eq_CLM_of_localRepresents
+                (d := d) hd OS lgc (P := P)
+                (BHW.os45FlatCommonChart_ordinaryEdgeCLM hd OS lgc P)
+                (BHW.os45FlatCommonChart_ordinaryEdgeCLM_represents hd OS lgc)
+                φ hφ_compact hφE
+            have hminus_schwinger :
+                (∫ x : BHW.OS45FlatCommonChartReal d n,
+                  BHW.os45FlatCommonChartBranch d n OS lgc
+                    (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+                    (fun a => (x a : ℂ)) * φ x) =
+                  BHW.os45FlatCommonChart_ordinaryEdgeCLM hd OS lgc P φ := by
+              /-
+                Active OS-I `(4.14)` compact-test leaf, now with the
+                ordinary side paid to the checked ordinary edge CLM.
 
-              This is now in the flat real-edge form used by the monograph:
-              prove, by the local Jost/EOW partition on the Figure-2-4 edge,
-              that the ordinary `(4.1)` and retained adjacent `(4.12)`
-              boundary distributions have equal pairings against the same
-              compact flat test.
-
-              The available source-current comparison `hsource_current`
-              controls the Wick-section `bvt_F` currents.  What is still
-              missing is the OS-I §4.5 boundary transport from those currents
-              to the deterministic zero-height flat branches below, i.e. the
-              compact-test Jost-edge/EOW production step rather than another
-              side-height or endpoint normalization.
-            -/
-            exact ?os45_OS414_flat_commonEdge_pairing_from_Jost_EOW_partition
+                The remaining production step is the adjacent `(4.12)` half:
+                prove, by the local Jost/EOW partition on the Figure-2-4
+                edge, that the deterministic adjacent zero-height boundary
+                distribution has the same ordinary edge CLM pairing.  This is
+                the missing seed-to-common-edge boundary transport, not another
+                source-side or reduced-normal gate.
+              -/
+              exact
+                ?os45_OS414_adjacent_flat_commonEdge_pairing_eq_ordinaryEdgeCLM_from_Jost_EOW_partition
+            exact hminus_schwinger.trans hplus_schwinger.symm
           have hAdj :=
             BHW.os45FlatCommonChart_adjacentCommonBoundary_integral_eq_sourcePullback
               (d := d) hd OS lgc D φ hφ_compact hφE
