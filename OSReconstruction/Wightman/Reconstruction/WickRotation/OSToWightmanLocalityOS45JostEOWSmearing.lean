@@ -575,25 +575,86 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
               BHW.extendF (bvt_F OS lgc n) zAdj =
                 bvt_F OS lgc n
                   (fun k => wickRotatePoint (u (P.τ k))) := by
+            have hzAdj_initialOverlap :
+                zAdj ∈ BHW.ExtendedTube d n ∩
+                  BHW.permutedExtendedTubeSector d n P.τ := by
+              constructor
+              · simpa [zAdj, zWick] using
+                  BHW.os45Figure24_adjacentWick_mem_extendedTube
+                    (d := d) (n := n) (hd := hd) (P := P) huP
+              · exact (H.OS412SeedWindow_subset_permutedSector
+                  hzAdj_seedWindow).1
+            have hzAdj_seedBranch_arg :
+                BHW.permAct (d := d) P.τ zAdj =
+                  fun k => wickRotatePoint (u k) := by
+              calc
+                BHW.permAct (d := d) P.τ zAdj =
+                    BHW.permAct (d := d) P.τ
+                      (fun k => wickRotatePoint (u (P.τ k))) := by
+                        rw [hzAdj_eq]
+                _ = fun k => wickRotatePoint (u k) :=
+                    BHW.os45Figure24_permAct_adjacentWick_eq_ordinaryWick
+                      (d := d) (n := n) (hd := hd) (P := P) u
+            have hseedBranch_value :
+                bvt_F OS lgc n (BHW.permAct (d := d) P.τ zAdj) =
+                  bvt_F OS lgc n
+                    (fun k => wickRotatePoint (u (P.τ k))) := by
+              have hperm_raw :
+                  bvt_F OS lgc n
+                      (fun k => wickRotatePoint (u (P.τ k))) =
+                    bvt_F OS lgc n (fun k => wickRotatePoint (u k)) := by
+                simpa [BHW.permAct] using
+                  bvt_F_perm (d := d) OS lgc n P.τ
+                    (fun k => wickRotatePoint (u k))
+              calc
+                bvt_F OS lgc n (BHW.permAct (d := d) P.τ zAdj) =
+                    bvt_F OS lgc n (fun k => wickRotatePoint (u k)) := by
+                      rw [hzAdj_seedBranch_arg]
+                _ =
+                    bvt_F OS lgc n
+                      (fun k => wickRotatePoint (u (P.τ k))) :=
+                        hperm_raw.symm
+            have hoverlap_branch_eq :
+                BHW.extendF (bvt_F OS lgc n) zAdj =
+                  bvt_F OS lgc n
+                    (BHW.permAct (d := d) P.τ zAdj) := by
+              have hExt_holo_near :
+                  DifferentiableOn ℂ (BHW.extendF (bvt_F OS lgc n))
+                    (BHW.ExtendedTube d n) :=
+                BHW.differentiableOn_extendF_bvt_F_extendedTube
+                  (d := d) OS lgc n
+              have hSeed_holo_near :
+                  DifferentiableOn ℂ
+                    (fun z : Fin n → Fin (d + 1) → ℂ =>
+                      bvt_F OS lgc n (BHW.permAct (d := d) P.τ z))
+                    ({z : Fin n → Fin (d + 1) → ℂ |
+                      BHW.permAct (d := d) P.τ z ∈ BHW.ForwardTube d n} ∩
+                        H.ΩJ) :=
+                H.differentiableOn_OS412SeedBranch OS lgc
             /-
               Exact remaining Vladimirov/BHW tempered-BV uniqueness leaf.
 
-              The deterministic adjacent seed `zAdj = permAct P.τ (wick u)` is
-              in the OS-I `(4.12)` seed window (`hzAdj_seedWindow`), and
-              `hFadj_seed_at_zAdj` records the raw seed trace.  It is
-              deliberately not an ordinary forward-tube point
-              (`hzAdj_not_forward`), so `extendF_eq_on_forwardTube` cannot
-              identify `extendF (bvt_F) zAdj` with the boundary value.
+              The deterministic adjacent seed is now proved to lie in the
+              true initial-sector overlap (`hzAdj_initialOverlap`).  On this
+              overlap there are two concrete holomorphic germs:
 
-              What remains is the Vladimirov/BHW interface: construct, from OS
-              polynomial growth and compact-test equality of the common
-              boundary distributions on the local Figure-2-4 collar, the
-              tempered boundary-value uniqueness transport identifying the
-              deterministic BHW branch `extendF (bvt_F)` with the raw
-              `(4.12)` branch at this adjacent Wick seed.
+              * `extendF (bvt_F OS lgc n)` on the ordinary extended tube;
+              * `z ↦ bvt_F OS lgc n (permAct P.τ z)` on the OS-I `(4.12)`
+                preimage-forward-tube seed window.
+
+              The target has been reduced only by the checked permutation
+              normalization `hseedBranch_value`: the remaining mathematical
+              content is exactly the Vladimirov tempered-BV uniqueness
+              comparison of these two germs at `zAdj`, using OS polynomial
+              growth and equality of their tempered boundary distributions on
+              the local Figure-2-4 collar.  The local holomorphy handles are
+              `hExt_holo_near` and `hSeed_holo_near`; the absent producer is
+              the BHW-to-flat-tube tempered boundary package plus its boundary
+              distribution equality.
             -/
             exact
-              ?os45_vladimirov_tempered_BV_extendF_eq_bvt_F_at_adjacent_wick
+              ?os45_vladimirov_tempered_BV_initial_overlap_branch_eq_at_adjacent_wick
+            exact hoverlap_branch_eq.trans hseedBranch_value
           exact hFadj_to_extendF.trans hdeterministic_adjacent_trace
         have hbranches_eq :
             ∀ u ∈ U,
