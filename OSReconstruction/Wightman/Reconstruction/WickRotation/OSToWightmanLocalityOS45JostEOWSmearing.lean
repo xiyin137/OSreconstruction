@@ -228,15 +228,105 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
     have htransport_error :
         Tendsto (fun ε : ℝ => Ext ε - Raw ε)
           (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) := by
+      let φ0 : SchwartzNPoint d n :=
+        ((D.toZeroDiagonalCLM
+          (1 : Equiv.Perm (Fin n)) φ).1 : SchwartzNPoint d n)
+      have hφ0U :
+          tsupport (φ0 : NPointDomain d n → ℂ) ⊆ U := by
+        simpa [φ0, BHW.OS45Figure24SourceCutoffData.toZeroDiagonalCLM] using
+          D.toSchwartzNPointCLM_tsupport_subset_image
+            (1 : Equiv.Perm (Fin n)) φ hφU
+      have h0_minus_plus :
+          ∀ u ∈ closure U,
+            BHW.os45FlatCommonChartSourceSide d n
+              (1 : Equiv.Perm (Fin n)) (-1 : ℝ) 0 η u ∈ Ωplus := by
+        intro u hu
+        simpa using h0_plus u hu
+      have hplus_pair :=
+        D.tendsto_sourceSide_extendF_sideZeroDiagonalCLM_pair
+          (d := d) OS lgc (1 : Equiv.Perm (Fin n))
+          hΩplus_open hFplus_cont hU_open (fun u hu => subset_closure hu)
+          hU_compact η h0_plus h0_minus_plus φ hφ_compact hφU
+      have hordinary_endpoint_ext_eq_bvt :
+          ∀ u ∈ U,
+            BHW.extendF (bvt_F OS lgc n)
+                (BHW.os45FlatCommonChartSourceSide d n
+                  (1 : Equiv.Perm (Fin n)) (1 : ℝ) 0 η u) =
+              bvt_F OS lgc n
+                (BHW.os45FlatCommonChartSourceSide d n
+                  (1 : Equiv.Perm (Fin n)) (1 : ℝ) 0 η u) := by
+        intro u hu
+        have huP : u ∈ P.V := hU_sub hu
+        have hsource_zero :
+            BHW.os45FlatCommonChartSourceSide d n
+                (1 : Equiv.Perm (Fin n)) (1 : ℝ) 0 η u =
+              (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+                (BHW.realEmbed
+                  (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                    (1 : Equiv.Perm (Fin n)) u)) := by
+          exact
+            BHW.os45FlatCommonChartSourceSide_zero_eq_commonEdge
+              (d := d) (n := n)
+              (1 : Equiv.Perm (Fin n)) (1 : ℝ) η u
+        rw [hsource_zero]
+        exact
+          BHW.os45Figure24CommonEdge_ordinary_extendF_eq_bvt_F
+            (d := d) (n := n) hd OS lgc (P := P) (u := u) huP
+      have hplus_endpoint_integral :
+          (∫ u : NPointDomain d n,
+            BHW.extendF (bvt_F OS lgc n)
+              (BHW.os45FlatCommonChartSourceSide d n
+                (1 : Equiv.Perm (Fin n)) (1 : ℝ) 0 η u) *
+              (φ0 : NPointDomain d n → ℂ) u) =
+            ∫ u : NPointDomain d n,
+              bvt_F OS lgc n
+                (BHW.os45FlatCommonChartSourceSide d n
+                  (1 : Equiv.Perm (Fin n)) (1 : ℝ) 0 η u) *
+                (φ0 : NPointDomain d n → ℂ) u := by
+        refine MeasureTheory.integral_congr_ae (Filter.Eventually.of_forall ?_)
+        intro u
+        by_cases hu : u ∈ U
+        · simpa using
+            congrArg
+              (fun c : ℂ => c * (φ0 : NPointDomain d n → ℂ) u)
+              (hordinary_endpoint_ext_eq_bvt u hu)
+        · have hnot : u ∉ tsupport (φ0 : NPointDomain d n → ℂ) := fun hut =>
+            hu (hφ0U hut)
+          have hzero : (φ0 : NPointDomain d n → ℂ) u = 0 :=
+            image_eq_zero_of_notMem_tsupport hnot
+          simp [hzero]
+      have hplus_ext_to_quarterTurn_bvt :
+          Tendsto
+            (fun ε : ℝ =>
+              ∫ u : NPointDomain d n,
+                BHW.extendF (bvt_F OS lgc n)
+                  (BHW.os45FlatCommonChartSourceSide d n
+                    (1 : Equiv.Perm (Fin n)) (1 : ℝ) ε η u) *
+                  ((((D.toSideZeroDiagonalCLM
+                    (1 : Equiv.Perm (Fin n)) (1 : ℝ) ε η φ).1 :
+                      SchwartzNPoint d n) : NPointDomain d n → ℂ) u))
+            (𝓝[Set.Ioi 0] (0 : ℝ))
+            (𝓝
+              (∫ u : NPointDomain d n,
+                bvt_F OS lgc n
+                  (BHW.os45FlatCommonChartSourceSide d n
+                    (1 : Equiv.Perm (Fin n)) (1 : ℝ) 0 η u) *
+                  (φ0 : NPointDomain d n → ℂ) u)) := by
+        rw [← hplus_endpoint_integral]
+        simpa [φ0] using hplus_pair.1
       /-
         Genuine local Vladimirov/BHW producer input.
 
-        Required mathematical payload: construct the local tempered boundary
-        value package on the actual OS45 BHW collar from OS polynomial growth,
-        identify its boundary distribution with the raw OS `(4.12)` source
-        current on compact tests, and apply local boundary-value uniqueness to
-        show the deterministic `extendF` collar pairings have the same
-        distributional limit as `Raw`.
+        The ordinary deterministic side now reaches the quarter-turned
+        common-edge `bvt_F` endpoint by checked moving-test continuity and the
+        forward-tube endpoint normalization above.  What is still missing is
+        the genuine OS-I §4.5 Vladimirov/BHW identification of that
+        quarter-turned common-edge boundary distribution with the Wick-section
+        raw source current, together with the selected adjacent/permuted
+        analogue.  That requires constructing the local tempered BV package on
+        the actual OS45 BHW collar from OS polynomial growth and proving that
+        its boundary distribution is the raw `(4.12)` source current on compact
+        tests.
       -/
       exact ?os45_vladimirov_bhw_local_collar_transport
     have hsum := htransport_error.add hraw
