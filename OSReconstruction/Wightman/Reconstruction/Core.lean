@@ -790,6 +790,60 @@ structure WightmanFunctions (d : ℕ) [NeZero d] where
         ∀ (g_a : SchwartzNPoint d m),
           (∀ x : NPointDomain d m, g_a x = g (fun i => x i - a)) →
           ‖W (n + m) (f.tensorProduct g_a) - W n f * W m g‖ < ε
+  /-- **Vladimirov H(T^C) compact-subset polynomial growth on the forward tube**
+      (Streater-Wightman Theorem 3.1.1 / Vladimirov 25.1).
+
+      For each `n`, the analytic continuation has, for every compact `K` of
+      imaginary parts in `ForwardConeAbs d n`, a polynomial bound in the real
+      part `x` uniform over `y ∈ K`:
+      ```
+        ‖W_analytic (x + iy)‖ ≤ C_K · (1 + ‖x‖)^{N_K}
+      ```
+
+      **This is the satisfiable form** of the polynomial bound on the
+      analytic continuation. The earlier `spectrum_condition` field's global
+      bound `‖W_analytic z‖ ≤ C(1+‖z‖)^N` over the entire tube is **too
+      strong** — unsatisfiable for any actual Wightman QFT (free-field
+      counterexample: internal `1/(z-w)²` blow-up as imaginary differences
+      approach `∂V+`; see `docs/ruelle_bound_vacuity_concern.md`). The
+      compact-subset form is the one Vladimirov 25.1 actually requires and
+      what `bv_implies_fourier_support` / `vladimirov_tillmann` consume.
+
+      **New code should consume this field** (or equivalently
+      `ForwardTubeAnalyticityCompactSubset`) rather than the older
+      `spectrum_condition`'s global bound. The two fields share the same
+      analytic continuation function `W_analytic` (concretely they share the
+      first existential-bound witness if both are derived from a shared
+      construction); they differ only in which polynomial-bound clause they
+      assert.
+
+      **Witness identity (per PR-#88 review)**: this field is a *property* of
+      the same `W_analytic` chosen by `spectrum_condition`, not a separate
+      existential. Concretely the bound is asserted on
+      `(spectrum_condition n).choose` (Lean's `Classical.choose` witness for
+      the `spectrum_condition` existential). This forces — by construction —
+      that consumers combining `spectrum_condition`'s differentiability /
+      boundary-value content with this field's compact-subset growth are
+      talking about a single analytic continuation, with no chance of mixing
+      witnesses across the two fields.
+
+      Boundary values are not repeated here (they live on
+      `spectrum_condition` and apply to the same `W_analytic` automatically).
+
+      Ref: Streater-Wightman, *PCT, Spin and Statistics, and All That*,
+      Theorem 3.1.1 (polynomial behavior on the forward tube). -/
+  spectrum_condition_compact_subset : ∀ (n : ℕ),
+    -- Compact-subset polynomial growth (Vladimirov H(T^C)) on
+    -- `(spectrum_condition n).choose`. Compact subsets are taken inside the
+    -- imaginary-part cone for `ForwardTube d n`, i.e. imaginary parts `y`
+    -- such that `InForwardCone d n y` holds.
+    ∀ (K : Set (Fin n → Fin (d + 1) → ℝ)), IsCompact K →
+      (∀ y ∈ K, InForwardCone d n y) →
+        ∃ (C_bd : ℝ) (N : ℕ), C_bd > 0 ∧
+          ∀ (x y : Fin n → Fin (d + 1) → ℝ), y ∈ K →
+            ‖(spectrum_condition n).choose
+                (fun k μ => (x k μ : ℂ) + (y k μ : ℂ) * Complex.I)‖ ≤
+              C_bd * (1 + ‖x‖) ^ N
 
 namespace WightmanFunctionsCore
 
@@ -817,6 +871,87 @@ def toWightmanFunctions (Wcore : WightmanFunctionsCore d)
   positive_definite := Wcore.positive_definite
   hermitian := Wcore.hermitian
   cluster := hcluster
+  spectrum_condition_compact_subset := by
+    -- Derive compact-subset growth from `Wcore.spectrum_condition`'s global
+    -- form. The conversion is: for compact `K` of imaginary parts, bound
+    -- `‖y‖` over `K` by some `R_K`, then apply the global bound and absorb
+    -- `R_K` into the constant.
+    --
+    -- The goal involves `(spectrum_condition n).choose` where, after the
+    -- field assignment `spectrum_condition := Wcore.spectrum_condition`,
+    -- `self.spectrum_condition = Wcore.spectrum_condition` definitionally,
+    -- so `(self.spectrum_condition n).choose = (Wcore.spectrum_condition n).choose`.
+    -- We use `Classical.choose_spec` to extract the spec on this canonical
+    -- witness (per PR-#88 review: the compact-subset growth is a property
+    -- *of the same chosen W*, not a separate existential).
+    intro n K hK_cpt hK_in_cone
+    obtain ⟨hDiff, ⟨C_bd, N, hC_pos, hgrowth⟩, _hBV⟩ :=
+      (Wcore.spectrum_condition n).choose_spec
+    -- `hgrowth : ∀ z ∈ ForwardTube d n, ‖(Wcore.spectrum_condition n).choose z‖ ≤
+    --              C_bd * (1 + ‖z‖) ^ N`.
+    -- Bound ‖y‖ over compact K.
+    obtain ⟨R, hR⟩ : ∃ R : ℝ, ∀ y ∈ K, ‖y‖ ≤ R := by
+      rcases hK_cpt.bddAbove_image continuous_norm.continuousOn with ⟨R, hR⟩
+      exact ⟨R, fun y hy => hR (Set.mem_image_of_mem _ hy)⟩
+    refine ⟨C_bd * (1 + max R 0) ^ N, N, by positivity, fun x y hy => ?_⟩
+    -- Reduce to the global bound on z := x + iy.
+    set z : Fin n → Fin (d + 1) → ℂ := fun k μ => (x k μ : ℂ) + (y k μ : ℂ) * Complex.I
+      with hz_def
+    have hRy : ‖y‖ ≤ max R 0 := le_trans (hR y hy) (le_max_left _ _)
+    -- z ∈ ForwardTube d n via the imaginary-part description and hK_in_cone.
+    have hy_cone : InForwardCone d n y := hK_in_cone y hy
+    have hz_FT : z ∈ ForwardTube d n := by
+      intro k
+      simp only [hz_def]
+      have h_im : ∀ k μ, (((x k μ : ℂ) + (y k μ : ℂ) * Complex.I).im) = y k μ := by
+        intro k μ
+        simp [Complex.add_im, Complex.mul_im, Complex.I_im, Complex.ofReal_im,
+              Complex.ofReal_re, Complex.I_re]
+      by_cases hk : (k : ℕ) = 0
+      · -- k.val = 0: prev = 0; imaginary diff = Im z_k = y k.
+        simp only [hk, ↓reduceDIte, Pi.zero_apply, sub_zero]
+        have hy_k : InOpenForwardCone d (fun μ => y k μ) := by
+          have := hy_cone k
+          simp [hk] at this
+          exact this
+        convert hy_k using 1
+        funext μ
+        exact h_im k μ
+      · -- k.val > 0: prev = z_{k-1}; imaginary diff = y k - y (k-1).
+        simp only [hk, ↓reduceDIte]
+        have hy_diff : InOpenForwardCone d
+            (fun μ => y k μ - y ⟨k.val - 1, by omega⟩ μ) := by
+          have := hy_cone k
+          simp [hk] at this
+          exact this
+        convert hy_diff using 1
+        funext μ
+        simp [Complex.sub_im, Complex.add_im, Complex.mul_im, Complex.I_im,
+              Complex.ofReal_im]
+    -- Apply the global bound at z.
+    have h_zx_le : ‖z‖ ≤ ‖x‖ + ‖y‖ := by
+      refine (pi_norm_le_iff_of_nonneg (by positivity)).mpr (fun k => ?_)
+      refine (pi_norm_le_iff_of_nonneg (by positivity)).mpr (fun μ => ?_)
+      have h_per : ‖z k μ‖ ≤ ‖x k μ‖ + ‖y k μ‖ := by
+        simp only [hz_def]
+        refine le_trans (norm_add_le _ _) ?_
+        simp [Complex.norm_real, Complex.norm_mul, Complex.norm_I, Real.norm_eq_abs]
+      have hxk : ‖x k μ‖ ≤ ‖x‖ :=
+        le_trans (norm_le_pi_norm (x k) μ) (norm_le_pi_norm x k)
+      have hyk : ‖y k μ‖ ≤ ‖y‖ :=
+        le_trans (norm_le_pi_norm (y k) μ) (norm_le_pi_norm y k)
+      linarith [h_per, hxk, hyk]
+    -- After field assignment, `(self.spectrum_condition n).choose = (Wcore.spectrum_condition n).choose`
+    -- definitionally, so the goal's W matches hgrowth's W.
+    calc ‖(Wcore.spectrum_condition n).choose z‖
+        ≤ C_bd * (1 + ‖z‖) ^ N := hgrowth z hz_FT
+      _ ≤ C_bd * (1 + (‖x‖ + max R 0)) ^ N := by
+            gcongr; linarith [hRy, h_zx_le]
+      _ ≤ C_bd * ((1 + max R 0) * (1 + ‖x‖)) ^ N := by
+            gcongr
+            nlinarith [norm_nonneg x, le_max_right R 0]
+      _ = C_bd * (1 + max R 0) ^ N * (1 + ‖x‖) ^ N := by
+            rw [mul_pow, mul_assoc]
 
 end WightmanFunctionsCore
 /-! ### Inner Product Hermiticity and Cauchy-Schwarz -/
