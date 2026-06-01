@@ -5857,7 +5857,54 @@ theorem OS45BHWJostHullData.os45CommonEdge_sourceRepresentsZero_of_OS412_sourceS
           transport identifying the deterministic source-side branches `Fext`
           with those source currents in compact-test limit.
         -/
-        exact ?os_i_section45_source_current_to_source_side_residual_transfer
+        let FextPlus : ℝ → ℂ := fun ε =>
+          ∫ u : NPointDomain d n,
+            BHW.extendF (bvt_F OS lgc n)
+              (BHW.os45FlatCommonChartSourceSide d n
+                (1 : Equiv.Perm (Fin n)) (1 : ℝ) ε η u) *
+            ((((D.toSideZeroDiagonalCLM
+              (1 : Equiv.Perm (Fin n)) (1 : ℝ) ε η φ).1 :
+                SchwartzNPoint d n) : NPointDomain d n → ℂ) u)
+        let FextMinus : ℝ → ℂ := fun ε =>
+          ∫ u : NPointDomain d n,
+            BHW.extendF (bvt_F OS lgc n)
+              (BHW.permAct (d := d)
+                (P.τ.symm * (1 : Equiv.Perm (Fin n))).symm
+                (BHW.os45FlatCommonChartSourceSide d n
+                  (1 : Equiv.Perm (Fin n)) (-1 : ℝ) ε η u)) *
+            ((((D.toSideZeroDiagonalCLM
+              (1 : Equiv.Perm (Fin n)) (-1 : ℝ) ε η φ).1 :
+                SchwartzNPoint d n) : NPointDomain d n → ℂ) u)
+        let FcurPlus : ℝ → ℂ := fun ε =>
+          ∫ u : NPointDomain d n,
+            bvt_F OS lgc n (fun k => wickRotatePoint (u k)) *
+            ((((D.toSideZeroDiagonalCLM
+              (1 : Equiv.Perm (Fin n)) (1 : ℝ) ε η φ).1 :
+                SchwartzNPoint d n) : NPointDomain d n → ℂ) u)
+        let FcurMinus : ℝ → ℂ := fun ε =>
+          ∫ u : NPointDomain d n,
+            bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k))) *
+            ((((D.toSideZeroDiagonalCLM
+              (1 : Equiv.Perm (Fin n)) (-1 : ℝ) ε η φ).1 :
+                SchwartzNPoint d n) : NPointDomain d n → ℂ) u)
+        have hplus_transport :
+            Tendsto (fun ε : ℝ => FextPlus ε - FcurPlus ε)
+              (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) := by
+          exact ?os_i_section45_plus_source_side_transport
+        have hminus_transport :
+            Tendsto (fun ε : ℝ => FextMinus ε - FcurMinus ε)
+              (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) := by
+          exact ?os_i_section45_minus_source_side_transport
+        have hdiff := hplus_transport.sub hminus_transport
+        have htarget :
+            (fun ε : ℝ =>
+              (FextPlus ε - FcurPlus ε) -
+                (FextMinus ε - FcurMinus ε)) =
+              fun ε : ℝ => Fext ε - Fcur ε := by
+          funext ε
+          dsimp [Fext, Fcur, FextPlus, FextMinus, FcurPlus, FcurMinus]
+          ring
+        simpa [htarget] using hdiff
       have hsum := htransport.add hsource_current
       simpa [sub_eq_add_neg] using hsum
     simpa [Fext] using hside_ext
