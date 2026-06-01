@@ -262,21 +262,145 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
               (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) ∧
             Tendsto AdjacentResidual
               (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) := by
-        /-
-          Vladimirov/BHW tempered-boundary-value uniqueness packet.
+        have h0_minus_plus :
+            ∀ u ∈ closure U,
+              BHW.os45FlatCommonChartSourceSide d n
+                (1 : Equiv.Perm (Fin n)) (-1 : ℝ) 0 η u ∈ Ωplus := by
+          intro u hu
+          simpa using h0_plus u hu
+        have h0_plus_minus :
+            ∀ u ∈ closure U,
+              BHW.os45FlatCommonChartSourceSide d n
+                (1 : Equiv.Perm (Fin n)) (1 : ℝ) 0 η u ∈ Ωminus := by
+          intro u hu
+          simpa using h0_minus u hu
+        have hKηC :
+            ({η} : Set (BHW.OS45FlatCommonChartReal d n)) ⊆
+              BHW.os45FlatCommonChartCone d n := by
+          intro ξ hξ
+          simpa [Set.mem_singleton_iff.mp hξ] using hηC
+        have hsource_pairings :=
+          D.sideZeroDiagonal_sourcePairings_tendstoUniformlyOn_schwinger
+            OS lgc ({η} : Set (BHW.OS45FlatCommonChartReal d n))
+            isCompact_singleton hKηC φ hφ_compact hφE
+        have hraw_plus :
+            Tendsto
+              (fun ε : ℝ =>
+                ∫ u : NPointDomain d n,
+                  bvt_F OS lgc n (fun k => wickRotatePoint (u k)) *
+                    ((((D.toSideZeroDiagonalCLM
+                      (1 : Equiv.Perm (Fin n)) (1 : ℝ) ε η φ).1 :
+                        SchwartzNPoint d n) : NPointDomain d n → ℂ) u))
+              (𝓝[Set.Ioi 0] (0 : ℝ))
+              (𝓝 (OS.S n
+                (D.toZeroDiagonalCLM (1 : Equiv.Perm (Fin n)) φ))) :=
+          hsource_pairings.1.tendsto_at (by simp)
+        have hraw_minus :
+            Tendsto
+              (fun ε : ℝ =>
+                ∫ u : NPointDomain d n,
+                  bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k))) *
+                    ((((D.toSideZeroDiagonalCLM
+                      (1 : Equiv.Perm (Fin n)) (-1 : ℝ) ε η φ).1 :
+                        SchwartzNPoint d n) : NPointDomain d n → ℂ) u))
+              (𝓝[Set.Ioi 0] (0 : ℝ))
+              (𝓝 (OS.S n
+                (D.toZeroDiagonalCLM (1 : Equiv.Perm (Fin n)) φ))) :=
+          hsource_pairings.2.2.2.tendsto_at (by simp)
+        have hside_plus_pair :=
+          D.tendsto_sourceSide_extendF_sideZeroDiagonalCLM_pair
+            (d := d) OS lgc (1 : Equiv.Perm (Fin n))
+            hΩplus_open (by simpa using hFplus_cont)
+            hU_open (fun u hu => subset_closure hu) hU_compact η
+            h0_plus h0_minus_plus φ hφ_compact hφU
+        have hside_minus_pair :=
+          D.tendsto_sourceSide_extendF_sideZeroDiagonalCLM_pair
+            (d := d) OS lgc
+            (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+            hΩminus_open (by simpa using hFminus_cont)
+            hU_open (fun u hu => subset_closure hu) hU_compact η
+            h0_plus_minus h0_minus φ hφ_compact hφU
+        have hordinary_zeroHeight_eq_schwinger :
+            (∫ u : NPointDomain d n,
+              BHW.extendF (bvt_F OS lgc n)
+                (BHW.os45QuarterTurnConfig (d := d) (n := n)
+                  (fun k => wickRotatePoint (u k))) *
+                ((((D.toZeroDiagonalCLM
+                  (1 : Equiv.Perm (Fin n)) φ).1 :
+                    SchwartzNPoint d n) : NPointDomain d n → ℂ) u)) =
+              OS.S n
+                (D.toZeroDiagonalCLM (1 : Equiv.Perm (Fin n)) φ) := by
+          /-
+            Vladimirov/BHW ordinary boundary-identification leaf.
 
-          The two conjuncts are the literal ordinary and adjacent halves of
-          the source-side residual.  Closing this packet requires the OS-I
-          §4.5 mixed-tube argument: polynomial-growth tempered boundary
-          values for the deterministic BHW `extendF` source-side branches,
-          the matching OS source-current boundary values on the Wick section,
-          and uniqueness of those tempered boundary values on the local Jost
-          collar.  The adjacent half cannot be replaced by a forward-tube
-          endpoint shortcut; it is the same Vladimirov mechanism transported
-          through the BHW adjacent sector.
-        -/
-        exact
-          ?vladimirov_bhw_sourceSide_temperedBV_uniqueness_packet
+            The checked moving-test theorem above reduces the ordinary
+            residual to this scalar equality: the zero-height ordinary BHW
+            common-edge boundary functional must be the same tempered
+            boundary value as the Wick-section OS source current.  This is
+            not endpoint continuity; it is the OS-I §4.5 mixed-tube
+            uniqueness step from the Euclidean Wick section to the horizontal
+            Figure-2-4 common edge.
+          -/
+          exact ?vladimirov_bhw_ordinary_zeroHeight_eq_schwinger
+        have hadjacent_zeroHeight_eq_schwinger :
+            (∫ u : NPointDomain d n,
+              BHW.extendF (bvt_F OS lgc n)
+                (BHW.permAct (d := d)
+                  P.τ
+                  (BHW.os45QuarterTurnConfig (d := d) (n := n)
+                    (fun k => wickRotatePoint (u k)))) *
+                ((((D.toZeroDiagonalCLM
+                  (1 : Equiv.Perm (Fin n)) φ).1 :
+                    SchwartzNPoint d n) : NPointDomain d n → ℂ) u)) =
+              OS.S n
+                (D.toZeroDiagonalCLM (1 : Equiv.Perm (Fin n)) φ) := by
+          /-
+            Vladimirov/BHW adjacent boundary-identification leaf.
+
+            This is the selected adjacent copy of the same mixed-tube
+            uniqueness mechanism.  The existing
+            `permAct_ordinaryWick_not_mem_forwardTube` obstruction rules out
+            replacing it by `extendF_eq_on_forwardTube`; the proof has to
+            identify the adjacent BHW source-side boundary value with the OS
+            source current by tempered boundary-value uniqueness on the local
+            Jost collar.
+          -/
+          exact ?vladimirov_bhw_adjacent_zeroHeight_eq_schwinger
+        constructor
+        · have hlim := hside_plus_pair.1.sub hraw_plus
+          have hlim0 :
+              Tendsto OrdinaryResidual
+                (𝓝[Set.Ioi 0] (0 : ℝ))
+                (𝓝
+                  ((∫ u : NPointDomain d n,
+                    BHW.extendF (bvt_F OS lgc n)
+                      (BHW.os45FlatCommonChartSourceSide d n
+                        (1 : Equiv.Perm (Fin n)) (1 : ℝ) 0 η u) *
+                      ((((D.toZeroDiagonalCLM
+                        (1 : Equiv.Perm (Fin n)) φ).1 :
+                          SchwartzNPoint d n) : NPointDomain d n → ℂ) u)) -
+                    OS.S n
+                      (D.toZeroDiagonalCLM (1 : Equiv.Perm (Fin n)) φ))) := by
+            simpa [OrdinaryResidual] using hlim
+          simpa [hordinary_zeroHeight_eq_schwinger] using hlim0
+        · have hlim := hside_minus_pair.2.sub hraw_minus
+          have hlim0 :
+              Tendsto AdjacentResidual
+                (𝓝[Set.Ioi 0] (0 : ℝ))
+                (𝓝
+                  ((∫ u : NPointDomain d n,
+                    BHW.extendF (bvt_F OS lgc n)
+                      (BHW.permAct (d := d)
+                        (P.τ.symm * (1 : Equiv.Perm (Fin n))).symm
+                        (BHW.os45FlatCommonChartSourceSide d n
+                          (1 : Equiv.Perm (Fin n)) (-1 : ℝ) 0 η u)) *
+                      ((((D.toZeroDiagonalCLM
+                        (1 : Equiv.Perm (Fin n)) φ).1 :
+                          SchwartzNPoint d n) : NPointDomain d n → ℂ) u)) -
+                    OS.S n
+                      (D.toZeroDiagonalCLM (1 : Equiv.Perm (Fin n)) φ))) := by
+            simpa [AdjacentResidual] using hlim
+          simpa [hadjacent_zeroHeight_eq_schwinger] using hlim0
       rcases hresidual_packet with ⟨hOrdinary, hAdjacent⟩
       have hdiff := hOrdinary.sub hAdjacent
       simpa [hdecompose] using hdiff
