@@ -1,4 +1,5 @@
 import OSReconstruction.SCV.VladimirovTillmann
+import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanLocalityOS45Figure24Seed
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanLocalityOS45SourceSideMoving
 
 /-!
@@ -290,22 +291,59 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
                 `hz0_overlap` is the exact BHW overlap point where the
                 Vladimirov/common-tempered-BV uniqueness producer must act.
 
-                The tempting global flat-tube call
-                `tube_holomorphic_unique_from_equal_tempered_bv_flat` with
-                the OS45 quarter-turn chart is too strong: after undoing the
-                quarter-turn, branch-domain membership depends on the real
-                edge point, so the valid carrier is the existing compact
-                Figure-2-4 local wedge, not the whole tube over
-                `os45FlatCommonChartCone`.
-
-                The remaining proof body is therefore the local Vladimirov
-                tempered-BV uniqueness step: build the two tempered boundary
-                values on the compact BHW collar through `z0`, identify their
-                boundary distributions by the OS-I `(4.12)`--`(4.14)` Jost
-                argument, and evaluate the resulting local equality at this
-                adjacent Wick seed.
+                The raw OS-I `(4.12)` analytic element is available on a
+                genuine metric ball around `z0`: on that ball it is the
+                deterministic adjacent branch `extendF ∘ permAct P.τ`, and
+                at `z0` its value is the adjacent Wick boundary value.  The
+                remaining proof is therefore the local Vladimirov uniqueness
+                comparison between the ordinary deterministic branch
+                `extendF` and this raw `(4.12)` seed branch on the compact
+                BHW collar through `z0`.
               -/
-              exact ?os45_vladimirov_local_temperedBV_adjacentWick_transport
+              rcases
+                  H.OS412SeedWindow_initialSectorOverlap_deterministicAdjBranch_metricBallChart
+                    OS lgc huP with
+                ⟨Cseed, Bseed, rseed, hrseed_pos, hCseed_ball,
+                  hz0Cseed_raw, hCseed_open, hCseed_pre, hCseed_sub,
+                  hBseed_holo, hBseed_eq_adj, hBseed_trace⟩
+              have hz0Cseed : z0 ∈ Cseed := by
+                simpa [z0] using hz0Cseed_raw
+              have hBseed_adj :
+                  Bseed z0 =
+                    BHW.extendF (bvt_F OS lgc n)
+                      (BHW.permAct (d := d) P.τ z0) := by
+                simpa [z0] using hBseed_eq_adj hz0Cseed
+              have hBseed_raw :
+                  Bseed z0 =
+                    bvt_F OS lgc n
+                      (fun k => wickRotatePoint (u (P.τ k))) := by
+                simpa [z0] using hBseed_trace
+              have hBseed_consistent :
+                  BHW.extendF (bvt_F OS lgc n)
+                      (BHW.permAct (d := d) P.τ z0) =
+                    bvt_F OS lgc n
+                      (fun k => wickRotatePoint (u (P.τ k))) :=
+                hBseed_adj.symm.trans hBseed_raw
+              have hordinary_matches_OS412_seed :
+                  BHW.extendF (bvt_F OS lgc n) z0 = Bseed z0 := by
+                /-
+                  This is the live Vladimirov/Tillmann local-BV leaf, now
+                  stated against the concrete OS-I `(4.12)` seed branch rather
+                  than against a downstream branch wrapper:
+
+                  * ordinary side: `extendF (bvt_F OS lgc n)` on the
+                    extended-tube part of the BHW collar;
+                  * adjacent seed side: `Bseed`, holomorphic on the metric
+                    seed ball and equal there to `extendF ∘ permAct P.τ`;
+                  * common BV: the OS-I `(4.12)`--`(4.14)` source/Jost
+                    tempered boundary value on the local Figure-2-4 collar.
+
+                  The available global flat-tube uniqueness theorem is not
+                  directly applicable here because the carrier is this local
+                  BHW collar, not a full tube over `os45FlatCommonChartCone`.
+                -/
+                exact ?os45_vladimirov_temperedBV_ordinary_matches_OS412_seed_branch
+              exact hordinary_matches_OS412_seed.trans hBseed_adj
           exact hdeterministic_overlap.trans hseed_extendF
         exact hvladimirov_endpoint.trans hseed_eval
       refine MeasureTheory.integral_congr_ae (Filter.Eventually.of_forall ?_)
