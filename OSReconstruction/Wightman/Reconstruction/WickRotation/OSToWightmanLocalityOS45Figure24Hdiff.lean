@@ -6078,7 +6078,157 @@ theorem OS45BHWJostHullData.os45CommonEdge_sourceRepresentsZero_of_OS412_sourceS
                   (1 : Equiv.Perm (Fin n)) φ :
                     NPointDomain d n → ℂ) u) hadj
           have hAadj_eq_Acommon : AadjCommon = Acommon := by
-            exact ?os_i_section45_common_edge_pairing_eq
+            have hU_nonempty : U.Nonempty := hU_connected.nonempty
+            have hsource_eq :
+                ∀ u ∈ U,
+                  BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                      (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+                      (BHW.realEmbed
+                        (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                          (1 : Equiv.Perm (Fin n)) u)) =
+                    BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                      (1 : Equiv.Perm (Fin n))
+                      (BHW.realEmbed
+                        (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                          (1 : Equiv.Perm (Fin n)) u)) := by
+              rcases
+                  BHW.os45CommonEdge_initialSectorOverlap_traces_except_adjacentWick
+                    (d := d) hd OS lgc (P := P)
+                    hU_compact hU_connected hU_closure with
+                ⟨Ucx, Ford, Fadj, hUcx_open, hUcx_connected, hwick_mem,
+                  hcommon_mem, _hUcx_sub, hFord_holo, hFadj_holo,
+                  hFord_wick, hFadj_wick_extendF, hFord_common,
+                  hFadj_common, _hFadj_seed_trace⟩
+              refine
+                BHW.os45CommonEdge_pulledRealBranches_eqOn_of_wickPairings
+                  (d := d) hd OS lgc (P := P)
+                  hU_open hU_nonempty hUcx_open hUcx_connected
+                  hwick_mem hcommon_mem Ford Fadj hFord_holo hFadj_holo
+                  ?_ hFord_common hFadj_common
+              intro ψ hψ_compact hψU
+              have htransported :
+                  (∫ u : NPointDomain d n,
+                    BHW.extendF (bvt_F OS lgc n)
+                      (BHW.permAct (d := d) P.τ
+                        (fun k => wickRotatePoint (u k))) * ψ u) =
+                    ∫ u : NPointDomain d n,
+                      bvt_F OS lgc n (fun k => wickRotatePoint (u k)) * ψ u := by
+                /-
+                  Active Vladimirov/BHW tempered-BV transport leaf.
+
+                  The ordinary and adjacent branches now live on the checked
+                  initial-sector-overlap chart, with all common-edge traces
+                  normalized.  What remains is the canonical uniqueness step:
+                  the deterministic adjacent branch and the ordinary branch
+                  have the same tempered boundary value on this local chart,
+                  hence agree as holomorphic functions there.
+                -/
+                have hbranch_eq : Set.EqOn Fadj Ford Ucx := by
+                  exact ?vladimirov_bhw_initial_overlap_temperedBV_uniqueness
+                calc
+                  (∫ u : NPointDomain d n,
+                    BHW.extendF (bvt_F OS lgc n)
+                      (BHW.permAct (d := d) P.τ
+                        (fun k => wickRotatePoint (u k))) * ψ u)
+                      =
+                    ∫ u : NPointDomain d n,
+                      Fadj (fun k => wickRotatePoint (u k)) * ψ u := by
+                      refine MeasureTheory.integral_congr_ae
+                        (Filter.Eventually.of_forall ?_)
+                      intro u
+                      by_cases hu : u ∈ U
+                      · exact congrArg (fun c : ℂ => c * ψ u)
+                          (hFadj_wick_extendF u hu).symm
+                      · have hψ_zero : ψ u = 0 :=
+                          image_eq_zero_of_notMem_tsupport
+                            (fun hψ_supp => hu (hψU hψ_supp))
+                        simp [hψ_zero]
+                  _ =
+                    ∫ u : NPointDomain d n,
+                      Ford (fun k => wickRotatePoint (u k)) * ψ u := by
+                      refine MeasureTheory.integral_congr_ae
+                        (Filter.Eventually.of_forall ?_)
+                      intro u
+                      by_cases hu : u ∈ U
+                      · exact congrArg (fun c : ℂ => c * ψ u)
+                          (hbranch_eq (hwick_mem u hu))
+                      · have hψ_zero : ψ u = 0 :=
+                          image_eq_zero_of_notMem_tsupport
+                            (fun hψ_supp => hu (hψU hψ_supp))
+                        simp [hψ_zero]
+                  _ =
+                    ∫ u : NPointDomain d n,
+                      bvt_F OS lgc n (fun k => wickRotatePoint (u k)) * ψ u := by
+                      refine MeasureTheory.integral_congr_ae
+                        (Filter.Eventually.of_forall ?_)
+                      intro u
+                      by_cases hu : u ∈ U
+                      · exact congrArg (fun c : ℂ => c * ψ u)
+                          (hFord_wick u hu)
+                      · have hψ_zero : ψ u = 0 :=
+                          image_eq_zero_of_notMem_tsupport
+                            (fun hψ_supp => hu (hψU hψ_supp))
+                        simp [hψ_zero]
+              calc
+                (∫ u : NPointDomain d n,
+                    Fadj (fun k => wickRotatePoint (u k)) * ψ u)
+                    =
+                  ∫ u : NPointDomain d n,
+                    BHW.extendF (bvt_F OS lgc n)
+                      (BHW.permAct (d := d) P.τ
+                        (fun k => wickRotatePoint (u k))) * ψ u := by
+                    refine MeasureTheory.integral_congr_ae
+                      (Filter.Eventually.of_forall ?_)
+                    intro u
+                    by_cases hu : u ∈ U
+                    · exact congrArg (fun c : ℂ => c * ψ u)
+                        (hFadj_wick_extendF u hu)
+                    · have hψ_zero : ψ u = 0 :=
+                        image_eq_zero_of_notMem_tsupport
+                          (fun hψ_supp => hu (hψU hψ_supp))
+                      simp [hψ_zero]
+                _ =
+                  ∫ u : NPointDomain d n,
+                    bvt_F OS lgc n (fun k => wickRotatePoint (u k)) * ψ u :=
+                    htransported
+                _ =
+                  ∫ u : NPointDomain d n,
+                    Ford (fun k => wickRotatePoint (u k)) * ψ u := by
+                    refine MeasureTheory.integral_congr_ae
+                      (Filter.Eventually.of_forall ?_)
+                    intro u
+                    by_cases hu : u ∈ U
+                    · exact congrArg (fun c : ℂ => c * ψ u)
+                        (hFord_wick u hu).symm
+                    · have hψ_zero : ψ u = 0 :=
+                        image_eq_zero_of_notMem_tsupport
+                          (fun hψ_supp => hu (hψU hψ_supp))
+                      simp [hψ_zero]
+            have htestU :
+                tsupport
+                    (D.toSchwartzNPointCLM
+                      (1 : Equiv.Perm (Fin n)) φ :
+                        NPointDomain d n → ℂ) ⊆ U := by
+              exact
+                D.toSchwartzNPointCLM_tsupport_subset_image
+                  (1 : Equiv.Perm (Fin n)) φ hφU
+            dsimp [AadjCommon, Acommon]
+            refine MeasureTheory.integral_congr_ae
+              (Filter.Eventually.of_forall ?_)
+            intro u
+            by_cases hu : u ∈ U
+            · exact congrArg (fun c : ℂ =>
+                c *
+                  (D.toSchwartzNPointCLM
+                    (1 : Equiv.Perm (Fin n)) φ :
+                      NPointDomain d n → ℂ) u) (hsource_eq u hu)
+            · have htest_zero :
+                  (D.toSchwartzNPointCLM
+                    (1 : Equiv.Perm (Fin n)) φ :
+                      NPointDomain d n → ℂ) u = 0 :=
+                image_eq_zero_of_notMem_tsupport
+                  (fun htest_supp => hu (htestU htest_supp))
+              simp [htest_zero]
           exact hAplus_common.trans (hAminus_common.trans hAadj_eq_Acommon).symm
         have hFextDiff :
             Tendsto (fun ε : ℝ => FextPlus ε - FextMinus ε)
