@@ -425,11 +425,182 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
                         bvt_F OS lgc n
                           (BHW.permAct (d := d) P.τ
                             (fun k => wickRotatePoint (u k))) * ψ u := by
-                    -- OS-I §4.5 residual branch-current transfer: identify
-                    -- the deterministic BHW adjacent Wick branch with the raw
-                    -- `(4.12)` ACR source current in compact-test pairing.
-                    exact
-                      ?os_i_section45_adjacent_wick_branch_current_transfer
+                    -- Vladimirov/BHW interface: first build the non-legacy
+                    -- single local branch from true overlap equality, then use
+                    -- its checked Wick transport.  The remaining named
+                    -- obligation below is the tempered-BV uniqueness producer,
+                    -- not another downstream input gate.
+                    have hS :
+                        BHW.OS45BHWJostSPrimeBranchData
+                          (d := d) hd OS lgc H := by
+                      refine
+                        BHW.OS45BHWJostSPrimeBranchData.of_extendF_overlapEq
+                          (d := d) (n := n) (hd := hd) OS lgc
+                          (P := P) (H := H) ?_
+                      let Ford :
+                          (Fin n → Fin (d + 1) → ℂ) → ℂ :=
+                        BHW.extendF (bvt_F OS lgc n)
+                      let Fadj :
+                          (Fin n → Fin (d + 1) → ℂ) → ℂ :=
+                        fun z =>
+                          BHW.extendF (bvt_F OS lgc n)
+                            (BHW.permAct (d := d) P.τ z)
+                      have hFord_holo_overlap :
+                          DifferentiableOn ℂ Ford
+                            (BHW.ExtendedTube d n ∩
+                              BHW.permutedExtendedTubeSector d n P.τ) := by
+                        exact
+                          (BHW.differentiableOn_extendF_bvt_F_extendedTube
+                            (d := d) OS lgc n).mono
+                            (by intro z hz; exact hz.1)
+                      have hFadj_holo_overlap :
+                          DifferentiableOn ℂ Fadj
+                            (BHW.ExtendedTube d n ∩
+                              BHW.permutedExtendedTubeSector d n P.τ) := by
+                        exact
+                          (BHW.differentiableOn_extendF_bvt_F_permAct_preimageExtendedTube
+                            (d := d) OS lgc n P.τ).mono
+                            (by intro z hz; exact hz.2)
+                      have hVladimirov :
+                          Set.EqOn Ford Fadj
+                            (BHW.ExtendedTube d n ∩
+                              BHW.permutedExtendedTubeSector d n P.τ) := by
+                        /-
+                          OS-I §4.5 / Vladimirov-Tillmann leaf.
+
+                          This is the real BHW/Vladimirov interface.  The
+                          package below is exactly the data needed to invoke
+                          `tube_holomorphic_unique_from_bv`: a common tube
+                          chart covering the overlap collar, integrability for
+                          the two branch restrictions and their difference, and
+                          a shared tempered boundary-value CLM produced by the
+                          OS-I (4.12)--(4.14) source-current transport.
+                        -/
+                        have hPkg :
+                            ∃ (C : Set (Fin n → Fin (d + 1) → ℝ))
+                              (W : SchwartzMap
+                                (Fin n → Fin (d + 1) → ℝ) ℂ →L[ℂ] ℂ),
+                              IsOpen C ∧
+                              Convex ℝ C ∧
+                              IsCone C ∧
+                              IsSalientCone C ∧
+                              C.Nonempty ∧
+                              (BHW.ExtendedTube d n ∩
+                                  BHW.permutedExtendedTubeSector d n P.τ ⊆
+                                TubeDomainSetPi C) ∧
+                              DifferentiableOn ℂ Ford (TubeDomainSetPi C) ∧
+                              DifferentiableOn ℂ Fadj (TubeDomainSetPi C) ∧
+                              (∀ y ∈ C,
+                                ∀ χ : SchwartzMap
+                                  (Fin n → Fin (d + 1) → ℝ) ℂ,
+                                  Integrable
+                                    (fun x : Fin n → Fin (d + 1) → ℝ =>
+                                      (Ford
+                                          (fun k μ =>
+                                            (x k μ : ℂ) +
+                                              (y k μ : ℂ) * Complex.I) -
+                                        Fadj
+                                          (fun k μ =>
+                                            (x k μ : ℂ) +
+                                              (y k μ : ℂ) * Complex.I)) *
+                                        χ x)) ∧
+                              (∀ y ∈ C,
+                                ∀ χ : SchwartzMap
+                                  (Fin n → Fin (d + 1) → ℝ) ℂ,
+                                  Integrable
+                                    (fun x : Fin n → Fin (d + 1) → ℝ =>
+                                      Ford
+                                        (fun k μ =>
+                                          (x k μ : ℂ) +
+                                            (y k μ : ℂ) * Complex.I) *
+                                        χ x)) ∧
+                              (∀ y ∈ C,
+                                ∀ χ : SchwartzMap
+                                  (Fin n → Fin (d + 1) → ℝ) ℂ,
+                                  Integrable
+                                    (fun x : Fin n → Fin (d + 1) → ℝ =>
+                                      Fadj
+                                        (fun k μ =>
+                                          (x k μ : ℂ) +
+                                            (y k μ : ℂ) * Complex.I) *
+                                        χ x)) ∧
+                              (∀ η ∈ C,
+                                ∀ χ : SchwartzMap
+                                  (Fin n → Fin (d + 1) → ℝ) ℂ,
+                                  Tendsto
+                                    (fun ε : ℝ =>
+                                      ∫ x : Fin n → Fin (d + 1) → ℝ,
+                                        Ford
+                                          (fun k μ =>
+                                            (x k μ : ℂ) + (ε : ℂ) *
+                                              (η k μ : ℂ) * Complex.I) *
+                                          χ x)
+                                    (𝓝[Set.Ioi 0] (0 : ℝ))
+                                    (𝓝 (W χ))) ∧
+                              (∀ η ∈ C,
+                                ∀ χ : SchwartzMap
+                                  (Fin n → Fin (d + 1) → ℝ) ℂ,
+                                  Tendsto
+                                    (fun ε : ℝ =>
+                                      ∫ x : Fin n → Fin (d + 1) → ℝ,
+                                        Fadj
+                                          (fun k μ =>
+                                            (x k μ : ℂ) + (ε : ℂ) *
+                                              (η k μ : ℂ) * Complex.I) *
+                                          χ x)
+                                    (𝓝[Set.Ioi 0] (0 : ℝ))
+                                    (𝓝 (W χ))) := by
+                          exact
+                            ?vladimirov_bhw_tube_chart_common_bv_package
+                        rcases hPkg with
+                          ⟨C, W, hC_open, hC_conv, hC_cone, hC_salient,
+                            hC_ne, hoverlap_tube, hFord_tube, hFadj_tube,
+                            hFG_int, hFord_int, hFadj_int, hFord_bv,
+                            hFadj_bv⟩
+                        have hTube :
+                            Set.EqOn Ford Fadj (TubeDomainSetPi C) :=
+                          tube_holomorphic_unique_from_bv C hC_open
+                            hC_conv hC_cone hC_salient hC_ne Ford Fadj
+                            hFord_tube hFadj_tube hFG_int hFord_int
+                            hFadj_int W hFord_bv hFadj_bv
+                        intro z hz
+                        exact hTube (hoverlap_tube hz)
+                      intro z hz
+                      simpa [Ford, Fadj] using hVladimirov hz
+                    have hwick_transport :
+                        (∫ u : NPointDomain d n,
+                          BHW.extendF (bvt_F OS lgc n)
+                            (BHW.permAct (d := d) P.τ
+                              (fun k => wickRotatePoint (u k))) * ψ u) =
+                        ∫ u : NPointDomain d n,
+                          bvt_F OS lgc n
+                            (fun k => wickRotatePoint (u k)) * ψ u :=
+                      BHW.OS45BHWJostSPrimeBranchData.transported_wick_pairing
+                        (d := d) (n := n) OS lgc (P := P) (H := H)
+                        hS hU_sub ψ _hψ_compact hψU
+                    have hraw_perm_rev :
+                        (∫ u : NPointDomain d n,
+                          bvt_F OS lgc n
+                            (fun k => wickRotatePoint (u k)) * ψ u) =
+                        ∫ u : NPointDomain d n,
+                          bvt_F OS lgc n
+                            (BHW.permAct (d := d) P.τ
+                              (fun k => wickRotatePoint (u k))) * ψ u := by
+                      symm
+                      refine MeasureTheory.integral_congr_ae
+                        (Filter.Eventually.of_forall ?_)
+                      intro u
+                      have hperm :
+                          bvt_F OS lgc n
+                            (BHW.permAct (d := d) P.τ
+                              (fun k => wickRotatePoint (u k))) =
+                          bvt_F OS lgc n
+                            (fun k => wickRotatePoint (u k)) := by
+                        simpa [BHW.permAct] using
+                          bvt_F_perm (d := d) OS lgc n P.τ
+                            (fun k => wickRotatePoint (u k))
+                      exact congrArg (fun c : ℂ => c * ψ u) hperm
+                    exact hwick_transport.trans hraw_perm_rev
                   have hraw_perm :
                       (∫ u : NPointDomain d n,
                         bvt_F OS lgc n
