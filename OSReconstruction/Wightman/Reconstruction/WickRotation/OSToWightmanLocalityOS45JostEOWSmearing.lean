@@ -324,25 +324,47 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
                     bvt_F OS lgc n
                       (fun k => wickRotatePoint (u (P.τ k))) :=
                 hBseed_adj.symm.trans hBseed_raw
+              have hBseed_ordinaryWick :
+                  Bseed z0 =
+                    bvt_F OS lgc n
+                      (fun k => wickRotatePoint (u k)) := by
+                calc
+                  Bseed z0 =
+                      BHW.extendF (bvt_F OS lgc n)
+                        (BHW.permAct (d := d) P.τ z0) :=
+                    hBseed_adj
+                  _ = bvt_F OS lgc n
+                        (BHW.permAct (d := d) P.τ z0) :=
+                    hseed_extendF
+                  _ = bvt_F OS lgc n
+                        (fun k => wickRotatePoint (u k)) :=
+                    hseed_eval
               have hordinary_matches_OS412_seed :
                   BHW.extendF (bvt_F OS lgc n) z0 = Bseed z0 := by
                 /-
-                  This is the live Vladimirov/Tillmann local-BV leaf, now
-                  stated against the concrete OS-I `(4.12)` seed branch rather
-                  than against a downstream branch wrapper:
+                  This is the live Vladimirov/Tillmann local-BV leaf in its
+                  boundary-representative form.
 
                   * ordinary side: `extendF (bvt_F OS lgc n)` on the
-                    extended-tube part of the BHW collar;
-                  * adjacent seed side: `Bseed`, holomorphic on the metric
-                    seed ball and equal there to `extendF ∘ permAct P.τ`;
+                    adjacent Wick point `z0`;
+                  * boundary representative: the ordinary Wick value
+                    `bvt_F OS lgc n (wick u)`;
                   * common BV: the OS-I `(4.12)`--`(4.14)` source/Jost
                     tempered boundary value on the local Figure-2-4 collar.
 
                   The available global flat-tube uniqueness theorem is not
                   directly applicable here because the carrier is this local
                   BHW collar, not a full tube over `os45FlatCommonChartCone`.
+                  The remaining producer must show that the ordinary BHW
+                  extension has this tempered boundary representative at the
+                  adjacent Wick endpoint.
                 -/
-                exact ?os45_vladimirov_temperedBV_ordinary_matches_OS412_seed_branch
+                have hordinary_boundary :
+                    BHW.extendF (bvt_F OS lgc n) z0 =
+                      bvt_F OS lgc n
+                        (fun k => wickRotatePoint (u k)) := by
+                  exact ?os45_vladimirov_temperedBV_ordinary_boundary_at_adjacentWick
+                exact hordinary_boundary.trans hBseed_ordinaryWick.symm
               exact hordinary_matches_OS412_seed.trans hBseed_adj
           exact hdeterministic_overlap.trans hseed_extendF
         exact hvladimirov_endpoint.trans hseed_eval
