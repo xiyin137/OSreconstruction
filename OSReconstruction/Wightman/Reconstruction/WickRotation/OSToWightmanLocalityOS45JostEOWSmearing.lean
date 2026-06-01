@@ -1,4 +1,5 @@
 import OSReconstruction.SCV.VladimirovTillmann
+import OSReconstruction.SCV.IdentityTheorem
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanLocalityOS45Figure24Seed
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanLocalityOS45SourceSideMoving
 
@@ -291,94 +292,198 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
                 `hz0_overlap` is the exact BHW overlap point where the
                 Vladimirov/common-tempered-BV uniqueness producer must act.
 
-                The raw OS-I `(4.12)` analytic element is available on a
-                genuine metric ball around `z0`: on that ball it is the
-                deterministic adjacent branch `extendF ∘ permAct P.τ`, and
-                at `z0` its value is the adjacent Wick boundary value.  The
-                remaining proof is therefore the local Vladimirov uniqueness
-                comparison between the ordinary deterministic branch
-                `extendF` and this raw `(4.12)` seed branch on the compact
-                BHW collar through `z0`.
-              -/
-              rcases
-                  H.OS412SeedWindow_initialSectorOverlap_deterministicAdjBranch_metricBallChart
-                    OS lgc huP with
-                ⟨Cseed, Bseed, rseed, hrseed_pos, hCseed_ball,
-                  hz0Cseed_raw, hCseed_open, hCseed_pre, hCseed_sub,
-                  hBseed_holo, hBseed_eq_adj, hBseed_trace⟩
-              have hz0Cseed : z0 ∈ Cseed := by
-                simpa [z0] using hz0Cseed_raw
-              have hBseed_adj :
-                  Bseed z0 =
-                    BHW.extendF (bvt_F OS lgc n)
-                      (BHW.permAct (d := d) P.τ z0) := by
-                simpa [z0] using hBseed_eq_adj hz0Cseed
-              have hBseed_raw :
-                  Bseed z0 =
-                    bvt_F OS lgc n
-                      (fun k => wickRotatePoint (u (P.τ k))) := by
-                simpa [z0] using hBseed_trace
-              have hBseed_consistent :
-                  BHW.extendF (bvt_F OS lgc n)
-                      (BHW.permAct (d := d) P.τ z0) =
-                    bvt_F OS lgc n
-                      (fun k => wickRotatePoint (u (P.τ k))) :=
-                hBseed_adj.symm.trans hBseed_raw
-              have hBseed_ordinaryWick :
-                  Bseed z0 =
-                    bvt_F OS lgc n
-                      (fun k => wickRotatePoint (u k)) := by
-                calc
-                  Bseed z0 =
-                      BHW.extendF (bvt_F OS lgc n)
-                        (BHW.permAct (d := d) P.τ z0) :=
-                    hBseed_adj
-                  _ = bvt_F OS lgc n
-                        (BHW.permAct (d := d) P.τ z0) :=
-                    hseed_extendF
-                  _ = bvt_F OS lgc n
-                        (fun k => wickRotatePoint (u k)) :=
-                    hseed_eval
-              have hordinary_matches_OS412_seed :
-                  BHW.extendF (bvt_F OS lgc n) z0 = Bseed z0 := by
-                /-
-                  This is the live Vladimirov/Tillmann local-BV leaf in the
-                  actual local-collar form.
-
-                  Both analytic branches are now present on the same OS-I
-                  `(4.12)` seed collar `Cseed`:
-
-                  * ordinary side: the BHW extension `extendF (bvt_F OS lgc n)`,
-                    holomorphic because `Cseed ⊆ ExtendedTube`;
-                  * adjacent seed side: the raw `(4.12)` branch `Bseed`,
-                    already holomorphic and already identified with
-                    `extendF (bvt_F) ∘ permAct P.τ` on `Cseed`;
-                  * boundary representative at `z0`: the ordinary Wick value,
-                    by the seed normalization above.
-
-                  The available global flat-tube uniqueness theorem is not
-                  directly applicable here because the carrier is this local
-                  BHW collar, not a full tube over `os45FlatCommonChartCone`.
-                  The remaining producer is the local tempered-BV uniqueness
-                  statement on `Cseed`: the ordinary extension and the raw
-                  OS-I seed branch have the same tempered boundary value there.
+                  The raw OS-I `(4.12)` analytic element is available on a
+                  genuine metric ball around `z0`: on that ball it is the
+                  deterministic adjacent branch `extendF ∘ permAct P.τ`, and
+                  at `z0` its value is the adjacent Wick boundary value.  The
+                  Vladimirov/EOW seed is produced at the common real Jost edge;
+                  the checked BHW corridor and SCV identity theorem then carry
+                  that seed back to a smaller `(4.12)` collar through `z0`.
                 -/
-                have hCseed_sub_ET :
-                    Cseed ⊆ BHW.ExtendedTube d n := by
-                  intro z hz
-                  exact (hCseed_sub hz).2.1
-                have hordinary_holo_Cseed :
-                    DifferentiableOn ℂ
-                      (BHW.extendF (bvt_F OS lgc n)) Cseed :=
-                  (BHW.differentiableOn_extendF_bvt_F_extendedTube
-                    (d := d) OS lgc n).mono hCseed_sub_ET
-                have hordinary_eq_seed_on_Cseed :
-                    Set.EqOn
-                      (BHW.extendF (bvt_F OS lgc n)) Bseed Cseed := by
+                let Fdet : (Fin n → Fin (d + 1) → ℂ) → ℂ :=
+                  BHW.extendF (bvt_F OS lgc n)
+                let common0 : Fin n → Fin (d + 1) → ℂ :=
+                  (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+                    (BHW.realEmbed
+                      (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                        (1 : Equiv.Perm (Fin n)) u))
+                let pcommon : Fin n → Fin (d + 1) → ℂ :=
+                  BHW.permAct (d := d) P.τ common0
+                have hcommon_edge_seed :
+                    ∃ Wc : Set (Fin n → Fin (d + 1) → ℂ),
+                      IsOpen Wc ∧
+                      common0 ∈ Wc ∧
+                      Wc ⊆ BHW.ExtendedTube d n ∩
+                        BHW.permutedExtendedTubeSector d n P.τ ∧
+                      Set.EqOn Fdet
+                        (fun z =>
+                          Fdet (BHW.permAct (d := d) P.τ z)) Wc := by
+                  /-
+                    This is the actual Vladimirov/BHW interface.
+
+                    The missing OS-I `(4.12)`--`(4.14)` production theorem must
+                    construct a local common-edge open seed from the tempered
+                    boundary-value packages of the ordinary and adjacent flat
+                    branches: domains, polynomial growth/tempered BV, equality
+                    of the common Jost-edge boundary distributions, and the local
+                    EOW/Vladimirov uniqueness conclusion.
+                  -/
                   exact
-                    ?os45_vladimirov_temperedBV_unique_on_OS412_seed_collar
-                exact hordinary_eq_seed_on_Cseed hz0Cseed
-              exact hordinary_matches_OS412_seed.trans hBseed_adj
+                    ?os45_vladimirov_temperedBV_common_edge_open_seed
+                rcases hcommon_edge_seed with
+                  ⟨Wc, hWc_open, hcommon0Wc, hWc_sub, hWc_eq⟩
+                let Wτ : Set (Fin n → Fin (d + 1) → ℂ) :=
+                  {z | BHW.permAct (d := d) P.τ z ∈ Wc}
+                have hWτ_open : IsOpen Wτ := by
+                  simpa [Wτ] using
+                    hWc_open.preimage
+                      (BHW.continuous_permAct (d := d) (n := n) P.τ)
+                have hττ :
+                    ∀ z : Fin n → Fin (d + 1) → ℂ,
+                      BHW.permAct (d := d) P.τ
+                          (BHW.permAct (d := d) P.τ z) = z := by
+                  intro z
+                  ext k μ
+                  simp [BHW.permAct, P.τ_eq]
+                have hpcommonWτ : pcommon ∈ Wτ := by
+                  simpa [Wτ, pcommon] using
+                    show BHW.permAct (d := d) P.τ pcommon ∈ Wc by
+                      simpa [pcommon, hττ common0] using hcommon0Wc
+                have hWτ_eq :
+                    Set.EqOn Fdet
+                      (fun z =>
+                        Fdet (BHW.permAct (d := d) P.τ z)) Wτ := by
+                  intro z hz
+                  have h := hWc_eq hz
+                  simpa [hττ z] using h.symm
+                have hWτ_sub :
+                    Wτ ⊆ BHW.ExtendedTube d n ∩
+                      BHW.permutedExtendedTubeSector d n P.τ := by
+                  intro z hz
+                  have hz' := hWc_sub hz
+                  constructor
+                  · have hzET :
+                        BHW.permAct (d := d) P.τ
+                            (BHW.permAct (d := d) P.τ z) ∈
+                          BHW.ExtendedTube d n := by
+                      simpa [BHW.permutedExtendedTubeSector] using hz'.2
+                    simpa [hττ z] using hzET
+                  · simpa [BHW.permutedExtendedTubeSector] using hz'.1
+                rcases
+                    BHW.os45Figure24_adjacentWick_to_permActCommonEdge_endpointMetricBall
+                      (d := d) (n := n) (hd := hd) (P := P) huP
+                      hWτ_open hpcommonWτ with
+                  ⟨Uprop, rprop, hUprop_open, hUprop_connected,
+                    hadjUprop, _hpcommonUprop, hUprop_sub, hrprop_pos,
+                    hcommon_ball_sub⟩
+                have hz0_eq_adjacent :
+                    z0 = fun k => wickRotatePoint (u (P.τ k)) := by
+                  simp [z0,
+                    BHW.os45Figure24_permAct_ordinaryWick_eq_adjacentWick
+                      (d := d) (n := n) (hd := hd) (P := P) u]
+                have hz0Uprop : z0 ∈ Uprop := by
+                  simpa [hz0_eq_adjacent] using hadjUprop
+                have hFdet_holo_Uprop :
+                    DifferentiableOn ℂ Fdet Uprop :=
+                  (BHW.differentiableOn_extendF_bvt_F_extendedTube
+                    (d := d) OS lgc n).mono (by
+                      intro z hz
+                      exact (hUprop_sub hz).1)
+                have hFdet_perm_holo_Uprop :
+                    DifferentiableOn ℂ
+                      (fun z =>
+                        Fdet (BHW.permAct (d := d) P.τ z)) Uprop :=
+                  (BHW.differentiableOn_extendF_bvt_F_permAct_preimageExtendedTube
+                    (d := d) OS lgc n P.τ).mono (by
+                      intro z hz
+                      exact (hUprop_sub hz).2)
+                have hcommon_ball_ne :
+                    (Metric.ball pcommon rprop).Nonempty :=
+                  ⟨pcommon, Metric.mem_ball_self hrprop_pos⟩
+                have hcommon_ball_sub_Uprop :
+                    Metric.ball pcommon rprop ⊆ Uprop := by
+                  intro z hz
+                  exact (hcommon_ball_sub hz).1
+                have hcommon_ball_eq :
+                    Set.EqOn Fdet
+                      (fun z =>
+                        Fdet (BHW.permAct (d := d) P.τ z))
+                      (Metric.ball pcommon rprop) := by
+                  intro z hz
+                  exact hWτ_eq (hcommon_ball_sub hz).2
+                have hUprop_eq :
+                    Set.EqOn Fdet
+                      (fun z =>
+                        Fdet (BHW.permAct (d := d) P.τ z)) Uprop :=
+                  identity_theorem_product_of_eqOn_open
+                    hUprop_open hUprop_connected Metric.isOpen_ball
+                    hcommon_ball_ne hcommon_ball_sub_Uprop
+                    hFdet_holo_Uprop hFdet_perm_holo_Uprop
+                    hcommon_ball_eq
+                rcases
+                    H.OS412SeedWindow_metricBallChartInWindow
+                      OS lgc huP hUprop_open hz0Uprop with
+                  ⟨Cseed, Bseed, rseed, hrseed_pos, hCseed_ball,
+                    hz0Cseed_raw, hCseed_open, hCseed_pre, hCseed_sub,
+                    hBseed_holo, hBseed_eq_raw, hBseed_trace⟩
+                have hBseed_eq_adj :
+                    Set.EqOn Bseed
+                      (fun z : Fin n → Fin (d + 1) → ℂ =>
+                        BHW.extendF (bvt_F OS lgc n)
+                          (BHW.permAct (d := d) P.τ z)) Cseed := by
+                  intro z hz
+                  have hz_forward :
+                      BHW.permAct (d := d) P.τ z ∈ BHW.ForwardTube d n :=
+                    (hCseed_sub hz).1.1
+                  have hext :
+                      BHW.extendF (bvt_F OS lgc n)
+                          (BHW.permAct (d := d) P.τ z) =
+                        bvt_F OS lgc n
+                          (BHW.permAct (d := d) P.τ z) :=
+                    BHW.extendF_eq_on_forwardTube n (bvt_F OS lgc n)
+                      hF_holo hF_lorentz
+                      (BHW.permAct (d := d) P.τ z) hz_forward
+                  exact (hBseed_eq_raw hz).trans hext.symm
+                have hz0Cseed : z0 ∈ Cseed := by
+                  simpa [z0] using hz0Cseed_raw
+                have hBseed_adj :
+                    Bseed z0 =
+                      BHW.extendF (bvt_F OS lgc n)
+                        (BHW.permAct (d := d) P.τ z0) := by
+                  simpa [z0] using hBseed_eq_adj hz0Cseed
+                have hordinary_matches_OS412_seed :
+                    BHW.extendF (bvt_F OS lgc n) z0 = Bseed z0 := by
+                  /-
+                    The common-edge Vladimirov/EOW seed has already been
+                    propagated across the checked Figure-2-4 corridor as
+                    `hUprop_eq`.  Since the raw OS-I `(4.12)` branch agrees
+                    with the deterministic adjacent model on `Cseed`, the
+                    ordinary BHW branch agrees with that seed branch on the
+                    smaller collar through `z0`.
+
+                    Both analytic branches are now present on the same OS-I
+                    `(4.12)` seed collar `Cseed`:
+
+                    * ordinary side: the BHW extension `extendF (bvt_F OS lgc n)`,
+                      holomorphic because `Cseed ⊆ ExtendedTube`;
+                    * adjacent seed side: the raw `(4.12)` branch `Bseed`,
+                      already holomorphic and already identified with
+                      `extendF (bvt_F) ∘ permAct P.τ` on `Cseed`;
+                    * boundary representative at `z0`: the ordinary Wick value,
+                      by the seed normalization above.
+
+                    The only remaining external producer is therefore the
+                    common-edge open seed above, not a second local uniqueness
+                    obligation on `Cseed`.
+                  -/
+                    have hordinary_eq_seed_on_Cseed :
+                        Set.EqOn
+                          (BHW.extendF (bvt_F OS lgc n)) Bseed Cseed := by
+                      intro z hz
+                      have hzU : z ∈ Uprop := (hCseed_sub hz).2
+                      exact (hUprop_eq hzU).trans (hBseed_eq_adj hz).symm
+                    exact hordinary_eq_seed_on_Cseed hz0Cseed
+                exact hordinary_matches_OS412_seed.trans hBseed_adj
           exact hdeterministic_overlap.trans hseed_extendF
         exact hvladimirov_endpoint.trans hseed_eval
       refine MeasureTheory.integral_congr_ae (Filter.Eventually.of_forall ?_)
