@@ -260,8 +260,46 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
         simpa [Fminus] using
           BHW.differentiableOn_os45FlatCommonChartBranch d n OS lgc
             (P.τ.symm * (1 : Equiv.Perm (Fin n)))
-      exact
-        ?os45_vladimirov_raw_to_extendF_local_collar_error_zero
+      have hzero_pairing :
+          (∫ u : NPointDomain d n,
+            BHW.extendF (bvt_F OS lgc n)
+              (BHW.os45FlatCommonChartSourceSide d n
+                (1 : Equiv.Perm (Fin n)) (1 : ℝ) 0 η u) *
+              ((((D.toZeroDiagonalCLM
+                (1 : Equiv.Perm (Fin n)) φ).1 : SchwartzNPoint d n) :
+                  NPointDomain d n → ℂ) u)) =
+            ∫ u : NPointDomain d n,
+              BHW.extendF (bvt_F OS lgc n)
+                (BHW.permAct (d := d)
+                  (P.τ.symm * (1 : Equiv.Perm (Fin n))).symm
+                  (BHW.os45FlatCommonChartSourceSide d n
+                    (1 : Equiv.Perm (Fin n)) (-1 : ℝ) 0 η u)) *
+                ((((D.toZeroDiagonalCLM
+                  (1 : Equiv.Perm (Fin n)) φ).1 : SchwartzNPoint d n) :
+                    NPointDomain d n → ℂ) u) := by
+        /-
+          Vladimirov/BHW boundary-value uniqueness leaf.
+
+          All moving-test and collar-continuity bookkeeping has now been pushed
+          below this line.  What remains is the OS-I `(4.12)`--`(4.14)`
+          tempered-BV step on the compact Figure-2-4 Jost edge: identify the
+          zero-height deterministic adjacent `extendF` source pairing with the
+          ordinary one.  This should be produced from the local common tempered
+          boundary distribution of the two flat BHW branches, using the
+          polynomial estimates and Vladimirov uniqueness mechanism from the
+          monograph part (b).
+        -/
+        exact
+          ?os45_vladimirov_zeroHeight_source_pairing
+      have hExt_zero :
+          Tendsto Ext (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) := by
+        exact
+          D.tendsto_sourceSide_extendF_difference_zero_of_zeroHeightPairing
+            (d := d) OS lgc hΩplus_open hΩminus_open
+            hFplus_cont hFminus_cont hU_open
+            (fun u hu => subset_closure hu) hU_compact η
+            h0_plus h0_minus φ hφ_compact hφU hzero_pairing
+      simpa using hExt_zero.sub hraw
     have hsum := htransport_error.add hraw
     simpa only [sub_add_cancel, zero_add] using hsum
     /-
