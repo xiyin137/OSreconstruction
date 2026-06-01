@@ -1,5 +1,4 @@
 import OSReconstruction.SCV.VladimirovTillmann
-import OSReconstruction.SCV.TubeBoundaryValueExistence
 import OSReconstruction.SCV.IdentityTheorem
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanLocalityOS45Figure24Seed
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanLocalityOS45SourceSideMoving
@@ -492,104 +491,61 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
                                 ψ x)
                           (𝓝[Set.Ioi 0] (0 : ℝ))
                           (𝓝 (Tlocal ψ)) := by
-                      let Cminus : Set (BHW.OS45FlatCommonChartReal d n) :=
-                        {ξ | -ξ ∈ BHW.os45FlatCommonChartCone d n}
-                      let Fminus :
-                          BHW.OS45FlatCommonChartSpace d n → ℂ :=
-                        BHW.os45FlatCommonChartBranch d n OS lgc
-                          (P.τ.symm * (1 : Equiv.Perm (Fin n)))
-                      have hη_minus : (-η) ∈ Cminus := by
-                        dsimp [Cminus]
-                        simpa using hηC
-                      have hTminus :
-                          SCV.HasFourierLaplaceReprTempered Cminus Fminus := by
-                        let C : Set (BHW.OS45FlatCommonChartReal d n) :=
-                          BHW.os45FlatCommonChartCone d n
-                        have hCminus_neg : Cminus = Neg.neg '' C := by
-                          ext ξ
-                          constructor
-                          · intro hξ
-                            exact ⟨-ξ, by simpa [C] using hξ, by simp⟩
-                          · rintro ⟨y, hy, rfl⟩
-                            dsimp [Cminus]
-                            simpa [C] using hy
-                        have hCminus_open : IsOpen Cminus := by
-                          rw [hCminus_neg]
-                          simpa [Homeomorph.coe_neg] using
-                            ((Homeomorph.neg
-                              (BHW.OS45FlatCommonChartReal d n)).isOpen_image).2
-                              hC_open
-                        have hCminus_conv : Convex ℝ Cminus := by
-                          rw [hCminus_neg]
-                          rw [Set.image_neg_eq_neg]
-                          exact _hC_conv.neg
-                        have hCminus_cone : IsCone Cminus := by
-                          intro y hy t ht
-                          dsimp [Cminus] at hy ⊢
-                          have hmem :
-                              t • (-y) ∈
-                                BHW.os45FlatCommonChartCone d n :=
-                            _hC_cone t (-y) ht hy
-                          simpa [smul_neg] using hmem
-                        have hCminus_ne : Cminus.Nonempty := by
-                          rcases hC_nonempty with ⟨y, hy⟩
-                          exact ⟨-y, by dsimp [Cminus]; simpa using hy⟩
-                        refine
-                          hasFourierLaplaceReprTempered_of_vladimirov_growth
-                            (C := Cminus) hCminus_open hCminus_conv
-                            hCminus_cone hCminus_ne
-                            (F := Fminus)
-                            (by
-                              have hFminus_hol_omega :
-                                  DifferentiableOn ℂ Fminus
-                                    (BHW.os45FlatCommonChartOmega d n
-                                      (P.τ.symm *
-                                        (1 : Equiv.Perm (Fin n)))) := by
-                                simpa [Fminus] using
-                                  BHW.differentiableOn_os45FlatCommonChartBranch
-                                    d n OS lgc
-                                    (P.τ.symm *
-                                      (1 : Equiv.Perm (Fin n)))
-                              have hCminus_tube_subset_branchOmega :
-                                  SCV.TubeDomain Cminus ⊆
-                                    BHW.os45FlatCommonChartOmega d n
-                                      (P.τ.symm *
-                                        (1 : Equiv.Perm (Fin n))) := by
-                                exact
-                                  ?os45_vladimirov_adjacent_lower_tube_subset_branchOmega
-                              exact
-                                hFminus_hol_omega.mono
-                                  hCminus_tube_subset_branchOmega)
-                            (C_bd :=
-                              ?os45_vladimirov_adjacent_lower_tube_growth_constant)
-                            (N :=
-                              ?os45_vladimirov_adjacent_lower_tube_growth_degree)
-                            (M :=
-                              ?os45_vladimirov_adjacent_lower_tube_boundary_order)
-                            ?os45_vladimirov_adjacent_lower_tube_growth_positive
-                            ?os45_vladimirov_adjacent_lower_tube_global_growth
-                            ?os45_vladimirov_adjacent_lower_tube_compact_poly_growth
-                            ?os45_vladimirov_adjacent_lower_tube_uniform_ray_growth
-                      have hdist_eq :
-                          hTminus.dist ψ = Tlocal ψ := by
+                      let Plus : ℝ → ℂ := fun ε =>
+                        ∫ x : BHW.OS45FlatCommonChartReal d n,
+                          BHW.os45FlatCommonChartBranch d n OS lgc
+                            (1 : Equiv.Perm (Fin n))
+                            (fun a => (x a : ℂ) +
+                              (ε : ℂ) * (η a : ℂ) * Complex.I) * ψ x
+                      let Minus : ℝ → ℂ := fun ε =>
+                        ∫ x : BHW.OS45FlatCommonChartReal d n,
+                          BHW.os45FlatCommonChartBranch d n OS lgc
+                            (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+                            (fun a => (x a : ℂ) -
+                              (ε : ℂ) * (η a : ℂ) * Complex.I) * ψ x
+                      have hplus_to_Tlocal :
+                          Tendsto Plus (𝓝[Set.Ioi 0] (0 : ℝ))
+                            (𝓝 (Tlocal ψ)) := by
+                        have hplus_uniform :=
+                          BHW.os45_BHWJost_flatCommonChart_distributionalBoundaryValue_plus_of_zeroHeight_pairingCLM
+                            (d := d) hd OS lgc Tlocal
+                            ({η} :
+                              Set (BHW.OS45FlatCommonChartReal d n))
+                            isCompact_singleton hη_singleton ψ hψ_compact
+                            hψEdge (hzero_plus ψ hψ_compact hψE)
+                        have hη_mem :
+                            η ∈
+                              ({η} :
+                                Set (BHW.OS45FlatCommonChartReal d n)) := by
+                          simp
+                        simpa [Plus, one_mul] using
+                          hplus_uniform.tendsto_at hη_mem
+                      have hlocal_collar_diff :
+                          Tendsto (fun ε : ℝ => Plus ε - Minus ε)
+                            (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) := by
                         /-
-                          Genuine Vladimirov uniqueness input.
+                          Genuine local Vladimirov/BHW producer input.
 
-                          The boundary distribution carried by the adjacent
-                          lower-tube package must be identified with the
-                          ordinary common-edge CLM on `E`.  This is exactly
-                          the OS-I Jost/Vladimirov common-boundary statement:
-                          Euclidean source symmetry gives equality on the
-                          Jost edge, and tempered-BV uniqueness transports it
-                          to the deterministic BHW branch.
+                          This is the compact-collar form of the OS-I
+                          `(4.12)`--`(4.14)` transport: on tests supported in
+                          the Figure-2-4 common edge window `E`, the ordinary
+                          plus side and adjacent minus side finite-height
+                          pairings have the same distributional boundary
+                          value.  Unlike the rejected global lower-tube
+                          package, this is exactly local over the BHW collar
+                          supplied by
+                          `os45_BHWJost_flatCommonChart_localWedge_of_figure24`.
                         -/
                         exact
-                          ?os45_vladimirov_adjacent_boundary_dist_eq_ordinaryEdgeCLM
-                      have hminus_bv :=
-                        hTminus.boundary_value ψ (-η) hη_minus
-                      simpa [Fminus, Cminus, hdist_eq, sub_eq_add_neg,
-                        neg_mul, one_mul, Pi.neg_apply, mul_assoc] using
-                        hminus_bv
+                          ?os45_vladimirov_local_collar_flat_side_difference_zero
+                      have hminus_as_plus_sub :
+                          Tendsto (fun ε : ℝ =>
+                              Plus ε - (Plus ε - Minus ε))
+                            (𝓝[Set.Ioi 0] (0 : ℝ))
+                            (𝓝 (Tlocal ψ - 0)) :=
+                        hplus_to_Tlocal.sub hlocal_collar_diff
+                      simpa [Plus, Minus, sub_eq_add_neg, sub_sub_cancel,
+                        one_mul, neg_mul, mul_assoc] using hminus_as_plus_sub
                     exact
                       tendsto_nhds_unique hminus_zeroHeight_limit
                         hminus_vladimirov_to_Tlocal
