@@ -6116,141 +6116,50 @@ theorem OS45BHWJostHullData.os45CommonEdge_sourceRepresentsZero_of_OS412_sourceS
                 /-
                   Active Vladimirov/BHW tempered-BV transport leaf.
 
-                  The ordinary and adjacent branches now live on the checked
-                  initial-sector-overlap chart, with all common-edge traces
-                  normalized.  What remains is the canonical uniqueness step:
-                  the deterministic adjacent branch and the ordinary branch
-                  have the same tempered boundary value on this local chart,
-                  hence agree as holomorphic functions there.
+                  The previous local-tube carrier was too strong: a checked
+                  initial-overlap chart is local and need not contain a full
+                  global tube over every real base.  The actual OS-I uniqueness
+                  step needed here is pointwise on the adjacent Wick boundary:
+                  `extendF (bvt_F)` must agree with the selected `bvt_F`
+                  branch at `permAct P.τ (wick u)`.  Once this is available,
+                  the already-proved permutation invariance of `bvt_F` closes
+                  the compact-test pairing.
                 -/
-                have hbranch_eq : Set.EqOn Fadj Ford Ucx := by
-                  classical
+                have hadj_boundary :
+                    ∀ u ∈ U,
+                      BHW.extendF (bvt_F OS lgc n)
+                        (BHW.permAct (d := d) P.τ
+                          (fun k => wickRotatePoint (u k))) =
+                      bvt_F OS lgc n
+                        (BHW.permAct (d := d) P.τ
+                          (fun k => wickRotatePoint (u k))) := by
+                  intro u hu
+                  let z : Fin n → Fin (d + 1) → ℂ :=
+                    fun k => wickRotatePoint (u k)
+                  have huP : u ∈ P.V := hU_closure (subset_closure hu)
+                  have hz_ft : z ∈ BHW.ForwardTube d n := by
+                    simpa [z] using
+                      BHW.os45Figure24_ordinaryWick_mem_forwardTube
+                        (d := d) (n := n) (hd := hd) (P := P) huP
+                  have hτz_overlap :
+                      BHW.permAct (d := d) P.τ z ∈
+                        BHW.ExtendedTube d n ∩
+                          BHW.permutedExtendedTubeSector d n P.τ := by
+                    simpa [z] using
+                      H.OS412Seed_mem_initialSectorOverlap u huP
                   /-
-                    Direct Vladimirov/Tillmann entry point.
-
-                    The local chart `Ucx` is an arbitrary connected open piece
-                    of the BHW initial-sector overlap.  To use
-                    `tube_holomorphic_unique_from_bv` honestly, the chart has
-                    to be replaced by a genuine tube carrier whose vertical
-                    tube sits inside `Ucx`, with common tempered boundary value
-                    data for `Fadj` and `Ford`.  The definitions below expose
-                    that exact OS-I §4.5 payload instead of adding another
-                    theorem gate.
+                    Remaining OS-I §4.5/Vladimirov sub-gap:
+                    the BHW extension selected by `extendF` and the ACR/OS
+                    continuation selected as `bvt_F` have the same tempered
+                    boundary value at the adjacent Wick boundary point
+                    `permAct P.τ z`.  The exact geometric inputs now exposed
+                    are the ordinary forward-tube seed `hz_ft` and the adjacent
+                    extended/permuted-sector seed `hτz_overlap`; the missing
+                    producer is the tempered-BV uniqueness argument tying those
+                    two selectors together.
                   -/
-                  let Cvl : Set (Fin n → Fin (d + 1) → ℝ) :=
-                    { y | ∀ x : Fin n → Fin (d + 1) → ℝ,
-                        (fun k μ =>
-                          (x k μ : ℂ) + (y k μ : ℂ) * Complex.I) ∈ Ucx }
-                  have hTube_sub_Ucx : TubeDomainSetPi Cvl ⊆ Ucx := by
-                    intro z hz
-                    have hzC : (fun k μ => (z k μ).im) ∈ Cvl := hz
-                    have hmem := hzC (fun k μ => (z k μ).re)
-                    convert hmem using 2
-                    ext k <;> simp
-                  have hFord_tube :
-                      DifferentiableOn ℂ Ford (TubeDomainSetPi Cvl) :=
-                    hFord_holo.mono hTube_sub_Ucx
-                  have hFadj_tube :
-                      DifferentiableOn ℂ Fadj (TubeDomainSetPi Cvl) :=
-                    hFadj_holo.mono hTube_sub_Ucx
-                  have hCvl_open : IsOpen Cvl := by
-                    -- Gap: produce a nonempty open cone of vertical
-                    -- directions whose full tube remains in the checked
-                    -- BHW initial-overlap chart.
-                    simpa [Cvl] using hUcx_open
-                  have hCvl_conv : Convex ℝ Cvl := by
-                    -- Gap: the same carrier must be convex for the
-                    -- Vladimirov/Tillmann uniqueness theorem.
-                    simpa [Cvl] using _hC_convex
-                  have hCvl_cone : IsCone Cvl := by
-                    -- Gap: source-side BHW directions have to be closed under
-                    -- positive scaling inside the local carrier.
-                    simpa [Cvl, IsCone] using _hC_smul
-                  have hCvl_salient : IsSalientCone Cvl := by
-                    -- Gap: identify the carrier with a pointed OS-I
-                    -- forward/Jost cone.
-                    simpa [Cvl, IsSalientCone] using _hC_connected
-                  have hCvl_ne : Cvl.Nonempty := by
-                    -- Gap: select the actual OS-I Jost edge direction in the
-                    -- carrier, not merely the connected complex chart `Ucx`.
-                    simpa [Cvl] using hU_nonempty
-                  have hFG_int :
-                      ∀ y : Fin n → Fin (d + 1) → ℝ, y ∈ Cvl →
-                        ∀ ψ : SchwartzMap (Fin n → Fin (d + 1) → ℝ) ℂ,
-                          MeasureTheory.Integrable
-                            (fun x : Fin n → Fin (d + 1) → ℝ =>
-                              (Fadj (fun k μ =>
-                                  (x k μ : ℂ) + (y k μ : ℂ) * Complex.I) -
-                                Ford (fun k μ =>
-                                  (x k μ : ℂ) + (y k μ : ℂ) * Complex.I)) *
-                                ψ x) := by
-                    -- Gap: polynomial-growth/integrability package on the
-                    -- local tube carrier.
-                    simpa using hFord_tube
-                  have hFadj_int :
-                      ∀ y : Fin n → Fin (d + 1) → ℝ, y ∈ Cvl →
-                        ∀ ψ : SchwartzMap (Fin n → Fin (d + 1) → ℝ) ℂ,
-                          MeasureTheory.Integrable
-                            (fun x : Fin n → Fin (d + 1) → ℝ =>
-                              Fadj (fun k μ =>
-                                (x k μ : ℂ) + (y k μ : ℂ) * Complex.I) *
-                                ψ x) := by
-                    -- Gap: tempered BV growth for the deterministic adjacent
-                    -- BHW branch on the same carrier.
-                    simpa using hFadj_tube
-                  have hFord_int :
-                      ∀ y : Fin n → Fin (d + 1) → ℝ, y ∈ Cvl →
-                        ∀ ψ : SchwartzMap (Fin n → Fin (d + 1) → ℝ) ℂ,
-                          MeasureTheory.Integrable
-                            (fun x : Fin n → Fin (d + 1) → ℝ =>
-                              Ford (fun k μ =>
-                                (x k μ : ℂ) + (y k μ : ℂ) * Complex.I) *
-                                ψ x) := by
-                    -- Gap: tempered BV growth for the ordinary branch on the
-                    -- same carrier.
-                    simpa using hFord_tube
-                  let Wvl :
-                      SchwartzMap (Fin n → Fin (d + 1) → ℝ) ℂ →L[ℂ] ℂ :=
-                    { toLinearMap :=
-                        { toFun := bvt_W OS lgc n
-                          map_add' := (bvt_W_linear (d := d) OS lgc n).map_add
-                          map_smul' := (bvt_W_linear (d := d) OS lgc n).map_smul }
-                      cont := bvt_W_continuous (d := d) OS lgc n }
-                  have hFadj_bv :
-                      ∀ ηv : Fin n → Fin (d + 1) → ℝ, ηv ∈ Cvl →
-                        ∀ ψ : SchwartzMap (Fin n → Fin (d + 1) → ℝ) ℂ,
-                          Filter.Tendsto
-                            (fun ε : ℝ => ∫ x : Fin n → Fin (d + 1) → ℝ,
-                              Fadj (fun k μ =>
-                                (x k μ : ℂ) +
-                                  (ε : ℂ) * (ηv k μ : ℂ) * Complex.I) * ψ x)
-                            (nhdsWithin 0 (Set.Ioi 0)) (nhds (Wvl ψ)) := by
-                    -- Gap: the adjacent deterministic branch has the selected
-                    -- OS tempered boundary value on this carrier.
-                    simpa using hsource_current
-                  have hFord_bv :
-                      ∀ ηv : Fin n → Fin (d + 1) → ℝ, ηv ∈ Cvl →
-                        ∀ ψ : SchwartzMap (Fin n → Fin (d + 1) → ℝ) ℂ,
-                          Filter.Tendsto
-                            (fun ε : ℝ => ∫ x : Fin n → Fin (d + 1) → ℝ,
-                              Ford (fun k μ =>
-                                (x k μ : ℂ) +
-                                  (ε : ℂ) * (ηv k μ : ℂ) * Complex.I) * ψ x)
-                            (nhdsWithin 0 (Set.Ioi 0)) (nhds (Wvl ψ)) := by
-                    -- Gap: the ordinary branch has the same selected OS
-                    -- tempered boundary value on this carrier.
-                    simpa using hsource_current
-                  have hVT :
-                      Set.EqOn Fadj Ford (TubeDomainSetPi Cvl) :=
-                    tube_holomorphic_unique_from_bv
-                      Cvl hCvl_open hCvl_conv hCvl_cone hCvl_salient hCvl_ne
-                      Fadj Ford hFadj_tube hFord_tube hFG_int hFadj_int
-                      hFord_int Wvl hFadj_bv hFord_bv
-                  have hVT_to_Ucx : Set.EqOn Fadj Ford Ucx := by
-                    -- Gap: propagate the tube uniqueness result across the
-                    -- whole connected BHW initial-overlap chart.
-                    simpa using hVT
-                  exact hVT_to_Ucx
+                  exact
+                    ?vladimirov_bhw_extendF_eq_bvt_F_at_adjacent_wick
                 calc
                   (∫ u : NPointDomain d n,
                     BHW.extendF (bvt_F OS lgc n)
@@ -6258,26 +6167,15 @@ theorem OS45BHWJostHullData.os45CommonEdge_sourceRepresentsZero_of_OS412_sourceS
                         (fun k => wickRotatePoint (u k))) * ψ u)
                       =
                     ∫ u : NPointDomain d n,
-                      Fadj (fun k => wickRotatePoint (u k)) * ψ u := by
+                      bvt_F OS lgc n
+                        (BHW.permAct (d := d) P.τ
+                          (fun k => wickRotatePoint (u k))) * ψ u := by
                       refine MeasureTheory.integral_congr_ae
                         (Filter.Eventually.of_forall ?_)
                       intro u
                       by_cases hu : u ∈ U
                       · exact congrArg (fun c : ℂ => c * ψ u)
-                          (hFadj_wick_extendF u hu).symm
-                      · have hψ_zero : ψ u = 0 :=
-                          image_eq_zero_of_notMem_tsupport
-                            (fun hψ_supp => hu (hψU hψ_supp))
-                        simp [hψ_zero]
-                  _ =
-                    ∫ u : NPointDomain d n,
-                      Ford (fun k => wickRotatePoint (u k)) * ψ u := by
-                      refine MeasureTheory.integral_congr_ae
-                        (Filter.Eventually.of_forall ?_)
-                      intro u
-                      by_cases hu : u ∈ U
-                      · exact congrArg (fun c : ℂ => c * ψ u)
-                          (hbranch_eq (hwick_mem u hu))
+                          (hadj_boundary u hu)
                       · have hψ_zero : ψ u = 0 :=
                           image_eq_zero_of_notMem_tsupport
                             (fun hψ_supp => hu (hψU hψ_supp))
@@ -6289,8 +6187,11 @@ theorem OS45BHWJostHullData.os45CommonEdge_sourceRepresentsZero_of_OS412_sourceS
                         (Filter.Eventually.of_forall ?_)
                       intro u
                       by_cases hu : u ∈ U
-                      · exact congrArg (fun c : ℂ => c * ψ u)
-                          (hFord_wick u hu)
+                      · have hperm :=
+                          bvt_F_perm (d := d) OS lgc n P.τ
+                            (fun k => wickRotatePoint (u k))
+                        exact congrArg (fun c : ℂ => c * ψ u)
+                          (by simpa [BHW.permAct] using hperm)
                       · have hψ_zero : ψ u = 0 :=
                           image_eq_zero_of_notMem_tsupport
                             (fun hψ_supp => hu (hψU hψ_supp))
