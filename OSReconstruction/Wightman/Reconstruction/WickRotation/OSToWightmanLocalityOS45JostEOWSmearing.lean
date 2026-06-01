@@ -341,7 +341,82 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
             uniqueness step from the Euclidean Wick section to the horizontal
             Figure-2-4 common edge.
           -/
-          exact ?vladimirov_bhw_ordinary_zeroHeight_eq_schwinger
+          let SidePlus : ℝ → ℂ := fun ε =>
+            ∫ u : NPointDomain d n,
+              BHW.extendF (bvt_F OS lgc n)
+                (BHW.os45FlatCommonChartSourceSide d n
+                  (1 : Equiv.Perm (Fin n)) (1 : ℝ) ε η u) *
+                ((((D.toSideZeroDiagonalCLM
+                  (1 : Equiv.Perm (Fin n)) (1 : ℝ) ε η φ).1 :
+                    SchwartzNPoint d n) : NPointDomain d n → ℂ) u)
+          let WickPlus : ℝ → ℂ := fun ε =>
+            ∫ u : NPointDomain d n,
+              bvt_F OS lgc n (fun k => wickRotatePoint (u k)) *
+                ((((D.toSideZeroDiagonalCLM
+                  (1 : Equiv.Perm (Fin n)) (1 : ℝ) ε η φ).1 :
+                    SchwartzNPoint d n) : NPointDomain d n → ℂ) u)
+          have hside_limit :
+              Tendsto SidePlus
+                (𝓝[Set.Ioi 0] (0 : ℝ))
+                (𝓝
+                  (∫ u : NPointDomain d n,
+                    BHW.extendF (bvt_F OS lgc n)
+                      (BHW.os45QuarterTurnConfig (d := d) (n := n)
+                        (fun k => wickRotatePoint (u k))) *
+                      ((((D.toZeroDiagonalCLM
+                        (1 : Equiv.Perm (Fin n)) φ).1 :
+                          SchwartzNPoint d n) : NPointDomain d n → ℂ) u))) := by
+            simpa [SidePlus] using hside_plus_pair.1
+          have hwick_limit :
+              Tendsto WickPlus
+                (𝓝[Set.Ioi 0] (0 : ℝ))
+                (𝓝
+                  (OS.S n
+                    (D.toZeroDiagonalCLM (1 : Equiv.Perm (Fin n)) φ))) := by
+            simpa [WickPlus] using hraw_plus
+          have hordinary_transport :
+              Tendsto (fun ε : ℝ => SidePlus ε - WickPlus ε)
+                (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) := by
+            /-
+              Vladimirov/BHW ordinary tempered-BV uniqueness leaf.
+
+              This is the first honest OS-I `(4.12)` transport theorem still
+              missing from the substrate: the ordinary BHW source-side tube
+              branch and the Wick-section OS source-current branch have the
+              same tempered boundary value on the local Figure-2-4 collar.
+              Its proof should use the polynomial-growth/Vladimirov package for
+              the pulled BHW branch, the Euclidean Wick-section source pairing,
+              and uniqueness of the boundary value in the common tube chart.
+            -/
+            exact ?vladimirov_bhw_ordinary_sourceSide_to_wick_temperedBV
+          have hside_minus_wick :
+              Tendsto (fun ε : ℝ => SidePlus ε - WickPlus ε)
+                (𝓝[Set.Ioi 0] (0 : ℝ))
+                (𝓝
+                  ((∫ u : NPointDomain d n,
+                    BHW.extendF (bvt_F OS lgc n)
+                      (BHW.os45QuarterTurnConfig (d := d) (n := n)
+                        (fun k => wickRotatePoint (u k))) *
+                      ((((D.toZeroDiagonalCLM
+                        (1 : Equiv.Perm (Fin n)) φ).1 :
+                          SchwartzNPoint d n) : NPointDomain d n → ℂ) u)) -
+                    OS.S n
+                      (D.toZeroDiagonalCLM
+                        (1 : Equiv.Perm (Fin n)) φ))) :=
+            hside_limit.sub hwick_limit
+          have hzero :
+              ((∫ u : NPointDomain d n,
+                BHW.extendF (bvt_F OS lgc n)
+                  (BHW.os45QuarterTurnConfig (d := d) (n := n)
+                    (fun k => wickRotatePoint (u k))) *
+                  ((((D.toZeroDiagonalCLM
+                    (1 : Equiv.Perm (Fin n)) φ).1 :
+                      SchwartzNPoint d n) : NPointDomain d n → ℂ) u)) -
+                OS.S n
+                  (D.toZeroDiagonalCLM
+                    (1 : Equiv.Perm (Fin n)) φ)) = 0 :=
+            tendsto_nhds_unique hside_minus_wick hordinary_transport
+          exact sub_eq_zero.mp hzero
         have hadjacent_zeroHeight_eq_schwinger :
             (∫ u : NPointDomain d n,
               BHW.extendF (bvt_F OS lgc n)
@@ -365,7 +440,88 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
             source current by tempered boundary-value uniqueness on the local
             Jost collar.
           -/
-          exact ?vladimirov_bhw_adjacent_zeroHeight_eq_schwinger
+          let SideMinus : ℝ → ℂ := fun ε =>
+            ∫ u : NPointDomain d n,
+              BHW.extendF (bvt_F OS lgc n)
+                (BHW.permAct (d := d)
+                  (P.τ.symm * (1 : Equiv.Perm (Fin n))).symm
+                  (BHW.os45FlatCommonChartSourceSide d n
+                    (1 : Equiv.Perm (Fin n)) (-1 : ℝ) ε η u)) *
+                ((((D.toSideZeroDiagonalCLM
+                  (1 : Equiv.Perm (Fin n)) (-1 : ℝ) ε η φ).1 :
+                    SchwartzNPoint d n) : NPointDomain d n → ℂ) u)
+          let WickMinus : ℝ → ℂ := fun ε =>
+            ∫ u : NPointDomain d n,
+              bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k))) *
+                ((((D.toSideZeroDiagonalCLM
+                  (1 : Equiv.Perm (Fin n)) (-1 : ℝ) ε η φ).1 :
+                    SchwartzNPoint d n) : NPointDomain d n → ℂ) u)
+          have hside_limit :
+              Tendsto SideMinus
+                (𝓝[Set.Ioi 0] (0 : ℝ))
+                (𝓝
+                  (∫ u : NPointDomain d n,
+                    BHW.extendF (bvt_F OS lgc n)
+                      (BHW.permAct (d := d)
+                        P.τ
+                        (BHW.os45QuarterTurnConfig (d := d) (n := n)
+                          (fun k => wickRotatePoint (u k)))) *
+                      ((((D.toZeroDiagonalCLM
+                        (1 : Equiv.Perm (Fin n)) φ).1 :
+                          SchwartzNPoint d n) : NPointDomain d n → ℂ) u))) := by
+            simpa [SideMinus, P.τ_eq] using hside_minus_pair.2
+          have hwick_limit :
+              Tendsto WickMinus
+                (𝓝[Set.Ioi 0] (0 : ℝ))
+                (𝓝
+                  (OS.S n
+                    (D.toZeroDiagonalCLM (1 : Equiv.Perm (Fin n)) φ))) := by
+            simpa [WickMinus] using hraw_minus
+          have hadjacent_transport :
+              Tendsto (fun ε : ℝ => SideMinus ε - WickMinus ε)
+                (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) := by
+            /-
+              Vladimirov/BHW adjacent tempered-BV uniqueness leaf.
+
+              This is the selected adjacent copy of the same OS-I transport,
+              with the deterministic BHW branch `extendF ∘ permAct P.τ` in the
+              local adjacent tube chart.  The forward-tube shortcut is blocked;
+              the missing proof is the tempered boundary-value uniqueness
+              argument on the adjacent Figure-2-4 collar.
+            -/
+            exact ?vladimirov_bhw_adjacent_sourceSide_to_wick_temperedBV
+          have hside_minus_wick :
+              Tendsto (fun ε : ℝ => SideMinus ε - WickMinus ε)
+                (𝓝[Set.Ioi 0] (0 : ℝ))
+                (𝓝
+                  ((∫ u : NPointDomain d n,
+                    BHW.extendF (bvt_F OS lgc n)
+                      (BHW.permAct (d := d)
+                        P.τ
+                        (BHW.os45QuarterTurnConfig (d := d) (n := n)
+                          (fun k => wickRotatePoint (u k)))) *
+                      ((((D.toZeroDiagonalCLM
+                        (1 : Equiv.Perm (Fin n)) φ).1 :
+                          SchwartzNPoint d n) : NPointDomain d n → ℂ) u)) -
+                    OS.S n
+                      (D.toZeroDiagonalCLM
+                        (1 : Equiv.Perm (Fin n)) φ))) :=
+            hside_limit.sub hwick_limit
+          have hzero :
+              ((∫ u : NPointDomain d n,
+                BHW.extendF (bvt_F OS lgc n)
+                  (BHW.permAct (d := d)
+                    P.τ
+                    (BHW.os45QuarterTurnConfig (d := d) (n := n)
+                      (fun k => wickRotatePoint (u k)))) *
+                  ((((D.toZeroDiagonalCLM
+                    (1 : Equiv.Perm (Fin n)) φ).1 :
+                      SchwartzNPoint d n) : NPointDomain d n → ℂ) u)) -
+                OS.S n
+                  (D.toZeroDiagonalCLM
+                    (1 : Equiv.Perm (Fin n)) φ)) = 0 :=
+            tendsto_nhds_unique hside_minus_wick hadjacent_transport
+          exact sub_eq_zero.mp hzero
         constructor
         · have hlim := hside_plus_pair.1.sub hraw_plus
           have hlim0 :
