@@ -423,18 +423,97 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
               hunif.tendsto_at hη_mem
           have hminus_vladimirov_to_Tlocal :
               Tendsto Minus (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 (Tlocal φ)) := by
-            /-
-              Genuine local Vladimirov/BHW producer input.
+            let Plus : ℝ → ℂ := fun ε =>
+              ∫ x : BHW.OS45FlatCommonChartReal d n,
+                BHW.os45FlatCommonChartBranch d n OS lgc
+                  (1 : Equiv.Perm (Fin n))
+                  (fun a => (x a : ℂ) +
+                    (ε : ℂ) * (η a : ℂ) * Complex.I) * φ x
+            have hplus_to_Tlocal :
+                Tendsto Plus (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 (Tlocal φ)) := by
+              have hF_cont :
+                  ContinuousOn
+                    (BHW.os45FlatCommonChartBranch d n OS lgc
+                      (1 : Equiv.Perm (Fin n)))
+                    (BHW.os45FlatCommonChartOmega d n
+                      (1 : Equiv.Perm (Fin n))) :=
+                (BHW.differentiableOn_os45FlatCommonChartBranch
+                  d n OS lgc
+                  (1 : Equiv.Perm (Fin n))).continuousOn
+              have hside :
+                  ∀ K : Set (BHW.OS45FlatCommonChartReal d n),
+                    IsCompact K →
+                    K ⊆ BHW.os45FlatCommonChartEdgeSet d n P
+                      (1 : Equiv.Perm (Fin n)) →
+                    ∀ Kη : Set (BHW.OS45FlatCommonChartReal d n),
+                      IsCompact Kη →
+                      Kη ⊆ BHW.os45FlatCommonChartCone d n →
+                      ∃ r : ℝ, 0 < r ∧
+                        ∀ x ∈ K, ∀ η ∈ Kη, ∀ ε : ℝ,
+                          0 < ε → ε < r →
+                          (fun a => (x a : ℂ) +
+                            ((1 : ℝ) : ℂ) * (ε : ℂ) *
+                              (η a : ℂ) * Complex.I) ∈
+                            BHW.os45FlatCommonChartOmega d n
+                              (1 : Equiv.Perm (Fin n)) := by
+                intro K hK hKE Kη hKη hKηC
+                obtain ⟨r, hr_pos, hr_mem⟩ :=
+                  BHW.os45_BHWJost_flatCommonChart_localWedge_of_figure24
+                    (d := d) hd (P := P) K hK hKE Kη hKη hKηC
+                refine ⟨r, hr_pos, ?_⟩
+                intro x hx η hη ε hε_pos hε_lt
+                have hmem := (hr_mem x hx η hη ε hε_pos hε_lt).1
+                simpa [one_mul] using hmem
+              have hunif :=
+                SCV.tendstoUniformlyOn_sideIntegral_of_zeroHeight_pairing
+                  (m := BHW.os45FlatCommonChartDim d n)
+                  (E := BHW.os45FlatCommonChartEdgeSet d n P
+                    (1 : Equiv.Perm (Fin n)))
+                  (C := BHW.os45FlatCommonChartCone d n)
+                  (Ωc := BHW.os45FlatCommonChartOmega d n
+                    (1 : Equiv.Perm (Fin n)))
+                  (BHW.isOpen_os45FlatCommonChartOmega d n
+                    (1 : Equiv.Perm (Fin n)))
+                  (BHW.os45FlatCommonChartBranch d n OS lgc
+                    (1 : Equiv.Perm (Fin n)))
+                  hF_cont
+                  (BHW.os45FlatCommonChart_real_mem_omega_id
+                    (d := d) hd (P := P))
+                  (1 : ℝ) hside
+                  ({η} : Set (BHW.OS45FlatCommonChartReal d n))
+                  isCompact_singleton (by simpa [Cedge] using hη_singleton)
+                  φ hφ_compact hφEdge' (Tlocal φ)
+                  (hzero_plus φ hφ_compact hφE')
+              have hη_mem :
+                  η ∈ ({η} : Set (BHW.OS45FlatCommonChartReal d n)) := by
+                simp
+              simpa [Plus, one_mul] using hunif.tendsto_at hη_mem
+            have hflat_side_difference :
+                Tendsto (fun ε : ℝ => Plus ε - Minus ε)
+                  (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) := by
+              /-
+                Genuine Vladimirov/BHW residual-transfer leaf.
 
-              The previous global attempt asked for
-              `SCV.TubeDomain Cedge ⊆ Ωminus`, but the Figure-2-4 geometry
-              only supplies compact local wedges.  The actual OS-I
-              `(4.12)`--`(4.14)` payload is this compact-test boundary-value
-              transport for the current compact test: the adjacent one-sided
-              flat branch has the same boundary CLM `Tlocal` as the ordinary
-              branch on this support window.
-            -/
-            exact ?os45_vladimirov_adjacent_sideBoundaryValue_to_ordinaryCLM
+                This is the OS-I `(4.12)`--`(4.14)` compact-window
+                tempered-boundary-value uniqueness step: transport the raw
+                source-current comparison `hsource_current` through the local
+                BHW/Jost continuation so that the ordinary plus and adjacent
+                minus flat side branches have the same distributional boundary
+                on the Figure-2-4 support window.
+              -/
+              exact
+                ?os45_vladimirov_compactWindow_flatSideDifference_from_sourceCurrent
+            have hminus_as_difference :
+                Tendsto (fun ε : ℝ => Plus ε - (Plus ε - Minus ε))
+                  (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 (Tlocal φ - 0)) :=
+              hplus_to_Tlocal.sub hflat_side_difference
+            have hminus_as_difference' :
+                Tendsto (fun ε : ℝ => Plus ε - (Plus ε - Minus ε))
+                  (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 (Tlocal φ)) := by
+              simpa using hminus_as_difference
+            refine hminus_as_difference'.congr' ?_
+            exact Filter.Eventually.of_forall fun ε => by
+              simp [Plus, Minus]
           exact
             tendsto_nhds_unique hminus_zeroHeight_limit
               hminus_vladimirov_to_Tlocal
