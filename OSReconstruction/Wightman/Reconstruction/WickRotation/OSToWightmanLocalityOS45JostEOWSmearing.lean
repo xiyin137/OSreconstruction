@@ -523,21 +523,97 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
                       have hlocal_collar_diff :
                           Tendsto (fun ε : ℝ => Plus ε - Minus ε)
                             (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) := by
-                        /-
-                          Genuine local Vladimirov/BHW producer input.
+                        have hsource_ext_local :
+                            Tendsto
+                              (fun ε : ℝ =>
+                                (∫ u : NPointDomain d n,
+                                  BHW.extendF (bvt_F OS lgc n)
+                                    (BHW.os45FlatCommonChartSourceSide d n
+                                      (1 : Equiv.Perm (Fin n)) (1 : ℝ)
+                                      ε η u) *
+                                    ((((D.toSideZeroDiagonalCLM
+                                      (1 : Equiv.Perm (Fin n)) (1 : ℝ)
+                                      ε η ψ).1 : SchwartzNPoint d n) :
+                                        NPointDomain d n → ℂ) u)) -
+                                ∫ u : NPointDomain d n,
+                                  BHW.extendF (bvt_F OS lgc n)
+                                    (BHW.permAct (d := d)
+                                      (P.τ.symm *
+                                        (1 : Equiv.Perm (Fin n))).symm
+                                      (BHW.os45FlatCommonChartSourceSide d n
+                                        (1 : Equiv.Perm (Fin n)) (-1 : ℝ)
+                                        ε η u)) *
+                                    ((((D.toSideZeroDiagonalCLM
+                                      (1 : Equiv.Perm (Fin n)) (-1 : ℝ)
+                                      ε η ψ).1 : SchwartzNPoint d n) :
+                                        NPointDomain d n → ℂ) u))
+                              (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) := by
+                          let Ext : ℝ → ℂ := fun ε =>
+                            (∫ u : NPointDomain d n,
+                              BHW.extendF (bvt_F OS lgc n)
+                                (BHW.os45FlatCommonChartSourceSide d n
+                                  (1 : Equiv.Perm (Fin n)) (1 : ℝ)
+                                  ε η u) *
+                                ((((D.toSideZeroDiagonalCLM
+                                  (1 : Equiv.Perm (Fin n)) (1 : ℝ)
+                                  ε η ψ).1 : SchwartzNPoint d n) :
+                                    NPointDomain d n → ℂ) u)) -
+                            ∫ u : NPointDomain d n,
+                              BHW.extendF (bvt_F OS lgc n)
+                                (BHW.permAct (d := d)
+                                  (P.τ.symm *
+                                    (1 : Equiv.Perm (Fin n))).symm
+                                  (BHW.os45FlatCommonChartSourceSide d n
+                                    (1 : Equiv.Perm (Fin n)) (-1 : ℝ)
+                                    ε η u)) *
+                                ((((D.toSideZeroDiagonalCLM
+                                  (1 : Equiv.Perm (Fin n)) (-1 : ℝ)
+                                  ε η ψ).1 : SchwartzNPoint d n) :
+                                    NPointDomain d n → ℂ) u)
+                          let Raw : ℝ → ℂ := fun ε =>
+                            (∫ u : NPointDomain d n,
+                              bvt_F OS lgc n
+                                (fun k => wickRotatePoint (u k)) *
+                                ((((D.toSideZeroDiagonalCLM
+                                  (1 : Equiv.Perm (Fin n)) (1 : ℝ)
+                                  ε η ψ).1 : SchwartzNPoint d n) :
+                                    NPointDomain d n → ℂ) u)) -
+                            ∫ u : NPointDomain d n,
+                              bvt_F OS lgc n
+                                (fun k => wickRotatePoint (u (P.τ k))) *
+                                ((((D.toSideZeroDiagonalCLM
+                                  (1 : Equiv.Perm (Fin n)) (-1 : ℝ)
+                                  ε η ψ).1 : SchwartzNPoint d n) :
+                                    NPointDomain d n → ℂ) u)
+                          change Tendsto Ext (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0)
+                          have hraw :
+                              Tendsto Raw (𝓝[Set.Ioi 0] (0 : ℝ))
+                                (𝓝 0) := by
+                            simpa [Raw] using
+                              D.sourceSide_ordinaryPlus_adjacentMinus_difference_tendsto_zero
+                                OS lgc η hηC ψ hψ_compact hψEdge
+                          have htransport_error :
+                              Tendsto (fun ε : ℝ => Ext ε - Raw ε)
+                                (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) := by
+                            /-
+                              Genuine local Vladimirov/BHW producer input.
 
-                          This is the compact-collar form of the OS-I
-                          `(4.12)`--`(4.14)` transport: on tests supported in
-                          the Figure-2-4 common edge window `E`, the ordinary
-                          plus side and adjacent minus side finite-height
-                          pairings have the same distributional boundary
-                          value.  Unlike the rejected global lower-tube
-                          package, this is exactly local over the BHW collar
-                          supplied by
-                          `os45_BHWJost_flatCommonChart_localWedge_of_figure24`.
-                        -/
-                        exact
-                          ?os45_vladimirov_local_collar_flat_side_difference_zero
+                              The OS source current `Raw` is already checked.
+                              What remains is the tempered-BV uniqueness
+                              transport from raw Wick-section source pairings
+                              to the deterministic `extendF` pairings on the
+                              same compact Figure-2-4 collar.
+                            -/
+                            exact
+                              ?os45_vladimirov_raw_to_extendF_local_collar_error_zero
+                          have hsum := htransport_error.add hraw
+                          simpa only [sub_add_cancel, zero_add] using hsum
+                        have hflat :=
+                          D.tendsto_flatCommonChart_sideBranch_difference_zero_of_sourceSideDifference
+                            (d := d) OS lgc η hηC ψ hψ_compact hψEdge
+                            hsource_ext_local
+                        simpa [Plus, Minus, one_mul, neg_mul, sub_eq_add_neg,
+                          smul_eq_mul, mul_assoc] using hflat
                       have hminus_as_plus_sub :
                           Tendsto (fun ε : ℝ =>
                               Plus ε - (Plus ε - Minus ε))
