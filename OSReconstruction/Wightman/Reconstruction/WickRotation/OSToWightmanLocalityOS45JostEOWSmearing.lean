@@ -540,19 +540,61 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
             ∀ u ∈ U,
               Fadj (fun k => wickRotatePoint (u k)) =
                 bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k))) := by
-          /-
-            Exact remaining Vladimirov/BHW trace leaf.
+          intro u hu
+          have huP : u ∈ P.V := hU_sub hu
+          let zWick : Fin n → Fin (d + 1) → ℂ :=
+            fun k => wickRotatePoint (u k)
+          let zAdj : Fin n → Fin (d + 1) → ℂ :=
+            BHW.permAct (d := d) P.τ zWick
+          have hzAdj_eq :
+              zAdj = fun k => wickRotatePoint (u (P.τ k)) := by
+            simp [zAdj, zWick,
+              BHW.os45Figure24_permAct_ordinaryWick_eq_adjacentWick
+                (d := d) (n := n) (hd := hd) (P := P) u]
+          have hFadj_to_extendF :
+              Fadj zWick =
+                BHW.extendF (bvt_F OS lgc n) zAdj := by
+            simpa [zWick, zAdj] using _hFadj_seed u hu
+          have hzAdj_seedWindow :
+              zAdj ∈
+                ({z : Fin n → Fin (d + 1) → ℂ |
+                    BHW.permAct (d := d) P.τ z ∈ BHW.ForwardTube d n} ∩
+                  H.ΩJ) := by
+            simpa [zWick, zAdj] using
+              H.permAct_ordinaryWick_mem_OS412SeedWindow u huP
+          have hzAdj_not_forward :
+              zAdj ∉ BHW.ForwardTube d n := by
+            simpa [zWick, zAdj] using
+              H.permAct_ordinaryWick_not_mem_forwardTube u huP
+          have hFadj_seed_at_zAdj :
+              Fadj zAdj =
+                bvt_F OS lgc n
+                  (fun k => wickRotatePoint (u (P.τ k))) := by
+            simpa [zWick, zAdj, hzAdj_eq] using hFadj_seed_trace u hu
+          have hdeterministic_adjacent_trace :
+              BHW.extendF (bvt_F OS lgc n) zAdj =
+                bvt_F OS lgc n
+                  (fun k => wickRotatePoint (u (P.τ k))) := by
+            /-
+              Exact remaining Vladimirov/BHW tempered-BV uniqueness leaf.
 
-            The initial-overlap packet above supplies the deterministic adjacent
-            branch `Fadj = extendF (bvt_F) ∘ permAct P.τ` on the connected OS45
-            collar and the genuine `(4.12)` seed trace
-            `hFadj_seed_trace` at `permAct P.τ (wick u)`.  What remains is the
-            local tempered-boundary-value uniqueness transport from that
-            `(4.12)` seed branch to the ordinary Wick-section point
-            `wick u`, using OS polynomial growth and equality of the tempered
-            boundary distributions on compact source tests.
-          -/
-          exact ?os45_vladimirov_tempered_BV_adjacent_wick_trace
+              The deterministic adjacent seed `zAdj = permAct P.τ (wick u)` is
+              in the OS-I `(4.12)` seed window (`hzAdj_seedWindow`), and
+              `hFadj_seed_at_zAdj` records the raw seed trace.  It is
+              deliberately not an ordinary forward-tube point
+              (`hzAdj_not_forward`), so `extendF_eq_on_forwardTube` cannot
+              identify `extendF (bvt_F) zAdj` with the boundary value.
+
+              What remains is the Vladimirov/BHW interface: construct, from OS
+              polynomial growth and compact-test equality of the common
+              boundary distributions on the local Figure-2-4 collar, the
+              tempered boundary-value uniqueness transport identifying the
+              deterministic BHW branch `extendF (bvt_F)` with the raw
+              `(4.12)` branch at this adjacent Wick seed.
+            -/
+            exact
+              ?os45_vladimirov_tempered_BV_extendF_eq_bvt_F_at_adjacent_wick
+          exact hFadj_to_extendF.trans hdeterministic_adjacent_trace
         have hbranches_eq :
             ∀ u ∈ U,
               BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
