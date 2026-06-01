@@ -272,10 +272,21 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
             BHW.extendF_eq_on_forwardTube n (bvt_F OS lgc n)
               hF_holo hF_lorentz
               (BHW.permAct (d := d) P.τ z0) hz0_perm_forward
+          have hz0_perm_ET :
+              BHW.permAct (d := d) P.τ z0 ∈ BHW.ExtendedTube d n :=
+            BHW.forwardTube_subset_extendedTube hz0_perm_forward
+          have hz0_overlap :
+              z0 ∈
+                {z : Fin n → Fin (d + 1) → ℂ |
+                  z ∈ BHW.ExtendedTube d n ∧
+                    BHW.permAct (d := d) P.τ z ∈ BHW.ExtendedTube d n} :=
+            ⟨hz0_ET, hz0_perm_ET⟩
           have hdeterministic_overlap :
               BHW.extendF (bvt_F OS lgc n) z0 =
                 BHW.extendF (bvt_F OS lgc n)
                   (BHW.permAct (d := d) P.τ z0) :=
+            -- `hz0_overlap` is the exact BHW overlap point where the local
+            -- Vladimirov/common-tempered-BV uniqueness producer must act.
             ?os45_vladimirov_bhw_seed_overlap_eq
           exact hdeterministic_overlap.trans hseed_extendF
         exact hvladimirov_endpoint.trans hseed_eval
