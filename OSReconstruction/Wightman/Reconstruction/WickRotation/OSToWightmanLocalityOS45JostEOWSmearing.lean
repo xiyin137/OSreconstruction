@@ -242,6 +242,17 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
         and adjacent residuals asks for individual raw boundary limits that are
         not the OS-I input exposed here.
       -/
+      exact
+        ?os45_vladimirov_signed_collar_residual_transfer
+      /-
+        Retired circular zero-height reduction.
+
+        This block tried to prove the finite-height `Ext` limit by first
+        deriving a zero-height adjacent/ordinary pairing equality.  That
+        equality then used the same flat side-difference limit that the
+        enclosing theorem is meant to produce, so it is kept inactive as route
+        evidence and the live goal is the genuine signed-collar residual above.
+
       let Fplus : BHW.OS45FlatCommonChartSpace d n → ℂ :=
         BHW.os45FlatCommonChartBranch d n OS lgc
           (1 : Equiv.Perm (Fin n))
@@ -753,6 +764,7 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
             (fun u hu => subset_closure hu) hU_compact η
             h0_plus h0_minus φ hφ_compact hφU hzero_pairing
       simpa using hExt_zero.sub hraw
+      -/
     have hsum := htransport_error.add hraw
     simpa only [sub_add_cancel, zero_add] using hsum
     /-
