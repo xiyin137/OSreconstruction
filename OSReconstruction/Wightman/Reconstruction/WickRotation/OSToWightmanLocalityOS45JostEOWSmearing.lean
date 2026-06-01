@@ -485,24 +485,101 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
                           (fun ε : ℝ =>
                             ∫ x : BHW.OS45FlatCommonChartReal d n,
                               BHW.os45FlatCommonChartBranch d n OS lgc
-                                (P.τ.symm * (1 : Equiv.Perm (Fin n)))
-                                (fun a => (x a : ℂ) -
+                              (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+                              (fun a => (x a : ℂ) -
                                   (ε : ℂ) * (η a : ℂ) * Complex.I) *
                                 ψ x)
                           (𝓝[Set.Ioi 0] (0 : ℝ))
                           (𝓝 (Tlocal ψ)) := by
-                      /-
-                        Vladimirov/BHW tempered-boundary-value uniqueness leaf.
+                      have hsource_current_ψ :
+                          Tendsto
+                            (fun ε : ℝ =>
+                              (∫ u : NPointDomain d n,
+                                bvt_F OS lgc n
+                                    (fun k => wickRotatePoint (u k)) *
+                                  ((((D.toSideZeroDiagonalCLM
+                                    (1 : Equiv.Perm (Fin n))
+                                    (1 : ℝ) ε η ψ).1 :
+                                      SchwartzNPoint d n) :
+                                      NPointDomain d n → ℂ) u)) -
+                              ∫ u : NPointDomain d n,
+                                bvt_F OS lgc n
+                                    (fun k => wickRotatePoint (u (P.τ k))) *
+                                  ((((D.toSideZeroDiagonalCLM
+                                    (1 : Equiv.Perm (Fin n))
+                                    (-1 : ℝ) ε η ψ).1 :
+                                      SchwartzNPoint d n) :
+                                      NPointDomain d n → ℂ) u))
+                            (𝓝[Set.Ioi 0] (0 : ℝ))
+                            (𝓝 0) := by
+                        exact
+                          D.sourceSide_ordinaryPlus_adjacentMinus_difference_tendsto_zero
+                            OS lgc η hηC ψ hψ_compact hψEdge
+                      have hplus_to_Tlocal :
+                          Tendsto
+                            (fun ε : ℝ =>
+                              ∫ x : BHW.OS45FlatCommonChartReal d n,
+                                BHW.os45FlatCommonChartBranch d n OS lgc
+                                  (1 : Equiv.Perm (Fin n))
+                                  (fun a => (x a : ℂ) +
+                                    (ε : ℂ) * (η a : ℂ) *
+                                      Complex.I) *
+                                  ψ x)
+                            (𝓝[Set.Ioi 0] (0 : ℝ))
+                            (𝓝 (Tlocal ψ)) := by
+                        have hunif :=
+                          BHW.os45_BHWJost_flatCommonChart_distributionalBoundaryValue_plus_of_zeroHeight_pairingCLM
+                            (d := d) hd OS lgc (P := P) Tlocal
+                            ({η} :
+                              Set (BHW.OS45FlatCommonChartReal d n))
+                            isCompact_singleton hη_singleton ψ
+                            hψ_compact hψEdge
+                            (hzero_plus ψ hψ_compact hψE)
+                        exact hunif.tendsto_at (by simp)
+                      have hside_difference_from_OS412 :
+                          Tendsto
+                            (fun ε : ℝ =>
+                              (∫ x :
+                                  BHW.OS45FlatCommonChartReal d n,
+                                BHW.os45FlatCommonChartBranch d n OS lgc
+                                  (1 : Equiv.Perm (Fin n))
+                                  (fun a => (x a : ℂ) +
+                                    (ε : ℂ) * (η a : ℂ) *
+                                      Complex.I) *
+                                  ψ x) -
+                              ∫ x :
+                                  BHW.OS45FlatCommonChartReal d n,
+                                BHW.os45FlatCommonChartBranch d n OS lgc
+                                  (P.τ.symm *
+                                    (1 : Equiv.Perm (Fin n)))
+                                  (fun a => (x a : ℂ) -
+                                    (ε : ℂ) * (η a : ℂ) *
+                                      Complex.I) *
+                                  ψ x)
+                            (𝓝[Set.Ioi 0] (0 : ℝ))
+                            (𝓝 0) := by
+                        /-
+                          Active Vladimirov/BHW residual-transfer leaf.
 
-                        This is the actual OS-I `(4.12)`--`(4.14)` producer
-                        still missing here: polynomial growth of the adjacent
-                        flat branch on the local Figure-2-4 minus tube,
-                        plus the source-current Wick-section transfer, must
-                        identify its boundary distribution with the ordinary
-                        edge CLM `Tlocal`.
-                      -/
-                      exact
-                        ?os45_vladimirov_temperedBV_adjacent_side_to_ordinaryEdgeCLM
+                          The raw OS-I `(4.14)` source-current comparison is
+                          now in scope as `hsource_current_ψ`, and the ordinary
+                          plus side has already been identified with the
+                          canonical edge CLM `Tlocal`.  The remaining analytic
+                          producer must transport the source-current comparison
+                          through the BHW/Vladimirov tempered boundary-value
+                          uniqueness argument, yielding the deterministic flat
+                          side-branch difference above.  This is the concrete
+                          polynomial-growth/common-BV interface; it is not a
+                          downstream Hdiff or source-representation consumer.
+                        -/
+                        exact
+                          ?os45_vladimirov_source_current_to_flat_side_difference
+                      refine Tendsto.congr' ?_ ?_
+                      · filter_upwards with ε
+                        ring
+                      · simpa using
+                          hplus_to_Tlocal.sub
+                            hside_difference_from_OS412
                     exact
                       tendsto_nhds_unique hminus_zeroHeight_limit
                         hminus_vladimirov_to_Tlocal
