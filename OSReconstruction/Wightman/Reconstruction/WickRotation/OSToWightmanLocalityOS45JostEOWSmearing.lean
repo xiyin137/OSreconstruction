@@ -235,94 +235,49 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
           /-
             Vladimirov/BHW endpoint uniqueness leaf.
 
-            At the corrected OS-I `(4.12)` seed point `z0`, both the
-            deterministic BHW branch `extendF (bvt_F)` and the raw seed branch
-            `z ↦ bvt_F (permAct P.τ z)` are holomorphic in a local
-            two-sector collar.  The missing producer is the tempered
-            boundary-value uniqueness argument which shows that these two
-            branches have the same distributional boundary value on the local
-            Figure-2-4 Jost edge.  The facts `hz0_ET` and `hz0_seed` are the
-            concrete domain carriers needed for that instantiation.
+            At the corrected OS-I `(4.12)` seed point `z0`, the raw seed
+            branch is already an `extendF` value because
+            `permAct P.τ z0` lies in the ordinary forward tube.  The genuine
+            remaining step is therefore not a global tube-domain uniqueness
+            statement for `bvt_F ∘ permAct`; it is the local BHW/Vladimirov
+            overlap equality between the two deterministic branches
+            `extendF z` and `extendF (permAct P.τ z)` at the seed.
+
+            This is the precise interface where the OS-I `(4.12)`--`(4.14)`
+            tempered boundary-value uniqueness argument must produce the
+            local Figure-2-4 two-sector EOW seed.
           -/
-          let Fdet : (Fin n → Fin (d + 1) → ℂ) → ℂ :=
-            fun z => BHW.extendF (bvt_F OS lgc n) z
-          let Fseed : (Fin n → Fin (d + 1) → ℂ) → ℂ :=
-            fun z => bvt_F OS lgc n (BHW.permAct (d := d) P.τ z)
-          let Cseed : Set (Fin n → Fin (d + 1) → ℝ) :=
-            ?os45_vladimirov_local_tube_cone
-          let Wseed :
-              SchwartzMap (Fin n → Fin (d + 1) → ℝ) ℂ →L[ℂ] ℂ :=
-            ?os45_vladimirov_common_tempered_bv
-          have hz0_tube : z0 ∈ TubeDomainSetPi Cseed :=
-            ?os45_vladimirov_seed_mem_local_tube
-          have hC_open : IsOpen Cseed :=
-            ?os45_vladimirov_local_tube_open
-          have hC_conv : Convex ℝ Cseed :=
-            ?os45_vladimirov_local_tube_convex
-          have hC_cone : IsCone Cseed :=
-            ?os45_vladimirov_local_tube_conic
-          have hC_salient : IsSalientCone Cseed :=
-            ?os45_vladimirov_local_tube_salient
-          have hC_nonempty : Cseed.Nonempty :=
-            ?os45_vladimirov_local_tube_nonempty
-          have hFdet_holo :
-              DifferentiableOn ℂ Fdet (TubeDomainSetPi Cseed) :=
-            ?os45_vladimirov_extendF_holomorphic_on_local_tube
-          have hFseed_holo :
-              DifferentiableOn ℂ Fseed (TubeDomainSetPi Cseed) :=
-            ?os45_vladimirov_seed_branch_holomorphic_on_local_tube
-          have hFG_int :
-              ∀ y : Fin n → Fin (d + 1) → ℝ, y ∈ Cseed →
-                ∀ ψ : SchwartzMap (Fin n → Fin (d + 1) → ℝ) ℂ,
-                  Integrable (fun x : Fin n → Fin (d + 1) → ℝ =>
-                    (Fdet (fun k μ =>
-                        (x k μ : ℂ) + (y k μ : ℂ) * Complex.I) -
-                      Fseed (fun k μ =>
-                        (x k μ : ℂ) + (y k μ : ℂ) * Complex.I)) * ψ x) :=
-            ?os45_vladimirov_difference_integrable_on_local_tube
-          have hFdet_int :
-              ∀ y : Fin n → Fin (d + 1) → ℝ, y ∈ Cseed →
-                ∀ ψ : SchwartzMap (Fin n → Fin (d + 1) → ℝ) ℂ,
-                  Integrable (fun x : Fin n → Fin (d + 1) → ℝ =>
-                    Fdet (fun k μ =>
-                        (x k μ : ℂ) + (y k μ : ℂ) * Complex.I) * ψ x) :=
-            ?os45_vladimirov_extendF_integrable_on_local_tube
-          have hFseed_int :
-              ∀ y : Fin n → Fin (d + 1) → ℝ, y ∈ Cseed →
-                ∀ ψ : SchwartzMap (Fin n → Fin (d + 1) → ℝ) ℂ,
-                  Integrable (fun x : Fin n → Fin (d + 1) → ℝ =>
-                    Fseed (fun k μ =>
-                        (x k μ : ℂ) + (y k μ : ℂ) * Complex.I) * ψ x) :=
-            ?os45_vladimirov_seed_branch_integrable_on_local_tube
-          have hFdet_bv :
-              ∀ η : Fin n → Fin (d + 1) → ℝ, η ∈ Cseed →
-                ∀ φ : SchwartzMap (Fin n → Fin (d + 1) → ℝ) ℂ,
-                  Filter.Tendsto
-                    (fun ε : ℝ =>
-                      ∫ x : Fin n → Fin (d + 1) → ℝ,
-                        Fdet (fun k μ =>
-                            (x k μ : ℂ) + (ε : ℂ) *
-                              (η k μ : ℂ) * Complex.I) * φ x)
-                    (nhdsWithin 0 (Set.Ioi 0)) (nhds (Wseed φ)) :=
-            ?os45_vladimirov_extendF_boundary_value_on_jost_edge
-          have hFseed_bv :
-              ∀ η : Fin n → Fin (d + 1) → ℝ, η ∈ Cseed →
-                ∀ φ : SchwartzMap (Fin n → Fin (d + 1) → ℝ) ℂ,
-                  Filter.Tendsto
-                    (fun ε : ℝ =>
-                      ∫ x : Fin n → Fin (d + 1) → ℝ,
-                        Fseed (fun k μ =>
-                            (x k μ : ℂ) + (ε : ℂ) *
-                              (η k μ : ℂ) * Complex.I) * φ x)
-                    (nhdsWithin 0 (Set.Ioi 0)) (nhds (Wseed φ)) :=
-            ?os45_vladimirov_seed_branch_boundary_value_on_jost_edge
-          have hunique :
-              Set.EqOn Fdet Fseed (TubeDomainSetPi Cseed) :=
-            tube_holomorphic_unique_from_bv
-              Cseed hC_open hC_conv hC_cone hC_salient hC_nonempty
-              Fdet Fseed hFdet_holo hFseed_holo hFG_int hFdet_int
-              hFseed_int Wseed hFdet_bv hFseed_bv
-          exact hunique hz0_tube
+          have hz0_perm_forward :
+              BHW.permAct (d := d) P.τ z0 ∈ BHW.ForwardTube d n :=
+            hz0_seed.1
+          have hF_holo :
+              DifferentiableOn ℂ (bvt_F OS lgc n)
+                (BHW.ForwardTube d n) := by
+            simpa [BHW_forwardTube_eq (d := d) (n := n)] using
+              bvt_F_holomorphic (d := d) OS lgc n
+          have hF_lorentz :
+              ∀ (Λ : LorentzLieGroup.RestrictedLorentzGroup d)
+                (w : Fin n → Fin (d + 1) → ℂ), w ∈ BHW.ForwardTube d n →
+                bvt_F OS lgc n
+                  (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * w k ν) =
+                bvt_F OS lgc n w := by
+            intro Λ w hw
+            exact bvt_F_restrictedLorentzInvariant_forwardTube
+              (d := d) OS lgc n Λ w
+              ((BHW_forwardTube_eq (d := d) (n := n)) ▸ hw)
+          have hseed_extendF :
+              BHW.extendF (bvt_F OS lgc n)
+                  (BHW.permAct (d := d) P.τ z0) =
+                bvt_F OS lgc n (BHW.permAct (d := d) P.τ z0) :=
+            BHW.extendF_eq_on_forwardTube n (bvt_F OS lgc n)
+              hF_holo hF_lorentz
+              (BHW.permAct (d := d) P.τ z0) hz0_perm_forward
+          have hdeterministic_overlap :
+              BHW.extendF (bvt_F OS lgc n) z0 =
+                BHW.extendF (bvt_F OS lgc n)
+                  (BHW.permAct (d := d) P.τ z0) :=
+            ?os45_vladimirov_bhw_seed_overlap_eq
+          exact hdeterministic_overlap.trans hseed_extendF
         exact hvladimirov_endpoint.trans hseed_eval
       refine MeasureTheory.integral_congr_ae (Filter.Eventually.of_forall ?_)
       intro u
