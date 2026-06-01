@@ -180,6 +180,32 @@ theorem section43WeightedDerivToBCFCLM_norm_le
               gcongr
               exact le_add_of_nonneg_left (apply_nonneg _ _)
 
+set_option backward.isDefEq.respectTransparency false in
+/-- The complex Schwartz seminorm is controlled by the matching Section 4.3
+weighted-derivative BCF probe. -/
+theorem section43SchwartzSeminormComplex_le_probe_component_norm
+    (k n : ℕ) (f : SchwartzMap ℝ ℂ) :
+    SchwartzMap.seminorm ℂ k n f ≤
+      ‖section43WeightedDerivToBCFCLM k n f‖ := by
+  refine SchwartzMap.seminorm_le_bound' (𝕜 := ℂ) k n f (norm_nonneg _) ?_
+  intro σ
+  have h1 :
+      |σ| ^ k * ‖iteratedDeriv n f σ‖ ≤
+        ‖section43PolyWeight k σ‖ * ‖iteratedDeriv n f σ‖ := by
+    exact mul_le_mul_of_nonneg_right
+      (section43_abs_pow_le_polyWeight k σ) (norm_nonneg _)
+  calc
+    |σ| ^ k * ‖iteratedDeriv n f σ‖
+        ≤ ‖section43PolyWeight k σ‖ * ‖iteratedDeriv n f σ‖ := h1
+    _ = ‖section43PolyWeight k σ * iteratedDeriv n f σ‖ := by
+          rw [norm_mul]
+    _ = ‖section43WeightedDerivToBCFCLM k n f σ‖ := by
+          rw [section43WeightedDerivToBCFCLM_apply]
+    _ ≤ ‖section43WeightedDerivToBCFCLM k n f‖ := by
+          simpa using
+            (BoundedContinuousFunction.norm_coe_le_norm
+              (section43WeightedDerivToBCFCLM k n f) σ)
+
 private theorem section43_schwartzPsiZ_imagAxis_diff_eq
     (t h : ℝ) (ht : 0 < t) (hth : 0 < t + h)
     (hh_im : ‖((h : ℂ) * Complex.I)‖ ≤ (((t : ℂ) * Complex.I).im) / 2)
@@ -447,6 +473,57 @@ theorem continuousOn_section43WeightedDerivToBCFCLM_imagAxisPsiKernel_Ioi
     (continuousAt_section43WeightedDerivToBCFCLM_imagAxisPsiKernel_of_pos
       (Set.mem_Ioi.mp ht) k n).continuousWithinAt
 
+/-- The imaginary-axis Paley-Wiener kernel is Schwartz-continuous at every
+strictly positive time. -/
+theorem continuousAt_section43ImagAxisPsiKernel_of_pos
+    {t : ℝ} (ht : 0 < t) :
+    ContinuousAt section43ImagAxisPsiKernel t := by
+  rw [ContinuousAt]
+  refine ((schwartz_withSeminorms ℂ ℝ ℂ).tendsto_nhds
+    section43ImagAxisPsiKernel (section43ImagAxisPsiKernel t)).2 ?_
+  intro p ε hε
+  have hprobe :
+      Tendsto
+        (fun y : ℝ =>
+          section43WeightedDerivToBCFCLM p.1 p.2
+            (section43ImagAxisPsiKernel y))
+        (𝓝 t)
+        (𝓝 (section43WeightedDerivToBCFCLM p.1 p.2
+            (section43ImagAxisPsiKernel t))) :=
+    continuousAt_section43WeightedDerivToBCFCLM_imagAxisPsiKernel_of_pos
+      ht p.1 p.2
+  have hevent :
+      ∀ᶠ y in 𝓝 t,
+        section43WeightedDerivToBCFCLM p.1 p.2
+            (section43ImagAxisPsiKernel y) ∈
+          Metric.ball
+            (section43WeightedDerivToBCFCLM p.1 p.2
+              (section43ImagAxisPsiKernel t)) ε :=
+    hprobe (Metric.ball_mem_nhds _ hε)
+  filter_upwards [hevent] with y hy
+  have hdist :
+      dist
+          (section43WeightedDerivToBCFCLM p.1 p.2
+            (section43ImagAxisPsiKernel y))
+          (section43WeightedDerivToBCFCLM p.1 p.2
+            (section43ImagAxisPsiKernel t)) < ε := by
+    simpa [Metric.mem_ball] using hy
+  have hnorm :
+      ‖section43WeightedDerivToBCFCLM p.1 p.2
+          (section43ImagAxisPsiKernel y - section43ImagAxisPsiKernel t)‖ < ε := by
+    simpa [dist_eq_norm, map_sub] using hdist
+  exact lt_of_le_of_lt
+    (section43SchwartzSeminormComplex_le_probe_component_norm p.1 p.2
+      (section43ImagAxisPsiKernel y - section43ImagAxisPsiKernel t))
+    hnorm
+
+/-- The imaginary-axis Paley-Wiener kernel is Schwartz-continuous on the
+strict positive half-line. -/
+theorem continuousOn_section43ImagAxisPsiKernel_Ioi :
+    ContinuousOn section43ImagAxisPsiKernel (Set.Ioi (0 : ℝ)) := by
+  intro t ht
+  exact (continuousAt_section43ImagAxisPsiKernel_of_pos ht).continuousWithinAt
+
 private theorem section43_identity_theorem_right_halfplane
     (f g : ℂ → ℂ)
     (hf : DifferentiableOn ℂ f {z : ℂ | 0 < z.re})
@@ -697,6 +774,30 @@ theorem section43OneSidedLaplace_scalar_fubini_apply
   obtain ⟨s, G, hTG⟩ := section43_exists_probe_factorization T
   exact section43OneSidedLaplace_scalar_fubini_apply_of_probe_factorization
     T g s G hTG (integrable_section43Probe_imagAxisPsiKernel_source s g)
+
+/-- Scalar integrability extracted from the one-dimensional finite-probe
+Fubini theorem. -/
+theorem integrable_section43ImagAxisPsiKernel_source_apply_clm
+    (T : SchwartzMap ℝ ℂ →L[ℂ] ℂ)
+    (g : Section43CompactPositiveTimeSource1D) :
+    Integrable
+      (fun t : ℝ => T (section43ImagAxisPsiKernel t) * g.f t) := by
+  obtain ⟨s, G, hTG⟩ := section43_exists_probe_factorization T
+  have hInt : Integrable (section43ProbeImagAxisFamily s g) :=
+    integrable_section43Probe_imagAxisPsiKernel_source s g
+  have hG :
+      Integrable (fun t : ℝ => G (section43ProbeImagAxisFamily s g t)) :=
+    G.integrable_comp hInt
+  refine hG.congr ?_
+  filter_upwards with t
+  have hT_apply :
+      T (section43ImagAxisPsiKernel t) =
+        G (section43ProbeCLM s (section43ImagAxisPsiKernel t)) := by
+    exact congrArg
+      (fun H : SchwartzMap ℝ ℂ →L[ℂ] ℂ =>
+        H (section43ImagAxisPsiKernel t)) hTG
+  rw [hT_apply]
+  simp [section43ProbeImagAxisFamily, map_smul, smul_eq_mul, mul_comm]
 
 theorem section43OneSidedAnnihilatorFL_integral_zero_of_annihilates_laplace
     (A : Section43PositiveEnergy1D →L[ℂ] ℂ)

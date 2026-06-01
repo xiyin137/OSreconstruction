@@ -124,7 +124,7 @@ def IsLorentzCovariantWeak (W : (n : ℕ) → SchwartzNPoint d n → ℂ) : Prop
     (∀ x : NPointDomain d n, g.toFun x = f.toFun (fun i => Matrix.mulVec Λ⁻¹.val (x i))) →
     W n f = W n g
 
-/-- Local commutativity condition for Wightman functions.
+/-- Adjacent local commutativity condition for Wightman functions.
 
     For a collection of n-point functions W_n, local commutativity means:
     When adjacent points x_i and x_{i+1} are spacelike separated, swapping them
@@ -139,7 +139,7 @@ def IsLorentzCovariantWeak (W : (n : ℕ) → SchwartzNPoint d n → ℂ) : Prop
     At the distribution level, this is expressed via test functions with
     spacelike-separated supports: if supp(f) and supp(g) are spacelike separated,
     then W₂(f ⊗ g) = W₂(g ⊗ f). -/
-def IsLocallyCommutativeWeak (W : (n : ℕ) → SchwartzNPoint d n → ℂ) : Prop :=
+def IsAdjacentLocallyCommutativeWeak (W : (n : ℕ) → SchwartzNPoint d n → ℂ) : Prop :=
   -- For Schwartz functions f, g where g is the swap of adjacent coordinates
   -- i and i+1 in f, and the supports of f have spacelike-separated adjacent
   -- arguments, we have W_n(f) = W_n(g). Avoids constructing the swapped
@@ -150,6 +150,13 @@ def IsLocallyCommutativeWeak (W : (n : ℕ) → SchwartzNPoint d n → ℂ) : Pr
     (∀ x : NPointDomain d n,
       g.toFun x = f.toFun (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k))) →
     W n f = W n g
+
+/-- Compatibility name for the standard adjacent-swap Wightman locality
+predicate.  This is intentionally not an arbitrary non-adjacent pair-swap
+property: moving a non-adjacent point through intervening fields requires the
+corresponding chain of adjacent spacelike crossings. -/
+abbrev IsLocallyCommutativeWeak :=
+  IsAdjacentLocallyCommutativeWeak
 
 /-! ### Positive Definiteness -/
 
@@ -759,8 +766,8 @@ structure WightmanFunctions (d : ℕ) [NeZero d] where
             W_analytic (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x))
           (nhdsWithin 0 (Set.Ioi 0))
           (nhds (W n f)))
-  /-- Local commutativity (weak form) -/
-  locally_commutative : IsLocallyCommutativeWeak d W
+  /-- Adjacent local commutativity (weak form, the standard R3 surface). -/
+  locally_commutative : IsAdjacentLocallyCommutativeWeak d W
   /-- Positive definiteness -/
   positive_definite : Wightman.IsPositiveDefinite d W
   /-- Hermiticity: W_n(f̃) = conj(W_n(f)) where f̃(x₁,...,xₙ) = conj(f(xₙ,...,x₁)).
@@ -798,7 +805,7 @@ variable {d : ℕ} [NeZero d]
 /-- Upgrade a checked core package to full Wightman functions once the
 remaining locality and cluster frontiers are supplied. -/
 def toWightmanFunctions (Wcore : WightmanFunctionsCore d)
-    (hlocal : IsLocallyCommutativeWeak d Wcore.W)
+    (hlocal : IsAdjacentLocallyCommutativeWeak d Wcore.W)
     (hcluster : ∀ (n m : ℕ) (f : SchwartzNPoint d n) (g : SchwartzNPoint d m),
       ∀ ε : ℝ, ε > 0 → ∃ R : ℝ, R > 0 ∧
         ∀ a : SpacetimeDim d, a 0 = 0 → (∑ i : Fin d, (a (Fin.succ i))^2) > R^2 →

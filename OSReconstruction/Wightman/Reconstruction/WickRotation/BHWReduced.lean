@@ -110,6 +110,30 @@ noncomputable def normalizedCutoffOfBump (d : ℕ) [NeZero d] :
     (@RCLike.ofRealLI ℂ _).integral_comp_comm f
   rw [this, Complex.ofReal_inv, inv_mul_cancel₀ hI_ne]
 
+theorem normalizedCutoffOfBump_hasCompactSupport (d : ℕ) [NeZero d] :
+    HasCompactSupport
+      ((normalizedCutoffOfBump d).toSchwartz : SpacetimeDim d → ℂ) := by
+  unfold normalizedCutoffOfBump
+  generalize hspec : spacetimeBump_spec d = S
+  rcases S with ⟨_, hcs, hcd, _, _⟩
+  dsimp
+  set f := spacetimeBump d
+  set I := ∫ x : SpacetimeDim d, f x
+  set f_schwartz : SchwartzMap (SpacetimeDim d) ℝ := hcs.toSchwartzMap hcd
+  have hreal :
+      HasCompactSupport
+        (fun x : SpacetimeDim d => (f_schwartz x : ℂ)) := by
+    simpa using hcs.comp_left Complex.ofReal_zero
+  have hscaled :
+      HasCompactSupport
+        (fun x : SpacetimeDim d => (↑I⁻¹ : ℂ) * (f_schwartz x : ℂ)) := by
+    simpa using
+      (HasCompactSupport.mul_left
+        (f := fun _ : SpacetimeDim d => (↑I⁻¹ : ℂ)) hreal)
+  change HasCompactSupport
+    (fun x : SpacetimeDim d => (↑I⁻¹ : ℂ) * (f_schwartz x : ℂ))
+  exact hscaled
+
 /-- Lift a reduced Schwartz test to absolute coordinates by inserting a
     Schwartz cutoff in the basepoint variable and then composing with the real
     full difference-coordinate chart. -/

@@ -277,28 +277,40 @@ theorem sourceComplexGramVariety_selectedChart_of_realRegular
       sourceSelectedComplexGramZeroSection_gram_differentiableOn
         d n hI hJ hminor hD_target hD_inv
 
-/-- Pull back a variety-holomorphic scalar function along a differentiable
+/-- Pull back a variety-germ-holomorphic scalar function along a differentiable
 chart whose image lies in the variety domain. -/
-theorem SourceVarietyHolomorphicOn.comp_differentiableOn_chart
+theorem SourceVarietyGermHolomorphicOn.comp_differentiableOn_chart
     (d n N : ℕ)
     {U : Set (Fin n → Fin n → ℂ)}
     {H : (Fin n → Fin n → ℂ) → ℂ}
     {D : Set (Fin N → ℂ)}
     {Γ : (Fin N → ℂ) → (Fin n → Fin n → ℂ)}
-    (hH : SourceVarietyHolomorphicOn d n H U)
+    (hH : SourceVarietyGermHolomorphicOn d n H U)
     (hΓU : Γ '' D ⊆ U)
+    (hΓvar : Γ '' D ⊆ sourceComplexGramVariety d n)
     (hΓdiff : DifferentiableOn ℂ Γ D) :
     DifferentiableOn ℂ (fun z => H (Γ z)) D := by
   intro z hzD
   have hΓzU : Γ z ∈ U := hΓU ⟨z, hzD, rfl⟩
   rcases hH (Γ z) hΓzU with
-    ⟨U0, hU0_open, hΓzU0, hHdiffU0, _hU0sub⟩
-  have hHat : DifferentiableAt ℂ H (Γ z) :=
-    (hHdiffU0 (Γ z) hΓzU0).differentiableAt
+    ⟨U0, H0, hU0_open, hΓzU0, hH0diffU0, hEq, _hU0sub⟩
+  have hH0at : DifferentiableAt ℂ H0 (Γ z) :=
+    (hH0diffU0 (Γ z) hΓzU0).differentiableAt
       (hU0_open.mem_nhds hΓzU0)
-  simpa [Function.comp_def] using
+  have hcomp :
+      DifferentiableWithinAt ℂ (fun z => H0 (Γ z)) D z := by
+    simpa [Function.comp_def] using
     DifferentiableAt.comp_differentiableWithinAt
-      (f := Γ) (g := H) (x := z) hHat (hΓdiff z hzD)
+      (f := Γ) (g := H0) (x := z) hH0at (hΓdiff z hzD)
+  have heq :
+      (fun z => H (Γ z)) =ᶠ[𝓝[D] z] (fun z => H0 (Γ z)) := by
+    have hΓU0_event :
+        ∀ᶠ y in 𝓝[D] z, Γ y ∈ U0 :=
+      (hΓdiff z hzD).continuousWithinAt.preimage_mem_nhdsWithin
+        (hU0_open.mem_nhds hΓzU0)
+    filter_upwards [hΓU0_event, self_mem_nhdsWithin] with y hyU0 hyD
+    exact hEq ⟨hyU0, hΓvar ⟨y, hyD, rfl⟩⟩
+  exact hcomp.congr_of_eventuallyEq_of_mem heq hzD
 
 /-- A local totally-real zero theorem on the source complex Gram variety:
 vanishing on a Hall-Wightman real environment gives a nonempty relatively open
@@ -312,7 +324,7 @@ theorem sourceVariety_localChart_totallyReal_zero
     {H : (Fin n → Fin n → ℂ) → ℂ}
     (hU_rel : IsRelOpenInSourceComplexGramVariety d n U)
     (hO_sub : ∀ G ∈ O, sourceRealGramComplexify n G ∈ U)
-    (hH : SourceVarietyHolomorphicOn d n H U)
+    (hH : SourceVarietyGermHolomorphicOn d n H U)
     (h_zero : ∀ G ∈ O, H (sourceRealGramComplexify n G) = 0) :
     ∃ W : Set (Fin n → Fin n → ℂ),
       IsRelOpenInSourceComplexGramVariety d n W ∧
@@ -375,8 +387,8 @@ theorem sourceVariety_localChart_totallyReal_zero
     exact hVreD q hq.1
   have hcoord_diff :
       DifferentiableOn ℂ (fun z => H (Γ z)) D :=
-    SourceVarietyHolomorphicOn.comp_differentiableOn_chart
-      d n N hH hΓU hΓdiff
+    SourceVarietyGermHolomorphicOn.comp_differentiableOn_chart
+      d n N hH hΓU hΓvar hΓdiff
   have hcoord_zero :
       ∀ q ∈ VreO, H (Γ (SCV.realToComplex q)) = 0 := by
     intro q hq

@@ -348,10 +348,35 @@ private theorem diffCoordFun_complexLorentzAction {m d : ℕ}
       BHW.complexLorentzAction Λ (BHW.diffCoordFun (m + 1) d z) := by
   ext k μ
   by_cases hk : k.val = 0
-  · simp [BHW.diffCoordFun, BHW.complexLorentzAction, hk]
-  · simp [BHW.diffCoordFun, BHW.complexLorentzAction, hk]
-    simp_rw [mul_sub]
-    rw [Finset.sum_sub_distrib]
+  · have hleft :
+        BHW.diffCoordFun (m + 1) d (BHW.complexLorentzAction Λ z) k μ =
+          BHW.complexLorentzVectorAction Λ (z k) μ := by
+      simp [BHW.diffCoordFun, BHW.complexLorentzAction, hk]
+    have hright :
+        BHW.complexLorentzAction Λ (BHW.diffCoordFun (m + 1) d z) k μ =
+          BHW.complexLorentzVectorAction Λ (z k) μ := by
+      have hcoord : BHW.diffCoordFun (m + 1) d z k = z k := by
+        ext ν
+        simp [BHW.diffCoordFun, hk]
+      simp [BHW.complexLorentzAction, hcoord]
+    rw [hleft, hright]
+  · have hleft :
+        BHW.diffCoordFun (m + 1) d (BHW.complexLorentzAction Λ z) k μ =
+          BHW.complexLorentzVectorAction Λ (z k) μ -
+            BHW.complexLorentzVectorAction Λ (z ⟨k.val - 1, by omega⟩) μ := by
+      simp [BHW.diffCoordFun, BHW.complexLorentzAction, hk]
+    have hright :
+        BHW.complexLorentzAction Λ (BHW.diffCoordFun (m + 1) d z) k μ =
+          BHW.complexLorentzVectorAction Λ (z k) μ -
+            BHW.complexLorentzVectorAction Λ (z ⟨k.val - 1, by omega⟩) μ := by
+      have hcoord :
+          BHW.diffCoordFun (m + 1) d z k =
+            fun ν => z k ν - z ⟨k.val - 1, by omega⟩ ν := by
+        ext ν
+        simp [BHW.diffCoordFun, hk]
+      simp [BHW.complexLorentzAction, hcoord, BHW.complexLorentzVectorAction,
+        mul_sub, Finset.sum_sub_distrib]
+    rw [hleft, hright]
 
 /-- Partial sums commute with the coordinatewise complex Lorentz action. -/
 private theorem partialSumFun_complexLorentzAction {m d : ℕ}
@@ -360,7 +385,8 @@ private theorem partialSumFun_complexLorentzAction {m d : ℕ}
     BHW.partialSumFun (m + 1) d (BHW.complexLorentzAction Λ ξ) =
       BHW.complexLorentzAction Λ (BHW.partialSumFun (m + 1) d ξ) := by
   ext k μ
-  simp [BHW.partialSumFun, BHW.complexLorentzAction, Finset.mul_sum]
+  simp [BHW.partialSumFun, BHW.complexLorentzAction, BHW.complexLorentzVectorAction,
+    Finset.mul_sum]
   rw [Finset.sum_comm]
 
 /-- Evaluate the BHW extension on a fixed-tail base fiber. -/
@@ -663,7 +689,8 @@ private theorem complexLorentzAction_convexCombo {m d : ℕ}
     a • BHW.complexLorentzAction Λ w₁ + b • BHW.complexLorentzAction Λ w₂ =
       BHW.complexLorentzAction Λ (a • w₁ + b • w₂) := by
   ext k μ
-  simp [BHW.complexLorentzAction, Pi.smul_apply, Complex.real_smul, Finset.mul_sum]
+  simp [BHW.complexLorentzAction, BHW.complexLorentzVectorAction,
+    Pi.smul_apply, Complex.real_smul, Finset.mul_sum]
   rw [← Finset.sum_add_distrib]
   apply Finset.sum_congr rfl
   intro x hx

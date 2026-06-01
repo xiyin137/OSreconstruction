@@ -136,7 +136,7 @@ private theorem extendF_perm_adjacent_eq_on_sector_overlap_hd2 [NeZero d]
           F (fun k μ => (x k μ : ℂ) + ε * (η k μ : ℂ) * Complex.I) * f x)
         (nhdsWithin 0 (Set.Ioi 0))
         (nhds (W n f)))
-    (hF_local_dist : IsLocallyCommutativeWeak d W)
+    (hF_local_dist : IsAdjacentLocallyCommutativeWeak d W)
     (hd2 : 2 ≤ d)
     (hFwd_conn : ∀ (i : Fin n) (hi : i.val + 1 < n),
       IsConnected (adjSwapForwardOverlapSet (d := d) n i hi))
@@ -231,7 +231,7 @@ private theorem extendF_perm_overlap_of_adjSwap_connected_and_chain_hd2 [NeZero 
           F (fun k μ => (x k μ : ℂ) + ε * (η k μ : ℂ) * Complex.I) * f x)
         (nhdsWithin 0 (Set.Ioi 0))
         (nhds (W n f)))
-    (hF_local_dist : IsLocallyCommutativeWeak d W)
+    (hF_local_dist : IsAdjacentLocallyCommutativeWeak d W)
     (hd2 : 2 ≤ d)
     (hFwd_conn : ∀ (i : Fin n) (hi : i.val + 1 < n),
       IsConnected (adjSwapForwardOverlapSet (d := d) n i hi))
@@ -293,7 +293,7 @@ private theorem extendF_perm_overlap_of_adjSwap_connected_and_midCond_hd2 [NeZer
           F (fun k μ => (x k μ : ℂ) + ε * (η k μ : ℂ) * Complex.I) * f x)
         (nhdsWithin 0 (Set.Ioi 0))
         (nhds (W n f)))
-    (hF_local_dist : IsLocallyCommutativeWeak d W)
+    (hF_local_dist : IsAdjacentLocallyCommutativeWeak d W)
     (hd2 : 2 ≤ d)
     (hFwd_conn : ∀ (i : Fin n) (hi : i.val + 1 < n),
       IsConnected (adjSwapForwardOverlapSet (d := d) n i hi))
@@ -910,9 +910,10 @@ private theorem permForwardOverlapSlice_convex
     trans (↑a * ∑ ν, Λ.val μ ν * (permAct (d := d) σ w₁) k ν +
         ↑b * ∑ ν, Λ.val μ ν * (permAct (d := d) σ w₂) k ν)
     · rw [Finset.mul_sum, Finset.mul_sum, ← Finset.sum_add_distrib]
-      congr 1
-      ext ν
-      ring
+      apply Finset.sum_congr rfl
+      intro ν _
+      simp only [permAct, Pi.add_apply, Pi.smul_apply, Complex.real_smul]
+      ring_nf
     · rfl
   rw [hlin]
   exact forwardTube_convex hw₁.2 hw₂.2 ha hb hab
@@ -1420,7 +1421,7 @@ private theorem areSpacelikeSeparated_of_jost_pair (x y : Fin (d + 1) → ℝ)
 private theorem distributional_perm_invariant_on_jost_support
     (n : ℕ)
     (W : (m : ℕ) → SchwartzNPoint d m → ℂ)
-    (hF_local_dist : IsLocallyCommutativeWeak d W)
+    (hF_local_dist : IsAdjacentLocallyCommutativeWeak d W)
     (f : SchwartzNPoint d n)
     (hf : ∀ x : NPointDomain d n, f x ≠ 0 → x ∈ JostSet d n)
     (σ : Equiv.Perm (Fin n)) :
@@ -1475,7 +1476,7 @@ private theorem extendF_perm_eq_on_realOpen_of_distributional_local_commutativit
           F (fun k μ => (x k μ : ℂ) + ε * (η k μ : ℂ) * Complex.I) * f x)
         (nhdsWithin 0 (Set.Ioi 0))
         (nhds (W n f)))
-    (hF_local_dist : IsLocallyCommutativeWeak d W)
+    (hF_local_dist : IsAdjacentLocallyCommutativeWeak d W)
     (σ : Equiv.Perm (Fin n))
     (V : Set (Fin n → Fin (d + 1) → ℝ))
     (hV_open : IsOpen V)
@@ -1631,7 +1632,7 @@ private theorem extendF_perm_overlap_of_jostWitness_and_forwardOverlapConnected 
           F (fun k μ => (x k μ : ℂ) + ε * (η k μ : ℂ) * Complex.I) * f x)
         (nhdsWithin 0 (Set.Ioi 0))
         (nhds (W n f)))
-    (hF_local_dist : IsLocallyCommutativeWeak d W)
+    (hF_local_dist : IsAdjacentLocallyCommutativeWeak d W)
     (σ : Equiv.Perm (Fin n))
     (hJostWitness :
       ∃ x : Fin n → Fin (d + 1) → ℝ,
@@ -1707,7 +1708,7 @@ private theorem extendF_perm_overlap_of_jostWitness_and_indexConnected
           F (fun k μ => (x k μ : ℂ) + ε * (η k μ : ℂ) * Complex.I) * f x)
         (nhdsWithin 0 (Set.Ioi 0))
         (nhds (W n f)))
-    (hF_local_dist : IsLocallyCommutativeWeak d W)
+    (hF_local_dist : IsAdjacentLocallyCommutativeWeak d W)
     (σ : Equiv.Perm (Fin n))
     (hJostWitness :
       ∃ x : Fin n → Fin (d + 1) → ℝ,
@@ -1745,7 +1746,7 @@ private theorem extendF_perm_overlap_of_jostSet_and_forwardOverlapConnected
           F (fun k μ => (x k μ : ℂ) + ε * (η k μ : ℂ) * Complex.I) * f x)
         (nhdsWithin 0 (Set.Ioi 0))
         (nhds (W n f)))
-    (hF_local_dist : IsLocallyCommutativeWeak d W)
+    (hF_local_dist : IsAdjacentLocallyCommutativeWeak d W)
     (hd : 1 ≤ d) (hn : 1 ≤ n)
     (σ : Equiv.Perm (Fin n))
     (hJostET : ∀ x : Fin n → Fin (d + 1) → ℝ, x ∈ JostSet d n →
@@ -1794,7 +1795,7 @@ private theorem extendF_perm_overlap_of_jostWitness_and_real_double_coset_genera
           F (fun k μ => (x k μ : ℂ) + ε * (η k μ : ℂ) * Complex.I) * f x)
         (nhdsWithin 0 (Set.Ioi 0))
         (nhds (W n f)))
-    (hF_local_dist : IsLocallyCommutativeWeak d W)
+    (hF_local_dist : IsAdjacentLocallyCommutativeWeak d W)
     (σ : Equiv.Perm (Fin n))
     (hJostWitness :
       ∃ x : Fin n → Fin (d + 1) → ℝ,
@@ -1835,7 +1836,7 @@ private theorem extendF_perm_overlap_of_jostWitness_and_real_double_coset_genera
           F (fun k μ => (x k μ : ℂ) + ε * (η k μ : ℂ) * Complex.I) * f x)
         (nhdsWithin 0 (Set.Ioi 0))
         (nhds (W n f)))
-    (hF_local_dist : IsLocallyCommutativeWeak d W)
+    (hF_local_dist : IsAdjacentLocallyCommutativeWeak d W)
     (σ : Equiv.Perm (Fin n))
     (hJostWitness :
       ∃ x : Fin n → Fin (d + 1) → ℝ,
@@ -1874,7 +1875,7 @@ private theorem extendF_perm_overlap_of_jostSet_and_real_double_coset_generation
           F (fun k μ => (x k μ : ℂ) + ε * (η k μ : ℂ) * Complex.I) * f x)
         (nhdsWithin 0 (Set.Ioi 0))
         (nhds (W n f)))
-    (hF_local_dist : IsLocallyCommutativeWeak d W)
+    (hF_local_dist : IsAdjacentLocallyCommutativeWeak d W)
     (hd : 1 ≤ d) (hn : 1 ≤ n)
     (σ : Equiv.Perm (Fin n))
     (hJostET : ∀ x : Fin n → Fin (d + 1) → ℝ, x ∈ JostSet d n →
@@ -2010,7 +2011,8 @@ private theorem permutation_extension_from_invariance (n : ℕ)
         have hcond :
             complexLorentzAction Λ⁻¹
               (fun k => (complexLorentzAction Λ z) (σ k)) ∈ ForwardTube d n := by
-          simpa [hrewrite] using hzσFT
+          rw [hrewrite]
+          exact hzσFT
         have hstep :
             F (complexLorentzAction Λ⁻¹
               (fun k => (complexLorentzAction Λ z) (σ k))) =
@@ -2020,7 +2022,8 @@ private theorem permutation_extension_from_invariance (n : ℕ)
         have hleft : F_σ (complexLorentzAction Λ z) = F (complexLorentzAction Λ z) := by
           simp [F_σ, hΛzFT]
         have hstep' : F (fun k => z (σ k)) = F (complexLorentzAction Λ z) := by
-          simpa [hrewrite] using hstep
+          rw [hrewrite] at hstep
+          exact hstep
         exact hleft.trans (hstep'.symm.trans hright.symm)
       · have hzσFT : (fun k => z (σ k)) ∈ ForwardTube d n := by
           simpa [σFT] using hzσ
@@ -2506,7 +2509,7 @@ private theorem iterated_eow_permutation_extension [NeZero d] (n : ℕ)
           F (fun k μ => (x k μ : ℂ) + ε * (η k μ : ℂ) * Complex.I) * f x)
         (nhdsWithin 0 (Set.Ioi 0))
         (nhds (W n f)))
-    (hF_local_dist : IsLocallyCommutativeWeak d W)
+    (hF_local_dist : IsAdjacentLocallyCommutativeWeak d W)
     (σ : Equiv.Perm (Fin n)) :
     ∃ (U_σ : Set (Fin n → Fin (d + 1) → ℂ))
       (F_σ : (Fin n → Fin (d + 1) → ℂ) → ℂ),
@@ -2643,7 +2646,7 @@ private theorem permInvariance_of_extendF_overlap [NeZero d] (n : ℕ)
           F (fun k μ => (x k μ : ℂ) + ε * (η k μ : ℂ) * Complex.I) * f x)
         (nhdsWithin 0 (Set.Ioi 0))
         (nhds (W n f)))
-    (hF_local_dist : IsLocallyCommutativeWeak d W)
+    (hF_local_dist : IsAdjacentLocallyCommutativeWeak d W)
     (τ : Equiv.Perm (Fin n))
     (hExtPerm :
       ∀ (z : Fin n → Fin (d + 1) → ℂ),
@@ -2685,7 +2688,7 @@ private theorem eow_chain_adj_swap [NeZero d] (n : ℕ)
           F (fun k μ => (x k μ : ℂ) + ε * (η k μ : ℂ) * Complex.I) * f x)
         (nhdsWithin 0 (Set.Ioi 0))
         (nhds (W n f)))
-    (hF_local_dist : IsLocallyCommutativeWeak d W)
+    (hF_local_dist : IsAdjacentLocallyCommutativeWeak d W)
     (σ₀ : Equiv.Perm (Fin n)) (i₀ : Fin n) (hi₀ : i₀.val + 1 < n)
     (_ih_σ : ∀ (w : Fin n → Fin (d + 1) → ℂ), w ∈ ForwardTube d n →
       ∀ (Γ : ComplexLorentzGroup d),
@@ -2720,7 +2723,7 @@ private theorem F_permutation_invariance [NeZero d] (n : ℕ)
           F (fun k μ => (x k μ : ℂ) + ε * (η k μ : ℂ) * Complex.I) * f x)
         (nhdsWithin 0 (Set.Ioi 0))
         (nhds (W n f)))
-    (hF_local_dist : IsLocallyCommutativeWeak d W)
+    (hF_local_dist : IsAdjacentLocallyCommutativeWeak d W)
     {w : Fin n → Fin (d + 1) → ℂ} (hw : w ∈ ForwardTube d n)
     {τ : Equiv.Perm (Fin n)} {Γ : ComplexLorentzGroup d}
     (h : complexLorentzAction Γ (fun k => w (τ k)) ∈ ForwardTube d n) :
@@ -2784,7 +2787,7 @@ private theorem fullExtendF_well_defined [NeZero d] (n : ℕ)
           F (fun k μ => (x k μ : ℂ) + ε * (η k μ : ℂ) * Complex.I) * f x)
         (nhdsWithin 0 (Set.Ioi 0))
         (nhds (W n f)))
-    (hF_local_dist : IsLocallyCommutativeWeak d W)
+    (hF_local_dist : IsAdjacentLocallyCommutativeWeak d W)
     {w₁ w₂ : Fin n → Fin (d + 1) → ℂ}
     (hw₁ : w₁ ∈ ForwardTube d n) (hw₂ : w₂ ∈ ForwardTube d n)
     {π₁ π₂ : Equiv.Perm (Fin n)} {Λ₁ Λ₂ : ComplexLorentzGroup d}
@@ -2825,7 +2828,7 @@ theorem bargmann_hall_wightman_theorem [NeZero d] (n : ℕ)
           F (fun k μ => (x k μ : ℂ) + ε * (η k μ : ℂ) * Complex.I) * f x)
         (nhdsWithin 0 (Set.Ioi 0))
         (nhds (W n f)))
-    (hF_local_dist : IsLocallyCommutativeWeak d W) :
+    (hF_local_dist : IsAdjacentLocallyCommutativeWeak d W) :
     ∃ (F_ext : (Fin n → Fin (d + 1) → ℂ) → ℂ),
       -- F_ext is holomorphic on the permuted extended tube
       DifferentiableOn ℂ F_ext (PermutedExtendedTube d n) ∧

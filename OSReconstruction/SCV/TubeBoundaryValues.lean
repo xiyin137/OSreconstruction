@@ -762,4 +762,118 @@ axiom tube_boundaryValueData_of_polyGrowth
           (nhdsWithin 0 (Set.Ioi 0))
           (nhds (W φ))
 
+/-- Moving-test boundary-value upgrade for a fixed already-selected boundary
+functional.
+
+This is the form to use when a surrounding development has already fixed the
+boundary distribution (for example `bvt_W`).  The fixed-test convergence
+identifies that selected `W`; the proof exposes the same private slice-CLM
+family and Banach-Steinhaus step used in the tube-boundary-value construction,
+so no new boundary functional is chosen. -/
+theorem tube_boundaryValueData_moving_of_fixed
+    {n d : ℕ}
+    (C : Set (Fin n → Fin (d + 1) → ℝ))
+    (hC_cone : IsCone C)
+    {F : (Fin n → Fin (d + 1) → ℂ) → ℂ}
+    (hF_hol : DifferentiableOn ℂ F (TubeDomainSetPi C))
+    (C_bd : ℝ) (N : ℕ) (hC : 0 < C_bd)
+    (hF_growth : ∀ z ∈ TubeDomainSetPi C,
+      ‖F z‖ ≤ C_bd * (1 + ‖z‖) ^ N)
+    (W : SchwartzMap (Fin n → Fin (d + 1) → ℝ) ℂ →L[ℂ] ℂ)
+    (hW_fixed :
+      ∀ (φ : SchwartzMap (Fin n → Fin (d + 1) → ℝ) ℂ)
+        (η : Fin n → Fin (d + 1) → ℝ),
+        η ∈ C →
+        Filter.Tendsto
+          (fun ε : ℝ => ∫ x : Fin n → Fin (d + 1) → ℝ,
+            F (fun k μ => ↑(x k μ) + (ε : ℂ) * ↑(η k μ) * Complex.I) * φ x)
+          (nhdsWithin 0 (Set.Ioi 0))
+          (nhds (W φ)))
+    (η : Fin n → Fin (d + 1) → ℝ) (hη : η ∈ C)
+    {α : Type*} {l : Filter α} [l.IsCountablyGenerated]
+    (εseq : α → ℝ)
+    (hεseq : Filter.Tendsto εseq l (nhdsWithin 0 (Set.Ioi 0)))
+    {φseq : α → SchwartzMap (Fin n → Fin (d + 1) → ℝ) ℂ}
+    {φ0 : SchwartzMap (Fin n → Fin (d + 1) → ℝ) ℂ}
+    (hφseq : Filter.Tendsto φseq l (nhds φ0)) :
+    Filter.Tendsto
+      (fun a : α => ∫ x : Fin n → Fin (d + 1) → ℝ,
+        F (fun k μ =>
+          ↑(x k μ) + (εseq a : ℂ) * ↑(η k μ) * Complex.I) *
+          φseq a x)
+      l
+      (nhds (W φ0)) := by
+  classical
+  let restrictCLMReal :
+      (SchwartzMap (Fin n → Fin (d + 1) → ℝ) ℂ →L[ℂ] ℂ) →
+        SchwartzMap (Fin n → Fin (d + 1) → ℝ) ℂ →L[ℝ] ℂ := fun L =>
+    { toLinearMap :=
+        { toFun := fun φ => L φ
+          map_add' := by
+            intro φ ψ
+            exact L.map_add φ ψ
+          map_smul' := by
+            intro r φ
+            simpa [Complex.real_smul] using L.map_smul (r : ℂ) φ }
+      cont := L.continuous }
+  let Tseq : ℝ →
+      SchwartzMap (Fin n → Fin (d + 1) → ℝ) ℂ →L[ℝ] ℂ := fun ε =>
+    if hε : 0 < ε then
+      restrictCLMReal
+        (tubeSliceIntegralCLM_of_polyGrowth C hC_cone hF_hol
+          C_bd N hC hF_growth η hη ε hε)
+    else 0
+  have hTseq_fixed :
+      ∀ ψ : SchwartzMap (Fin n → Fin (d + 1) → ℝ) ℂ,
+        Filter.Tendsto (fun ε : ℝ => Tseq ε ψ)
+          (nhdsWithin 0 (Set.Ioi 0))
+          (nhds (restrictCLMReal W ψ)) := by
+    intro ψ
+    refine Filter.Tendsto.congr' ?_ (hW_fixed ψ η hη)
+    filter_upwards [self_mem_nhdsWithin] with ε hε_pos
+    have hε_pos' : 0 < ε := hε_pos
+    dsimp [Tseq]
+    rw [dif_pos hε_pos']
+    change
+      (∫ x : Fin n → Fin (d + 1) → ℝ,
+        F (fun k μ => ↑(x k μ) + (ε : ℂ) * ↑(η k μ) * Complex.I) * ψ x) =
+      (tubeSliceIntegralCLM_of_polyGrowth C hC_cone hF_hol
+        C_bd N hC hF_growth η hη ε hε_pos') ψ
+    rw [tubeSliceIntegralCLM_of_polyGrowth_apply]
+    apply integral_congr_ae
+    filter_upwards with x
+    congr 1
+    norm_num [Complex.ofReal_mul]
+  have hTseq_comp :
+      ∀ ψ : SchwartzMap (Fin n → Fin (d + 1) → ℝ) ℂ,
+        Filter.Tendsto (fun a : α => Tseq (εseq a) ψ)
+          l (nhds (restrictCLMReal W ψ)) := by
+    intro ψ
+    exact (hTseq_fixed ψ).comp hεseq
+  have hmoving :
+      Filter.Tendsto
+        (fun a : α => Tseq (εseq a) (φseq a))
+        l (nhds (restrictCLMReal W φ0)) :=
+    SchwartzMap.tempered_apply_tendsto_of_tendsto_filter
+      (T := fun a : α => Tseq (εseq a))
+      (S := restrictCLMReal W) hTseq_comp hφseq
+  refine Filter.Tendsto.congr' ?_ hmoving
+  have hpos_event : ∀ᶠ a in l, 0 < εseq a :=
+    hεseq.eventually self_mem_nhdsWithin
+  filter_upwards [hpos_event] with a hε_pos
+  dsimp [Tseq]
+  rw [dif_pos hε_pos]
+  change
+    (tubeSliceIntegralCLM_of_polyGrowth C hC_cone hF_hol
+      C_bd N hC hF_growth η hη (εseq a) hε_pos) (φseq a) =
+    ∫ x : Fin n → Fin (d + 1) → ℝ,
+      F (fun k μ =>
+        ↑(x k μ) + (εseq a : ℂ) * ↑(η k μ) * Complex.I) *
+        φseq a x
+  rw [tubeSliceIntegralCLM_of_polyGrowth_apply]
+  apply integral_congr_ae
+  filter_upwards with x
+  congr 1
+  norm_num [Complex.ofReal_mul]
+
 end SCV

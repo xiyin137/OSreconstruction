@@ -351,6 +351,29 @@ theorem extendF_preimage_eq (n : ℕ) (F : (Fin n → Fin (d + 1) → ℂ) → �
   have := complex_lorentz_invariance n F hF_holo hF_real_inv (Λ₂⁻¹ * Λ₁) w₁ hw₁ (hrel ▸ hw₂)
   rw [hrel] at this; exact this.symm
 
+/-- Any two forward-tube preimages of the same extended-tube point give the
+same value when direct complex-Lorentz invariance on the forward tube is
+already available.  This is the `hF_cinv` version of
+`extendF_preimage_eq`; it is used by source-descent branch-law proofs so they
+do not have to rederive complex invariance from real Lorentz invariance. -/
+theorem extendF_preimage_eq_of_cinv (n : ℕ)
+    (F : (Fin n → Fin (d + 1) → ℂ) → ℂ)
+    (hF_cinv :
+      ∀ (Λ : ComplexLorentzGroup d) (z : Fin n → Fin (d + 1) → ℂ),
+        z ∈ ForwardTube d n → complexLorentzAction Λ z ∈ ForwardTube d n →
+        F (complexLorentzAction Λ z) = F z)
+    {w₁ w₂ : Fin n → Fin (d + 1) → ℂ}
+    (hw₁ : w₁ ∈ ForwardTube d n) (hw₂ : w₂ ∈ ForwardTube d n)
+    {Λ₁ Λ₂ : ComplexLorentzGroup d}
+    (h : complexLorentzAction Λ₁ w₁ = complexLorentzAction Λ₂ w₂) :
+    F w₁ = F w₂ := by
+  have hrel : complexLorentzAction (Λ₂⁻¹ * Λ₁) w₁ = w₂ := by
+    have := congr_arg (complexLorentzAction Λ₂⁻¹) h
+    rwa [← complexLorentzAction_mul, complexLorentzAction_inv] at this
+  have hcinv := hF_cinv (Λ₂⁻¹ * Λ₁) w₁ hw₁ (hrel ▸ hw₂)
+  rw [hrel] at hcinv
+  exact hcinv.symm
+
 /-- `extendF` is invariant under complex Lorentz transformations on the extended tube. -/
 theorem extendF_complex_lorentz_invariant (n : ℕ) (F : (Fin n → Fin (d + 1) → ℂ) → ℂ)
     (hF_holo : DifferentiableOn ℂ F (ForwardTube d n))
@@ -381,6 +404,38 @@ theorem extendF_complex_lorentz_invariant (n : ℕ) (F : (Fin n → Fin (d + 1) 
   -- Λ₃·hex_Λz.choose = Λ·z = Λ·(Λ₂·hex_z.choose) = (Λ*Λ₂)·hex_z.choose
   -- By extendF_preimage_eq, F values agree.
   exact extendF_preimage_eq n F hF_holo hF_real_inv hw_Λz hw_z
+    (hΛz_eq.symm.trans ((congr_arg (complexLorentzAction Λ) hz_eq).trans
+      (complexLorentzAction_mul Λ Λ₂ hex_z.choose).symm))
+
+/-- Direct complex-Lorentz invariance of `extendF` on the extended tube.
+
+This version consumes the already-upgraded forward-tube complex invariance
+hypothesis directly.  It is the lower support bridge used by the
+Hall-Wightman source branch-law route; it does not use PET, EOW, locality, or
+any scalar-representative data. -/
+theorem extendF_complexLorentzInvariant_of_cinv (n : ℕ)
+    (F : (Fin n → Fin (d + 1) → ℂ) → ℂ)
+    (hF_cinv :
+      ∀ (Λ : ComplexLorentzGroup d) (z : Fin n → Fin (d + 1) → ℂ),
+        z ∈ ForwardTube d n → complexLorentzAction Λ z ∈ ForwardTube d n →
+        F (complexLorentzAction Λ z) = F z)
+    (Λ : ComplexLorentzGroup d) (z : Fin n → Fin (d + 1) → ℂ)
+    (hz : z ∈ ExtendedTube d n) :
+    extendF F (complexLorentzAction Λ z) = extendF F z := by
+  obtain ⟨Λ₀, w₀, hw₀, hzw₀⟩ := Set.mem_iUnion.mp hz
+  simp only [extendF]
+  have hex_z : ∃ (w : Fin n → Fin (d + 1) → ℂ),
+      w ∈ ForwardTube d n ∧ ∃ (Λ' : ComplexLorentzGroup d),
+        z = complexLorentzAction Λ' w :=
+    ⟨w₀, hw₀, Λ₀, hzw₀⟩
+  have hex_Λz : ∃ (w : Fin n → Fin (d + 1) → ℂ),
+      w ∈ ForwardTube d n ∧ ∃ (Λ' : ComplexLorentzGroup d),
+        complexLorentzAction Λ z = complexLorentzAction Λ' w :=
+    ⟨w₀, hw₀, Λ * Λ₀, by rw [hzw₀, complexLorentzAction_mul]⟩
+  rw [dif_pos hex_Λz, dif_pos hex_z]
+  obtain ⟨hw_Λz, Λ₃, hΛz_eq⟩ := hex_Λz.choose_spec
+  obtain ⟨hw_z, Λ₂, hz_eq⟩ := hex_z.choose_spec
+  exact extendF_preimage_eq_of_cinv n F hF_cinv hw_Λz hw_z
     (hΛz_eq.symm.trans ((congr_arg (complexLorentzAction Λ) hz_eq).trans
       (complexLorentzAction_mul Λ Λ₂ hex_z.choose).symm))
 

@@ -253,6 +253,25 @@ theorem identity_theorem_product {n m : ℕ}
     (fun _ hz => analyticAt_of_differentiableOn_product hU hg hz)
     hconn.isPreconnected hz₀ hagree)
 
+/-- Product-indexed SCV identity theorem from a nonempty open seed.
+
+This is the form used by local analytic-continuation galleries: once two
+holomorphic branches agree on a complex-open seed inside a connected product
+domain, the equality propagates to the full domain. -/
+theorem identity_theorem_product_of_eqOn_open {n m : ℕ}
+    {U W : Set (Fin n → Fin m → ℂ)} (hU : IsOpen U) (hconn : IsConnected U)
+    (hW : IsOpen W) (hne : W.Nonempty) (hWU : W ⊆ U)
+    {f g : (Fin n → Fin m → ℂ) → ℂ}
+    (hf : DifferentiableOn ℂ f U) (hg : DifferentiableOn ℂ g U)
+    (hagree : Set.EqOn f g W) :
+    Set.EqOn f g U := by
+  rcases hne with ⟨z₀, hz₀W⟩
+  have hz₀U : z₀ ∈ U := hWU hz₀W
+  have hlocal : f =ᶠ[nhds z₀] g := by
+    rw [Filter.eventuallyEq_iff_exists_mem]
+    exact ⟨W, hW.mem_nhds hz₀W, hagree⟩
+  exact identity_theorem_product hU hconn hf hg hz₀U hlocal
+
 /-! ### Osgood's lemma for product-indexed domains -/
 
 /-- **Osgood's Lemma for product-indexed domains**: A continuous function

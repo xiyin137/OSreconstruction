@@ -368,6 +368,111 @@ theorem tube_holomorphic_unique_from_bv {n d : ℕ}
   have h0 := hHflat_zero (e z) (hmem_flat z hz)
   change F (e.symm (e z)) - G (e.symm (e z)) = 0 at h0
   rwa [e.symm_apply_apply, sub_eq_zero] at h0
+
+/-- Flat tube-holomorphic uniqueness from equal tempered boundary-value
+packages.
+
+This is the direct Vladimirov uniqueness mechanism needed at the OS45/BHW
+interface: once two holomorphic tube branches carry tempered boundary-value
+packages whose boundary distributions agree, and their interior slices are
+integrable against Schwartz tests, the branches agree throughout the common
+tube.  The OS-facing work is therefore reduced to producing the two tempered
+packages and proving equality of their boundary distributions. -/
+theorem tube_holomorphic_unique_from_equal_tempered_bv_flat {m : ℕ}
+    {C : Set (Fin m → ℝ)}
+    (hC_open : IsOpen C) (hC_conv : Convex ℝ C) (hC_ne : C.Nonempty)
+    (hC_cone : ∀ (t : ℝ), 0 < t → ∀ y ∈ C, t • y ∈ C)
+    {F G : (Fin m → ℂ) → ℂ}
+    (hF_holo : DifferentiableOn ℂ F (SCV.TubeDomain C))
+    (hG_holo : DifferentiableOn ℂ G (SCV.TubeDomain C))
+    (hTF : SCV.HasFourierLaplaceReprTempered C F)
+    (hTG : SCV.HasFourierLaplaceReprTempered C G)
+    (hdist : ∀ φ : SchwartzMap (Fin m → ℝ) ℂ,
+      hTF.dist φ = hTG.dist φ)
+    (hF_int : ∀ y ∈ C, ∀ ψ : SchwartzMap (Fin m → ℝ) ℂ,
+      MeasureTheory.Integrable (fun x : Fin m → ℝ =>
+        F (fun i => (x i : ℂ) + (y i : ℂ) * Complex.I) * ψ x))
+    (hG_int : ∀ y ∈ C, ∀ ψ : SchwartzMap (Fin m → ℝ) ℂ,
+      MeasureTheory.Integrable (fun x : Fin m → ℝ =>
+        G (fun i => (x i : ℂ) + (y i : ℂ) * Complex.I) * ψ x)) :
+    Set.EqOn F G (SCV.TubeDomain C) := by
+  classical
+  let H : (Fin m → ℂ) → ℂ := fun z => F z - G z
+  have hH_holo : DifferentiableOn ℂ H (SCV.TubeDomain C) := by
+    simpa [H] using hF_holo.sub hG_holo
+  have hH_int :
+      ∀ y ∈ C, ∀ ψ : SchwartzMap (Fin m → ℝ) ℂ,
+        MeasureTheory.Integrable (fun x : Fin m → ℝ =>
+          H (fun i => (x i : ℂ) + (y i : ℂ) * Complex.I) * ψ x) := by
+    intro y hy ψ
+    have hFi := hF_int y hy ψ
+    have hGi := hG_int y hy ψ
+    exact (hFi.sub hGi).congr
+      (Filter.Eventually.of_forall fun x => by
+        simp [H, sub_mul])
+  have hH_bv_zero :
+      ∀ (φ : SchwartzMap (Fin m → ℝ) ℂ) (η : Fin m → ℝ), η ∈ C →
+        Filter.Tendsto
+          (fun ε : ℝ => ∫ x : Fin m → ℝ,
+            H (fun i => (x i : ℂ) + ε * (η i : ℂ) * Complex.I) * φ x)
+          (nhdsWithin 0 (Set.Ioi 0)) (nhds 0) := by
+    intro φ η hη
+    have hF_bv := hTF.boundary_value φ η hη
+    have hG_bv := hTG.boundary_value φ η hη
+    have hdiff :
+        Filter.Tendsto
+          (fun ε : ℝ =>
+            (∫ x : Fin m → ℝ,
+              F (fun i => (x i : ℂ) + ε * (η i : ℂ) * Complex.I) * φ x) -
+            ∫ x : Fin m → ℝ,
+              G (fun i => (x i : ℂ) + ε * (η i : ℂ) * Complex.I) * φ x)
+          (nhdsWithin 0 (Set.Ioi 0)) (nhds 0) := by
+      simpa [hdist φ] using hF_bv.sub hG_bv
+    refine hdiff.congr' ?_
+    filter_upwards [self_mem_nhdsWithin] with ε hε
+    have hε_pos : 0 < ε := hε
+    have hεη : ε • η ∈ C := hC_cone ε hε_pos η hη
+    have hFi := hF_int (ε • η) hεη φ
+    have hGi := hG_int (ε • η) hεη φ
+    have hFi' :
+        MeasureTheory.Integrable (fun x : Fin m → ℝ =>
+          F (fun i => (x i : ℂ) + ε * (η i : ℂ) * Complex.I) * φ x) := by
+      convert hFi using 1
+      ext x
+      congr 2
+      ext i
+      simp [Pi.smul_apply, smul_eq_mul, mul_assoc]
+    have hGi' :
+        MeasureTheory.Integrable (fun x : Fin m → ℝ =>
+          G (fun i => (x i : ℂ) + ε * (η i : ℂ) * Complex.I) * φ x) := by
+      convert hGi using 1
+      ext x
+      congr 2
+      ext i
+      simp [Pi.smul_apply, smul_eq_mul, mul_assoc]
+    calc
+      (∫ x : Fin m → ℝ,
+          F (fun i => (x i : ℂ) + ε * (η i : ℂ) * Complex.I) * φ x) -
+          ∫ x : Fin m → ℝ,
+            G (fun i => (x i : ℂ) + ε * (η i : ℂ) * Complex.I) * φ x =
+        ∫ x : Fin m → ℝ,
+          F (fun i => (x i : ℂ) + ε * (η i : ℂ) * Complex.I) * φ x -
+            G (fun i => (x i : ℂ) + ε * (η i : ℂ) * Complex.I) * φ x := by
+          exact (MeasureTheory.integral_sub hFi' hGi').symm
+      _ = ∫ x : Fin m → ℝ,
+          H (fun i => (x i : ℂ) + ε * (η i : ℂ) * Complex.I) * φ x := by
+          refine MeasureTheory.integral_congr_ae
+            (Filter.Eventually.of_forall ?_)
+          intro x
+          simp [H, sub_mul]
+  have hzero :=
+    SCV.distributional_uniqueness_tube_of_zero_bv
+      hC_open hC_conv hC_ne hC_cone hH_holo hH_int hH_bv_zero
+  intro z hz
+  have h := hzero z hz
+  change F z - G z = 0 at h
+  exact sub_eq_zero.mp h
+
 /-! ### Fourier-Laplace representation axiom -/
 
 /-- **Fourier-Laplace representation theorem.**

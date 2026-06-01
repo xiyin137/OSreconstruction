@@ -343,9 +343,50 @@ boundary values beyond compactly supported tests in `E`; and
 `SCV.localEOWSliceCLMs_from_preparedDomains` applies that package to the
 prepared affine real-window domains.  The one-chart implementation target
 `SCV.chartDistributionalEOW_local_envelope` is now checked in
-`SCV/LocalEOWDistributionalEnvelope.lean`; the next SCV targets are the
-affine transport theorem `chartDistributionalEOW_transport_originalCoords`
-and then the local chart-cover patching theorem.  Do not
+`SCV/LocalEOWDistributionalEnvelope.lean`.  For theorem 2 Slot 1, this checked
+one-chart theorem is the active SCV endpoint.  The OS45 proof no longer tries
+to instantiate it at the equal-time adjacent Jost center.  That equal-time
+attempt is retired because a horizontal common-chart point `y + i v` pulls back
+through the quarter-turn with ACR-one time-imaginary sign `y + v` on the plus
+branch and the corresponding `y - v` sign on the negative branch, so openness
+at `y = 0` does not give the standard `hlocal_wedge` hypothesis.
+
+The active OS45 consumer instead first chooses the ordered identity-sector
+perturbation and works at that ordered horizontal common edge.  The formerly
+documented shortcut claiming that both horizontal branch arguments are honest
+forward-tube points is rejected: the identity branch is forward, but the
+adjacent-swapped branch reverses the relevant time-imaginary gap under the
+repo convention `permAct σ z = fun k => z (σ k)`.  Thus
+`Hplus = Hminus` on the horizontal edge cannot be obtained by two direct uses
+of `BHW.extendF_eq_on_forwardTube`.  The
+identity-order selector is now checked as
+`BHW.choose_os45_identity_real_open_edge_for_adjacent_swap`, and the same-patch
+trace/geometry package is checked as
+`BHW.os45_adjacent_identity_localEOWGeometry`.  The
+next OS45-side proof-doc task is to replace the false pointwise
+common-boundary shortcut with the genuine branchwise horizontal ACR/BHW
+common-boundary theorem surface.  In the one-chart call, the common
+distribution is `Tdiff = Tτ - Tid`, the difference of the two branchwise
+horizontal-edge CLMs; it is not assumed zero and is not the final real-edge
+locality distribution.  The branchwise CLMs must be produced before any global
+PET branch theorem is used: `Tid` and `Tτ` are full CLMs produced by the OS45
+branchwise distributional boundary-value theorem for the selected ordered
+branch and the relabelled ordered patch `x ∘ τ`, and the OS45 reindexing lemma
+puts those two ordinary branches on the same quarter-turn chart edge.  The
+zero-diagonal Schwinger/E3 checks identify their compact Jost-supported
+Euclidean restrictions, but they do not define the full CLMs.  These CLMs are
+also not direct pullbacks of the final physical real-time `bvt_W`, because the
+OS45 horizontal edge is real only in the quarter-turn chart.  This is the
+theorem-2-specific OS45 input to the checked SCV theorem, not a new SCV
+recovery axiom and not the later Hall-Wightman source theorem.
+Only then should the ordered horizontal-edge local wedge, boundary-value input
+to `chartDistributionalEOW_local_envelope`, and side-component gluing be
+implemented.  Thus the remaining work is OS45-side geometry/common-boundary
+and gluing, not more SCV recovery infrastructure.
+The future SCV targets `chartDistributionalEOW_transport_originalCoords` and
+the local chart-cover patching theorem remain useful for a global local EOW
+package, but they are not checked inputs and must not be cited as such in the
+current OS45 single-chart implementation.  Do not
 instantiate any slice limit on the whole ambient cone `C` from the
 uniform-on-compact OS-II boundary hypothesis; the Lean route first shrinks to
 a conic neighborhood whose projective base has compact closure inside `C`, and
@@ -479,12 +520,13 @@ Source ledger for the internal helper list:
 | `positive_dimension_of_nonempty_not_zero` | Checked in `SCV/LocalEOWFixedBasis.lean`: finite-dimensional sanity lemma for the final local theorem.  If `C.Nonempty` and `(0 : Fin m -> ℝ) ∉ C`, then `0 < m`; for `m = 0` every vector `Fin 0 -> ℝ` is definitionally equal to zero, contradicting the two hypotheses.  This lets the final theorem keep the natural OS-II cone hypotheses instead of adding an extra dimension assumption. |
 | `localWedge_truncated_maps_compact_subcone` | Direct compact-set use of the local wedge hypothesis. |
 | global cone-basis choice | Use the existing checked theorem `open_set_contains_basis` in `SCV/EOWMultiDim.lean` directly after deriving `hm : 0 < m`; do not add a production wrapper just to rename it.  For the final patched theorem this basis must be chosen once globally from `C`, not separately for each edge point; using one fixed linear part is what makes overlap side seeds compatible. |
+| `open_convex_cone_basis_with_positive_sum` | Needed for the theorem-2 OS45 single-chart instantiation, not for the already checked one-chart theorem.  Given `0 < m`, an open convex cone `C`, and a direction `η0 ∈ C`, choose basis vectors `ys j ∈ C` with `LinearIndependent ℝ ys` and `∑ j, ys j = η0`.  The proof is finite-dimensional: take a small affinely independent simplex around `η0 / m` inside `C`, with barycenter `η0 / m`, and scale the vertices by `m`.  In the active ordered-edge route this makes the OS45 half-time seed ray strict-positive in chart coordinates.  The theorem-2 gluing step uses the resulting chart-coordinate orthants for its side components; it should not switch to a broad original-coordinate sign cut after the one-chart theorem has returned strict coordinate side balls. |
 | `cone_positive_combination_mem` | Checked in `SCV/LocalEOWFixedBasis.lean`: convex-cone bookkeeping.  If `ys j ∈ C` and all coefficients are nonnegative with positive sum, normalize the coefficients to a convex combination in `C`, then rescale by the positive sum using `hC_cone`.  The checked simplex lemmas use the normalized version; this helper is the unnormalized form used when rewriting positive chart-imaginary directions. |
 | `localEOWCoefficientSimplex`, `localEOWSimplexDirections`, `isCompact_localEOWCoefficientSimplex`, `isCompact_localEOWSimplexDirections`, `localEOWSimplexDirections_subset_cone`, `localEOW_positive_imag_normalized_mem_simplex` | Checked in `SCV/LocalContinuousEOW.lean`: compact closed coefficient simplex, compact image under the finite-dimensional chart-direction map, convex-combination inclusion in the cone, and normalization of positive imaginary chart directions. |
 | `zero_not_mem_localEOWSimplexDirections`, `tendsto_neg_nhdsWithin_zero_neg_image`, `localEOWSideDirectionWindow_subset_closure`, `isCompact_localEOWSideDirectionClosure`, `localEOWSimplexDirections_subset_sideDirectionWindow`, `exists_localEOWSideCone_radius`, `isOpen_localEOWSideCone`, `isOpen_neg_image`, `localEOWRealLinearPart_mem_localEOWSideCone`, `localEOWSideCone_subset_cone`, `localEOWSideCone_direction_norm_bound`, `localEOWSideCone_scalar_le_norm_div`, `localEOW_basisSideCone_rawBoundaryValue` | Checked in `SCV/LocalEOWSideCone.lean`: linear independence excludes `0` from the fixed-basis direction simplex; an open thickening of the simplex and compact closed envelope are constructed inside `C ∩ {η | η ≠ 0}`; the generated side cone is open, lies in `C`, and contains every positive chart-imaginary direction after normalization; compactness gives the uniform lower norm bound on directions, hence the scalar in `y = s • η` tends to zero with `y`; and continuity of negation converts the lower side to the negative-image filter.  The strengthened raw boundary theorem returns the chosen `ε`, the identities `Cplus = localEOWSideCone ys ε` and `Cminus = Neg.neg '' Cplus`, the closed-envelope containment, and the plus/minus raw `nhdsWithin` limits on this relatively compact conic window and its negative image. |
 | `exists_localEOW_truncatedSideCones_for_sliceMargin` | Checked in `SCV/LocalEOWSideCone.lean`: from the explicit `ε` side-cone data, the local wedge hypothesis, and a compactly supported cutoff `χ` with `tsupport χ ⊆ E`, choose a radius `rside > 0` and local side sets `CplusLoc = localEOWSideCone ys ε ∩ ball 0 rside`, `CminusLoc = Neg.neg '' CplusLoc`.  It proves openness, inclusion in the untruncated side cones, and the exact slice margins `x + i y ∈ Ωplus/Ωminus` for all `x ∈ tsupport χ`.  The proof uses the compact closed direction envelope and the scalar bound `s ≤ ‖y‖ / c`; it is the boundedness step between raw boundary limits and the cutoff-support slice package consumed by `localEOWSliceCLMs_from_preparedDomains`. |
 | `exists_localEOWRealLinearPart_ball_subset` | Checked in `SCV/LocalEOWSideCone.lean`: by continuity at zero of the finite-dimensional linear map `localEOWRealLinearPart ys`, every positive original-side radius contains the image of a sufficiently small chart-coordinate ball.  This is the shrink used so strict positive/negative coordinate side balls land in the truncated side cones. |
-| `StrictPositiveImagBall`, `StrictNegativeImagBall`, `isOpen_StrictPositiveImagBall`, `isOpen_StrictNegativeImagBall`, `norm_complexChart_im_le`, `norm_complexChart_re_le`, `StrictPositiveImagBall_im_nonneg`, `StrictNegativeImagBall_im_nonpos`, `StrictPositiveImagBall_im_sum_pos`, `StrictNegativeImagBall_neg_im_sum_pos`, `StrictPositiveImagBall_im_sum_le_card_mul`, `StrictNegativeImagBall_neg_im_sum_le_card_mul`, `StrictPositiveImagBall_add_realEmbed_mem_ball_of_norm_le`, `StrictNegativeImagBall_add_realEmbed_mem_ball_of_norm_le`, `localEOWChart_im_eq_realLinearPart_im`, `localEOWRealLinearPart_im_mem_truncatedSideCone_of_strictPositive`, `localEOWRealLinearPart_im_mem_neg_truncatedSideCone_of_strictNegative`, `localEOWChart_mem_TubeDomain_truncatedSideCone_of_strictPositive`, `localEOWChart_mem_TubeDomain_neg_truncatedSideCone_of_strictNegative`, `localEOWChart_mem_fixedWindow_of_strictPositiveImagBall`, `localEOWChart_mem_fixedWindow_of_strictNegativeImagBall` | Checked in `SCV/LocalEOWChartEnvelope.lean`: the final recovery side balls are chart-coordinate balls, while the fixed-window side cones are original real-edge cones.  The file proves the missing bridge explicitly: `Im (localEOWChart x0 ys w) = localEOWRealLinearPart ys (Im w)`, positive strict chart coordinates land in `localEOWSideCone ys ε ∩ ball 0 rside` after the small linear-image radius, and negative strict chart coordinates land in `Neg.neg '' (localEOWSideCone ys ε ∩ ball 0 rside)`.  It also proves the coordinate-sum facts needed by the fixed-window Rudin polywedge hypotheses: from `w ∈ StrictPositiveImagBall R`, the vector `Im w` is nonnegative, has positive coordinate sum when `0 < m`, and has sum at most `card * R`; the negative side is the same statement for `-Im w`.  The side approximate-identity and translate-margin uses need the additional explicit real-translation fact: adding `realEmbed t` leaves every imaginary coordinate unchanged and increases the chart norm by at most `‖t‖`, so `w ∈ StrictPositiveImagBall R`, `‖t‖ ≤ r`, and `R + r < Rbig` give `w + realEmbed t ∈ ball 0 Rbig` with strict positive imaginary coordinates, and similarly on the negative side.  Therefore `card * R < rpoly` feeds fixed-window side membership, and `Rcore + rker < Rside` feeds side approximate identities, without silently replacing coordinate-sum smallness by norm smallness or treating real translations as changing side signs. |
+| `StrictPositiveImagBall`, `StrictNegativeImagBall`, `isOpen_StrictPositiveImagBall`, `isOpen_StrictNegativeImagBall`, `norm_complexChart_im_le`, `norm_complexChart_re_le`, `StrictPositiveImagBall_im_nonneg`, `StrictNegativeImagBall_im_nonpos`, `StrictPositiveImagBall_im_sum_pos`, `StrictNegativeImagBall_neg_im_sum_pos`, `StrictPositiveImagBall_im_sum_le_card_mul`, `StrictNegativeImagBall_neg_im_sum_le_card_mul`, `StrictPositiveImagBall_add_realEmbed_mem_ball_of_norm_le`, `StrictNegativeImagBall_add_realEmbed_mem_ball_of_norm_le`, `localEOWChart_im_eq_realLinearPart_im`, `localEOWRealLinearPart_im_mem_truncatedSideCone_of_strictPositive`, `localEOWRealLinearPart_im_mem_neg_truncatedSideCone_of_strictNegative`, `localEOWChart_mem_TubeDomain_truncatedSideCone_of_strictPositive`, `localEOWChart_mem_TubeDomain_neg_truncatedSideCone_of_strictNegative`, `localEOWChart_mem_fixedWindow_of_strictPositiveImagBall`, `localEOWChart_mem_fixedWindow_of_strictNegativeImagBall` | Checked in `SCV/LocalEOWChartEnvelope.lean`: the final recovery side balls are chart-coordinate balls, while the fixed-window side cones are original real-edge cones.  The file proves the missing bridge explicitly: `Im (localEOWChart x0 ys w) = localEOWRealLinearPart ys (Im w)`, positive strict chart coordinates land in `localEOWSideCone ys ε ∩ ball 0 rside` after the small linear-image radius, and negative strict chart coordinates land in `Neg.neg '' (localEOWSideCone ys ε ∩ ball 0 rside)`.  It also proves the coordinate-sum facts needed by the fixed-window Rudin polywedge hypotheses: from `w ∈ StrictPositiveImagBall R`, the vector `Im w` is nonnegative, has positive coordinate sum when `0 < m`, and has sum at most `card * R`; the negative side is the same statement for `-Im w`.  In the theorem-2 OS45 side gluing, the local ball overlap with the positive chart-orthant component is exactly `StrictPositiveImagBall R`, and similarly on the negative side, so the one-chart side identities are already full overlap identities.  The remaining theorem-2 side-component topology targets are the chart-orthant component rewrite lemmas, the path endpoint helper, the connected-component open/connected suppliers, and `SCV.disjoint_chartPositiveOrthant_chartNegativeOrthant hm`; they are topology consumers of these checked strict side balls, not new EOW recovery infrastructure.  The explicit `hm : 0 < m` is needed for orthant disjointness because the zero-dimensional coordinatewise predicates are vacuous.  The side approximate-identity and translate-margin uses need the additional explicit real-translation fact: adding `realEmbed t` leaves every imaginary coordinate unchanged and increases the chart norm by at most `‖t‖`, so `w ∈ StrictPositiveImagBall R`, `‖t‖ ≤ r`, and `R + r < Rbig` give `w + realEmbed t ∈ ball 0 Rbig` with strict positive imaginary coordinates, and similarly on the negative side.  Therefore `card * R < rpoly` feeds fixed-window side membership, and `Rcore + rker < Rside` feeds side approximate identities, without silently replacing coordinate-sum smallness by norm smallness or treating real translations as changing side signs. |
 | `exists_oneChartRecoveryScale` | Checked in `SCV/LocalEOWChartEnvelope.lean`: finite arithmetic scale selection for the one-chart assembly.  From positive `δ`, `δside`, `ρin`, `rpoly`, `rψOrig`, and a nonnegative operator norm bound `M`, choose `σ > 0` satisfying `128 * σ ≤ δ`, `4 * σ < δside`, `4 * σ < ρin`, `card * (4 * σ) < rpoly`, and `M * (2 * σ) ≤ rψOrig`.  This isolates the simultaneous smallness choice required by the tightened proof route, rather than solving the inequalities ad hoc inside `chartDistributionalEOW_local_envelope`.  In the final pairing-CLM call, instantiate it with `M = 2 * ‖(localEOWRealLinearCLE ys hli).toContinuousLinearMap‖` so the returned inequality controls the pushed support of `χr • ψ` when `χr` is one on radius `2σ` and supported on radius `4σ`. |
 | `oneChartRecoveryScale_radius_margins`, `oneChartRecoveryScale_core_translate_mem_desc`, `oneChartRecoveryScale_desc_translate_mem_cov`, `oneChartRecoveryScale_cov_ball_subset_half`, `oneChartRecoveryScale_cut_closedBall_subset_half` | Checked in `SCV/LocalEOWChartEnvelope.lean`: the finite radius consequences of `128 * σ ≤ δ` and `0 < σ` used by the local product-kernel recovery call.  These supply `Rcov > 0`, `Rcov < Rcut`, `Rcut < δ / 2`, `2 * Rcov < δ / 4`, the core-to-descent and descent-to-covariance real-translation margins using `realEmbed`, and the open/closed ball containments needed for `Ucov ⊆ U0` and the cutoff integration window. |
 | `exists_normalized_schwartz_bump_kernelSupportWithin`, `exists_shrinking_normalized_schwartz_bump_sequence`, `tendsto_realConvolutionTest_of_shrinking_normalized_support` | Checked in `SCV/DistributionalEOWApproxIdentity.lean`: the descent kernel `η` is a normalized Schwartz kernel supported in the chosen radius, and the recovery sequence `ψn` has nonnegativity, real-valuedness, normalization, fixed support, shrinking support, and convergence of `realConvolutionTest θ (ψn n)` to `θ`.  These are the exact `η` and `ψn` suppliers for `regularizedEnvelope_chartEnvelope_from_oneChartScale`; no abstract approximate-identity axiom is used. |
@@ -518,7 +560,8 @@ Source ledger for the internal helper list:
 | `exists_complexChart_schwartz_cutoff_eq_one_on_closedBall`, `SupportsInOpen.smulLeftCLM_eq_of_eq_one_on` | Checked in `SCV/DistributionalEOWSupport.lean`: the complex-chart analogue of the closed-ball cutoff construction and the support-window cutoff-removal lemma.  These are the first helper layer for the local pairing CLM; the complex-chart cutoff makes the global mixed Schwartz CLM compactly supported in the chart variable, and the `SupportsInOpen` removal lemma proves the cutoff is invisible on product tests supported in `Ucov`. |
 | `schwartzPartialEval₁CLM`, `schwartzPartialEval₁CLM_apply`, `schwartzPartialEval₁CLM_tensorProduct₂` | Checked in `SCV/DistributionalEOWKernel.lean`: fixed-chart partial evaluation `F ↦ (t ↦ F (z,t))` is a genuine continuous linear map on mixed Schwartz tests, built from `SchwartzMap.compCLM` along `t ↦ (z,t)`.  The apply and tensor-product specialization theorems are checked. |
 | `iteratedFDeriv_partialEval₁_eq_compContinuousLinearMap_inr`, `norm_iteratedFDeriv_partialEval₁_le`, `schwartzPartialEval₁CLM_seminorm_le`, `schwartzPartialEval₁CLM_compactSeminormBound` | Checked in `SCV/SchwartzPartialEval.lean` and `SCV/DistributionalEOWKernel.lean`: first-variable partial evaluation has the expected derivative formula through `ContinuousLinearMap.inr`, each fixed partial evaluation is bounded by the corresponding mixed Schwartz seminorm, and the compact finite-seminorm bound is checked with exact witnesses `s' = s` and `C = 1`. |
-| `exists_closedBall_integral_clm_of_continuousOn` | Checked in `SCV/DistributionalEOWSupport.lean`: integration over `Metric.closedBall 0 R` against a coefficient that is continuous on that closed ball is a continuous complex-linear functional on real-chart Schwartz kernels, with the explicit seminorm bound using `SchwartzMap.seminorm ℂ 0 0`.  This is the real-radius local replacement for the older natural-radius/global-continuity compact-ball integral CLM. |
+| `exists_schwartz_cutoff_eq_one_on_compact_subset_open_compactSupport` | Small flat-coordinate projection to expose from the checked `SCV.exists_schwartz_cutoff_eq_one_on_compact_subset_open`: the proof already constructs a compactly supported smooth cutoff equal to one on a compact subset of an open set, so the theorem-2 branch-BV route needs the same witness with the `HasCompactSupport` field retained.  The theorem-2 `NPointDomain d n` consumer must then use `BHW.exists_nPoint_schwartz_cutoff_eq_one_on_compact_subset_open_compactSupport`, transporting compact support and `tsupport` containment by `flattenCLEquivReal n (d + 1)` rather than pretending the flat theorem has the `NPointDomain` type. |
+| `exists_closedBall_integral_clm_of_continuousOn` | Checked in `SCV/DistributionalEOWSupport.lean`: integration over `Metric.closedBall 0 R` against a coefficient that is continuous on that closed ball is a continuous complex-linear functional on flat real-chart Schwartz kernels `Fin m -> ℝ`, with the explicit seminorm bound using `SchwartzMap.seminorm ℂ 0 0`.  This is the real-radius local replacement for the older natural-radius/global-continuity compact-ball integral CLM.  The theorem-2 `NPointDomain d n` branch boundary consumer must reach it through the flattening adapter `BHW.exists_nPoint_closedBall_integral_clm_of_continuousOn`, using `flattenCLEquivReal n (d + 1)`, `flattenCLEquivReal_norm_eq`, `SchwartzMap.compCLMOfContinuousLinearEquiv`, and `integral_flattenCLEquivReal`; it must not pretend the flat theorem already has the `NPointDomain` type. |
 | `exists_realMollifyLocal_valueCLM_of_closedBall` | Checked in `SCV/LocalDistributionalEOW.lean`: for a fixed chart point `z`, if `F` is continuous on a side domain containing all translates `z + realEmbed t` for `t ∈ closedBall 0 r`, then `ψ ↦ realMollifyLocal F ψ z` is represented on `KernelSupportWithin ψ r` by a continuous complex-linear functional.  The proof uses the compact-ball integral CLM plus the support condition to replace the full integral by the closed-ball integral. |
 | `exists_bound_realMollifyLocal_smulLeftCLM` | Checked in `SCV/LocalDistributionalEOW.lean`: after multiplying kernels by a fixed Schwartz cutoff whose topological support is inside `closedBall 0 r`, each side mollifier value is bounded by `C * SchwartzMap.seminorm ℂ 0 0 ψ`.  This is the explicit seminorm estimate needed before integrating the side value CLMs through the local Rudin envelope. |
 | `exists_bound_localRudinEnvelope_smulLeftCLM_of_side_bounds` | Checked in `SCV/LocalDistributionalEOW.lean`: the direct Rudin-circle integration estimate.  If the plus and minus arc values are already uniformly bounded by the zeroth Schwartz seminorm after a fixed cutoff, then the normalized local Rudin envelope value is also bounded by that seminorm.  This is useful away from the real-edge endpoints, but by itself is too strong for a general distributional boundary value. |
@@ -578,9 +621,18 @@ constructed small side domains, such as
 `{w ∈ ball 0 (δ / 2) | ∀ j, 0 < (w j).im}` and its negative companion,
 transported by `localEOWChart`.  A theorem claiming agreement on all of
 `U ∩ Ωplus` or `U ∩ Ωminus` needs an additional side-connectedness hypothesis
-or an OS45-specific connected-component restriction.  The theorem-2 route only
-needs the explicit side-domain agreement for the regularized kernels and the
-later BHW common-chart connectedness step.
+or an OS45-specific connected-component restriction.  The theorem-2 route uses
+the OS45-specific restriction: side components are taken in
+`Ωplus ∩ SCV.ChartPositiveOrthant m` and
+`Ωminus ∩ SCV.ChartNegativeOrthant m`, so their overlaps with the coordinate
+ball are exactly `SCV.StrictPositiveImagBall R` and
+`SCV.StrictNegativeImagBall R`.  The resulting gluing package is
+`SCV.glue_localEnvelope_to_disjoint_sideComponents`; its domain witness is
+definitionally the three-piece union `U0 ∪ Uplus ∪ Uminus`, with
+connectedness supplied by `SCV.isConnected_threeUnion_of_connected_core_meets`
+and local holomorphy combined by `DifferentiableOn.congr` plus
+`DifferentiableOn.union_of_isOpen`.  No theorem-2 consumer may silently enlarge
+this glued domain to arbitrary components of `Ωplus` or `Ωminus`.
 
 Coordinate discipline for the product-kernel stage: the checked fixed-window
 family is written in the Rudin coordinate `w`, but the side mollifier
@@ -18620,12 +18672,14 @@ should proceed in the following order.
 8. Prove the recovered distribution gives back the original tube function by
    the standard Poisson/Fourier-Laplace reconstruction formula.
 
-For theorem 2, the boundary-value package also needs a compact-direction
-strengthening.  The public `tube_boundaryValueData_of_polyGrowth` is currently
-raywise; the OS45 local EOW supplier needs uniform convergence on every compact
-direction set `Kη ⊆ C`.  This must be proved in the same QFT-free SCV package,
-not added as a new axiom and not hidden in a BHW-specific theorem.  The
-uniform theorem should have the following shape before the OS specialization:
+For the general OS-II boundary-value package, a compact-direction strengthening
+is still useful.  The public `tube_boundaryValueData_of_polyGrowth` is currently
+raywise; future global tube-boundary transports may need uniform convergence on
+every compact direction set `Kη ⊆ C`.  This must be proved in the same QFT-free
+SCV package, not added as a new axiom and not hidden in a BHW-specific theorem.
+It is not the current ordered-edge OS45 Slot 1 blocker, because that local seed
+uses continuous horizontal-edge boundary values.  The uniform theorem should
+have the following shape before any OS specialization:
 
 ```lean
 theorem tube_boundaryValueData_uniformOnCompactDirections_of_polyGrowth
@@ -18651,13 +18705,31 @@ theorem tube_boundaryValueData_uniformOnCompactDirections_of_polyGrowth
             Kη
 ```
 
-The proof is the raywise proof with every estimate made uniform on compact
-`Kη`: compactness supplies a bound on `‖η‖` and a single tube-radius margin for
-small `ε`; the polynomial-growth estimate gives one Schwartz seminorm
-dominating all slices; continuity of the integrand in `(ε,η,x)` plus that
-dominating seminorm gives local uniform convergence; a finite subcover of
-`Kη` gives `TendstoUniformlyOn`.  The existing private lemmas
-`tubeSlice_uniformPolyGrowth_of_polyGrowth` and
+The proof must be the boundary-value construction with every estimate made
+uniform on compact `Kη`; it must not be derived from the current public
+raywise theorem alone.  Raywise convergence plus a chosen boundary functional
+does not imply `TendstoUniformlyOn`.  Prove the compact-direction theorem
+first and recover the raywise theorem by singleton compact sets.
+
+The estimate/proof spine is:
+
+1. compactness supplies a bound `Bη` on `‖η‖` over `Kη`; the cone property gives
+   `ε • η ∈ C` for all `η ∈ Kη` and `0 < ε`;
+2. replace `tubeSlice_uniformPolyGrowth_of_polyGrowth` and
+   `tubeSliceIntegralCLM_uniformSeminormBound_of_polyGrowth` by
+   compact-direction versions using the constant
+   `C_bd * (1 + Bη) ^ N`;
+3. prove the dense-subset or Fourier-Laplace/Vladimirov core convergence in
+   compact-direction form, using dominated convergence for the jointly
+   continuous integrand `(ε,η,x) ↦ F(x + i εη) φ x`;
+4. repeat the dense-to-all-Schwartz argument from
+   `tube_boundaryValueData_of_polyGrowth_of_denseSubset`, keeping one
+   approximating test and one seminorm bound for every `η ∈ Kη`;
+5. prove the output `W` is independent of `Kη` by singleton uniqueness, then
+   expose `tube_boundaryValueData_of_polyGrowth` as the singleton corollary if
+   desired.
+
+The existing private lemmas `tubeSlice_uniformPolyGrowth_of_polyGrowth` and
 `tubeSliceIntegralCLM_uniformSeminormBound_of_polyGrowth` are the correct
 starting points, but their current statements are only fixed-direction
 uniformity and must be compact-direction versions before the theorem above can

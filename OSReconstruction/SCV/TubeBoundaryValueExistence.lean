@@ -148,7 +148,14 @@ theorem polyGrowth_temperedDistribution {m : ℕ}
     (fun φ ψ => by
       simp [A, mul_add, integral_add, hA_integrable φ, hA_integrable ψ])
     (fun a φ => by
-      simp [A, smul_eq_mul, mul_left_comm, integral_const_mul])
+      calc
+        ∫ x : Fin m → ℝ, F x * (a • φ) x =
+            ∫ x : Fin m → ℝ, a * (F x * φ x) := by
+              refine integral_congr_ae (Eventually.of_forall ?_)
+              intro x
+              simp [smul_eq_mul, mul_assoc, mul_left_comm, mul_comm]
+        _ = a * ∫ x : Fin m → ℝ, F x * φ x := by
+              exact integral_const_mul a (fun x : Fin m → ℝ => F x * φ x))
     hbound, ?_⟩
   intro φ
   rfl
@@ -448,12 +455,30 @@ theorem hasDerivAt_tubeSlice_ray
     have hF_at : DifferentiableAt ℂ F (slice τ x) := by
       exact (hF_hol _ (hslice_mem hτ x)).differentiableAt
         ((SCV.tubeDomain_isOpen hC_open).mem_nhds (hslice_mem hτ x))
+    let sliceC : ℂ → (Fin m → ℂ) := fun w i => (x i : ℂ) + w * (η i : ℂ) * I
+    have hsliceC_tau : sliceC (τ : ℂ) = slice τ x := by
+      ext i
+      simp [sliceC, slice]
+    have hsliceC_deriv : HasDerivAt sliceC vη (τ : ℂ) := by
+      refine hasDerivAt_pi.2 ?_
+      intro i
+      have hw :
+          HasDerivAt (fun w : ℂ => w * (η i : ℂ) * I) ((η i : ℂ) * I) (τ : ℂ) := by
+        simpa [mul_assoc] using
+          ((hasDerivAt_id (τ : ℂ)).mul_const (η i : ℂ)).mul_const I
+      simpa [sliceC, vη] using hw.const_add (x i : ℂ)
+    have hF_at' : DifferentiableAt ℂ F (sliceC (τ : ℂ)) := by
+      simpa [hsliceC_tau] using hF_at
     have hcomp :
-        HasDerivAt (fun s => F (slice s x)) (((fderiv ℂ F (slice τ x)).restrictScalars ℝ) vη) τ := by
-      simpa using
-        (hF_at.hasFDerivAt.restrictScalars ℝ).comp_hasDerivAt τ hslice_deriv
+        HasDerivAt (fun s => F (slice s x)) ((fderiv ℂ F (slice τ x)) vη) τ := by
+      have hcomplex :
+          HasDerivAt (fun w : ℂ => F (sliceC w)) ((fderiv ℂ F (slice τ x)) vη)
+            (τ : ℂ) := by
+        have hc := hF_at'.hasFDerivAt.comp_hasDerivAt (τ : ℂ) hsliceC_deriv
+        simpa [Function.comp, hsliceC_tau] using hc
+      simpa [sliceC, slice] using hcomplex.comp_ofReal
     have hderiv :
-        HasDerivAt (fun s => Fparam s x) (((fderiv ℂ F (slice τ x)).restrictScalars ℝ) vη) τ :=
+        HasDerivAt (fun s => Fparam s x) ((fderiv ℂ F (slice τ x)) vη) τ :=
       hcomp.congr_of_eventuallyEq hEq
     simpa [Fparam', hτ] using hderiv
   have hFparam'_meas : AEStronglyMeasurable (Fparam' τ₀) volume := by
@@ -696,26 +721,49 @@ theorem hasDerivAt_tubeSlice_ray
         Complex.ofRealCLM.comp (ContinuousLinearMap.proj i)
     have hA_apply : A η = uη := by
       ext i
-      simp [A, uη]
+      change (Complex.ofRealCLM.comp (ContinuousLinearMap.proj i)) η = (η i : ℂ)
+      rfl
     have hG_line : ∀ x : Fin m → ℝ, HasLineDerivAt ℝ G (G' x) x η := by
       intro x
       have hsliceX :
           HasFDerivAt (fun y : Fin m → ℝ => slice τ₀ y) A x := by
         refine hasFDerivAt_pi.2 ?_
         intro i
-        simpa [slice, A] using
+        simpa [slice, A, ContinuousLinearMap.pi_apply] using
           (Complex.ofRealCLM.hasFDerivAt.comp x (ContinuousLinearMap.proj i).hasFDerivAt).const_add
             (((τ₀ • η) i : ℝ) * I)
-      have hF_at : DifferentiableAt ℂ F (slice τ₀ x) := by
-        exact (hF_hol _ (hslice_mem hτ0 x)).differentiableAt
-          ((SCV.tubeDomain_isOpen hC_open).mem_nhds (hslice_mem hτ0 x))
-      have hG_fderiv :
-          HasFDerivAt G (((fderiv ℂ F (slice τ₀ x)).restrictScalars ℝ).comp A) x := by
-        simpa [G] using (hF_at.hasFDerivAt.restrictScalars ℝ).comp x hsliceX
-      have hderiv_vec :
-          (((fderiv ℂ F (slice τ₀ x)).restrictScalars ℝ).comp A) η = G' x := by
-        simp [G', hA_apply]
-      exact (hG_fderiv.hasLineDerivAt η).congr_deriv hderiv_vec
+      let sliceC : ℂ → (Fin m → ℂ) :=
+        fun w i => (x i : ℂ) + w * (η i : ℂ) + ((τ₀ • η) i : ℝ) * I
+      have hsliceC_zero : sliceC 0 = slice τ₀ x := by
+        ext i
+        simp [sliceC, slice]
+      have hsliceC_real :
+          (fun t : ℝ => sliceC (t : ℂ)) = fun t : ℝ => slice τ₀ (x + t • η) := by
+        funext t
+        ext i
+        simp [sliceC, slice, Pi.add_apply, Pi.smul_apply, add_assoc, add_comm, mul_assoc]
+      have hsliceC_deriv : HasDerivAt sliceC uη (0 : ℂ) := by
+        refine hasDerivAt_pi.2 ?_
+        intro i
+        have hw : HasDerivAt (fun w : ℂ => w * (η i : ℂ)) (η i : ℂ) (0 : ℂ) := by
+          simpa using (hasDerivAt_id (0 : ℂ)).mul_const (η i : ℂ)
+        simpa [sliceC, uη, add_assoc] using
+          (hw.const_add (x i : ℂ)).const_add (((τ₀ • η) i : ℝ) * I)
+      have hF_at : DifferentiableAt ℂ F (sliceC 0) := by
+        simpa [hsliceC_zero] using
+          (hF_hol _ (hslice_mem hτ0 x)).differentiableAt
+            ((SCV.tubeDomain_isOpen hC_open).mem_nhds (hslice_mem hτ0 x))
+      change HasDerivAt (fun t : ℝ => G (x + t • η)) (G' x) 0
+      have hcomplex :
+          HasDerivAt (fun w : ℂ => F (sliceC w)) (G' x) (0 : ℂ) := by
+        have hc := hF_at.hasFDerivAt.comp_hasDerivAt (0 : ℂ) hsliceC_deriv
+        simpa [Function.comp, G', hsliceC_zero, uη] using hc
+      have hreal := hcomplex.comp_ofReal
+      have hfun :
+          (fun y : ℝ => F (sliceC (y : ℂ))) = fun t : ℝ => G (x + t • η) := by
+        funext t
+        rw [congrFun hsliceC_real t]
+      simpa [hfun] using hreal
     have hφ_line : ∀ x : Fin m → ℝ,
         HasLineDerivAt ℝ (fun y : Fin m → ℝ => φ y)
           (directionalDerivSchwartz η φ x) x η := by
@@ -776,7 +824,8 @@ theorem hasDerivAt_tubeSlice_ray
           - ∫ x : Fin m → ℝ, G' x * φ x := by
       exact integral_bilinear_hasLineDerivAt_right_eq_neg_left_of_integrable
         (μ := (volume : Measure (Fin m → ℝ))) (B := ContinuousLinearMap.mul ℝ ℂ)
-        h_int_G'φ h_int_Gdφ h_int_Gφ hG_line hφ_line
+        h_int_G'φ h_int_Gdφ h_int_Gφ
+        (fun x _hx => hG_line x) (fun x _hx => hφ_line x)
     have hibp' :
         ∫ x : Fin m → ℝ, G' x * φ x =
           - ∫ x : Fin m → ℝ, G x * directionalDerivSchwartz η φ x := by
@@ -801,9 +850,14 @@ theorem hasDerivAt_tubeSlice_ray
                       simp [G', map_smul, smul_eq_mul]
                 simp [hcr]
         _ = I * ∫ x : Fin m → ℝ, G' x * φ x := by
-            rw [show (fun x : Fin m → ℝ => (I * G' x) * φ x) =
-                fun x : Fin m → ℝ => I * (G' x * φ x) by
-                  funext x; ring, integral_const_mul]
+            calc
+              ∫ x : Fin m → ℝ, (I * G' x) * φ x =
+                  ∫ x : Fin m → ℝ, I * (G' x * φ x) := by
+                    refine integral_congr_ae (Eventually.of_forall ?_)
+                    intro x
+                    ring
+              _ = I * ∫ x : Fin m → ℝ, G' x * φ x := by
+                    exact integral_const_mul I (fun x : Fin m → ℝ => G' x * φ x)
     calc
       ∫ x : Fin m → ℝ, Fparam' τ₀ x * φ x
           = I * ∫ x : Fin m → ℝ, G' x * φ x := hcr_int
@@ -1049,7 +1103,14 @@ theorem cr_integration_identity
     rw [← hFTC]
     show ∫ τ in t₀..t, g' τ =
       -I * ∫ τ in t₀..t, tubeSlice F (τ • η) (directionalDerivSchwartz η φ)
-    simp only [g', intervalIntegral.integral_const_mul]
+    rw [show (fun τ : ℝ => g' τ) =
+        fun τ : ℝ => -I * tubeSlice F (τ • η) (directionalDerivSchwartz η φ) by
+          funext τ
+          rfl]
+    exact
+      intervalIntegral.integral_const_mul (-I)
+        (fun τ : ℝ =>
+          tubeSlice F (τ • η) (directionalDerivSchwartz η φ))
   -- Step 7: Convert interval integral to set integral on Icc (using t₀ ≤ t)
   rw [key]
   congr 1
@@ -1091,6 +1152,56 @@ axiom tube_boundaryValue_of_vladimirov_growth
           (fun ε : ℝ => tubeSlice F (ε • η) φ)
           (nhdsWithin 0 (Set.Ioi 0))
           (nhds (W φ))
+
+/-- Package the boundary functional produced by
+`tube_boundaryValue_of_vladimirov_growth` as a tempered Fourier-Laplace
+boundary-value datum.
+
+The converse Vladimirov theorem supplies the continuous Schwartz functional and
+ray boundary convergence from the full growth bound.  The two remaining fields
+of `HasFourierLaplaceReprTempered` are the explicit compact-subcone and fixed
+ray polynomial estimates, which are kept as hypotheses here so OS-facing code
+can prove them in the geometry where the tube chart actually lives. -/
+noncomputable def hasFourierLaplaceReprTempered_of_vladimirov_growth
+    {C : Set (Fin m → ℝ)}
+    (hC_open : IsOpen C) (hC_conv : Convex ℝ C)
+    (hC_cone : IsCone C) (hC_ne : C.Nonempty)
+    {F : (Fin m → ℂ) → ℂ}
+    (hF_hol : DifferentiableOn ℂ F (SCV.TubeDomain C))
+    {C_bd : ℝ} {N M : ℕ} (hC_bd : 0 < C_bd)
+    (hF_growth : ∀ (z : Fin m → ℂ), z ∈ SCV.TubeDomain C →
+      ‖F z‖ ≤ C_bd * (1 + ‖z‖) ^ N *
+        (1 + (Metric.infDist (fun i => (z i).im) Cᶜ)⁻¹) ^ M)
+    (hpoly : ∀ (K : Set (Fin m → ℝ)), IsCompact K → K ⊆ C →
+      ∃ (C_poly : ℝ) (N_poly : ℕ), C_poly > 0 ∧
+        ∀ (x y : Fin m → ℝ), y ∈ K →
+          ‖F (fun i => ↑(x i) + ↑(y i) * Complex.I)‖ ≤
+            C_poly * (1 + ‖x‖) ^ N_poly)
+    (hunif : ∀ (η : Fin m → ℝ), η ∈ C →
+      ∃ (C_ray : ℝ) (N_ray : ℕ) (δ : ℝ), C_ray > 0 ∧ δ > 0 ∧
+        ∀ (x : Fin m → ℝ) (ε : ℝ), 0 < ε → ε < δ →
+          ‖F (fun i => ↑(x i) + ↑ε * ↑(η i) * Complex.I)‖ ≤
+            C_ray * (1 + ‖x‖) ^ N_ray) :
+    SCV.HasFourierLaplaceReprTempered C F := by
+  classical
+  let hW_exists :=
+    tube_boundaryValue_of_vladimirov_growth
+      hC_open hC_conv hC_cone hC_ne hF_hol hC_bd hF_growth
+  let W : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ :=
+    Classical.choose hW_exists
+  have hW_bv :
+      ∀ (φ : SchwartzMap (Fin m → ℝ) ℂ)
+        (η : Fin m → ℝ), η ∈ C →
+        Tendsto
+          (fun ε : ℝ => tubeSlice F (ε • η) φ)
+          (nhdsWithin 0 (Set.Ioi 0))
+          (nhds (W φ)) :=
+    Classical.choose_spec hW_exists
+  refine
+    SCV.exists_fourierLaplaceReprTempered
+      hC_open hC_conv hC_ne hF_hol W.continuous ?_ hpoly hunif
+  intro f η hη
+  simpa [tubeSlice, Pi.smul_apply, smul_eq_mul, mul_assoc] using hW_bv f η hη
 
 /-- **Boundary value existence for pure polynomial growth.**
 

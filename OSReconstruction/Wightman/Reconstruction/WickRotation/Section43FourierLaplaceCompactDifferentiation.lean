@@ -1741,4 +1741,29 @@ theorem section43FourierLaplaceTransformComponent_has_representative
       section43FourierLaplaceTransformComponent d n f hf_ord hf_compact
   rfl
 
+/-- Any Fourier-Laplace representative of a compact ordered source determines
+the same positive-energy quotient as the canonical transform component. -/
+theorem section43FourierLaplaceRepresentative_quotient_eq_transformComponent
+    (d n : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    (hf_compact : HasCompactSupport (f : NPointDomain d n → ℂ))
+    (Ψ : SchwartzNPoint d n)
+    (hΨ :
+      section43FourierLaplaceRepresentative d n ⟨f, hf_ord⟩ Ψ) :
+    section43PositiveEnergyQuotientMap (d := d) n Ψ =
+      section43FourierLaplaceTransformComponent d n f hf_ord hf_compact := by
+  rcases
+    section43FourierLaplaceTransformComponent_has_representative
+      d n f hf_ord hf_compact with
+    ⟨Φ, hΦ, hΦq⟩
+  have hΨΦ :
+      section43PositiveEnergyQuotientMap (d := d) n Ψ =
+        section43PositiveEnergyQuotientMap (d := d) n Φ := by
+    apply section43PositiveEnergyQuotientMap_eq_of_eqOn_region (d := d)
+    intro q hq
+    exact (hΨ q hq).trans (hΦ q hq).symm
+  exact hΨΦ.trans hΦq
+
 end OSReconstruction

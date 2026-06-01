@@ -4,6 +4,7 @@ Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
 import OSReconstruction.SCV.LocalEOWChartAssembly
+import OSReconstruction.SCV.LocalContinuousEOWSideAgreement
 
 /-!
 # Local Distributional EOW Envelope
@@ -590,5 +591,354 @@ theorem chartDistributionalEOW_local_envelope
     simpa [X] using hH_plus w hw
   · intro w hw
     simpa [X] using hH_minus w hw
+
+/-- Shrink a local EOW envelope ball into both branch domains and extract
+equality of the two pulled side branches on the smaller coordinate ball.
+
+The distributional EOW theorem gives `Hcoord` on a ball and identifies it with
+the plus and minus side functions only on strict side subballs.  This helper
+first shrinks the ball so the affine chart lands in both branch domains, then
+uses the several-variable identity theorem twice to propagate the plus and
+minus side identities to the whole smaller ball. -/
+theorem localEOW_envelope_eqOn_small_twoSector_ball
+    {m : ℕ} (hm : 0 < m)
+    {Ωplus Ωminus : Set (ComplexChartSpace m)}
+    (hΩplus_open : IsOpen Ωplus)
+    (hΩminus_open : IsOpen Ωminus)
+    {x0 : Fin m → ℝ} {ys : Fin m → Fin m → ℝ}
+    {Fplus Fminus Hcoord : ComplexChartSpace m → ℂ}
+    {R : ℝ} (hR : 0 < R)
+    (hFplus : DifferentiableOn ℂ Fplus Ωplus)
+    (hFminus : DifferentiableOn ℂ Fminus Ωminus)
+    (hHcoord :
+      DifferentiableOn ℂ Hcoord
+        (Metric.ball (0 : ComplexChartSpace m) R))
+    (hplus :
+      ∀ w ∈ StrictPositiveImagBall (m := m) R,
+        Hcoord w = Fplus (localEOWChart x0 ys w))
+    (hminus :
+      ∀ w ∈ StrictNegativeImagBall (m := m) R,
+        Hcoord w = Fminus (localEOWChart x0 ys w))
+    (hzero_plus : localEOWChart x0 ys 0 ∈ Ωplus)
+    (hzero_minus : localEOWChart x0 ys 0 ∈ Ωminus) :
+    ∃ R0 : ℝ,
+      0 < R0 ∧
+      Metric.ball (0 : ComplexChartSpace m) R0 ⊆
+        Metric.ball (0 : ComplexChartSpace m) R ∩
+          (localEOWChart x0 ys) ⁻¹' Ωplus ∩
+          (localEOWChart x0 ys) ⁻¹' Ωminus ∧
+      Set.EqOn
+        (fun w => Fplus (localEOWChart x0 ys w))
+        (fun w => Fminus (localEOWChart x0 ys w))
+        (Metric.ball (0 : ComplexChartSpace m) R0) := by
+  classical
+  let Upre : Set (ComplexChartSpace m) :=
+    Metric.ball (0 : ComplexChartSpace m) R ∩
+      (localEOWChart x0 ys) ⁻¹' Ωplus ∩
+      (localEOWChart x0 ys) ⁻¹' Ωminus
+  have hUpre_open : IsOpen Upre := by
+    dsimp [Upre]
+    exact (Metric.isOpen_ball.inter
+      (hΩplus_open.preimage (continuous_localEOWChart x0 ys))).inter
+      (hΩminus_open.preimage (continuous_localEOWChart x0 ys))
+  have hzero_ball : (0 : ComplexChartSpace m) ∈
+      Metric.ball (0 : ComplexChartSpace m) R := by
+    simpa [Metric.mem_ball] using hR
+  have hzero_Upre : (0 : ComplexChartSpace m) ∈ Upre := by
+    exact ⟨⟨hzero_ball, hzero_plus⟩, hzero_minus⟩
+  obtain ⟨ε, hε_pos, hε_sub⟩ :=
+    Metric.isOpen_iff.mp hUpre_open (0 : ComplexChartSpace m) hzero_Upre
+  let R0 : ℝ := ε / 2
+  have hR0_pos : 0 < R0 := by
+    dsimp [R0]
+    positivity
+  have hR0_lt_ε : R0 < ε := by
+    dsimp [R0]
+    linarith
+  have hball_sub :
+      Metric.ball (0 : ComplexChartSpace m) R0 ⊆ Upre := by
+    intro w hw
+    exact hε_sub (Metric.ball_subset_ball (le_of_lt hR0_lt_ε) hw)
+  have hball_sub_out :
+      Metric.ball (0 : ComplexChartSpace m) R0 ⊆
+        Metric.ball (0 : ComplexChartSpace m) R ∩
+          (localEOWChart x0 ys) ⁻¹' Ωplus ∩
+          (localEOWChart x0 ys) ⁻¹' Ωminus := by
+    simpa [Upre] using hball_sub
+  let U : Set (ComplexChartSpace m) :=
+    Metric.ball (0 : ComplexChartSpace m) R0
+  have hU_open : IsOpen U := Metric.isOpen_ball
+  have hU_preconn : IsPreconnected U :=
+    (convex_ball (0 : ComplexChartSpace m) R0).isPreconnected
+  have hU_sub_big :
+      U ⊆ Metric.ball (0 : ComplexChartSpace m) R := by
+    intro w hw
+    exact (hball_sub hw).1.1
+  have hU_mem_plus :
+      ∀ w ∈ U, localEOWChart x0 ys w ∈ Ωplus := by
+    intro w hw
+    exact (hball_sub hw).1.2
+  have hU_mem_minus :
+      ∀ w ∈ U, localEOWChart x0 ys w ∈ Ωminus := by
+    intro w hw
+    exact (hball_sub hw).2
+  have hH_anal :
+      AnalyticOnNhd ℂ Hcoord U := fun z hz =>
+    SCV.differentiableOn_analyticAt hU_open
+      (hHcoord.mono hU_sub_big) hz
+  have hFplus_anal :
+      AnalyticOnNhd ℂ
+        (fun w => Fplus (localEOWChart x0 ys w)) U := fun z hz =>
+    SCV.differentiableOn_analyticAt hU_open
+      (chartHolomorphy_from_originalHolomorphy Ωplus x0 ys Fplus U
+        hU_mem_plus hFplus) hz
+  have hFminus_anal :
+      AnalyticOnNhd ℂ
+        (fun w => Fminus (localEOWChart x0 ys w)) U := fun z hz =>
+    SCV.differentiableOn_analyticAt hU_open
+      (chartHolomorphy_from_originalHolomorphy Ωminus x0 ys Fminus U
+        hU_mem_minus hFminus) hz
+  have hPos_open : IsOpen {w : ComplexChartSpace m | ∀ j, 0 < (w j).im} := by
+    simp only [Set.setOf_forall]
+    exact isOpen_iInter_of_finite fun j =>
+      isOpen_lt continuous_const
+        (Complex.continuous_im.comp (continuous_apply j))
+  have hNeg_open : IsOpen {w : ComplexChartSpace m | ∀ j, (w j).im < 0} := by
+    simp only [Set.setOf_forall]
+    exact isOpen_iInter_of_finite fun j =>
+      isOpen_lt (Complex.continuous_im.comp (continuous_apply j))
+        continuous_const
+  set zpos : ComplexChartSpace m :=
+    fun _ => ((R0 / 4 : ℝ) : ℂ) * Complex.I with hzpos_def
+  have hzpos_im : ∀ j, (zpos j).im = R0 / 4 := by
+    intro j
+    simp [zpos, Complex.mul_im, Complex.ofReal_re, Complex.ofReal_im,
+      Complex.I_re, Complex.I_im]
+  have hzpos_pos : ∀ j, 0 < (zpos j).im := fun j => by
+    rw [hzpos_im j]
+    positivity
+  have hzpos_U : zpos ∈ U := by
+    rw [Metric.mem_ball, dist_zero_right]
+    calc
+      ‖zpos‖ = ‖((R0 / 4 : ℝ) : ℂ) * Complex.I‖ := by
+        apply le_antisymm
+        · exact (pi_norm_le_iff_of_nonneg (norm_nonneg _) |>.mpr fun j => le_rfl)
+        · exact norm_le_pi_norm zpos ⟨0, hm⟩
+      _ = R0 / 4 := by
+        rw [norm_mul, Complex.norm_real, Complex.norm_I, mul_one,
+          Real.norm_eq_abs, abs_of_pos (by positivity : 0 < R0 / 4)]
+      _ < R0 := by
+        linarith
+  have hEq_near_plus :
+      Hcoord =ᶠ[nhds zpos]
+        fun w => Fplus (localEOWChart x0 ys w) := by
+    rw [Filter.eventuallyEq_iff_exists_mem]
+    refine ⟨U ∩ {w : ComplexChartSpace m | ∀ j, 0 < (w j).im}, ?_, ?_⟩
+    · exact Filter.inter_mem (hU_open.mem_nhds hzpos_U)
+        (hPos_open.mem_nhds hzpos_pos)
+    · intro z hz
+      have hzStrict : z ∈ StrictPositiveImagBall (m := m) R :=
+        ⟨hU_sub_big hz.1, hz.2⟩
+      exact hplus z hzStrict
+  have hH_eq_plus :
+      Set.EqOn Hcoord (fun w => Fplus (localEOWChart x0 ys w)) U :=
+    hH_anal.eqOn_of_preconnected_of_eventuallyEq hFplus_anal
+      hU_preconn hzpos_U hEq_near_plus
+  set zneg : ComplexChartSpace m :=
+    fun _ => -(((R0 / 4 : ℝ) : ℂ) * Complex.I) with hzneg_def
+  have hzneg_im : ∀ j, (zneg j).im = - R0 / 4 := by
+    intro j
+    simp [zneg, Complex.mul_im, Complex.ofReal_re, Complex.ofReal_im,
+      Complex.I_re, Complex.I_im]
+    ring
+  have hzneg_neg : ∀ j, (zneg j).im < 0 := fun j => by
+    rw [hzneg_im j]
+    linarith [hR0_pos]
+  have hzneg_U : zneg ∈ U := by
+    rw [Metric.mem_ball, dist_zero_right]
+    calc
+      ‖zneg‖ =
+          ‖(fun _ : Fin m => ((R0 / 4 : ℝ) : ℂ) * Complex.I)‖ := by
+        rw [hzneg_def]
+        change
+          ‖-(fun _ : Fin m => ((R0 / 4 : ℝ) : ℂ) * Complex.I)‖ =
+            ‖(fun _ : Fin m => ((R0 / 4 : ℝ) : ℂ) * Complex.I)‖
+        exact norm_neg _
+      _ = ‖((R0 / 4 : ℝ) : ℂ) * Complex.I‖ := by
+        apply le_antisymm
+        · exact (pi_norm_le_iff_of_nonneg (norm_nonneg _) |>.mpr fun j => le_rfl)
+        · exact norm_le_pi_norm
+            (fun _ : Fin m => ((R0 / 4 : ℝ) : ℂ) * Complex.I)
+            ⟨0, hm⟩
+      _ = R0 / 4 := by
+        rw [norm_mul, Complex.norm_real, Complex.norm_I, mul_one,
+          Real.norm_eq_abs, abs_of_pos (by positivity : 0 < R0 / 4)]
+      _ < R0 := by
+        linarith
+  have hEq_near_minus :
+      Hcoord =ᶠ[nhds zneg]
+        fun w => Fminus (localEOWChart x0 ys w) := by
+    rw [Filter.eventuallyEq_iff_exists_mem]
+    refine ⟨U ∩ {w : ComplexChartSpace m | (∀ j, (w j).im < 0)}, ?_, ?_⟩
+    · exact Filter.inter_mem (hU_open.mem_nhds hzneg_U)
+        (hNeg_open.mem_nhds hzneg_neg)
+    · intro z hz
+      have hzStrict : z ∈ StrictNegativeImagBall (m := m) R :=
+        ⟨hU_sub_big hz.1, hz.2⟩
+      exact hminus z hzStrict
+  have hH_eq_minus :
+      Set.EqOn Hcoord (fun w => Fminus (localEOWChart x0 ys w)) U :=
+    hH_anal.eqOn_of_preconnected_of_eventuallyEq hFminus_anal
+      hU_preconn hzneg_U hEq_near_minus
+  refine ⟨R0, hR0_pos, hball_sub_out, ?_⟩
+  intro w hw
+  exact (hH_eq_plus hw).symm.trans (hH_eq_minus hw)
+
+/-- Continuous local EOW gives eventual equality of the two side branches at
+the common real edge, provided both side domains are actual neighborhoods of
+the base edge point.
+
+This is the neighborhood-form version used by the OS45 BHW/Jost local-step
+payload: first build the checked continuous local envelope, then shrink by
+`localEOW_envelope_eqOn_small_twoSector_ball`, and finally transport the
+coordinate-ball equality back through the local affine chart inverse. -/
+theorem local_continuous_edge_of_the_wedge_eventuallyEq_at_common_edge {m : ℕ}
+    (hm : 0 < m)
+    (Ωplus Ωminus : Set (Fin m → ℂ))
+    (E C : Set (Fin m → ℝ))
+    (hΩplus_open : IsOpen Ωplus) (hΩminus_open : IsOpen Ωminus)
+    (hE_open : IsOpen E) (hC_open : IsOpen C)
+    (hC_conv : Convex ℝ C) (hC_ne : C.Nonempty)
+    (hlocal_wedge :
+      ∀ K : Set (Fin m → ℝ), IsCompact K → K ⊆ E →
+        ∀ Kη : Set (Fin m → ℝ), IsCompact Kη → Kη ⊆ C →
+          ∃ r : ℝ, 0 < r ∧
+            ∀ x ∈ K, ∀ η ∈ Kη, ∀ ε : ℝ, 0 < ε → ε < r →
+              (fun a => (x a : ℂ) + (ε : ℂ) * (η a : ℂ) * Complex.I) ∈ Ωplus ∧
+              (fun a => (x a : ℂ) - (ε : ℂ) * (η a : ℂ) * Complex.I) ∈ Ωminus)
+    (Fplus Fminus : (Fin m → ℂ) → ℂ)
+    (hFplus_diff : DifferentiableOn ℂ Fplus Ωplus)
+    (hFminus_diff : DifferentiableOn ℂ Fminus Ωminus)
+    (bv : (Fin m → ℝ) → ℂ) (hbv_cont : ContinuousOn bv E)
+    (hFplus_bv :
+      ∀ x ∈ E, Filter.Tendsto Fplus
+        (nhdsWithin (SCV.realEmbed x) Ωplus) (nhds (bv x)))
+    (hFminus_bv :
+      ∀ x ∈ E, Filter.Tendsto Fminus
+        (nhdsWithin (SCV.realEmbed x) Ωminus) (nhds (bv x)))
+    (x0 : Fin m → ℝ) (hx0 : x0 ∈ E)
+    (hplus_nhds : Ωplus ∈ nhds (SCV.realEmbed x0))
+    (hminus_nhds : Ωminus ∈ nhds (SCV.realEmbed x0)) :
+    Fplus =ᶠ[nhds (SCV.realEmbed x0)] Fminus := by
+  classical
+  obtain ⟨ys, _hys_mem, hys_li, ρ, hρ, r, hr, δ, hδ, hδρ, hδsum,
+      _hE_mem, _hplus, _hminus, F0, hF0_diff, hF0_plus, hF0_minus,
+      _hF0_real, _hF0_unique_plus⟩ :=
+    SCV.local_continuous_edge_of_the_wedge_envelope hm Ωplus Ωminus E C
+      hΩplus_open hΩminus_open hE_open hC_open hC_conv hC_ne hlocal_wedge
+      Fplus Fminus hFplus_diff hFminus_diff bv hbv_cont hFplus_bv hFminus_bv
+      x0 hx0
+  have hR : 0 < δ / 2 := by positivity
+  have hzero_plus : SCV.localEOWChart x0 ys 0 ∈ Ωplus := by
+    simpa [SCV.localEOWChart_zero] using mem_of_mem_nhds hplus_nhds
+  have hzero_minus : SCV.localEOWChart x0 ys 0 ∈ Ωminus := by
+    simpa [SCV.localEOWChart_zero] using mem_of_mem_nhds hminus_nhds
+  obtain ⟨R0, hR0, _hR0_sub, hEq⟩ :=
+    SCV.localEOW_envelope_eqOn_small_twoSector_ball
+      (m := m) hm hΩplus_open hΩminus_open
+      (x0 := x0) (ys := ys)
+      (Fplus := Fplus) (Fminus := Fminus) (Hcoord := F0)
+      (R := δ / 2) hR hFplus_diff hFminus_diff hF0_diff
+      (by
+        intro w hw
+        exact (hF0_plus w hw.1 hw.2).2)
+      (by
+        intro w hw
+        exact (hF0_minus w hw.1 hw.2).2)
+      hzero_plus hzero_minus
+  obtain ⟨Φinv, hΦinv_diff, hleft, hright⟩ :=
+    SCV.localEOWChart_equiv x0 ys hys_li
+  have hΦinv_cont : Continuous Φinv := hΦinv_diff.continuous
+  have hΦinv_base : Φinv (SCV.realEmbed x0) = 0 := by
+    rw [← SCV.localEOWChart_zero x0 ys]
+    exact hleft 0
+  have hpre :
+      {z : Fin m → ℂ | Φinv z ∈ Metric.ball (0 : Fin m → ℂ) R0} ∈
+        nhds (SCV.realEmbed x0) := by
+    have hball_nhds :
+        Metric.ball (0 : Fin m → ℂ) R0 ∈
+          nhds (Φinv (SCV.realEmbed x0)) := by
+      simpa [hΦinv_base] using
+        Metric.isOpen_ball.mem_nhds
+          (by simpa [Metric.mem_ball] using hR0)
+    exact hΦinv_cont.continuousAt hball_nhds
+  rw [Filter.eventuallyEq_iff_exists_mem]
+  refine ⟨{z : Fin m → ℂ | Φinv z ∈ Metric.ball (0 : Fin m → ℂ) R0},
+    hpre, ?_⟩
+  intro z hz
+  have hzEq := hEq hz
+  simpa [hright z] using hzEq
+
+/-- Continuous local EOW gives a concrete complex-open equality seed at the
+common real edge.
+
+This is the form consumed by local OS45 transfer steps: after the two side
+branches have the same continuous boundary value, shrink the eventual equality
+to a metric ball contained in both side domains. -/
+theorem local_continuous_edge_of_the_wedge_eqOn_open_at_common_edge {m : ℕ}
+    (hm : 0 < m)
+    (Ωplus Ωminus : Set (Fin m → ℂ))
+    (E C : Set (Fin m → ℝ))
+    (hΩplus_open : IsOpen Ωplus) (hΩminus_open : IsOpen Ωminus)
+    (hE_open : IsOpen E) (hC_open : IsOpen C)
+    (hC_conv : Convex ℝ C) (hC_ne : C.Nonempty)
+    (hlocal_wedge :
+      ∀ K : Set (Fin m → ℝ), IsCompact K → K ⊆ E →
+        ∀ Kη : Set (Fin m → ℝ), IsCompact Kη → Kη ⊆ C →
+          ∃ r : ℝ, 0 < r ∧
+            ∀ x ∈ K, ∀ η ∈ Kη, ∀ ε : ℝ, 0 < ε → ε < r →
+              (fun a => (x a : ℂ) + (ε : ℂ) * (η a : ℂ) * Complex.I) ∈ Ωplus ∧
+              (fun a => (x a : ℂ) - (ε : ℂ) * (η a : ℂ) * Complex.I) ∈ Ωminus)
+    (Fplus Fminus : (Fin m → ℂ) → ℂ)
+    (hFplus_diff : DifferentiableOn ℂ Fplus Ωplus)
+    (hFminus_diff : DifferentiableOn ℂ Fminus Ωminus)
+    (bv : (Fin m → ℝ) → ℂ) (hbv_cont : ContinuousOn bv E)
+    (hFplus_bv :
+      ∀ x ∈ E, Filter.Tendsto Fplus
+        (nhdsWithin (SCV.realEmbed x) Ωplus) (nhds (bv x)))
+    (hFminus_bv :
+      ∀ x ∈ E, Filter.Tendsto Fminus
+        (nhdsWithin (SCV.realEmbed x) Ωminus) (nhds (bv x)))
+    (x0 : Fin m → ℝ) (hx0 : x0 ∈ E)
+    (hplus_nhds : Ωplus ∈ nhds (SCV.realEmbed x0))
+    (hminus_nhds : Ωminus ∈ nhds (SCV.realEmbed x0)) :
+    ∃ W : Set (Fin m → ℂ),
+      IsOpen W ∧
+      IsPreconnected W ∧
+      SCV.realEmbed x0 ∈ W ∧
+      W ⊆ Ωplus ∩ Ωminus ∧
+      Set.EqOn Fplus Fminus W := by
+  classical
+  have hevent :
+      Fplus =ᶠ[nhds (SCV.realEmbed x0)] Fminus :=
+    SCV.local_continuous_edge_of_the_wedge_eventuallyEq_at_common_edge
+      hm Ωplus Ωminus E C hΩplus_open hΩminus_open hE_open hC_open
+      hC_conv hC_ne hlocal_wedge Fplus Fminus hFplus_diff hFminus_diff
+      bv hbv_cont hFplus_bv hFminus_bv x0 hx0 hplus_nhds hminus_nhds
+  rw [Filter.eventuallyEq_iff_exists_mem] at hevent
+  rcases hevent with ⟨V, hV_nhds, hV_eq⟩
+  have hcommon_nhds :
+      V ∩ Ωplus ∩ Ωminus ∈ nhds (SCV.realEmbed x0) :=
+    Filter.inter_mem (Filter.inter_mem hV_nhds hplus_nhds) hminus_nhds
+  rcases Metric.mem_nhds_iff.mp hcommon_nhds with
+    ⟨r, hr_pos, hball_sub⟩
+  refine
+    ⟨Metric.ball (SCV.realEmbed x0) r, Metric.isOpen_ball,
+      (convex_ball (SCV.realEmbed x0) r).isPreconnected,
+      Metric.mem_ball_self hr_pos, ?_, ?_⟩
+  · intro z hz
+    exact ⟨(hball_sub hz).1.2, (hball_sub hz).2⟩
+  · intro z hz
+    exact hV_eq (hball_sub hz).1.1
 
 end SCV

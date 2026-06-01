@@ -1218,7 +1218,7 @@ theorem sourceComplexGramVariety_identity_principle_easy
     (hW_rel : IsRelOpenInSourceComplexGramVariety d n W)
     (hW_ne : W.Nonempty)
     (hW_sub : W ⊆ U)
-    (hH : SourceVarietyHolomorphicOn d n H U)
+    (hH : SourceVarietyGermHolomorphicOn d n H U)
     (hW_zero : Set.EqOn H 0 W) :
     Set.EqOn H 0 U := by
   let X :=
@@ -1270,14 +1270,30 @@ theorem sourceComplexGramVariety_identity_principle_easy
     intro q hqU
     have hΓqU : Γ q ∈ U := hqU
     rcases hH (Γ q) hΓqU with
-      ⟨U0, hU0_open, hΓqU0, hHdiffU0, _hU0_sub⟩
-    have hHat : DifferentiableAt ℂ H (Γ q) :=
-      (hHdiffU0 (Γ q) hΓqU0).differentiableAt
+      ⟨U0, H0, hU0_open, hΓqU0, hH0diffU0, hEq, _hU0_sub⟩
+    have hH0at : DifferentiableAt ℂ H0 (Γ q) :=
+      (hH0diffU0 (Γ q) hΓqU0).differentiableAt
         (hU0_open.mem_nhds hΓqU0)
-    exact
-      (hHat.comp q
+    have hcomp :
+        DifferentiableWithinAt ℂ (fun q : X => H0 (Γ q)) Uhat q :=
+      (hH0at.comp q
         ((differentiable_sourceFullSymCoordMap n).differentiableAt)
         ).differentiableWithinAt
+    have hΓ_cont : Continuous Γ := by
+      simpa [Γ] using (differentiable_sourceFullSymCoordMap n).continuous
+    have hΓU0_event :
+        ∀ᶠ q' in 𝓝[Uhat] q, Γ q' ∈ U0 :=
+      hΓ_cont.continuousAt.continuousWithinAt.preimage_mem_nhdsWithin
+        (hU0_open.mem_nhds hΓqU0)
+    have heq :
+        (fun q : X => H (Γ q)) =ᶠ[𝓝[Uhat] q]
+          (fun q : X => H0 (Γ q)) := by
+      filter_upwards [hΓU0_event, self_mem_nhdsWithin] with q' hq'U0 hq'Uhat
+      have hΓq'var : Γ q' ∈ sourceComplexGramVariety d n := by
+        rw [sourceComplexGramVariety_eq_sourceSymmetricMatrixSpace_of_le d n hn]
+        exact sourceFullSymCoordMap_mem_sourceSymmetricMatrixSpace n q'
+      exact hEq ⟨hq'U0, hΓq'var⟩
+    exact hcomp.congr_of_eventuallyEq_of_mem heq hqU
   rcases hWhat_ne with ⟨q0, hq0W⟩
   have hq0U : q0 ∈ Uhat := hWhat_sub_Uhat hq0W
   have hagree :

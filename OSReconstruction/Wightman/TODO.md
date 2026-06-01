@@ -23,7 +23,7 @@ rg -n '^[[:space:]]*sorry([[:space:]]|$)' OSReconstruction --glob '*.lean'
 | `OSReconstruction/vNA` | 36 |
 | **Whole project** | **53** |
 
-Current axiom count in `OSReconstruction`: 12.
+Current axiom count in `OSReconstruction`: 14.
 
 ## Wightman Remaining `sorry`s
 
@@ -131,6 +131,10 @@ Active axioms outside SCV include:
   `exists_continuousMultilinear_ofSeparatelyContinuous`
 - `Wightman/Reconstruction/WickRotation/BHWReducedExtension.lean`:
   `reduced_bargmann_hall_wightman_of_input`
+- `Wightman/Reconstruction/WickRotation/OSToWightmanLocalityOS45BHWJostLocal.lean`:
+  `localSPrime_twoSectorBranch_of_EOW_BHW`
+- `ComplexLieGroups/Connectedness/BHWPermutation/SourceOrientedStandardSOAxiom.lean`:
+  `standardSO_FFT_SFT_presentationData`
 
 ## Execution Order
 

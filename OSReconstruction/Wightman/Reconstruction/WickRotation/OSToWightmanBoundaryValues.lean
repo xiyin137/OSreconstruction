@@ -353,6 +353,32 @@ This sorry is the direct boundary-distributional adjacent-swap locality
 statement on the OS route.  It should be supplied by the OS Section 4.5
 branch-difference / boundary-transfer argument, not by any finite-height
 canonical-shell equality.
+
+Active route:
+OS-I source-side branch transfer / common-edge source equality ->
+local moving-source `Hdiff` / horizontal branch-difference packet ->
+`ReducedLocalAdjacentBoundaryCLMInvariant` ->
+closed-support reduced canonical swap invariance -> this boundary-value
+locality statement.
+
+The paper-facing input shape is the source-side branch-transfer equality, in the
+local `RepresentsDistributionOn 0` / zero-difference source form.  The `Hdiff`
+germ is the Lean transport envelope built from that equality, while the reduced
+sign-flip formulation is downstream reduced-normal bookkeeping rather than a
+replacement theorem-2 gate.  In particular, the next proof-body leaf is the
+OS-I `(4.12)`--`(4.14)` source transfer that produces this zero source
+representation, not another gate between the existing carriers.
+
+Do not replace that source-transfer proof body with a direct cone-height
+source-side ray to fixed canonical reduced branch shortcut: the OS45
+moving-source/quarter-turn contribution is part of the Hdiff/source
+representation argument and does not disappear as a standalone coordinate
+identity.
+
+The older Route A through `AdjacentReducedRuelleDistributionalLimit` is kept as
+a checked diagnostic route only.  Do not close this frontier by feeding the
+selected/local-edge Ruelle producer downstream, since that can reintroduce the
+old `BHW.localSPrime_twoSectorBranch_of_EOW_BHW` trust boundary.
 -/
 private theorem bvt_W_swap_pairing_of_spacelike
     (OS : OsterwalderSchraderAxioms d)
@@ -726,7 +752,7 @@ theorem bvt_lorentz_covariant (OS : OsterwalderSchraderAxioms d)
 
 theorem bvt_locally_commutative (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) :
-    IsLocallyCommutativeWeak d (bvt_W OS lgc) := by
+    IsAdjacentLocallyCommutativeWeak d (bvt_W OS lgc) := by
   intro n i hi f g hsupp hswap
   exact bvt_W_swap_pairing_of_spacelike (d := d) OS lgc n i hi f g hsupp hswap
 
@@ -988,7 +1014,7 @@ def constructWightmanFunctionsCore (OS : OsterwalderSchraderAxioms d)
 adjacent locality and cluster frontiers are supplied explicitly. -/
 def constructWightmanFunctions (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS)
-    (hlocal : IsLocallyCommutativeWeak d (bvt_W OS lgc))
+    (hlocal : IsAdjacentLocallyCommutativeWeak d (bvt_W OS lgc))
     (hcluster : ∀ (n m : ℕ) (f : SchwartzNPoint d n) (g : SchwartzNPoint d m),
       ∀ ε : ℝ, ε > 0 → ∃ R : ℝ, R > 0 ∧
         ∀ a : SpacetimeDim d, a 0 = 0 → (∑ i : Fin d, (a (Fin.succ i))^2) > R^2 →

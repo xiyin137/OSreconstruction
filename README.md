@@ -4,14 +4,14 @@ A Lean 4 formalization of the **Osterwalder-Schrader reconstruction theorem** an
 
 ## Current Axiom Inventory
 
-The tracked production tree currently contains **12 explicit axioms** (verified by `rg '^axiom\s+\w' OSReconstruction --glob '*.lean'`):
+The tracked production tree currently contains **14 explicit axioms** (verified by `rg '^axiom\s+\w' OSReconstruction --glob '*.lean'`):
 
 **Functional analysis / general analysis (3):**
 - `schwartz_nuclear_extension` in `Wightman/WightmanAxioms.lean` — **partially proved**: nuclearity of Schwartz space is now proved in the [`gaussian-field`](https://github.com/or-n/gaussian-field) library; the remaining gap is importing the instance and deriving the kernel theorem
 - `exists_continuousMultilinear_ofSeparatelyContinuous` in `Wightman/WightmanAxioms.lean` — **proved** in [`gaussian-field`](https://github.com/mrdouglasny/gaussian-field) (`GeneralResults/SeparatelyContMultilinear.lean`, extension branch); remaining gap is importing the theorem
 - `schwartz_clm_fubini_exchange` in `GeneralResults/SchwartzFubini.lean` — CLM-integral exchange for Schwartz-valued families (Fréchet Bochner)
 
-**SCV / tube domain (7):**
+**SCV / tube domain / BHW continuation (8):**
 - `bv_implies_fourier_support` in `SCV/VladimirovTillmann.lean` — growth + BV → spectral support in dual cone (Vladimirov 25.1)
 - `fl_representation_from_bv` in `SCV/VladimirovTillmann.lean` — Fourier-Laplace representation from BV + spectral support (Vladimirov 25.5)
 - `distributional_cluster_lifts_to_tube` in `SCV/VladimirovTillmann.lean` — distributional cluster on tube boundary lifts to pointwise cluster on tube interior
@@ -19,6 +19,10 @@ The tracked production tree currently contains **12 explicit axioms** (verified 
 - `tube_boundaryValue_of_vladimirov_growth` in `SCV/TubeBoundaryValueExistence.lean` — BV existence from Vladimirov growth (M>0)
 - `tube_boundaryValue_realizes_dualCone_distribution` in `SCV/FourierSupportCone.lean` — BV realized by dual-cone distribution
 - `bochner_tube_extension` in `SCV/BochnerTubeTheorem.lean` — global Bochner tube extension theorem
+- `localSPrime_twoSectorBranch_of_EOW_BHW` in `Wightman/Reconstruction/WickRotation/OSToWightmanLocalityOS45BHWJostLocal.lean` — local two-sector Bargmann-Hall-Wightman/Hall-Wightman continuation on the path component of the neutral `S'_n` hull, with explicit proper-complex Lorentz invariance hypotheses on both initial-sector branches (authorized 2026-05-11 after Gemini/Claude audits rejected the arbitrary-holomorphic version and verified the determinant-one proper Lorentz-group caveat)
+
+**Classical invariant theory (1):**
+- `standardSO_FFT_SFT_presentationData` in `ComplexLieGroups/Connectedness/BHWPermutation/SourceOrientedStandardSOAxiom.lean` — Weyl-Cartan FFT/SFT for `SO(D; ℂ)` on `(ℂ^D)^n`, with Gram and ordered-volume generators and the corrected symmetry/rank/alternation/Cauchy-Binet/linear-syzygy presentation kernel (authorized 2026-05-07). The axiom module is deliberately separate from the axiom-free conditional presentation module and is not imported by the BHW barrel.
 
 **SNAG / spectral (1):**
 - `snag_theorem` in `GeneralResults/SNAGTheorem.lean` — Stone-Naimark-Ambrose-Godement: every strongly-continuous unitary representation of a locally compact abelian group has a joint projection-valued spectral measure (Reed-Simon I VIII.12 / Mackey 1957). Vetted "Standard"; see `docs/cluster_axiom_vetting.md` entry 1.
@@ -166,9 +170,11 @@ This fetches Mathlib and dependencies automatically on first build.
 
 ## Project Status
 
-The tracked production tree currently includes **12 explicit `axiom`
-declarations** (3 FA/general analysis + 7 SCV + 1 reconstruction bridge + 1 SNAG/spectral).
-See the axiom inventory at the top of this file for the complete list. Remaining work
+The tracked production tree currently includes **14 explicit `axiom`
+declarations** (3 FA/general analysis + 7 SCV + 1 local BHW/Hall-Wightman
+continuation theorem + 1 classical invariant-theory + 1 reconstruction bridge
++ 1 SNAG/spectral). See the axiom inventory at the top of this file for the
+complete list. Remaining work
 outside these deferred surfaces is represented by explicit theorem-level
 `sorry` placeholders.
 The snapshot below counts only tracked production files; local scratch under
@@ -260,7 +266,7 @@ Snapshot (2026-05-10, tracked live production tree):
 | `vNA/` | 36 |
 | **Total** | **53** |
 
-Tracked production tree also contains `12` explicit axioms; see the current
+Tracked production tree also contains `14` explicit axioms; see the current
 inventory at the top of this file.
 
 The count convention is direct tactic holes:
@@ -326,6 +332,7 @@ flowchart TD
 | `SCV/LaplaceSchwartz.lean` | 0 | generic tempered boundary-value lemmas extracted |
 | `SCV/TubeDistributions.lean` | 0 | sorry-free |
 | `SCV/BochnerTubeTheorem.lean` | 0 + 1 axiom | local-to-global tube extension |
+| `Wightman/Reconstruction/WickRotation/OSToWightmanLocalityOS45BHWJostLocal.lean` | 0 + 1 axiom | local two-sector BHW/Hall-Wightman continuation on the strict OS-II route |
 | `SCV/PaleyWiener.lean` | 0 | sorry-free |
 | `ComplexLieGroups/Connectedness/BHWPermutation/PermutationFlowBlocker.lean` | 2 | permutation-flow blockers |
 | `vNA/MeasureTheory/CaratheodoryExtension.lean` | 11 | measure-theoretic extension lane |

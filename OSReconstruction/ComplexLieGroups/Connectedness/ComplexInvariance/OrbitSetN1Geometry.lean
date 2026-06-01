@@ -1203,7 +1203,10 @@ lemma orbitImage_wScalarE0_eq_scalePack_image_firstCol_geom
     refine ⟨firstColCLG (m := m) Λ, ⟨Λ, hΛ, rfl⟩, ?_⟩
     ext k μ
     fin_cases k
-    simp [orbitMap, scalePack_geom, firstColCLG, complexLorentzAction_wScalarE0]
+    change c * Λ.val μ 0 =
+      (complexLorentzAction (d := m + 1) (n := 1) Λ
+        (wScalarE0 (m := m) c) 0 μ)
+    rw [complexLorentzAction_wScalarE0 (m := m) Λ c]
   · rintro ⟨v, hv, rfl⟩
     rcases hv with ⟨Λ, hΛ, hvΛ⟩
     refine ⟨Λ, hΛ, ?_⟩

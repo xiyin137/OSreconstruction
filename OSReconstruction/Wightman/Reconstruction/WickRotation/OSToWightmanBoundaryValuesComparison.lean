@@ -4,6 +4,7 @@ Released under Apache 2.0 license.
 Authors: Michael Douglas, ModularPhysics Contributors
 -/
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBoundaryValuesBase
+import OSReconstruction.SCV.DistributionalEOWCutoff
 
 /-!
 # OS to Wightman Boundary Value Transfer Support
@@ -1502,6 +1503,674 @@ theorem bv_local_commutativity_transfer_of_swap_pairing (n : ℕ)
       (nhds (W_n g)) :=
     Filter.Tendsto.congr' hEq hg
   exact tendsto_nhds_unique hf hg_as_f
+
+/-- Compact boundary-value locality transfer from a canonical-shell limit.
+
+This is the theorem-2 boundary-value consumer needed after the Jost/BHW
+boundary argument proves that the difference of the two canonical adjacent
+pairings tends to zero.  Unlike
+`bv_local_commutativity_transfer_of_swap_pairing`, it does not require
+finite-height equality for every positive shell height. -/
+theorem bv_local_commutativity_transfer_of_swap_pairing_tendsto_compact (n : ℕ)
+    (W_n : SchwartzNPoint d n → ℂ)
+    (F_n : (Fin n → Fin (d + 1) → ℂ) → ℂ)
+    (hBV : ∀ (f : SchwartzNPoint d n) (η : Fin n → Fin (d + 1) → ℝ),
+      InForwardCone d n η →
+      Filter.Tendsto
+        (fun ε : ℝ => ∫ x : NPointDomain d n,
+          F_n (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x))
+        (nhdsWithin 0 (Set.Ioi 0))
+        (nhds (W_n f)))
+    (hF_swapCanonical_tendsto :
+      ∀ (i j : Fin n) (f g : SchwartzNPoint d n),
+        HasCompactSupport (f : NPointDomain d n → ℂ) →
+        (∀ x, f.toFun x ≠ 0 →
+          MinkowskiSpace.AreSpacelikeSeparated d (x i) (x j)) →
+        (∀ x, g.toFun x = f.toFun (fun k => x (Equiv.swap i j k))) →
+        Filter.Tendsto
+          (fun ε : ℝ =>
+            (∫ x : NPointDomain d n,
+                F_n (fun k μ =>
+                  ↑(x k μ) +
+                    ε * ↑(canonicalForwardConeDirection (d := d) n k μ) *
+                      Complex.I) * (g x))
+              -
+            ∫ x : NPointDomain d n,
+                F_n (fun k μ =>
+                  ↑(x k μ) +
+                    ε * ↑(canonicalForwardConeDirection (d := d) n k μ) *
+                      Complex.I) * (f x))
+          (nhdsWithin 0 (Set.Ioi 0))
+          (nhds 0)) :
+    ∀ (i j : Fin n) (f g : SchwartzNPoint d n),
+      HasCompactSupport (f : NPointDomain d n → ℂ) →
+      (∀ x, f.toFun x ≠ 0 →
+        MinkowskiSpace.AreSpacelikeSeparated d (x i) (x j)) →
+      (∀ x, g.toFun x = f.toFun (fun k => x (Equiv.swap i j k))) →
+      W_n f = W_n g := by
+  intro i j f g hf_compact hsp hswap
+  let η := canonicalForwardConeDirection (d := d) n
+  have hη : InForwardCone d n η := canonicalForwardConeDirection_mem (d := d) n
+  have hf := hBV f η hη
+  have hg := hBV g η hη
+  have hdiff_limit :
+      Filter.Tendsto
+        (fun ε : ℝ =>
+          (∫ x : NPointDomain d n,
+              F_n (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (g x)) -
+            ∫ x : NPointDomain d n,
+              F_n (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x))
+        (nhdsWithin 0 (Set.Ioi 0))
+        (nhds (W_n g - W_n f)) := by
+    exact hg.sub hf
+  have hdiff_zero :
+      Filter.Tendsto
+        (fun ε : ℝ =>
+          (∫ x : NPointDomain d n,
+              F_n (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (g x)) -
+            ∫ x : NPointDomain d n,
+              F_n (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x))
+        (nhdsWithin 0 (Set.Ioi 0))
+        (nhds 0) := by
+    simpa [η] using
+      hF_swapCanonical_tendsto i j f g hf_compact hsp hswap
+  have hzero : W_n g - W_n f = 0 :=
+    tendsto_nhds_unique hdiff_limit hdiff_zero
+  exact (sub_eq_zero.mp hzero).symm
+
+omit [NeZero d] in
+private theorem locality_unflatten_flattenSchwartzNPoint
+    {n : ℕ} (f : SchwartzNPoint d n) :
+    OSReconstruction.unflattenSchwartzNPoint (d := d)
+      (OSReconstruction.flattenSchwartzNPoint (d := d) f) = f := by
+  ext x
+  simp [OSReconstruction.flattenSchwartzNPoint_apply,
+    OSReconstruction.unflattenSchwartzNPoint_apply]
+
+private noncomputable def localityUnitBallBumpSchwartzNPointRadius
+    (n : ℕ) (R : ℝ) (hR : 0 < R) : SchwartzNPoint d n :=
+  OSReconstruction.unflattenSchwartzNPoint (d := d)
+    (OSReconstruction.unitBallBumpSchwartzPiRadius (n * (d + 1)) R hR)
+
+private noncomputable def localityBumpTruncationRadiusNPoint
+    {n : ℕ} (f : SchwartzNPoint d n) (N : ℕ) : SchwartzNPoint d n :=
+  SchwartzMap.smulLeftCLM ℂ
+    (localityUnitBallBumpSchwartzNPointRadius (d := d) n
+      (OSReconstruction.bumpTruncationRadiusValue N)
+      (OSReconstruction.bumpTruncationRadiusValue_pos N)) f
+
+set_option maxHeartbeats 4000000 in
+private theorem localityBumpTruncationRadiusNPoint_eq_unflatten
+    {n : ℕ} (f : SchwartzNPoint d n) (N : ℕ) :
+    localityBumpTruncationRadiusNPoint (d := d) f N =
+      OSReconstruction.unflattenSchwartzNPoint (d := d)
+        (OSReconstruction.bumpTruncationRadius
+          (OSReconstruction.flattenSchwartzNPoint (d := d) f) N) := by
+  ext x
+  rw [localityBumpTruncationRadiusNPoint]
+  rw [SchwartzMap.smulLeftCLM_apply_apply
+    (g := ((localityUnitBallBumpSchwartzNPointRadius (d := d) n
+      (OSReconstruction.bumpTruncationRadiusValue N)
+      (OSReconstruction.bumpTruncationRadiusValue_pos N) : SchwartzNPoint d n) :
+        NPointDomain d n → ℂ))
+    (localityUnitBallBumpSchwartzNPointRadius (d := d) n
+      (OSReconstruction.bumpTruncationRadiusValue N)
+      (OSReconstruction.bumpTruncationRadiusValue_pos N)).hasTemperateGrowth
+    f x]
+  rw [localityUnitBallBumpSchwartzNPointRadius,
+    OSReconstruction.unflattenSchwartzNPoint_apply]
+  rw [OSReconstruction.unflattenSchwartzNPoint_apply]
+  rw [OSReconstruction.bumpTruncationRadius]
+  rw [SchwartzMap.smulLeftCLM_apply_apply (by fun_prop)]
+  simp [OSReconstruction.flattenSchwartzNPoint_apply, smul_eq_mul]
+
+set_option maxHeartbeats 4000000 in
+/-- Compactly supported approximants that preserve vanishing outside a set.
+
+The approximants are ordinary radial bump truncations of `f`.  Compact support
+comes from the bump, convergence is the standard Schwartz-density theorem, and
+the zero-off property is preserved because each approximant is a pointwise
+multiple of `f`. -/
+theorem exists_compactSupportApprox_zeroOff_npoint
+    {n : ℕ} (U : Set (NPointDomain d n)) (f : SchwartzNPoint d n)
+    (hf_zero : ∀ x, x ∉ U → f x = 0) :
+    ∃ fN : ℕ → SchwartzNPoint d n,
+      (∀ N, HasCompactSupport (fN N : NPointDomain d n → ℂ)) ∧
+      (∀ N x, x ∉ U → fN N x = 0) ∧
+      Filter.Tendsto fN Filter.atTop (nhds f) := by
+  let fN : ℕ → SchwartzNPoint d n :=
+    fun N => localityBumpTruncationRadiusNPoint (d := d) f N
+  refine ⟨fN, ?_, ?_, ?_⟩
+  · intro N
+    have hflat_compact :
+        HasCompactSupport
+          (((OSReconstruction.bumpTruncationRadius
+            (OSReconstruction.flattenSchwartzNPoint (d := d) f) N :
+              SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ)) :
+            (Fin (n * (d + 1)) → ℝ) → ℂ) := by
+      simpa [OSReconstruction.bumpTruncationRadius,
+        OSReconstruction.bumpTruncationRadiusValue] using
+        OSReconstruction.hasCompactSupport_cutoff_mul_radius
+          (m := n * (d + 1)) (R := OSReconstruction.bumpTruncationRadiusValue N)
+          (OSReconstruction.bumpTruncationRadiusValue_pos N)
+          (OSReconstruction.flattenSchwartzNPoint (d := d) f)
+    simpa [fN] using
+      (show HasCompactSupport
+          ((localityBumpTruncationRadiusNPoint (d := d) f N :
+            SchwartzNPoint d n) : NPointDomain d n → ℂ) from by
+        rw [localityBumpTruncationRadiusNPoint_eq_unflatten (d := d)]
+        simpa [OSReconstruction.unflattenSchwartzNPoint_apply] using
+          hflat_compact.comp_homeomorph
+            (flattenCLEquivReal n (d + 1)).toHomeomorph)
+  · intro N x hxU
+    change
+      (localityBumpTruncationRadiusNPoint (d := d) f N :
+        SchwartzNPoint d n) x = 0
+    rw [localityBumpTruncationRadiusNPoint]
+    rw [SchwartzMap.smulLeftCLM_apply_apply
+      (g := ((localityUnitBallBumpSchwartzNPointRadius (d := d) n
+        (OSReconstruction.bumpTruncationRadiusValue N)
+        (OSReconstruction.bumpTruncationRadiusValue_pos N) : SchwartzNPoint d n) :
+          NPointDomain d n → ℂ))
+      (localityUnitBallBumpSchwartzNPointRadius (d := d) n
+        (OSReconstruction.bumpTruncationRadiusValue N)
+        (OSReconstruction.bumpTruncationRadiusValue_pos N)).hasTemperateGrowth
+      f x]
+    simp [hf_zero x hxU]
+  · have hunflat :=
+      ((OSReconstruction.unflattenSchwartzNPoint (d := d)).continuous.tendsto
+        (OSReconstruction.flattenSchwartzNPoint (d := d) f)).comp
+          (SchwartzMap.tendsto_bump_truncation_nhds
+            (OSReconstruction.flattenSchwartzNPoint (d := d) f))
+    have hrew :
+        fN =
+          fun N : ℕ =>
+            OSReconstruction.unflattenSchwartzNPoint (d := d)
+              (OSReconstruction.bumpTruncationRadius
+                (OSReconstruction.flattenSchwartzNPoint (d := d) f) N) := by
+      funext N
+      simpa [fN] using
+        localityBumpTruncationRadiusNPoint_eq_unflatten (d := d) f N
+    rw [hrew]
+    simpa [Function.comp,
+      locality_unflatten_flattenSchwartzNPoint (d := d) f] using hunflat
+
+set_option maxHeartbeats 4000000 in
+/-- Compactly supported approximants that preserve an existing topological
+support inclusion.
+
+This is the strict-support analogue of
+`exists_compactSupportApprox_zeroOff_npoint`: radial bump truncations are
+pointwise multiples of `f`, so their topological support stays inside
+`tsupport f`. -/
+theorem exists_compactSupportApprox_tsupport_subset_npoint
+    {n : ℕ} {U : Set (NPointDomain d n)} (f : SchwartzNPoint d n)
+    (hf_tsupport : tsupport (f : NPointDomain d n → ℂ) ⊆ U) :
+    ∃ fN : ℕ → SchwartzNPoint d n,
+      (∀ N, HasCompactSupport (fN N : NPointDomain d n → ℂ)) ∧
+      (∀ N, tsupport (fN N : NPointDomain d n → ℂ) ⊆ U) ∧
+      Filter.Tendsto fN Filter.atTop (nhds f) := by
+  let fN : ℕ → SchwartzNPoint d n :=
+    fun N => localityBumpTruncationRadiusNPoint (d := d) f N
+  refine ⟨fN, ?_, ?_, ?_⟩
+  · intro N
+    have hflat_compact :
+        HasCompactSupport
+          (((OSReconstruction.bumpTruncationRadius
+            (OSReconstruction.flattenSchwartzNPoint (d := d) f) N :
+              SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ)) :
+            (Fin (n * (d + 1)) → ℝ) → ℂ) := by
+      simpa [OSReconstruction.bumpTruncationRadius,
+        OSReconstruction.bumpTruncationRadiusValue] using
+        OSReconstruction.hasCompactSupport_cutoff_mul_radius
+          (m := n * (d + 1)) (R := OSReconstruction.bumpTruncationRadiusValue N)
+          (OSReconstruction.bumpTruncationRadiusValue_pos N)
+          (OSReconstruction.flattenSchwartzNPoint (d := d) f)
+    simpa [fN] using
+      (show HasCompactSupport
+          ((localityBumpTruncationRadiusNPoint (d := d) f N :
+            SchwartzNPoint d n) : NPointDomain d n → ℂ) from by
+        rw [localityBumpTruncationRadiusNPoint_eq_unflatten (d := d)]
+        simpa [OSReconstruction.unflattenSchwartzNPoint_apply] using
+          hflat_compact.comp_homeomorph
+            (flattenCLEquivReal n (d + 1)).toHomeomorph)
+  · intro N x hx
+    exact hf_tsupport
+      ((SchwartzMap.tsupport_smulLeftCLM_subset
+        (F := ℂ)
+        (g :=
+          (localityUnitBallBumpSchwartzNPointRadius (d := d) n
+            (OSReconstruction.bumpTruncationRadiusValue N)
+            (OSReconstruction.bumpTruncationRadiusValue_pos N) :
+              NPointDomain d n → ℂ))
+        (f := f)) hx).1
+  · have hunflat :=
+      ((OSReconstruction.unflattenSchwartzNPoint (d := d)).continuous.tendsto
+        (OSReconstruction.flattenSchwartzNPoint (d := d) f)).comp
+          (SchwartzMap.tendsto_bump_truncation_nhds
+            (OSReconstruction.flattenSchwartzNPoint (d := d) f))
+    have hrew :
+        fN =
+          fun N : ℕ =>
+            OSReconstruction.unflattenSchwartzNPoint (d := d)
+              (OSReconstruction.bumpTruncationRadius
+                (OSReconstruction.flattenSchwartzNPoint (d := d) f) N) := by
+      funext N
+      simpa [fN] using
+        localityBumpTruncationRadiusNPoint_eq_unflatten (d := d) f N
+    rw [hrew]
+    simpa [Function.comp,
+      locality_unflatten_flattenSchwartzNPoint (d := d) f] using hunflat
+
+omit [NeZero d] in
+/-- A compact subset of an open `NPointDomain` set admits a Schwartz cutoff
+equal to one on the compact set and whose topological support lies in the open
+set. -/
+theorem exists_schwartzNPoint_cutoff_eq_one_on_compact_subset_open
+    {n : ℕ} {K U : Set (NPointDomain d n)}
+    (hK : IsCompact K) (hU : IsOpen U) (hKU : K ⊆ U) :
+    ∃ χ : SchwartzNPoint d n,
+      (∀ x ∈ K, χ x = 1) ∧
+      tsupport (χ : NPointDomain d n → ℂ) ⊆ U := by
+  classical
+  let e : NPointDomain d n ≃L[ℝ] (Fin (n * (d + 1)) → ℝ) :=
+    flattenCLEquivReal n (d + 1)
+  let Kflat : Set (Fin (n * (d + 1)) → ℝ) := e '' K
+  let Uflat : Set (Fin (n * (d + 1)) → ℝ) := e '' U
+  have hKflat : IsCompact Kflat := hK.image e.continuous
+  have hUflat : IsOpen Uflat := by
+    simpa [Uflat] using e.toHomeomorph.isOpenMap U hU
+  have hKUflat : Kflat ⊆ Uflat := by
+    intro y hy
+    rcases hy with ⟨x, hxK, rfl⟩
+    exact ⟨x, hKU hxK, rfl⟩
+  obtain ⟨χflat, hχflat_one, hχflat_sub⟩ :=
+    SCV.exists_schwartz_cutoff_eq_one_on_compact_subset_open
+      (m := n * (d + 1)) hKflat hUflat hKUflat
+  let χ : SchwartzNPoint d n :=
+    SchwartzMap.compCLMOfContinuousLinearEquiv ℂ e χflat
+  refine ⟨χ, ?_, ?_⟩
+  · intro x hxK
+    change χflat (e x) = 1
+    exact hχflat_one (e x) ⟨x, hxK, rfl⟩
+  · have hχ_tsupport :
+        tsupport (χ : NPointDomain d n → ℂ) =
+          e.toHomeomorph ⁻¹'
+            tsupport (χflat : (Fin (n * (d + 1)) → ℝ) → ℂ) := by
+      simpa [χ, e, SchwartzMap.compCLMOfContinuousLinearEquiv_apply] using
+        (tsupport_comp_eq_preimage
+          (g := (χflat : (Fin (n * (d + 1)) → ℝ) → ℂ)) e.toHomeomorph)
+    intro x hx
+    have hex : e x ∈ Uflat := hχflat_sub (by
+      simpa [hχ_tsupport] using hx)
+    rcases hex with ⟨y, hyU, hy_eq⟩
+    have hyx : y = x := e.injective hy_eq
+    simpa [hyx] using hyU
+
+omit [NeZero d] in
+/-- Localize a Schwartz test to an open patch while preserving its values on a
+chosen compact core. -/
+theorem exists_schwartzNPoint_localized_eq_on_compact_subset_open
+    {n : ℕ} {K U : Set (NPointDomain d n)}
+    (hK : IsCompact K) (hU : IsOpen U) (hKU : K ⊆ U)
+    (f : SchwartzNPoint d n) :
+    ∃ ψ : SchwartzNPoint d n,
+      (∀ x ∈ K, ψ x = f x) ∧
+      tsupport (ψ : NPointDomain d n → ℂ) ⊆ U := by
+  obtain ⟨χ, hχ_one, hχ_support⟩ :=
+    exists_schwartzNPoint_cutoff_eq_one_on_compact_subset_open
+      (d := d) hK hU hKU
+  let ψ : SchwartzNPoint d n := SchwartzMap.smulLeftCLM ℂ χ f
+  refine ⟨ψ, ?_, ?_⟩
+  · intro x hxK
+    change (SchwartzMap.smulLeftCLM ℂ χ f : SchwartzNPoint d n) x = f x
+    rw [SchwartzMap.smulLeftCLM_apply_apply χ.hasTemperateGrowth f x]
+    simp [hχ_one x hxK]
+  · intro x hx
+    exact hχ_support
+      ((SchwartzMap.tsupport_smulLeftCLM_subset
+        (F := ℂ)
+        (g := (χ : NPointDomain d n → ℂ))
+        (f := f)) hx).2
+
+omit [NeZero d] in
+/-- If the ordinary support of a Schwartz test is contained in a compact core
+inside a patch, then its topological support is contained in the patch.  This
+is the compact-core support upgrade needed before applying local
+boundary-value packets with `tsupport` hypotheses. -/
+theorem tsupport_subset_of_support_subset_compact_subset_open
+    {n : ℕ} {K U : Set (NPointDomain d n)}
+    (hK : IsCompact K) (_hU : IsOpen U) (hKU : K ⊆ U)
+    (f : SchwartzNPoint d n)
+    (hf_support : Function.support (f : NPointDomain d n → ℂ) ⊆ K) :
+    tsupport (f : NPointDomain d n → ℂ) ⊆ U := by
+  have hclosure :
+      closure (Function.support (f : NPointDomain d n → ℂ)) ⊆ K :=
+    closure_minimal hf_support hK.isClosed
+  have htsupport :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ K := by
+    simpa [tsupport] using hclosure
+  exact htsupport.trans hKU
+
+private noncomputable def localityPermuteSchwartzCLM {n : ℕ}
+    (σ : Equiv.Perm (Fin n)) :
+    SchwartzNPoint d n →L[ℂ] SchwartzNPoint d n :=
+  SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
+    ((LinearEquiv.funCongrLeft ℝ (Fin (d + 1) → ℝ) σ).toContinuousLinearEquiv)
+
+/-- Compact adjacent locality extends to all Schwartz tests by radial compact
+exhaustion, preserving the selected adjacent spacelike support condition. -/
+theorem bv_local_commutativity_full_of_compact_support_adjacent_locality {n : ℕ}
+    (W_n : SchwartzNPoint d n → ℂ)
+    (hW_cont : Continuous W_n)
+    (i : Fin n) (hi : i.val + 1 < n)
+    (hcompact :
+      ∀ (f g : SchwartzNPoint d n),
+        HasCompactSupport (f : NPointDomain d n → ℂ) →
+        (∀ x, f.toFun x ≠ 0 →
+          MinkowskiSpace.AreSpacelikeSeparated d
+            (x i) (x ⟨i.val + 1, hi⟩)) →
+        (∀ x, g.toFun x =
+          f.toFun (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k))) →
+        W_n f = W_n g) :
+    ∀ (f g : SchwartzNPoint d n),
+      (∀ x, f.toFun x ≠ 0 →
+        MinkowskiSpace.AreSpacelikeSeparated d
+          (x i) (x ⟨i.val + 1, hi⟩)) →
+      (∀ x, g.toFun x =
+        f.toFun (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k))) →
+      W_n f = W_n g := by
+  intro f g hsp hswap
+  let j : Fin n := ⟨i.val + 1, hi⟩
+  let τ : Equiv.Perm (Fin n) := Equiv.swap i j
+  let U : Set (NPointDomain d n) :=
+    {x | MinkowskiSpace.AreSpacelikeSeparated d (x i) (x j)}
+  have hf_zero : ∀ x, x ∉ U → f x = 0 := by
+    intro x hxU
+    by_contra hfx
+    exact hxU (hsp x hfx)
+  obtain ⟨fN, hfN_compact, hfN_zero, hfN_tendsto⟩ :=
+    exists_compactSupportApprox_zeroOff_npoint (d := d) U f hf_zero
+  let P : SchwartzNPoint d n →L[ℂ] SchwartzNPoint d n :=
+    localityPermuteSchwartzCLM (d := d) τ
+  let gN : ℕ → SchwartzNPoint d n := fun N => P (fN N)
+  have hcompact_eq : ∀ N, W_n (fN N) = W_n (gN N) := by
+    intro N
+    refine hcompact (fN N) (gN N) (hfN_compact N) ?_ ?_
+    · intro x hfx
+      by_contra hxU
+      exact hfx (hfN_zero N x hxU)
+    · intro x
+      change localityPermuteSchwartzCLM (d := d) (Equiv.swap i j) (fN N) x =
+        (fN N).toFun (fun k => x (Equiv.swap i j k))
+      rfl
+  have hleft :
+      Filter.Tendsto (fun N => W_n (fN N)) Filter.atTop (nhds (W_n f)) :=
+    (hW_cont.tendsto f).comp hfN_tendsto
+  have hP_tendsto :
+      Filter.Tendsto (fun N => P (fN N)) Filter.atTop (nhds (P f)) :=
+    (P.continuous.tendsto f).comp hfN_tendsto
+  have hP_f : P f = g := by
+    ext x
+    exact (hswap x).symm
+  have hgN_tendsto :
+      Filter.Tendsto gN Filter.atTop (nhds g) := by
+    simpa [gN, hP_f] using hP_tendsto
+  have hright :
+      Filter.Tendsto (fun N => W_n (gN N)) Filter.atTop (nhds (W_n g)) :=
+    (hW_cont.tendsto g).comp hgN_tendsto
+  have hleft_as_right :
+      Filter.Tendsto (fun N => W_n (fN N)) Filter.atTop (nhds (W_n g)) :=
+    Filter.Tendsto.congr'
+      (Filter.Eventually.of_forall fun N => (hcompact_eq N).symm) hright
+  exact tendsto_nhds_unique hleft hleft_as_right
+
+/-- Compact adjacent boundary-value transfer from a canonical-shell difference
+limit for the selected adjacent pair. -/
+theorem bv_local_commutativity_transfer_of_adjacent_swap_pairing_tendsto_compact
+    (n : ℕ)
+    (W_n : SchwartzNPoint d n → ℂ)
+    (F_n : (Fin n → Fin (d + 1) → ℂ) → ℂ)
+    (hBV : ∀ (f : SchwartzNPoint d n) (η : Fin n → Fin (d + 1) → ℝ),
+      InForwardCone d n η →
+      Filter.Tendsto
+        (fun ε : ℝ => ∫ x : NPointDomain d n,
+          F_n (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x))
+        (nhdsWithin 0 (Set.Ioi 0))
+        (nhds (W_n f)))
+    (i : Fin n) (hi : i.val + 1 < n)
+    (hF_swapCanonical_tendsto :
+      ∀ (f g : SchwartzNPoint d n),
+        HasCompactSupport (f : NPointDomain d n → ℂ) →
+        (∀ x, f.toFun x ≠ 0 →
+          MinkowskiSpace.AreSpacelikeSeparated d
+            (x i) (x ⟨i.val + 1, hi⟩)) →
+        (∀ x, g.toFun x =
+          f.toFun (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k))) →
+        Filter.Tendsto
+          (fun ε : ℝ =>
+            (∫ x : NPointDomain d n,
+                F_n (fun k μ =>
+                  ↑(x k μ) +
+                    ε * ↑(canonicalForwardConeDirection (d := d) n k μ) *
+                      Complex.I) * (g x))
+              -
+            ∫ x : NPointDomain d n,
+                F_n (fun k μ =>
+                  ↑(x k μ) +
+                    ε * ↑(canonicalForwardConeDirection (d := d) n k μ) *
+                      Complex.I) * (f x))
+          (nhdsWithin 0 (Set.Ioi 0))
+          (nhds 0)) :
+    ∀ (f g : SchwartzNPoint d n),
+      HasCompactSupport (f : NPointDomain d n → ℂ) →
+      (∀ x, f.toFun x ≠ 0 →
+        MinkowskiSpace.AreSpacelikeSeparated d
+          (x i) (x ⟨i.val + 1, hi⟩)) →
+      (∀ x, g.toFun x =
+        f.toFun (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k))) →
+      W_n f = W_n g := by
+  intro f g hf_compact hsp hswap
+  let η := canonicalForwardConeDirection (d := d) n
+  have hη : InForwardCone d n η := canonicalForwardConeDirection_mem (d := d) n
+  have hf := hBV f η hη
+  have hg := hBV g η hη
+  have hdiff_limit :
+      Filter.Tendsto
+        (fun ε : ℝ =>
+          (∫ x : NPointDomain d n,
+              F_n (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (g x)) -
+            ∫ x : NPointDomain d n,
+              F_n (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x))
+        (nhdsWithin 0 (Set.Ioi 0))
+        (nhds (W_n g - W_n f)) := by
+    exact hg.sub hf
+  have hdiff_zero :
+      Filter.Tendsto
+        (fun ε : ℝ =>
+          (∫ x : NPointDomain d n,
+              F_n (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (g x)) -
+            ∫ x : NPointDomain d n,
+              F_n (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x))
+        (nhdsWithin 0 (Set.Ioi 0))
+        (nhds 0) := by
+    simpa [η] using
+      hF_swapCanonical_tendsto f g hf_compact hsp hswap
+  have hzero : W_n g - W_n f = 0 :=
+    tendsto_nhds_unique hdiff_limit hdiff_zero
+  exact (sub_eq_zero.mp hzero).symm
+
+/-- Full adjacent locality from compact canonical-shell limits for the selected
+adjacent pair. -/
+theorem bv_local_commutativity_transfer_of_adjacent_swap_pairing_tendsto
+    (n : ℕ)
+    (W_n : SchwartzNPoint d n → ℂ)
+    (F_n : (Fin n → Fin (d + 1) → ℂ) → ℂ)
+    (hW_cont : Continuous W_n)
+    (hBV : ∀ (f : SchwartzNPoint d n) (η : Fin n → Fin (d + 1) → ℝ),
+      InForwardCone d n η →
+      Filter.Tendsto
+        (fun ε : ℝ => ∫ x : NPointDomain d n,
+          F_n (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x))
+        (nhdsWithin 0 (Set.Ioi 0))
+        (nhds (W_n f)))
+    (i : Fin n) (hi : i.val + 1 < n)
+    (hF_swapCanonical_tendsto :
+      ∀ (f g : SchwartzNPoint d n),
+        HasCompactSupport (f : NPointDomain d n → ℂ) →
+        (∀ x, f.toFun x ≠ 0 →
+          MinkowskiSpace.AreSpacelikeSeparated d
+            (x i) (x ⟨i.val + 1, hi⟩)) →
+        (∀ x, g.toFun x =
+          f.toFun (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k))) →
+        Filter.Tendsto
+          (fun ε : ℝ =>
+            (∫ x : NPointDomain d n,
+                F_n (fun k μ =>
+                  ↑(x k μ) +
+                    ε * ↑(canonicalForwardConeDirection (d := d) n k μ) *
+                      Complex.I) * (g x))
+              -
+            ∫ x : NPointDomain d n,
+                F_n (fun k μ =>
+                  ↑(x k μ) +
+                    ε * ↑(canonicalForwardConeDirection (d := d) n k μ) *
+                      Complex.I) * (f x))
+          (nhdsWithin 0 (Set.Ioi 0))
+          (nhds 0)) :
+    ∀ (f g : SchwartzNPoint d n),
+      (∀ x, f.toFun x ≠ 0 →
+        MinkowskiSpace.AreSpacelikeSeparated d
+          (x i) (x ⟨i.val + 1, hi⟩)) →
+      (∀ x, g.toFun x =
+        f.toFun (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k))) →
+      W_n f = W_n g := by
+  refine
+    bv_local_commutativity_full_of_compact_support_adjacent_locality
+      (d := d) W_n hW_cont i hi ?_
+  intro f g hf_compact hsp hswap
+  exact
+    bv_local_commutativity_transfer_of_adjacent_swap_pairing_tendsto_compact
+      (d := d) n W_n F_n hBV i hi hF_swapCanonical_tendsto
+      f g hf_compact hsp hswap
+
+/-- Compact-test adjacent locality extends to all Schwartz tests once the tests
+vanish outside the spacelike region.
+
+This is the final density step in the OS/Jost locality argument: compact
+locality is applied to radial truncations of `f`, which preserve vanishing
+outside the spacelike set; continuity of `W_n` then passes the equality to the
+Schwartz limit. -/
+theorem bv_local_commutativity_full_of_compact_support_locality {n : ℕ}
+    (W_n : SchwartzNPoint d n → ℂ)
+    (hW_cont : Continuous W_n)
+    (hcompact :
+      ∀ (i j : Fin n) (f g : SchwartzNPoint d n),
+        HasCompactSupport (f : NPointDomain d n → ℂ) →
+        (∀ x, f.toFun x ≠ 0 →
+          MinkowskiSpace.AreSpacelikeSeparated d (x i) (x j)) →
+        (∀ x, g.toFun x = f.toFun (fun k => x (Equiv.swap i j k))) →
+        W_n f = W_n g) :
+    ∀ (i j : Fin n) (f g : SchwartzNPoint d n),
+      (∀ x, f.toFun x ≠ 0 →
+        MinkowskiSpace.AreSpacelikeSeparated d (x i) (x j)) →
+      (∀ x, g.toFun x = f.toFun (fun k => x (Equiv.swap i j k))) →
+      W_n f = W_n g := by
+  intro i j f g hsp hswap
+  let τ : Equiv.Perm (Fin n) := Equiv.swap i j
+  let U : Set (NPointDomain d n) :=
+    {x | MinkowskiSpace.AreSpacelikeSeparated d (x i) (x j)}
+  have hf_zero : ∀ x, x ∉ U → f x = 0 := by
+    intro x hxU
+    by_contra hfx
+    exact hxU (hsp x hfx)
+  obtain ⟨fN, hfN_compact, hfN_zero, hfN_tendsto⟩ :=
+    exists_compactSupportApprox_zeroOff_npoint (d := d) U f hf_zero
+  let P : SchwartzNPoint d n →L[ℂ] SchwartzNPoint d n :=
+    localityPermuteSchwartzCLM (d := d) τ
+  let gN : ℕ → SchwartzNPoint d n := fun N => P (fN N)
+  have hcompact_eq : ∀ N, W_n (fN N) = W_n (gN N) := by
+    intro N
+    refine hcompact i j (fN N) (gN N) (hfN_compact N) ?_ ?_
+    · intro x hfx
+      by_contra hxU
+      exact hfx (hfN_zero N x hxU)
+    · intro x
+      change localityPermuteSchwartzCLM (d := d) (Equiv.swap i j) (fN N) x =
+        (fN N).toFun (fun k => x (Equiv.swap i j k))
+      rfl
+  have hleft :
+      Filter.Tendsto (fun N => W_n (fN N)) Filter.atTop (nhds (W_n f)) :=
+    (hW_cont.tendsto f).comp hfN_tendsto
+  have hP_tendsto :
+      Filter.Tendsto (fun N => P (fN N)) Filter.atTop (nhds (P f)) :=
+    (P.continuous.tendsto f).comp hfN_tendsto
+  have hP_f : P f = g := by
+    ext x
+    exact (hswap x).symm
+  have hgN_tendsto :
+      Filter.Tendsto gN Filter.atTop (nhds g) := by
+    simpa [gN, hP_f] using hP_tendsto
+  have hright :
+      Filter.Tendsto (fun N => W_n (gN N)) Filter.atTop (nhds (W_n g)) :=
+    (hW_cont.tendsto g).comp hgN_tendsto
+  have hleft_as_right :
+      Filter.Tendsto (fun N => W_n (fN N)) Filter.atTop (nhds (W_n g)) :=
+    Filter.Tendsto.congr'
+      (Filter.Eventually.of_forall fun N => (hcompact_eq N).symm) hright
+  exact tendsto_nhds_unique hleft hleft_as_right
+
+/-- Full Schwartz adjacent locality from the compact canonical-shell
+boundary-difference theorem.
+
+The only hard input here is the compact-test canonical difference limit.  The
+proof first applies the boundary-value transfer on compact tests, then uses the
+zero-off compact exhaustion theorem to pass to arbitrary Schwartz tests. -/
+theorem bv_local_commutativity_transfer_of_swap_pairing_tendsto (n : ℕ)
+    (W_n : SchwartzNPoint d n → ℂ)
+    (F_n : (Fin n → Fin (d + 1) → ℂ) → ℂ)
+    (hW_cont : Continuous W_n)
+    (hBV : ∀ (f : SchwartzNPoint d n) (η : Fin n → Fin (d + 1) → ℝ),
+      InForwardCone d n η →
+      Filter.Tendsto
+        (fun ε : ℝ => ∫ x : NPointDomain d n,
+          F_n (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x))
+        (nhdsWithin 0 (Set.Ioi 0))
+        (nhds (W_n f)))
+    (hF_swapCanonical_tendsto :
+      ∀ (i j : Fin n) (f g : SchwartzNPoint d n),
+        HasCompactSupport (f : NPointDomain d n → ℂ) →
+        (∀ x, f.toFun x ≠ 0 →
+          MinkowskiSpace.AreSpacelikeSeparated d (x i) (x j)) →
+        (∀ x, g.toFun x = f.toFun (fun k => x (Equiv.swap i j k))) →
+        Filter.Tendsto
+          (fun ε : ℝ =>
+            (∫ x : NPointDomain d n,
+                F_n (fun k μ =>
+                  ↑(x k μ) +
+                    ε * ↑(canonicalForwardConeDirection (d := d) n k μ) *
+                      Complex.I) * (g x))
+              -
+            ∫ x : NPointDomain d n,
+                F_n (fun k μ =>
+                  ↑(x k μ) +
+                    ε * ↑(canonicalForwardConeDirection (d := d) n k μ) *
+                      Complex.I) * (f x))
+          (nhdsWithin 0 (Set.Ioi 0))
+          (nhds 0)) :
+    ∀ (i j : Fin n) (f g : SchwartzNPoint d n),
+      (∀ x, f.toFun x ≠ 0 →
+        MinkowskiSpace.AreSpacelikeSeparated d (x i) (x j)) →
+      (∀ x, g.toFun x = f.toFun (fun k => x (Equiv.swap i j k))) →
+      W_n f = W_n g := by
+  refine
+    bv_local_commutativity_full_of_compact_support_locality
+      (d := d) W_n hW_cont ?_
+  intro i j f g hf_compact hsp hswap
+  exact
+    bv_local_commutativity_transfer_of_swap_pairing_tendsto_compact
+      (d := d) n W_n F_n hBV hF_swapCanonical_tendsto
+      i j f g hf_compact hsp hswap
 
 theorem boundary_ray_hermitian_pairing_of_F_negCanonical
     (n : ℕ)

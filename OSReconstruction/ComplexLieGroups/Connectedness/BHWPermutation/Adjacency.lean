@@ -694,9 +694,10 @@ theorem adjSwapForwardOverlapSlice_convex
     simp only [complexLorentzAction, Pi.add_apply, Pi.smul_apply, Complex.real_smul]
     trans (↑a * ∑ ν, Λ.val μ ν * w₁ (τ k) ν + ↑b * ∑ ν, Λ.val μ ν * w₂ (τ k) ν)
     · rw [Finset.mul_sum, Finset.mul_sum, ← Finset.sum_add_distrib]
-      congr 1
-      ext ν
-      ring
+      apply Finset.sum_congr rfl
+      intro ν _
+      simp only [Pi.add_apply, Pi.smul_apply, Complex.real_smul]
+      ring_nf
     · rfl
   rw [hlin]
   exact forwardTube_convex hw₁.2 hw₂.2 ha hb hab
@@ -975,6 +976,11 @@ theorem indexSet_right_mul_ofReal
       _ = complexLorentzAction (1 : ComplexLorentzGroup d) w := by
             simp [ofReal_one_eq]
       _ = w := complexLorentzAction_one w
+  have hperm_cancel :
+      (fun k => (complexLorentzAction (ComplexLorentzGroup.ofReal R) w') (τ k)) =
+        fun k => w (τ k) := by
+    funext k
+    exact congrFun hw'_cancel (τ k)
   have hstep :
       complexLorentzAction (Λ * ComplexLorentzGroup.ofReal R) (fun k => w' (τ k)) =
       complexLorentzAction Λ (fun k => w (τ k)) := by
@@ -986,9 +992,9 @@ theorem indexSet_right_mul_ofReal
                 (fun k => w' (τ k))
       _ = complexLorentzAction Λ
             (fun k => (complexLorentzAction (ComplexLorentzGroup.ofReal R) w') (τ k)) := by
-            simp [hcommR]
+            rw [hcommR]
       _ = complexLorentzAction Λ (fun k => w (τ k)) := by
-            simp [hw'_cancel]
+            rw [hperm_cancel]
   rw [hstep]
   exact hw.2
 
