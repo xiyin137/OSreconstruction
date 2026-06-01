@@ -342,29 +342,42 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
               have hordinary_matches_OS412_seed :
                   BHW.extendF (bvt_F OS lgc n) z0 = Bseed z0 := by
                 /-
-                  This is the live Vladimirov/Tillmann local-BV leaf in its
-                  boundary-representative form.
+                  This is the live Vladimirov/Tillmann local-BV leaf in the
+                  actual local-collar form.
 
-                  * ordinary side: `extendF (bvt_F OS lgc n)` on the
-                    adjacent Wick point `z0`;
-                  * boundary representative: the ordinary Wick value
-                    `bvt_F OS lgc n (wick u)`;
-                  * common BV: the OS-I `(4.12)`--`(4.14)` source/Jost
-                    tempered boundary value on the local Figure-2-4 collar.
+                  Both analytic branches are now present on the same OS-I
+                  `(4.12)` seed collar `Cseed`:
+
+                  * ordinary side: the BHW extension `extendF (bvt_F OS lgc n)`,
+                    holomorphic because `Cseed ⊆ ExtendedTube`;
+                  * adjacent seed side: the raw `(4.12)` branch `Bseed`,
+                    already holomorphic and already identified with
+                    `extendF (bvt_F) ∘ permAct P.τ` on `Cseed`;
+                  * boundary representative at `z0`: the ordinary Wick value,
+                    by the seed normalization above.
 
                   The available global flat-tube uniqueness theorem is not
                   directly applicable here because the carrier is this local
                   BHW collar, not a full tube over `os45FlatCommonChartCone`.
-                  The remaining producer must show that the ordinary BHW
-                  extension has this tempered boundary representative at the
-                  adjacent Wick endpoint.
+                  The remaining producer is the local tempered-BV uniqueness
+                  statement on `Cseed`: the ordinary extension and the raw
+                  OS-I seed branch have the same tempered boundary value there.
                 -/
-                have hordinary_boundary :
-                    BHW.extendF (bvt_F OS lgc n) z0 =
-                      bvt_F OS lgc n
-                        (fun k => wickRotatePoint (u k)) := by
-                  exact ?os45_vladimirov_temperedBV_ordinary_boundary_at_adjacentWick
-                exact hordinary_boundary.trans hBseed_ordinaryWick.symm
+                have hCseed_sub_ET :
+                    Cseed ⊆ BHW.ExtendedTube d n := by
+                  intro z hz
+                  exact (hCseed_sub hz).2.1
+                have hordinary_holo_Cseed :
+                    DifferentiableOn ℂ
+                      (BHW.extendF (bvt_F OS lgc n)) Cseed :=
+                  (BHW.differentiableOn_extendF_bvt_F_extendedTube
+                    (d := d) OS lgc n).mono hCseed_sub_ET
+                have hordinary_eq_seed_on_Cseed :
+                    Set.EqOn
+                      (BHW.extendF (bvt_F OS lgc n)) Bseed Cseed := by
+                  exact
+                    ?os45_vladimirov_temperedBV_unique_on_OS412_seed_collar
+                exact hordinary_eq_seed_on_Cseed hz0Cseed
               exact hordinary_matches_OS412_seed.trans hBseed_adj
           exact hdeterministic_overlap.trans hseed_extendF
         exact hvladimirov_endpoint.trans hseed_eval
