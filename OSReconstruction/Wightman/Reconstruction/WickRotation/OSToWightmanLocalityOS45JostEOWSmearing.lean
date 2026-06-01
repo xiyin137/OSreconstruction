@@ -73,16 +73,103 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
       (BHW.os45CommonEdgeFlatCLE_mem_edgeSet_iff d n P
         (1 : Equiv.Perm (Fin n)) u).mpr
         (hU_closure (subset_closure huU))
-  /-
-    Active OS-I Section 4.5 payload.
-
-    The available Lean infrastructure checks all consumers after this point:
-    real-edge continuity, side boundary traces, source-to-flat Jacobian
-    transport, and the Hdiff/source-representation handoff.  What is not yet
-    formalized is the monograph's production of the compact-test equality above
-    from Jost real-edge equality plus distributional EOW and partition-of-unity
-    smearing on `tsupport φ ⊆ E`.
-  -/
-  exact ?os_i_section45_jost_eow_partition_smearing
+  have hJost_edge_eq :
+      ∀ x ∈ E,
+        BHW.os45FlatCommonChartBranch d n OS lgc
+            (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+            (SCV.realEmbed x) =
+          BHW.os45FlatCommonChartBranch d n OS lgc
+            (1 : Equiv.Perm (Fin n))
+            (SCV.realEmbed x) := by
+    rcases
+        BHW.os45CommonEdge_initialSectorOverlap_traces_except_adjacentWick
+          (d := d) hd OS lgc (P := P)
+          hU_compact hU_connected hU_closure with
+      ⟨Ucx, Ford, Fadj, hUcx_open, hUcx_connected, hwick_mem, hcommon_mem,
+        _hUcx_sub, hFord_holo, hFadj_holo, hFord_wick, hFadj_wick_extend,
+        hFord_common, hFadj_common, _hFadj_perm_wick⟩
+    have htransported_wick_pairing :
+        ∀ ψ : SchwartzNPoint d n,
+          HasCompactSupport (ψ : NPointDomain d n → ℂ) →
+          tsupport (ψ : NPointDomain d n → ℂ) ⊆ U →
+          ∫ u : NPointDomain d n,
+            BHW.extendF (bvt_F OS lgc n)
+              (BHW.permAct (d := d) P.τ
+                (fun k => wickRotatePoint (u k))) * ψ u =
+          ∫ u : NPointDomain d n,
+            bvt_F OS lgc n (fun k => wickRotatePoint (u k)) * ψ u := by
+      exact ?os_i_section45_extendF_permAct_wick_transport
+    have hwick_pairing :
+        ∀ ψ : SchwartzNPoint d n,
+          HasCompactSupport (ψ : NPointDomain d n → ℂ) →
+          tsupport (ψ : NPointDomain d n → ℂ) ⊆ U →
+          ∫ u : NPointDomain d n,
+            Fadj (fun k => wickRotatePoint (u k)) * ψ u =
+          ∫ u : NPointDomain d n,
+            Ford (fun k => wickRotatePoint (u k)) * ψ u := by
+      intro ψ hψ_compact hψU
+      calc
+        ∫ u : NPointDomain d n,
+            Fadj (fun k => wickRotatePoint (u k)) * ψ u =
+          ∫ u : NPointDomain d n,
+            BHW.extendF (bvt_F OS lgc n)
+              (BHW.permAct (d := d) P.τ
+                (fun k => wickRotatePoint (u k))) * ψ u := by
+            refine MeasureTheory.integral_congr_ae (Filter.Eventually.of_forall ?_)
+            intro u
+            by_cases hu : u ∈ U
+            · exact congrArg (fun c : ℂ => c * ψ u)
+                (hFadj_wick_extend u hu)
+            · have hψ_zero : ψ u = 0 :=
+                image_eq_zero_of_notMem_tsupport
+                  (fun hψ_supp => hu (hψU hψ_supp))
+              simp [hψ_zero]
+        _ =
+          ∫ u : NPointDomain d n,
+            bvt_F OS lgc n (fun k => wickRotatePoint (u k)) * ψ u :=
+            htransported_wick_pairing ψ hψ_compact hψU
+        _ =
+          ∫ u : NPointDomain d n,
+            Ford (fun k => wickRotatePoint (u k)) * ψ u := by
+            refine MeasureTheory.integral_congr_ae (Filter.Eventually.of_forall ?_)
+            intro u
+            by_cases hu : u ∈ U
+            · exact congrArg (fun c : ℂ => c * ψ u) (hFord_wick u hu).symm
+            · have hψ_zero : ψ u = 0 :=
+                image_eq_zero_of_notMem_tsupport
+                  (fun hψ_supp => hu (hψU hψ_supp))
+              simp [hψ_zero]
+    have hsource_eq :
+        ∀ u ∈ U,
+          BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+              (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+              (BHW.realEmbed
+                (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                  (1 : Equiv.Perm (Fin n)) u)) =
+            BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+              (1 : Equiv.Perm (Fin n))
+              (BHW.realEmbed
+                (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                  (1 : Equiv.Perm (Fin n)) u)) :=
+      BHW.os45CommonEdge_pulledRealBranches_eqOn_of_wickPairings
+        (d := d) hd OS lgc (P := P)
+        hU_open hU_connected.nonempty hUcx_open hUcx_connected
+        hwick_mem hcommon_mem Ford Fadj hFord_holo hFadj_holo
+        hwick_pairing hFord_common hFadj_common
+    exact
+      BHW.os45FlatCommonChart_realEdge_branch_eq_of_source_commonEdge_branch_eqOn
+        (d := d) hd OS lgc (P := P) (U := U) hsource_eq
+  refine MeasureTheory.integral_congr_ae (Filter.Eventually.of_forall ?_)
+  intro x
+  by_cases hxφ :
+      x ∈ Function.support
+        (φ : BHW.OS45FlatCommonChartReal d n → ℂ)
+  · have hxE : x ∈ E :=
+      hφU (subset_tsupport _ hxφ)
+    exact congrArg (fun c : ℂ => c * φ x) (hJost_edge_eq x hxE)
+  · have hφx : φ x = 0 := by
+      by_contra hne
+      exact hxφ (by simpa [Function.mem_support] using hne)
+    simp [hφx]
 
 end BHW
