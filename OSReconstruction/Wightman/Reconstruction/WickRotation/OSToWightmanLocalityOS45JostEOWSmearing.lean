@@ -286,42 +286,26 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
                 BHW.extendF (bvt_F OS lgc n)
                   (BHW.permAct (d := d) P.τ z0) :=
             by
-              -- `hz0_overlap` is the exact BHW overlap point where the
-              -- Vladimirov/common-tempered-BV uniqueness producer must act.
-              -- The following is the direct SCV uniqueness mechanism; the
-              -- remaining named goals are the OS45/BHW instantiation data,
-              -- not another outer reduction.
-              let e :=
-                flattenCLEquiv n (d + 1)
-              let C : Set (Fin (n * (d + 1)) → ℝ) :=
-                ?os45_vladimirov_common_flat_cone
-              let Ford_flat : (Fin (n * (d + 1)) → ℂ) → ℂ :=
-                fun w => BHW.extendF (bvt_F OS lgc n) (e.symm w)
-              let Fadj_flat : (Fin (n * (d + 1)) → ℂ) → ℂ :=
-                fun w =>
-                  BHW.extendF (bvt_F OS lgc n)
-                    (BHW.permAct (d := d) P.τ (e.symm w))
-              have hflatEq :
-                  Set.EqOn Ford_flat Fadj_flat (SCV.TubeDomain C) := by
-                refine
-                  tube_holomorphic_unique_from_equal_tempered_bv_flat
-                    (C := C)
-                    ?os45_vladimirov_common_flat_cone_open
-                    ?os45_vladimirov_common_flat_cone_convex
-                    ?os45_vladimirov_common_flat_cone_nonempty
-                    ?os45_vladimirov_common_flat_cone_scale
-                    ?os45_vladimirov_ford_flat_holomorphic
-                    ?os45_vladimirov_fadj_flat_holomorphic
-                    ?os45_vladimirov_ford_tempered_bv
-                    ?os45_vladimirov_fadj_tempered_bv
-                    ?os45_vladimirov_boundary_distributions_equal
-                    ?os45_vladimirov_ford_slice_integrable
-                    ?os45_vladimirov_fadj_slice_integrable
-              have hz0_flat :
-                  e z0 ∈ SCV.TubeDomain C :=
-                ?os45_vladimirov_seed_mem_common_flat_tube
-              have hz0_eq := hflatEq hz0_flat
-              simpa [Ford_flat, Fadj_flat, e] using hz0_eq
+              /-
+                `hz0_overlap` is the exact BHW overlap point where the
+                Vladimirov/common-tempered-BV uniqueness producer must act.
+
+                The tempting global flat-tube call
+                `tube_holomorphic_unique_from_equal_tempered_bv_flat` with
+                the OS45 quarter-turn chart is too strong: after undoing the
+                quarter-turn, branch-domain membership depends on the real
+                edge point, so the valid carrier is the existing compact
+                Figure-2-4 local wedge, not the whole tube over
+                `os45FlatCommonChartCone`.
+
+                The remaining proof body is therefore the local Vladimirov
+                tempered-BV uniqueness step: build the two tempered boundary
+                values on the compact BHW collar through `z0`, identify their
+                boundary distributions by the OS-I `(4.12)`--`(4.14)` Jost
+                argument, and evaluate the resulting local equality at this
+                adjacent Wick seed.
+              -/
+              exact ?os45_vladimirov_local_temperedBV_adjacentWick_transport
           exact hdeterministic_overlap.trans hseed_extendF
         exact hvladimirov_endpoint.trans hseed_eval
       refine MeasureTheory.integral_congr_ae (Filter.Eventually.of_forall ?_)
