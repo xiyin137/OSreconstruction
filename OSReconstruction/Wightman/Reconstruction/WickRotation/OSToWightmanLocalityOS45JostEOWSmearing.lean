@@ -416,8 +416,42 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
                   -- identity theorem, distributional EOW, and compact smearing
                   -- transport the adjacent `(4.12)` Wick section to the
                   -- ordinary Wick boundary value in compact-test pairing.
-                  exact
-                    ?os_i_section45_wick_section_compact_test_transport
+                  have hbranch_current :
+                      (∫ u : NPointDomain d n,
+                        BHW.extendF (bvt_F OS lgc n)
+                          (BHW.permAct (d := d) P.τ
+                            (fun k => wickRotatePoint (u k))) * ψ u) =
+                      ∫ u : NPointDomain d n,
+                        bvt_F OS lgc n
+                          (BHW.permAct (d := d) P.τ
+                            (fun k => wickRotatePoint (u k))) * ψ u := by
+                    -- OS-I §4.5 residual branch-current transfer: identify
+                    -- the deterministic BHW adjacent Wick branch with the raw
+                    -- `(4.12)` ACR source current in compact-test pairing.
+                    exact
+                      ?os_i_section45_adjacent_wick_branch_current_transfer
+                  have hraw_perm :
+                      (∫ u : NPointDomain d n,
+                        bvt_F OS lgc n
+                          (BHW.permAct (d := d) P.τ
+                            (fun k => wickRotatePoint (u k))) * ψ u) =
+                      ∫ u : NPointDomain d n,
+                        bvt_F OS lgc n (fun k => wickRotatePoint (u k)) *
+                          ψ u := by
+                    refine MeasureTheory.integral_congr_ae
+                      (Filter.Eventually.of_forall ?_)
+                    intro u
+                    have hperm :
+                        bvt_F OS lgc n
+                          (BHW.permAct (d := d) P.τ
+                            (fun k => wickRotatePoint (u k))) =
+                        bvt_F OS lgc n
+                          (fun k => wickRotatePoint (u k)) := by
+                      simpa [BHW.permAct] using
+                        bvt_F_perm (d := d) OS lgc n P.τ
+                          (fun k => wickRotatePoint (u k))
+                    exact congrArg (fun c : ℂ => c * ψ u) hperm
+                  exact hbranch_current.trans hraw_perm
                 _ =
                     ∫ u : NPointDomain d n,
                       Ford (fun k => wickRotatePoint (u k)) * ψ u :=
