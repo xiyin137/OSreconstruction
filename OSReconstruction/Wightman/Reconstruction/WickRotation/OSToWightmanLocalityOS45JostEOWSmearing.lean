@@ -1,4 +1,3 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanLocalityOS45Figure24Seed
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanLocalityOS45SourceSideMoving
 
 /-!
@@ -415,154 +414,40 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
                         ψ u := by
                   -- OS-I §4.5: Euclidean source-current equality, the Jost
                   -- identity theorem, distributional EOW, and compact smearing
-                  -- transport the adjacent `(4.12)` Wick section to the
-                  -- ordinary Wick boundary value in compact-test pairing.
-                  have hbranch_current :
-                      (∫ u : NPointDomain d n,
-                        BHW.extendF (bvt_F OS lgc n)
-                          (BHW.permAct (d := d) P.τ
-                            (fun k => wickRotatePoint (u k))) * ψ u) =
-                      ∫ u : NPointDomain d n,
-                        bvt_F OS lgc n
-                          (BHW.permAct (d := d) P.τ
-                            (fun k => wickRotatePoint (u k))) * ψ u := by
-                    /-
-                      Vladimirov/BHW interface in its local compact-test form.
-
-                      The deterministic adjacent branch on the ordinary Wick
-                      section is `Fadj✝ (wick u)`.  The genuine OS-I `(4.12)`
-                      seed value is `Fadj✝ (permAct P.τ (wick u))`, and the
-                      checked seed chart below identifies that seed with the
-                      raw source current.  The only missing mathematical step
-                      is the OS-I `(4.12)`--`(4.14)` tempered-boundary-value
-                      transport of this one local branch from the seed section
-                      to the ordinary Wick section in compact-test pairing.
-                    -/
-                    have hOS412_seed_charts :
-                        ∀ u ∈ U,
-                          ∃ (C0 : Set (Fin n → Fin (d + 1) → ℂ))
-                            (C0branch :
-                              (Fin n → Fin (d + 1) → ℂ) → ℂ)
-                            (r : ℝ),
-                            0 < r ∧
-                            C0 =
-                              Metric.ball
-                                (BHW.permAct (d := d) P.τ
-                                  (fun k => wickRotatePoint (u k))) r ∧
-                            BHW.permAct (d := d) P.τ
-                                (fun k => wickRotatePoint (u k)) ∈ C0 ∧
-                            IsOpen C0 ∧
-                            IsPreconnected C0 ∧
-                            C0 ⊆
-                              (({z : Fin n → Fin (d + 1) → ℂ |
-                                  BHW.permAct (d := d) P.τ z ∈
-                                    BHW.ForwardTube d n} ∩ H.ΩJ) ∩
-                                (BHW.ExtendedTube d n ∩
-                                  BHW.permutedExtendedTubeSector d n P.τ)) ∧
-                            DifferentiableOn ℂ C0branch C0 ∧
-                            Set.EqOn C0branch
-                              (fun z : Fin n → Fin (d + 1) → ℂ =>
-                                BHW.extendF (bvt_F OS lgc n)
-                                  (BHW.permAct (d := d) P.τ z)) C0 ∧
-                            C0branch
-                                (BHW.permAct (d := d) P.τ
-                                  (fun k => wickRotatePoint (u k))) =
-                              bvt_F OS lgc n
-                                (fun k => wickRotatePoint (u (P.τ k))) := by
-                      intro u hu
-                      exact
-                        H.OS412SeedWindow_initialSectorOverlap_deterministicAdjBranch_metricBallChart
-                          OS lgc (hU_sub hu)
-                    have hOS412_seed_to_wick_carrier :
-                        ∀ u ∈ U,
-                          ∃ W : Set (Fin n → Fin (d + 1) → ℂ),
-                            IsOpen W ∧ IsConnected W ∧
-                            BHW.permAct (d := d) P.τ
-                                (fun k => wickRotatePoint (u k)) ∈ W ∧
-                            (fun k => wickRotatePoint (u k)) ∈ W ∧
-                            W ⊆ H.ΩJ := by
-                      intro u hu
-                      exact
-                        H.OS412Seed_ordinaryWick_connectedNeighborhood
-                          (hU_sub hu)
-                    have hseed_to_wick_pairing :
+                    -- transport the adjacent `(4.12)` Wick section to the
+                    -- ordinary Wick boundary value in compact-test pairing.
+                    have hbranch_current :
                         (∫ u : NPointDomain d n,
-                          Fadj (fun k => wickRotatePoint (u k)) * ψ u) =
-                        ∫ u : NPointDomain d n,
-                          Fadj
-                            (BHW.permAct (d := d) P.τ
-                              (fun k => wickRotatePoint (u k))) * ψ u := by
-                      exact
-                        ?vladimirov_bhw_OS412_seed_to_wick_pairing_transport
-                    have hseed_trace_pairing :
-                        (∫ u : NPointDomain d n,
-                          Fadj
+                          BHW.extendF (bvt_F OS lgc n)
                             (BHW.permAct (d := d) P.τ
                               (fun k => wickRotatePoint (u k))) * ψ u) =
                         ∫ u : NPointDomain d n,
-                          bvt_F OS lgc n
+                          bvt_F OS lgc n (fun k => wickRotatePoint (u k)) *
+                            ψ u := by
+                      /-
+                        Vladimirov/BHW interface in its local compact-test form.
+
+                        This is the actual OS-I `(4.12)`--`(4.14)` / Vladimirov
+                        uniqueness leaf: the BHW adjacent branch
+                        `extendF (bvt_F) ∘ permAct P.τ`, evaluated on the
+                        ordinary Wick section, has the same tempered boundary
+                        value as the ordinary Wick current in every compact test
+                        supported in the Figure-2-4 source collar.
+                      -/
+                      calc
+                        (∫ u : NPointDomain d n,
+                          BHW.extendF (bvt_F OS lgc n)
                             (BHW.permAct (d := d) P.τ
-                              (fun k => wickRotatePoint (u k))) * ψ u := by
-                      refine MeasureTheory.integral_congr_ae
-                        (Filter.Eventually.of_forall ?_)
-                      intro u
-                      by_cases hu : u ∈ U
-                      · have htrace :
-                            Fadj
-                                (BHW.permAct (d := d) P.τ
-                                  (fun k => wickRotatePoint (u k))) =
+                              (fun k => wickRotatePoint (u k))) * ψ u) =
+                            ∫ u : NPointDomain d n,
+                              Fadj (fun k => wickRotatePoint (u k)) * ψ u :=
+                          hleft.symm
+                        _ =
+                            ∫ u : NPointDomain d n,
                               bvt_F OS lgc n
-                                (BHW.permAct (d := d) P.τ
-                                  (fun k => wickRotatePoint (u k))) := by
-                          simpa [BHW.permAct] using
-                            _hFadj_seed_trace u hu
-                        exact congrArg (fun c : ℂ => c * ψ u) htrace
-                      · have hψ_zero : ψ u = 0 :=
-                          image_eq_zero_of_notMem_tsupport
-                            (fun hψ_supp => hu (hψU hψ_supp))
-                        simp [hψ_zero]
-                    calc
-                      (∫ u : NPointDomain d n,
-                        BHW.extendF (bvt_F OS lgc n)
-                          (BHW.permAct (d := d) P.τ
-                            (fun k => wickRotatePoint (u k))) * ψ u) =
-                          ∫ u : NPointDomain d n,
-                            Fadj (fun k => wickRotatePoint (u k)) * ψ u :=
-                        hleft.symm
-                      _ =
-                          ∫ u : NPointDomain d n,
-                            Fadj
-                              (BHW.permAct (d := d) P.τ
-                                (fun k => wickRotatePoint (u k))) * ψ u :=
-                        hseed_to_wick_pairing
-                      _ =
-                          ∫ u : NPointDomain d n,
-                            bvt_F OS lgc n
-                              (BHW.permAct (d := d) P.τ
-                                (fun k => wickRotatePoint (u k))) * ψ u :=
-                        hseed_trace_pairing
-                  have hraw_perm :
-                      (∫ u : NPointDomain d n,
-                        bvt_F OS lgc n
-                          (BHW.permAct (d := d) P.τ
-                            (fun k => wickRotatePoint (u k))) * ψ u) =
-                      ∫ u : NPointDomain d n,
-                        bvt_F OS lgc n (fun k => wickRotatePoint (u k)) *
-                          ψ u := by
-                    refine MeasureTheory.integral_congr_ae
-                      (Filter.Eventually.of_forall ?_)
-                    intro u
-                    have hperm :
-                        bvt_F OS lgc n
-                          (BHW.permAct (d := d) P.τ
-                            (fun k => wickRotatePoint (u k))) =
-                        bvt_F OS lgc n
-                          (fun k => wickRotatePoint (u k)) := by
-                      simpa [BHW.permAct] using
-                        bvt_F_perm (d := d) OS lgc n P.τ
-                          (fun k => wickRotatePoint (u k))
-                    exact congrArg (fun c : ℂ => c * ψ u) hperm
-                  exact hbranch_current.trans hraw_perm
+                                (fun k => wickRotatePoint (u k)) * ψ u :=
+                          ?vladimirov_bhw_adjacent_wick_temperedBV_uniqueness_pairing
+                    exact hbranch_current
                 _ =
                     ∫ u : NPointDomain d n,
                       Ford (fun k => wickRotatePoint (u k)) * ψ u :=
