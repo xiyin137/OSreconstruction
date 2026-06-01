@@ -558,22 +558,53 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
                                   ψ x)
                             (𝓝[Set.Ioi 0] (0 : ℝ))
                             (𝓝 0) := by
-                        /-
-                          Active Vladimirov/BHW residual-transfer leaf.
+                        have hsourceSide_difference_from_OS412 :
+                            Tendsto
+                              (fun ε : ℝ =>
+                                (∫ u : NPointDomain d n,
+                                  BHW.extendF (bvt_F OS lgc n)
+                                    (BHW.os45FlatCommonChartSourceSide d n
+                                      (1 : Equiv.Perm (Fin n)) (1 : ℝ)
+                                      ε η u) *
+                                    ((((D.toSideZeroDiagonalCLM
+                                      (1 : Equiv.Perm (Fin n))
+                                      (1 : ℝ) ε η ψ).1 :
+                                        SchwartzNPoint d n) :
+                                          NPointDomain d n → ℂ) u)) -
+                                ∫ u : NPointDomain d n,
+                                  BHW.extendF (bvt_F OS lgc n)
+                                    (BHW.permAct (d := d)
+                                      (P.τ.symm *
+                                        (1 : Equiv.Perm (Fin n))).symm
+                                      (BHW.os45FlatCommonChartSourceSide
+                                        d n (1 : Equiv.Perm (Fin n))
+                                        (-1 : ℝ) ε η u)) *
+                                    ((((D.toSideZeroDiagonalCLM
+                                      (1 : Equiv.Perm (Fin n))
+                                      (-1 : ℝ) ε η ψ).1 :
+                                        SchwartzNPoint d n) :
+                                          NPointDomain d n → ℂ) u))
+                              (𝓝[Set.Ioi 0] (0 : ℝ))
+                              (𝓝 0) := by
+                          /-
+                            Active Vladimirov/BHW residual-transfer leaf.
 
-                          The raw OS-I `(4.14)` source-current comparison is
-                          now in scope as `hsource_current_ψ`, and the ordinary
-                          plus side has already been identified with the
-                          canonical edge CLM `Tlocal`.  The remaining analytic
-                          producer must transport the source-current comparison
-                          through the BHW/Vladimirov tempered boundary-value
-                          uniqueness argument, yielding the deterministic flat
-                          side-branch difference above.  This is the concrete
-                          polynomial-growth/common-BV interface; it is not a
-                          downstream Hdiff or source-representation consumer.
-                        -/
-                        exact
-                          ?os45_vladimirov_source_current_to_flat_side_difference
+                            The raw OS-I `(4.14)` source-current comparison is
+                            in scope as `hsource_current_ψ`.  What remains is
+                            the tempered boundary-value uniqueness step that
+                            identifies that raw `bvt_F` source-current limit
+                            with the deterministic source-side `extendF`
+                            branches above.  The flat-chart side transfer below
+                            is already handled by the OS45 source-side moving
+                            theorem, so this is the concrete polynomial-growth
+                            / common-BV interface.
+                          -/
+                          exact
+                            ?os45_vladimirov_source_current_to_extendF_sourceSide_difference
+                        simpa [one_mul, neg_mul] using
+                          D.tendsto_flatCommonChart_sideBranch_difference_zero_of_sourceSideDifference
+                            (d := d) OS lgc η hηC ψ hψ_compact hψEdge
+                            hsourceSide_difference_from_OS412
                       refine Tendsto.congr' ?_ ?_
                       · filter_upwards with ε
                         ring
