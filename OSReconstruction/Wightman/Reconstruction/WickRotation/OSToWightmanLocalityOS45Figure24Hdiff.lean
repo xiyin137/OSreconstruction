@@ -5887,154 +5887,182 @@ theorem OS45BHWJostHullData.os45CommonEdge_sourceRepresentsZero_of_OS412_sourceS
             ((((D.toSideZeroDiagonalCLM
               (1 : Equiv.Perm (Fin n)) (-1 : ℝ) ε η φ).1 :
                 SchwartzNPoint d n) : NPointDomain d n → ℂ) u)
-        have hplus_transport :
-            Tendsto (fun ε : ℝ => FextPlus ε - FcurPlus ε)
-              (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) := by
-          let A0 : ℂ :=
-            ∫ u : NPointDomain d n,
-              BHW.extendF (bvt_F OS lgc n)
+        let Aplus0 : ℂ :=
+          ∫ u : NPointDomain d n,
+            BHW.extendF (bvt_F OS lgc n)
+              (BHW.os45FlatCommonChartSourceSide d n
+                (1 : Equiv.Perm (Fin n)) (1 : ℝ) 0 η u) *
+            ((((D.toZeroDiagonalCLM
+              (1 : Equiv.Perm (Fin n)) φ).1 :
+                SchwartzNPoint d n) : NPointDomain d n → ℂ) u)
+        let Aminus0 : ℂ :=
+          ∫ u : NPointDomain d n,
+            BHW.extendF (bvt_F OS lgc n)
+              (BHW.permAct (d := d)
+                (P.τ.symm * (1 : Equiv.Perm (Fin n))).symm
                 (BHW.os45FlatCommonChartSourceSide d n
-                  (1 : Equiv.Perm (Fin n)) (1 : ℝ) 0 η u) *
-              ((((D.toZeroDiagonalCLM
-                (1 : Equiv.Perm (Fin n)) φ).1 :
-                  SchwartzNPoint d n) : NPointDomain d n → ℂ) u)
-          let S0 : ℂ :=
-            OS.S n (D.toZeroDiagonalCLM (1 : Equiv.Perm (Fin n)) φ)
-          have h0_minus_plus :
-              ∀ u ∈ closure U,
+                  (1 : Equiv.Perm (Fin n)) (-1 : ℝ) 0 η u)) *
+            ((((D.toZeroDiagonalCLM
+              (1 : Equiv.Perm (Fin n)) φ).1 :
+                SchwartzNPoint d n) : NPointDomain d n → ℂ) u)
+        let S0 : ℂ :=
+          OS.S n (D.toZeroDiagonalCLM (1 : Equiv.Perm (Fin n)) φ)
+        have h0_minus_plus :
+            ∀ u ∈ closure U,
+              BHW.os45FlatCommonChartSourceSide d n
+                (1 : Equiv.Perm (Fin n)) (-1 : ℝ) 0 η u ∈ Ωplus := by
+          intro u hu
+          simpa using h0_plus u hu
+        have h0_plus_minus :
+            ∀ u ∈ closure U,
+              BHW.os45FlatCommonChartSourceSide d n
+                (1 : Equiv.Perm (Fin n)) (1 : ℝ) 0 η u ∈ Ωminus := by
+          intro u hu
+          simpa using h0_minus u hu
+        have hFextPlus :
+            Tendsto FextPlus (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 Aplus0) := by
+          have hpair :=
+            D.tendsto_sourceSide_extendF_sideZeroDiagonalCLM_pair
+              (d := d) OS lgc (1 : Equiv.Perm (Fin n))
+              hΩplus_open hFplus_cont hU_open subset_closure hU_compact
+              η h0_plus h0_minus_plus φ hφ_compact hφU
+          simpa [FextPlus, Aplus0] using hpair.1
+        have hFextMinus :
+            Tendsto FextMinus (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 Aminus0) := by
+          have hpair :=
+            D.tendsto_sourceSide_extendF_sideZeroDiagonalCLM_pair
+              (d := d) OS lgc (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+              hΩminus_open hFminus_cont hU_open subset_closure hU_compact
+              η h0_plus_minus h0_minus φ hφ_compact hφU
+          simpa [FextMinus, Aminus0] using hpair.2
+        have hFcurPlus :
+            Tendsto FcurPlus (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 S0) := by
+          have hKηC :
+              ({η} : Set (BHW.OS45FlatCommonChartReal d n)) ⊆
+                BHW.os45FlatCommonChartCone d n := by
+            intro ξ hξ
+            simpa [Set.mem_singleton_iff.mp hξ] using hηC
+          have hsource :=
+            D.sideZeroDiagonal_sourcePairings_tendstoUniformlyOn_schwinger
+              OS lgc ({η} : Set (BHW.OS45FlatCommonChartReal d n))
+              isCompact_singleton hKηC φ hφ_compact hφE
+          have hcur := hsource.1.tendsto_at
+            (show η ∈ ({η} : Set (BHW.OS45FlatCommonChartReal d n)) by
+              simp)
+          simpa [FcurPlus, S0] using hcur
+        have hFcurMinus :
+            Tendsto FcurMinus (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 S0) := by
+          have hKηC :
+              ({η} : Set (BHW.OS45FlatCommonChartReal d n)) ⊆
+                BHW.os45FlatCommonChartCone d n := by
+            intro ξ hξ
+            simpa [Set.mem_singleton_iff.mp hξ] using hηC
+          have hsource :=
+            D.sideZeroDiagonal_sourcePairings_tendstoUniformlyOn_schwinger
+              OS lgc ({η} : Set (BHW.OS45FlatCommonChartReal d n))
+              isCompact_singleton hKηC φ hφ_compact hφE
+          have hcur := hsource.2.2.2.tendsto_at
+            (show η ∈ ({η} : Set (BHW.OS45FlatCommonChartReal d n)) by
+              simp)
+          simpa [FcurMinus, S0] using hcur
+        have hAplus_eq_Aminus : Aplus0 = Aminus0 := by
+          let Acommon : ℂ :=
+            ∫ u : NPointDomain d n,
+              BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                  (1 : Equiv.Perm (Fin n))
+                  (BHW.realEmbed
+                    (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                      (1 : Equiv.Perm (Fin n)) u)) *
+                (D.toSchwartzNPointCLM
+                  (1 : Equiv.Perm (Fin n)) φ : NPointDomain d n → ℂ) u
+          let AadjCommon : ℂ :=
+            ∫ u : NPointDomain d n,
+              BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                  (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+                  (BHW.realEmbed
+                    (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                      (1 : Equiv.Perm (Fin n)) u)) *
+                (D.toSchwartzNPointCLM
+                  (1 : Equiv.Perm (Fin n)) φ :
+                    NPointDomain d n → ℂ) u
+          have hAplus_common : Aplus0 = Acommon := by
+            dsimp [Aplus0, Acommon]
+            refine MeasureTheory.integral_congr_ae
+              (Filter.Eventually.of_forall ?_)
+            intro u
+            let z0 : Fin n → Fin (d + 1) → ℂ :=
+              (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+                (BHW.realEmbed
+                  (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                    (1 : Equiv.Perm (Fin n)) u))
+            have hsource_zero :
                 BHW.os45FlatCommonChartSourceSide d n
-                  (1 : Equiv.Perm (Fin n)) (-1 : ℝ) 0 η u ∈ Ωplus := by
-            intro u hu
-            simpa using h0_plus u hu
-          have hFextPlus :
-              Tendsto FextPlus (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 A0) := by
-            have hpair :=
-              D.tendsto_sourceSide_extendF_sideZeroDiagonalCLM_pair
-                (d := d) OS lgc (1 : Equiv.Perm (Fin n))
-                hΩplus_open hFplus_cont hU_open subset_closure hU_compact
-                η h0_plus h0_minus_plus φ hφ_compact hφU
-            simpa [FextPlus, A0] using hpair.1
-          have hFcurPlus :
-              Tendsto FcurPlus (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 S0) := by
-            have hKηC :
-                ({η} : Set (BHW.OS45FlatCommonChartReal d n)) ⊆
-                  BHW.os45FlatCommonChartCone d n := by
-              intro ξ hξ
-              simpa [Set.mem_singleton_iff.mp hξ] using hηC
-            have hsource :=
-              D.sideZeroDiagonal_sourcePairings_tendstoUniformlyOn_schwinger
-                OS lgc ({η} : Set (BHW.OS45FlatCommonChartReal d n))
-                isCompact_singleton hKηC φ hφ_compact hφE
-            have hcur := hsource.1.tendsto_at
-              (show η ∈ ({η} : Set (BHW.OS45FlatCommonChartReal d n)) by
-                simp)
-            simpa [FcurPlus, S0] using hcur
-          have hA0_eq_S0 : A0 = S0 := by
-            let Acommon : ℂ :=
-              ∫ u : NPointDomain d n,
+                    (1 : Equiv.Perm (Fin n)) (1 : ℝ) 0 η u = z0 := by
+              simpa [z0] using
+                BHW.os45FlatCommonChartSourceSide_zero_eq_commonEdge
+                  (d := d) (n := n)
+                  (1 : Equiv.Perm (Fin n)) (1 : ℝ) η u
+            have hord :
+                BHW.extendF (bvt_F OS lgc n) z0 =
+                  BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                    (1 : Equiv.Perm (Fin n))
+                    (BHW.realEmbed
+                      (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                        (1 : Equiv.Perm (Fin n)) u)) := by
+              simp [BHW.os45PulledRealBranch, z0]
+            change
+              BHW.extendF (bvt_F OS lgc n)
+                  (BHW.os45FlatCommonChartSourceSide d n
+                    (1 : Equiv.Perm (Fin n)) (1 : ℝ) 0 η u) *
+                  (D.toSchwartzNPointCLM
+                    (1 : Equiv.Perm (Fin n)) φ :
+                      NPointDomain d n → ℂ) u =
                 BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
                     (1 : Equiv.Perm (Fin n))
                     (BHW.realEmbed
                       (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
                         (1 : Equiv.Perm (Fin n)) u)) *
                   (D.toSchwartzNPointCLM
-                    (1 : Equiv.Perm (Fin n)) φ : NPointDomain d n → ℂ) u
-            have hA0_common : A0 = Acommon := by
-              dsimp [A0, Acommon]
-              refine MeasureTheory.integral_congr_ae
-                (Filter.Eventually.of_forall ?_)
-              intro u
-              let z0 : Fin n → Fin (d + 1) → ℂ :=
-                (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
-                  (BHW.realEmbed
-                    (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
-                      (1 : Equiv.Perm (Fin n)) u))
-              have hsource_zero :
-                  BHW.os45FlatCommonChartSourceSide d n
-                      (1 : Equiv.Perm (Fin n)) (1 : ℝ) 0 η u = z0 := by
-                simpa [z0] using
-                  BHW.os45FlatCommonChartSourceSide_zero_eq_commonEdge
-                    (d := d) (n := n)
-                    (1 : Equiv.Perm (Fin n)) (1 : ℝ) η u
-              have hord :
-                  BHW.extendF (bvt_F OS lgc n) z0 =
-                    BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
-                      (1 : Equiv.Perm (Fin n))
-                      (BHW.realEmbed
-                        (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
-                          (1 : Equiv.Perm (Fin n)) u)) := by
-                simp [BHW.os45PulledRealBranch, z0]
-              change
-                BHW.extendF (bvt_F OS lgc n)
-                    (BHW.os45FlatCommonChartSourceSide d n
-                      (1 : Equiv.Perm (Fin n)) (1 : ℝ) 0 η u) *
-                    (D.toSchwartzNPointCLM
-                      (1 : Equiv.Perm (Fin n)) φ :
-                        NPointDomain d n → ℂ) u =
-                  BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
-                      (1 : Equiv.Perm (Fin n))
-                      (BHW.realEmbed
-                        (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
-                          (1 : Equiv.Perm (Fin n)) u)) *
-                    (D.toSchwartzNPointCLM
-                      (1 : Equiv.Perm (Fin n)) φ :
-                        NPointDomain d n → ℂ) u
-              rw [hsource_zero, hord]
-            have hAcommon_eq_S0 : Acommon = S0 := by
-              exact ?os_i_section45_ordinary_common_edge_pairing_eq_schwinger
-            exact hA0_common.trans hAcommon_eq_S0
-          have hdiff := hFextPlus.sub hFcurPlus
-          have hlim : A0 - S0 = 0 := by
-            rw [hA0_eq_S0]
-            simp
-          simpa [hlim] using hdiff
-        have hminus_transport :
-            Tendsto (fun ε : ℝ => FextMinus ε - FcurMinus ε)
-              (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) := by
-          let Aminus0 : ℂ :=
-            ∫ u : NPointDomain d n,
-              BHW.extendF (bvt_F OS lgc n)
-                (BHW.permAct (d := d)
-                  (P.τ.symm * (1 : Equiv.Perm (Fin n))).symm
-                  (BHW.os45FlatCommonChartSourceSide d n
-                    (1 : Equiv.Perm (Fin n)) (-1 : ℝ) 0 η u)) *
-              ((((D.toZeroDiagonalCLM
-                (1 : Equiv.Perm (Fin n)) φ).1 :
-                  SchwartzNPoint d n) : NPointDomain d n → ℂ) u)
-          let S0 : ℂ :=
-            OS.S n (D.toZeroDiagonalCLM (1 : Equiv.Perm (Fin n)) φ)
-          have h0_plus_minus :
-              ∀ u ∈ closure U,
+                    (1 : Equiv.Perm (Fin n)) φ :
+                      NPointDomain d n → ℂ) u
+            rw [hsource_zero, hord]
+          have hAminus_common : Aminus0 = AadjCommon := by
+            dsimp [Aminus0, AadjCommon]
+            refine MeasureTheory.integral_congr_ae
+              (Filter.Eventually.of_forall ?_)
+            intro u
+            let z0 : Fin n → Fin (d + 1) → ℂ :=
+              (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+                (BHW.realEmbed
+                  (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                    (1 : Equiv.Perm (Fin n)) u))
+            have hsource_zero :
                 BHW.os45FlatCommonChartSourceSide d n
-                  (1 : Equiv.Perm (Fin n)) (1 : ℝ) 0 η u ∈ Ωminus := by
-            intro u hu
-            simpa using h0_minus u hu
-          have hFextMinus :
-              Tendsto FextMinus (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 Aminus0) := by
-            have hpair :=
-              D.tendsto_sourceSide_extendF_sideZeroDiagonalCLM_pair
-                (d := d) OS lgc (P.τ.symm * (1 : Equiv.Perm (Fin n)))
-                hΩminus_open hFminus_cont hU_open subset_closure hU_compact
-                η h0_plus_minus h0_minus φ hφ_compact hφU
-            simpa [FextMinus, Aminus0] using hpair.2
-          have hFcurMinus :
-              Tendsto FcurMinus (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 S0) := by
-            have hKηC :
-                ({η} : Set (BHW.OS45FlatCommonChartReal d n)) ⊆
-                  BHW.os45FlatCommonChartCone d n := by
-              intro ξ hξ
-              simpa [Set.mem_singleton_iff.mp hξ] using hηC
-            have hsource :=
-              D.sideZeroDiagonal_sourcePairings_tendstoUniformlyOn_schwinger
-                OS lgc ({η} : Set (BHW.OS45FlatCommonChartReal d n))
-                isCompact_singleton hKηC φ hφ_compact hφE
-            have hcur := hsource.2.2.2.tendsto_at
-              (show η ∈ ({η} : Set (BHW.OS45FlatCommonChartReal d n)) by
-                simp)
-            simpa [FcurMinus, S0] using hcur
-          have hAminus_eq_S0 : Aminus0 = S0 := by
-            let AadjCommon : ℂ :=
-              ∫ u : NPointDomain d n,
+                    (1 : Equiv.Perm (Fin n)) (-1 : ℝ) 0 η u = z0 := by
+              simpa [z0] using
+                BHW.os45FlatCommonChartSourceSide_zero_eq_commonEdge
+                  (d := d) (n := n)
+                  (1 : Equiv.Perm (Fin n)) (-1 : ℝ) η u
+            have hadj :
+                BHW.extendF (bvt_F OS lgc n)
+                    (BHW.permAct (d := d) P.τ z0) =
+                  BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                    (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+                    (BHW.realEmbed
+                      (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                        (1 : Equiv.Perm (Fin n)) u)) := by
+              simpa [z0] using
+                BHW.os45Figure24CommonEdge_permAct_extendF_eq_adjacentPulledRealBranch
+                  (d := d) (n := n) hd OS lgc (P := P) u
+            change
+              BHW.extendF (bvt_F OS lgc n)
+                  (BHW.permAct (d := d)
+                    (P.τ.symm * (1 : Equiv.Perm (Fin n))).symm
+                    (BHW.os45FlatCommonChartSourceSide d n
+                      (1 : Equiv.Perm (Fin n)) (-1 : ℝ) 0 η u)) *
+                  (D.toSchwartzNPointCLM
+                    (1 : Equiv.Perm (Fin n)) φ :
+                      NPointDomain d n → ℂ) u =
                 BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
                     (P.τ.symm * (1 : Equiv.Perm (Fin n)))
                     (BHW.realEmbed
@@ -6043,75 +6071,35 @@ theorem OS45BHWJostHullData.os45CommonEdge_sourceRepresentsZero_of_OS412_sourceS
                   (D.toSchwartzNPointCLM
                     (1 : Equiv.Perm (Fin n)) φ :
                       NPointDomain d n → ℂ) u
-            have hAminus_common : Aminus0 = AadjCommon := by
-              dsimp [Aminus0, AadjCommon]
-              refine MeasureTheory.integral_congr_ae
-                (Filter.Eventually.of_forall ?_)
-              intro u
-              let z0 : Fin n → Fin (d + 1) → ℂ :=
-                (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
-                  (BHW.realEmbed
-                    (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
-                      (1 : Equiv.Perm (Fin n)) u))
-              have hsource_zero :
-                  BHW.os45FlatCommonChartSourceSide d n
-                      (1 : Equiv.Perm (Fin n)) (-1 : ℝ) 0 η u = z0 := by
-                simpa [z0] using
-                  BHW.os45FlatCommonChartSourceSide_zero_eq_commonEdge
-                    (d := d) (n := n)
-                    (1 : Equiv.Perm (Fin n)) (-1 : ℝ) η u
-              have hadj :
-                  BHW.extendF (bvt_F OS lgc n)
-                      (BHW.permAct (d := d) P.τ z0) =
-                    BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
-                      (P.τ.symm * (1 : Equiv.Perm (Fin n)))
-                      (BHW.realEmbed
-                        (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
-                          (1 : Equiv.Perm (Fin n)) u)) := by
-                simpa [z0] using
-                  BHW.os45Figure24CommonEdge_permAct_extendF_eq_adjacentPulledRealBranch
-                    (d := d) (n := n) hd OS lgc (P := P) u
-              change
-                BHW.extendF (bvt_F OS lgc n)
-                    (BHW.permAct (d := d)
-                      (P.τ.symm * (1 : Equiv.Perm (Fin n))).symm
-                      (BHW.os45FlatCommonChartSourceSide d n
-                        (1 : Equiv.Perm (Fin n)) (-1 : ℝ) 0 η u)) *
-                    (D.toSchwartzNPointCLM
-                      (1 : Equiv.Perm (Fin n)) φ :
-                        NPointDomain d n → ℂ) u =
-                  BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
-                      (P.τ.symm * (1 : Equiv.Perm (Fin n)))
-                      (BHW.realEmbed
-                        (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
-                          (1 : Equiv.Perm (Fin n)) u)) *
-                    (D.toSchwartzNPointCLM
-                      (1 : Equiv.Perm (Fin n)) φ :
-                        NPointDomain d n → ℂ) u
-              rw [hsource_zero]
-              simpa using congrArg (fun c : ℂ =>
-                c *
-                  (D.toSchwartzNPointCLM
-                    (1 : Equiv.Perm (Fin n)) φ :
-                      NPointDomain d n → ℂ) u) hadj
-            have hAadj_eq_S0 : AadjCommon = S0 := by
-              exact ?os_i_section45_adjacent_common_edge_pairing_eq_schwinger
-            exact hAminus_common.trans hAadj_eq_S0
-          have hdiff := hFextMinus.sub hFcurMinus
-          have hlim : Aminus0 - S0 = 0 := by
-            rw [hAminus_eq_S0]
-            simp
-          simpa [hlim] using hdiff
-        have hdiff := hplus_transport.sub hminus_transport
-        have htarget :
+            rw [hsource_zero]
+            simpa using congrArg (fun c : ℂ =>
+              c *
+                (D.toSchwartzNPointCLM
+                  (1 : Equiv.Perm (Fin n)) φ :
+                    NPointDomain d n → ℂ) u) hadj
+          have hAadj_eq_Acommon : AadjCommon = Acommon := by
+            exact ?os_i_section45_common_edge_pairing_eq
+          exact hAplus_common.trans (hAminus_common.trans hAadj_eq_Acommon).symm
+        have hFextDiff :
+            Tendsto (fun ε : ℝ => FextPlus ε - FextMinus ε)
+              (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 (Aplus0 - Aminus0)) :=
+          hFextPlus.sub hFextMinus
+        have hFcurDiff :
+            Tendsto (fun ε : ℝ => FcurPlus ε - FcurMinus ε)
+              (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 (S0 - S0)) :=
+          hFcurPlus.sub hFcurMinus
+        have hdiff := hFextDiff.sub hFcurDiff
+        have hlim : Aplus0 - Aminus0 = 0 := by
+          rw [hAplus_eq_Aminus]
+          ring
+        have htarget' :
             (fun ε : ℝ =>
-              (FextPlus ε - FcurPlus ε) -
-                (FextMinus ε - FcurMinus ε)) =
+              (FextPlus ε - FextMinus ε) -
+                (FcurPlus ε - FcurMinus ε)) =
               fun ε : ℝ => Fext ε - Fcur ε := by
           funext ε
           dsimp [Fext, Fcur, FextPlus, FextMinus, FcurPlus, FcurMinus]
-          ring
-        simpa [htarget] using hdiff
+        simpa [htarget', hlim] using hdiff
       have hsum := htransport.add hsource_current
       simpa [sub_eq_add_neg] using hsum
     simpa [Fext] using hside_ext
