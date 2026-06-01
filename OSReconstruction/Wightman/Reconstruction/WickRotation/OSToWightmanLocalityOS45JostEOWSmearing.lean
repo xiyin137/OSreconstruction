@@ -491,180 +491,49 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
                                 ψ x)
                           (𝓝[Set.Ioi 0] (0 : ℝ))
                           (𝓝 (Tlocal ψ)) := by
-                      have hsource_current_ψ :
-                          Tendsto
-                            (fun ε : ℝ =>
-                              (∫ u : NPointDomain d n,
-                                bvt_F OS lgc n
-                                    (fun k => wickRotatePoint (u k)) *
-                                  ((((D.toSideZeroDiagonalCLM
-                                    (1 : Equiv.Perm (Fin n))
-                                    (1 : ℝ) ε η ψ).1 :
-                                      SchwartzNPoint d n) :
-                                      NPointDomain d n → ℂ) u)) -
-                              ∫ u : NPointDomain d n,
-                                bvt_F OS lgc n
-                                    (fun k => wickRotatePoint (u (P.τ k))) *
-                                  ((((D.toSideZeroDiagonalCLM
-                                    (1 : Equiv.Perm (Fin n))
-                                    (-1 : ℝ) ε η ψ).1 :
-                                      SchwartzNPoint d n) :
-                                      NPointDomain d n → ℂ) u))
-                            (𝓝[Set.Ioi 0] (0 : ℝ))
-                            (𝓝 0) := by
-                        exact
-                          D.sourceSide_ordinaryPlus_adjacentMinus_difference_tendsto_zero
-                            OS lgc η hηC ψ hψ_compact hψEdge
-                      have hplus_to_Tlocal :
-                          Tendsto
-                            (fun ε : ℝ =>
-                              ∫ x : BHW.OS45FlatCommonChartReal d n,
-                                BHW.os45FlatCommonChartBranch d n OS lgc
-                                  (1 : Equiv.Perm (Fin n))
-                                  (fun a => (x a : ℂ) +
-                                    (ε : ℂ) * (η a : ℂ) *
-                                      Complex.I) *
-                                  ψ x)
-                            (𝓝[Set.Ioi 0] (0 : ℝ))
-                            (𝓝 (Tlocal ψ)) := by
-                        have hunif :=
-                          BHW.os45_BHWJost_flatCommonChart_distributionalBoundaryValue_plus_of_zeroHeight_pairingCLM
-                            (d := d) hd OS lgc (P := P) Tlocal
-                            ({η} :
-                              Set (BHW.OS45FlatCommonChartReal d n))
-                            isCompact_singleton hη_singleton ψ
-                            hψ_compact hψEdge
-                            (hzero_plus ψ hψ_compact hψE)
-                        exact hunif.tendsto_at (by simp)
-                      have hside_difference_from_OS412 :
-                          Tendsto
-                            (fun ε : ℝ =>
-                              (∫ x :
-                                  BHW.OS45FlatCommonChartReal d n,
-                                BHW.os45FlatCommonChartBranch d n OS lgc
-                                  (1 : Equiv.Perm (Fin n))
-                                  (fun a => (x a : ℂ) +
-                                    (ε : ℂ) * (η a : ℂ) *
-                                      Complex.I) *
-                                  ψ x) -
-                              ∫ x :
-                                  BHW.OS45FlatCommonChartReal d n,
-                                BHW.os45FlatCommonChartBranch d n OS lgc
-                                  (P.τ.symm *
-                                    (1 : Equiv.Perm (Fin n)))
-                                  (fun a => (x a : ℂ) -
-                                    (ε : ℂ) * (η a : ℂ) *
-                                      Complex.I) *
-                                  ψ x)
-                            (𝓝[Set.Ioi 0] (0 : ℝ))
-                            (𝓝 0) := by
-                        have hsourceSide_difference_from_OS412 :
-                            Tendsto
-                              (fun ε : ℝ =>
-                                (∫ u : NPointDomain d n,
-                                  BHW.extendF (bvt_F OS lgc n)
-                                    (BHW.os45FlatCommonChartSourceSide d n
-                                      (1 : Equiv.Perm (Fin n)) (1 : ℝ)
-                                      ε η u) *
-                                    ((((D.toSideZeroDiagonalCLM
-                                      (1 : Equiv.Perm (Fin n))
-                                      (1 : ℝ) ε η ψ).1 :
-                                        SchwartzNPoint d n) :
-                                          NPointDomain d n → ℂ) u)) -
-                                ∫ u : NPointDomain d n,
-                                  BHW.extendF (bvt_F OS lgc n)
-                                    (BHW.permAct (d := d)
-                                      (P.τ.symm *
-                                        (1 : Equiv.Perm (Fin n))).symm
-                                      (BHW.os45FlatCommonChartSourceSide
-                                        d n (1 : Equiv.Perm (Fin n))
-                                        (-1 : ℝ) ε η u)) *
-                                    ((((D.toSideZeroDiagonalCLM
-                                      (1 : Equiv.Perm (Fin n))
-                                      (-1 : ℝ) ε η ψ).1 :
-                                        SchwartzNPoint d n) :
-                                          NPointDomain d n → ℂ) u))
-                              (𝓝[Set.Ioi 0] (0 : ℝ))
-                              (𝓝 0) := by
-                          /-
-                            Active Vladimirov/BHW residual-transfer leaf.
+                      let Cminus : Set (BHW.OS45FlatCommonChartReal d n) :=
+                        {ξ | -ξ ∈ BHW.os45FlatCommonChartCone d n}
+                      let Fminus :
+                          BHW.OS45FlatCommonChartSpace d n → ℂ :=
+                        BHW.os45FlatCommonChartBranch d n OS lgc
+                          (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+                      have hη_minus : (-η) ∈ Cminus := by
+                        dsimp [Cminus]
+                        simpa using hηC
+                      have hTminus :
+                          SCV.HasFourierLaplaceReprTempered Cminus Fminus := by
+                        /-
+                          Genuine Vladimirov/BHW producer input.
 
-                            The raw OS-I `(4.14)` source-current comparison is
-                            in scope as `hsource_current_ψ`.  The missing
-                            producer is the tempered boundary-value uniqueness
-                            packet for the two deterministic source-side BHW
-                            branches: polynomial growth and holomorphy on the
-                            local source collar give a common tempered boundary
-                            functional, and the OS source-current comparison
-                            identifies that common functional with the raw
-                            source boundary value.  Once that packet exists,
-                            the present residual is just uniqueness of limits.
-                          -/
-                          have hcommon_temperedBV_sourceSide :
-                              ∃ Wsrc :
-                                  SchwartzMap
-                                      (BHW.OS45FlatCommonChartReal d n) ℂ
-                                    →L[ℂ] ℂ,
-                                Tendsto
-                                  (fun ε : ℝ =>
-                                    ∫ u : NPointDomain d n,
-                                      BHW.extendF (bvt_F OS lgc n)
-                                        (BHW.os45FlatCommonChartSourceSide
-                                          d n (1 : Equiv.Perm (Fin n))
-                                          (1 : ℝ) ε η u) *
-                                        ((((D.toSideZeroDiagonalCLM
-                                          (1 : Equiv.Perm (Fin n))
-                                          (1 : ℝ) ε η ψ).1 :
-                                            SchwartzNPoint d n) :
-                                              NPointDomain d n → ℂ) u))
-                                  (𝓝[Set.Ioi 0] (0 : ℝ))
-                                  (𝓝 (Wsrc ψ)) ∧
-                                Tendsto
-                                  (fun ε : ℝ =>
-                                    ∫ u : NPointDomain d n,
-                                      BHW.extendF (bvt_F OS lgc n)
-                                        (BHW.permAct (d := d)
-                                          (P.τ.symm *
-                                            (1 : Equiv.Perm (Fin n))).symm
-                                          (BHW.os45FlatCommonChartSourceSide
-                                            d n (1 : Equiv.Perm (Fin n))
-                                            (-1 : ℝ) ε η u)) *
-                                        ((((D.toSideZeroDiagonalCLM
-                                          (1 : Equiv.Perm (Fin n))
-                                          (-1 : ℝ) ε η ψ).1 :
-                                            SchwartzNPoint d n) :
-                                              NPointDomain d n → ℂ) u))
-                                  (𝓝[Set.Ioi 0] (0 : ℝ))
-                                  (𝓝 (Wsrc ψ)) := by
-                            /-
-                              This is the actual OS-I §4.5/Vladimirov input:
-                              produce the common tempered-BV package for the
-                              ordinary and adjacent deterministic source-side
-                              branches from local holomorphy, polynomial
-                              growth, and equality of their OS boundary
-                              distributions on the Jost edge.  The existing SCV
-                              consumers are
-                              `SCV.tube_holomorphic_unique_from_equal_tempered_bv_flat`
-                              and
-                              `SCV.fourierLaplace_boundary_recovery_on_open_of_tempered`;
-                              the missing work is instantiating their
-                              hypotheses for this BHW source collar.
-                            -/
-                            exact
-                              ?os45_vladimirov_common_temperedBV_sourceSide_packet
-                          rcases hcommon_temperedBV_sourceSide with
-                            ⟨Wsrc, hplus_sourceSide, hminus_sourceSide⟩
-                          simpa using hplus_sourceSide.sub hminus_sourceSide
-                        simpa [one_mul, neg_mul] using
-                          D.tendsto_flatCommonChart_sideBranch_difference_zero_of_sourceSideDifference
-                            (d := d) OS lgc η hηC ψ hψ_compact hψEdge
-                            hsourceSide_difference_from_OS412
-                      refine Tendsto.congr' ?_ ?_
-                      · filter_upwards with ε
-                        ring
-                      · simpa using
-                          hplus_to_Tlocal.sub
-                            hside_difference_from_OS412
+                          This is the lower-tube tempered boundary-value
+                          package for the adjacent deterministic BHW branch on
+                          the local Figure-2-4 collar.  It must be built from
+                          holomorphy of `extendF`, the OS linear-growth bound
+                          transported to this chart, and the compact Jost
+                          source-current equality from OS-I `(4.12)`--`(4.14)`.
+                        -/
+                        exact
+                          ?os45_vladimirov_adjacent_lower_tube_tempered_package
+                      have hdist_eq :
+                          hTminus.dist ψ = Tlocal ψ := by
+                        /-
+                          Genuine Vladimirov uniqueness input.
+
+                          The boundary distribution carried by the adjacent
+                          lower-tube package must be identified with the
+                          ordinary common-edge CLM on `E`.  This is exactly
+                          the OS-I Jost/Vladimirov common-boundary statement:
+                          Euclidean source symmetry gives equality on the
+                          Jost edge, and tempered-BV uniqueness transports it
+                          to the deterministic BHW branch.
+                        -/
+                        exact
+                          ?os45_vladimirov_adjacent_boundary_dist_eq_ordinaryEdgeCLM
+                      have hminus_bv :=
+                        hTminus.boundary_value ψ (-η) hη_minus
+                      simpa [Fminus, Cminus, hdist_eq, sub_eq_add_neg,
+                        neg_mul, one_mul, Pi.neg_apply, mul_assoc] using
+                        hminus_bv
                     exact
                       tendsto_nhds_unique hminus_zeroHeight_limit
                         hminus_vladimirov_to_Tlocal
