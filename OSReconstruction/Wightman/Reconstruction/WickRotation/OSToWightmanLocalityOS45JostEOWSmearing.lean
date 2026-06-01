@@ -313,23 +313,130 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
                     ∃ Wc : Set (Fin n → Fin (d + 1) → ℂ),
                       IsOpen Wc ∧
                       common0 ∈ Wc ∧
-                      Wc ⊆ BHW.ExtendedTube d n ∩
-                        BHW.permutedExtendedTubeSector d n P.τ ∧
+                    Wc ⊆ BHW.ExtendedTube d n ∩
+                      BHW.permutedExtendedTubeSector d n P.τ ∧
                       Set.EqOn Fdet
                         (fun z =>
                           Fdet (BHW.permAct (d := d) P.τ z)) Wc := by
                   /-
-                    This is the actual Vladimirov/BHW interface.
+                    Vladimirov/BHW interface, now opened at the actual
+                    distributional EOW consumer.
 
-                    The missing OS-I `(4.12)`--`(4.14)` production theorem must
-                    construct a local common-edge open seed from the tempered
-                    boundary-value packages of the ordinary and adjacent flat
-                    branches: domains, polynomial growth/tempered BV, equality
-                    of the common Jost-edge boundary distributions, and the local
-                    EOW/Vladimirov uniqueness conclusion.
+                    The ordinary branch already represents the canonical
+                    common-edge CLM.  The remaining OS-I `(4.12)`--`(4.14)`
+                    producer must show that the adjacent boundary branch has the
+                    same tempered boundary distribution on this local flat Jost
+                    window.  Once that zero-height adjacent CLM equality is
+                    supplied, the checked local distributional EOW theorem below
+                    creates the required complex-open common-edge seed.
                   -/
-                  exact
-                    ?os45_vladimirov_temperedBV_common_edge_open_seed
+                  let e :=
+                    BHW.os45CommonEdgeFlatCLE d n
+                      (1 : Equiv.Perm (Fin n))
+                  let E : Set (BHW.OS45FlatCommonChartReal d n) := e '' U
+                  let x0 : BHW.OS45FlatCommonChartReal d n := e u
+                  let Tlocal :
+                      SchwartzMap (BHW.OS45FlatCommonChartReal d n) ℂ →L[ℂ] ℂ :=
+                    BHW.os45FlatCommonChart_ordinaryEdgeCLM hd OS lgc P
+                  have hE_open : IsOpen E := by
+                    simpa [E, e] using e.toHomeomorph.isOpenMap U hU_open
+                  have hE_sub :
+                      E ⊆ BHW.os45FlatCommonChartEdgeSet d n P
+                        (1 : Equiv.Perm (Fin n)) := by
+                    rintro x ⟨v, hvU, rfl⟩
+                    exact
+                      (BHW.os45CommonEdgeFlatCLE_mem_edgeSet_iff d n P
+                        (1 : Equiv.Perm (Fin n)) v).mpr (hU_sub hvU)
+                  have hx0 : x0 ∈ E := ⟨u, hu, rfl⟩
+                  have hm :
+                      0 < BHW.os45FlatCommonChartDim d n :=
+                    BHW.os45FlatCommonChartDim_pos_of_adjacent d n hi
+                  rcases BHW.os45FlatCommonChartCone_eowReady d n with
+                    ⟨hC_open, _hC_conv, _hC_zero, _hC_cone,
+                      hC_nonempty⟩
+                  obtain ⟨ys, hys_mem, hys_li⟩ :=
+                    open_set_contains_basis hm
+                      (BHW.os45FlatCommonChartCone d n)
+                      hC_open hC_nonempty
+                  have hzero_plus :
+                      ∀ ψ : SchwartzMap
+                          (BHW.OS45FlatCommonChartReal d n) ℂ,
+                        HasCompactSupport
+                          (ψ : BHW.OS45FlatCommonChartReal d n → ℂ) →
+                        tsupport
+                            (ψ : BHW.OS45FlatCommonChartReal d n → ℂ) ⊆ E →
+                        (∫ x : BHW.OS45FlatCommonChartReal d n,
+                          BHW.os45FlatCommonChartBranch d n OS lgc
+                            (1 : Equiv.Perm (Fin n))
+                            (fun a => (x a : ℂ)) * ψ x)
+                        = Tlocal ψ := by
+                    intro ψ hψ_compact hψE
+                    exact
+                      BHW.os45FlatCommonChart_plus_zeroHeight_pairing_eq_CLM_of_localRepresents
+                        (d := d) hd OS lgc (P := P) Tlocal
+                        (BHW.os45FlatCommonChart_ordinaryEdgeCLM_represents
+                          hd OS lgc)
+                        ψ hψ_compact (hψE.trans hE_sub)
+                  have hzero_minus :
+                      ∀ ψ : SchwartzMap
+                          (BHW.OS45FlatCommonChartReal d n) ℂ,
+                        HasCompactSupport
+                          (ψ : BHW.OS45FlatCommonChartReal d n → ℂ) →
+                        tsupport
+                            (ψ : BHW.OS45FlatCommonChartReal d n → ℂ) ⊆ E →
+                        (∫ x : BHW.OS45FlatCommonChartReal d n,
+                          BHW.os45FlatCommonChartBranch d n OS lgc
+                            (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+                            (fun a => (x a : ℂ)) * ψ x)
+                        = Tlocal ψ := by
+                    intro ψ hψ_compact hψE
+                    exact
+                      ?os45_vladimirov_temperedBV_adjacent_zeroHeight_CLM_of_OS_source_current
+                  rcases
+                      BHW.os45_BHWJost_initialSectorEqOn_open_of_flatCommonChart_localZeroHeight_pairingsCLM
+                        (d := d) hd OS lgc (P := P)
+                        hE_open hE_sub ys hys_mem hys_li x0 hx0
+                        Tlocal hzero_plus hzero_minus with
+                    ⟨Wc, hWc_open, _hWc_pre, hx0Wc, hWc_sub, hWc_eq⟩
+                  refine ⟨Wc, hWc_open, ?_, hWc_sub, ?_⟩
+                  · have hcommon0_flat :
+                        common0 =
+                          (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+                            (BHW.unflattenCfg n d
+                              (SCV.realEmbed x0)) := by
+                      have hsource_zero :=
+                        BHW.os45FlatCommonChartSourceSide_zero_eq_commonEdge
+                          (d := d) (n := n)
+                          (1 : Equiv.Perm (Fin n)) (1 : ℝ)
+                          (0 : BHW.OS45FlatCommonChartReal d n) u
+                      calc
+                        common0 =
+                            (BHW.os45QuarterTurnCLE
+                              (d := d) (n := n)).symm
+                              (BHW.realEmbed
+                                (BHW.os45CommonEdgeRealPoint
+                                  (d := d) (n := n)
+                                  (1 : Equiv.Perm (Fin n)) u)) := rfl
+                        _ =
+                            BHW.os45FlatCommonChartSourceSide d n
+                              (1 : Equiv.Perm (Fin n)) (1 : ℝ) 0
+                              (0 : BHW.OS45FlatCommonChartReal d n) u :=
+                              hsource_zero.symm
+                        _ =
+                            (BHW.os45QuarterTurnCLE
+                              (d := d) (n := n)).symm
+                              (BHW.unflattenCfg n d
+                                (SCV.realEmbed x0)) := by
+                          have hreal :
+                              SCV.realEmbed x0 =
+                                (fun a : Fin
+                                  (BHW.os45FlatCommonChartDim d n) =>
+                                  ((x0) a : ℂ)) := rfl
+                          rw [hreal]
+                          ext k μ
+                          simp [BHW.os45FlatCommonChartSourceSide, e, x0]
+                    simpa [hcommon0_flat] using hx0Wc
+                  · simpa [Fdet] using hWc_eq
                 rcases hcommon_edge_seed with
                   ⟨Wc, hWc_open, hcommon0Wc, hWc_sub, hWc_eq⟩
                 let Wτ : Set (Fin n → Fin (d + 1) → ℂ) :=
