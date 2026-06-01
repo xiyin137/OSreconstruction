@@ -190,6 +190,12 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
       membership facts above are the exact local data used by the existing
       moving-test consumers; no downstream Hdiff or legacy Route A branch is
       being used here.
+
+      A tempting ordinary-side shortcut would identify the zero source-side
+      endpoint with the raw Wick section and then use `extendF_eq_on_forwardTube`.
+      The checked coordinate identity rules that out: the endpoint is the
+      `t = 1` Figure-2-4 identity-path/common-edge point, so the residual is
+      genuinely the OS-I source-side transport, even on the ordinary side.
     -/
     exact ?os_i_section45_mixed_tube_jost_eow_residual_transfer
   have hflat :
