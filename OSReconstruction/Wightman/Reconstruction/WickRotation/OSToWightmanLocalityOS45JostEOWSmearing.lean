@@ -590,17 +590,71 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
                             Active Vladimirov/BHW residual-transfer leaf.
 
                             The raw OS-I `(4.14)` source-current comparison is
-                            in scope as `hsource_current_ψ`.  What remains is
-                            the tempered boundary-value uniqueness step that
-                            identifies that raw `bvt_F` source-current limit
-                            with the deterministic source-side `extendF`
-                            branches above.  The flat-chart side transfer below
-                            is already handled by the OS45 source-side moving
-                            theorem, so this is the concrete polynomial-growth
-                            / common-BV interface.
+                            in scope as `hsource_current_ψ`.  The missing
+                            producer is the tempered boundary-value uniqueness
+                            packet for the two deterministic source-side BHW
+                            branches: polynomial growth and holomorphy on the
+                            local source collar give a common tempered boundary
+                            functional, and the OS source-current comparison
+                            identifies that common functional with the raw
+                            source boundary value.  Once that packet exists,
+                            the present residual is just uniqueness of limits.
                           -/
-                          exact
-                            ?os45_vladimirov_source_current_to_extendF_sourceSide_difference
+                          have hcommon_temperedBV_sourceSide :
+                              ∃ Wsrc :
+                                  SchwartzMap
+                                      (BHW.OS45FlatCommonChartReal d n) ℂ
+                                    →L[ℂ] ℂ,
+                                Tendsto
+                                  (fun ε : ℝ =>
+                                    ∫ u : NPointDomain d n,
+                                      BHW.extendF (bvt_F OS lgc n)
+                                        (BHW.os45FlatCommonChartSourceSide
+                                          d n (1 : Equiv.Perm (Fin n))
+                                          (1 : ℝ) ε η u) *
+                                        ((((D.toSideZeroDiagonalCLM
+                                          (1 : Equiv.Perm (Fin n))
+                                          (1 : ℝ) ε η ψ).1 :
+                                            SchwartzNPoint d n) :
+                                              NPointDomain d n → ℂ) u))
+                                  (𝓝[Set.Ioi 0] (0 : ℝ))
+                                  (𝓝 (Wsrc ψ)) ∧
+                                Tendsto
+                                  (fun ε : ℝ =>
+                                    ∫ u : NPointDomain d n,
+                                      BHW.extendF (bvt_F OS lgc n)
+                                        (BHW.permAct (d := d)
+                                          (P.τ.symm *
+                                            (1 : Equiv.Perm (Fin n))).symm
+                                          (BHW.os45FlatCommonChartSourceSide
+                                            d n (1 : Equiv.Perm (Fin n))
+                                            (-1 : ℝ) ε η u)) *
+                                        ((((D.toSideZeroDiagonalCLM
+                                          (1 : Equiv.Perm (Fin n))
+                                          (-1 : ℝ) ε η ψ).1 :
+                                            SchwartzNPoint d n) :
+                                              NPointDomain d n → ℂ) u))
+                                  (𝓝[Set.Ioi 0] (0 : ℝ))
+                                  (𝓝 (Wsrc ψ)) := by
+                            /-
+                              This is the actual OS-I §4.5/Vladimirov input:
+                              produce the common tempered-BV package for the
+                              ordinary and adjacent deterministic source-side
+                              branches from local holomorphy, polynomial
+                              growth, and equality of their OS boundary
+                              distributions on the Jost edge.  The existing SCV
+                              consumers are
+                              `SCV.tube_holomorphic_unique_from_equal_tempered_bv_flat`
+                              and
+                              `SCV.fourierLaplace_boundary_recovery_on_open_of_tempered`;
+                              the missing work is instantiating their
+                              hypotheses for this BHW source collar.
+                            -/
+                            exact
+                              ?os45_vladimirov_common_temperedBV_sourceSide_packet
+                          rcases hcommon_temperedBV_sourceSide with
+                            ⟨Wsrc, hplus_sourceSide, hminus_sourceSide⟩
+                          simpa using hplus_sourceSide.sub hminus_sourceSide
                         simpa [one_mul, neg_mul] using
                           D.tendsto_flatCommonChart_sideBranch_difference_zero_of_sourceSideDifference
                             (d := d) OS lgc η hηC ψ hψ_compact hψEdge
