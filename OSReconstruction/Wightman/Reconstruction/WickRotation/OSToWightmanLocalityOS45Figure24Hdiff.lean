@@ -6019,19 +6019,42 @@ theorem OS45BHWJostHullData.os45CommonEdge_sourceRepresentsZero_of_OS412_sourceS
                     (P.τ.symm * (1 : Equiv.Perm (Fin n)))
                     (fun a => (x a : ℂ)) * φ x) =
                   BHW.os45FlatCommonChart_ordinaryEdgeCLM hd OS lgc P φ := by
-              /-
-                Active OS-I `(4.14)` compact-test leaf, now with the
-                ordinary side paid to the checked ordinary edge CLM.
+              have hminus_local :
+                  ∀ x0 ∈
+                      BHW.os45FlatCommonChartEdgeSet d n P
+                        (1 : Equiv.Perm (Fin n)),
+                    ∃ U : Set (BHW.OS45FlatCommonChartReal d n),
+                      IsOpen U ∧ x0 ∈ U ∧
+                        ContinuousOn
+                          (fun x : BHW.OS45FlatCommonChartReal d n =>
+                            BHW.os45FlatCommonChartBranch d n OS lgc
+                              (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+                              (fun a => (x a : ℂ))) U ∧
+                        SCV.RepresentsDistributionOn
+                          (BHW.os45FlatCommonChart_ordinaryEdgeCLM hd OS lgc P)
+                          (fun x : BHW.OS45FlatCommonChartReal d n =>
+                            BHW.os45FlatCommonChartBranch d n OS lgc
+                              (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+                              (fun a => (x a : ℂ))) U := by
+                /-
+                  Active OS-I `(4.12)`--`(4.14)` local branch-transfer leaf.
 
-                The remaining production step is the adjacent `(4.12)` half:
-                prove, by the local Jost/EOW partition on the Figure-2-4
-                edge, that the deterministic adjacent zero-height boundary
-                distribution has the same ordinary edge CLM pairing.  This is
-                the missing seed-to-common-edge boundary transport, not another
-                source-side or reduced-normal gate.
-              -/
+                  The ordinary branch already locally represents
+                  `os45FlatCommonChart_ordinaryEdgeCLM`.  The remaining
+                  production step is the adjacent half of the monograph
+                  part-(b) Jost/EOW argument: on a local Figure-2-4 Jost edge
+                  collar, the deterministic adjacent zero-height branch must
+                  represent the same ordinary edge CLM.  This is the actual
+                  mixed-tube boundary-value transport, not a source-current
+                  bookkeeping or reduced-normal gate.
+                -/
+                exact
+                  ?os45_OS414_adjacent_localRepresents_ordinaryEdgeCLM_from_Jost_EOW_partition
               exact
-                ?os45_OS414_adjacent_flat_commonEdge_pairing_eq_ordinaryEdgeCLM_from_Jost_EOW_partition
+                BHW.os45FlatCommonChart_minus_zeroHeight_pairing_eq_CLM_of_localRepresents
+                  (d := d) hd OS lgc (P := P)
+                  (BHW.os45FlatCommonChart_ordinaryEdgeCLM hd OS lgc P)
+                  hminus_local φ hφ_compact hφE
             exact hminus_schwinger.trans hplus_schwinger.symm
           have hAdj :=
             BHW.os45FlatCommonChart_adjacentCommonBoundary_integral_eq_sourcePullback
