@@ -184,15 +184,72 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
         (𝓝[Set.Ioi 0] (0 : ℝ))
         (𝓝 0) := by
     /-
-      Active Vladimirov/BHW source-side transport leaf.
+      Active Vladimirov/BHW local collar transport leaf.
 
-      The honest OS-I `(4.12)` input is the transported adjacent Wick
-      compact-test pairing.  Once that pairing is produced by the
-      Vladimirov/BHW tempered-BV uniqueness argument, the existing
-      initial-overlap trace theorem gives a holomorphic horizontal-difference
-      germ; the checked source-representation moving theorem then supplies the
-      finite-height `(4.14)` source-side residual.
+      The OS source-current side has already been proved as `hsource_current`.
+      The remaining producer must compare that raw Wick-section source current
+      with the deterministic BHW `extendF` pairings on the same compact
+      Figure-2-4 collar.  This is the local tempered-BV uniqueness/recovery
+      step; deriving it through transported Wick pairings or source
+      representation would be circular, because those are downstream
+      consumers of this collar transport.
     -/
+    let Ext : ℝ → ℂ := fun ε =>
+      (∫ u : NPointDomain d n,
+        BHW.extendF (bvt_F OS lgc n)
+          (BHW.os45FlatCommonChartSourceSide d n
+            (1 : Equiv.Perm (Fin n)) (1 : ℝ) ε η u) *
+          ((((D.toSideZeroDiagonalCLM
+            (1 : Equiv.Perm (Fin n)) (1 : ℝ) ε η φ).1 :
+              SchwartzNPoint d n) : NPointDomain d n → ℂ) u)) -
+      ∫ u : NPointDomain d n,
+        BHW.extendF (bvt_F OS lgc n)
+          (BHW.permAct (d := d)
+            (P.τ.symm * (1 : Equiv.Perm (Fin n))).symm
+            (BHW.os45FlatCommonChartSourceSide d n
+              (1 : Equiv.Perm (Fin n)) (-1 : ℝ) ε η u)) *
+          ((((D.toSideZeroDiagonalCLM
+            (1 : Equiv.Perm (Fin n)) (-1 : ℝ) ε η φ).1 :
+              SchwartzNPoint d n) : NPointDomain d n → ℂ) u)
+    let Raw : ℝ → ℂ := fun ε =>
+      (∫ u : NPointDomain d n,
+        bvt_F OS lgc n (fun k => wickRotatePoint (u k)) *
+          ((((D.toSideZeroDiagonalCLM
+            (1 : Equiv.Perm (Fin n)) (1 : ℝ) ε η φ).1 :
+              SchwartzNPoint d n) : NPointDomain d n → ℂ) u)) -
+      ∫ u : NPointDomain d n,
+        bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k))) *
+          ((((D.toSideZeroDiagonalCLM
+            (1 : Equiv.Perm (Fin n)) (-1 : ℝ) ε η φ).1 :
+              SchwartzNPoint d n) : NPointDomain d n → ℂ) u)
+    change Tendsto Ext (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0)
+    have hraw : Tendsto Raw (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) := by
+      simpa [Raw] using hsource_current
+    have htransport_error :
+        Tendsto (fun ε : ℝ => Ext ε - Raw ε)
+          (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) := by
+      /-
+        Genuine local Vladimirov/BHW producer input.
+
+        Required mathematical payload: construct the local tempered boundary
+        value package on the actual OS45 BHW collar from OS polynomial growth,
+        identify its boundary distribution with the raw OS `(4.12)` source
+        current on compact tests, and apply local boundary-value uniqueness to
+        show the deterministic `extendF` collar pairings have the same
+        distributional limit as `Raw`.
+      -/
+      exact ?os45_vladimirov_bhw_local_collar_transport
+    have hsum := htransport_error.add hraw
+    simpa only [sub_add_cancel, zero_add] using hsum
+    /-
+      Retired circular attempt kept temporarily as route evidence.
+
+      The old proof tried to create the same `hsource_ext` by first deriving
+      transported Wick pairings and a source-representation handoff.  The
+      adjacent zero-height step in that route reintroduced the same local
+      `Ext - Raw → 0` collar transport, so it is no longer part of the active
+      proof body.
+
     have htransported_wick_pairing :
         ∀ ψ : SchwartzNPoint d n,
           HasCompactSupport (ψ : NPointDomain d n → ℂ) →
@@ -1004,6 +1061,7 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
         (d := d) OS lgc hΩplus_open hΩminus_open hFplus_cont
         hFminus_cont hU_open (fun u hu => subset_closure hu) hU_compact
         η h0_plus h0_minus hrep φ hφ_compact hφU
+    -/
   have hflat :
       Tendsto
         (fun ε : ℝ =>
