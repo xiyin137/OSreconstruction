@@ -242,11 +242,23 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
               (1 : Equiv.Perm (Fin n)) (-1 : ℝ) 0 η u ∈ Ωplus := by
         intro u hu
         simpa using h0_plus u hu
+      have h0_plus_minus :
+          ∀ u ∈ closure U,
+            BHW.os45FlatCommonChartSourceSide d n
+              (1 : Equiv.Perm (Fin n)) (1 : ℝ) 0 η u ∈ Ωminus := by
+        intro u hu
+        simpa using h0_minus u hu
       have hplus_pair :=
         D.tendsto_sourceSide_extendF_sideZeroDiagonalCLM_pair
           (d := d) OS lgc (1 : Equiv.Perm (Fin n))
           hΩplus_open hFplus_cont hU_open (fun u hu => subset_closure hu)
           hU_compact η h0_plus h0_minus_plus φ hφ_compact hφU
+      have hminus_pair :=
+        D.tendsto_sourceSide_extendF_sideZeroDiagonalCLM_pair
+          (d := d) OS lgc
+          (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+          hΩminus_open hFminus_cont hU_open (fun u hu => subset_closure hu)
+          hU_compact η h0_plus_minus h0_minus φ hφ_compact hφU
       have hordinary_endpoint_ext_eq_bvt :
           ∀ u ∈ U,
             BHW.extendF (bvt_F OS lgc n)
@@ -328,7 +340,123 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
         its boundary distribution is the raw `(4.12)` source current on compact
         tests.
       -/
-      exact ?os45_vladimirov_bhw_local_collar_transport
+      have hminus_endpoint_integral :
+          (∫ u : NPointDomain d n,
+            BHW.extendF (bvt_F OS lgc n)
+              (BHW.permAct (d := d)
+                (P.τ.symm * (1 : Equiv.Perm (Fin n))).symm
+                (BHW.os45FlatCommonChartSourceSide d n
+                  (1 : Equiv.Perm (Fin n)) (-1 : ℝ) 0 η u)) *
+              (φ0 : NPointDomain d n → ℂ) u) =
+            ∫ u : NPointDomain d n,
+              BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                  (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+                  (BHW.realEmbed
+                    (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                      (1 : Equiv.Perm (Fin n)) u)) *
+                (φ0 : NPointDomain d n → ℂ) u := by
+        refine MeasureTheory.integral_congr_ae (Filter.Eventually.of_forall ?_)
+        intro u
+        let z0 : Fin n → Fin (d + 1) → ℂ :=
+          (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u))
+        have hsource_zero :
+            BHW.os45FlatCommonChartSourceSide d n
+                (1 : Equiv.Perm (Fin n)) (-1 : ℝ) 0 η u = z0 := by
+          simpa [z0] using
+            BHW.os45FlatCommonChartSourceSide_zero_eq_commonEdge
+              (d := d) (n := n)
+              (1 : Equiv.Perm (Fin n)) (-1 : ℝ) η u
+        have hadj :
+            BHW.extendF (bvt_F OS lgc n)
+                (BHW.permAct (d := d) P.τ z0) =
+              BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+                (BHW.realEmbed
+                  (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                    (1 : Equiv.Perm (Fin n)) u)) := by
+          simpa [z0] using
+            BHW.os45Figure24CommonEdge_permAct_extendF_eq_adjacentPulledRealBranch
+              (d := d) (n := n) hd OS lgc (P := P) u
+        change
+          BHW.extendF (bvt_F OS lgc n)
+              (BHW.permAct (d := d)
+                (P.τ.symm * (1 : Equiv.Perm (Fin n))).symm
+                (BHW.os45FlatCommonChartSourceSide d n
+                  (1 : Equiv.Perm (Fin n)) (-1 : ℝ) 0 η u)) *
+              (φ0 : NPointDomain d n → ℂ) u =
+            BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+                (BHW.realEmbed
+                  (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                    (1 : Equiv.Perm (Fin n)) u)) *
+              (φ0 : NPointDomain d n → ℂ) u
+        rw [hsource_zero]
+        simpa using
+          congrArg
+            (fun c : ℂ => c * (φ0 : NPointDomain d n → ℂ) u) hadj
+      have hminus_ext_to_adjacent_pulled :
+          Tendsto
+            (fun ε : ℝ =>
+              ∫ u : NPointDomain d n,
+                BHW.extendF (bvt_F OS lgc n)
+                  (BHW.permAct (d := d)
+                    (P.τ.symm * (1 : Equiv.Perm (Fin n))).symm
+                    (BHW.os45FlatCommonChartSourceSide d n
+                      (1 : Equiv.Perm (Fin n)) (-1 : ℝ) ε η u)) *
+                  ((((D.toSideZeroDiagonalCLM
+                    (1 : Equiv.Perm (Fin n)) (-1 : ℝ) ε η φ).1 :
+                      SchwartzNPoint d n) : NPointDomain d n → ℂ) u))
+            (𝓝[Set.Ioi 0] (0 : ℝ))
+            (𝓝
+              (∫ u : NPointDomain d n,
+                BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                    (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+                    (BHW.realEmbed
+                      (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                        (1 : Equiv.Perm (Fin n)) u)) *
+                  (φ0 : NPointDomain d n → ℂ) u)) := by
+        rw [← hminus_endpoint_integral]
+        simpa [φ0] using hminus_pair.2
+      let A0 : ℂ :=
+        ∫ u : NPointDomain d n,
+          bvt_F OS lgc n
+            (BHW.os45FlatCommonChartSourceSide d n
+              (1 : Equiv.Perm (Fin n)) (1 : ℝ) 0 η u) *
+            (φ0 : NPointDomain d n → ℂ) u
+      let B0 : ℂ :=
+        ∫ u : NPointDomain d n,
+          BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+              (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+              (BHW.realEmbed
+                (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                  (1 : Equiv.Perm (Fin n)) u)) *
+            (φ0 : NPointDomain d n → ℂ) u
+      have hzero_height_boundary_distribution : A0 - B0 = 0 := by
+        /-
+          Exact remaining OS-I §4.5 / Vladimirov-BHW leaf.
+
+          The finite side-height collar transport has now been reduced, inside
+          this proof body, to equality of the two zero-height common-boundary
+          distributions paired with the cutoff-pulled test `φ0`: the ordinary
+          quarter-turned `bvt_F` endpoint and the selected adjacent pulled-real
+          endpoint.  The missing mathematical payload is to construct the local
+          tempered boundary-value package on the OS45 BHW collar, identify this
+          common boundary distribution with the raw Wick-section source current
+          on compact tests, and apply the local Vladimirov/EOW uniqueness
+          argument from OS-I `(4.12)`--`(4.14)`.
+        -/
+        exact ?os45_vladimirov_bhw_zeroHeight_boundary_distribution
+      have hExt_to_zeroHeight :
+          Tendsto Ext (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 (A0 - B0)) := by
+        have hpair :=
+          hplus_ext_to_quarterTurn_bvt.sub hminus_ext_to_adjacent_pulled
+        simpa [Ext, A0, B0] using hpair
+      have hExt_zero : Tendsto Ext (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) := by
+        simpa [hzero_height_boundary_distribution] using hExt_to_zeroHeight
+      simpa using hExt_zero.sub hraw
     have hsum := htransport_error.add hraw
     simpa only [sub_add_cancel, zero_add] using hsum
     /-
