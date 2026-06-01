@@ -360,34 +360,68 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
           ⟨Ucx, Ford, Fadj, hUcx_open, hUcx_connected, hwick_mem,
             hcommon_mem, _hUcx_sub, hFord_holo, hFadj_holo,
             hFord_wick, hFadj_wick_extendF, hFord_common, hFadj_common,
-            hFadj_seed_trace⟩
+            _hFadj_seed_trace⟩
         exact
-          BHW.os45CommonEdge_pulledRealBranches_eqOn_of_E3_branchTraces
+          BHW.os45CommonEdge_pulledRealBranches_eqOn_of_wickPairings
             (d := d) hd OS lgc (P := P)
-            hU_open hU_connected.nonempty hU_sub hUcx_open hUcx_connected
+            hU_open hU_connected.nonempty hUcx_open hUcx_connected
             hwick_mem hcommon_mem Ford Fadj hFord_holo hFadj_holo
-            hFord_wick
             (by
-              intro u hu
+              intro ψ _hψ_compact hψU
+              have hleft :
+                  (∫ u : NPointDomain d n,
+                    Fadj (fun k => wickRotatePoint (u k)) * ψ u) =
+                  ∫ u : NPointDomain d n,
+                    BHW.extendF (bvt_F OS lgc n)
+                      (BHW.permAct (d := d) P.τ
+                        (fun k => wickRotatePoint (u k))) * ψ u := by
+                refine MeasureTheory.integral_congr_ae
+                  (Filter.Eventually.of_forall ?_)
+                intro u
+                by_cases hu : u ∈ U
+                · exact congrArg (fun c : ℂ => c * ψ u)
+                    (hFadj_wick_extendF u hu)
+                · have hψ_zero : ψ u = 0 :=
+                    image_eq_zero_of_notMem_tsupport
+                      (fun hψ_supp => hu (hψU hψ_supp))
+                  simp [hψ_zero]
+              have hright :
+                  (∫ u : NPointDomain d n,
+                    Ford (fun k => wickRotatePoint (u k)) * ψ u) =
+                  ∫ u : NPointDomain d n,
+                    bvt_F OS lgc n (fun k => wickRotatePoint (u k)) *
+                      ψ u := by
+                refine MeasureTheory.integral_congr_ae
+                  (Filter.Eventually.of_forall ?_)
+                intro u
+                by_cases hu : u ∈ U
+                · exact congrArg (fun c : ℂ => c * ψ u)
+                    (hFord_wick u hu)
+                · have hψ_zero : ψ u = 0 :=
+                    image_eq_zero_of_notMem_tsupport
+                      (fun hψ_supp => hu (hψU hψ_supp))
+                  simp [hψ_zero]
               calc
-                Fadj (fun k => wickRotatePoint (u k)) =
-                  BHW.extendF (bvt_F OS lgc n)
-                    (BHW.permAct (d := d) P.τ
-                      (fun k => wickRotatePoint (u k))) := by
-                    exact hFadj_wick_extendF u hu
+                (∫ u : NPointDomain d n,
+                  Fadj (fun k => wickRotatePoint (u k)) * ψ u) =
+                    ∫ u : NPointDomain d n,
+                      BHW.extendF (bvt_F OS lgc n)
+                        (BHW.permAct (d := d) P.τ
+                          (fun k => wickRotatePoint (u k))) * ψ u := hleft
                 _ =
-                  Fadj
-                    (BHW.permAct (d := d) P.τ
-                      (fun k => wickRotatePoint (u k))) := by
-                    -- OS-I (4.12): transport the deterministic adjacent
-                    -- `extendF` branch from the seed point to the local
-                    -- adjacent branch on the common overlap chart.
-                    exact
-                      ?os_i_section45_adjacent_seed_to_wick_branch_transport
+                    ∫ u : NPointDomain d n,
+                      bvt_F OS lgc n (fun k => wickRotatePoint (u k)) *
+                        ψ u := by
+                  -- OS-I §4.5: Euclidean source-current equality, the Jost
+                  -- identity theorem, distributional EOW, and compact smearing
+                  -- transport the adjacent `(4.12)` Wick section to the
+                  -- ordinary Wick boundary value in compact-test pairing.
+                  exact
+                    ?os_i_section45_wick_section_compact_test_transport
                 _ =
-                  bvt_F OS lgc n
-                    (fun k => wickRotatePoint (u (P.τ k))) := by
-                    exact hFadj_seed_trace u hu)
+                    ∫ u : NPointDomain d n,
+                      Ford (fun k => wickRotatePoint (u k)) * ψ u :=
+                  hright.symm)
             hFord_common hFadj_common
       have hAadj_eq_Acommon : AadjCommon = Acommon := by
         dsimp [AadjCommon, Acommon]
