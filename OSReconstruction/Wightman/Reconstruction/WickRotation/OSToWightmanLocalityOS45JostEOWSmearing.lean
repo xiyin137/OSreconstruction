@@ -232,14 +232,24 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
         Tendsto (fun ε : ℝ => Ext ε - Raw ε)
           (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) := by
       /-
-        Genuine OS-I `(4.12)`--`(4.14)` Vladimirov/BHW collar transport.
+        Active OS-I `(4.12)`--`(4.14)` Vladimirov/BHW residual transfer.
 
-        The side-difference route below is retired: it proves the deterministic
-        `extendF` side-current comparison from itself after source pullback.
-        The non-circular proof body now reduces the endpoint comparison to the
-        adjacent Wick trace transport furnished by the OS-I/Vladimirov
-        tempered-BV uniqueness step.
+        `hsource_current` has already proved the raw OS source-current limit
+        `Raw -> 0`.  The remaining proof is exactly the compact Figure-2-4
+        tempered-BV recovery step: identify the deterministic BHW collar
+        pairings `Ext` with the raw Wick-section source-current pairings `Raw`
+        in the distributional boundary-value limit.  The pointwise adjacent
+        Wick trace route below is retired because it asks for an endpoint
+        equality stronger than the monograph part-(b) smearing argument.
       -/
+      exact ?os45_vladimirov_raw_to_extendF_local_collar_error_zero
+      /-
+        Retired pointwise/zero-height route.  This attempted to recover
+        `Ext -> 0` by proving equality of zero-height deterministic source
+        pairings, which forced the over-strong adjacent Wick trace
+        `extendF (bvt_F) (permAct τ (wick u)) = bvt_F (wick (u ∘ τ))`.
+        The active leaf is the distributional residual transfer above.
+
       have hzero_pairing :
           (∫ u : NPointDomain d n,
             BHW.extendF (bvt_F OS lgc n)
@@ -517,6 +527,7 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
             (fun u hu => subset_closure hu) hU_compact η
             h0_plus h0_minus φ hφ_compact hφU hzero_pairing
       simpa using hExt_zero.sub hraw
+      -/
       /-
         Retired side-difference route.  The deterministic flat side difference
         is equivalent to the `Ext` comparison produced here, so using it as
