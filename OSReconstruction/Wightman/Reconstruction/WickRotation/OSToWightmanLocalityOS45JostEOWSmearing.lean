@@ -241,6 +241,14 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
         combined signed-collar statement: splitting it into separate ordinary
         and adjacent residuals asks for individual raw boundary limits that are
         not the OS-I input exposed here.
+
+        Checked non-producers: `tendsto_sourceSide_extendF_difference_zero_of_sourceRepresentsOn`
+        consumes the source-representation output of this theorem, the Hdiff
+        local `(4.14)` handoffs consume this flat compact-test equality, and
+        the guarded `S'_n` branch-data route is legacy.  The remaining
+        theorem is the local Vladimirov/BHW recovery step: construct the
+        common tempered boundary distribution for the raw `(4.12)` seed and
+        the deterministic BHW flat collar on this compact Figure-2-4 window.
       -/
       exact
         ?os45_vladimirov_signed_collar_residual_transfer
