@@ -177,6 +177,37 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
             that OS-I/Jost carrier, not a downstream weak-locality shortcut or
             a global two-sector branch wrapper.
           -/
+          have hCanonicalPair :
+              BHW.OS45SourcePatchBHWJostPairData
+                (d := d) hd OS lgc n i hi
+                (BHW.os45Figure24SourcePatch (d := d) (n := n) i hi) := by
+            /-
+              This is the actual Vladimirov/BHW proof body: produce the
+              ordinary and adjacent local branches on the checked source-patch
+              hull, then prove their Wick and real traces.  The adjacent Wick
+              trace is the OS-I `(4.12)` transport leaf.
+            -/
+            let HJ :
+                BHW.OS45SourcePatchBHWJostHullData
+                  (d := d) hd OS lgc n i hi
+                  (BHW.os45Figure24SourcePatch (d := d) (n := n) i hi) :=
+              BHW.os45_sourcePatch_bhwJostHullData_on_figure24SourcePatch
+                (d := d) hd OS lgc n i hi
+            let Bord : (Fin n → Fin (d + 1) → ℂ) → ℂ :=
+              ?os45_vladimirov_ordinary_bhw_branch
+            let Btau : (Fin n → Fin (d + 1) → ℂ) → ℂ :=
+              ?os45_vladimirov_adjacent_bhw_branch
+            refine
+              BHW.OS45SourcePatchBHWJostPairData.ofHullDataAndBranches
+                (d := d) (n := n) (hd := hd) (OS := OS) (lgc := lgc)
+                (i := i) (hi := hi)
+                HJ Bord Btau
+                ?os45_vladimirov_ordinary_branch_holomorphic
+                ?os45_vladimirov_adjacent_branch_holomorphic
+                ?os45_vladimirov_ordinary_wick_trace
+                ?os45_vladimirov_adjacent_wick_trace
+                ?os45_vladimirov_ordinary_real_trace
+                ?os45_vladimirov_adjacent_real_trace
           have hOverlap :
               IsConnected
                 {z : Fin n → Fin (d + 1) → ℂ |
@@ -184,11 +215,6 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
                     BHW.permAct (d := d) P.τ z ∈
                       BHW.ExtendedTube d n} := by
             exact ?os45_adjacent_extended_tube_overlap_connected
-          have hCanonicalPair :
-              BHW.OS45SourcePatchBHWJostPairData
-                (d := d) hd OS lgc n i hi
-                (BHW.os45Figure24SourcePatch (d := d) (n := n) i hi) := by
-            exact ?os45_vladimirov_temperedBV_sourcePatch_pairData
           have hCompact :
               BHW.OS45CompactFigure24WickPairingEq (d := d) n i hi OS lgc :=
             BHW.os45CompactFigure24WickPairingEq_of_pairData_canonical
