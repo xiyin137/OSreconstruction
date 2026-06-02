@@ -278,34 +278,106 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
                 hwick_mem, hcommon_mem, _hUcx_sub, hFord_holo, hFadj_holo,
                 hFord_wick, hFadj_wick_extendF, hFord_common, hFadj_common,
                 _hFadj_seed_trace⟩
-            refine
-              BHW.os45CommonEdge_pulledRealBranches_eqOn_of_E3_branchTraces
-                (d := d) hd OS lgc (P := P)
-                hU_open hU_nonempty hU_sub hUcx_open hUcx_connected
-                hwick_mem hcommon_mem Ford Fadj hFord_holo hFadj_holo
-                hFord_wick ?_ hFord_common hFadj_common
-            intro u hu
-            have hFadj_extend := hFadj_wick_extendF u hu
-            have htransport :
-                BHW.extendF (bvt_F OS lgc n)
-                    (BHW.permAct (d := d) P.τ
-                      (fun k => wickRotatePoint (u k))) =
-                  bvt_F OS lgc n
-                    (fun k => wickRotatePoint (u (P.τ k))) := by
+            have htransported_wick_pairing :
+                ∀ ψ : SchwartzNPoint d n,
+                  HasCompactSupport (ψ : NPointDomain d n → ℂ) →
+                  tsupport (ψ : NPointDomain d n → ℂ) ⊆ U →
+                  ∫ u : NPointDomain d n,
+                    BHW.extendF (bvt_F OS lgc n)
+                      (BHW.permAct (d := d) P.τ
+                        (fun k => wickRotatePoint (u k))) * ψ u =
+                  ∫ u : NPointDomain d n,
+                    bvt_F OS lgc n (fun k => wickRotatePoint (u k)) *
+                      ψ u := by
               /-
-                Exact Vladimirov/BHW interface leaf.
+                Exact OS-I §4.5 seed-to-Wick compact-test transport leaf.
 
-                The initial-overlap packet already supplies the ordinary Wick
-                trace, both common-edge traces, and the adjacent seed trace at
-                `permAct P.τ (wick u)`.  What remains is the OS-I §4.5
-                tempered-boundary-value uniqueness transport identifying the
-                deterministic adjacent BHW branch
-                `extendF (bvt_F) (permAct P.τ (wick u))` with the raw adjacent
-                Wick boundary value.
+                The raw `(4.12)` seed chart has the correct trace at
+                `permAct P.τ (wick u)`, and the initial-overlap packet below
+                carries the deterministic adjacent branch
+                `extendF (bvt_F) ∘ permAct P.τ` at the ordinary Wick section.
+                The missing paper step is the Vladimirov/BHW uniqueness
+                transport identifying those two in compact-test pairings.
               -/
+              have hOverlap_eq :
+                  Set.EqOn
+                    (BHW.extendF (bvt_F OS lgc n))
+                    (fun z : Fin n → Fin (d + 1) → ℂ =>
+                      BHW.extendF (bvt_F OS lgc n)
+                        (BHW.permAct (d := d) P.τ z))
+                    (BHW.ExtendedTube d n ∩
+                      BHW.permutedExtendedTubeSector d n P.τ) := by
+                /-
+                  Vladimirov/BHW interface leaf.
+
+                  This is the canonical uniqueness output needed here: the
+                  ordinary and selected adjacent BHW boundary-value branches
+                  agree on the genuine two-sector overlap.  Once this overlap
+                  equality is available, the checked `of_extendF_overlapEq`
+                  gluing constructor builds the local `S'_n` branch, and the
+                  already-verified `transported_wick_pairing` consumer gives
+                  the exact compact-test transport below.
+
+                  Direct SCV route attempted: instantiate
+                  `SCV.tube_holomorphic_unique_from_equal_tempered_bv_flat`
+                  after flattening the two overlap branches.  The current
+                  OS45 substrate supplies holomorphy and local wedge geometry,
+                  but not the required branch-local
+                  `HasFourierLaplaceReprTempered` packages nor the equality of
+                  their boundary distributions on the Figure-2-4 common edge.
+                -/
+                exact
+                  ?os45_vladimirov_bhw_overlap_eq_from_equal_tempered_boundary_values
+              let S : BHW.OS45BHWJostSPrimeBranchData hd OS lgc H :=
+                BHW.OS45BHWJostSPrimeBranchData.of_extendF_overlapEq
+                  (d := d) OS lgc (P := P) (H := H) hOverlap_eq
               exact
-                ?os45_vladimirov_adjacentWick_trace_from_temperedBV_uniqueness
-            exact hFadj_extend.trans htransport
+                BHW.OS45BHWJostSPrimeBranchData.transported_wick_pairing
+                  (d := d) OS lgc (P := P) (H := H) S hU_sub
+            refine
+              BHW.os45CommonEdge_pulledRealBranches_eqOn_of_wickPairings
+                (d := d) hd OS lgc (P := P)
+                hU_open hU_nonempty hUcx_open hUcx_connected
+                hwick_mem hcommon_mem Ford Fadj hFord_holo hFadj_holo ?_
+                hFord_common hFadj_common
+            intro ψ hψ_compact hψU
+            calc
+              ∫ u : NPointDomain d n,
+                  Fadj (fun k => wickRotatePoint (u k)) * ψ u =
+                ∫ u : NPointDomain d n,
+                  BHW.extendF (bvt_F OS lgc n)
+                    (BHW.permAct (d := d) P.τ
+                      (fun k => wickRotatePoint (u k))) * ψ u := by
+                  refine
+                    MeasureTheory.integral_congr_ae
+                      (Filter.Eventually.of_forall ?_)
+                  intro u
+                  by_cases hu : u ∈ U
+                  · exact congrArg (fun c : ℂ => c * ψ u)
+                      (hFadj_wick_extendF u hu)
+                  · have hψ_zero : ψ u = 0 :=
+                      image_eq_zero_of_notMem_tsupport
+                        (fun hψ_supp => hu (hψU hψ_supp))
+                    simp [hψ_zero]
+              _ =
+                ∫ u : NPointDomain d n,
+                  bvt_F OS lgc n (fun k => wickRotatePoint (u k)) *
+                    ψ u :=
+                  htransported_wick_pairing ψ hψ_compact hψU
+              _ =
+                ∫ u : NPointDomain d n,
+                  Ford (fun k => wickRotatePoint (u k)) * ψ u := by
+                  refine
+                    (MeasureTheory.integral_congr_ae
+                      (Filter.Eventually.of_forall ?_)).symm
+                  intro u
+                  by_cases hu : u ∈ U
+                  · exact congrArg (fun c : ℂ => c * ψ u)
+                      (hFord_wick u hu)
+                  · have hψ_zero : ψ u = 0 :=
+                      image_eq_zero_of_notMem_tsupport
+                        (fun hψ_supp => hu (hψU hψ_supp))
+                    simp [hψ_zero]
           · intro u hu
             exact False.elim (hU_nonempty ⟨u, hu⟩)
         have hsource_support :
