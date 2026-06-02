@@ -105,85 +105,95 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
         (𝓝[Set.Ioi 0] (0 : ℝ))
         (𝓝 0) := by
       /-
-        Flat-chart Vladimirov/BHW side-current leaf.
+        Vladimirov/BHW finite-height source-current leaf.
 
-        The ordinary `+` side already has a checked zero-height boundary
-        distribution, namely the local common-edge `ordinaryEdgeCLM`. Side
-        continuity reduces the remaining OS-I `(4.12)`--`(4.14)` content to the
-        selected adjacent zero-height pairing against that same CLM.
+        The checked OS-I `(4.14)` source-current comparison gives the raw
+        Schwinger-side limit.  What remains is the true BHW/Jost transport:
+        identify the deterministic Figure-2-4 `extendF` side branches with
+        those raw Wick-section currents in the same moving source tests.
       -/
-      let T := BHW.os45FlatCommonChart_ordinaryEdgeCLM hd OS lgc P
-      let Kη : Set (BHW.OS45FlatCommonChartReal d n) := {η}
-      have hKη : IsCompact Kη := isCompact_singleton
-      have hKηC : Kη ⊆ BHW.os45FlatCommonChartCone d n := by
-        intro η' hη'
-        have hη'_eq : η' = η := by
-          simpa [Kη] using hη'
-        simpa [hη'_eq] using hηC
-      have hplus_bv :
+      let ExtPlus : ℝ → ℂ := fun ε =>
+        ∫ u : NPointDomain d n,
+          BHW.extendF (bvt_F OS lgc n)
+            (BHW.os45FlatCommonChartSourceSide d n
+              (1 : Equiv.Perm (Fin n)) (1 : ℝ) ε η u) *
+            ((((D.toSideZeroDiagonalCLM
+              (1 : Equiv.Perm (Fin n)) (1 : ℝ) ε η φ).1 :
+                SchwartzNPoint d n) : NPointDomain d n → ℂ) u)
+      let ExtMinus : ℝ → ℂ := fun ε =>
+        ∫ u : NPointDomain d n,
+          BHW.extendF (bvt_F OS lgc n)
+            (BHW.permAct (d := d)
+              (P.τ.symm * (1 : Equiv.Perm (Fin n))).symm
+              (BHW.os45FlatCommonChartSourceSide d n
+                (1 : Equiv.Perm (Fin n)) (-1 : ℝ) ε η u)) *
+            ((((D.toSideZeroDiagonalCLM
+              (1 : Equiv.Perm (Fin n)) (-1 : ℝ) ε η φ).1 :
+                SchwartzNPoint d n) : NPointDomain d n → ℂ) u)
+      let RawPlus : ℝ → ℂ := fun ε =>
+        ∫ u : NPointDomain d n,
+          bvt_F OS lgc n (fun k => wickRotatePoint (u k)) *
+            ((((D.toSideZeroDiagonalCLM
+              (1 : Equiv.Perm (Fin n)) (1 : ℝ) ε η φ).1 :
+                SchwartzNPoint d n) : NPointDomain d n → ℂ) u)
+      let RawMinus : ℝ → ℂ := fun ε =>
+        ∫ u : NPointDomain d n,
+          bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k))) *
+            ((((D.toSideZeroDiagonalCLM
+              (1 : Equiv.Perm (Fin n)) (-1 : ℝ) ε η φ).1 :
+                SchwartzNPoint d n) : NPointDomain d n → ℂ) u)
+      have hraw :
+          Tendsto
+            (fun ε : ℝ => RawPlus ε - RawMinus ε)
+            (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) := by
+        simpa [RawPlus, RawMinus] using
+          D.sourceSide_ordinaryPlus_adjacentMinus_difference_tendsto_zero
+            OS lgc η hηC φ hφ_compact hφE
+      have hplus_transfer :
+          Tendsto
+            (fun ε : ℝ => ExtPlus ε - RawPlus ε)
+            (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) := by
+        /-
+          OS-I `(4.1)`/Vladimirov transfer for the ordinary side: the
+          deterministic positive Figure-2-4 side branch has the same moving-test
+          boundary current as the raw Wick section.
+        -/
+        exact ?os45_vladimirov_ordinary_sourceSide_extendF_to_raw_wick_current
+      have hminus_transfer :
+          Tendsto
+            (fun ε : ℝ => ExtMinus ε - RawMinus ε)
+            (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) := by
+        /-
+          OS-I `(4.12)`/Vladimirov transfer for the adjacent side: the selected
+          deterministic negative Figure-2-4 branch has the same moving-test
+          boundary current as the raw permuted Wick section.
+        -/
+        exact ?os45_vladimirov_adjacent_sourceSide_extendF_to_raw_wick_current
+      have hresidual :
           Tendsto
             (fun ε : ℝ =>
-              ∫ x : BHW.OS45FlatCommonChartReal d n,
-                BHW.os45FlatCommonChartBranch d n OS lgc
-                  (1 : Equiv.Perm (Fin n))
-                  (fun a =>
-                    (x a : ℂ) +
-                      ((((1 : ℝ) * ε) • η) a : ℂ) * Complex.I) *
-                  φ x)
-            (𝓝[Set.Ioi 0] (0 : ℝ))
-            (𝓝 (T φ)) := by
-        have hplus_zero :
-            (∫ x : BHW.OS45FlatCommonChartReal d n,
-              BHW.os45FlatCommonChartBranch d n OS lgc
-                (1 : Equiv.Perm (Fin n))
-                (fun a => (x a : ℂ)) * φ x) =
-              T φ := by
-          simpa [T] using
-            BHW.os45FlatCommonChart_plus_zeroHeight_pairing_eq_CLM_of_localRepresents
-              (d := d) hd OS lgc (P := P)
-              (BHW.os45FlatCommonChart_ordinaryEdgeCLM hd OS lgc P)
-              (BHW.os45FlatCommonChart_ordinaryEdgeCLM_represents hd OS lgc)
-              φ hφ_compact hφE
-        have hplus_unif :=
-          BHW.os45_BHWJost_flatCommonChart_distributionalBoundaryValue_plus_of_zeroHeight_pairingCLM
-            (d := d) hd OS lgc (P := P) T Kη hKη hKηC
-            φ hφ_compact hφE hplus_zero
-        simpa [Kη, T, one_mul, Pi.smul_apply, smul_eq_mul, mul_assoc] using
-          hplus_unif.tendsto_at (by simp [Kη])
-      have hminus_bv :
+              (ExtPlus ε - RawPlus ε) - (ExtMinus ε - RawMinus ε))
+            (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) := by
+        simpa using hplus_transfer.sub hminus_transfer
+      have hsrc :
           Tendsto
             (fun ε : ℝ =>
-              ∫ x : BHW.OS45FlatCommonChartReal d n,
-                BHW.os45FlatCommonChartBranch d n OS lgc
-                  (P.τ.symm * (1 : Equiv.Perm (Fin n)))
-                  (fun a =>
-                    (x a : ℂ) +
-                      ((((-1 : ℝ) * ε) • η) a : ℂ) * Complex.I) *
-                  φ x)
-            (𝓝[Set.Ioi 0] (0 : ℝ))
-            (𝓝 (T φ)) := by
-        have hminus_zero :
-            (∫ x : BHW.OS45FlatCommonChartReal d n,
-              BHW.os45FlatCommonChartBranch d n OS lgc
-                (P.τ.symm * (1 : Equiv.Perm (Fin n)))
-                (fun a => (x a : ℂ)) * φ x) =
-              T φ := by
-          /-
-            Vladimirov/BHW lower-edge producer: identify the selected adjacent
-            zero-height boundary distribution with the ordinary common-edge CLM
-            by OS-I `(4.12)`--`(4.14)` Wick-section transport and tempered-BV
-            uniqueness on the local Jost collar.
-          -/
-          exact ?os45_vladimirov_adjacent_zeroHeight_pairing_eq_ordinaryEdgeCLM
-        have hminus_unif :=
-          BHW.os45_BHWJost_flatCommonChart_distributionalBoundaryValue_minus_of_zeroHeight_pairingCLM
-            (d := d) hd OS lgc (P := P) T Kη hKη hKηC
-            φ hφ_compact hφE hminus_zero
-        simpa [Kη, T, sub_eq_add_neg, neg_mul, one_mul, Pi.smul_apply,
-            smul_eq_mul, mul_assoc] using
-          hminus_unif.tendsto_at (by simp [Kη])
-      have hdiff := hplus_bv.sub hminus_bv
-      simpa [sub_self] using hdiff
+              (RawPlus ε - RawMinus ε) +
+                ((ExtPlus ε - RawPlus ε) - (ExtMinus ε - RawMinus ε)))
+            (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) := by
+        simpa using hraw.add hresidual
+      have hsrc_target :
+          Tendsto
+            (fun ε : ℝ => ExtPlus ε - ExtMinus ε)
+            (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) := by
+        refine Tendsto.congr' ?_ hsrc
+        filter_upwards with ε
+        dsimp [ExtPlus, ExtMinus, RawPlus, RawMinus]
+        ring
+      exact
+        D.tendsto_flatCommonChart_sideBranch_difference_zero_of_sourceSideDifference
+          (d := d) OS lgc η hηC φ hφ_compact hφE
+          (by simpa [ExtPlus, ExtMinus] using hsrc_target)
   have hzero :=
     D.zeroHeightPairing_of_tendsto_flatCommonChart_sideBranch_difference_zero
       (d := d) OS lgc η hηC φ hφ_compact hφE hflat
