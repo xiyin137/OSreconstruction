@@ -231,6 +231,8 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
     have htransport_error :
         Tendsto (fun ε : ℝ => Ext ε - Raw ε)
           (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) := by
+      let Residual : ℝ → ℂ := fun ε => Ext ε - Raw ε
+      change Tendsto Residual (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0)
       /-
         Active OS-I `(4.12)`--`(4.14)` Vladimirov/BHW residual transfer.
 
@@ -238,11 +240,24 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
         `Raw -> 0`.  The remaining proof is exactly the compact Figure-2-4
         tempered-BV recovery step: identify the deterministic BHW collar
         pairings `Ext` with the raw Wick-section source-current pairings `Raw`
-        in the distributional boundary-value limit.  The pointwise adjacent
-        Wick trace route below is retired because it asks for an endpoint
-        equality stronger than the monograph part-(b) smearing argument.
+        in the distributional boundary-value limit.
+
+        The checked SCV uniqueness/recovery surfaces are global tube statements:
+        `SCV.tube_holomorphic_unique_from_equal_tempered_bv_flat` and
+        `SCV.fourierLaplace_boundary_recovery_on_open_of_tempered` require a
+        `HasFourierLaplaceReprTempered` package on `SCV.TubeDomain C`.  The
+        OS45 geometry available here is the local Figure-2-4 wedge/collar
+        supplied by `os45_BHWJost_flatCommonChart_localWedge_of_figure24`, so
+        the missing producer is the local compact-support tempered-BV recovery
+        theorem turning that collar data plus the raw `(4.12)` source-current
+        boundary distribution into `Residual -> 0`.
+
+        The pointwise adjacent Wick trace route below is retired because it
+        asks for an endpoint equality stronger than the monograph part-(b)
+        smearing argument.
       -/
-      exact ?os45_vladimirov_raw_to_extendF_local_collar_error_zero
+      exact
+        ?os_i45_local_wedge_temperedBV_recovers_BHW_collar_from_raw_source_current
       /-
         Retired pointwise/zero-height route.  This attempted to recover
         `Ext -> 0` by proving equality of zero-height deterministic source
