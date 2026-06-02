@@ -485,17 +485,18 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
                 BHW.permAct_realEmbed, BHW.permAct] using hx_sector
             let τ : Equiv.Perm (Fin n) :=
               Equiv.swap i ⟨i.val + 1, hi⟩
+            let e := flattenCLEquiv n (d + 1)
             let Cflat : Set (Fin (n * (d + 1)) → ℝ) :=
               ?os45_vladimirov_realJostEdge_localFlatCone
             let Fflat : (Fin (n * (d + 1)) → ℂ) → ℂ :=
               fun z =>
                 BHW.extendF (bvt_F OS lgc n)
                   (BHW.permAct (d := d) τ
-                    ((flattenCLEquiv n (d + 1)).symm z))
+                    (e.symm z))
             let Gflat : (Fin (n * (d + 1)) → ℂ) → ℂ :=
               fun z =>
                 BHW.extendF (bvt_F OS lgc n)
-                  ((flattenCLEquiv n (d + 1)).symm z)
+                  (e.symm z)
             have hCflat_open : IsOpen Cflat :=
               ?os45_vladimirov_realJostEdge_localFlatCone_open
             have hCflat_conv : Convex ℝ Cflat :=
@@ -505,12 +506,39 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
             have hCflat_cone :
                 ∀ (t : ℝ), 0 < t → ∀ y ∈ Cflat, t • y ∈ Cflat :=
               ?os45_vladimirov_realJostEdge_localFlatCone_cone
+            have hCflat_to_ET :
+                Set.MapsTo
+                  (fun z : Fin (n * (d + 1)) → ℂ => e.symm z)
+                  (SCV.TubeDomain Cflat) (BHW.ExtendedTube d n) :=
+              ?os45_vladimirov_realJostEdge_localFlatCone_mapsTo_ET
+            have hCflat_to_permET :
+                Set.MapsTo
+                  (fun z : Fin (n * (d + 1)) → ℂ =>
+                    BHW.permAct (d := d) τ (e.symm z))
+                  (SCV.TubeDomain Cflat) (BHW.ExtendedTube d n) :=
+              ?os45_vladimirov_realJostEdge_localFlatCone_mapsTo_permET
             have hFflat_holo :
-                DifferentiableOn ℂ Fflat (SCV.TubeDomain Cflat) :=
-              ?os45_vladimirov_realJostEdge_permExtendF_flat_holo
+                DifferentiableOn ℂ Fflat (SCV.TubeDomain Cflat) := by
+              have hExtend :=
+                BHW.differentiableOn_extendF_bvt_F_extendedTube
+                  (d := d) OS lgc n
+              have hinner :
+                  DifferentiableOn ℂ
+                    (fun z : Fin (n * (d + 1)) → ℂ =>
+                      BHW.permAct (d := d) τ (e.symm z))
+                    (SCV.TubeDomain Cflat) := by
+                exact
+                  ((BHW.differentiable_permAct (d := d) (n := n) τ).comp
+                    e.symm.differentiable).differentiableOn
+              simpa [Fflat] using
+                hExtend.comp hinner hCflat_to_permET
             have hGflat_holo :
-                DifferentiableOn ℂ Gflat (SCV.TubeDomain Cflat) :=
-              ?os45_vladimirov_realJostEdge_extendF_flat_holo
+                DifferentiableOn ℂ Gflat (SCV.TubeDomain Cflat) := by
+              have hExtend :=
+                BHW.differentiableOn_extendF_bvt_F_extendedTube
+                  (d := d) OS lgc n
+              simpa [Gflat] using
+                hExtend.comp e.symm.differentiableOn hCflat_to_ET
             have hFflat_tempered :
                 SCV.HasFourierLaplaceReprTempered Cflat Fflat :=
               ?os45_vladimirov_realJostEdge_permExtendF_temperedBV
@@ -529,7 +557,49 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
                         Fflat
                           (fun a => (x a : ℂ) +
                             (y a : ℂ) * Complex.I) * ρ x) :=
-              ?os45_vladimirov_realJostEdge_permExtendF_slice_integrable
+              by
+                intro y hy ρ
+                have hK_sub : ({y} : Set (Fin (n * (d + 1)) → ℝ)) ⊆
+                    Cflat := by
+                  intro y' hy'
+                  simpa [Set.mem_singleton_iff.mp hy'] using hy
+                obtain ⟨C_bd, N, _hC_bd_pos, hbound⟩ :=
+                  hFflat_tempered.poly_growth {y} isCompact_singleton hK_sub
+                have hslice_cont :
+                    Continuous
+                      (fun x : Fin (n * (d + 1)) → ℝ =>
+                        Fflat
+                          (fun a => (x a : ℂ) +
+                            (y a : ℂ) * Complex.I)) := by
+                  have hembed :
+                      Continuous
+                        (fun x : Fin (n * (d + 1)) → ℝ =>
+                          (fun a => (x a : ℂ) +
+                            (y a : ℂ) * Complex.I :
+                            Fin (n * (d + 1)) → ℂ)) :=
+                    continuous_pi fun a =>
+                      (Complex.continuous_ofReal.comp
+                        (continuous_apply a)).add continuous_const
+                  have hmem :
+                      ∀ x : Fin (n * (d + 1)) → ℝ,
+                        (fun a => (x a : ℂ) +
+                          (y a : ℂ) * Complex.I :
+                          Fin (n * (d + 1)) → ℂ) ∈
+                          SCV.TubeDomain Cflat := by
+                    intro x
+                    simpa [SCV.TubeDomain, Complex.add_im,
+                      Complex.mul_im, Complex.ofReal_re,
+                      Complex.ofReal_im, Complex.I_re, Complex.I_im] using hy
+                  exact hFflat_holo.continuousOn.comp_continuous hembed hmem
+                refine
+                  SCV.integrable_poly_growth_schwartz
+                    (fun x : Fin (n * (d + 1)) → ℝ =>
+                      Fflat
+                        (fun a => (x a : ℂ) +
+                          (y a : ℂ) * Complex.I))
+                    hslice_cont.aestronglyMeasurable C_bd N ?_ ρ
+                intro x
+                exact hbound x y (by simp)
             have hGflat_int :
                 ∀ y ∈ Cflat,
                   ∀ ρ : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ,
@@ -538,7 +608,49 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
                         Gflat
                           (fun a => (x a : ℂ) +
                             (y a : ℂ) * Complex.I) * ρ x) :=
-              ?os45_vladimirov_realJostEdge_extendF_slice_integrable
+              by
+                intro y hy ρ
+                have hK_sub : ({y} : Set (Fin (n * (d + 1)) → ℝ)) ⊆
+                    Cflat := by
+                  intro y' hy'
+                  simpa [Set.mem_singleton_iff.mp hy'] using hy
+                obtain ⟨C_bd, N, _hC_bd_pos, hbound⟩ :=
+                  hGflat_tempered.poly_growth {y} isCompact_singleton hK_sub
+                have hslice_cont :
+                    Continuous
+                      (fun x : Fin (n * (d + 1)) → ℝ =>
+                        Gflat
+                          (fun a => (x a : ℂ) +
+                            (y a : ℂ) * Complex.I)) := by
+                  have hembed :
+                      Continuous
+                        (fun x : Fin (n * (d + 1)) → ℝ =>
+                          (fun a => (x a : ℂ) +
+                            (y a : ℂ) * Complex.I :
+                            Fin (n * (d + 1)) → ℂ)) :=
+                    continuous_pi fun a =>
+                      (Complex.continuous_ofReal.comp
+                        (continuous_apply a)).add continuous_const
+                  have hmem :
+                      ∀ x : Fin (n * (d + 1)) → ℝ,
+                        (fun a => (x a : ℂ) +
+                          (y a : ℂ) * Complex.I :
+                          Fin (n * (d + 1)) → ℂ) ∈
+                          SCV.TubeDomain Cflat := by
+                    intro x
+                    simpa [SCV.TubeDomain, Complex.add_im,
+                      Complex.mul_im, Complex.ofReal_re,
+                      Complex.ofReal_im, Complex.I_re, Complex.I_im] using hy
+                  exact hGflat_holo.continuousOn.comp_continuous hembed hmem
+                refine
+                  SCV.integrable_poly_growth_schwartz
+                    (fun x : Fin (n * (d + 1)) → ℝ =>
+                      Gflat
+                        (fun a => (x a : ℂ) +
+                          (y a : ℂ) * Complex.I))
+                    hslice_cont.aestronglyMeasurable C_bd N ?_ ρ
+                intro x
+                exact hbound x y (by simp)
             have hVladimirov_eqOn :
                 Set.EqOn Fflat Gflat (SCV.TubeDomain Cflat) :=
               tube_holomorphic_unique_from_equal_tempered_bv_flat
