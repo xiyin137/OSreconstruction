@@ -104,19 +104,22 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
               φ x)
         (𝓝[Set.Ioi 0] (0 : ℝ))
         (𝓝 0) := by
-    /-
-      Flat-chart Vladimirov/BHW side-current leaf.
+      /-
+        Flat-chart Vladimirov/BHW side-current leaf.
 
-        Prove that the ordinary `+` and selected adjacent `-` flat side-branch
-        currents have the same Schwinger boundary distribution on the Figure-2-4
-        collar. This is the OS-I `(4.12)`--`(4.14)` source-side Schwinger
-        normalization plus local Vladimirov tempered-BV uniqueness on the common
-        Jost edge. It is not a `sourceRepresentsOn`, Hdiff, local-S-prime, or
-        downstream EOW-envelope input.
+        The ordinary `+` side already has a checked zero-height boundary
+        distribution, namely the local common-edge `ordinaryEdgeCLM`. Side
+        continuity reduces the remaining OS-I `(4.12)`--`(4.14)` content to the
+        selected adjacent zero-height pairing against that same CLM.
       -/
-      let T :=
-        BHW.os45_BHWJost_flatCommonChart_schwingerCLM
-          (d := d) hd OS lgc P (1 : Equiv.Perm (Fin n))
+      let T := BHW.os45FlatCommonChart_ordinaryEdgeCLM hd OS lgc P
+      let Kη : Set (BHW.OS45FlatCommonChartReal d n) := {η}
+      have hKη : IsCompact Kη := isCompact_singleton
+      have hKηC : Kη ⊆ BHW.os45FlatCommonChartCone d n := by
+        intro η' hη'
+        have hη'_eq : η' = η := by
+          simpa [Kη] using hη'
+        simpa [hη'_eq] using hηC
       have hplus_bv :
           Tendsto
             (fun ε : ℝ =>
@@ -129,12 +132,24 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
                   φ x)
             (𝓝[Set.Ioi 0] (0 : ℝ))
             (𝓝 (T φ)) := by
-        /-
-          Vladimirov/BHW upper-side producer: construct the tempered boundary
-          value package for the ordinary flat chart and identify its distribution
-          with the OS Schwinger CLM pulled through the Figure-2-4 cutoff.
-        -/
-        exact ?os45_vladimirov_ordinary_upper_flat_bv_eq_schwinger
+        have hplus_zero :
+            (∫ x : BHW.OS45FlatCommonChartReal d n,
+              BHW.os45FlatCommonChartBranch d n OS lgc
+                (1 : Equiv.Perm (Fin n))
+                (fun a => (x a : ℂ)) * φ x) =
+              T φ := by
+          simpa [T] using
+            BHW.os45FlatCommonChart_plus_zeroHeight_pairing_eq_CLM_of_localRepresents
+              (d := d) hd OS lgc (P := P)
+              (BHW.os45FlatCommonChart_ordinaryEdgeCLM hd OS lgc P)
+              (BHW.os45FlatCommonChart_ordinaryEdgeCLM_represents hd OS lgc)
+              φ hφ_compact hφE
+        have hplus_unif :=
+          BHW.os45_BHWJost_flatCommonChart_distributionalBoundaryValue_plus_of_zeroHeight_pairingCLM
+            (d := d) hd OS lgc (P := P) T Kη hKη hKηC
+            φ hφ_compact hφE hplus_zero
+        simpa [Kη, T, one_mul, Pi.smul_apply, smul_eq_mul, mul_assoc] using
+          hplus_unif.tendsto_at (by simp [Kη])
       have hminus_bv :
           Tendsto
             (fun ε : ℝ =>
@@ -147,13 +162,26 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
                   φ x)
             (𝓝[Set.Ioi 0] (0 : ℝ))
             (𝓝 (T φ)) := by
-        /-
-          Vladimirov/BHW lower-side producer: construct the adjacent lower-tube
-          tempered boundary value and prove that the OS-I `(4.12)`--`(4.14)`
-          Wick-section transport gives the same Schwinger CLM as the ordinary
-          side. This is the current irreducible interface.
-        -/
-        exact ?os45_vladimirov_adjacent_lower_flat_bv_eq_schwinger
+        have hminus_zero :
+            (∫ x : BHW.OS45FlatCommonChartReal d n,
+              BHW.os45FlatCommonChartBranch d n OS lgc
+                (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+                (fun a => (x a : ℂ)) * φ x) =
+              T φ := by
+          /-
+            Vladimirov/BHW lower-edge producer: identify the selected adjacent
+            zero-height boundary distribution with the ordinary common-edge CLM
+            by OS-I `(4.12)`--`(4.14)` Wick-section transport and tempered-BV
+            uniqueness on the local Jost collar.
+          -/
+          exact ?os45_vladimirov_adjacent_zeroHeight_pairing_eq_ordinaryEdgeCLM
+        have hminus_unif :=
+          BHW.os45_BHWJost_flatCommonChart_distributionalBoundaryValue_minus_of_zeroHeight_pairingCLM
+            (d := d) hd OS lgc (P := P) T Kη hKη hKηC
+            φ hφ_compact hφE hminus_zero
+        simpa [Kη, T, sub_eq_add_neg, neg_mul, one_mul, Pi.smul_apply,
+            smul_eq_mul, mul_assoc] using
+          hminus_unif.tendsto_at (by simp [Kη])
       have hdiff := hplus_bv.sub hminus_bv
       simpa [sub_self] using hdiff
   have hzero :=
