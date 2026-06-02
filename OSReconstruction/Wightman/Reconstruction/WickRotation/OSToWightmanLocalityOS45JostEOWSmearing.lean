@@ -3,6 +3,7 @@ import OSReconstruction.SCV.LocalBoundaryRecovery
 import OSReconstruction.SCV.IdentityTheorem
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanLocalityOS45Figure24Seed
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanLocalityOS45SourceSideMoving
+import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanRuelleOverlap
 
 /-!
 # OS45 Jost/EOW Smearing Producer
@@ -176,7 +177,27 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
             that OS-I/Jost carrier, not a downstream weak-locality shortcut or
             a global two-sector branch wrapper.
           -/
-          exact ?os45_OS412_seed_to_ordinary_wick_compact_pairing
+          have hOverlap :
+              IsConnected
+                {z : Fin n → Fin (d + 1) → ℂ |
+                  z ∈ BHW.ExtendedTube d n ∧
+                    BHW.permAct (d := d) P.τ z ∈
+                      BHW.ExtendedTube d n} := by
+            exact ?os45_adjacent_extended_tube_overlap_connected
+          have hCanonicalPair :
+              BHW.OS45SourcePatchBHWJostPairData
+                (d := d) hd OS lgc n i hi
+                (BHW.os45Figure24SourcePatch (d := d) (n := n) i hi) := by
+            exact ?os45_vladimirov_temperedBV_sourcePatch_pairData
+          have hCompact :
+              BHW.OS45CompactFigure24WickPairingEq (d := d) n i hi OS lgc :=
+            BHW.os45CompactFigure24WickPairingEq_of_pairData_canonical
+              (d := d) hd OS lgc n i hi hCanonicalPair
+              (by intro x hx; exact hx)
+          exact
+            BHW.os45CommonEdge_transported_wick_pairing_of_compactFigure24WickPairingEq
+              (d := d) hd OS lgc (P := P) hOverlap hCompact hU_sub
+              ψ hψ_compact hψU
         have hsource :
             ∀ u ∈ U,
               BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
