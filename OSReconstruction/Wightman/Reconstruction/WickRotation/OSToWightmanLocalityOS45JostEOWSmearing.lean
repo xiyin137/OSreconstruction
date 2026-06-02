@@ -280,16 +280,50 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
               hU_open subset_closure hU_compact η h0_plus_perm h0_minus_perm
               φ hφ_compact hφU
           simpa [ExtMinus, ZeroMinus] using hpair.2
+        have hExtPlus_schwinger_direct :
+            Tendsto ExtPlus
+              (𝓝[Set.Ioi 0] (0 : ℝ))
+              (𝓝 (OS.S n
+                (D.toZeroDiagonalCLM (1 : Equiv.Perm (Fin n)) φ))) := by
+          /-
+            Vladimirov/BHW transport leaf, ordinary side.
+
+            `hExtPlus_zero` already identifies the finite side-height ordinary
+            source family with the horizontal zero-height common-edge pairing.
+            The missing OS-I step is to identify the same finite side-height
+            family with the selected Schwinger boundary distribution.  This is
+            not the raw Wick-section theorem: at zero height the endpoint is the
+            quarter-turned Wick carrier
+            `os45QuarterTurnConfig (fun k => wickRotatePoint (u k))`, so the
+            proof needs the Cauchy/Vladimirov transport through the Figure-2-4
+            tube collar.
+          -/
+          exact ?os45_vladimirov_extPlus_schwinger_boundary_value
         have hZeroPlus_schwinger :
             ZeroPlus =
               OS.S n
                 (D.toZeroDiagonalCLM (1 : Equiv.Perm (Fin n)) φ) := by
-          exact ?os45_vladimirov_zeroPlus_schwinger_boundary_value
+          exact tendsto_nhds_unique hExtPlus_zero hExtPlus_schwinger_direct
+        have hExtMinus_schwinger_direct :
+            Tendsto ExtMinus
+              (𝓝[Set.Ioi 0] (0 : ℝ))
+              (𝓝 (OS.S n
+                (D.toZeroDiagonalCLM (1 : Equiv.Perm (Fin n)) φ))) := by
+          /-
+            Vladimirov/BHW transport leaf, adjacent side.
+
+            This is the analogous finite side-height BV statement for
+            `extendF ∘ permAct` on the selected adjacent sector.  It must come
+            from the same Figure-2-4 tempered-boundary-value uniqueness
+            mechanism, not from the downstream source-representation/Hdiff
+            consumers.
+          -/
+          exact ?os45_vladimirov_extMinus_schwinger_boundary_value
         have hZeroMinus_schwinger :
             ZeroMinus =
               OS.S n
                 (D.toZeroDiagonalCLM (1 : Equiv.Perm (Fin n)) φ) := by
-          exact ?os45_vladimirov_zeroMinus_schwinger_boundary_value
+          exact tendsto_nhds_unique hExtMinus_zero hExtMinus_schwinger_direct
         have hExtPlus_schwinger :
             Tendsto ExtPlus
               (𝓝[Set.Ioi 0] (0 : ℝ))
