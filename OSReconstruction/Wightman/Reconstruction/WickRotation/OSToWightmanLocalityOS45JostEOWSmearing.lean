@@ -292,93 +292,213 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
               BHW.os45FlatCommonChartBranch d n OS lgc
                 (1 : Equiv.Perm (Fin n))
                 (fun a => (x a : ℂ)) * φ x := by
-        let Fminus : BHW.OS45FlatCommonChartSpace d n → ℂ :=
-          BHW.os45FlatCommonChartBranch d n OS lgc
-            (P.τ.symm * (1 : Equiv.Perm (Fin n)))
-        have hC_cone' :
-            ∀ t : ℝ, 0 < t →
-              ∀ y ∈ Cedge, t • y ∈ Cedge := by
-          intro t ht y hy
-          exact hC_smul t y ht (by simpa [Cedge] using hy)
-        have hFminus_tube_holo :
-            DifferentiableOn ℂ Fminus (SCV.TubeDomain Cedge) := by
-          /-
-            Vladimirov/BHW interface, domain half.
-
-            The available BHW holomorphy theorem is on the pulled local branch
-            domain `os45FlatCommonChartOmega`.  To use
-            `SCV.fourierLaplace_boundary_recovery_on_open_of_tempered` directly,
-            the OS-I proof must produce the corresponding tube/wedge holomorphy
-            package for the selected adjacent flat branch on this Figure-2-4
-            collar, not merely a real-edge continuity statement.
-          -/
-          exact ?os45_adjacent_flat_branch_tube_holomorphic
-        have hTminus :
-            SCV.HasFourierLaplaceReprTempered Cedge Fminus := by
-          /-
-            Vladimirov/BHW interface, tempered package half.
-
-            This is the canonical missing producer: polynomial-growth control
-            and tempered boundary-value convergence for the deterministic BHW
-            adjacent flat collar, in the local tube coordinates attached to
-            the compact Figure-2-4 window.
-          -/
-          exact ?os45_adjacent_flat_branch_temperedBV_package
-        have hminus_contU :
-            ∀ x ∈ E,
-              ContinuousWithinAt Fminus
-                (SCV.TubeDomain Cedge) (SCV.realEmbed x) := by
-          /-
-            Boundary recovery needs the local real-edge trace of the same
-            tube package.  Existing `tendsto_os45FlatCommonChartBranch_realEdge`
-            proves continuity inside `os45FlatCommonChartOmega`; the missing
-            bridge is the compatibility of that local BHW domain with the
-            tube/wedge package used by Vladimirov recovery.
-          -/
-          exact ?os45_adjacent_flat_branch_tube_boundary_continuity_on_E
-        have hminus_recovery :
-            hTminus.dist φ =
-              ∫ x : BHW.OS45FlatCommonChartReal d n,
-                Fminus (SCV.realEmbed x) * φ x := by
+        have hzero_plus_all :
+            ∀ ψ : SchwartzMap (BHW.OS45FlatCommonChartReal d n) ℂ,
+              HasCompactSupport
+                (ψ : BHW.OS45FlatCommonChartReal d n → ℂ) →
+              tsupport (ψ : BHW.OS45FlatCommonChartReal d n → ℂ) ⊆ E →
+              (∫ x : BHW.OS45FlatCommonChartReal d n,
+                BHW.os45FlatCommonChartBranch d n OS lgc
+                  (1 : Equiv.Perm (Fin n))
+                  (fun a => (x a : ℂ)) * ψ x)
+              = Tlocal ψ := by
+          intro ψ hψ_compact hψE
           exact
-            SCV.fourierLaplace_boundary_recovery_on_open_of_tempered
-              (m := BHW.os45FlatCommonChartDim d n)
-              (C := Cedge)
-              (F := Fminus)
-              (by simpa [Cedge] using hC_open)
-              (by simpa [Cedge] using hC_convex)
-              (by simpa [Cedge] using hC_ne)
-              hC_cone' hFminus_tube_holo hTminus
-              E hE_open hminus_contU φ hφE' hφ_compact
-        have hminus_dist_Tlocal :
-            hTminus.dist φ = Tlocal φ := by
-          /-
-            Vladimirov uniqueness/common-BV leaf.
-
-            This is where the raw OS-I `(4.12)` source-current comparison
-            `hsource_current` must be promoted to equality of the adjacent BHW
-            collar's tempered boundary distribution with the ordinary
-            Figure-2-4 edge functional.  Proving this is the actual
-            Vladimirov/BHW uniqueness step; the surrounding code only performs
-            boundary recovery and coordinate pullback.
-          -/
-          exact ?os45_OS412_source_current_identifies_adjacent_BHW_boundary_distribution
-        calc
-          (∫ x : BHW.OS45FlatCommonChartReal d n,
-            BHW.os45FlatCommonChartBranch d n OS lgc
-              (P.τ.symm * (1 : Equiv.Perm (Fin n)))
-              (fun a => (x a : ℂ)) * φ x)
-              =
-            ∫ x : BHW.OS45FlatCommonChartReal d n,
-              Fminus (SCV.realEmbed x) * φ x := by
-              rfl
-          _ = hTminus.dist φ := hminus_recovery.symm
-          _ = Tlocal φ := hminus_dist_Tlocal
-          _ =
+            BHW.os45FlatCommonChart_plus_zeroHeight_pairing_eq_CLM_of_localRepresents
+              (d := d) hd OS lgc (P := P) Tlocal
+              (BHW.os45FlatCommonChart_ordinaryEdgeCLM_represents
+                hd OS lgc)
+              ψ hψ_compact (hψE.trans hE_sub)
+        have hzero_minus_phi :
+            (∫ x : BHW.OS45FlatCommonChartReal d n,
+              BHW.os45FlatCommonChartBranch d n OS lgc
+                (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+                (fun a => (x a : ℂ)) * φ x)
+            = Tlocal φ := by
+          have hφEdge' :
+              tsupport
+                  (φ : BHW.OS45FlatCommonChartReal d n → ℂ) ⊆
+                BHW.os45FlatCommonChartEdgeSet d n P
+                  (1 : Equiv.Perm (Fin n)) :=
+            hφE'.trans hE_sub
+          have hη_singleton :
+              ({η} : Set (BHW.OS45FlatCommonChartReal d n)) ⊆ Cedge := by
+            intro ξ hξ
+            simpa [Cedge, Set.mem_singleton_iff.mp hξ] using hηC
+          let Minus : ℝ → ℂ := fun ε =>
             ∫ x : BHW.OS45FlatCommonChartReal d n,
               BHW.os45FlatCommonChartBranch d n OS lgc
-                (1 : Equiv.Perm (Fin n))
-                (fun a => (x a : ℂ)) * φ x := hzero_plus.symm
+                (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+                (fun a => (x a : ℂ) -
+                  (ε : ℂ) * (η a : ℂ) * Complex.I) * φ x
+          have hminus_zeroHeight_limit :
+              Tendsto Minus (𝓝[Set.Ioi 0] (0 : ℝ))
+                (𝓝
+                  (∫ x : BHW.OS45FlatCommonChartReal d n,
+                    BHW.os45FlatCommonChartBranch d n OS lgc
+                      (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+                      (fun a => (x a : ℂ)) * φ x)) := by
+            have hF_cont :
+                ContinuousOn
+                  (BHW.os45FlatCommonChartBranch d n OS lgc
+                    (P.τ.symm * (1 : Equiv.Perm (Fin n))))
+                  (BHW.os45FlatCommonChartOmega d n
+                    (P.τ.symm * (1 : Equiv.Perm (Fin n)))) :=
+              (BHW.differentiableOn_os45FlatCommonChartBranch
+                d n OS lgc
+                (P.τ.symm * (1 : Equiv.Perm (Fin n)))).continuousOn
+            have hside :
+                ∀ K : Set (BHW.OS45FlatCommonChartReal d n),
+                  IsCompact K →
+                  K ⊆ BHW.os45FlatCommonChartEdgeSet d n P
+                    (1 : Equiv.Perm (Fin n)) →
+                  ∀ Kη : Set (BHW.OS45FlatCommonChartReal d n),
+                    IsCompact Kη →
+                    Kη ⊆ BHW.os45FlatCommonChartCone d n →
+                    ∃ r : ℝ, 0 < r ∧
+                      ∀ x ∈ K, ∀ η ∈ Kη, ∀ ε : ℝ,
+                        0 < ε → ε < r →
+                        (fun a => (x a : ℂ) +
+                          ((-1 : ℝ) : ℂ) * (ε : ℂ) *
+                            (η a : ℂ) * Complex.I) ∈
+                          BHW.os45FlatCommonChartOmega d n
+                            (P.τ.symm *
+                              (1 : Equiv.Perm (Fin n))) := by
+              intro K hK hKE Kη hKη hKηC
+              obtain ⟨r, hr_pos, hr_mem⟩ :=
+                BHW.os45_BHWJost_flatCommonChart_localWedge_of_figure24
+                  (d := d) hd (P := P) K hK hKE Kη hKη hKηC
+              refine ⟨r, hr_pos, ?_⟩
+              intro x hx η hη ε hε_pos hε_lt
+              have hmem := (hr_mem x hx η hη ε hε_pos hε_lt).2
+              simpa [sub_eq_add_neg, neg_mul, one_mul] using hmem
+            have hunif :=
+              SCV.tendstoUniformlyOn_sideIntegral_of_zeroHeight_pairing
+                (m := BHW.os45FlatCommonChartDim d n)
+                (E := BHW.os45FlatCommonChartEdgeSet d n P
+                  (1 : Equiv.Perm (Fin n)))
+                (C := BHW.os45FlatCommonChartCone d n)
+                (Ωc := BHW.os45FlatCommonChartOmega d n
+                  (P.τ.symm * (1 : Equiv.Perm (Fin n))))
+                (BHW.isOpen_os45FlatCommonChartOmega d n
+                  (P.τ.symm * (1 : Equiv.Perm (Fin n))))
+                (BHW.os45FlatCommonChartBranch d n OS lgc
+                  (P.τ.symm * (1 : Equiv.Perm (Fin n))))
+                hF_cont
+                (BHW.os45FlatCommonChart_real_mem_omega_adjacent
+                  (d := d) hd (P := P))
+                (-1 : ℝ) hside
+                ({η} : Set (BHW.OS45FlatCommonChartReal d n))
+                isCompact_singleton (by simpa [Cedge] using hη_singleton)
+                φ hφ_compact hφEdge'
+                (∫ x : BHW.OS45FlatCommonChartReal d n,
+                  BHW.os45FlatCommonChartBranch d n OS lgc
+                    (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+                    (fun a => (x a : ℂ)) * φ x)
+                rfl
+            have hη_mem :
+                η ∈ ({η} : Set (BHW.OS45FlatCommonChartReal d n)) := by
+              simp
+            simpa [Minus, sub_eq_add_neg, neg_mul, one_mul] using
+              hunif.tendsto_at hη_mem
+          have hminus_vladimirov_to_Tlocal :
+              Tendsto Minus (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 (Tlocal φ)) := by
+            let Plus : ℝ → ℂ := fun ε =>
+              ∫ x : BHW.OS45FlatCommonChartReal d n,
+                BHW.os45FlatCommonChartBranch d n OS lgc
+                  (1 : Equiv.Perm (Fin n))
+                  (fun a => (x a : ℂ) +
+                    (ε : ℂ) * (η a : ℂ) * Complex.I) * φ x
+            have hplus_to_Tlocal :
+                Tendsto Plus (𝓝[Set.Ioi 0] (0 : ℝ))
+                  (𝓝 (Tlocal φ)) := by
+              have hF_cont :
+                  ContinuousOn
+                    (BHW.os45FlatCommonChartBranch d n OS lgc
+                      (1 : Equiv.Perm (Fin n)))
+                    (BHW.os45FlatCommonChartOmega d n
+                      (1 : Equiv.Perm (Fin n))) :=
+                (BHW.differentiableOn_os45FlatCommonChartBranch
+                  d n OS lgc
+                  (1 : Equiv.Perm (Fin n))).continuousOn
+              have hside :
+                  ∀ K : Set (BHW.OS45FlatCommonChartReal d n),
+                    IsCompact K →
+                    K ⊆ BHW.os45FlatCommonChartEdgeSet d n P
+                      (1 : Equiv.Perm (Fin n)) →
+                    ∀ Kη : Set (BHW.OS45FlatCommonChartReal d n),
+                      IsCompact Kη →
+                      Kη ⊆ BHW.os45FlatCommonChartCone d n →
+                      ∃ r : ℝ, 0 < r ∧
+                        ∀ x ∈ K, ∀ η ∈ Kη, ∀ ε : ℝ,
+                          0 < ε → ε < r →
+                          (fun a => (x a : ℂ) +
+                            ((1 : ℝ) : ℂ) * (ε : ℂ) *
+                              (η a : ℂ) * Complex.I) ∈
+                            BHW.os45FlatCommonChartOmega d n
+                              (1 : Equiv.Perm (Fin n)) := by
+                intro K hK hKE Kη hKη hKηC
+                obtain ⟨r, hr_pos, hr_mem⟩ :=
+                  BHW.os45_BHWJost_flatCommonChart_localWedge_of_figure24
+                    (d := d) hd (P := P) K hK hKE Kη hKη hKηC
+                refine ⟨r, hr_pos, ?_⟩
+                intro x hx η hη ε hε_pos hε_lt
+                have hmem := (hr_mem x hx η hη ε hε_pos hε_lt).1
+                simpa [one_mul] using hmem
+              have hunif :=
+                SCV.tendstoUniformlyOn_sideIntegral_of_zeroHeight_pairing
+                  (m := BHW.os45FlatCommonChartDim d n)
+                  (E := BHW.os45FlatCommonChartEdgeSet d n P
+                    (1 : Equiv.Perm (Fin n)))
+                  (C := BHW.os45FlatCommonChartCone d n)
+                  (Ωc := BHW.os45FlatCommonChartOmega d n
+                    (1 : Equiv.Perm (Fin n)))
+                  (BHW.isOpen_os45FlatCommonChartOmega d n
+                    (1 : Equiv.Perm (Fin n)))
+                  (BHW.os45FlatCommonChartBranch d n OS lgc
+                    (1 : Equiv.Perm (Fin n)))
+                  hF_cont
+                  (BHW.os45FlatCommonChart_real_mem_omega_id
+                    (d := d) hd (P := P))
+                  (1 : ℝ) hside
+                  ({η} : Set (BHW.OS45FlatCommonChartReal d n))
+                  isCompact_singleton (by simpa [Cedge] using hη_singleton)
+                  φ hφ_compact hφEdge' (Tlocal φ)
+                  (hzero_plus_all φ hφ_compact hφE')
+              have hη_mem :
+                  η ∈ ({η} : Set (BHW.OS45FlatCommonChartReal d n)) := by
+                simp
+              simpa [Plus, one_mul] using hunif.tendsto_at hη_mem
+            have hflat_side_difference :
+                Tendsto (fun ε : ℝ => Plus ε - Minus ε)
+                  (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) := by
+              /-
+                Genuine Vladimirov/BHW residual-transfer leaf.
+
+                This is the OS-I `(4.12)`--`(4.14)` compact-window
+                tempered-boundary-value uniqueness step: transport the raw
+                source-current comparison `hsource_current` through the local
+                BHW/Jost continuation so that the ordinary plus and adjacent
+                minus flat side branches have the same distributional boundary
+                on the Figure-2-4 support window.
+              -/
+              exact
+                ?os45_vladimirov_compactWindow_flatSideDifference_from_sourceCurrent
+            have hminus_as_difference :
+                Tendsto (fun ε : ℝ => Plus ε - (Plus ε - Minus ε))
+                  (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 (Tlocal φ - 0)) :=
+              hplus_to_Tlocal.sub hflat_side_difference
+            have hminus_as_difference' :
+                Tendsto (fun ε : ℝ => Plus ε - (Plus ε - Minus ε))
+                  (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 (Tlocal φ)) := by
+              simpa using hminus_as_difference
+            refine hminus_as_difference'.congr' ?_
+            exact Filter.Eventually.of_forall fun ε => by
+              simp [Plus, Minus]
+          exact
+            tendsto_nhds_unique hminus_zeroHeight_limit
+              hminus_vladimirov_to_Tlocal
+        exact hzero_minus_phi.trans hzero_plus.symm
       have hsource_integrals :
           (∫ u : NPointDomain d n,
             BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
