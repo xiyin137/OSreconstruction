@@ -666,8 +666,232 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
                           ((Equiv.swap i ⟨i.val + 1, hi⟩) k))) -
                     BHW.extendF (bvt_F OS lgc n) (BHW.realEmbed u)) *
                     χ u = 0 := by
-              exact
-                ?os45_vladimirov_realJostEdge_pairing_zero_from_temperedBV_uniqueness
+              let eR : NPointDomain d n ≃L[ℝ]
+                  (Fin (n * (d + 1)) → ℝ) :=
+                flattenCLEquivReal n (d + 1)
+              let ρ : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ :=
+                flattenSchwartzNPoint (d := d) χ
+              let Uflat : Set (Fin (n * (d + 1)) → ℝ) :=
+                eR '' U
+              have hUflat_open : IsOpen Uflat := by
+                simpa [Uflat, eR] using eR.toHomeomorph.isOpenMap U hU_open
+              have hρ_support :
+                  tsupport (ρ : (Fin (n * (d + 1)) → ℝ) → ℂ) ⊆
+                    Uflat := by
+                have hρ_tsupport :
+                    tsupport (ρ : (Fin (n * (d + 1)) → ℝ) → ℂ) =
+                      eR.symm.toHomeomorph ⁻¹'
+                        tsupport (χ : NPointDomain d n → ℂ) := by
+                  simpa [ρ, eR, flattenSchwartzNPoint,
+                    SchwartzMap.compCLMOfContinuousLinearEquiv_apply] using
+                    (tsupport_comp_eq_preimage
+                      (g := (χ : NPointDomain d n → ℂ))
+                      eR.symm.toHomeomorph)
+                intro x hx
+                have hxχ : eR.symm x ∈
+                    tsupport (χ : NPointDomain d n → ℂ) := by
+                  simpa [hρ_tsupport] using hx
+                exact ⟨eR.symm x, hχU hxχ, by simp [eR]⟩
+              have hρ_compact :
+                  HasCompactSupport
+                    (ρ : (Fin (n * (d + 1)) → ℝ) → ℂ) := by
+                simpa [ρ, eR, flattenSchwartzNPoint] using
+                  hχ_compact.comp_homeomorph eR.symm.toHomeomorph
+              have hFflat_boundary_cont :
+                  ∀ x ∈ Uflat,
+                    ContinuousWithinAt Fflat (SCV.TubeDomain Cflat)
+                      (SCV.realEmbed x) :=
+                by
+                  intro x hx
+                  rcases hx with ⟨u, huU, rfl⟩
+                  have hflat_real :
+                      e.symm (SCV.realEmbed (eR u)) =
+                        BHW.realEmbed u := by
+                    ext k μ
+                    simp [e, eR, SCV.realEmbed, BHW.realEmbed]
+                  have hpointET :
+                      BHW.permAct (d := d) τ
+                        (e.symm (SCV.realEmbed (eR u))) ∈
+                        BHW.ExtendedTube d n := by
+                    have hu_sector :=
+                      H.realPatch_mem_permutedExtendedTubeSector u
+                        (hU_sub huU)
+                    rw [hflat_real]
+                    simpa [τ, P.τ_eq, BHW.permutedExtendedTubeSector,
+                      BHW.permAct_realEmbed, BHW.permAct] using hu_sector
+                  have hbranch_cont :
+                      ContinuousWithinAt
+                        (BHW.extendF (bvt_F OS lgc n))
+                        (BHW.ExtendedTube d n)
+                        (BHW.permAct (d := d) τ
+                          (e.symm (SCV.realEmbed (eR u)))) :=
+                    (BHW.differentiableOn_extendF_bvt_F_extendedTube
+                      (d := d) OS lgc n).continuousOn.continuousWithinAt
+                        hpointET
+                  have hinner_cont :
+                      ContinuousWithinAt
+                        (fun z : Fin (n * (d + 1)) → ℂ =>
+                          BHW.permAct (d := d) τ (e.symm z))
+                        (SCV.TubeDomain Cflat)
+                        (SCV.realEmbed (eR u)) :=
+                    (((BHW.differentiable_permAct (d := d) (n := n) τ).continuous.comp
+                      e.symm.continuous).continuousAt.continuousWithinAt)
+                  simpa [Fflat] using
+                    ContinuousWithinAt.comp
+                      (f := fun z : Fin (n * (d + 1)) → ℂ =>
+                        BHW.permAct (d := d) τ (e.symm z))
+                      (g := BHW.extendF (bvt_F OS lgc n))
+                      (s := SCV.TubeDomain Cflat)
+                      (t := BHW.ExtendedTube d n)
+                      (x := SCV.realEmbed (eR u))
+                      hbranch_cont hinner_cont hCflat_to_permET
+              have hGflat_boundary_cont :
+                  ∀ x ∈ Uflat,
+                    ContinuousWithinAt Gflat (SCV.TubeDomain Cflat)
+                      (SCV.realEmbed x) :=
+                by
+                  intro x hx
+                  rcases hx with ⟨u, huU, rfl⟩
+                  have hflat_real :
+                      e.symm (SCV.realEmbed (eR u)) =
+                        BHW.realEmbed u := by
+                    ext k μ
+                    simp [e, eR, SCV.realEmbed, BHW.realEmbed]
+                  have hpointET :
+                      e.symm (SCV.realEmbed (eR u)) ∈
+                        BHW.ExtendedTube d n := by
+                    rw [hflat_real]
+                    exact H.realPatch_mem_extendedTube u (hU_sub huU)
+                  have hbranch_cont :
+                      ContinuousWithinAt
+                        (BHW.extendF (bvt_F OS lgc n))
+                        (BHW.ExtendedTube d n)
+                        (e.symm (SCV.realEmbed (eR u))) :=
+                    (BHW.differentiableOn_extendF_bvt_F_extendedTube
+                      (d := d) OS lgc n).continuousOn.continuousWithinAt
+                        hpointET
+                  have hinner_cont :
+                      ContinuousWithinAt
+                        (fun z : Fin (n * (d + 1)) → ℂ => e.symm z)
+                        (SCV.TubeDomain Cflat)
+                        (SCV.realEmbed (eR u)) :=
+                    e.symm.continuous.continuousAt.continuousWithinAt
+                  simpa [Gflat] using
+                    ContinuousWithinAt.comp
+                      (f := fun z : Fin (n * (d + 1)) → ℂ => e.symm z)
+                      (g := BHW.extendF (bvt_F OS lgc n))
+                      (s := SCV.TubeDomain Cflat)
+                      (t := BHW.ExtendedTube d n)
+                      (x := SCV.realEmbed (eR u))
+                      hbranch_cont hinner_cont hCflat_to_ET
+              have hFflat_recovery :
+                  hFflat_tempered.dist ρ =
+                    ∫ x : Fin (n * (d + 1)) → ℝ,
+                      Fflat (SCV.realEmbed x) * ρ x :=
+                SCV.fourierLaplace_boundary_recovery_on_open_of_tempered
+                  hCflat_open hCflat_conv hCflat_ne hCflat_cone
+                  hFflat_holo hFflat_tempered
+                  Uflat hUflat_open hFflat_boundary_cont
+                  ρ hρ_support hρ_compact
+              have hGflat_recovery :
+                  hGflat_tempered.dist ρ =
+                    ∫ x : Fin (n * (d + 1)) → ℝ,
+                      Gflat (SCV.realEmbed x) * ρ x :=
+                SCV.fourierLaplace_boundary_recovery_on_open_of_tempered
+                  hCflat_open hCflat_conv hCflat_ne hCflat_cone
+                  hGflat_holo hGflat_tempered
+                  Uflat hUflat_open hGflat_boundary_cont
+                  ρ hρ_support hρ_compact
+              have hflat_pairing_eq :
+                  (∫ x : Fin (n * (d + 1)) → ℝ,
+                    Fflat (SCV.realEmbed x) * ρ x) =
+                  ∫ x : Fin (n * (d + 1)) → ℝ,
+                    Gflat (SCV.realEmbed x) * ρ x := by
+                calc
+                  (∫ x : Fin (n * (d + 1)) → ℝ,
+                    Fflat (SCV.realEmbed x) * ρ x)
+                      = hFflat_tempered.dist ρ := hFflat_recovery.symm
+                  _ = hGflat_tempered.dist ρ := hBoundaryDist_eq ρ
+                  _ = ∫ x : Fin (n * (d + 1)) → ℝ,
+                    Gflat (SCV.realEmbed x) * ρ x := hGflat_recovery
+              let A : NPointDomain d n → ℂ :=
+                fun u =>
+                  BHW.extendF (bvt_F OS lgc n)
+                    (BHW.realEmbed
+                      (fun k => u
+                        ((Equiv.swap i ⟨i.val + 1, hi⟩) k)))
+              let B : NPointDomain d n → ℂ :=
+                fun u =>
+                  BHW.extendF (bvt_F OS lgc n) (BHW.realEmbed u)
+              have hFflat_source :
+                  (∫ x : Fin (n * (d + 1)) → ℝ,
+                    Fflat (SCV.realEmbed x) * ρ x) =
+                  ∫ u : NPointDomain d n, A u * χ u :=
+                by
+                  rw [integral_flatten_change_of_variables n (d + 1)]
+                  congr 1
+                  ext y
+                  have hflat_real :
+                      e.symm (SCV.realEmbed (eR y)) =
+                        BHW.realEmbed y := by
+                    ext k μ
+                    simp [e, eR, SCV.realEmbed, BHW.realEmbed]
+                  have hFarg :
+                      Fflat (SCV.realEmbed (eR y)) = A y := by
+                    simp [Fflat, A, τ, hflat_real,
+                      BHW.permAct_realEmbed]
+                  have hρarg : ρ (eR y) = χ y := by
+                    simp [ρ, eR, flattenSchwartzNPoint]
+                  simp [eR, hFarg, hρarg]
+              have hGflat_source :
+                  (∫ x : Fin (n * (d + 1)) → ℝ,
+                    Gflat (SCV.realEmbed x) * ρ x) =
+                  ∫ u : NPointDomain d n, B u * χ u :=
+                by
+                  rw [integral_flatten_change_of_variables n (d + 1)]
+                  congr 1
+                  ext y
+                  have hflat_real :
+                      e.symm (SCV.realEmbed (eR y)) =
+                        BHW.realEmbed y := by
+                    ext k μ
+                    simp [e, eR, SCV.realEmbed, BHW.realEmbed]
+                  have hGarg :
+                      Gflat (SCV.realEmbed (eR y)) = B y := by
+                    simp [Gflat, B, hflat_real]
+                  have hρarg : ρ (eR y) = χ y := by
+                    simp [ρ, eR, flattenSchwartzNPoint]
+                  simp [eR, hGarg, hρarg]
+              have hsource_pairing_eq :
+                  (∫ u : NPointDomain d n, A u * χ u) =
+                  ∫ u : NPointDomain d n, B u * χ u := by
+                calc
+                  (∫ u : NPointDomain d n, A u * χ u)
+                      = ∫ x : Fin (n * (d + 1)) → ℝ,
+                          Fflat (SCV.realEmbed x) * ρ x := hFflat_source.symm
+                  _ = ∫ x : Fin (n * (d + 1)) → ℝ,
+                          Gflat (SCV.realEmbed x) * ρ x := hflat_pairing_eq
+                  _ = ∫ u : NPointDomain d n, B u * χ u := hGflat_source
+              have hdiff_eq :
+                  (∫ u : NPointDomain d n,
+                    (BHW.extendF (bvt_F OS lgc n)
+                        (BHW.realEmbed
+                          (fun k => u
+                            ((Equiv.swap i ⟨i.val + 1, hi⟩) k))) -
+                      BHW.extendF (bvt_F OS lgc n) (BHW.realEmbed u)) *
+                      χ u) =
+                    (∫ u : NPointDomain d n, A u * χ u) -
+                      ∫ u : NPointDomain d n, B u * χ u := by
+                trans ∫ u : NPointDomain d n, A u * χ u - B u * χ u
+                · refine MeasureTheory.integral_congr_ae
+                    (Filter.Eventually.of_forall ?_)
+                  intro u
+                  simp [A, B]
+                  ring
+                · simpa [A, B] using
+                    MeasureTheory.integral_sub hτ_int hid_int
+              simpa using
+                hdiff_eq.trans (sub_eq_zero.mpr hsource_pairing_eq)
             have hpair :=
               BHW.integral_realSourceBranchDifference_eq_zero_to_pairing_eq
                 (d := d) OS lgc n
