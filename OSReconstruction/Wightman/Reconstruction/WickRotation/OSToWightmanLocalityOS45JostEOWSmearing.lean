@@ -156,6 +156,24 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
             (fun ε : ℝ =>
               (ExtPlus ε - ExtMinus ε) - (RawPlus ε - RawMinus ε))
             (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) := by
+        /-
+          Actual Vladimirov/BHW local collar transport leaf.
+
+          The raw OS-I `(4.12)`--`(4.14)` source-current comparison has already
+          produced `hraw`.  What remains here is the local tempered-boundary-
+          value uniqueness/recovery theorem on the Figure-2-4 BHW collar:
+          identify the deterministic `extendF` side pairings with those raw
+          Wick-section source pairings in compact-test limit.  This is local
+          collar BV/EOW content, not a pointwise endpoint equality and not the
+          global `SCV.TubeDomain C` uniqueness surface.
+        -/
+        exact ?os45_vladimirov_bhw_local_collar_transport
+        /-
+          Retired consumer route.  It tries to obtain the same collar transport
+          by first proving pointwise Wick-section equality and then feeding the
+          source-representation machinery.  That pointwise equality is itself
+          the Vladimirov/BHW transport, so using this route would repackage the
+          leaf instead of producing the local tempered-BV argument.
         have htransported_wick_pairing :
             ∀ ψ : SchwartzNPoint d n,
               HasCompactSupport (ψ : NPointDomain d n → ℂ) →
@@ -225,79 +243,40 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
               exact
                 ⟨hz_ext, by
                   simpa [BHW.permutedExtendedTubeSector, z] using hτz_ext⟩
+            let zSeed : Fin n → Fin (d + 1) → ℂ :=
+              BHW.permAct (d := d) P.τ z
+            have hzSeed_window :
+                zSeed ∈
+                  ({w : Fin n → Fin (d + 1) → ℂ |
+                      BHW.permAct (d := d) P.τ w ∈ BHW.ForwardTube d n} ∩
+                    H.ΩJ) := by
+              simpa [zSeed, z] using
+                H.permAct_ordinaryWick_mem_OS412SeedWindow u huP
+            have hzSeed_overlap :
+                zSeed ∈ BHW.ExtendedTube d n ∩
+                  BHW.permutedExtendedTubeSector d n P.τ := by
+              simpa [zSeed, z] using
+                H.OS412Seed_mem_initialSectorOverlap u huP
+            rcases
+                H.OS412SeedWindow_initialSectorOverlap_deterministicAdjBranch_metricBallChart
+                  OS lgc huP with
+              ⟨Cseed, Bseed, rseed, hrseed_pos, hCseed_ball,
+                hzSeed_Cseed, hCseed_open, hCseed_pre, hCseed_overlap,
+                hBseed_holo, hBseed_model, hBseed_trace⟩
+            rcases H.OS412Seed_ordinaryWick_connectedNeighborhood huP with
+              ⟨Ωpath, hΩpath_open, hΩpath_connected, hzSeed_Ωpath,
+                hz_Ωpath, hΩpath_sub⟩
             /-
-              Local Vladimirov/BHW interface leaf at the actual Wick-section
-              point.  This is weaker and more faithful than a global equality on
-              `T'_n ∩ τT'_n`: the compact-test transport only needs the common
-              tempered boundary-value package on a local tube chart through
-              `z = wick u`.
+              Actual OS-I `(4.12)` seed-to-Wick transport leaf.  The seed chart
+              above identifies the raw adjacent analytic element with
+              `extendF ∘ permAct P.τ` near `zSeed`; `Ωpath` is the checked
+              connected BHW/Jost carrier from that seed to the ordinary Wick
+              endpoint `z`.  The remaining Vladimirov/BHW step is to transport
+              this analytic element to `z` and identify the deterministic
+              adjacent endpoint branch with the ordinary branch there.
             -/
-            let Cflat : Set (Fin (n * (d + 1)) → ℝ) :=
-              ?os45_vladimirov_flat_local_tube_cone_at_wick
-            let chart :
-                (Fin (n * (d + 1)) → ℂ) →
-                  (Fin n → Fin (d + 1) → ℂ) :=
-              fun q => (flattenCLEquiv n (d + 1)).symm q
-            let u0 : Fin (n * (d + 1)) → ℂ :=
-              (flattenCLEquiv n (d + 1)) z
-            let Fchart : (Fin (n * (d + 1)) → ℂ) → ℂ :=
-              fun q => Ford (chart q)
-            let Gchart : (Fin (n * (d + 1)) → ℂ) → ℂ :=
-              fun q => Fadj (chart q)
-            have hchart_u0 : chart u0 = z :=
-              by simp [chart, u0]
-            have hu0 : u0 ∈ SCV.TubeDomain Cflat :=
-              ?os45_vladimirov_chart_point_mem_tube_at_wick
-            have hchart_tube_sub_overlap :
-                ∀ q ∈ SCV.TubeDomain Cflat,
-                  chart q ∈
-                    BHW.ExtendedTube d n ∩
-                      BHW.permutedExtendedTubeSector d n P.τ :=
-              ?os45_vladimirov_chart_tube_subset_overlap_at_wick
-            have hCflat_open : IsOpen Cflat :=
-              ?os45_vladimirov_flat_tube_cone_open_at_wick
-            have hCflat_conv : Convex ℝ Cflat :=
-              ?os45_vladimirov_flat_tube_cone_convex_at_wick
-            have hCflat_ne : Cflat.Nonempty :=
-              ?os45_vladimirov_flat_tube_cone_nonempty_at_wick
-            have hCflat_cone :
-                ∀ (t : ℝ), 0 < t → ∀ y ∈ Cflat, t • y ∈ Cflat :=
-              ?os45_vladimirov_flat_tube_cone_smul_at_wick
-            have hchart_holo :
-                DifferentiableOn ℂ chart (SCV.TubeDomain Cflat) :=
-              by
-                simpa [chart] using
-                  (flattenCLEquiv n (d + 1)).symm.differentiable.differentiableOn
-            have hFchart_holo :
-                DifferentiableOn ℂ Fchart (SCV.TubeDomain Cflat) :=
-              hFord_holo_overlap.comp hchart_holo hchart_tube_sub_overlap
-            have hGchart_holo :
-                DifferentiableOn ℂ Gchart (SCV.TubeDomain Cflat) :=
-              hFadj_holo_overlap.comp hchart_holo hchart_tube_sub_overlap
-            have hTF :
-                SCV.HasFourierLaplaceReprTempered Cflat Fchart :=
-              ?os45_vladimirov_ford_tempered_bv_package_at_wick
-            have hTG :
-                SCV.HasFourierLaplaceReprTempered Cflat Gchart :=
-              ?os45_vladimirov_fadj_tempered_bv_package_at_wick
-            have hdist :
-                ∀ ξ : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ,
-                  hTF.dist ξ = hTG.dist ξ :=
-              ?os45_vladimirov_common_tempered_boundary_dist_at_wick
-            have hEqChart :
-                Set.EqOn Fchart Gchart (SCV.TubeDomain Cflat) :=
-              tube_holomorphic_unique_from_equal_tempered_bv_flat
-                hCflat_open hCflat_conv hCflat_ne hCflat_cone
-                hFchart_holo hGchart_holo hTF hTG hdist
-                ?os45_vladimirov_ford_chart_integrable_at_wick
-                ?os45_vladimirov_fadj_chart_integrable_at_wick
-            have hFord_eq_Fadj : Ford z = Fadj z := by
-              calc
-                Ford z = Fchart u0 := by
-                  simp [Fchart, hchart_u0]
-                _ = Gchart u0 := hEqChart hu0
-                _ = Fadj z := by
-                  simp [Gchart, hchart_u0]
+            have hFord_eq_Fadj : Ford z = Fadj z :=
+              -- retired placeholder: seed-to-Wick transport is the same leaf
             have hF_holo :
                 DifferentiableOn ℂ (bvt_F OS lgc n) (BHW.ForwardTube d n) := by
               simpa [BHW_forwardTube_eq (d := d) (n := n)] using
@@ -489,6 +468,7 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
               η h0_plus h0_minus hrep' φ hφ_compact hφU
         simpa [ExtPlus, ExtMinus, RawPlus, RawMinus] using
           hsrc_ext.sub hraw
+        -/
       have hsrc :
           Tendsto
             (fun ε : ℝ =>
