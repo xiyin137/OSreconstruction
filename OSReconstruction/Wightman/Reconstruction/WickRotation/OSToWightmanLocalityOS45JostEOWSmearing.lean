@@ -429,7 +429,94 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
                 (1 : Equiv.Perm (Fin n)) (-1 : ℝ) ε η φ).1 :
                 SchwartzNPoint d n) : NPointDomain d n → ℂ) u))
         (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) :=
-    ?os45_OSI45_sourceSide_extendF_transport_from_wick_currents
+    by
+      let Tschw : SchwartzMap (BHW.OS45FlatCommonChartReal d n) ℂ →L[ℂ] ℂ :=
+        ((BHW.os45CommonEdgeFlatJacobianAbs n : ℂ)) •
+          ((OsterwalderSchraderAxioms.schwingerCLM (d := d) OS n).comp
+            (D.toZeroDiagonalCLM (1 : Equiv.Perm (Fin n))))
+      have hKηC_singleton :
+          ({η} : Set (BHW.OS45FlatCommonChartReal d n)) ⊆
+            BHW.os45FlatCommonChartCone d n := by
+        intro ξ hξ
+        simpa [Set.mem_singleton_iff.mp hξ] using hηC
+      have hflat_plus :
+          Tendsto
+            (fun ε : ℝ =>
+              ∫ x : BHW.OS45FlatCommonChartReal d n,
+                BHW.os45FlatCommonChartBranch d n OS lgc
+                  (1 : Equiv.Perm (Fin n))
+                  (fun a =>
+                    (x a : ℂ) + (ε : ℂ) * (η a : ℂ) * Complex.I) *
+                φ x)
+            (𝓝[Set.Ioi 0] (0 : ℝ))
+            (𝓝
+              ((BHW.os45CommonEdgeFlatJacobianAbs n : ℂ) *
+                OS.S n
+                  (D.toZeroDiagonalCLM
+                    (1 : Equiv.Perm (Fin n)) φ))) :=
+        by
+          have hzero_plus :
+              (∫ x : BHW.OS45FlatCommonChartReal d n,
+                BHW.os45FlatCommonChartBranch d n OS lgc
+                  (1 : Equiv.Perm (Fin n))
+                  (fun a => (x a : ℂ)) * φ x) =
+                Tschw φ :=
+            ?os45_OSI45_flat_plus_zero_height_schwingerCLM
+          have hunif :=
+            BHW.os45_BHWJost_flatCommonChart_distributionalBoundaryValue_plus_of_zeroHeight_pairingCLM
+              (d := d) hd OS lgc (P := P) Tschw
+              ({η} : Set (BHW.OS45FlatCommonChartReal d n))
+              isCompact_singleton hKηC_singleton
+              φ _hφ_compact hφE hzero_plus
+          have hη_singleton :
+              η ∈ ({η} : Set (BHW.OS45FlatCommonChartReal d n)) := by
+            simp
+          have hpoint := hunif.tendsto_at hη_singleton
+          simpa [Tschw] using hpoint
+      have hflat_minus :
+          Tendsto
+            (fun ε : ℝ =>
+              ∫ x : BHW.OS45FlatCommonChartReal d n,
+                BHW.os45FlatCommonChartBranch d n OS lgc
+                  (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+                  (fun a =>
+                    (x a : ℂ) - (ε : ℂ) * (η a : ℂ) * Complex.I) *
+                φ x)
+            (𝓝[Set.Ioi 0] (0 : ℝ))
+            (𝓝
+              ((BHW.os45CommonEdgeFlatJacobianAbs n : ℂ) *
+                OS.S n
+                  (D.toZeroDiagonalCLM
+                    (1 : Equiv.Perm (Fin n)) φ))) :=
+        by
+          have hzero_minus :
+              (∫ x : BHW.OS45FlatCommonChartReal d n,
+                BHW.os45FlatCommonChartBranch d n OS lgc
+                  (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+                  (fun a => (x a : ℂ)) * φ x) =
+                Tschw φ :=
+            ?os45_OSI45_flat_minus_zero_height_schwingerCLM
+          have hunif :=
+            BHW.os45_BHWJost_flatCommonChart_distributionalBoundaryValue_minus_of_zeroHeight_pairingCLM
+              (d := d) hd OS lgc (P := P) Tschw
+              ({η} : Set (BHW.OS45FlatCommonChartReal d n))
+              isCompact_singleton hKηC_singleton
+              φ _hφ_compact hφE hzero_minus
+          have hη_singleton :
+              η ∈ ({η} : Set (BHW.OS45FlatCommonChartReal d n)) := by
+            simp
+          have hpoint := hunif.tendsto_at hη_singleton
+          simpa [Tschw] using hpoint
+      have hplus_src :=
+        BHW.os45_flat_plus_selector_to_sourceSide
+          (d := d) (n := n) OS lgc D η hηC
+          φ _hφ_compact hφE hflat_plus
+      have hminus_src :=
+        BHW.os45_flat_minus_selector_to_sourceSide
+          (d := d) (n := n) OS lgc D η hηC
+          φ _hφ_compact hφE hflat_minus
+      have hdiff := hplus_src.sub hminus_src
+      simpa using hdiff
   have hside :
       Tendsto
         (fun ε : ℝ =>
