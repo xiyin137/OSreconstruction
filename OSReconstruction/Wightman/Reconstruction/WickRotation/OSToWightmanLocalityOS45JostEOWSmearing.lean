@@ -279,11 +279,100 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
                   (fun a => (x a : ℂ)) * φ x) =
                 J * OS.S n
                   (D.toZeroDiagonalCLM (1 : Equiv.Perm (Fin n)) φ) := by
-            /-
-              The remaining ordinary-side Vladimirov/BHW payload: the flat
-              Figure-2-4 real-edge branch represents the Schwinger boundary CLM.
-            -/
-            exact ?os45_vladimirov_ordinary_flat_real_edge_pairing_eq_schwinger
+            let ψ0 : NPointDomain d n → ℂ := fun u =>
+              D.χ u *
+                φ (BHW.os45CommonEdgeFlatCLE d n
+                  (1 : Equiv.Perm (Fin n)) u)
+            have hwick_source :
+                (∫ u : NPointDomain d n,
+                  BHW.os45FlatCommonChartBranch d n OS lgc
+                    (1 : Equiv.Perm (Fin n))
+                    (BHW.flattenCfg n d
+                      (fun k μ =>
+                        BHW.realEmbed
+                            (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                              (1 : Equiv.Perm (Fin n)) u) k μ +
+                          (BHW.os45HalfTimeDirection (d := d) (n := n)
+                              (1 : Equiv.Perm (Fin n)) u k μ : ℂ) *
+                            Complex.I)) *
+                    ψ0 u) =
+                  OS.S n
+                    (D.toZeroDiagonalCLM
+                      (1 : Equiv.Perm (Fin n)) φ) := by
+              simpa [ψ0]
+                using
+                  BHW.os45FlatCommonChart_wickSection_sourcePairing_eq_schwinger
+                    (d := d) OS lgc D φ hφE
+            have hsource_transport :
+                (∫ u : NPointDomain d n,
+                  BHW.extendF (bvt_F OS lgc n)
+                    (BHW.os45QuarterTurnConfig (d := d) (n := n)
+                      (fun k => wickRotatePoint (u k))) *
+                    ψ0 u) =
+                ∫ u : NPointDomain d n,
+                  BHW.os45FlatCommonChartBranch d n OS lgc
+                    (1 : Equiv.Perm (Fin n))
+                    (BHW.flattenCfg n d
+                      (fun k μ =>
+                        BHW.realEmbed
+                            (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                              (1 : Equiv.Perm (Fin n)) u) k μ +
+                          (BHW.os45HalfTimeDirection (d := d) (n := n)
+                              (1 : Equiv.Perm (Fin n)) u k μ : ℂ) *
+                            Complex.I)) *
+                    ψ0 u := by
+              /-
+                Remaining OS-I `(4.12)`/Vladimirov payload: the tempered
+                boundary-value uniqueness transport along
+                `os45Figure24IdentityPath` from the horizontal common-edge
+                endpoint to the Wick-section endpoint, smeared against the
+                compact source test `ψ0`.
+              -/
+              exact ?os45_vladimirov_Figure24IdentityPath_source_pairing_transport
+            have hsource_to_flat :
+                J *
+                    (∫ u : NPointDomain d n,
+                      BHW.extendF (bvt_F OS lgc n)
+                        (BHW.os45QuarterTurnConfig (d := d) (n := n)
+                          (fun k => wickRotatePoint (u k))) *
+                        ψ0 u) =
+                  (∫ x : BHW.OS45FlatCommonChartReal d n,
+                    BHW.os45FlatCommonChartBranch d n OS lgc
+                      (1 : Equiv.Perm (Fin n))
+                      (fun a => (x a : ℂ)) * φ x) := by
+              simpa [J, ψ0, BHW.os45FlatCommonChartSourceSide_zero_eq_commonEdge,
+                BHW.os45QuarterTurnCLE_symm_realEmbed_commonEdge_eq_wick]
+                using hflat_source.symm
+            calc
+              (∫ x : BHW.OS45FlatCommonChartReal d n,
+                BHW.os45FlatCommonChartBranch d n OS lgc
+                  (1 : Equiv.Perm (Fin n))
+                  (fun a => (x a : ℂ)) * φ x) =
+                J *
+                  (∫ u : NPointDomain d n,
+                    BHW.extendF (bvt_F OS lgc n)
+                      (BHW.os45QuarterTurnConfig (d := d) (n := n)
+                        (fun k => wickRotatePoint (u k))) *
+                      ψ0 u) := hsource_to_flat.symm
+              _ =
+                J *
+                  (∫ u : NPointDomain d n,
+                    BHW.os45FlatCommonChartBranch d n OS lgc
+                      (1 : Equiv.Perm (Fin n))
+                      (BHW.flattenCfg n d
+                        (fun k μ =>
+                          BHW.realEmbed
+                              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                                (1 : Equiv.Perm (Fin n)) u) k μ +
+                            (BHW.os45HalfTimeDirection (d := d) (n := n)
+                                (1 : Equiv.Perm (Fin n)) u k μ : ℂ) *
+                              Complex.I)) *
+                      ψ0 u) := by
+                  rw [hsource_transport]
+              _ =
+                J * OS.S n
+                  (D.toZeroDiagonalCLM (1 : Equiv.Perm (Fin n)) φ) := by
+                  rw [hwick_source]
           have hsource_to_flat :
               J *
                 (∫ u : NPointDomain d n,
