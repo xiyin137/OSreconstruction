@@ -177,53 +177,54 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
             that OS-I/Jost carrier, not a downstream weak-locality shortcut or
             a global two-sector branch wrapper.
           -/
-          have hCanonicalPair :
-              BHW.OS45SourcePatchBHWJostPairData
-                (d := d) hd OS lgc n i hi
-                (BHW.os45Figure24SourcePatch (d := d) (n := n) i hi) := by
-            /-
-              This is the actual Vladimirov/BHW proof body: produce the
-              ordinary and adjacent local branches on the checked source-patch
-              hull, then prove their Wick and real traces.  The adjacent Wick
-              trace is the OS-I `(4.12)` transport leaf.
-            -/
-            let HJ :
-                BHW.OS45SourcePatchBHWJostHullData
-                  (d := d) hd OS lgc n i hi
-                  (BHW.os45Figure24SourcePatch (d := d) (n := n) i hi) :=
-              BHW.os45_sourcePatch_bhwJostHullData_on_figure24SourcePatch
-                (d := d) hd OS lgc n i hi
-            let Bord : (Fin n → Fin (d + 1) → ℂ) → ℂ :=
-              ?os45_vladimirov_ordinary_bhw_branch
-            let Btau : (Fin n → Fin (d + 1) → ℂ) → ℂ :=
-              ?os45_vladimirov_adjacent_bhw_branch
-            refine
-              BHW.OS45SourcePatchBHWJostPairData.ofHullDataAndBranches
-                (d := d) (n := n) (hd := hd) (OS := OS) (lgc := lgc)
-                (i := i) (hi := hi)
-                HJ Bord Btau
-                ?os45_vladimirov_ordinary_branch_holomorphic
-                ?os45_vladimirov_adjacent_branch_holomorphic
-                ?os45_vladimirov_ordinary_wick_trace
-                ?os45_vladimirov_adjacent_wick_trace
-                ?os45_vladimirov_ordinary_real_trace
-                ?os45_vladimirov_adjacent_real_trace
-          have hOverlap :
-              IsConnected
-                {z : Fin n → Fin (d + 1) → ℂ |
-                  z ∈ BHW.ExtendedTube d n ∧
-                    BHW.permAct (d := d) P.τ z ∈
-                      BHW.ExtendedTube d n} := by
-            exact ?os45_adjacent_extended_tube_overlap_connected
-          have hCompact :
-              BHW.OS45CompactFigure24WickPairingEq (d := d) n i hi OS lgc :=
-            BHW.os45CompactFigure24WickPairingEq_of_pairData_canonical
-              (d := d) hd OS lgc n i hi hCanonicalPair
-              (by intro x hx; exact hx)
+          have hSPrime :
+              BHW.OS45BHWJostSPrimeBranchData hd OS lgc H := by
+            let Ford : (Fin n → Fin (d + 1) → ℂ) → ℂ :=
+              BHW.extendF (bvt_F OS lgc n)
+            let Fadj : (Fin n → Fin (d + 1) → ℂ) → ℂ :=
+              fun z =>
+                BHW.extendF (bvt_F OS lgc n)
+                  (BHW.permAct (d := d) P.τ z)
+            have hOverlap_open :
+                IsOpen (BHW.ExtendedTube d n ∩
+                  BHW.permutedExtendedTubeSector d n P.τ) :=
+              BHW.isOpen_extendedTube.inter
+                (BHW.isOpen_permutedExtendedTubeSector (d := d) (n := n) P.τ)
+            have hFord_holo_overlap :
+                DifferentiableOn ℂ Ford
+                  (BHW.ExtendedTube d n ∩
+                    BHW.permutedExtendedTubeSector d n P.τ) :=
+              (BHW.differentiableOn_extendF_bvt_F_extendedTube
+                (d := d) OS lgc n).mono (by intro z hz; exact hz.1)
+            have hFadj_holo_overlap :
+                DifferentiableOn ℂ Fadj
+                  (BHW.ExtendedTube d n ∩
+                    BHW.permutedExtendedTubeSector d n P.τ) :=
+              (BHW.differentiableOn_extendF_bvt_F_permAct_preimageExtendedTube
+                (d := d) OS lgc n P.τ).mono (by
+                  intro z hz
+                  simpa [BHW.permutedExtendedTubeSector, Fadj] using hz.2)
+            have hOverlapEq :
+                Set.EqOn Ford Fadj
+                  (BHW.ExtendedTube d n ∩
+                    BHW.permutedExtendedTubeSector d n P.τ) := by
+              /-
+                Vladimirov/BHW interface leaf.  On the true two-sheet overlap,
+                `Ford` and `Fadj` are holomorphic and have the same tempered
+                boundary value from the OS-I `(4.12)`--`(4.14)` source patch.
+                The intended mechanism is `SCV.tube_holomorphic_unique_from_bv`
+                or its tempered package form after flattening a local tube chart;
+                this is the producer, not the downstream compact-packet Route A.
+              -/
+              intro z hz
+              exact ?os45_vladimirov_temperedBV_overlapEq_at_z
+            exact
+              BHW.OS45BHWJostSPrimeBranchData.of_extendF_overlapEq
+                (d := d) OS lgc (P := P) (H := H)
+                (by intro z hz; simpa [Ford, Fadj] using hOverlapEq hz)
           exact
-            BHW.os45CommonEdge_transported_wick_pairing_of_compactFigure24WickPairingEq
-              (d := d) hd OS lgc (P := P) hOverlap hCompact hU_sub
-              ψ hψ_compact hψU
+            hSPrime.transported_wick_pairing
+              (d := d) OS lgc hU_sub ψ hψ_compact hψU
         have hsource :
             ∀ u ∈ U,
               BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
