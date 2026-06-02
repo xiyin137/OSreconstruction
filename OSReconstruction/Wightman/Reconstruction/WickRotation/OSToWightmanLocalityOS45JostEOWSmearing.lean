@@ -167,35 +167,16 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
                 bvt_F OS lgc n (fun k => wickRotatePoint (u k)) * ψ u := by
           intro ψ hψ_compact hψU
           /-
-            Remaining OS-I `(4.12)`/Vladimirov payload: prove equality of the
-            two tempered boundary-value branches on the genuine adjacent
-            two-sector overlap.  The checked `S'_n` branch consumer below then
-            turns that overlap equality into the compact Wick-section
-            transport, without using the legacy
-            `localSPrime_twoSectorBranch_of_EOW_BHW` constructor.
+            Remaining OS-I `(4.12)` payload in its compact-test form: transport
+            the deterministic adjacent branch `extendF ∘ permAct P.τ` from the
+            genuine adjacent Wick seed back to the ordinary Wick section on the
+            compact source window.  The checked seed-window lemmas provide the
+            branch value at `permAct P.τ (wick u)` and the carrier geometry;
+            the missing step is the classical Wick-section transport through
+            that OS-I/Jost carrier, not a downstream weak-locality shortcut or
+            a global two-sector branch wrapper.
           -/
-          have hoverlap_eq :
-              Set.EqOn
-                (BHW.extendF (bvt_F OS lgc n))
-                (fun z : Fin n → Fin (d + 1) → ℂ =>
-                  BHW.extendF (bvt_F OS lgc n)
-                    (BHW.permAct (d := d) P.τ z))
-                (BHW.ExtendedTube d n ∩
-                  BHW.permutedExtendedTubeSector d n P.τ) := by
-            /-
-              OS-I §4.5 / Vladimirov uniqueness leaf.  This should be proved
-              from polynomial tempered boundary-value bounds plus equality of
-              the two boundary distributions on a local Jost real edge, then
-              propagated across the connected overlap by the identity theorem.
-            -/
-            exact ?os45_vladimirov_temperedBV_overlap_eq_from_common_jost_edge
-          let S : BHW.OS45BHWJostSPrimeBranchData hd OS lgc H :=
-            BHW.OS45BHWJostSPrimeBranchData.of_extendF_overlapEq
-              (d := d) OS lgc (P := P) (H := H) hoverlap_eq
-          exact
-            BHW.OS45BHWJostSPrimeBranchData.transported_wick_pairing
-              (d := d) (n := n) (hd := hd) OS lgc (P := P) (H := H)
-              S hU_sub ψ hψ_compact hψU
+          exact ?os45_OS412_seed_to_ordinary_wick_compact_pairing
         have hsource :
             ∀ u ∈ U,
               BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
