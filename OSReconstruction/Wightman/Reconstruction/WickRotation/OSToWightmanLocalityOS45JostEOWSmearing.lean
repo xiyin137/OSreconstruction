@@ -486,8 +486,10 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
             let τ : Equiv.Perm (Fin n) :=
               Equiv.swap i ⟨i.val + 1, hi⟩
             let e := flattenCLEquiv n (d + 1)
+            have hn_pos : 0 < n := by omega
+            haveI : NeZero n := ⟨Nat.pos_iff_ne_zero.mp hn_pos⟩
             let Cflat : Set (Fin (n * (d + 1)) → ℝ) :=
-              ?os45_vladimirov_realJostEdge_localFlatCone
+              BHW.os45FlatCommonChartCone d n
             let Fflat : (Fin (n * (d + 1)) → ℂ) → ℂ :=
               fun z =>
                 BHW.extendF (bvt_F OS lgc n)
@@ -497,15 +499,21 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
               fun z =>
                 BHW.extendF (bvt_F OS lgc n)
                   (e.symm z)
+            obtain ⟨hCflat_open_raw, hCflat_conv_raw, _hCflat_zero,
+              hCflat_cone_raw, hCflat_ne_raw⟩ :=
+              BHW.os45FlatCommonChartCone_eowReady d n
             have hCflat_open : IsOpen Cflat :=
-              ?os45_vladimirov_realJostEdge_localFlatCone_open
+              by simpa [Cflat] using hCflat_open_raw
             have hCflat_conv : Convex ℝ Cflat :=
-              ?os45_vladimirov_realJostEdge_localFlatCone_convex
+              by simpa [Cflat] using hCflat_conv_raw
             have hCflat_ne : Cflat.Nonempty :=
-              ?os45_vladimirov_realJostEdge_localFlatCone_nonempty
+              by simpa [Cflat] using hCflat_ne_raw
             have hCflat_cone :
                 ∀ (t : ℝ), 0 < t → ∀ y ∈ Cflat, t • y ∈ Cflat :=
-              ?os45_vladimirov_realJostEdge_localFlatCone_cone
+              by
+                intro t ht y hy
+                simpa [Cflat] using
+                  hCflat_cone_raw t y ht (by simpa [Cflat] using hy)
             have hCflat_to_ET :
                 Set.MapsTo
                   (fun z : Fin (n * (d + 1)) → ℂ => e.symm z)
