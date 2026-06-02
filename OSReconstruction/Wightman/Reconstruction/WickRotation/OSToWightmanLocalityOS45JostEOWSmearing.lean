@@ -234,6 +234,90 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
       /-
         Genuine OS-I `(4.12)`--`(4.14)` Vladimirov/BHW collar transport.
 
+        The side-difference route below is retired: it proves the deterministic
+        `extendF` side-current comparison from itself after source pullback.
+        The non-circular proof body is the residual comparison between each
+        deterministic BHW side branch and the corresponding raw OS-I Wick
+        current on the same compact Figure-2-4 source window.
+      -/
+      let IextPlus : ℝ → ℂ := fun ε =>
+        ∫ u : NPointDomain d n,
+          BHW.extendF (bvt_F OS lgc n)
+            (BHW.os45FlatCommonChartSourceSide d n
+              (1 : Equiv.Perm (Fin n)) (1 : ℝ) ε η u) *
+            ((((D.toSideZeroDiagonalCLM
+              (1 : Equiv.Perm (Fin n)) (1 : ℝ) ε η φ).1 :
+                SchwartzNPoint d n) : NPointDomain d n → ℂ) u)
+      let IrawPlus : ℝ → ℂ := fun ε =>
+        ∫ u : NPointDomain d n,
+          bvt_F OS lgc n (fun k => wickRotatePoint (u k)) *
+            ((((D.toSideZeroDiagonalCLM
+              (1 : Equiv.Perm (Fin n)) (1 : ℝ) ε η φ).1 :
+                SchwartzNPoint d n) : NPointDomain d n → ℂ) u)
+      let IextMinus : ℝ → ℂ := fun ε =>
+        ∫ u : NPointDomain d n,
+          BHW.extendF (bvt_F OS lgc n)
+            (BHW.permAct (d := d)
+              (P.τ.symm * (1 : Equiv.Perm (Fin n))).symm
+              (BHW.os45FlatCommonChartSourceSide d n
+                (1 : Equiv.Perm (Fin n)) (-1 : ℝ) ε η u)) *
+            ((((D.toSideZeroDiagonalCLM
+              (1 : Equiv.Perm (Fin n)) (-1 : ℝ) ε η φ).1 :
+                SchwartzNPoint d n) : NPointDomain d n → ℂ) u)
+      let IrawMinus : ℝ → ℂ := fun ε =>
+        ∫ u : NPointDomain d n,
+          bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k))) *
+            ((((D.toSideZeroDiagonalCLM
+              (1 : Equiv.Perm (Fin n)) (-1 : ℝ) ε η φ).1 :
+                SchwartzNPoint d n) : NPointDomain d n → ℂ) u)
+      have hplus_residual :
+          Tendsto (fun ε : ℝ => IextPlus ε - IrawPlus ε)
+            (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) := by
+        /-
+          Ordinary-sector Vladimirov/BHW residual transport: identify the
+          deterministic zero-height BHW common-edge boundary value with the
+          raw OS-I Wick-section current, using tempered boundary-value
+          uniqueness and the polynomial-growth control on this compact collar.
+        -/
+        exact
+          ?os45_vladimirov_ordinary_raw_to_extendF_sourceSide_residual
+      have hminus_residual :
+          Tendsto (fun ε : ℝ => IextMinus ε - IrawMinus ε)
+            (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) := by
+        /-
+          Adjacent-sector Vladimirov/BHW residual transport: the same
+          tempered-BV uniqueness argument after the adjacent transposition.
+          This is the sharp BHW/Vladimirov interface; no legacy
+          `BHWJostLocal` shortcut or source-representation consumer is used here.
+        -/
+        exact
+          ?os45_vladimirov_adjacent_raw_to_extendF_sourceSide_residual
+      have hresidual_difference :
+          Tendsto
+            (fun ε : ℝ =>
+              (IextPlus ε - IrawPlus ε) -
+                (IextMinus ε - IrawMinus ε))
+            (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 (0 - 0)) :=
+        hplus_residual.sub hminus_residual
+      have hresidual_difference_zero :
+          Tendsto
+            (fun ε : ℝ =>
+              (IextPlus ε - IrawPlus ε) -
+                (IextMinus ε - IrawMinus ε))
+            (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) := by
+        simpa using hresidual_difference
+      refine hresidual_difference_zero.congr' ?_
+      filter_upwards with ε
+      simp [Ext, Raw, IextPlus, IrawPlus, IextMinus, IrawMinus]
+      ring
+      /-
+        Retired side-difference route.  The deterministic flat side difference
+        is equivalent to the `Ext` comparison produced here, so using it as
+        the live leaf would be circular.
+
+      /-
+        Genuine OS-I `(4.12)`--`(4.14)` Vladimirov/BHW collar transport.
+
         The global-tube recovery route was too strong for the Figure-2-4 data:
         BHW supplies local wedge access on compact common-edge windows, not a
         global `SCV.TubeDomain` inclusion for the adjacent branch.  The active
@@ -524,6 +608,7 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
             (fun u hu => subset_closure hu) hU_compact η
             h0_plus h0_minus φ hφ_compact hφU hzero_pairing
       simpa using hExt_zero.sub hraw
+      -/
       /-
       let e :=
         BHW.os45CommonEdgeFlatCLE d n
