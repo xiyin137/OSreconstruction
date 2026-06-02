@@ -422,19 +422,54 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
             simp [hψ_zero]
       _ =
         ∫ u : NPointDomain d n,
-          bvt_F OS lgc n (fun k => wickRotatePoint (u k)) * ψ u := by
+          bvt_F OS lgc n
+            (fun k => wickRotatePoint (u (P.τ k))) * ψ u := by
           /-
-            OS-I `(4.12)` transported Wick pairing leaf.
+            Vladimirov/BHW deterministic-to-raw adjacent Wick BV leaf.
 
-            This is the genuine seed-to-ordinary-Wick transport: the
-            deterministic adjacent branch `extendF ∘ permAct P.τ`, evaluated
-            on the ordinary Wick section and paired against compact source
-            tests on `U`, must equal the ordinary Wick pairing.  The initial
-            overlap carrier and E3/Wick trace normalization are already in the
-            surrounding proof; this is the remaining Vladimirov/BHW
-            uniqueness step.
+            The OS Euclidean source-pairing calculation below identifies the
+            raw adjacent Wick boundary value with the ordinary Wick boundary
+            value for arbitrary compact source tests supported in `U`.  The
+            remaining analytic payload is the tempered-BV uniqueness step
+            identifying the deterministic BHW adjacent boundary
+            `extendF (bvt_F) (permAct P.τ (wick u))` with that raw
+            `(4.12)` adjacent Wick boundary value in compact source pairings.
           -/
-          exact ?os45_OS412_transported_wick_pairing
+          exact ?os45_vladimirov_extendF_adjacentWick_pairing_eq_raw412
+      _ =
+        ∫ u : NPointDomain d n,
+          bvt_F OS lgc n (fun k => wickRotatePoint (u k)) * ψ u := by
+          let D : BHW.OS45Figure24SourceCutoffData P :=
+            Classical.choice
+              (BHW.exists_os45Figure24SourceCutoffData (d := d) P)
+          let ψflat :
+              SchwartzMap (BHW.OS45FlatCommonChartReal d n) ℂ :=
+            (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
+              (BHW.os45CommonEdgeFlatCLE d n
+                (1 : Equiv.Perm (Fin n))).symm) ψ
+          have hψP : tsupport (ψ : NPointDomain d n → ℂ) ⊆ P.V :=
+            hψU.trans hU_sub
+          have hψflatE :
+              tsupport (ψflat :
+                BHW.OS45FlatCommonChartReal d n → ℂ) ⊆
+                BHW.os45FlatCommonChartEdgeSet d n P
+                  (1 : Equiv.Perm (Fin n)) := by
+            simpa [ψflat] using
+              BHW.tsupport_comp_os45CommonEdgeFlatCLE_symm_subset_edgeSet
+                (d := d) (n := n) (hd := hd) (P := P)
+                (1 : Equiv.Perm (Fin n)) ψ hψP
+          have hDψ :
+              D.toSchwartzNPointCLM (1 : Equiv.Perm (Fin n)) ψflat =
+                ψ := by
+            simpa [ψflat] using
+              D.toSchwartzNPointCLM_flatPullback_eq
+                (1 : Equiv.Perm (Fin n)) ψ hψP
+          have hraw :=
+            BHW.os45CommonEdge_adjacentWick_sourcePairing_eq_ordinaryWick
+              (d := d) (hd := hd) (n := n) OS lgc (P := P)
+              D ψflat hψflatE
+          rw [hDψ] at hraw
+          simpa using hraw
       _ =
         ∫ u : NPointDomain d n,
           Ford (fun k => wickRotatePoint (u k)) * ψ u := by
