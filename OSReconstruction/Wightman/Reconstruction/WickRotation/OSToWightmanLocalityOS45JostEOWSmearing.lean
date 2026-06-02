@@ -375,348 +375,94 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
             (1 : Equiv.Perm (Fin n))
             (SCV.realEmbed x) * φ x := by
   classical
-  intro φ hφ_compact hφU
-  let D : BHW.OS45Figure24SourceCutoffData P :=
-    Classical.choice (BHW.exists_os45Figure24SourceCutoffData (d := d) P)
+  intro φ _hφ_compact hφU
   have hU_sub : U ⊆ P.V := fun u hu => hU_closure (subset_closure hu)
-  have hφE :
-      tsupport (φ : BHW.OS45FlatCommonChartReal d n → ℂ) ⊆
-        BHW.os45FlatCommonChartEdgeSet d n P
-          (1 : Equiv.Perm (Fin n)) := by
-    intro x hx
-    rcases hφU hx with ⟨u, huU, rfl⟩
-    exact
-      (BHW.os45CommonEdgeFlatCLE_mem_edgeSet_iff d n P
-        (1 : Equiv.Perm (Fin n)) u).mpr (hU_sub huU)
-  have hn_pos : 0 < n := by omega
-  haveI : NeZero n := ⟨Nat.pos_iff_ne_zero.mp hn_pos⟩
-  rcases BHW.os45FlatCommonChartCone_eowReady d n with
-    ⟨_hC_open, _hC_convex, _hC_zero, _hC_smul, hC_nonempty⟩
-  rcases hC_nonempty with ⟨η, hηC⟩
-  have hflat :
-      Tendsto
-        (fun ε : ℝ =>
-          (∫ x : BHW.OS45FlatCommonChartReal d n,
-            BHW.os45FlatCommonChartBranch d n OS lgc
-              (1 : Equiv.Perm (Fin n))
-              (fun a =>
-                (x a : ℂ) +
-                  ((((1 : ℝ) * ε) • η) a : ℂ) * Complex.I) *
-              φ x) -
-          ∫ x : BHW.OS45FlatCommonChartReal d n,
-            BHW.os45FlatCommonChartBranch d n OS lgc
-              (P.τ.symm * (1 : Equiv.Perm (Fin n)))
-              (fun a =>
-                (x a : ℂ) +
-                  ((((-1 : ℝ) * ε) • η) a : ℂ) * Complex.I) *
-              φ x)
-        (𝓝[Set.Ioi 0] (0 : ℝ))
-        (𝓝 0) := by
-      /-
-        Vladimirov/BHW finite-height source-current leaf.
-
-        The checked OS-I `(4.14)` source-current comparison gives the raw
-        Wick-section difference limit.  What remains is the true BHW/Jost
-        transport: identify the deterministic Figure-2-4 two-sheet source
-        difference with that raw Wick-section difference in the same moving
-        source tests.
-      -/
-      let ExtPlus : ℝ → ℂ := fun ε =>
+  have hsource_eq :
+      ∀ u ∈ U,
+        BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+            (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u)) =
+          BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+            (1 : Equiv.Perm (Fin n))
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u)) := by
+    rcases
+        BHW.os45CommonEdge_initialSectorOverlap_traces_except_adjacentWick
+          (d := d) hd OS lgc (P := P)
+          (U := U) hU_compact hU_connected hU_closure with
+      ⟨Ucx, Ford, Fadj, hUcx_open, hUcx_connected, hwick_mem,
+        hcommon_mem, _hUcx_sub, hFord_holo, hFadj_holo, hFord_wick,
+        hFadj_wick_extendF, hFord_common, hFadj_common,
+        _hFadj_seed_trace⟩
+    refine
+      BHW.os45CommonEdge_pulledRealBranches_eqOn_of_wickPairings
+        (d := d) hd OS lgc (P := P) hU_open hU_connected.nonempty
+        hUcx_open hUcx_connected hwick_mem hcommon_mem Ford Fadj
+        hFord_holo hFadj_holo ?_ hFord_common hFadj_common
+    intro ψ hψ_compact hψU
+    calc
+      ∫ u : NPointDomain d n,
+          Fadj (fun k => wickRotatePoint (u k)) * ψ u =
         ∫ u : NPointDomain d n,
           BHW.extendF (bvt_F OS lgc n)
-            (BHW.os45FlatCommonChartSourceSide d n
-              (1 : Equiv.Perm (Fin n)) (1 : ℝ) ε η u) *
-            ((((D.toSideZeroDiagonalCLM
-              (1 : Equiv.Perm (Fin n)) (1 : ℝ) ε η φ).1 :
-                SchwartzNPoint d n) : NPointDomain d n → ℂ) u)
-      let ExtMinus : ℝ → ℂ := fun ε =>
+            (BHW.permAct (d := d) P.τ
+              (fun k => wickRotatePoint (u k))) * ψ u := by
+          refine MeasureTheory.integral_congr_ae
+            (Filter.Eventually.of_forall ?_)
+          intro u
+          by_cases hu : u ∈ U
+          · exact congrArg (fun c : ℂ => c * ψ u)
+              (hFadj_wick_extendF u hu)
+          · have hψ_zero : ψ u = 0 :=
+              image_eq_zero_of_notMem_tsupport
+                (fun hψ_supp => hu (hψU hψ_supp))
+            simp [hψ_zero]
+      _ =
         ∫ u : NPointDomain d n,
-          BHW.extendF (bvt_F OS lgc n)
-            (BHW.permAct (d := d)
-              (P.τ.symm * (1 : Equiv.Perm (Fin n))).symm
-              (BHW.os45FlatCommonChartSourceSide d n
-                (1 : Equiv.Perm (Fin n)) (-1 : ℝ) ε η u)) *
-            ((((D.toSideZeroDiagonalCLM
-              (1 : Equiv.Perm (Fin n)) (-1 : ℝ) ε η φ).1 :
-                SchwartzNPoint d n) : NPointDomain d n → ℂ) u)
-      let RawPlus : ℝ → ℂ := fun ε =>
-        ∫ u : NPointDomain d n,
-          bvt_F OS lgc n (fun k => wickRotatePoint (u k)) *
-            ((((D.toSideZeroDiagonalCLM
-              (1 : Equiv.Perm (Fin n)) (1 : ℝ) ε η φ).1 :
-                SchwartzNPoint d n) : NPointDomain d n → ℂ) u)
-      let RawMinus : ℝ → ℂ := fun ε =>
-        ∫ u : NPointDomain d n,
-          bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k))) *
-            ((((D.toSideZeroDiagonalCLM
-              (1 : Equiv.Perm (Fin n)) (-1 : ℝ) ε η φ).1 :
-                SchwartzNPoint d n) : NPointDomain d n → ℂ) u)
-      have hraw :
-          Tendsto
-            (fun ε : ℝ => RawPlus ε - RawMinus ε)
-            (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) := by
-        simpa [RawPlus, RawMinus] using
-          D.sourceSide_ordinaryPlus_adjacentMinus_difference_tendsto_zero
-            OS lgc η hηC φ hφ_compact hφE
-      have hresidual :
-          Tendsto
-            (fun ε : ℝ =>
-              (ExtPlus ε - ExtMinus ε) - (RawPlus ε - RawMinus ε))
-            (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) := by
-        have hKηC :
-            ({η} : Set (BHW.OS45FlatCommonChartReal d n)) ⊆
-              BHW.os45FlatCommonChartCone d n := by
-          intro ξ hξ
-          simpa [Set.mem_singleton_iff.mp hξ] using hηC
-        rcases
-            D.sideZeroDiagonal_sourcePairings_tendstoUniformlyOn_schwinger
-              OS lgc ({η} : Set (BHW.OS45FlatCommonChartReal d n))
-              isCompact_singleton hKηC φ hφ_compact hφE with
-          ⟨hrawPlus_unif, _hrawAdjPlus_unif, _hrawOrdMinus_unif,
-            hrawMinus_unif⟩
-        have hRawPlus_schwinger :
-            Tendsto RawPlus
-              (𝓝[Set.Ioi 0] (0 : ℝ))
-              (𝓝 (OS.S n
-                (D.toZeroDiagonalCLM (1 : Equiv.Perm (Fin n)) φ))) := by
-          simpa [RawPlus] using hrawPlus_unif.tendsto_at (by simp)
-        have hRawMinus_schwinger :
-            Tendsto RawMinus
-              (𝓝[Set.Ioi 0] (0 : ℝ))
-              (𝓝 (OS.S n
-                (D.toZeroDiagonalCLM (1 : Equiv.Perm (Fin n)) φ))) := by
-          simpa [RawMinus] using hrawMinus_unif.tendsto_at (by simp)
-        let ZeroPlus : ℂ :=
-          ∫ u : NPointDomain d n,
-            BHW.extendF (bvt_F OS lgc n)
-              (BHW.os45FlatCommonChartSourceSide d n
-                (1 : Equiv.Perm (Fin n)) (1 : ℝ) 0 η u) *
-              ((((D.toZeroDiagonalCLM
-                (1 : Equiv.Perm (Fin n)) φ).1 : SchwartzNPoint d n) :
-                  NPointDomain d n → ℂ) u)
-        let ZeroMinus : ℂ :=
-          ∫ u : NPointDomain d n,
-            BHW.extendF (bvt_F OS lgc n)
-              (BHW.permAct (d := d)
-                (P.τ.symm * (1 : Equiv.Perm (Fin n))).symm
-                (BHW.os45FlatCommonChartSourceSide d n
-                  (1 : Equiv.Perm (Fin n)) (-1 : ℝ) 0 η u)) *
-              ((((D.toZeroDiagonalCLM
-                (1 : Equiv.Perm (Fin n)) φ).1 : SchwartzNPoint d n) :
-                  NPointDomain d n → ℂ) u)
-        have hΩplus_open : IsOpen (BHW.ExtendedTube d n) :=
-          BHW.isOpen_extendedTube
-        have hΩminus_open :
-            IsOpen (BHW.permutedExtendedTubeSector d n P.τ) :=
-          BHW.isOpen_permutedExtendedTubeSector (d := d) (n := n) P.τ
-        have hFplus_cont :
-            ContinuousOn
-              (fun z : Fin n → Fin (d + 1) → ℂ =>
-                BHW.extendF (bvt_F OS lgc n) z)
-              (BHW.ExtendedTube d n) :=
-          (BHW.differentiableOn_extendF_bvt_F_extendedTube
-            (d := d) OS lgc n).continuousOn
-        have hFminus_cont :
-            ContinuousOn
-              (fun z : Fin n → Fin (d + 1) → ℂ =>
-                BHW.extendF (bvt_F OS lgc n)
-                  (BHW.permAct (d := d)
-                    (P.τ.symm * (1 : Equiv.Perm (Fin n))).symm z))
-              (BHW.permutedExtendedTubeSector d n P.τ) := by
-          simpa [BHW.permutedExtendedTubeSector] using
-            (BHW.differentiableOn_extendF_bvt_F_permAct_preimageExtendedTube
-              (d := d) OS lgc n P.τ).continuousOn
-        have h0_plus_ext :
-            ∀ u ∈ closure U,
-              BHW.os45FlatCommonChartSourceSide d n
-                (1 : Equiv.Perm (Fin n)) (1 : ℝ) 0 η u ∈
-                  BHW.ExtendedTube d n := by
-          intro u hu
-          have huV : u ∈ closure P.V :=
-            subset_closure (hU_closure hu)
-          have hmem :=
-            BHW.os45Figure24_commonEdge_mem_initialSectorOverlap
-              (d := d) (n := n) (hd := hd) (P := P) huV
-          rw [BHW.os45FlatCommonChartSourceSide_zero_eq_commonEdge]
-          exact hmem.1
-        have h0_minus_ext :
-            ∀ u ∈ closure U,
-              BHW.os45FlatCommonChartSourceSide d n
-                (1 : Equiv.Perm (Fin n)) (-1 : ℝ) 0 η u ∈
-                  BHW.ExtendedTube d n := by
-          intro u hu
-          simpa using h0_plus_ext u hu
-        have h0_plus_perm :
-            ∀ u ∈ closure U,
-              BHW.os45FlatCommonChartSourceSide d n
-                (1 : Equiv.Perm (Fin n)) (1 : ℝ) 0 η u ∈
-                  BHW.permutedExtendedTubeSector d n P.τ := by
-          intro u hu
-          have huV : u ∈ closure P.V :=
-            subset_closure (hU_closure hu)
-          have hmem :=
-            BHW.os45Figure24_commonEdge_mem_initialSectorOverlap
-              (d := d) (n := n) (hd := hd) (P := P) huV
-          rw [BHW.os45FlatCommonChartSourceSide_zero_eq_commonEdge]
-          exact hmem.2
-        have h0_minus_perm :
-            ∀ u ∈ closure U,
-              BHW.os45FlatCommonChartSourceSide d n
-                (1 : Equiv.Perm (Fin n)) (-1 : ℝ) 0 η u ∈
-                  BHW.permutedExtendedTubeSector d n P.τ := by
-          intro u hu
-          simpa using h0_plus_perm u hu
-        have hExtPlus_zero :
-            Tendsto ExtPlus
-              (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 ZeroPlus) := by
-          have hpair :=
-            D.tendsto_sourceSide_extendF_sideZeroDiagonalCLM_pair
-              (d := d) OS lgc (1 : Equiv.Perm (Fin n))
-              hΩplus_open (by simpa using hFplus_cont)
-              hU_open subset_closure hU_compact η h0_plus_ext h0_minus_ext
-              φ hφ_compact hφU
-          simpa [ExtPlus, ZeroPlus] using hpair.1
-        have hExtMinus_zero :
-            Tendsto ExtMinus
-              (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 ZeroMinus) := by
-          have hpair :=
-            D.tendsto_sourceSide_extendF_sideZeroDiagonalCLM_pair
-              (d := d) OS lgc
-              (P.τ.symm * (1 : Equiv.Perm (Fin n)))
-              hΩminus_open (by simpa using hFminus_cont)
-              hU_open subset_closure hU_compact η h0_plus_perm h0_minus_perm
-              φ hφ_compact hφU
-          simpa [ExtMinus, ZeroMinus] using hpair.2
-        have hExtPlus_schwinger_direct :
-            Tendsto ExtPlus
-              (𝓝[Set.Ioi 0] (0 : ℝ))
-              (𝓝 (OS.S n
-                (D.toZeroDiagonalCLM (1 : Equiv.Perm (Fin n)) φ))) := by
-          have hflat_plus :
-              Tendsto
-                (fun ε : ℝ =>
-                  ∫ x : BHW.OS45FlatCommonChartReal d n,
-                    BHW.os45FlatCommonChartBranch d n OS lgc
-                      (1 : Equiv.Perm (Fin n))
-                      (fun a =>
-                        (x a : ℂ) + (ε : ℂ) * (η a : ℂ) * Complex.I) *
-                      φ x)
-                (𝓝[Set.Ioi 0] (0 : ℝ))
-                (𝓝
-                  ((BHW.os45CommonEdgeFlatJacobianAbs n : ℂ) *
-                    OS.S n
-                      (D.toZeroDiagonalCLM
-                        (1 : Equiv.Perm (Fin n)) φ))) := by
-            /-
-              Vladimirov/BHW transport leaf, ordinary side.
+          bvt_F OS lgc n (fun k => wickRotatePoint (u k)) * ψ u := by
+          /-
+            OS-I `(4.12)` transported Wick pairing leaf.
 
-              The source-side finite selector is now reduced to the flat
-              Figure-2-4 one-sided Schwinger boundary value.  The surrounding
-              proof supplies the Jacobian and moving-test normalization; the
-              remaining analytic content is the Vladimirov/BHW tempered-BV
-              uniqueness on this flat collar.
-            -/
-            exact ?os45_vladimirov_flatPlus_schwinger_boundary_value
-          exact
-            BHW.os45_flat_plus_selector_to_sourceSide
-              (d := d) (n := n) OS lgc (P := P) D η hηC φ
-              hφ_compact hφE hflat_plus
-        have hZeroPlus_schwinger :
-            ZeroPlus =
-              OS.S n
-                (D.toZeroDiagonalCLM (1 : Equiv.Perm (Fin n)) φ) := by
-          exact tendsto_nhds_unique hExtPlus_zero hExtPlus_schwinger_direct
-        have hExtMinus_schwinger_direct :
-            Tendsto ExtMinus
-              (𝓝[Set.Ioi 0] (0 : ℝ))
-              (𝓝 (OS.S n
-                (D.toZeroDiagonalCLM (1 : Equiv.Perm (Fin n)) φ))) := by
-          have hflat_minus :
-              Tendsto
-                (fun ε : ℝ =>
-                  ∫ x : BHW.OS45FlatCommonChartReal d n,
-                    BHW.os45FlatCommonChartBranch d n OS lgc
-                      (P.τ.symm * (1 : Equiv.Perm (Fin n)))
-                      (fun a =>
-                        (x a : ℂ) -
-                          (ε : ℂ) * (η a : ℂ) * Complex.I) *
-                      φ x)
-                (𝓝[Set.Ioi 0] (0 : ℝ))
-                (𝓝
-                  ((BHW.os45CommonEdgeFlatJacobianAbs n : ℂ) *
-                    OS.S n
-                      (D.toZeroDiagonalCLM
-                        (1 : Equiv.Perm (Fin n)) φ))) := by
-            /-
-              Vladimirov/BHW transport leaf, adjacent side.
-
-              This is the matching flat lower-side selector for the retained
-              adjacent sheet.  It must be supplied by the same Figure-2-4
-              tempered-boundary-value uniqueness mechanism, not by downstream
-              source-representation or Hdiff consumers.
-            -/
-            exact ?os45_vladimirov_flatMinus_schwinger_boundary_value
-          exact
-            BHW.os45_flat_minus_selector_to_sourceSide
-              (d := d) (n := n) OS lgc (P := P) D η hηC φ
-              hφ_compact hφE hflat_minus
-        have hZeroMinus_schwinger :
-            ZeroMinus =
-              OS.S n
-                (D.toZeroDiagonalCLM (1 : Equiv.Perm (Fin n)) φ) := by
-          exact tendsto_nhds_unique hExtMinus_zero hExtMinus_schwinger_direct
-        have hExtPlus_schwinger :
-            Tendsto ExtPlus
-              (𝓝[Set.Ioi 0] (0 : ℝ))
-              (𝓝 (OS.S n
-                (D.toZeroDiagonalCLM (1 : Equiv.Perm (Fin n)) φ))) := by
-          simpa [hZeroPlus_schwinger] using hExtPlus_zero
-        have hExtMinus_schwinger :
-            Tendsto ExtMinus
-              (𝓝[Set.Ioi 0] (0 : ℝ))
-              (𝓝 (OS.S n
-                (D.toZeroDiagonalCLM (1 : Equiv.Perm (Fin n)) φ))) := by
-          simpa [hZeroMinus_schwinger] using hExtMinus_zero
-        have hplus_residual :
-            Tendsto (fun ε : ℝ => ExtPlus ε - RawPlus ε)
-              (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) := by
-          simpa using hExtPlus_schwinger.sub hRawPlus_schwinger
-        have hminus_residual :
-            Tendsto (fun ε : ℝ => ExtMinus ε - RawMinus ε)
-              (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) := by
-          simpa using hExtMinus_schwinger.sub hRawMinus_schwinger
-        have hsplit :
-            Tendsto
-              (fun ε : ℝ =>
-                (ExtPlus ε - RawPlus ε) - (ExtMinus ε - RawMinus ε))
-              (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) := by
-          simpa using hplus_residual.sub hminus_residual
-        refine Tendsto.congr' ?_ hsplit
-        filter_upwards with ε
-        dsimp [ExtPlus, ExtMinus, RawPlus, RawMinus]
-        ring
-      have hsrc :
-          Tendsto
-            (fun ε : ℝ =>
-              (RawPlus ε - RawMinus ε) +
-                ((ExtPlus ε - ExtMinus ε) - (RawPlus ε - RawMinus ε)))
-            (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) := by
-        simpa using hraw.add hresidual
-      have hsrc_target :
-          Tendsto
-            (fun ε : ℝ => ExtPlus ε - ExtMinus ε)
-            (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) := by
-        refine Tendsto.congr' ?_ hsrc
-        filter_upwards with ε
-        dsimp [ExtPlus, ExtMinus, RawPlus, RawMinus]
-        ring
-      exact
-        D.tendsto_flatCommonChart_sideBranch_difference_zero_of_sourceSideDifference
-          (d := d) OS lgc η hηC φ hφ_compact hφE
-          (by simpa [ExtPlus, ExtMinus] using hsrc_target)
-  have hzero :=
-    D.zeroHeightPairing_of_tendsto_flatCommonChart_sideBranch_difference_zero
-      (d := d) OS lgc η hηC φ hφ_compact hφE hflat
-  simpa [SCV.realEmbed] using hzero
+            This is the genuine seed-to-ordinary-Wick transport: the
+            deterministic adjacent branch `extendF ∘ permAct P.τ`, evaluated
+            on the ordinary Wick section and paired against compact source
+            tests on `U`, must equal the ordinary Wick pairing.  The initial
+            overlap carrier and E3/Wick trace normalization are already in the
+            surrounding proof; this is the remaining Vladimirov/BHW
+            uniqueness step.
+          -/
+          exact ?os45_OS412_transported_wick_pairing
+      _ =
+        ∫ u : NPointDomain d n,
+          Ford (fun k => wickRotatePoint (u k)) * ψ u := by
+          refine MeasureTheory.integral_congr_ae
+            (Filter.Eventually.of_forall ?_)
+          intro u
+          by_cases hu : u ∈ U
+          · exact congrArg (fun c : ℂ => c * ψ u)
+              (hFord_wick u hu).symm
+          · have hψ_zero : ψ u = 0 :=
+              image_eq_zero_of_notMem_tsupport
+                (fun hψ_supp => hu (hψU hψ_supp))
+            simp [hψ_zero]
+  have hflat_eq :
+      ∀ x ∈ BHW.os45CommonEdgeFlatCLE d n
+          (1 : Equiv.Perm (Fin n)) '' U,
+        BHW.os45FlatCommonChartBranch d n OS lgc
+            (P.τ.symm * (1 : Equiv.Perm (Fin n))) (SCV.realEmbed x) =
+          BHW.os45FlatCommonChartBranch d n OS lgc
+            (1 : Equiv.Perm (Fin n)) (SCV.realEmbed x) :=
+    BHW.os45FlatCommonChart_realEdge_branch_eq_of_source_commonEdge_branch_eqOn
+      (d := d) hd OS lgc (P := P) hsource_eq
+  refine MeasureTheory.integral_congr_ae (Filter.Eventually.of_forall ?_)
+  intro x
+  by_cases hx : x ∈
+      tsupport (φ : BHW.OS45FlatCommonChartReal d n → ℂ)
+  · exact congrArg (fun c : ℂ => c * φ x) (hflat_eq x (hφU hx))
+  · have hφ_zero : φ x = 0 := image_eq_zero_of_notMem_tsupport hx
+    simp [hφ_zero]
 
 end BHW
