@@ -233,31 +233,71 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
           (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) := by
       let Residual : ℝ → ℂ := fun ε => Ext ε - Raw ε
       change Tendsto Residual (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0)
-      /-
-        Active OS-I `(4.12)`--`(4.14)` Vladimirov/BHW residual transfer.
+      let OrdResidual : ℝ → ℂ := fun ε =>
+        (∫ u : NPointDomain d n,
+          BHW.extendF (bvt_F OS lgc n)
+            (BHW.os45FlatCommonChartSourceSide d n
+              (1 : Equiv.Perm (Fin n)) (1 : ℝ) ε η u) *
+            ((((D.toSideZeroDiagonalCLM
+              (1 : Equiv.Perm (Fin n)) (1 : ℝ) ε η φ).1 :
+                SchwartzNPoint d n) : NPointDomain d n → ℂ) u)) -
+        ∫ u : NPointDomain d n,
+          bvt_F OS lgc n (fun k => wickRotatePoint (u k)) *
+            ((((D.toSideZeroDiagonalCLM
+              (1 : Equiv.Perm (Fin n)) (1 : ℝ) ε η φ).1 :
+                SchwartzNPoint d n) : NPointDomain d n → ℂ) u)
+      let AdjResidual : ℝ → ℂ := fun ε =>
+        (∫ u : NPointDomain d n,
+          BHW.extendF (bvt_F OS lgc n)
+            (BHW.permAct (d := d)
+              (P.τ.symm * (1 : Equiv.Perm (Fin n))).symm
+              (BHW.os45FlatCommonChartSourceSide d n
+                (1 : Equiv.Perm (Fin n)) (-1 : ℝ) ε η u)) *
+            ((((D.toSideZeroDiagonalCLM
+              (1 : Equiv.Perm (Fin n)) (-1 : ℝ) ε η φ).1 :
+                SchwartzNPoint d n) : NPointDomain d n → ℂ) u)) -
+        ∫ u : NPointDomain d n,
+          bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k))) *
+            ((((D.toSideZeroDiagonalCLM
+              (1 : Equiv.Perm (Fin n)) (-1 : ℝ) ε η φ).1 :
+                SchwartzNPoint d n) : NPointDomain d n → ℂ) u)
+      have hOrdResidual :
+          Tendsto OrdResidual (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) := by
+        /-
+          Ordinary OS-I `(4.1)` collar transport leaf.
 
-        `hsource_current` has already proved the raw OS source-current limit
-        `Raw -> 0`.  The remaining proof is exactly the compact Figure-2-4
-        tempered-BV recovery step: identify the deterministic BHW collar
-        pairings `Ext` with the raw Wick-section source-current pairings `Raw`
-        in the distributional boundary-value limit.
+          The tempting zero-height shortcut fails for a real reason: the
+          checked moving `extendF` side limit lands at
+          `extendF (os45QuarterTurnConfig (wick u))`, while the raw OS current
+          is `bvt_F (wick u)`.  The existing
+          `os45FlatCommonChart_wickSection_sourcePairing_eq_schwinger`
+          normalizes the pulled flat Wick-section branch, not this deterministic
+          BHW source-side collar.  Thus the ordinary side still needs the same
+          local tempered-BV transport mechanism as the adjacent side, specialized
+          to the identity branch.
+        -/
+        exact
+          ?os_i45_ordinary_BHW_collar_pairing_matches_raw_Wick_boundary
+      have hAdjResidual :
+          Tendsto AdjResidual (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) := by
+        /-
+          Adjacent OS-I `(4.12)` collar transport leaf.
 
-        The checked SCV uniqueness/recovery surfaces are global tube statements:
-        `SCV.tube_holomorphic_unique_from_equal_tempered_bv_flat` and
-        `SCV.fourierLaplace_boundary_recovery_on_open_of_tempered` require a
-        `HasFourierLaplaceReprTempered` package on `SCV.TubeDomain C`.  The
-        OS45 geometry available here is the local Figure-2-4 wedge/collar
-        supplied by `os45_BHWJost_flatCommonChart_localWedge_of_figure24`, so
-        the missing producer is the local compact-support tempered-BV recovery
-        theorem turning that collar data plus the raw `(4.12)` source-current
-        boundary distribution into `Residual -> 0`.
-
-        The pointwise adjacent Wick trace route below is retired because it
-        asks for an endpoint equality stronger than the monograph part-(b)
-        smearing argument.
-      -/
-      exact
-        ?os_i45_local_wedge_temperedBV_recovers_BHW_collar_from_raw_source_current
+          This is the same local tempered-BV transfer on the selected adjacent
+          side sheet, after applying the adjacent branch permutation.  It is
+          the part of the proof where the retained raw `(4.12)` Wick-source
+          boundary value must be transported through the Figure-2-4/BHW collar.
+        -/
+        exact
+          ?os_i45_adjacent_BHW_collar_pairing_matches_raw_Wick_boundary
+      have hsplit :
+          Tendsto (fun ε : ℝ => OrdResidual ε - AdjResidual ε)
+            (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) := by
+        simpa using hOrdResidual.sub hAdjResidual
+      refine hsplit.congr' ?_
+      exact Filter.Eventually.of_forall fun ε => by
+        simp [Residual, OrdResidual, AdjResidual, Ext, Raw]
+        ring
       /-
         Retired pointwise/zero-height route.  This attempted to recover
         `Ext -> 0` by proving equality of zero-height deterministic source
