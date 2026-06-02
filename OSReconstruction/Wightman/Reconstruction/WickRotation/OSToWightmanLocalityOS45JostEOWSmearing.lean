@@ -248,15 +248,210 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
           Deterministic BHW side-current boundary-value producer.
 
           This is the current-level Vladimirov/BHW input to be proved directly:
-          instantiate the OS45 flat-chart distributional EOW envelope for the
-          ordinary `+` branch and selected adjacent `-` branch with the
-          Schwinger CLM as common boundary distribution, then pull the two
-          finite side-height flat-chart currents back through
+          identify the ordinary `+` branch and selected adjacent `-` branch as
+          carrying the same Schwinger boundary distribution on the Figure-2-4
+          Jost edge by the local Vladimirov tempered-BV uniqueness mechanism,
+          then pull the two finite side-height flat-chart currents back through
           `os45FlatCommonChart_branch_integral_eq_sourceSide_extendF_sideZeroDiagonalCLM`.
           The raw OS source-current limit `hraw` below is already closed and
           must not be used as a source-representation substitute for this step.
         -/
-        exact ?os45_vladimirov_deterministic_side_current_schwinger_limit
+        let Flat : ℝ → ℂ := fun ε =>
+          (∫ x : BHW.OS45FlatCommonChartReal d n,
+            BHW.os45FlatCommonChartBranch d n OS lgc
+              (1 : Equiv.Perm (Fin n))
+              (fun a =>
+                (x a : ℂ) +
+                  ((((1 : ℝ) * ε) • η) a : ℂ) * Complex.I) *
+              φ x) -
+          ∫ x : BHW.OS45FlatCommonChartReal d n,
+            BHW.os45FlatCommonChartBranch d n OS lgc
+              (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+              (fun a =>
+                (x a : ℂ) +
+                  ((((-1 : ℝ) * ε) • η) a : ℂ) * Complex.I) *
+              φ x
+        have hFlat :
+            Tendsto Flat (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) := by
+          /-
+            Flat-chart distributional EOW current limit.
+
+            This is now the precise Vladimirov/BHW leaf: prove that the
+            ordinary `+` and selected adjacent `-` flat side-branch currents
+            have the same Schwinger boundary distribution on the Figure-2-4
+            collar.  This should be produced by the OS-I `(4.12)`--`(4.14)`
+            source-side Schwinger normalization plus local Vladimirov
+            tempered-BV uniqueness on the common Jost edge, not by a
+            source-representation, local-S-prime branch, or downstream EOW
+            envelope.
+          -/
+          exact ?os45_vladimirov_flat_chart_side_current_schwinger_limit
+        let Kη : Set (BHW.OS45FlatCommonChartReal d n) := {η}
+        have hKη : IsCompact Kη := isCompact_singleton
+        have hKηC : Kη ⊆ BHW.os45FlatCommonChartCone d n := by
+          intro η' hη'
+          have hηeq : η' = η := by
+            simpa [Kη] using hη'
+          simpa [hηeq] using hηC
+        have hside_support :=
+          BHW.os45FlatCommonChart_sideSupport_radius
+            (d := d) (n := n) (P := P)
+            Kη hKη hKηC φ hφ_compact hφE
+        rcases hside_support with ⟨r_support, hr_support, hside_support⟩
+        have hside_event :
+            ∀ᶠ ε in 𝓝[Set.Ioi 0] (0 : ℝ), ∀ η' ∈ Kη,
+              tsupport (SCV.translateSchwartz (ε • η') φ :
+                BHW.OS45FlatCommonChartReal d n → ℂ) ⊆
+                  BHW.os45FlatCommonChartEdgeSet d n P
+                    (1 : Equiv.Perm (Fin n)) ∧
+              tsupport (SCV.translateSchwartz ((-ε : ℝ) • η') φ :
+                BHW.OS45FlatCommonChartReal d n → ℂ) ⊆
+                  BHW.os45FlatCommonChartEdgeSet d n P
+                    (1 : Equiv.Perm (Fin n)) := by
+          filter_upwards
+            [self_mem_nhdsWithin, nhdsWithin_le_nhds (Iio_mem_nhds hr_support)]
+            with ε hε_pos hε_lt η' hη'
+          exact hside_support ε hε_pos hε_lt η' hη'
+        have hinteg :=
+          BHW.os45FlatCommonChart_branch_side_shifted_mul_integrable_eventually
+            (d := d) OS lgc (P := P)
+            Kη hKη hKηC φ hφ_compact hφE
+        let J : ℂ := (BHW.os45CommonEdgeFlatJacobianAbs n : ℂ)
+        have hJ_ne : J ≠ 0 := by
+          have hJ_real_ne : BHW.os45CommonEdgeFlatJacobianAbs n ≠ 0 :=
+            ne_of_gt (BHW.os45CommonEdgeFlatJacobianAbs_pos n)
+          simpa [J] using
+            (show (BHW.os45CommonEdgeFlatJacobianAbs n : ℂ) ≠ 0 by
+              exact_mod_cast hJ_real_ne)
+        have hFlat_scaled :
+            Tendsto (fun ε : ℝ => J⁻¹ * Flat ε)
+              (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) := by
+          have hJ :
+              Tendsto (fun _ : ℝ => J⁻¹)
+                (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 J⁻¹) :=
+            tendsto_const_nhds
+          simpa using hJ.mul hFlat
+        refine hFlat_scaled.congr' ?_
+        filter_upwards [hside_event, hinteg] with ε hsupport hinteg
+        have hplus_pull :
+            (∫ x : BHW.OS45FlatCommonChartReal d n,
+                BHW.os45FlatCommonChartBranch d n OS lgc
+                  (1 : Equiv.Perm (Fin n))
+                  (fun a =>
+                    (x a : ℂ) +
+                      ((((1 : ℝ) * ε) • η) a : ℂ) * Complex.I) *
+                φ x)
+              =
+            J *
+              ∫ u : NPointDomain d n,
+                BHW.extendF (bvt_F OS lgc n)
+                  (BHW.os45FlatCommonChartSourceSide d n
+                    (1 : Equiv.Perm (Fin n)) (1 : ℝ) ε η u) *
+                ((((D.toSideZeroDiagonalCLM
+                  (1 : Equiv.Perm (Fin n)) (1 : ℝ) ε η φ).1 :
+                    SchwartzNPoint d n) : NPointDomain d n → ℂ) u) := by
+          have hφE_plus :
+              tsupport (SCV.translateSchwartz (((1 : ℝ) * ε) • η) φ :
+                BHW.OS45FlatCommonChartReal d n → ℂ) ⊆
+                BHW.os45FlatCommonChartEdgeSet d n P
+                  (1 : Equiv.Perm (Fin n)) := by
+            simpa [Kη] using (hsupport η (by simp [Kη])).1
+          have hg_plus :
+              Integrable
+                (fun x : BHW.OS45FlatCommonChartReal d n =>
+                  BHW.os45FlatCommonChartBranch d n OS lgc
+                    (1 : Equiv.Perm (Fin n))
+                    (fun j =>
+                      ((x + ((1 : ℝ) * ε) • η) j : ℂ) +
+                        ((((1 : ℝ) * ε) • η) j : ℂ) * Complex.I) *
+                  φ (x + ((1 : ℝ) * ε) • η)) := by
+            simpa [Kη] using (hinteg η (by simp [Kη])).1
+          simpa [J, one_mul] using
+            BHW.os45FlatCommonChart_branch_integral_eq_sourceSide_extendF_sideZeroDiagonalCLM
+              (d := d) (n := n) OS lgc D
+              (1 : Equiv.Perm (Fin n)) (1 : Equiv.Perm (Fin n))
+              (1 : ℝ) ε η φ hφE_plus hg_plus
+        have hminus_pull :
+            (∫ x : BHW.OS45FlatCommonChartReal d n,
+                BHW.os45FlatCommonChartBranch d n OS lgc
+                  (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+                  (fun a =>
+                    (x a : ℂ) +
+                      ((((-1 : ℝ) * ε) • η) a : ℂ) * Complex.I) *
+                φ x)
+              =
+            J *
+              ∫ u : NPointDomain d n,
+                BHW.extendF (bvt_F OS lgc n)
+                  (BHW.permAct (d := d)
+                    (P.τ.symm * (1 : Equiv.Perm (Fin n))).symm
+                    (BHW.os45FlatCommonChartSourceSide d n
+                      (1 : Equiv.Perm (Fin n)) (-1 : ℝ) ε η u)) *
+                ((((D.toSideZeroDiagonalCLM
+                  (1 : Equiv.Perm (Fin n)) (-1 : ℝ) ε η φ).1 :
+                    SchwartzNPoint d n) : NPointDomain d n → ℂ) u) := by
+          have hφE_minus :
+              tsupport (SCV.translateSchwartz (((-1 : ℝ) * ε) • η) φ :
+                BHW.OS45FlatCommonChartReal d n → ℂ) ⊆
+                BHW.os45FlatCommonChartEdgeSet d n P
+                  (1 : Equiv.Perm (Fin n)) := by
+            simpa [Kη, neg_smul] using (hsupport η (by simp [Kη])).2
+          have hg_minus :
+              Integrable
+                (fun x : BHW.OS45FlatCommonChartReal d n =>
+                  BHW.os45FlatCommonChartBranch d n OS lgc
+                    (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+                    (fun j =>
+                      ((x + (((-1 : ℝ) * ε) • η)) j : ℂ) +
+                        ((((-1 : ℝ) * ε) • η) j : ℂ) * Complex.I) *
+                  φ (x + (((-1 : ℝ) * ε) • η))) := by
+            simpa [Kη, neg_smul] using (hinteg η (by simp [Kη])).2
+          simpa [J, neg_mul, one_mul] using
+            BHW.os45FlatCommonChart_branch_integral_eq_sourceSide_extendF_sideZeroDiagonalCLM
+              (d := d) (n := n) OS lgc D
+              (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+              (1 : Equiv.Perm (Fin n)) (-1 : ℝ) ε η φ
+              hφE_minus hg_minus
+        have hflat_eq : Flat ε = J * Ext ε := by
+          change
+            ((∫ x : BHW.OS45FlatCommonChartReal d n,
+                BHW.os45FlatCommonChartBranch d n OS lgc
+                  (1 : Equiv.Perm (Fin n))
+                  (fun a =>
+                    (x a : ℂ) +
+                      ((((1 : ℝ) * ε) • η) a : ℂ) * Complex.I) *
+                φ x) -
+              ∫ x : BHW.OS45FlatCommonChartReal d n,
+                BHW.os45FlatCommonChartBranch d n OS lgc
+                  (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+                  (fun a =>
+                    (x a : ℂ) +
+                      ((((-1 : ℝ) * ε) • η) a : ℂ) * Complex.I) *
+                φ x) =
+              J *
+                ((∫ u : NPointDomain d n,
+                  BHW.extendF (bvt_F OS lgc n)
+                    (BHW.os45FlatCommonChartSourceSide d n
+                      (1 : Equiv.Perm (Fin n)) (1 : ℝ) ε η u) *
+                  ((((D.toSideZeroDiagonalCLM
+                    (1 : Equiv.Perm (Fin n)) (1 : ℝ) ε η φ).1 :
+                      SchwartzNPoint d n) : NPointDomain d n → ℂ) u)) -
+                ∫ u : NPointDomain d n,
+                  BHW.extendF (bvt_F OS lgc n)
+                    (BHW.permAct (d := d)
+                      (P.τ.symm * (1 : Equiv.Perm (Fin n))).symm
+                      (BHW.os45FlatCommonChartSourceSide d n
+                        (1 : Equiv.Perm (Fin n)) (-1 : ℝ) ε η u)) *
+                  ((((D.toSideZeroDiagonalCLM
+                    (1 : Equiv.Perm (Fin n)) (-1 : ℝ) ε η φ).1 :
+                      SchwartzNPoint d n) : NPointDomain d n → ℂ) u))
+          rw [hplus_pull, hminus_pull]
+          ring
+        have hcancel : J⁻¹ * (J * Ext ε) = Ext ε := by
+          rw [← mul_assoc, inv_mul_cancel₀ hJ_ne, one_mul]
+        calc
+          J⁻¹ * Flat ε = J⁻¹ * (J * Ext ε) := by rw [hflat_eq]
+          _ = Ext ε := hcancel
       simpa using hExt.sub hraw
     have hsum :
         Tendsto (fun ε : ℝ => (Ext ε - Raw ε) + Raw ε)
