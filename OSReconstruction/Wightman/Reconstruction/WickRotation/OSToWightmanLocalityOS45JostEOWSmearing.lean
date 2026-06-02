@@ -155,14 +155,186 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
             (fun ε : ℝ =>
               (ExtPlus ε - ExtMinus ε) - (RawPlus ε - RawMinus ε))
             (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) := by
-        /-
-          Remaining OS-I `(4.12)`/Vladimirov payload: the paired
-          deterministic Figure-2-4 source-side difference has the same moving
-          boundary current as the raw Wick-section difference.  This is the
-          common-boundary uniqueness step; it deliberately does not ask for the
-          ordinary or adjacent branch separately to have Schwinger limit.
-        -/
-        exact ?os45_vladimirov_paired_sourceSide_difference_transport
+        have htransported_wick_pairing :
+            ∀ ψ : SchwartzNPoint d n,
+              HasCompactSupport (ψ : NPointDomain d n → ℂ) →
+              tsupport (ψ : NPointDomain d n → ℂ) ⊆ U →
+              ∫ u : NPointDomain d n,
+                BHW.extendF (bvt_F OS lgc n)
+                  (BHW.permAct (d := d) P.τ
+                    (fun k => wickRotatePoint (u k))) * ψ u =
+              ∫ u : NPointDomain d n,
+                bvt_F OS lgc n (fun k => wickRotatePoint (u k)) * ψ u := by
+          /-
+            Remaining OS-I `(4.12)`/Vladimirov payload: the adjacent
+            deterministic seed branch `extendF ∘ permAct P.τ` has the same
+            compact source-window Wick-section boundary pairings as the
+            ordinary Wightman branch.  This is the tempered BV uniqueness
+            step at the Vladimirov/BHW interface.
+          -/
+          exact ?os45_vladimirov_OS412_seed_to_wick_pairing_transport
+        have hsource :
+            ∀ u ∈ U,
+              BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                  (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+                  (BHW.realEmbed
+                    (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                      (1 : Equiv.Perm (Fin n)) u)) =
+                BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                  (1 : Equiv.Perm (Fin n))
+                  (BHW.realEmbed
+                    (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                      (1 : Equiv.Perm (Fin n)) u)) := by
+          rcases
+              BHW.os45CommonEdge_initialSectorOverlap_traces_except_adjacentWick
+                (d := d) hd OS lgc (P := P)
+                hU_compact hU_connected hU_closure with
+            ⟨Ucx, Ford, Fadj, hUcx_open, hUcx_connected, hwick_mem,
+              hcommon_mem, _hUcx_sub, hFord_holo, hFadj_holo,
+              hFord_wick, hFadj_wick, hFord_common, hFadj_common,
+              _hFadj_adjWick⟩
+          refine
+            BHW.os45CommonEdge_pulledRealBranches_eqOn_of_wickPairings
+              (d := d) hd OS lgc (P := P) hU_open
+              hU_connected.nonempty hUcx_open hUcx_connected hwick_mem
+              hcommon_mem Ford Fadj hFord_holo hFadj_holo ?_
+              hFord_common hFadj_common
+          intro ψ hψ_compact hψU
+          have hFadj_pair :
+              (∫ u : NPointDomain d n,
+                Fadj (fun k => wickRotatePoint (u k)) * ψ u) =
+              ∫ u : NPointDomain d n,
+                BHW.extendF (bvt_F OS lgc n)
+                  (BHW.permAct (d := d) P.τ
+                    (fun k => wickRotatePoint (u k))) * ψ u := by
+            refine MeasureTheory.integral_congr_ae (Filter.Eventually.of_forall ?_)
+            intro u
+            by_cases hu : u ∈ U
+            · exact congrArg (fun c : ℂ => c * ψ u) (hFadj_wick u hu)
+            · have hψ_zero : ψ u = 0 :=
+                image_eq_zero_of_notMem_tsupport
+                  (fun hψ_supp => hu (hψU hψ_supp))
+              simp [hψ_zero]
+          have hFord_pair :
+              (∫ u : NPointDomain d n,
+                Ford (fun k => wickRotatePoint (u k)) * ψ u) =
+              ∫ u : NPointDomain d n,
+                bvt_F OS lgc n (fun k => wickRotatePoint (u k)) * ψ u := by
+            refine MeasureTheory.integral_congr_ae (Filter.Eventually.of_forall ?_)
+            intro u
+            by_cases hu : u ∈ U
+            · exact congrArg (fun c : ℂ => c * ψ u) (hFord_wick u hu)
+            · have hψ_zero : ψ u = 0 :=
+                image_eq_zero_of_notMem_tsupport
+                  (fun hψ_supp => hu (hψU hψ_supp))
+              simp [hψ_zero]
+          exact
+            hFadj_pair.trans
+              ((htransported_wick_pairing ψ hψ_compact hψU).trans
+                hFord_pair.symm)
+        let Ghoriz : NPointDomain d n → ℂ := fun u =>
+          BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+              (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+              (BHW.realEmbed
+                (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                  (1 : Equiv.Perm (Fin n)) u)) -
+            BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+              (1 : Equiv.Perm (Fin n))
+              (BHW.realEmbed
+                (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                  (1 : Equiv.Perm (Fin n)) u))
+        have hrep :
+            SCV.RepresentsDistributionOn
+              (0 : SchwartzMap (NPointDomain d n) ℂ →L[ℂ] ℂ)
+              Ghoriz U := by
+          have hpoint : ∀ u ∈ U, Ghoriz u = 0 := by
+            intro u hu
+            exact sub_eq_zero.mpr (hsource u hu)
+          intro ψ hψU
+          calc
+            (0 : SchwartzMap (NPointDomain d n) ℂ →L[ℂ] ℂ) ψ
+                = ∫ u : NPointDomain d n, (0 : ℂ) * ψ u := by simp
+            _ = ∫ u : NPointDomain d n, Ghoriz u * ψ u := by
+                exact
+                  BHW.integral_eq_of_tsupport_subset_of_pointwise_on
+                    (d := d) (n := n) U (fun _ => 0) Ghoriz ψ hψU.2
+                    (by
+                      intro u hu
+                      exact (hpoint u hu).symm)
+        have hΩplus_open : IsOpen (BHW.ExtendedTube d n) :=
+          BHW.isOpen_extendedTube
+        have hΩminus_open :
+            IsOpen (BHW.permutedExtendedTubeSector d n P.τ) :=
+          BHW.isOpen_permutedExtendedTubeSector (d := d) (n := n) P.τ
+        have hFplus_cont :
+            ContinuousOn
+              (fun z : Fin n → Fin (d + 1) → ℂ =>
+                BHW.extendF (bvt_F OS lgc n) z)
+              (BHW.ExtendedTube d n) :=
+          (BHW.differentiableOn_extendF_bvt_F_extendedTube
+            (d := d) OS lgc n).continuousOn
+        have hFminus_cont :
+            ContinuousOn
+              (fun z : Fin n → Fin (d + 1) → ℂ =>
+                BHW.extendF (bvt_F OS lgc n)
+                  (BHW.permAct (d := d)
+                    (P.τ.symm * (1 : Equiv.Perm (Fin n))).symm z))
+              (BHW.permutedExtendedTubeSector d n P.τ) := by
+          simpa [BHW.permutedExtendedTubeSector] using
+            (BHW.differentiableOn_extendF_bvt_F_permAct_preimageExtendedTube
+              (d := d) OS lgc n P.τ).continuousOn
+        have h0_plus :
+            ∀ u ∈ closure U,
+              BHW.os45FlatCommonChartSourceSide d n
+                (1 : Equiv.Perm (Fin n)) (1 : ℝ) 0 η u ∈
+                  BHW.ExtendedTube d n := by
+          intro u hu
+          have huV : u ∈ closure P.V :=
+            subset_closure (hU_closure hu)
+          have hmem :=
+            BHW.os45Figure24_commonEdge_mem_initialSectorOverlap
+              (d := d) (n := n) (hd := hd) (P := P) huV
+          rw [BHW.os45FlatCommonChartSourceSide_zero_eq_commonEdge]
+          exact hmem.1
+        have h0_minus :
+            ∀ u ∈ closure U,
+              BHW.os45FlatCommonChartSourceSide d n
+                (1 : Equiv.Perm (Fin n)) (-1 : ℝ) 0 η u ∈
+                  BHW.permutedExtendedTubeSector d n P.τ := by
+          intro u hu
+          have huV : u ∈ closure P.V :=
+            subset_closure (hU_closure hu)
+          have hmem :=
+            BHW.os45Figure24_commonEdge_mem_initialSectorOverlap
+              (d := d) (n := n) (hd := hd) (P := P) huV
+          rw [BHW.os45FlatCommonChartSourceSide_zero_eq_commonEdge]
+          exact hmem.2
+        have hsrc_ext :
+            Tendsto
+              (fun ε : ℝ => ExtPlus ε - ExtMinus ε)
+              (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) := by
+          have hrep' :
+              SCV.RepresentsDistributionOn
+                (0 : SchwartzMap (NPointDomain d n) ℂ →L[ℂ] ℂ)
+                (fun u : NPointDomain d n =>
+                  BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                      (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+                      (BHW.realEmbed
+                        (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                          (1 : Equiv.Perm (Fin n)) u)) -
+                    BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                      (1 : Equiv.Perm (Fin n))
+                      (BHW.realEmbed
+                        (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                          (1 : Equiv.Perm (Fin n)) u))) U := by
+            simpa [Ghoriz] using hrep
+          simpa [ExtPlus, ExtMinus] using
+            D.tendsto_sourceSide_extendF_difference_zero_of_sourceRepresentsOn
+              (d := d) OS lgc hΩplus_open hΩminus_open
+              hFplus_cont hFminus_cont hU_open subset_closure hU_compact
+              η h0_plus h0_minus hrep' φ hφ_compact hφU
+        simpa [ExtPlus, ExtMinus, RawPlus, RawMinus] using
+          hsrc_ext.sub hraw
       have hsrc :
           Tendsto
             (fun ε : ℝ =>
