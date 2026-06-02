@@ -251,6 +251,9 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
         common tempered boundary distribution for the raw `(4.12)` seed and
         the deterministic BHW flat collar on this compact Figure-2-4 window.
       -/
+      exact
+        ?os45_vladimirov_raw_to_extendF_local_collar_error_zero
+      /-
       let e :=
         BHW.os45CommonEdgeFlatCLE d n
           (1 : Equiv.Perm (Fin n))
@@ -740,6 +743,7 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
             (fun u hu => subset_closure hu) hU_compact η
             h0_plus h0_minus φ hφ_compact hφU hzero_pairing
       simpa using hExt_zero.sub hraw
+      -/
       /-
         Retired circular zero-height reduction.
 
