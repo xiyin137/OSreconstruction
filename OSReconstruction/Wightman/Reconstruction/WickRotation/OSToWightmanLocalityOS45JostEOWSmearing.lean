@@ -430,12 +430,128 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
             The OS Euclidean source-pairing calculation below identifies the
             raw adjacent Wick boundary value with the ordinary Wick boundary
             value for arbitrary compact source tests supported in `U`.  The
-            remaining analytic payload is the tempered-BV uniqueness step
-            identifying the deterministic BHW adjacent boundary
-            `extendF (bvt_F) (permAct P.τ (wick u))` with that raw
-            `(4.12)` adjacent Wick boundary value in compact source pairings.
+            remaining analytic payload is the real Jost-edge common-boundary
+            pairing for the two BHW `extendF` branches on this same source
+            window.  The checked local-edge identity theorem then transports
+            that Jost-edge equality through the adjacent ET overlap to the
+            adjacent Wick point.
           -/
-          exact ?os45_vladimirov_extendF_adjacentWick_pairing_eq_raw412
+          have hrealEdge :
+              ∀ χ : SchwartzNPoint d n,
+                HasCompactSupport (χ : NPointDomain d n → ℂ) →
+                tsupport (χ : NPointDomain d n → ℂ) ⊆ U →
+                  (∫ x : NPointDomain d n,
+                    BHW.extendF (bvt_F OS lgc n)
+                      (BHW.realEmbed
+                        (fun k => x
+                          ((Equiv.swap i ⟨i.val + 1, hi⟩) k))) *
+                      χ x)
+                  =
+                  ∫ x : NPointDomain d n,
+                    BHW.extendF (bvt_F OS lgc n)
+                      (BHW.realEmbed x) * χ x := by
+            /-
+              The actual OS-I §4.5 / Vladimirov-BHW producer:
+              construct the common real Jost-edge boundary distribution from
+              Euclidean permutation symmetry, tempered tube bounds, and
+              distributional EOW, then recover these compact pairings.
+            -/
+            exact ?os45_vladimirov_realJostEdge_extendF_pairing_eq
+          have hOverlap :
+              IsConnected
+                {z : Fin n → Fin (d + 1) → ℂ |
+                  z ∈ BHW.ExtendedTube d n ∧
+                    BHW.permAct (d := d)
+                      (Equiv.swap i ⟨i.val + 1, hi⟩) z ∈
+                      BHW.ExtendedTube d n} :=
+            bvt_selectedAdjacentOverlap_connected_of_permSeedGeometry
+              (d := d) n i hi
+          have hF_holo :
+              DifferentiableOn ℂ (bvt_F OS lgc n)
+                (BHW.ForwardTube d n) := by
+            simpa [BHW_forwardTube_eq (d := d) (n := n)] using
+              bvt_F_holomorphic (d := d) OS lgc n
+          have hF_lorentz :
+              ∀ (Λ : RestrictedLorentzGroup d)
+                (z : Fin n → Fin (d + 1) → ℂ),
+                z ∈ BHW.ForwardTube d n →
+                bvt_F OS lgc n
+                  (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * z k ν) =
+                bvt_F OS lgc n z := by
+            intro Λ z hz
+            exact bvt_F_restrictedLorentzInvariant_forwardTube
+              (d := d) OS lgc n Λ z
+              ((BHW_forwardTube_eq (d := d) (n := n)) ▸ hz)
+          refine MeasureTheory.integral_congr_ae
+            (Filter.Eventually.of_forall ?_)
+          intro u
+          by_cases hu : u ∈ U
+          · have huP : u ∈ P.V := hU_sub hu
+            let z : Fin n → Fin (d + 1) → ℂ :=
+              fun k => wickRotatePoint (u k)
+            have hz_forward : z ∈ BHW.ForwardTube d n := by
+              simpa [z] using
+                BHW.os45Figure24_ordinaryWick_mem_forwardTube
+                  (d := d) (n := n) (hd := hd) (P := P) huP
+            have hz_ET : z ∈ BHW.ExtendedTube d n :=
+              H.ordinaryWick_mem_extendedTube u huP
+            have hτz_ET :
+                BHW.permAct (d := d) P.τ z ∈
+                  BHW.ExtendedTube d n := by
+              simpa [z, BHW.permAct] using
+                BHW.os45Figure24_adjacentWick_mem_extendedTube
+                  (d := d) (n := n) (hd := hd) (P := P) huP
+            have hVedge_ET :
+                ∀ x ∈ U, BHW.realEmbed x ∈
+                  BHW.ExtendedTube d n := by
+              intro x hx
+              exact H.realPatch_mem_extendedTube x (hU_sub hx)
+            have hVedge_swapET :
+                ∀ x ∈ U,
+                  BHW.realEmbed
+                    (fun k => x
+                      ((Equiv.swap i ⟨i.val + 1, hi⟩) k)) ∈
+                    BHW.ExtendedTube d n := by
+              intro x hx
+              have hx_sector :=
+                H.realPatch_mem_permutedExtendedTubeSector x (hU_sub hx)
+              simpa [P.τ_eq, BHW.permutedExtendedTubeSector,
+                BHW.permAct_realEmbed, BHW.permAct] using hx_sector
+            have hbranch :
+                BHW.extendF (bvt_F OS lgc n)
+                    (BHW.permAct (d := d) P.τ z) =
+                  BHW.extendF (bvt_F OS lgc n) z := by
+              have hlocal :=
+                BHW.bvt_F_extendF_adjacent_overlap_of_localEdgePairing
+                  (d := d) OS lgc n i hi hOverlap
+                  U hU_open hU_connected.nonempty
+                  hVedge_ET hVedge_swapET hrealEdge
+                  z hz_ET
+                  (by simpa [P.τ_eq] using hτz_ET)
+              simpa [P.τ_eq] using hlocal
+            have hext :
+                BHW.extendF (bvt_F OS lgc n) z =
+                  bvt_F OS lgc n z :=
+              BHW.extendF_eq_on_forwardTube n (bvt_F OS lgc n)
+                hF_holo hF_lorentz z hz_forward
+            have hperm :
+                bvt_F OS lgc n
+                    (fun k => wickRotatePoint (u (P.τ k))) =
+                  bvt_F OS lgc n z := by
+              simpa [z, BHW.permAct] using
+                bvt_F_perm (d := d) OS lgc n P.τ
+                  (fun k => wickRotatePoint (u k))
+            have hpoint :
+                BHW.extendF (bvt_F OS lgc n)
+                    (BHW.permAct (d := d) P.τ z) =
+                  bvt_F OS lgc n
+                    (fun k => wickRotatePoint (u (P.τ k))) :=
+              hbranch.trans (hext.trans hperm.symm)
+            simpa [z] using congrArg (fun c : ℂ => c * ψ u) hpoint
+          · have hψ_zero : ψ u = 0 :=
+              image_eq_zero_of_notMem_tsupport
+                (fun hψ_supp => hu (hψU hψ_supp))
+            simp [hψ_zero]
       _ =
         ∫ u : NPointDomain d n,
           bvt_F OS lgc n (fun k => wickRotatePoint (u k)) * ψ u := by
