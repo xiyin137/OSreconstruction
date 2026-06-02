@@ -263,33 +263,151 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
                 SchwartzNPoint d n) : NPointDomain d n → ℂ) u)
       have hOrdResidual :
           Tendsto OrdResidual (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) := by
-        /-
-          Ordinary OS-I `(4.1)` collar transport leaf.
+        have h0_minus_plus :
+            ∀ u ∈ closure U,
+              BHW.os45FlatCommonChartSourceSide d n
+                (1 : Equiv.Perm (Fin n)) (-1 : ℝ) 0 η u ∈ Ωplus := by
+          intro u hu
+          simpa using h0_plus u hu
+        have hdet_pair :=
+          D.tendsto_sourceSide_extendF_sideZeroDiagonalCLM_pair
+            (d := d) OS lgc (1 : Equiv.Perm (Fin n))
+            hΩplus_open (by simpa using hFplus_cont)
+            hU_open (fun u hu => subset_closure hu) hU_compact η
+            h0_plus h0_minus_plus φ hφ_compact hφU
+        have hKηC :
+            ({η} : Set (BHW.OS45FlatCommonChartReal d n)) ⊆
+              BHW.os45FlatCommonChartCone d n := by
+          intro ξ hξ
+          simpa [Set.mem_singleton_iff.mp hξ] using hηC
+        rcases
+            D.sideZeroDiagonal_sourcePairings_tendstoUniformlyOn_schwinger
+              OS lgc ({η} : Set (BHW.OS45FlatCommonChartReal d n))
+              isCompact_singleton hKηC φ hφ_compact hφE with
+          ⟨hraw_unif, _hadj_plus, _hord_minus, _hadj_minus⟩
+        have hraw :
+            Tendsto
+              (fun ε : ℝ =>
+                ∫ u : NPointDomain d n,
+                  bvt_F OS lgc n (fun k => wickRotatePoint (u k)) *
+                    ((((D.toSideZeroDiagonalCLM
+                      (1 : Equiv.Perm (Fin n)) (1 : ℝ) ε η φ).1 :
+                        SchwartzNPoint d n) : NPointDomain d n → ℂ) u))
+              (𝓝[Set.Ioi 0] (0 : ℝ))
+              (𝓝 (OS.S n (D.toZeroDiagonalCLM
+                (1 : Equiv.Perm (Fin n)) φ))) := by
+          simpa using hraw_unif.tendsto_at (by simp)
+        have hdet_zero_schwinger :
+            (∫ u : NPointDomain d n,
+              BHW.extendF (bvt_F OS lgc n)
+                (BHW.os45QuarterTurnConfig (d := d) (n := n)
+                  (fun k => wickRotatePoint (u k))) *
+                ((((D.toZeroDiagonalCLM
+                  (1 : Equiv.Perm (Fin n)) φ).1 : SchwartzNPoint d n) :
+                    NPointDomain d n → ℂ) u)) =
+              OS.S n (D.toZeroDiagonalCLM
+                (1 : Equiv.Perm (Fin n)) φ) := by
+          /-
+            Remaining ordinary OS-I/Vladimirov boundary-normalization leaf.
 
-          The tempting zero-height shortcut fails for a real reason: the
-          checked moving `extendF` side limit lands at
-          `extendF (os45QuarterTurnConfig (wick u))`, while the raw OS current
-          is `bvt_F (wick u)`.  The existing
-          `os45FlatCommonChart_wickSection_sourcePairing_eq_schwinger`
-          normalizes the pulled flat Wick-section branch, not this deterministic
-          BHW source-side collar.  Thus the ordinary side still needs the same
-          local tempered-BV transport mechanism as the adjacent side, specialized
-          to the identity branch.
-        -/
-        exact
-          ?os_i45_ordinary_BHW_collar_pairing_matches_raw_Wick_boundary
+            The moving-test convergence is now discharged.  What remains is the
+            actual local BV transport identifying the deterministic BHW
+            zero-height collar trace
+            `extendF (os45QuarterTurnConfig (wick u))` with the raw OS
+            Wick-section boundary distribution on this compact source window.
+          -/
+          exact
+            ?os_i45_ordinary_quarterTurn_BHW_zeroHeight_boundary_eq_schwinger
+        have hdet :
+            Tendsto
+              (fun ε : ℝ =>
+                ∫ u : NPointDomain d n,
+                  BHW.extendF (bvt_F OS lgc n)
+                    (BHW.os45FlatCommonChartSourceSide d n
+                      (1 : Equiv.Perm (Fin n)) (1 : ℝ) ε η u) *
+                    ((((D.toSideZeroDiagonalCLM
+                      (1 : Equiv.Perm (Fin n)) (1 : ℝ) ε η φ).1 :
+                        SchwartzNPoint d n) : NPointDomain d n → ℂ) u))
+              (𝓝[Set.Ioi 0] (0 : ℝ))
+              (𝓝 (OS.S n (D.toZeroDiagonalCLM
+                (1 : Equiv.Perm (Fin n)) φ))) := by
+          simpa [hdet_zero_schwinger] using hdet_pair.1
+        simpa [OrdResidual] using hdet.sub hraw
       have hAdjResidual :
           Tendsto AdjResidual (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) := by
-        /-
-          Adjacent OS-I `(4.12)` collar transport leaf.
+        have h0_plus_minus :
+            ∀ u ∈ closure U,
+              BHW.os45FlatCommonChartSourceSide d n
+                (1 : Equiv.Perm (Fin n)) (1 : ℝ) 0 η u ∈ Ωminus := by
+          intro u hu
+          simpa using h0_minus u hu
+        have hdet_pair :=
+          D.tendsto_sourceSide_extendF_sideZeroDiagonalCLM_pair
+            (d := d) OS lgc (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+            hΩminus_open (by simpa using hFminus_cont)
+            hU_open (fun u hu => subset_closure hu) hU_compact η
+            h0_plus_minus h0_minus φ hφ_compact hφU
+        have hKηC :
+            ({η} : Set (BHW.OS45FlatCommonChartReal d n)) ⊆
+              BHW.os45FlatCommonChartCone d n := by
+          intro ξ hξ
+          simpa [Set.mem_singleton_iff.mp hξ] using hηC
+        rcases
+            D.sideZeroDiagonal_sourcePairings_tendstoUniformlyOn_schwinger
+              OS lgc ({η} : Set (BHW.OS45FlatCommonChartReal d n))
+              isCompact_singleton hKηC φ hφ_compact hφE with
+          ⟨_hord_plus, _hadj_plus, _hord_minus, hadj_minus_unif⟩
+        have hraw :
+            Tendsto
+              (fun ε : ℝ =>
+                ∫ u : NPointDomain d n,
+                  bvt_F OS lgc n (fun k => wickRotatePoint (u (P.τ k))) *
+                    ((((D.toSideZeroDiagonalCLM
+                      (1 : Equiv.Perm (Fin n)) (-1 : ℝ) ε η φ).1 :
+                        SchwartzNPoint d n) : NPointDomain d n → ℂ) u))
+              (𝓝[Set.Ioi 0] (0 : ℝ))
+              (𝓝 (OS.S n (D.toZeroDiagonalCLM
+                (1 : Equiv.Perm (Fin n)) φ))) := by
+          simpa using hadj_minus_unif.tendsto_at (by simp)
+        have hdet_zero_schwinger :
+            (∫ u : NPointDomain d n,
+              BHW.extendF (bvt_F OS lgc n)
+                (BHW.permAct (d := d) P.τ
+                  (BHW.os45QuarterTurnConfig (d := d) (n := n)
+                    (fun k => wickRotatePoint (u k)))) *
+                ((((D.toZeroDiagonalCLM
+                  (1 : Equiv.Perm (Fin n)) φ).1 : SchwartzNPoint d n) :
+                    NPointDomain d n → ℂ) u)) =
+              OS.S n (D.toZeroDiagonalCLM
+                (1 : Equiv.Perm (Fin n)) φ) := by
+          /-
+            Remaining adjacent OS-I `(4.12)`/Vladimirov
+            boundary-normalization leaf.
 
-          This is the same local tempered-BV transfer on the selected adjacent
-          side sheet, after applying the adjacent branch permutation.  It is
-          the part of the proof where the retained raw `(4.12)` Wick-source
-          boundary value must be transported through the Figure-2-4/BHW collar.
-        -/
-        exact
-          ?os_i45_adjacent_BHW_collar_pairing_matches_raw_Wick_boundary
+            The moving-test convergence is now discharged.  What remains is the
+            actual local BV transport identifying the selected adjacent
+            deterministic BHW zero-height collar trace with the raw adjacent
+            Wick-section OS boundary distribution on this compact source window.
+          -/
+          exact
+            ?os_i45_adjacent_quarterTurn_BHW_zeroHeight_boundary_eq_schwinger
+        have hdet :
+            Tendsto
+              (fun ε : ℝ =>
+                ∫ u : NPointDomain d n,
+                  BHW.extendF (bvt_F OS lgc n)
+                    (BHW.permAct (d := d)
+                      (P.τ.symm * (1 : Equiv.Perm (Fin n))).symm
+                      (BHW.os45FlatCommonChartSourceSide d n
+                        (1 : Equiv.Perm (Fin n)) (-1 : ℝ) ε η u)) *
+                    ((((D.toSideZeroDiagonalCLM
+                      (1 : Equiv.Perm (Fin n)) (-1 : ℝ) ε η φ).1 :
+                        SchwartzNPoint d n) : NPointDomain d n → ℂ) u))
+              (𝓝[Set.Ioi 0] (0 : ℝ))
+              (𝓝 (OS.S n (D.toZeroDiagonalCLM
+                (1 : Equiv.Perm (Fin n)) φ))) := by
+          simpa [hdet_zero_schwinger] using hdet_pair.2
+        simpa [AdjResidual] using hdet.sub hraw
       have hsplit :
           Tendsto (fun ε : ℝ => OrdResidual ε - AdjResidual ε)
             (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 0) := by
