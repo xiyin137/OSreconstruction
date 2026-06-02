@@ -177,116 +177,156 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
             that OS-I/Jost carrier, not a downstream weak-locality shortcut or
             a global two-sector branch wrapper.
           -/
-          have hSPrime :
-              BHW.OS45BHWJostSPrimeBranchData hd OS lgc H := by
-            let Ford : (Fin n → Fin (d + 1) → ℂ) → ℂ :=
+          let Ford : (Fin n → Fin (d + 1) → ℂ) → ℂ :=
+            BHW.extendF (bvt_F OS lgc n)
+          let Fadj : (Fin n → Fin (d + 1) → ℂ) → ℂ :=
+            fun z =>
               BHW.extendF (bvt_F OS lgc n)
-            let Fadj : (Fin n → Fin (d + 1) → ℂ) → ℂ :=
-              fun z =>
-                BHW.extendF (bvt_F OS lgc n)
-                  (BHW.permAct (d := d) P.τ z)
-            have hOverlap_open :
-                IsOpen (BHW.ExtendedTube d n ∩
+                (BHW.permAct (d := d) P.τ z)
+          have hFord_holo_overlap :
+              DifferentiableOn ℂ Ford
+                (BHW.ExtendedTube d n ∩
                   BHW.permutedExtendedTubeSector d n P.τ) :=
-              BHW.isOpen_extendedTube.inter
-                (BHW.isOpen_permutedExtendedTubeSector (d := d) (n := n) P.τ)
-            have hFord_holo_overlap :
-                DifferentiableOn ℂ Ford
-                  (BHW.ExtendedTube d n ∩
-                    BHW.permutedExtendedTubeSector d n P.τ) :=
-              (BHW.differentiableOn_extendF_bvt_F_extendedTube
-                (d := d) OS lgc n).mono (by intro z hz; exact hz.1)
-            have hFadj_holo_overlap :
-                DifferentiableOn ℂ Fadj
-                  (BHW.ExtendedTube d n ∩
-                    BHW.permutedExtendedTubeSector d n P.τ) :=
-              (BHW.differentiableOn_extendF_bvt_F_permAct_preimageExtendedTube
-                (d := d) OS lgc n P.τ).mono (by
-                  intro z hz
-                  simpa [BHW.permutedExtendedTubeSector, Fadj] using hz.2)
-            have hOverlapEq :
-                Set.EqOn Ford Fadj
-                  (BHW.ExtendedTube d n ∩
-                    BHW.permutedExtendedTubeSector d n P.τ) := by
-              /-
-                Vladimirov/BHW interface leaf.  On the true two-sheet overlap,
-                `Ford` and `Fadj` are holomorphic and have the same tempered
-                boundary value from the OS-I `(4.12)`--`(4.14)` source patch.
-                The intended mechanism is `SCV.tube_holomorphic_unique_from_bv`
-                or its tempered package form after flattening a local tube chart;
-                this is the producer, not the downstream compact-packet Route A.
-              -/
-              intro z hz
-              let Cflat : Set (Fin (n * (d + 1)) → ℝ) :=
-                ?os45_vladimirov_flat_local_tube_cone_at_z
-              let chart :
-                  (Fin (n * (d + 1)) → ℂ) →
-                    (Fin n → Fin (d + 1) → ℂ) :=
-                ?os45_vladimirov_overlap_tube_chart_at_z
-              let u0 : Fin (n * (d + 1)) → ℂ :=
-                ?os45_vladimirov_chart_point_at_z
-              let Fchart : (Fin (n * (d + 1)) → ℂ) → ℂ :=
-                fun u => Ford (chart u)
-              let Gchart : (Fin (n * (d + 1)) → ℂ) → ℂ :=
-                fun u => Fadj (chart u)
-              have hchart_u0 : chart u0 = z :=
-                ?os45_vladimirov_chart_point_maps_to_z
-              have hu0 : u0 ∈ SCV.TubeDomain Cflat :=
-                ?os45_vladimirov_chart_point_mem_tube
-              have hchart_tube_sub_overlap :
-                  ∀ u ∈ SCV.TubeDomain Cflat,
-                    chart u ∈
-                      BHW.ExtendedTube d n ∩
-                        BHW.permutedExtendedTubeSector d n P.τ :=
-                ?os45_vladimirov_chart_tube_subset_overlap
-              have hCflat_open : IsOpen Cflat :=
-                ?os45_vladimirov_flat_tube_cone_open
-              have hCflat_conv : Convex ℝ Cflat :=
-                ?os45_vladimirov_flat_tube_cone_convex
-              have hCflat_ne : Cflat.Nonempty :=
-                ?os45_vladimirov_flat_tube_cone_nonempty
-              have hCflat_cone :
-                  ∀ (t : ℝ), 0 < t → ∀ y ∈ Cflat, t • y ∈ Cflat :=
-                ?os45_vladimirov_flat_tube_cone_smul
-              have hchart_holo :
-                  DifferentiableOn ℂ chart (SCV.TubeDomain Cflat) :=
-                ?os45_vladimirov_overlap_tube_chart_holomorphic
-              have hFchart_holo :
-                  DifferentiableOn ℂ Fchart (SCV.TubeDomain Cflat) :=
-                hFord_holo_overlap.comp hchart_holo hchart_tube_sub_overlap
-              have hGchart_holo :
-                  DifferentiableOn ℂ Gchart (SCV.TubeDomain Cflat) :=
-                hFadj_holo_overlap.comp hchart_holo hchart_tube_sub_overlap
-              have hTF :
-                  SCV.HasFourierLaplaceReprTempered Cflat Fchart :=
-                ?os45_vladimirov_ford_tempered_bv_package
-              have hTG :
-                  SCV.HasFourierLaplaceReprTempered Cflat Gchart :=
-                ?os45_vladimirov_fadj_tempered_bv_package
-              have hdist :
-                  ∀ ξ : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ,
-                    hTF.dist ξ = hTG.dist ξ :=
-                ?os45_vladimirov_common_tempered_boundary_dist
-              have hEqChart :
-                  Set.EqOn Fchart Gchart (SCV.TubeDomain Cflat) :=
-                tube_holomorphic_unique_from_equal_tempered_bv_flat
-                  hCflat_open hCflat_conv hCflat_ne hCflat_cone
-                  hFchart_holo hGchart_holo hTF hTG hdist
-                  ?os45_vladimirov_ford_chart_integrable
-                  ?os45_vladimirov_fadj_chart_integrable
+            (BHW.differentiableOn_extendF_bvt_F_extendedTube
+              (d := d) OS lgc n).mono (by intro z hz; exact hz.1)
+          have hFadj_holo_overlap :
+              DifferentiableOn ℂ Fadj
+                (BHW.ExtendedTube d n ∩
+                  BHW.permutedExtendedTubeSector d n P.τ) :=
+            (BHW.differentiableOn_extendF_bvt_F_permAct_preimageExtendedTube
+              (d := d) OS lgc n P.τ).mono (by
+                intro z hz
+                simpa [BHW.permutedExtendedTubeSector, Fadj] using hz.2)
+          have htransport_point :
+              ∀ u ∈ U,
+                BHW.extendF (bvt_F OS lgc n)
+                    (BHW.permAct (d := d) P.τ
+                      (fun k => wickRotatePoint (u k))) =
+                  bvt_F OS lgc n (fun k => wickRotatePoint (u k)) := by
+            intro u hu
+            let z : Fin n → Fin (d + 1) → ℂ :=
+              fun k => wickRotatePoint (u k)
+            have huP : u ∈ P.V := hU_sub hu
+            have hz_forward : z ∈ BHW.ForwardTube d n := by
+              simpa [z] using
+                BHW.os45Figure24_ordinaryWick_mem_forwardTube
+                  (d := d) (n := n) (hd := hd) (P := P) huP
+            have hz_overlap :
+                z ∈ BHW.ExtendedTube d n ∩
+                  BHW.permutedExtendedTubeSector d n P.τ := by
+              have hz_ext : z ∈ BHW.ExtendedTube d n :=
+                BHW.forwardTube_subset_extendedTube (d := d) (n := n)
+                  hz_forward
+              have hτz_ext :
+                  BHW.permAct (d := d) P.τ z ∈ BHW.ExtendedTube d n := by
+                simpa [z] using
+                  BHW.os45Figure24_adjacentWick_mem_extendedTube
+                    (d := d) (n := n) (hd := hd) (P := P) huP
+              exact
+                ⟨hz_ext, by
+                  simpa [BHW.permutedExtendedTubeSector, z] using hτz_ext⟩
+            /-
+              Local Vladimirov/BHW interface leaf at the actual Wick-section
+              point.  This is weaker and more faithful than a global equality on
+              `T'_n ∩ τT'_n`: the compact-test transport only needs the common
+              tempered boundary-value package on a local tube chart through
+              `z = wick u`.
+            -/
+            let Cflat : Set (Fin (n * (d + 1)) → ℝ) :=
+              ?os45_vladimirov_flat_local_tube_cone_at_wick
+            let chart :
+                (Fin (n * (d + 1)) → ℂ) →
+                  (Fin n → Fin (d + 1) → ℂ) :=
+              fun q => (flattenCLEquiv n (d + 1)).symm q
+            let u0 : Fin (n * (d + 1)) → ℂ :=
+              (flattenCLEquiv n (d + 1)) z
+            let Fchart : (Fin (n * (d + 1)) → ℂ) → ℂ :=
+              fun q => Ford (chart q)
+            let Gchart : (Fin (n * (d + 1)) → ℂ) → ℂ :=
+              fun q => Fadj (chart q)
+            have hchart_u0 : chart u0 = z :=
+              by simp [chart, u0]
+            have hu0 : u0 ∈ SCV.TubeDomain Cflat :=
+              ?os45_vladimirov_chart_point_mem_tube_at_wick
+            have hchart_tube_sub_overlap :
+                ∀ q ∈ SCV.TubeDomain Cflat,
+                  chart q ∈
+                    BHW.ExtendedTube d n ∩
+                      BHW.permutedExtendedTubeSector d n P.τ :=
+              ?os45_vladimirov_chart_tube_subset_overlap_at_wick
+            have hCflat_open : IsOpen Cflat :=
+              ?os45_vladimirov_flat_tube_cone_open_at_wick
+            have hCflat_conv : Convex ℝ Cflat :=
+              ?os45_vladimirov_flat_tube_cone_convex_at_wick
+            have hCflat_ne : Cflat.Nonempty :=
+              ?os45_vladimirov_flat_tube_cone_nonempty_at_wick
+            have hCflat_cone :
+                ∀ (t : ℝ), 0 < t → ∀ y ∈ Cflat, t • y ∈ Cflat :=
+              ?os45_vladimirov_flat_tube_cone_smul_at_wick
+            have hchart_holo :
+                DifferentiableOn ℂ chart (SCV.TubeDomain Cflat) :=
+              by
+                simpa [chart] using
+                  (flattenCLEquiv n (d + 1)).symm.differentiable.differentiableOn
+            have hFchart_holo :
+                DifferentiableOn ℂ Fchart (SCV.TubeDomain Cflat) :=
+              hFord_holo_overlap.comp hchart_holo hchart_tube_sub_overlap
+            have hGchart_holo :
+                DifferentiableOn ℂ Gchart (SCV.TubeDomain Cflat) :=
+              hFadj_holo_overlap.comp hchart_holo hchart_tube_sub_overlap
+            have hTF :
+                SCV.HasFourierLaplaceReprTempered Cflat Fchart :=
+              ?os45_vladimirov_ford_tempered_bv_package_at_wick
+            have hTG :
+                SCV.HasFourierLaplaceReprTempered Cflat Gchart :=
+              ?os45_vladimirov_fadj_tempered_bv_package_at_wick
+            have hdist :
+                ∀ ξ : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ,
+                  hTF.dist ξ = hTG.dist ξ :=
+              ?os45_vladimirov_common_tempered_boundary_dist_at_wick
+            have hEqChart :
+                Set.EqOn Fchart Gchart (SCV.TubeDomain Cflat) :=
+              tube_holomorphic_unique_from_equal_tempered_bv_flat
+                hCflat_open hCflat_conv hCflat_ne hCflat_cone
+                hFchart_holo hGchart_holo hTF hTG hdist
+                ?os45_vladimirov_ford_chart_integrable_at_wick
+                ?os45_vladimirov_fadj_chart_integrable_at_wick
+            have hFord_eq_Fadj : Ford z = Fadj z := by
               calc
                 Ford z = Fchart u0 := by
                   simp [Fchart, hchart_u0]
                 _ = Gchart u0 := hEqChart hu0
                 _ = Fadj z := by
                   simp [Gchart, hchart_u0]
+            have hF_holo :
+                DifferentiableOn ℂ (bvt_F OS lgc n) (BHW.ForwardTube d n) := by
+              simpa [BHW_forwardTube_eq (d := d) (n := n)] using
+                bvt_F_holomorphic (d := d) OS lgc n
+            have hF_lorentz :
+                ∀ (Λ : LorentzLieGroup.RestrictedLorentzGroup d)
+                  (w : Fin n → Fin (d + 1) → ℂ), w ∈ BHW.ForwardTube d n →
+                  bvt_F OS lgc n
+                    (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * w k ν) =
+                  bvt_F OS lgc n w := by
+              intro Λ w hw
+              exact bvt_F_restrictedLorentzInvariant_forwardTube
+                (d := d) OS lgc n Λ w
+                ((BHW_forwardTube_eq (d := d) (n := n)) ▸ hw)
+            have hext :
+                Ford z = bvt_F OS lgc n z :=
+              BHW.extendF_eq_on_forwardTube n (bvt_F OS lgc n)
+                hF_holo hF_lorentz z hz_forward
             exact
-              BHW.OS45BHWJostSPrimeBranchData.of_extendF_overlapEq
-                (d := d) OS lgc (P := P) (H := H)
-                (by intro z hz; simpa [Ford, Fadj] using hOverlapEq hz)
-          exact
-            hSPrime.transported_wick_pairing
-              (d := d) OS lgc hU_sub ψ hψ_compact hψU
+              (hFord_eq_Fadj.symm.trans hext : Fadj z = bvt_F OS lgc n z)
+          refine MeasureTheory.integral_congr_ae (Filter.Eventually.of_forall ?_)
+          intro u
+          by_cases hu : u ∈ U
+          · exact congrArg (fun c : ℂ => c * ψ u)
+              (htransport_point u hu)
+          · have hψ_zero : ψ u = 0 :=
+              image_eq_zero_of_notMem_tsupport
+                (fun hψ_supp => hu (hψU hψ_supp))
+            simp [hψ_zero]
         have hsource :
             ∀ u ∈ U,
               BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
