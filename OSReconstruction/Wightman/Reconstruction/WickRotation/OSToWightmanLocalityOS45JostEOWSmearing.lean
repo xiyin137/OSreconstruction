@@ -251,8 +251,142 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
         common tempered boundary distribution for the raw `(4.12)` seed and
         the deterministic BHW flat collar on this compact Figure-2-4 window.
       -/
+      let e :=
+        BHW.os45CommonEdgeFlatCLE d n
+          (1 : Equiv.Perm (Fin n))
+      let E : Set (BHW.OS45FlatCommonChartReal d n) := e '' U
+      let Cedge : Set (BHW.OS45FlatCommonChartReal d n) :=
+        BHW.os45FlatCommonChartCone d n
+      let Tlocal :
+          SchwartzMap (BHW.OS45FlatCommonChartReal d n) ℂ →L[ℂ] ℂ :=
+        BHW.os45FlatCommonChart_ordinaryEdgeCLM hd OS lgc P
+      have hE_open : IsOpen E := by
+        simpa [E, e] using e.toHomeomorph.isOpenMap U hU_open
+      have hE_sub :
+          E ⊆ BHW.os45FlatCommonChartEdgeSet d n P
+            (1 : Equiv.Perm (Fin n)) := by
+        rintro x ⟨u, huU, rfl⟩
+        exact
+          (BHW.os45CommonEdgeFlatCLE_mem_edgeSet_iff d n P
+            (1 : Equiv.Perm (Fin n)) u).mpr (hU_sub huU)
+      have hφE' :
+          tsupport (φ : BHW.OS45FlatCommonChartReal d n → ℂ) ⊆ E := by
+        simpa [E, e] using hφU
+      have hzero_plus :
+          (∫ x : BHW.OS45FlatCommonChartReal d n,
+            BHW.os45FlatCommonChartBranch d n OS lgc
+              (1 : Equiv.Perm (Fin n))
+              (fun a => (x a : ℂ)) * φ x) =
+            Tlocal φ := by
+        exact
+          BHW.os45FlatCommonChart_plus_zeroHeight_pairing_eq_CLM_of_localRepresents
+            (d := d) hd OS lgc (P := P) Tlocal
+            (BHW.os45FlatCommonChart_ordinaryEdgeCLM_represents hd OS lgc)
+            φ hφ_compact (hφE'.trans hE_sub)
+      have hzero_minus :
+          (∫ x : BHW.OS45FlatCommonChartReal d n,
+            BHW.os45FlatCommonChartBranch d n OS lgc
+              (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+              (fun a => (x a : ℂ)) * φ x) =
+            Tlocal φ := by
+        let Fminus : BHW.OS45FlatCommonChartSpace d n → ℂ :=
+          BHW.os45FlatCommonChartBranch d n OS lgc
+            (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+        have hFminus_holo_local :
+            DifferentiableOn ℂ Fminus
+              (BHW.os45FlatCommonChartOmega d n
+                (P.τ.symm * (1 : Equiv.Perm (Fin n)))) := by
+          simpa [Fminus] using
+            BHW.differentiableOn_os45FlatCommonChartBranch
+              d n OS lgc
+              (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+        have hCedge_open : IsOpen Cedge := by
+          simpa [Cedge] using hC_open
+        have hCedge_convex : Convex ℝ Cedge := by
+          simpa [Cedge] using hC_convex
+        have hCedge_ne : Cedge.Nonempty := by
+          simpa [Cedge] using hC_ne
+        have hCedge_smul :
+            ∀ t : ℝ, 0 < t → ∀ y ∈ Cedge, t • y ∈ Cedge := by
+          intro t ht y hy
+          simpa [Cedge] using hC_smul t y ht (by simpa [Cedge] using hy)
+        have hFminus_holo_tube :
+            DifferentiableOn ℂ Fminus (SCV.TubeDomain Cedge) := by
+          /-
+            This is the first genuine Vladimirov/BHW interface obligation:
+            promote the checked local Figure-2-4 adjacent wedge holomorphy
+            `hFminus_holo_local` to the tube carrier used by the existing SCV
+            tempered boundary-value recovery theorem, without asserting the
+            false global inclusion `SCV.TubeDomain Cedge ⊆ Ωminus`.
+          -/
+          exact
+            ?os45_vladimirov_adjacent_flat_branch_tube_holomorphic
+        have hFminus_tempered :
+            SCV.HasFourierLaplaceReprTempered Cedge Fminus := by
+          /-
+            This is the polynomial-growth/tempered-BV package for the adjacent
+            flat branch on the local OS45 collar.  It is the canonical
+            Vladimirov input, not a theorem-2-specific wrapper.
+          -/
+          exact
+            ?os45_vladimirov_adjacent_flat_branch_temperedBV_package
+        have hFminus_contE :
+            ∀ x ∈ E,
+              ContinuousWithinAt Fminus (SCV.TubeDomain Cedge)
+                (SCV.realEmbed x) := by
+          /-
+            Boundary recovery only needs continuity on the compact real edge
+            window supporting the test.  Existing BHW geometry gives local
+            wedge access there, but not yet this tube-within continuity field.
+          -/
+          exact
+            ?os45_vladimirov_adjacent_flat_branch_boundary_continuity_on_E
+        have hrec :=
+          SCV.fourierLaplace_boundary_recovery_on_open_of_tempered
+            (C := Cedge) hCedge_open hCedge_convex hCedge_ne
+            hCedge_smul (F := Fminus) hFminus_holo_tube
+            hFminus_tempered E hE_open hFminus_contE φ hφE'
+            hφ_compact
+        have hdist_Tlocal :
+            hFminus_tempered.dist φ = Tlocal φ := by
+          /-
+            OS-I `(4.12)`--`(4.14)` must identify the recovered tempered
+            boundary distribution with the same source-current distribution
+            represented by the ordinary edge CLM on this Figure-2-4 window.
+          -/
+          exact
+            ?os45_OS412_source_current_identifies_adjacent_BHW_boundary_distribution
+        calc
+          (∫ x : BHW.OS45FlatCommonChartReal d n,
+            BHW.os45FlatCommonChartBranch d n OS lgc
+              (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+              (fun a => (x a : ℂ)) * φ x) =
+              ∫ x : BHW.OS45FlatCommonChartReal d n,
+                Fminus (SCV.realEmbed x) * φ x := by
+                apply MeasureTheory.integral_congr_ae
+                filter_upwards with x
+                congr 2
+          _ = hFminus_tempered.dist φ := hrec.symm
+          _ = Tlocal φ := hdist_Tlocal
+      have hflat_zero :
+          (∫ x : BHW.OS45FlatCommonChartReal d n,
+            BHW.os45FlatCommonChartBranch d n OS lgc
+              (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+              (fun a => (x a : ℂ)) * φ x) =
+            ∫ x : BHW.OS45FlatCommonChartReal d n,
+              BHW.os45FlatCommonChartBranch d n OS lgc
+                (1 : Equiv.Perm (Fin n))
+                (fun a => (x a : ℂ)) * φ x := by
+        rw [hzero_minus, hzero_plus]
+      /-
+        The remaining mechanical part is to feed `hflat_zero` back through the
+        checked source-side pullback and moving-test lemmas to obtain
+        `Ext - Raw -> 0`.  The live analytic blockers above are the actual
+        Vladimirov/BHW producer obligations; `hflat_zero` records the boundary
+        equality they would supply.
+      -/
       exact
-        ?os45_vladimirov_raw_to_extendF_local_collar_error_zero
+        ?os45_vladimirov_source_collar_residual_from_local_boundary_recovery
       /-
       let e :=
         BHW.os45CommonEdgeFlatCLE d n
