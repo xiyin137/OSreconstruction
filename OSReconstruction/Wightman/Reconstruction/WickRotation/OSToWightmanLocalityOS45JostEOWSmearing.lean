@@ -483,36 +483,69 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
                 H.realPatch_mem_permutedExtendedTubeSector x (hU_sub hx)
               simpa [P.τ_eq, BHW.permutedExtendedTubeSector,
                 BHW.permAct_realEmbed, BHW.permAct] using hx_sector
-            have hreal_pointwise :
-                ∀ u ∈ U,
-                  BHW.extendF (bvt_F OS lgc n)
-                      (BHW.realEmbed
-                        (fun k => u
-                          ((Equiv.swap i ⟨i.val + 1, hi⟩) k))) =
-                    BHW.extendF (bvt_F OS lgc n)
-                      (BHW.realEmbed u) := by
-              intro u hu
-              have huP : u ∈ P.V := hU_sub hu
-              have huJost : u ∈ BHW.JostSet d n := P.V_jost u huP
-              have huET :
-                  BHW.realEmbed u ∈ BHW.ExtendedTube d n :=
-                H.realPatch_mem_extendedTube u huP
-              have hτuET :
-                  BHW.realEmbed
-                      (fun k => u
-                        ((Equiv.swap i ⟨i.val + 1, hi⟩) k)) ∈
-                    BHW.ExtendedTube d n := by
-                have hu_sector :=
-                  H.realPatch_mem_permutedExtendedTubeSector u huP
-                simpa [P.τ_eq, BHW.permutedExtendedTubeSector,
-                  BHW.permAct_realEmbed, BHW.permAct] using hu_sector
-              /-
-                OS-I §4.5 unsmeared Vladimirov/BHW step:
-                Euclidean permutation symmetry gives the same tempered
-                boundary distribution on this Jost real edge; EOW/uniqueness
-                identifies the two BHW interior values at the Jost point.
-              -/
-              exact ?os45_vladimirov_realJostEdge_pointwise_eq
+            let τ : Equiv.Perm (Fin n) :=
+              Equiv.swap i ⟨i.val + 1, hi⟩
+            let Cflat : Set (Fin (n * (d + 1)) → ℝ) :=
+              ?os45_vladimirov_realJostEdge_localFlatCone
+            let Fflat : (Fin (n * (d + 1)) → ℂ) → ℂ :=
+              fun z =>
+                BHW.extendF (bvt_F OS lgc n)
+                  (BHW.permAct (d := d) τ
+                    ((flattenCLEquiv n (d + 1)).symm z))
+            let Gflat : (Fin (n * (d + 1)) → ℂ) → ℂ :=
+              fun z =>
+                BHW.extendF (bvt_F OS lgc n)
+                  ((flattenCLEquiv n (d + 1)).symm z)
+            have hCflat_open : IsOpen Cflat :=
+              ?os45_vladimirov_realJostEdge_localFlatCone_open
+            have hCflat_conv : Convex ℝ Cflat :=
+              ?os45_vladimirov_realJostEdge_localFlatCone_convex
+            have hCflat_ne : Cflat.Nonempty :=
+              ?os45_vladimirov_realJostEdge_localFlatCone_nonempty
+            have hCflat_cone :
+                ∀ (t : ℝ), 0 < t → ∀ y ∈ Cflat, t • y ∈ Cflat :=
+              ?os45_vladimirov_realJostEdge_localFlatCone_cone
+            have hFflat_holo :
+                DifferentiableOn ℂ Fflat (SCV.TubeDomain Cflat) :=
+              ?os45_vladimirov_realJostEdge_permExtendF_flat_holo
+            have hGflat_holo :
+                DifferentiableOn ℂ Gflat (SCV.TubeDomain Cflat) :=
+              ?os45_vladimirov_realJostEdge_extendF_flat_holo
+            have hFflat_tempered :
+                SCV.HasFourierLaplaceReprTempered Cflat Fflat :=
+              ?os45_vladimirov_realJostEdge_permExtendF_temperedBV
+            have hGflat_tempered :
+                SCV.HasFourierLaplaceReprTempered Cflat Gflat :=
+              ?os45_vladimirov_realJostEdge_extendF_temperedBV
+            have hBoundaryDist_eq :
+                ∀ ρ : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ,
+                  hFflat_tempered.dist ρ = hGflat_tempered.dist ρ :=
+              ?os45_OSI45_sourceSide_commonBoundaryDistribution
+            have hFflat_int :
+                ∀ y ∈ Cflat,
+                  ∀ ρ : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ,
+                    MeasureTheory.Integrable
+                      (fun x : Fin (n * (d + 1)) → ℝ =>
+                        Fflat
+                          (fun a => (x a : ℂ) +
+                            (y a : ℂ) * Complex.I) * ρ x) :=
+              ?os45_vladimirov_realJostEdge_permExtendF_slice_integrable
+            have hGflat_int :
+                ∀ y ∈ Cflat,
+                  ∀ ρ : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ,
+                    MeasureTheory.Integrable
+                      (fun x : Fin (n * (d + 1)) → ℝ =>
+                        Gflat
+                          (fun a => (x a : ℂ) +
+                            (y a : ℂ) * Complex.I) * ρ x) :=
+              ?os45_vladimirov_realJostEdge_extendF_slice_integrable
+            have hVladimirov_eqOn :
+                Set.EqOn Fflat Gflat (SCV.TubeDomain Cflat) :=
+              tube_holomorphic_unique_from_equal_tempered_bv_flat
+                hCflat_open hCflat_conv hCflat_ne hCflat_cone
+                hFflat_holo hGflat_holo
+                hFflat_tempered hGflat_tempered
+                hBoundaryDist_eq hFflat_int hGflat_int
             have hzero :
                 ∫ u : NPointDomain d n,
                   (BHW.extendF (bvt_F OS lgc n)
@@ -521,27 +554,8 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
                           ((Equiv.swap i ⟨i.val + 1, hi⟩) k))) -
                     BHW.extendF (bvt_F OS lgc n) (BHW.realEmbed u)) *
                     χ u = 0 := by
-              calc
-                ∫ u : NPointDomain d n,
-                  (BHW.extendF (bvt_F OS lgc n)
-                      (BHW.realEmbed
-                        (fun k => u
-                          ((Equiv.swap i ⟨i.val + 1, hi⟩) k))) -
-                    BHW.extendF (bvt_F OS lgc n) (BHW.realEmbed u)) *
-                    χ u
-                    =
-                  ∫ u : NPointDomain d n, (0 : ℂ) := by
-                    refine MeasureTheory.integral_congr_ae
-                      (Filter.Eventually.of_forall ?_)
-                    intro u
-                    by_cases hu : u ∈ U
-                    · have hpt := hreal_pointwise u hu
-                      simp [hpt]
-                    · have hχ_zero : χ u = 0 :=
-                        image_eq_zero_of_notMem_tsupport
-                          (fun hχ_supp => hu (hχU hχ_supp))
-                      simp [hχ_zero]
-                _ = 0 := by simp
+              exact
+                ?os45_vladimirov_realJostEdge_pairing_zero_from_temperedBV_uniqueness
             have hpair :=
               BHW.integral_realSourceBranchDifference_eq_zero_to_pairing_eq
                 (d := d) OS lgc n
