@@ -450,13 +450,103 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
                   ∫ x : NPointDomain d n,
                     BHW.extendF (bvt_F OS lgc n)
                       (BHW.realEmbed x) * χ x := by
-            /-
-              The actual OS-I §4.5 / Vladimirov-BHW producer:
-              construct the common real Jost-edge boundary distribution from
-              Euclidean permutation symmetry, tempered tube bounds, and
-              distributional EOW, then recover these compact pairings.
-            -/
-            exact ?os45_vladimirov_realJostEdge_extendF_pairing_eq
+            intro χ hχ_compact hχU
+            have hid_int :
+                Integrable
+                  (fun u : NPointDomain d n =>
+                    BHW.extendF (bvt_F OS lgc n)
+                      (BHW.realEmbed u) * χ u) := by
+              simpa using
+                BHW.integrable_extendF_realSource_mul_schwartz_of_ET
+                  (d := d) OS lgc n U hU_open
+                  (1 : Equiv.Perm (Fin n))
+                  (by
+                    intro x hx
+                    simpa using
+                      H.realPatch_mem_extendedTube x (hU_sub hx))
+                  χ hχ_compact hχU
+            have hτ_int :
+                Integrable
+                  (fun u : NPointDomain d n =>
+                    BHW.extendF (bvt_F OS lgc n)
+                      (BHW.realEmbed
+                        (fun k => u
+                          ((Equiv.swap i ⟨i.val + 1, hi⟩) k))) *
+                    χ u) := by
+              refine
+                BHW.integrable_extendF_realSource_mul_schwartz_of_ET
+                  (d := d) OS lgc n U hU_open
+                  (Equiv.swap i ⟨i.val + 1, hi⟩) ?_
+                  χ hχ_compact hχU
+              intro x hx
+              have hx_sector :=
+                H.realPatch_mem_permutedExtendedTubeSector x (hU_sub hx)
+              simpa [P.τ_eq, BHW.permutedExtendedTubeSector,
+                BHW.permAct_realEmbed, BHW.permAct] using hx_sector
+            have hreal_pointwise :
+                ∀ u ∈ U,
+                  BHW.extendF (bvt_F OS lgc n)
+                      (BHW.realEmbed
+                        (fun k => u
+                          ((Equiv.swap i ⟨i.val + 1, hi⟩) k))) =
+                    BHW.extendF (bvt_F OS lgc n)
+                      (BHW.realEmbed u) := by
+              intro u hu
+              have huP : u ∈ P.V := hU_sub hu
+              have huJost : u ∈ BHW.JostSet d n := P.V_jost u huP
+              have huET :
+                  BHW.realEmbed u ∈ BHW.ExtendedTube d n :=
+                H.realPatch_mem_extendedTube u huP
+              have hτuET :
+                  BHW.realEmbed
+                      (fun k => u
+                        ((Equiv.swap i ⟨i.val + 1, hi⟩) k)) ∈
+                    BHW.ExtendedTube d n := by
+                have hu_sector :=
+                  H.realPatch_mem_permutedExtendedTubeSector u huP
+                simpa [P.τ_eq, BHW.permutedExtendedTubeSector,
+                  BHW.permAct_realEmbed, BHW.permAct] using hu_sector
+              /-
+                OS-I §4.5 unsmeared Vladimirov/BHW step:
+                Euclidean permutation symmetry gives the same tempered
+                boundary distribution on this Jost real edge; EOW/uniqueness
+                identifies the two BHW interior values at the Jost point.
+              -/
+              exact ?os45_vladimirov_realJostEdge_pointwise_eq
+            have hzero :
+                ∫ u : NPointDomain d n,
+                  (BHW.extendF (bvt_F OS lgc n)
+                      (BHW.realEmbed
+                        (fun k => u
+                          ((Equiv.swap i ⟨i.val + 1, hi⟩) k))) -
+                    BHW.extendF (bvt_F OS lgc n) (BHW.realEmbed u)) *
+                    χ u = 0 := by
+              calc
+                ∫ u : NPointDomain d n,
+                  (BHW.extendF (bvt_F OS lgc n)
+                      (BHW.realEmbed
+                        (fun k => u
+                          ((Equiv.swap i ⟨i.val + 1, hi⟩) k))) -
+                    BHW.extendF (bvt_F OS lgc n) (BHW.realEmbed u)) *
+                    χ u
+                    =
+                  ∫ u : NPointDomain d n, (0 : ℂ) := by
+                    refine MeasureTheory.integral_congr_ae
+                      (Filter.Eventually.of_forall ?_)
+                    intro u
+                    by_cases hu : u ∈ U
+                    · have hpt := hreal_pointwise u hu
+                      simp [hpt]
+                    · have hχ_zero : χ u = 0 :=
+                        image_eq_zero_of_notMem_tsupport
+                          (fun hχ_supp => hu (hχU hχ_supp))
+                      simp [hχ_zero]
+                _ = 0 := by simp
+            have hpair :=
+              BHW.integral_realSourceBranchDifference_eq_zero_to_pairing_eq
+                (d := d) OS lgc n
+                (Equiv.swap i ⟨i.val + 1, hi⟩) χ hid_int hτ_int hzero
+            exact hpair.symm
           have hOverlap :
               IsConnected
                 {z : Fin n → Fin (d + 1) → ℂ |
