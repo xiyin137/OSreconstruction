@@ -12418,6 +12418,174 @@ theorem eventually_sourceSide_coneHeight_lower_extendF_eq_reducedExtension_os45R
                   (reducedNormalLowerCanonicalRay (d := d) i hi p ε)))))) := by
       rw [hred]
 
+/-- Upper Fred-level OS45 normalization from an explicit OS45-to-canonical
+ray comparison.
+
+The remaining analytic input is not a zero-height coordinate identification:
+it is the asymptotic equality of Fred values on the quarter-turned OS45 ray
+and on the ordinary reduced canonical approach ray.  The canonical branch
+term is then removed by the already checked reduced-extension representative
+for the canonical ray. -/
+theorem tendsto_reducedExtension_os45UpperRay_sub_canonicalReducedBranch_of_os45Ray_sub_canonicalRay
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {m : ℕ} {i : Fin (m + 1)} {hi : i.val + 1 < m + 1}
+    (σ : Equiv.Perm (Fin (m + 1)))
+    (Fred : BHW.ReducedBHWExtensionData (d := d) (n := m + 1)
+      (bvt_F_reduced (d := d) OS lgc m))
+    (p : ReducedSpace d m i ⟨i.val + 1, hi⟩)
+    (hFred_ray_comparison :
+      Filter.Tendsto
+        (fun ε : ℝ =>
+          Fred.toFun
+              (BHW.reducedDiffMap (m + 1) d
+                (BHW.permAct (d := d) σ
+                  ((BHW.os45QuarterTurnCLE (d := d) (n := m + 1)).symm
+                    (BHW.unflattenCfg (m + 1) d
+                      (reducedNormalToOS45CommonEdgeComplexCLM
+                        (d := d) i hi
+                        (reducedNormalUpperCanonicalRay
+                          (d := d) i hi p ε)))))) -
+            Fred.toFun
+              (reducedNormalCoordFlatComplexCLM (d := d) i hi
+                (reducedNormalUpperCanonicalRay (d := d) i hi p ε)))
+        (nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)) : Filter ℝ)
+        (nhds 0)) :
+    Filter.Tendsto
+      (fun ε : ℝ =>
+        Fred.toFun
+            (BHW.reducedDiffMap (m + 1) d
+              (BHW.permAct (d := d) σ
+                ((BHW.os45QuarterTurnCLE (d := d) (n := m + 1)).symm
+                  (BHW.unflattenCfg (m + 1) d
+                    (reducedNormalToOS45CommonEdgeComplexCLM
+                      (d := d) i hi
+                      (reducedNormalUpperCanonicalRay
+                        (d := d) i hi p ε)))))) -
+          canonicalReducedBranch (d := d) OS lgc m ε
+            (reducedCoordInv (d := d) i ⟨i.val + 1, hi⟩
+              (reducedAdjacent_succ_ne i hi) p))
+      (nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)) : Filter ℝ)
+      (nhds 0) := by
+  let l : Filter ℝ := nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ))
+  let A : ℝ → ℂ := fun ε =>
+    Fred.toFun
+      (BHW.reducedDiffMap (m + 1) d
+        (BHW.permAct (d := d) σ
+          ((BHW.os45QuarterTurnCLE (d := d) (n := m + 1)).symm
+            (BHW.unflattenCfg (m + 1) d
+              (reducedNormalToOS45CommonEdgeComplexCLM
+                (d := d) i hi
+                (reducedNormalUpperCanonicalRay (d := d) i hi p ε))))))
+  let B : ℝ → ℂ := fun ε =>
+    Fred.toFun
+      (reducedNormalCoordFlatComplexCLM (d := d) i hi
+        (reducedNormalUpperCanonicalRay (d := d) i hi p ε))
+  let C : ℝ → ℂ := fun ε =>
+    canonicalReducedBranch (d := d) OS lgc m ε
+      (reducedCoordInv (d := d) i ⟨i.val + 1, hi⟩
+        (reducedAdjacent_succ_ne i hi) p)
+  have hcompare : Filter.Tendsto (fun ε : ℝ => A ε - B ε) l (nhds 0) := by
+    simpa [A, B, l] using hFred_ray_comparison
+  have hcanonical :=
+    reducedNormalUpperCanonicalRay_reducedExtension_transfer
+      (d := d) OS lgc i hi Fred p
+  have hcanonical' : Filter.Tendsto (fun ε : ℝ => B ε - C ε) l (nhds 0) := by
+    simpa [B, C, l] using hcanonical
+  have hsum : Filter.Tendsto
+      (fun ε : ℝ => (A ε - B ε) + (B ε - C ε)) l (nhds 0) := by
+    simpa using hcompare.add hcanonical'
+  change Filter.Tendsto (fun ε : ℝ => A ε - C ε) l (nhds 0)
+  refine Filter.Tendsto.congr' ?_ hsum
+  filter_upwards with ε
+  ring
+
+/-- Lower Fred-level OS45 normalization from an explicit comparison with the
+sign-flipped ordinary canonical ray.
+
+The lower OS45 ray is still parameterized by the lower reduced-normal side at
+`p`, but the canonical branch in the final statement is the upper canonical
+approach for the sign-flipped reduced point.  This is the precise Fred-level
+comparison needed before the Hdiff/EOW handoff. -/
+theorem tendsto_reducedExtension_os45LowerRay_sub_canonicalReducedBranch_of_os45Ray_sub_signFlipCanonicalRay
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {m : ℕ} {i : Fin (m + 1)} {hi : i.val + 1 < m + 1}
+    (σ : Equiv.Perm (Fin (m + 1)))
+    (Fred : BHW.ReducedBHWExtensionData (d := d) (n := m + 1)
+      (bvt_F_reduced (d := d) OS lgc m))
+    (p : ReducedSpace d m i ⟨i.val + 1, hi⟩)
+    (hFred_ray_comparison :
+      Filter.Tendsto
+        (fun ε : ℝ =>
+          Fred.toFun
+              (BHW.reducedDiffMap (m + 1) d
+                (BHW.permAct (d := d) σ
+                  ((BHW.os45QuarterTurnCLE (d := d) (n := m + 1)).symm
+                    (BHW.unflattenCfg (m + 1) d
+                      (reducedNormalToOS45CommonEdgeComplexCLM
+                        (d := d) i hi
+                        (reducedNormalLowerCanonicalRay
+                          (d := d) i hi p ε)))))) -
+            Fred.toFun
+              (reducedNormalCoordFlatComplexCLM (d := d) i hi
+                (reducedNormalUpperCanonicalRay (d := d) i hi
+                  (reducedSignFlip (d := d) i ⟨i.val + 1, hi⟩ p) ε)))
+        (nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)) : Filter ℝ)
+        (nhds 0)) :
+    Filter.Tendsto
+      (fun ε : ℝ =>
+        Fred.toFun
+            (BHW.reducedDiffMap (m + 1) d
+              (BHW.permAct (d := d) σ
+                ((BHW.os45QuarterTurnCLE (d := d) (n := m + 1)).symm
+                  (BHW.unflattenCfg (m + 1) d
+                    (reducedNormalToOS45CommonEdgeComplexCLM
+                      (d := d) i hi
+                      (reducedNormalLowerCanonicalRay
+                        (d := d) i hi p ε)))))) -
+          canonicalReducedBranch (d := d) OS lgc m ε
+            (reducedCoordInv (d := d) i ⟨i.val + 1, hi⟩
+              (reducedAdjacent_succ_ne i hi)
+              (reducedSignFlip (d := d) i ⟨i.val + 1, hi⟩ p)))
+      (nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)) : Filter ℝ)
+      (nhds 0) := by
+  let l : Filter ℝ := nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ))
+  let A : ℝ → ℂ := fun ε =>
+    Fred.toFun
+      (BHW.reducedDiffMap (m + 1) d
+        (BHW.permAct (d := d) σ
+          ((BHW.os45QuarterTurnCLE (d := d) (n := m + 1)).symm
+            (BHW.unflattenCfg (m + 1) d
+              (reducedNormalToOS45CommonEdgeComplexCLM
+                (d := d) i hi
+                (reducedNormalLowerCanonicalRay (d := d) i hi p ε))))))
+  let B : ℝ → ℂ := fun ε =>
+    Fred.toFun
+      (reducedNormalCoordFlatComplexCLM (d := d) i hi
+        (reducedNormalUpperCanonicalRay (d := d) i hi
+          (reducedSignFlip (d := d) i ⟨i.val + 1, hi⟩ p) ε))
+  let C : ℝ → ℂ := fun ε =>
+    canonicalReducedBranch (d := d) OS lgc m ε
+      (reducedCoordInv (d := d) i ⟨i.val + 1, hi⟩
+        (reducedAdjacent_succ_ne i hi)
+        (reducedSignFlip (d := d) i ⟨i.val + 1, hi⟩ p))
+  have hcompare : Filter.Tendsto (fun ε : ℝ => A ε - B ε) l (nhds 0) := by
+    simpa [A, B, l] using hFred_ray_comparison
+  have hcanonical :=
+    reducedNormalUpperCanonicalRay_reducedExtension_transfer
+      (d := d) OS lgc i hi Fred
+      (reducedSignFlip (d := d) i ⟨i.val + 1, hi⟩ p)
+  have hcanonical' : Filter.Tendsto (fun ε : ℝ => B ε - C ε) l (nhds 0) := by
+    simpa [B, C, l] using hcanonical
+  have hsum : Filter.Tendsto
+      (fun ε : ℝ => (A ε - B ε) + (B ε - C ε)) l (nhds 0) := by
+    simpa using hcompare.add hcanonical'
+  change Filter.Tendsto (fun ε : ℝ => A ε - C ε) l (nhds 0)
+  refine Filter.Tendsto.congr' ?_ hsum
+  filter_upwards with ε
+  ring
+
 /-- Upper finite-height source-side transfer, reduced to the Fred-level
 normalization of the reduced PET extension on the OS45 quarter-turned ray.
 
