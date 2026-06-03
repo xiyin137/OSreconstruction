@@ -5016,6 +5016,80 @@ theorem OS45BHWJostHullData.os45CommonEdge_sourceRepresentsZero_of_local414_inte
         hU_connected.nonempty Ucx Hdiff hUcx_open hUcx_connected
         hwick_mem hcommon_mem hHdiff_holo hwick_pairing_zero hcommon_trace
 
+  /-- Pointwise common-edge equality supplies the source-pairing equality.
+
+  The cutoff-pullback support lemma localizes
+  `D.toSchwartzNPointCLM 1 φ` to the same source window `U`, so equality of the
+  two pulled real branches on `U` is enough to identify their pairings against
+  every flat test supported in `os45CommonEdgeFlatCLE '' U`. -/
+  theorem OS45BHWJostHullData.os45CommonEdge_sourcePairings_of_pulledRealBranches_eqOn
+      [NeZero d]
+      {hd : 2 ≤ d} {i : Fin n} {hi : i.val + 1 < n}
+      {P : BHW.OS45Figure24CanonicalSourcePatchData (d := d) hd n i hi}
+      (_H : BHW.OS45BHWJostHullData (d := d) hd n i hi P)
+      (OS : OsterwalderSchraderAxioms d)
+      (lgc : OSLinearGrowthCondition d OS)
+      {U : Set (NPointDomain d n)}
+      (D : BHW.OS45Figure24SourceCutoffData P)
+      (hbranches :
+        ∀ u ∈ U,
+          BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+              (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+              (BHW.realEmbed
+                (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                  (1 : Equiv.Perm (Fin n)) u)) =
+            BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+              (1 : Equiv.Perm (Fin n))
+              (BHW.realEmbed
+                (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                  (1 : Equiv.Perm (Fin n)) u))) :
+      ∀ φ : SchwartzMap (BHW.OS45FlatCommonChartReal d n) ℂ,
+        HasCompactSupport
+          (φ : BHW.OS45FlatCommonChartReal d n → ℂ) →
+        tsupport (φ : BHW.OS45FlatCommonChartReal d n → ℂ) ⊆
+          BHW.os45CommonEdgeFlatCLE d n
+            (1 : Equiv.Perm (Fin n)) '' U →
+        (∫ u : NPointDomain d n,
+          BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+              (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+              (BHW.realEmbed
+                (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                  (1 : Equiv.Perm (Fin n)) u)) *
+            (D.toSchwartzNPointCLM
+              (1 : Equiv.Perm (Fin n)) φ : NPointDomain d n → ℂ) u) =
+          ∫ u : NPointDomain d n,
+            BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                (1 : Equiv.Perm (Fin n))
+                (BHW.realEmbed
+                  (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                    (1 : Equiv.Perm (Fin n)) u)) *
+              (D.toSchwartzNPointCLM
+                (1 : Equiv.Perm (Fin n)) φ : NPointDomain d n → ℂ) u := by
+    classical
+    intro φ _hφ_compact hφU
+    have hsource_support :
+        tsupport
+            (D.toSchwartzNPointCLM
+              (1 : Equiv.Perm (Fin n)) φ : NPointDomain d n → ℂ) ⊆ U :=
+      D.toSchwartzNPointCLM_tsupport_subset_image
+        (1 : Equiv.Perm (Fin n)) φ hφU
+    refine MeasureTheory.integral_congr_ae (Filter.Eventually.of_forall ?_)
+    intro u
+    by_cases hu : u ∈ U
+    · exact
+        congrArg
+          (fun c : ℂ =>
+            c *
+              (D.toSchwartzNPointCLM
+                (1 : Equiv.Perm (Fin n)) φ : NPointDomain d n → ℂ) u)
+          (hbranches u hu)
+    · have htest_zero :
+          (D.toSchwartzNPointCLM
+            (1 : Equiv.Perm (Fin n)) φ : NPointDomain d n → ℂ) u = 0 :=
+        image_eq_zero_of_notMem_tsupport
+          (fun htest_supp => hu (hsource_support htest_supp))
+      simp [htest_zero]
+
   /-- Source-pairing form of the local `(4.14)` Hdiff handoff.
 
   Equality of the two pulled real common-edge source pairings against the
