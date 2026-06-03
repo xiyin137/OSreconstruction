@@ -2371,6 +2371,72 @@ theorem bvt_W_swap_pairing_of_spacelike_from_local_reducedBoundaryCLMInvariant
       (reducedCanonicalAdjacentSwapBoundaryInvariantSchwartzClosedSupport_of_local_reducedBoundaryCLMInvariant
         (d := d) OS lgc χ hlocalCLM)
 
+/-- Pointwise reduced-normal sign-flip convergence on the selected spacelike
+collar is enough for theorem-2 locality.
+
+This is the downstream surface matched to the OS-I source-transfer payload:
+the remaining analytic theorem may prove the asymptotic sign-flip boundary
+comparison directly, without first packaging exact ray representatives in
+`ReducedNormalCanonicalRayEOWBranchDataOn`. -/
+theorem bvt_W_swap_pairing_of_spacelike_from_pointwise_normalSignFlip
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (χ : BHW.NormalizedBasepointCutoff d)
+    (hpoint :
+      ∀ (m : ℕ) (i : Fin (m + 1)) (hi : i.val + 1 < m + 1)
+        (p : AdjacentNormal.ReducedSpace d m i ⟨i.val + 1, hi⟩),
+        p ∈ AdjacentNormal.reducedSelectedSpacelike
+            (d := d) i ⟨i.val + 1, hi⟩ →
+          Filter.Tendsto
+            (fun ε : ℝ =>
+              canonicalReducedBranch (d := d) OS lgc m ε
+                  (AdjacentNormal.reducedCoordInv
+                    (d := d) i ⟨i.val + 1, hi⟩
+                    (AdjacentNormal.reducedAdjacent_succ_ne i hi)
+                    (AdjacentNormal.reducedSignFlip
+                      (d := d) i ⟨i.val + 1, hi⟩ p)) -
+                canonicalReducedBranch (d := d) OS lgc m ε
+                  (AdjacentNormal.reducedCoordInv
+                    (d := d) i ⟨i.val + 1, hi⟩
+                    (AdjacentNormal.reducedAdjacent_succ_ne i hi) p))
+            (nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)) : Filter ℝ)
+            (nhds 0)) :
+    ∀ (n : ℕ) (i : Fin n) (hi : i.val + 1 < n) (f g : SchwartzNPoint d n),
+      (∀ x, f.toFun x ≠ 0 →
+        MinkowskiSpace.AreSpacelikeSeparated d
+          (x i) (x ⟨i.val + 1, hi⟩)) →
+      (∀ x, g.toFun x =
+        f.toFun (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k))) →
+      bvt_W OS lgc n f = bvt_W OS lgc n g := by
+  refine
+    bvt_W_swap_pairing_of_spacelike_from_local_reducedBoundaryCLMInvariant
+      (d := d) OS lgc χ ?_
+  refine
+    reducedLocalAdjacentBoundaryCLMInvariant_of_local_normalSignFlip_pointwise
+      (d := d) OS lgc χ ?_
+  intro m i hi φ _hφ_compact hφ_tsupport ξ hξ
+  let j : Fin (m + 1) := ⟨i.val + 1, hi⟩
+  let V : Set (NPointDomain d m) :=
+    reducedSpacelikeSwapEdge (d := d) m i j
+  refine
+    ⟨V, by simpa [V] using isOpen_reducedSpacelikeSwapEdge (d := d) m i j,
+      hφ_tsupport hξ, ?_⟩
+  intro ψ _hψ_compact hψ_tsupport η hη
+  have hη_ts :
+      η ∈ tsupport (ψ : NPointDomain d m → ℂ) :=
+    subset_tsupport (ψ : NPointDomain d m → ℂ)
+      (Function.mem_support.mpr hη)
+  have hη_edge :
+      η ∈ reducedSpacelikeSwapEdge (d := d) m i j := by
+    simpa [V] using hψ_tsupport hη_ts
+  have hp :
+      AdjacentNormal.reducedCoord (d := d) i j η ∈
+        AdjacentNormal.reducedSelectedSpacelike (d := d) i j := by
+    exact
+      (AdjacentNormal.reducedCoord_mem_reducedSelectedSpacelike_iff
+        (d := d) i j η).2 hη_edge
+  simpa [j] using hpoint m i hi (AdjacentNormal.reducedCoord (d := d) i j η) hp
+
 /-- Collar-local reduced-normal EOW branch data is the theorem-2 final-mile
 input.
 
