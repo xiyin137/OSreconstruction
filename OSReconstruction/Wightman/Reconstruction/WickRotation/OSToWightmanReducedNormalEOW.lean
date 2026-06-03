@@ -863,6 +863,51 @@ theorem reducedNormalCoordFlatComplexMap_lowerCanonicalRay
     canonicalReducedDirectionC]
   ring_nf
 
+theorem canonicalReducedBranch_reducedSignFlip_eq_adjacentReducedPermutedBranch
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {m : ℕ} (i : Fin (m + 1)) (hi : i.val + 1 < m + 1)
+    (p : ReducedSpace d m i ⟨i.val + 1, hi⟩) (ε : ℝ) :
+    canonicalReducedBranch (d := d) OS lgc m ε
+        (reducedCoordInv (d := d) i ⟨i.val + 1, hi⟩
+          (reducedAdjacent_succ_ne i hi)
+          (reducedSignFlip (d := d) i ⟨i.val + 1, hi⟩ p)) =
+      adjacentReducedPermutedBranch (d := d) OS lgc m i
+        ⟨i.val + 1, hi⟩ ε
+        (reducedCoordInv (d := d) i ⟨i.val + 1, hi⟩
+          (reducedAdjacent_succ_ne i hi) p) := by
+  let j : Fin (m + 1) := ⟨i.val + 1, hi⟩
+  let hij : i ≠ j := reducedAdjacent_succ_ne i hi
+  let ξ : NPointDomain d m := reducedCoordInv (d := d) i j hij p
+  have hflip :
+      reducedCoordInv (d := d) i j hij
+          (reducedSignFlip (d := d) i j p) =
+        realPermOnReducedDiff (d := d) m (Equiv.swap i j) ξ := by
+    simpa [j, hij, ξ] using
+      reducedCoordInv_reducedSignFlip_eq_realPerm_adjacentSwap
+        (d := d) i hi p
+  have htarget :
+      canonicalReducedBranch (d := d) OS lgc m ε
+          (reducedCoordInv (d := d) i j hij
+            (reducedSignFlip (d := d) i j p)) =
+        adjacentReducedPermutedBranch (d := d) OS lgc m i j ε ξ := by
+    calc
+      canonicalReducedBranch (d := d) OS lgc m ε
+          (reducedCoordInv (d := d) i j hij
+            (reducedSignFlip (d := d) i j p))
+          = canonicalReducedBranch (d := d) OS lgc m ε
+              (realPermOnReducedDiff (d := d) m (Equiv.swap i j) ξ) := by
+              rw [hflip]
+      _ = canonicalAfterReducedSwapBranch (d := d) OS lgc m i j ε ξ := by
+              exact
+                (canonicalAfterReducedSwapBranch_eq_canonicalReducedBranch_realPerm
+                  (d := d) OS lgc m i j ε ξ).symm
+      _ = adjacentReducedPermutedBranch (d := d) OS lgc m i j ε ξ := by
+              exact
+                (adjacentReducedPermutedBranch_eq_canonicalAfterReducedSwapBranch
+                  (d := d) OS lgc m i j ε ξ).symm
+  simpa [j, hij, ξ] using htarget
+
 omit [NeZero d] in
 theorem reducedNormalUpperCanonicalRay_tendsto
     {m : ℕ} (i : Fin (m + 1)) (hi : i.val + 1 < m + 1)

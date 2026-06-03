@@ -647,6 +647,69 @@ theorem tendsto_extendF_bvt_F_sub_adjacentReducedPermutedBranch_of_eventually_re
           ring
   exact Filter.Tendsto.congr' hzero.symm tendsto_const_nhds
 
+/-- Adjacent-swapped source-side transfer in the exact sign-flip form required
+by the reduced-normal EOW packet.
+
+The source-side reduced differences are assumed in the adjacent-swapped
+positive-height normal form based at the original reduced-normal point; the
+target branch is rewritten to the canonical positive ray based at the
+sign-flipped reduced-normal point. -/
+theorem tendsto_extendF_bvt_F_sub_signFlipCanonicalBranch_of_eventually_reducedDiff_eq_adjacent
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {m : ℕ} (i : Fin (m + 1)) (hi : i.val + 1 < m + 1)
+    (Fred : BHW.ReducedBHWExtensionData (d := d) (n := m + 1)
+      (bvt_F_reduced (d := d) OS lgc m))
+    (p : AdjacentNormal.ReducedSpace d m i ⟨i.val + 1, hi⟩)
+    (z : ℝ → Fin (m + 1) → Fin (d + 1) → ℂ)
+    (hET :
+      ∀ᶠ ε : ℝ in nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)),
+        z ε ∈ BHW.ExtendedTube d (m + 1))
+    (hred :
+      ∀ᶠ ε : ℝ in nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)),
+        BHW.reducedDiffMap (m + 1) d (z ε) =
+          fun k μ =>
+            (AdjacentNormal.reducedCoordInv (d := d)
+                i ⟨i.val + 1, hi⟩
+                (AdjacentNormal.reducedAdjacent_succ_ne i hi) p k μ : ℂ) +
+              ε *
+                permutedCanonicalReducedDirectionC
+                  (d := d) m
+                  (Equiv.swap i ⟨i.val + 1, hi⟩) k μ *
+                Complex.I) :
+    Filter.Tendsto
+      (fun ε : ℝ =>
+        BHW.extendF (bvt_F OS lgc (m + 1)) (z ε) -
+          canonicalReducedBranch (d := d) OS lgc m ε
+            (AdjacentNormal.reducedCoordInv (d := d)
+              i ⟨i.val + 1, hi⟩
+              (AdjacentNormal.reducedAdjacent_succ_ne i hi)
+              (AdjacentNormal.reducedSignFlip
+                (d := d) i ⟨i.val + 1, hi⟩ p)))
+      (nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)) : Filter ℝ)
+      (nhds 0) := by
+  let j : Fin (m + 1) := ⟨i.val + 1, hi⟩
+  let ξ : NPointDomain d m :=
+    AdjacentNormal.reducedCoordInv (d := d) i j
+      (AdjacentNormal.reducedAdjacent_succ_ne i hi) p
+  have hswap :
+      Filter.Tendsto
+        (fun ε : ℝ =>
+          BHW.extendF (bvt_F OS lgc (m + 1)) (z ε) -
+            adjacentReducedPermutedBranch (d := d) OS lgc m i j ε ξ)
+        (nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)) : Filter ℝ)
+        (nhds 0) := by
+    exact
+      tendsto_extendF_bvt_F_sub_adjacentReducedPermutedBranch_of_eventually_reducedDiff_eq
+        (d := d) OS lgc m i j Fred ξ z hET
+        (by simpa [j, ξ] using hred)
+  refine Filter.Tendsto.congr' ?_ hswap
+  filter_upwards with ε
+  have hbranch :=
+    AdjacentNormal.canonicalReducedBranch_reducedSignFlip_eq_adjacentReducedPermutedBranch
+      (d := d) OS lgc i hi p ε
+  simp [j, ξ, hbranch]
+
 /-- Moving source-side value transport through a reduced PET extension.
 
 This is the flexible OS-I `(4.12)`--`(4.14)` source-transfer form: the moving
