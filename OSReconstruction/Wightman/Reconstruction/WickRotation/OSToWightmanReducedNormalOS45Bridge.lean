@@ -6388,6 +6388,114 @@ theorem eventually_sourceSide_coneHeight_lower_mem_extendedTube
       d (m + 1) (P.τ.symm * (1 : Equiv.Perm (Fin (m + 1))))
       (1 : Equiv.Perm (Fin (m + 1))) (-1 : ℝ) ε ηc uε).1 hflat
 
+/-- Upper moving-source transport packet for the cone-valid OS45 height.
+
+This combines the local-wedge membership statement with the exact
+reduced-difference coordinate identity.  The source variable is the moving
+`uε = e.symm (x0 - ε • ηc)`, matching the genuine source-side Figure-2-4
+geometry; no unshifted-source PET normal form is asserted here. -/
+theorem eventually_sourceSide_coneHeight_upper_transport_packet
+    {m : ℕ} {i : Fin (m + 1)} {hi : i.val + 1 < m + 1}
+    {hd : 2 ≤ d}
+    (P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd (m + 1) i hi)
+    (p : ReducedSpace d m i ⟨i.val + 1, hi⟩)
+    (hpP :
+      coordInv (d := d) i ⟨i.val + 1, hi⟩
+          (reducedAdjacent_succ_ne i hi)
+          ((0 : SpacetimeDim d), p) ∈ P.V) :
+    ∀ᶠ ε : ℝ in nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)),
+      let ηc : BHW.OS45FlatCommonChartReal d (m + 1) :=
+        BHW.os45CommonEdgeFlatCLE d (m + 1)
+          (1 : Equiv.Perm (Fin (m + 1)))
+          (canonicalForwardConeDirection (d := d) (m + 1))
+      let x0 : BHW.OS45FlatCommonChartReal d (m + 1) :=
+        reducedNormalToOS45CommonEdgeFlatCLM (d := d) i hi
+          (reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩ p)
+      let uε : NPointDomain d (m + 1) :=
+        (BHW.os45CommonEdgeFlatCLE d (m + 1)
+          (1 : Equiv.Perm (Fin (m + 1)))).symm (x0 - ε • ηc)
+      BHW.os45FlatCommonChartSourceSide d (m + 1)
+          (1 : Equiv.Perm (Fin (m + 1))) (1 : ℝ) ε ηc uε ∈
+        BHW.ExtendedTube d (m + 1) ∧
+      BHW.reducedDiffMap (m + 1) d
+          (BHW.os45FlatCommonChartSourceSide d (m + 1)
+            (1 : Equiv.Perm (Fin (m + 1))) (1 : ℝ) ε ηc uε) =
+        BHW.reducedDiffMap (m + 1) d
+          ((BHW.os45QuarterTurnCLE (d := d) (n := m + 1)).symm
+            (BHW.unflattenCfg (m + 1) d
+              (reducedNormalToOS45CommonEdgeComplexCLM
+                (d := d) i hi
+                (reducedNormalUpperCanonicalRay (d := d) i hi p ε)))) := by
+  have hmem :=
+    eventually_sourceSide_coneHeight_upper_mem_extendedTube
+      (d := d) P p hpP
+  filter_upwards [hmem] with ε hmemε
+  refine ⟨?_, ?_⟩
+  · simpa using hmemε
+  · simpa [BHW.permAct] using
+      (reducedDiffMap_coneHeight_sourceSide_eq_upperCanonicalRay
+        (d := d) (i := i) (hi := hi)
+        (σ := (1 : Equiv.Perm (Fin (m + 1)))) p ε)
+
+/-- Lower moving-source transport packet for the cone-valid OS45 height after
+the adjacent branch permutation.
+
+This is the lower companion to
+`eventually_sourceSide_coneHeight_upper_transport_packet`, again using the
+moving source point `uε = e.symm (x0 + ε • ηc)` rather than an unshifted source
+variable. -/
+theorem eventually_sourceSide_coneHeight_lower_transport_packet
+    {m : ℕ} {i : Fin (m + 1)} {hi : i.val + 1 < m + 1}
+    {hd : 2 ≤ d}
+    (P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd (m + 1) i hi)
+    (p : ReducedSpace d m i ⟨i.val + 1, hi⟩)
+    (hpP :
+      coordInv (d := d) i ⟨i.val + 1, hi⟩
+          (reducedAdjacent_succ_ne i hi)
+          ((0 : SpacetimeDim d), p) ∈ P.V) :
+    ∀ᶠ ε : ℝ in nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)),
+      let ηc : BHW.OS45FlatCommonChartReal d (m + 1) :=
+        BHW.os45CommonEdgeFlatCLE d (m + 1)
+          (1 : Equiv.Perm (Fin (m + 1)))
+          (canonicalForwardConeDirection (d := d) (m + 1))
+      let x0 : BHW.OS45FlatCommonChartReal d (m + 1) :=
+        reducedNormalToOS45CommonEdgeFlatCLM (d := d) i hi
+          (reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩ p)
+      let uε : NPointDomain d (m + 1) :=
+        (BHW.os45CommonEdgeFlatCLE d (m + 1)
+          (1 : Equiv.Perm (Fin (m + 1)))).symm (x0 + ε • ηc)
+      BHW.permAct (d := d)
+          ((P.τ.symm * (1 : Equiv.Perm (Fin (m + 1)))).symm)
+          (BHW.os45FlatCommonChartSourceSide d (m + 1)
+            (1 : Equiv.Perm (Fin (m + 1))) (-1 : ℝ) ε ηc uε) ∈
+        BHW.ExtendedTube d (m + 1) ∧
+      BHW.reducedDiffMap (m + 1) d
+          (BHW.permAct (d := d)
+            ((P.τ.symm * (1 : Equiv.Perm (Fin (m + 1)))).symm)
+            (BHW.os45FlatCommonChartSourceSide d (m + 1)
+              (1 : Equiv.Perm (Fin (m + 1))) (-1 : ℝ) ε ηc uε)) =
+        BHW.reducedDiffMap (m + 1) d
+          (BHW.permAct (d := d)
+            ((P.τ.symm * (1 : Equiv.Perm (Fin (m + 1)))).symm)
+            ((BHW.os45QuarterTurnCLE (d := d) (n := m + 1)).symm
+              (BHW.unflattenCfg (m + 1) d
+                (reducedNormalToOS45CommonEdgeComplexCLM
+                  (d := d) i hi
+                  (reducedNormalLowerCanonicalRay (d := d) i hi p ε))))) := by
+  have hmem :=
+    eventually_sourceSide_coneHeight_lower_mem_extendedTube
+      (d := d) P p hpP
+  filter_upwards [hmem] with ε hmemε
+  refine ⟨?_, ?_⟩
+  · simpa using hmemε
+  · simpa using
+      (reducedDiffMap_coneHeight_sourceSide_eq_lowerCanonicalRay
+        (d := d) (i := i) (hi := hi)
+        (σ := ((P.τ.symm * (1 : Equiv.Perm (Fin (m + 1)))).symm))
+        p ε)
+
 end AdjacentNormal
 
 end OSReconstruction
