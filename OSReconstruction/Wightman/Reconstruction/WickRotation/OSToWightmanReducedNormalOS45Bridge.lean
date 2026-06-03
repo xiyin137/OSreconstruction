@@ -12846,14 +12846,14 @@ theorem tendsto_reducedNormalLower_os45Branch_sub_canonicalReducedBranch_of_redu
       hΩε
   rw [hbranch]
 
-/-- Local Hdiff sign-flip handoff with only the Fred-level OS45 ray
-normalizations left as hypotheses.
+/-- Local Hdiff sign-flip handoff with only the explicit Fred-level OS45 ray
+comparisons left as hypotheses.
 
 The local Hdiff germ supplies the common-boundary EOW comparison.  The two
 branch-transfer hypotheses needed by that comparison are produced here from
 the checked OS45 branch-domain topology plus the stated Fred-level
-carrier-to-canonical normalizations. -/
-theorem reducedNormalSignFlip_pointwise_of_OS45HdiffGerm_fred_normalization
+OS45-ray-to-canonical-ray comparisons. -/
+theorem reducedNormalSignFlip_pointwise_of_OS45HdiffGerm_fred_ray_comparison
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS)
     {m : ℕ} {i : Fin (m + 1)} {hi : i.val + 1 < m + 1}
@@ -12907,7 +12907,7 @@ theorem reducedNormalSignFlip_pointwise_of_OS45HdiffGerm_fred_normalization
               (BHW.realEmbed
                 (BHW.os45CommonEdgeRealPoint (d := d) (n := m + 1)
                   (1 : Equiv.Perm (Fin (m + 1))) u)))
-    (hplus_fred_normalization :
+    (hplus_fred_ray_comparison :
       Filter.Tendsto
         (fun ε : ℝ =>
           Fred.toFun
@@ -12917,12 +12917,12 @@ theorem reducedNormalSignFlip_pointwise_of_OS45HdiffGerm_fred_normalization
                   (reducedNormalToOS45CommonEdgeComplexCLM
                     (d := d) i hi
                     (reducedNormalUpperCanonicalRay (d := d) i hi p ε))))) -
-            canonicalReducedBranch (d := d) OS lgc m ε
-              (reducedCoordInv (d := d) i ⟨i.val + 1, hi⟩
-                (reducedAdjacent_succ_ne i hi) p))
+            Fred.toFun
+              (reducedNormalCoordFlatComplexCLM (d := d) i hi
+                (reducedNormalUpperCanonicalRay (d := d) i hi p ε)))
         (nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)) : Filter ℝ)
         (nhds 0))
-    (hminus_fred_normalization :
+    (hminus_fred_ray_comparison :
       Filter.Tendsto
         (fun ε : ℝ =>
           Fred.toFun
@@ -12935,10 +12935,10 @@ theorem reducedNormalSignFlip_pointwise_of_OS45HdiffGerm_fred_normalization
                       (d := d) i hi
                       (reducedNormalLowerCanonicalRay
                         (d := d) i hi p ε)))))) -
-            canonicalReducedBranch (d := d) OS lgc m ε
-              (reducedCoordInv (d := d) i ⟨i.val + 1, hi⟩
-                (reducedAdjacent_succ_ne i hi)
-                (reducedSignFlip (d := d) i ⟨i.val + 1, hi⟩ p)))
+            Fred.toFun
+              (reducedNormalCoordFlatComplexCLM (d := d) i hi
+                (reducedNormalUpperCanonicalRay (d := d) i hi
+                  (reducedSignFlip (d := d) i ⟨i.val + 1, hi⟩ p) ε)))
         (nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)) : Filter ℝ)
         (nhds 0)) :
     Filter.Tendsto
@@ -12956,6 +12956,13 @@ theorem reducedNormalSignFlip_pointwise_of_OS45HdiffGerm_fred_normalization
   let σ0 : Equiv.Perm (Fin (m + 1)) := 1
   let σadj : Equiv.Perm (Fin (m + 1)) :=
     P.τ.symm * (1 : Equiv.Perm (Fin (m + 1)))
+  have hplus_fred_normalization :=
+    tendsto_reducedExtension_os45UpperRay_sub_canonicalReducedBranch_of_os45Ray_sub_canonicalRay
+      (d := d) OS lgc (1 : Equiv.Perm (Fin (m + 1))) Fred p
+      hplus_fred_ray_comparison
+  have hminus_fred_normalization :=
+    tendsto_reducedExtension_os45LowerRay_sub_canonicalReducedBranch_of_os45Ray_sub_signFlipCanonicalRay
+      (d := d) OS lgc σadj.symm Fred p hminus_fred_ray_comparison
   let L : SCV.ComplexChartSpace ((d + 1) +
       Fintype.card (SpectatorIndex (m + 1) i j) * (d + 1)) →L[ℂ]
         BHW.OS45FlatCommonChartSpace d (m + 1) :=
