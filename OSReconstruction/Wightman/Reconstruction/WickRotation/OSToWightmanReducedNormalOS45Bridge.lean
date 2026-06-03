@@ -554,6 +554,99 @@ theorem tendsto_extendF_bvt_F_sub_canonicalReducedBranch_of_eventually_reducedDi
           ring
   exact Filter.Tendsto.congr' hzero.symm tendsto_const_nhds
 
+/-- If a moving absolute source-side path is eventually on the extended tube and
+its reduced differences are the adjacent-swapped positive-height ray, then its
+`extendF` boundary branch is asymptotic to the adjacent-permuted reduced branch.
+
+This is the pointwise lower-side companion to
+`tendsto_extendF_bvt_F_sub_canonicalReducedBranch_of_eventually_reducedDiff_eq`:
+after the reduced-difference normal form identifies the source path with the
+swapped PET ray, the selected reduced branch is transported through the
+permuted reduced extension. -/
+theorem tendsto_extendF_bvt_F_sub_adjacentReducedPermutedBranch_of_eventually_reducedDiff_eq
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (m : ℕ) (i j : Fin (m + 1))
+    (Fred : BHW.ReducedBHWExtensionData (d := d) (n := m + 1)
+      (bvt_F_reduced (d := d) OS lgc m))
+    (ξ : NPointDomain d m)
+    (z : ℝ → Fin (m + 1) → Fin (d + 1) → ℂ)
+    (hET :
+      ∀ᶠ ε : ℝ in nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)),
+        z ε ∈ BHW.ExtendedTube d (m + 1))
+    (hred :
+      ∀ᶠ ε : ℝ in nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)),
+        BHW.reducedDiffMap (m + 1) d (z ε) =
+          fun k μ =>
+            (ξ k μ : ℂ) +
+              ε *
+                permutedCanonicalReducedDirectionC
+                  (d := d) m (Equiv.swap i j) k μ *
+                Complex.I) :
+    Filter.Tendsto
+      (fun ε : ℝ =>
+        BHW.extendF (bvt_F OS lgc (m + 1)) (z ε) -
+          adjacentReducedPermutedBranch (d := d) OS lgc m i j ε ξ)
+      (nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)) : Filter ℝ)
+      (nhds 0) := by
+  let l : Filter ℝ := nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ))
+  have hzero :
+      (fun ε : ℝ =>
+        BHW.extendF (bvt_F OS lgc (m + 1)) (z ε) -
+          adjacentReducedPermutedBranch (d := d) OS lgc m i j ε ξ) =ᶠ[l]
+        fun _ : ℝ => (0 : ℂ) := by
+    filter_upwards [self_mem_nhdsWithin, hET, hred] with ε hε hεET hεred
+    have hext :=
+      extendF_bvt_F_eq_reducedExtension_on_extendedTube
+        (d := d) OS lgc m Fred (z ε) hεET
+    have hdomain :
+        (fun k μ =>
+          (ξ k μ : ℂ) +
+            ε *
+              permutedCanonicalReducedDirectionC
+                (d := d) m (Equiv.swap i j) k μ *
+              Complex.I) ∈ BHW.ReducedPermutedExtendedTubeN d m := by
+      refine ⟨z ε, BHW.extendedTube_subset_permutedExtendedTube hεET, ?_⟩
+      simpa using hεred
+    have hperm :=
+      bvt_F_reduced_permutedApproach_eq_reducedExtension
+        (d := d) OS lgc m i j Fred ξ hε hdomain
+    calc
+      BHW.extendF (bvt_F OS lgc (m + 1)) (z ε) -
+          adjacentReducedPermutedBranch (d := d) OS lgc m i j ε ξ
+          =
+        Fred.toFun (BHW.reducedDiffMap (m + 1) d (z ε)) -
+          bvt_F_reduced (d := d) OS lgc m
+            (fun k μ =>
+              (ξ k μ : ℂ) +
+                ε *
+                  permutedCanonicalReducedDirectionC
+                    (d := d) m (Equiv.swap i j) k μ *
+                  Complex.I) := by
+          rw [hext]
+          rfl
+      _ =
+        Fred.toFun
+            (fun k μ =>
+              (ξ k μ : ℂ) +
+                ε *
+                  permutedCanonicalReducedDirectionC
+                    (d := d) m (Equiv.swap i j) k μ *
+                  Complex.I) -
+          bvt_F_reduced (d := d) OS lgc m
+            (fun k μ =>
+              (ξ k μ : ℂ) +
+                ε *
+                  permutedCanonicalReducedDirectionC
+                    (d := d) m (Equiv.swap i j) k μ *
+                  Complex.I) := by
+          rw [hεred]
+          rfl
+      _ = 0 := by
+          rw [hperm]
+          ring
+  exact Filter.Tendsto.congr' hzero.symm tendsto_const_nhds
+
 /-- Moving source-side value transport through a reduced PET extension.
 
 This is the flexible OS-I `(4.12)`--`(4.14)` source-transfer form: the moving
