@@ -1442,19 +1442,68 @@ structure LocalEdgePairingOS45NormalAsymptoticBranchPacket
             (AdjacentNormal.reducedCoordInv (d := d)
               i ⟨i.val + 1, hi⟩
               (AdjacentNormal.reducedAdjacent_succ_ne i hi)
-              (AdjacentNormal.reducedSignFlip
-                (d := d) i ⟨i.val + 1, hi⟩ p)))
+                (AdjacentNormal.reducedSignFlip
+                  (d := d) i ⟨i.val + 1, hi⟩ p)))
       (nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)) : Filter ℝ)
       (nhds 0)
 
-/-- Support-local OS45 edge-pairing packets feed the active reduced local CLM
-route directly.
+/-- A local-edge OS45 packet places the zero-center absolute representative in
+a full real Jost patch.
 
-This is the theorem-2-facing Path 2 handoff: the local edge-pairing packet and
-the two asymptotic `(4.12)`--`(4.14)` source-side transfers supply the
-pointwise reduced-normal sign-flip convergence on every support collar, and the
-checked reduced local CLM consumer does the smearing.  The proof deliberately
-does not pass through `AdjacentReducedRuelleDistributionalLimit`. -/
+This records the strength of the OS45/Figure-2-4 packet surface: it is a
+Jost-support handoff, not by itself the arbitrary adjacent-spacelike
+frozen-spectator producer needed for theorem 2. -/
+theorem LocalEdgePairingOS45NormalAsymptoticBranchPacket.zeroCenter_mem_jost
+    (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {m : ℕ} {i : Fin (m + 1)} {hi : i.val + 1 < m + 1}
+    {p : AdjacentNormal.ReducedSpace d m i ⟨i.val + 1, hi⟩}
+    (packet :
+      LocalEdgePairingOS45NormalAsymptoticBranchPacket
+        (d := d) hd OS lgc hi p) :
+    AdjacentNormal.coordInv (d := d) i ⟨i.val + 1, hi⟩
+        (AdjacentNormal.reducedAdjacent_succ_ne i hi)
+        ((0 : SpacetimeDim d), p) ∈ BHW.JostSet d (m + 1) :=
+  packet.P.V_jost _ packet.hpP
+
+/-- Consequently, an OS45 local-edge packet forces every pair in the
+zero-center representative to be spacelike, including frozen spectator pairs.
+
+The theorem-2 locality hypothesis only supplies the adjacent selected pair, so
+the arbitrary-support producer has to live on the reduced-normal EOW surface
+rather than require such a packet at every adjacent-spacelike point. -/
+theorem LocalEdgePairingOS45NormalAsymptoticBranchPacket.zeroCenter_pair_spacelike
+    (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {m : ℕ} {i : Fin (m + 1)} {hi : i.val + 1 < m + 1}
+    {p : AdjacentNormal.ReducedSpace d m i ⟨i.val + 1, hi⟩}
+    (packet :
+      LocalEdgePairingOS45NormalAsymptoticBranchPacket
+        (d := d) hd OS lgc hi p)
+    (a b : Fin (m + 1)) (hab : a ≠ b) :
+    BHW.IsSpacelike d
+      (fun μ =>
+        AdjacentNormal.coordInv (d := d) i ⟨i.val + 1, hi⟩
+            (AdjacentNormal.reducedAdjacent_succ_ne i hi)
+            ((0 : SpacetimeDim d), p) a μ -
+          AdjacentNormal.coordInv (d := d) i ⟨i.val + 1, hi⟩
+            (AdjacentNormal.reducedAdjacent_succ_ne i hi)
+            ((0 : SpacetimeDim d), p) b μ) := by
+  exact
+    (packet.zeroCenter_mem_jost hd OS lgc).2 a b hab
+
+/-- Support-local OS45 edge-pairing packets feed the reduced local CLM route.
+
+This handoff is correct when such packets are actually available, but the
+packet surface is stronger than arbitrary adjacent-spacelike support: by
+`LocalEdgePairingOS45NormalAsymptoticBranchPacket.zeroCenter_pair_spacelike`,
+it places the zero-center representative in a full Jost patch.  The theorem-2
+arbitrary-support producer should therefore construct the reduced-normal EOW
+branch data directly, or derive this packet only on genuinely Jost-localized
+collars.  The proof deliberately does not pass through
+`AdjacentReducedRuelleDistributionalLimit`. -/
 theorem reducedLocalAdjacentBoundaryCLMInvariant_of_localEdgePairing_OS45NormalBranches_asymptotic
     (hd : 2 ≤ d)
     (OS : OsterwalderSchraderAxioms d)

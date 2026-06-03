@@ -135,6 +135,16 @@ structure ReducedNormalLocalEOWBranchData
             (reducedSignFlip (d := d) i ⟨i.val + 1, hi⟩ p))
 
 omit [NeZero d] in
+/-- The inverse of the continuous-linear reduced coordinate chart is the
+concrete zero-center reconstruction map. -/
+theorem reducedCoordCLE_symm_apply_eq_reducedCoordInv
+    {m : ℕ} (i j : Fin (m + 1)) (hij : i ≠ j)
+    (p : ReducedSpace d m i j) :
+    (reducedCoordCLE (d := d) i j hij).symm p =
+      reducedCoordInv (d := d) i j hij p := by
+  rfl
+
+omit [NeZero d] in
 /-- The reduced-coordinate chart followed by the flattened normal SCV chart. -/
 noncomputable def reducedNormalCoordFlatCLE
     {m : ℕ} (i : Fin (m + 1)) (hi : i.val + 1 < m + 1) :
@@ -157,6 +167,66 @@ noncomputable def reducedNormalFlatCanonicalDirection
     ((reducedCoordCLE (d := d) i ⟨i.val + 1, hi⟩
       (reducedAdjacent_succ_ne i hi))
       (canonicalReducedDirection (d := d) m))
+
+omit [NeZero d] in
+/-- Complexified inverse of the flattened reduced-normal chart, obtained by
+applying the real inverse chart to real and imaginary parts separately. -/
+noncomputable def reducedNormalCoordFlatComplexMap
+    {m : ℕ} (i : Fin (m + 1)) (hi : i.val + 1 < m + 1) :
+    SCV.ComplexChartSpace ((d + 1) +
+      Fintype.card (SpectatorIndex (m + 1) i ⟨i.val + 1, hi⟩) *
+        (d + 1)) → BHW.ReducedNPointConfig d m :=
+  fun z k μ =>
+    ((reducedNormalCoordFlatCLE (d := d) i hi).symm
+      (fun a => (z a).re) k μ : ℂ) +
+    ((reducedNormalCoordFlatCLE (d := d) i hi).symm
+      (fun a => (z a).im) k μ : ℂ) * Complex.I
+
+omit [NeZero d] in
+/-- On real points, the complexified flattened inverse chart is the original
+real inverse chart, embedded in the reduced complex coordinates. -/
+theorem reducedNormalCoordFlatComplexMap_realEmbed
+    {m : ℕ} (i : Fin (m + 1)) (hi : i.val + 1 < m + 1)
+    (x : Fin ((d + 1) +
+      Fintype.card (SpectatorIndex (m + 1) i ⟨i.val + 1, hi⟩) *
+        (d + 1)) → ℝ) :
+    reducedNormalCoordFlatComplexMap (d := d) i hi (SCV.realEmbed x) =
+      fun k μ =>
+        ((reducedNormalCoordFlatCLE (d := d) i hi).symm x k μ : ℂ) := by
+  ext k μ
+  have hzero :
+      (reducedNormalCoordFlatCLE (d := d) i hi).symm
+          (fun a : Fin ((d + 1) +
+            Fintype.card (SpectatorIndex (m + 1) i ⟨i.val + 1, hi⟩) *
+              (d + 1)) => (0 : ℝ)) k μ = 0 := by
+    exact
+      congrFun
+        (congrFun
+          ((reducedNormalCoordFlatCLE (d := d) i hi).symm.map_zero) k) μ
+  simp [reducedNormalCoordFlatComplexMap, SCV.realEmbed, hzero]
+
+omit [NeZero d] in
+/-- Unflattening a reduced normal point and then inverting the reduced chart
+recovers the zero-center reduced-coordinate representative. -/
+theorem reducedNormalCoordFlatCLE_symm_flatten
+    {m : ℕ} (i : Fin (m + 1)) (hi : i.val + 1 < m + 1)
+    (p : ReducedSpace d m i ⟨i.val + 1, hi⟩) :
+    (reducedNormalCoordFlatCLE (d := d) i hi).symm
+        (reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩ p) =
+      reducedCoordInv (d := d) i ⟨i.val + 1, hi⟩
+        (reducedAdjacent_succ_ne i hi) p := by
+  simp [reducedNormalCoordFlatCLE,
+    reducedCoordCLE_symm_apply_eq_reducedCoordInv]
+
+omit [NeZero d] in
+/-- The flattened canonical direction pulls back to the canonical reduced
+imaginary direction. -/
+theorem reducedNormalCoordFlatCLE_symm_canonicalDirection
+    {m : ℕ} (i : Fin (m + 1)) (hi : i.val + 1 < m + 1) :
+    (reducedNormalCoordFlatCLE (d := d) i hi).symm
+        (reducedNormalFlatCanonicalDirection (d := d) i hi) =
+      canonicalReducedDirection (d := d) m := by
+  simp [reducedNormalCoordFlatCLE, reducedNormalFlatCanonicalDirection]
 
 omit [NeZero d] in
 /-- The forward cone transported to flattened reduced normal coordinates. -/
@@ -454,6 +524,135 @@ noncomputable def reducedNormalLowerCanonicalRay
       (ε : ℂ) *
         (reducedNormalFlatCanonicalDirection (d := d) i hi a : ℂ) *
         Complex.I
+
+omit [NeZero d] in
+/-- The complexified inverse reduced-normal chart sends the upper flattened
+canonical ray to the standard positive-height reduced PET ray. -/
+theorem reducedNormalCoordFlatComplexMap_upperCanonicalRay
+    {m : ℕ} (i : Fin (m + 1)) (hi : i.val + 1 < m + 1)
+    (p : ReducedSpace d m i ⟨i.val + 1, hi⟩) (ε : ℝ) :
+    reducedNormalCoordFlatComplexMap (d := d) i hi
+        (reducedNormalUpperCanonicalRay (d := d) i hi p ε) =
+      fun k μ =>
+        (reducedCoordInv (d := d) i ⟨i.val + 1, hi⟩
+          (reducedAdjacent_succ_ne i hi) p k μ : ℂ) +
+          (ε : ℂ) * canonicalReducedDirectionC (d := d) m k μ *
+            Complex.I := by
+  ext k μ
+  have hreal :
+      (fun a =>
+          (reducedNormalUpperCanonicalRay (d := d) i hi p ε a).re) =
+        reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩ p := by
+    ext a
+    simp [reducedNormalUpperCanonicalRay]
+  have himag :
+      (fun a =>
+          (reducedNormalUpperCanonicalRay (d := d) i hi p ε a).im) =
+        ε • reducedNormalFlatCanonicalDirection (d := d) i hi := by
+    ext a
+    simp [reducedNormalUpperCanonicalRay, Pi.smul_apply, mul_assoc]
+  have hflat :=
+    reducedNormalCoordFlatCLE_symm_flatten (d := d) i hi p
+  have hdir :=
+    reducedNormalCoordFlatCLE_symm_canonicalDirection (d := d) i hi
+  have himag_apply :
+      (reducedNormalCoordFlatCLE (d := d) i hi).symm
+          (fun a =>
+            (reducedNormalUpperCanonicalRay (d := d) i hi p ε a).im)
+          k μ =
+        ε * canonicalReducedDirection (d := d) m k μ := by
+    calc
+      (reducedNormalCoordFlatCLE (d := d) i hi).symm
+          (fun a =>
+            (reducedNormalUpperCanonicalRay (d := d) i hi p ε a).im)
+          k μ
+          =
+        (reducedNormalCoordFlatCLE (d := d) i hi).symm
+            (ε • reducedNormalFlatCanonicalDirection (d := d) i hi) k μ := by
+            rw [himag]
+      _ =
+        (ε • (reducedNormalCoordFlatCLE (d := d) i hi).symm
+            (reducedNormalFlatCanonicalDirection (d := d) i hi)) k μ := by
+            rw [map_smul]
+      _ = ε * canonicalReducedDirection (d := d) m k μ := by
+            rw [hdir]
+            simp [Pi.smul_apply]
+  have hreal_apply :
+      (reducedNormalCoordFlatCLE (d := d) i hi).symm
+          (fun a =>
+            (reducedNormalUpperCanonicalRay (d := d) i hi p ε a).re)
+          k μ =
+        reducedCoordInv (d := d) i ⟨i.val + 1, hi⟩
+          (reducedAdjacent_succ_ne i hi) p k μ := by
+    rw [hreal, hflat]
+  simp [reducedNormalCoordFlatComplexMap, hreal_apply, himag_apply,
+    canonicalReducedDirectionC]
+
+omit [NeZero d] in
+/-- The complexified inverse reduced-normal chart sends the lower flattened
+canonical ray to the same reduced point with negative canonical height.  The
+separate sign-flipped branch-data representative is the remaining source-side
+transport issue for arbitrary spectators. -/
+theorem reducedNormalCoordFlatComplexMap_lowerCanonicalRay
+    {m : ℕ} (i : Fin (m + 1)) (hi : i.val + 1 < m + 1)
+    (p : ReducedSpace d m i ⟨i.val + 1, hi⟩) (ε : ℝ) :
+    reducedNormalCoordFlatComplexMap (d := d) i hi
+        (reducedNormalLowerCanonicalRay (d := d) i hi p ε) =
+      fun k μ =>
+        (reducedCoordInv (d := d) i ⟨i.val + 1, hi⟩
+          (reducedAdjacent_succ_ne i hi) p k μ : ℂ) -
+          (ε : ℂ) * canonicalReducedDirectionC (d := d) m k μ *
+            Complex.I := by
+  ext k μ
+  have hreal :
+      (fun a =>
+          (reducedNormalLowerCanonicalRay (d := d) i hi p ε a).re) =
+        reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩ p := by
+    ext a
+    simp [reducedNormalLowerCanonicalRay]
+  have himag :
+      (fun a =>
+          (reducedNormalLowerCanonicalRay (d := d) i hi p ε a).im) =
+        (-ε) • reducedNormalFlatCanonicalDirection (d := d) i hi := by
+    ext a
+    simp [reducedNormalLowerCanonicalRay, Pi.smul_apply, mul_assoc]
+  have hflat :=
+    reducedNormalCoordFlatCLE_symm_flatten (d := d) i hi p
+  have hdir :=
+    reducedNormalCoordFlatCLE_symm_canonicalDirection (d := d) i hi
+  have himag_apply :
+      (reducedNormalCoordFlatCLE (d := d) i hi).symm
+          (fun a =>
+            (reducedNormalLowerCanonicalRay (d := d) i hi p ε a).im)
+          k μ =
+        -ε * canonicalReducedDirection (d := d) m k μ := by
+    calc
+      (reducedNormalCoordFlatCLE (d := d) i hi).symm
+          (fun a =>
+            (reducedNormalLowerCanonicalRay (d := d) i hi p ε a).im)
+          k μ
+          =
+        (reducedNormalCoordFlatCLE (d := d) i hi).symm
+            ((-ε) • reducedNormalFlatCanonicalDirection (d := d) i hi) k μ := by
+            rw [himag]
+      _ =
+        ((-ε) • (reducedNormalCoordFlatCLE (d := d) i hi).symm
+            (reducedNormalFlatCanonicalDirection (d := d) i hi)) k μ := by
+            rw [map_smul]
+      _ = -ε * canonicalReducedDirection (d := d) m k μ := by
+            rw [hdir]
+            simp [Pi.smul_apply]
+  have hreal_apply :
+      (reducedNormalCoordFlatCLE (d := d) i hi).symm
+          (fun a =>
+            (reducedNormalLowerCanonicalRay (d := d) i hi p ε a).re)
+          k μ =
+        reducedCoordInv (d := d) i ⟨i.val + 1, hi⟩
+          (reducedAdjacent_succ_ne i hi) p k μ := by
+    rw [hreal, hflat]
+  simp [reducedNormalCoordFlatComplexMap, hreal_apply, himag_apply,
+    canonicalReducedDirectionC]
+  ring_nf
 
 omit [NeZero d] in
 theorem reducedNormalUpperCanonicalRay_tendsto

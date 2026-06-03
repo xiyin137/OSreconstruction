@@ -415,4 +415,100 @@ theorem os45Figure24_adjacentWick_to_permActCommonEdge_endpointMetricBall
         (d := d) (n := n) (hd := hd) (P := P) hx)
       hW_open hcommonW
 
+/-- Fixed-branch compact-test form of the raw OS I `(4.12)` adjacent seed
+normalization.
+
+If a local adjacent chart is modeled by `extendF ∘ permAct P.τ` and covers the
+selected adjacent Wick seeds over a source window, then its compact-test
+pairing on those seeds is the ordinary Wick pairing.  This is the neutral
+upstream version of the OS412 local transport piece: it uses only the explicit
+carrier/model hypotheses and the forward-tube normalization of the double
+adjacent swap, not Wightman locality or any downstream `Hdiff` consumer. -/
+theorem OS45BHWJostHullData.OS412SeedWindow_adjacentModel_permActWick_pairing_eq_ordinaryWick
+    [NeZero d]
+    {hd : 2 ≤ d} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd n i hi}
+    (_H : BHW.OS45BHWJostHullData (d := d) hd n i hi P)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {U : Set (NPointDomain d n)}
+    (hU_sub : U ⊆ P.V)
+    {Acarrier : Set (Fin n → Fin (d + 1) → ℂ)}
+    {Abranch : (Fin n → Fin (d + 1) → ℂ) → ℂ}
+    (hA_mem :
+      ∀ u ∈ U,
+        BHW.permAct (d := d) P.τ (fun k => wickRotatePoint (u k)) ∈
+          Acarrier)
+    (hA_model :
+      Set.EqOn Abranch
+        (fun z : Fin n → Fin (d + 1) → ℂ =>
+          BHW.extendF (bvt_F OS lgc n)
+            (BHW.permAct (d := d) P.τ z)) Acarrier)
+    (φ : SchwartzNPoint d n)
+    (hφU : tsupport (φ : NPointDomain d n → ℂ) ⊆ U) :
+    ∫ u : NPointDomain d n,
+        Abranch
+          (BHW.permAct (d := d) P.τ
+            (fun k => wickRotatePoint (u k))) * φ u =
+      ∫ u : NPointDomain d n,
+        bvt_F OS lgc n (fun k => wickRotatePoint (u k)) * φ u := by
+  classical
+  have hF_holo :
+      DifferentiableOn ℂ (bvt_F OS lgc n) (BHW.ForwardTube d n) := by
+    simpa [BHW_forwardTube_eq (d := d) (n := n)] using
+      bvt_F_holomorphic (d := d) OS lgc n
+  have hF_lorentz :
+      ∀ (Λ : LorentzLieGroup.RestrictedLorentzGroup d)
+        (z : Fin n → Fin (d + 1) → ℂ), z ∈ BHW.ForwardTube d n →
+        bvt_F OS lgc n
+          (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * z k ν) =
+        bvt_F OS lgc n z := by
+    intro Λ z hz
+    exact bvt_F_restrictedLorentzInvariant_forwardTube
+      (d := d) OS lgc n Λ z
+      ((BHW_forwardTube_eq (d := d) (n := n)) ▸ hz)
+  refine MeasureTheory.integral_congr_ae (Filter.Eventually.of_forall ?_)
+  intro u
+  by_cases hu : u ∈ U
+  · let z : Fin n → Fin (d + 1) → ℂ :=
+      BHW.permAct (d := d) P.τ (fun k => wickRotatePoint (u k))
+    have hzA : z ∈ Acarrier := by
+      simpa [z] using hA_mem u hu
+    have hmodel :
+        Abranch z =
+          BHW.extendF (bvt_F OS lgc n)
+            (BHW.permAct (d := d) P.τ z) :=
+      hA_model hzA
+    have hdouble :
+        BHW.permAct (d := d) P.τ z =
+          fun k => wickRotatePoint (u k) := by
+      ext k μ
+      simp [z, BHW.permAct, P.τ_eq]
+    have hforward :
+        (fun k => wickRotatePoint (u k)) ∈ BHW.ForwardTube d n :=
+      BHW.os45Figure24_ordinaryWick_mem_forwardTube
+        (d := d) (n := n) (hd := hd) (P := P) (hU_sub hu)
+    have hext :
+        BHW.extendF (bvt_F OS lgc n)
+            (fun k => wickRotatePoint (u k)) =
+          bvt_F OS lgc n (fun k => wickRotatePoint (u k)) :=
+      BHW.extendF_eq_on_forwardTube n (bvt_F OS lgc n)
+        hF_holo hF_lorentz (fun k => wickRotatePoint (u k)) hforward
+    have hpoint :
+        Abranch z =
+          bvt_F OS lgc n (fun k => wickRotatePoint (u k)) := by
+      calc
+        Abranch z =
+            BHW.extendF (bvt_F OS lgc n)
+              (BHW.permAct (d := d) P.τ z) := hmodel
+        _ = BHW.extendF (bvt_F OS lgc n)
+              (fun k => wickRotatePoint (u k)) := by rw [hdouble]
+        _ = bvt_F OS lgc n (fun k => wickRotatePoint (u k)) := hext
+    exact congrArg (fun c : ℂ => c * φ u) hpoint
+  · have hφ_zero : φ u = 0 :=
+      image_eq_zero_of_notMem_tsupport
+        (fun hφ_supp => hu (hφU hφ_supp))
+    simp [hφ_zero]
+
 end BHW

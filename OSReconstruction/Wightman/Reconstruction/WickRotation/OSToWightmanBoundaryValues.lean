@@ -355,19 +355,18 @@ branch-difference / boundary-transfer argument, not by any finite-height
 canonical-shell equality.
 
 Active route:
-OS-I source-side branch transfer / common-edge source equality ->
-local moving-source `Hdiff` / horizontal branch-difference packet ->
+OS-I frozen-spectator mixed-tube/EOW branch data on reduced-normal collars ->
 `ReducedLocalAdjacentBoundaryCLMInvariant` ->
 closed-support reduced canonical swap invariance -> this boundary-value
 locality statement.
 
-The paper-facing input shape is the source-side branch-transfer equality, in the
-local `RepresentsDistributionOn 0` / zero-difference source form.  The `Hdiff`
-germ is the Lean transport envelope built from that equality, while the reduced
-sign-flip formulation is downstream reduced-normal bookkeeping rather than a
-replacement theorem-2 gate.  In particular, the next proof-body leaf is the
-OS-I `(4.12)`--`(4.14)` source transfer that produces this zero source
-representation, not another gate between the existing carriers.
+The paper-facing input shape is the OS-I local mixed-tube continuation around
+an arbitrary adjacent-spacelike support point, stated in Lean as
+`AdjacentNormal.ReducedNormalCanonicalRayEOWBranchDataOn` on an open
+reduced-normal collar.  A Figure-2-4/Jost local-edge packet is a valid
+specialization only when that collar is genuinely Jost-localized; it is too
+strong as the blanket theorem-2 producer because it forces the zero-center
+representative into a full Jost patch.
 
 Do not replace that source-transfer proof body with a direct cone-height
 source-side ray to fixed canonical reduced branch shortcut: the OS45

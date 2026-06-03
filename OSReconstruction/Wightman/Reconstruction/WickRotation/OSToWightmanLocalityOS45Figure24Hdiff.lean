@@ -3883,98 +3883,6 @@ private theorem OS45BHWJostHullData.OS412SeedWindow_adjacentModel_trace_at_seed_
         (fun k => wickRotatePoint (x k))
   exact hseed.trans hperm
 
-/-- Fixed-chart compact-test form of the raw `(4.12)` adjacent seed
-normalization.
-
-If a local adjacent chart modeled by `extendF ∘ permAct P.τ` covers the
-selected adjacent Wick seeds over a source window, then its compact-test
-pairing on those seeds is the ordinary Wick pairing.  This is the local
-piece consumed by the later finite source-side branch-transfer partition. -/
-private theorem OS45BHWJostHullData.OS412SeedWindow_adjacentModel_permActWick_pairing_eq_ordinaryWick
-    [NeZero d]
-    {hd : 2 ≤ d} {i : Fin n} {hi : i.val + 1 < n}
-    {P : BHW.OS45Figure24CanonicalSourcePatchData (d := d) hd n i hi}
-    (_H : BHW.OS45BHWJostHullData (d := d) hd n i hi P)
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS)
-    {U : Set (NPointDomain d n)}
-    (hU_sub : U ⊆ P.V)
-    {Aadj : OS45PointedChart d n}
-    (hAadj_mem :
-      ∀ u ∈ U,
-        BHW.permAct (d := d) P.τ (fun k => wickRotatePoint (u k)) ∈
-          Aadj.carrier)
-    (hAadj_model :
-      Set.EqOn Aadj.branch
-        (fun z : Fin n → Fin (d + 1) → ℂ =>
-          BHW.extendF (bvt_F OS lgc n)
-            (BHW.permAct (d := d) P.τ z)) Aadj.carrier)
-    (φ : SchwartzNPoint d n)
-    (hφU : tsupport (φ : NPointDomain d n → ℂ) ⊆ U) :
-    ∫ u : NPointDomain d n,
-        Aadj.branch
-          (BHW.permAct (d := d) P.τ
-            (fun k => wickRotatePoint (u k))) * φ u =
-      ∫ u : NPointDomain d n,
-        bvt_F OS lgc n (fun k => wickRotatePoint (u k)) * φ u := by
-  classical
-  have hF_holo :
-      DifferentiableOn ℂ (bvt_F OS lgc n) (BHW.ForwardTube d n) := by
-    simpa [BHW_forwardTube_eq (d := d) (n := n)] using
-      bvt_F_holomorphic (d := d) OS lgc n
-  have hF_lorentz :
-      ∀ (Λ : LorentzLieGroup.RestrictedLorentzGroup d)
-        (z : Fin n → Fin (d + 1) → ℂ), z ∈ BHW.ForwardTube d n →
-        bvt_F OS lgc n
-          (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * z k ν) =
-        bvt_F OS lgc n z := by
-    intro Λ z hz
-    exact bvt_F_restrictedLorentzInvariant_forwardTube
-      (d := d) OS lgc n Λ z
-      ((BHW_forwardTube_eq (d := d) (n := n)) ▸ hz)
-  refine MeasureTheory.integral_congr_ae (Filter.Eventually.of_forall ?_)
-  intro u
-  by_cases hu : u ∈ U
-  · let z : Fin n → Fin (d + 1) → ℂ :=
-      BHW.permAct (d := d) P.τ (fun k => wickRotatePoint (u k))
-    have hzA : z ∈ Aadj.carrier := by
-      simpa [z] using hAadj_mem u hu
-    have hmodel :
-        Aadj.branch z =
-          BHW.extendF (bvt_F OS lgc n)
-            (BHW.permAct (d := d) P.τ z) :=
-      hAadj_model hzA
-    have hdouble :
-        BHW.permAct (d := d) P.τ z =
-          fun k => wickRotatePoint (u k) := by
-      ext k μ
-      simp [z, BHW.permAct, P.τ_eq]
-    have hforward :
-        (fun k => wickRotatePoint (u k)) ∈ BHW.ForwardTube d n :=
-      BHW.os45Figure24_ordinaryWick_mem_forwardTube
-        (d := d) (n := n) (hd := hd) (P := P) (hU_sub hu)
-    have hext :
-        BHW.extendF (bvt_F OS lgc n)
-            (fun k => wickRotatePoint (u k)) =
-          bvt_F OS lgc n (fun k => wickRotatePoint (u k)) :=
-      BHW.extendF_eq_on_forwardTube n (bvt_F OS lgc n)
-        hF_holo hF_lorentz (fun k => wickRotatePoint (u k)) hforward
-    have hpoint :
-        Aadj.branch z =
-          bvt_F OS lgc n (fun k => wickRotatePoint (u k)) := by
-      calc
-        Aadj.branch z =
-            BHW.extendF (bvt_F OS lgc n)
-              (BHW.permAct (d := d) P.τ z) := hmodel
-        _ = BHW.extendF (bvt_F OS lgc n)
-              (fun k => wickRotatePoint (u k)) := by rw [hdouble]
-        _ = bvt_F OS lgc n (fun k => wickRotatePoint (u k)) := hext
-    exact congrArg (fun c : ℂ => c * φ u) hpoint
-  · have hφ_zero : φ u = 0 :=
-      image_eq_zero_of_notMem_tsupport
-        (fun hφ_supp => hu (hφU hφ_supp))
-    simp [hφ_zero]
-
 private theorem OS45BHWJostHullData.ordinaryWick_pointedChartInWindow
     [NeZero d]
     {hd : 2 ≤ d} {i : Fin n} {hi : i.val + 1 < n}
@@ -5301,258 +5209,6 @@ theorem OS45BHWJostHullData.os45CommonEdge_sourceRepresentsZero_of_sourcePairing
       bvIn bvOut hbvIn_cont hbvOut_cont hsideIn_bvIn
       hsideOut_bvOut (by simpa [E] using h414_integrals)
 
-/-- Initial-overlap ordinary branch data plus the concrete transported adjacent
-Wick pairing give the active local horizontal difference germ.
-
-This is a Path-2 proof-body assembly step, not a new theorem-2 input gate.  The
-ordinary branch, the concrete deterministic adjacent branch
-`extendF ∘ permAct P.τ`, and both common-edge traces are supplied by the checked
-Figure-2-4 initial-overlap chart.  The remaining analytic payload is now the
-paper's actual `(4.12)` seed-to-Wick compact-test transport for that concrete
-adjacent branch; after that pairing is supplied, the proof packages the genuine
-horizontal difference germ `Fadj - Ford`, whose Wick-section pairing vanishes and
-whose common-edge trace is adjacent-minus-ordinary. -/
-theorem os45CommonEdge_localHdiffGerm_of_initialOverlap_adjacentBranch
-    [NeZero d] (hd : 2 ≤ d)
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS)
-    {n : ℕ} {i : Fin n} {hi : i.val + 1 < n}
-    {P : BHW.OS45Figure24CanonicalSourcePatchData
-      (d := d) hd n i hi}
-    {U : Set (NPointDomain d n)}
-    (hU_open : IsOpen U)
-    (hU_compact : IsCompact (closure U))
-    (hU_connected : IsConnected U)
-    (hU_closure : closure U ⊆ P.V)
-    (htransported_wick_pairing :
-      ∀ φ : SchwartzNPoint d n,
-        HasCompactSupport (φ : NPointDomain d n → ℂ) →
-        tsupport (φ : NPointDomain d n → ℂ) ⊆ U →
-        ∫ u : NPointDomain d n,
-          BHW.extendF (bvt_F OS lgc n)
-            (BHW.permAct (d := d) P.τ
-              (fun k => wickRotatePoint (u k))) * φ u =
-        ∫ u : NPointDomain d n,
-          bvt_F OS lgc n (fun k => wickRotatePoint (u k)) * φ u) :
-    ∃ Ucx : Set (Fin n → Fin (d + 1) → ℂ),
-      IsOpen Ucx ∧
-      IsConnected Ucx ∧
-      (∀ u ∈ U, (fun k => wickRotatePoint (u k)) ∈ Ucx) ∧
-      (∀ u ∈ U,
-        (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
-          (BHW.realEmbed
-            (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
-              (1 : Equiv.Perm (Fin n)) u)) ∈ Ucx) ∧
-      ∃ Hdiff : (Fin n → Fin (d + 1) → ℂ) → ℂ,
-        DifferentiableOn ℂ Hdiff Ucx ∧
-        (∀ φ : SchwartzNPoint d n,
-          HasCompactSupport (φ : NPointDomain d n → ℂ) →
-          tsupport (φ : NPointDomain d n → ℂ) ⊆ U →
-          ∫ u : NPointDomain d n,
-            Hdiff (fun k => wickRotatePoint (u k)) * φ u = 0) ∧
-        (∀ u ∈ U,
-          Hdiff
-            ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
-              (BHW.realEmbed
-                (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
-                  (1 : Equiv.Perm (Fin n)) u))) =
-            BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
-                (P.τ.symm * (1 : Equiv.Perm (Fin n)))
-                (BHW.realEmbed
-                  (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
-                    (1 : Equiv.Perm (Fin n)) u)) -
-              BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
-                (1 : Equiv.Perm (Fin n))
-                (BHW.realEmbed
-                  (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
-                    (1 : Equiv.Perm (Fin n)) u))) := by
-  classical
-  rcases
-      BHW.os45CommonEdge_initialSectorOverlap_traces_except_adjacentWick
-        (d := d) hd OS lgc (P := P)
-        (U := U) hU_compact hU_connected hU_closure with
-    ⟨Ucx, Ford, Fadj, hUcx_open, htail⟩
-  rcases htail with ⟨hUcx_connected, htail⟩
-  rcases htail with ⟨hwick_mem, htail⟩
-  rcases htail with ⟨hcommon_mem, htail⟩
-  rcases htail with ⟨_hUcx_sub, htail⟩
-  rcases htail with ⟨hFord_holo, htail⟩
-  rcases htail with ⟨hFadj_holo, htail⟩
-  rcases htail with ⟨hFord_wick, htail⟩
-  rcases htail with ⟨hFadj_wick_extendF, htail⟩
-  rcases htail with ⟨hFord_common, htail⟩
-  rcases htail with ⟨hFadj_common, _hFadj0_seed_trace⟩
-  have hwick_pairing :
-      ∀ φ : SchwartzNPoint d n,
-        HasCompactSupport (φ : NPointDomain d n → ℂ) →
-        tsupport (φ : NPointDomain d n → ℂ) ⊆ U →
-        ∫ u : NPointDomain d n,
-          Fadj (fun k => wickRotatePoint (u k)) * φ u =
-        ∫ u : NPointDomain d n,
-          Ford (fun k => wickRotatePoint (u k)) * φ u := by
-    intro φ hφ_compact hφU
-    calc
-      ∫ u : NPointDomain d n,
-          Fadj (fun k => wickRotatePoint (u k)) * φ u =
-        ∫ u : NPointDomain d n,
-          BHW.extendF (bvt_F OS lgc n)
-            (BHW.permAct (d := d) P.τ
-              (fun k => wickRotatePoint (u k))) * φ u := by
-          refine MeasureTheory.integral_congr_ae (Filter.Eventually.of_forall ?_)
-          intro u
-          by_cases hu : u ∈ U
-          · exact congrArg (fun c : ℂ => c * φ u)
-              (hFadj_wick_extendF u hu)
-          · have hφ_zero : φ u = 0 :=
-              image_eq_zero_of_notMem_tsupport
-                (fun hφ_supp => hu (hφU hφ_supp))
-            simp [hφ_zero]
-      _ =
-        ∫ u : NPointDomain d n,
-          bvt_F OS lgc n (fun k => wickRotatePoint (u k)) * φ u :=
-          htransported_wick_pairing φ hφ_compact hφU
-      _ =
-        ∫ u : NPointDomain d n,
-          Ford (fun k => wickRotatePoint (u k)) * φ u := by
-          refine MeasureTheory.integral_congr_ae (Filter.Eventually.of_forall ?_)
-          intro u
-          by_cases hu : u ∈ U
-          · exact congrArg (fun c : ℂ => c * φ u) (hFord_wick u hu).symm
-          · have hφ_zero : φ u = 0 :=
-              image_eq_zero_of_notMem_tsupport
-                (fun hφ_supp => hu (hφU hφ_supp))
-            simp [hφ_zero]
-  let Hdiff : (Fin n → Fin (d + 1) → ℂ) → ℂ := fun z => Fadj z - Ford z
-  have hHdiff_holo : DifferentiableOn ℂ Hdiff Ucx :=
-    hFadj_holo.sub hFord_holo
-  refine
-    ⟨Ucx, hUcx_open, hUcx_connected, hwick_mem, hcommon_mem,
-      Hdiff, hHdiff_holo, ?_, ?_⟩
-  · intro φ hφ_compact hφU
-    let wick : NPointDomain d n → Fin n → Fin (d + 1) → ℂ :=
-      fun u => fun k => wickRotatePoint (u k)
-    have hwick_cont : Continuous wick := by
-      simpa [wick] using BHW.continuous_wickRotateRealConfig (d := d) (n := n)
-    have hFadj_cont :
-        ContinuousOn (fun u : NPointDomain d n => Fadj (wick u)) U := by
-      exact hFadj_holo.continuousOn.comp hwick_cont.continuousOn
-        (by intro u hu; simpa [wick] using hwick_mem u hu)
-    have hFord_cont :
-        ContinuousOn (fun u : NPointDomain d n => Ford (wick u)) U := by
-      exact hFord_holo.continuousOn.comp hwick_cont.continuousOn
-        (by intro u hu; simpa [wick] using hwick_mem u hu)
-    have hFadj_int :
-        Integrable
-          (fun u : NPointDomain d n => Fadj (wick u) * φ u) :=
-      SCV.integrable_continuousOn_mul_schwartz_of_supportsInOpen
-        (H := fun u : NPointDomain d n => Fadj (wick u))
-        (ψ := φ) (U := U) hU_open hFadj_cont
-        ⟨hφ_compact, hφU⟩
-    have hFord_int :
-        Integrable
-          (fun u : NPointDomain d n => Ford (wick u) * φ u) :=
-      SCV.integrable_continuousOn_mul_schwartz_of_supportsInOpen
-        (H := fun u : NPointDomain d n => Ford (wick u))
-        (ψ := φ) (U := U) hU_open hFord_cont
-        ⟨hφ_compact, hφU⟩
-    calc
-      ∫ u : NPointDomain d n, Hdiff (fun k => wickRotatePoint (u k)) * φ u
-          =
-        ∫ u : NPointDomain d n,
-          Fadj (wick u) * φ u - Ford (wick u) * φ u := by
-            refine MeasureTheory.integral_congr_ae
-              (Filter.Eventually.of_forall ?_)
-            intro u
-            simp [Hdiff, wick, sub_mul]
-      _ =
-        (∫ u : NPointDomain d n, Fadj (wick u) * φ u) -
-          ∫ u : NPointDomain d n, Ford (wick u) * φ u :=
-            MeasureTheory.integral_sub hFadj_int hFord_int
-      _ = 0 := by
-            rw [hwick_pairing φ hφ_compact hφU]
-            exact sub_self _
-  · intro u hu
-    change
-      Fadj
-        ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
-          (BHW.realEmbed
-            (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
-              (1 : Equiv.Perm (Fin n)) u))) -
-        Ford
-          ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
-            (BHW.realEmbed
-              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
-                (1 : Equiv.Perm (Fin n)) u))) =
-        BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
-            (P.τ.symm * (1 : Equiv.Perm (Fin n)))
-            (BHW.realEmbed
-              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
-                (1 : Equiv.Perm (Fin n)) u)) -
-          BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
-            (1 : Equiv.Perm (Fin n))
-            (BHW.realEmbed
-              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
-                (1 : Equiv.Perm (Fin n)) u))
-    rw [hFadj_common u hu, hFord_common u hu]
-
-/-- The active source-representation handoff from the concrete OS-I adjacent
-branch transport.
-
-Once the `(4.12)` seed-to-Wick compact-test transport has supplied the
-deterministic adjacent branch pairing used by
-`os45CommonEdge_localHdiffGerm_of_initialOverlap_adjacentBranch`, the checked
-horizontal difference germ immediately represents the zero source
-distribution on the same collar.  This keeps the theorem-2 Path 2 input in the
-paper-facing `RepresentsDistributionOn 0` form and leaves the remaining
-analytic leaf as exactly the transported Wick pairing hypothesis below. -/
-theorem os45CommonEdge_sourceRepresentsZero_of_initialOverlap_adjacentBranch
-    [NeZero d] (hd : 2 ≤ d)
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS)
-    {n : ℕ} {i : Fin n} {hi : i.val + 1 < n}
-    {P : BHW.OS45Figure24CanonicalSourcePatchData
-      (d := d) hd n i hi}
-    {U : Set (NPointDomain d n)}
-    (hU_open : IsOpen U)
-    (hU_compact : IsCompact (closure U))
-    (hU_connected : IsConnected U)
-    (hU_closure : closure U ⊆ P.V)
-    (htransported_wick_pairing :
-      ∀ φ : SchwartzNPoint d n,
-        HasCompactSupport (φ : NPointDomain d n → ℂ) →
-        tsupport (φ : NPointDomain d n → ℂ) ⊆ U →
-        ∫ u : NPointDomain d n,
-          BHW.extendF (bvt_F OS lgc n)
-            (BHW.permAct (d := d) P.τ
-              (fun k => wickRotatePoint (u k))) * φ u =
-        ∫ u : NPointDomain d n,
-          bvt_F OS lgc n (fun k => wickRotatePoint (u k)) * φ u) :
-    SCV.RepresentsDistributionOn
-      (0 : SchwartzMap (NPointDomain d n) ℂ →L[ℂ] ℂ)
-      (fun u : NPointDomain d n =>
-        BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
-            (P.τ.symm * (1 : Equiv.Perm (Fin n)))
-            (BHW.realEmbed
-              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
-                (1 : Equiv.Perm (Fin n)) u)) -
-          BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
-            (1 : Equiv.Perm (Fin n))
-            (BHW.realEmbed
-              (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
-                (1 : Equiv.Perm (Fin n)) u))) U := by
-  classical
-  rcases
-      BHW.os45CommonEdge_localHdiffGerm_of_initialOverlap_adjacentBranch
-        (d := d) hd OS lgc (P := P) hU_open hU_compact
-        hU_connected hU_closure htransported_wick_pairing with
-    ⟨Ucx, hUcx_open, hUcx_connected, hwick_mem, hcommon_mem,
-      Hdiff, hHdiff_holo, hwick_pairing_zero, hcommon_trace⟩
-  exact
-    BHW.os45CommonEdge_localHorizontalDifference_representsZero_of_germ
-      (d := d) hd OS lgc (P := P) U hU_open
-      hU_connected.nonempty Ucx Hdiff hUcx_open hUcx_connected
-      hwick_mem hcommon_mem hHdiff_holo hwick_pairing_zero hcommon_trace
-
 /-- Production entry for the OS-I `(4.12)`--`(4.14)` source-side transport.
 
 The live proof body is the monograph part-(b) common-edge step: prove equality
@@ -5570,7 +5226,7 @@ theorem OS45BHWJostHullData.os45CommonEdge_sourceRepresentsZero_of_OS412_sourceS
     (hU_compact : IsCompact (closure U))
     (hU_connected : IsConnected U)
     (hU_closure : closure U ⊆ P.V)
-    (D : BHW.OS45Figure24SourceCutoffData P) :
+    (_D : BHW.OS45Figure24SourceCutoffData P) :
     SCV.RepresentsDistributionOn
       (0 : SchwartzMap (NPointDomain d n) ℂ →L[ℂ] ℂ)
       (fun u : NPointDomain d n =>
@@ -5676,6 +5332,49 @@ theorem OS45BHWJostHullData.os45CommonEdge_sourceRepresentsZero_of_OS412_sourceS
       (by simpa [E, e] using hsideIn_bvIn)
       (by simpa [E, e] using hsideOut_bvOut)
       (by simpa [E, e] using h414_integrals)
+
+/-- Pointed source-window form of
+`OS45BHWJostHullData.os45CommonEdge_sourceRepresentsZero_of_OS412_sourceSide`.
+
+Once a reduced-normal representative has been placed in a Figure-2-4 source
+patch, the checked local topology supplies a connected open source window with
+compact closure inside that patch.  This removes the window bookkeeping from
+the theorem-2 producer; the remaining payload is the point-centered patch/hull
+placement and the two source-side ray transfers. -/
+theorem OS45BHWJostHullData.exists_sourceWindow_sourceRepresentsZero_of_OS412_sourceSide
+    [NeZero d]
+    {hd : 2 ≤ d} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData (d := d) hd n i hi}
+    (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (D : BHW.OS45Figure24SourceCutoffData P)
+    {u0 : NPointDomain d n}
+    (hu0 : u0 ∈ P.V) :
+    ∃ U : Set (NPointDomain d n),
+      IsOpen U ∧ U ⊆ P.V ∧ u0 ∈ U ∧
+      SCV.RepresentsDistributionOn
+        (0 : SchwartzMap (NPointDomain d n) ℂ →L[ℂ] ℂ)
+        (fun u : NPointDomain d n =>
+          BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+              (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+              (BHW.realEmbed
+                (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                  (1 : Equiv.Perm (Fin n)) u)) -
+            BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+              (1 : Equiv.Perm (Fin n))
+              (BHW.realEmbed
+                (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                  (1 : Equiv.Perm (Fin n)) u))) U := by
+  classical
+  rcases exists_connected_open_precompact_subset P.V_open hu0 with
+    ⟨U, hU_open, hU_connected, hu0U, hU_compact, hU_closure⟩
+  refine ⟨U, hU_open, ?_, hu0U, ?_⟩
+  · intro u hu
+    exact hU_closure (subset_closure hu)
+  · exact
+      H.os45CommonEdge_sourceRepresentsZero_of_OS412_sourceSide
+        OS lgc hU_open hU_compact hU_connected hU_closure D
 
 /-- Compact Figure-2-4 edge equality supplies the active source-zero
 representation on a local initial-overlap collar.
