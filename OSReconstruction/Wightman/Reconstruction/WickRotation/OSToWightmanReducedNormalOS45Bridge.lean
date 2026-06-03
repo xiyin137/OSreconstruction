@@ -12418,6 +12418,149 @@ theorem eventually_sourceSide_coneHeight_lower_extendF_eq_reducedExtension_os45R
                   (reducedNormalLowerCanonicalRay (d := d) i hi p ε)))))) := by
       rw [hred]
 
+/-- Upper finite-height source-side transfer, reduced to the Fred-level
+normalization of the reduced PET extension on the OS45 quarter-turned ray.
+
+This is the source-side analogue of
+`tendsto_reducedNormalUpper_os45Branch_sub_canonicalReducedBranch_of_reducedExtension_os45Ray_normalization`:
+the checked finite-height quotienting theorem supplies the `extendF =
+Fred.toFun` replacement, leaving exactly the analytic OS45 ray normalization
+as the remaining hypothesis. -/
+theorem tendsto_sourceSide_coneHeight_upper_extendF_sub_canonicalReducedBranch_of_reducedExtension_os45Ray_normalization
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {m : ℕ} {i : Fin (m + 1)} {hi : i.val + 1 < m + 1}
+    {hd : 2 ≤ d}
+    (P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd (m + 1) i hi)
+    (Fred : BHW.ReducedBHWExtensionData (d := d) (n := m + 1)
+      (bvt_F_reduced (d := d) OS lgc m))
+    (p : ReducedSpace d m i ⟨i.val + 1, hi⟩)
+    (hpP :
+      coordInv (d := d) i ⟨i.val + 1, hi⟩
+          (reducedAdjacent_succ_ne i hi)
+          ((0 : SpacetimeDim d), p) ∈ P.V)
+    (hFred_normalization :
+      Filter.Tendsto
+        (fun ε : ℝ =>
+          Fred.toFun
+            (BHW.reducedDiffMap (m + 1) d
+              ((BHW.os45QuarterTurnCLE (d := d) (n := m + 1)).symm
+                (BHW.unflattenCfg (m + 1) d
+                  (reducedNormalToOS45CommonEdgeComplexCLM
+                    (d := d) i hi
+                    (reducedNormalUpperCanonicalRay (d := d) i hi p ε))))) -
+            canonicalReducedBranch (d := d) OS lgc m ε
+              (reducedCoordInv (d := d) i ⟨i.val + 1, hi⟩
+                (reducedAdjacent_succ_ne i hi) p))
+        (nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)) : Filter ℝ)
+        (nhds 0)) :
+    Filter.Tendsto
+      (fun ε : ℝ =>
+        let ηc : BHW.OS45FlatCommonChartReal d (m + 1) :=
+          BHW.os45CommonEdgeFlatCLE d (m + 1)
+            (1 : Equiv.Perm (Fin (m + 1)))
+            (canonicalForwardConeDirection (d := d) (m + 1))
+        let x0 : BHW.OS45FlatCommonChartReal d (m + 1) :=
+          reducedNormalToOS45CommonEdgeFlatCLM (d := d) i hi
+            (reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩ p)
+        let uε : NPointDomain d (m + 1) :=
+          (BHW.os45CommonEdgeFlatCLE d (m + 1)
+            (1 : Equiv.Perm (Fin (m + 1)))).symm (x0 - ε • ηc)
+        BHW.extendF (bvt_F OS lgc (m + 1))
+            (BHW.os45FlatCommonChartSourceSide d (m + 1)
+              (1 : Equiv.Perm (Fin (m + 1))) (1 : ℝ) ε ηc uε) -
+          canonicalReducedBranch (d := d) OS lgc m ε
+            (reducedCoordInv (d := d) i ⟨i.val + 1, hi⟩
+              (reducedAdjacent_succ_ne i hi) p))
+      (nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)) : Filter ℝ)
+      (nhds 0) := by
+  have htransport :=
+    eventually_sourceSide_coneHeight_upper_extendF_eq_reducedExtension_os45Ray
+      (d := d) OS lgc P Fred p hpP
+  refine Filter.Tendsto.congr' ?_ hFred_normalization
+  filter_upwards [htransport] with ε hε
+  simpa using
+    congrArg
+      (fun z : ℂ =>
+        z - canonicalReducedBranch (d := d) OS lgc m ε
+          (reducedCoordInv (d := d) i ⟨i.val + 1, hi⟩
+            (reducedAdjacent_succ_ne i hi) p))
+      hε.symm
+
+/-- Lower finite-height source-side transfer, reduced to the Fred-level
+normalization of the reduced PET extension on the lower OS45 quarter-turned
+ray after the adjacent branch permutation. -/
+theorem tendsto_sourceSide_coneHeight_lower_extendF_sub_canonicalReducedBranch_of_reducedExtension_os45Ray_normalization
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {m : ℕ} {i : Fin (m + 1)} {hi : i.val + 1 < m + 1}
+    {hd : 2 ≤ d}
+    (P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd (m + 1) i hi)
+    (Fred : BHW.ReducedBHWExtensionData (d := d) (n := m + 1)
+      (bvt_F_reduced (d := d) OS lgc m))
+    (p : ReducedSpace d m i ⟨i.val + 1, hi⟩)
+    (hpP :
+      coordInv (d := d) i ⟨i.val + 1, hi⟩
+          (reducedAdjacent_succ_ne i hi)
+          ((0 : SpacetimeDim d), p) ∈ P.V)
+    (hFred_normalization :
+      Filter.Tendsto
+        (fun ε : ℝ =>
+          Fred.toFun
+            (BHW.reducedDiffMap (m + 1) d
+              (BHW.permAct (d := d)
+                ((P.τ.symm * (1 : Equiv.Perm (Fin (m + 1)))).symm)
+                ((BHW.os45QuarterTurnCLE (d := d) (n := m + 1)).symm
+                  (BHW.unflattenCfg (m + 1) d
+                    (reducedNormalToOS45CommonEdgeComplexCLM
+                      (d := d) i hi
+                      (reducedNormalLowerCanonicalRay
+                        (d := d) i hi p ε)))))) -
+            canonicalReducedBranch (d := d) OS lgc m ε
+              (reducedCoordInv (d := d) i ⟨i.val + 1, hi⟩
+                (reducedAdjacent_succ_ne i hi)
+                (reducedSignFlip (d := d) i ⟨i.val + 1, hi⟩ p)))
+        (nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)) : Filter ℝ)
+        (nhds 0)) :
+    Filter.Tendsto
+      (fun ε : ℝ =>
+        let ηc : BHW.OS45FlatCommonChartReal d (m + 1) :=
+          BHW.os45CommonEdgeFlatCLE d (m + 1)
+            (1 : Equiv.Perm (Fin (m + 1)))
+            (canonicalForwardConeDirection (d := d) (m + 1))
+        let x0 : BHW.OS45FlatCommonChartReal d (m + 1) :=
+          reducedNormalToOS45CommonEdgeFlatCLM (d := d) i hi
+            (reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩ p)
+        let uε : NPointDomain d (m + 1) :=
+          (BHW.os45CommonEdgeFlatCLE d (m + 1)
+            (1 : Equiv.Perm (Fin (m + 1)))).symm (x0 + ε • ηc)
+        BHW.extendF (bvt_F OS lgc (m + 1))
+            (BHW.permAct (d := d)
+              ((P.τ.symm * (1 : Equiv.Perm (Fin (m + 1)))).symm)
+              (BHW.os45FlatCommonChartSourceSide d (m + 1)
+                (1 : Equiv.Perm (Fin (m + 1))) (-1 : ℝ) ε ηc uε)) -
+          canonicalReducedBranch (d := d) OS lgc m ε
+            (reducedCoordInv (d := d) i ⟨i.val + 1, hi⟩
+              (reducedAdjacent_succ_ne i hi)
+              (reducedSignFlip (d := d) i ⟨i.val + 1, hi⟩ p)))
+      (nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)) : Filter ℝ)
+      (nhds 0) := by
+  have htransport :=
+    eventually_sourceSide_coneHeight_lower_extendF_eq_reducedExtension_os45Ray
+      (d := d) OS lgc P Fred p hpP
+  refine Filter.Tendsto.congr' ?_ hFred_normalization
+  filter_upwards [htransport] with ε hε
+  simpa using
+    congrArg
+      (fun z : ℂ =>
+        z - canonicalReducedBranch (d := d) OS lgc m ε
+          (reducedCoordInv (d := d) i ⟨i.val + 1, hi⟩
+            (reducedAdjacent_succ_ne i hi)
+            (reducedSignFlip (d := d) i ⟨i.val + 1, hi⟩ p)))
+      hε.symm
+
 /-- Upper reduced-normal OS45 branch transfer, reduced to the analytic
 normalization of the reduced PET extension on the OS45 quarter-turned ray.
 
@@ -12534,6 +12677,231 @@ theorem tendsto_reducedNormalLower_os45Branch_sub_canonicalReducedBranch_of_redu
         (reducedNormalLowerCanonicalRay (d := d) i hi p ε))
       hΩε
   rw [hbranch]
+
+/-- Local Hdiff sign-flip handoff with only the Fred-level OS45 ray
+normalizations left as hypotheses.
+
+The local Hdiff germ supplies the common-boundary EOW comparison.  The two
+branch-transfer hypotheses needed by that comparison are produced here from
+the checked OS45 branch-domain topology plus the stated Fred-level
+carrier-to-canonical normalizations. -/
+theorem reducedNormalSignFlip_pointwise_of_OS45HdiffGerm_fred_normalization
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {m : ℕ} {i : Fin (m + 1)} {hi : i.val + 1 < m + 1}
+    {hd : 2 ≤ d}
+    (P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd (m + 1) i hi)
+    (U : Set (NPointDomain d (m + 1)))
+    (hU_open : IsOpen U)
+    (hU_sub : U ⊆ P.V)
+    (hU_nonempty : U.Nonempty)
+    (p : ReducedSpace d m i ⟨i.val + 1, hi⟩)
+    (hpU :
+      coordInv (d := d) i ⟨i.val + 1, hi⟩
+          (reducedAdjacent_succ_ne i hi)
+          ((0 : SpacetimeDim d), p) ∈ U)
+    (Fred : BHW.ReducedBHWExtensionData (d := d) (n := m + 1)
+      (bvt_F_reduced (d := d) OS lgc m))
+    (Ucx : Set (Fin (m + 1) → Fin (d + 1) → ℂ))
+    (Hdiff : (Fin (m + 1) → Fin (d + 1) → ℂ) → ℂ)
+    (hUcx_open : IsOpen Ucx)
+    (hUcx_connected : IsConnected Ucx)
+    (hwick_mem :
+      ∀ u ∈ U, (fun k => wickRotatePoint (u k)) ∈ Ucx)
+    (hcommon_mem :
+      ∀ u ∈ U,
+        (BHW.os45QuarterTurnCLE (d := d) (n := m + 1)).symm
+          (BHW.realEmbed
+            (BHW.os45CommonEdgeRealPoint (d := d) (n := m + 1)
+              (1 : Equiv.Perm (Fin (m + 1))) u)) ∈ Ucx)
+    (hHdiff_holo : DifferentiableOn ℂ Hdiff Ucx)
+    (hwick_pairing_zero :
+      ∀ φ : SchwartzNPoint d (m + 1),
+        HasCompactSupport (φ : NPointDomain d (m + 1) → ℂ) →
+        tsupport (φ : NPointDomain d (m + 1) → ℂ) ⊆ U →
+        ∫ u : NPointDomain d (m + 1),
+          Hdiff (fun k => wickRotatePoint (u k)) * φ u = 0)
+    (hcommon_trace :
+      ∀ u ∈ U,
+        Hdiff
+          ((BHW.os45QuarterTurnCLE (d := d) (n := m + 1)).symm
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := m + 1)
+                (1 : Equiv.Perm (Fin (m + 1))) u))) =
+          BHW.os45PulledRealBranch (d := d) (n := m + 1) OS lgc
+              (P.τ.symm * (1 : Equiv.Perm (Fin (m + 1))))
+              (BHW.realEmbed
+                (BHW.os45CommonEdgeRealPoint (d := d) (n := m + 1)
+                  (1 : Equiv.Perm (Fin (m + 1))) u)) -
+            BHW.os45PulledRealBranch (d := d) (n := m + 1) OS lgc
+              (1 : Equiv.Perm (Fin (m + 1)))
+              (BHW.realEmbed
+                (BHW.os45CommonEdgeRealPoint (d := d) (n := m + 1)
+                  (1 : Equiv.Perm (Fin (m + 1))) u)))
+    (hplus_fred_normalization :
+      Filter.Tendsto
+        (fun ε : ℝ =>
+          Fred.toFun
+            (BHW.reducedDiffMap (m + 1) d
+              ((BHW.os45QuarterTurnCLE (d := d) (n := m + 1)).symm
+                (BHW.unflattenCfg (m + 1) d
+                  (reducedNormalToOS45CommonEdgeComplexCLM
+                    (d := d) i hi
+                    (reducedNormalUpperCanonicalRay (d := d) i hi p ε))))) -
+            canonicalReducedBranch (d := d) OS lgc m ε
+              (reducedCoordInv (d := d) i ⟨i.val + 1, hi⟩
+                (reducedAdjacent_succ_ne i hi) p))
+        (nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)) : Filter ℝ)
+        (nhds 0))
+    (hminus_fred_normalization :
+      Filter.Tendsto
+        (fun ε : ℝ =>
+          Fred.toFun
+            (BHW.reducedDiffMap (m + 1) d
+              (BHW.permAct (d := d)
+                ((P.τ.symm * (1 : Equiv.Perm (Fin (m + 1)))).symm)
+                ((BHW.os45QuarterTurnCLE (d := d) (n := m + 1)).symm
+                  (BHW.unflattenCfg (m + 1) d
+                    (reducedNormalToOS45CommonEdgeComplexCLM
+                      (d := d) i hi
+                      (reducedNormalLowerCanonicalRay
+                        (d := d) i hi p ε)))))) -
+            canonicalReducedBranch (d := d) OS lgc m ε
+              (reducedCoordInv (d := d) i ⟨i.val + 1, hi⟩
+                (reducedAdjacent_succ_ne i hi)
+                (reducedSignFlip (d := d) i ⟨i.val + 1, hi⟩ p)))
+        (nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)) : Filter ℝ)
+        (nhds 0)) :
+    Filter.Tendsto
+      (fun ε : ℝ =>
+        canonicalReducedBranch (d := d) OS lgc m ε
+            (reducedCoordInv (d := d) i ⟨i.val + 1, hi⟩
+              (reducedAdjacent_succ_ne i hi)
+              (reducedSignFlip (d := d) i ⟨i.val + 1, hi⟩ p)) -
+          canonicalReducedBranch (d := d) OS lgc m ε
+            (reducedCoordInv (d := d) i ⟨i.val + 1, hi⟩
+              (reducedAdjacent_succ_ne i hi) p))
+      (nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)) : Filter ℝ)
+      (nhds 0) := by
+  let j : Fin (m + 1) := ⟨i.val + 1, hi⟩
+  let σ0 : Equiv.Perm (Fin (m + 1)) := 1
+  let σadj : Equiv.Perm (Fin (m + 1)) :=
+    P.τ.symm * (1 : Equiv.Perm (Fin (m + 1)))
+  let L : SCV.ComplexChartSpace ((d + 1) +
+      Fintype.card (SpectatorIndex (m + 1) i j) * (d + 1)) →L[ℂ]
+        BHW.OS45FlatCommonChartSpace d (m + 1) :=
+    reducedNormalToOS45CommonEdgeComplexCLM (d := d) i hi
+  let xflat :
+      Fin ((d + 1) +
+        Fintype.card (SpectatorIndex (m + 1) i j) * (d + 1)) → ℝ :=
+    reducedNormalFlattenCLE (d := d) i j p
+  have hx_source :
+      xflat ∈ reducedNormalOS45SourcePreimage (d := d) i hi U := by
+    simpa [xflat, j] using
+      (reducedNormalFlatten_mem_reducedNormalOS45SourcePreimage_iff
+        (d := d) i hi U p).2 hpU
+  have hbase_plus :
+      L (SCV.realEmbed xflat) ∈
+        BHW.os45FlatCommonChartOmega d (m + 1) σ0 := by
+    have hL :
+        L (SCV.realEmbed xflat) =
+          SCV.realEmbed
+            (reducedNormalToOS45CommonEdgeFlatCLM (d := d) i hi xflat) := by
+      simpa [L, xflat, j] using
+        reducedNormalToOS45CommonEdgeComplexCLM_realEmbed
+          (d := d) i hi xflat
+    rw [hL]
+    simpa [σ0, SCV.realEmbed] using
+      reducedNormalToOS45CommonEdgeFlatCLM_real_mem_omega_id_of_sourcePreimage
+        (d := d) hd (P := P) hU_sub hx_source
+  have hbase_minus :
+      L (SCV.realEmbed xflat) ∈
+        BHW.os45FlatCommonChartOmega d (m + 1) σadj := by
+    have hL :
+        L (SCV.realEmbed xflat) =
+          SCV.realEmbed
+            (reducedNormalToOS45CommonEdgeFlatCLM (d := d) i hi xflat) := by
+      simpa [L, xflat, j] using
+        reducedNormalToOS45CommonEdgeComplexCLM_realEmbed
+          (d := d) i hi xflat
+    rw [hL]
+    simpa [σadj, SCV.realEmbed] using
+      reducedNormalToOS45CommonEdgeFlatCLM_real_mem_omega_adjacent_of_sourcePreimage
+        (d := d) hd (P := P) hU_sub hx_source
+  have hΩplus :
+      ∀ᶠ ε : ℝ in nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)),
+        reducedNormalToOS45CommonEdgeComplexCLM
+            (d := d) i hi
+            (reducedNormalUpperCanonicalRay (d := d) i hi p ε) ∈
+          BHW.os45FlatCommonChartOmega d (m + 1) σ0 := by
+    have hLcont : Continuous fun γ => L γ := L.continuous
+    have hγ := reducedNormalUpperCanonicalRay_tendsto (d := d) i hi p
+    have hlim := hLcont.tendsto _ |>.comp hγ
+    have hopen : IsOpen (BHW.os45FlatCommonChartOmega d (m + 1) σ0) :=
+      BHW.isOpen_os45FlatCommonChartOmega d (m + 1) σ0
+    simpa [L, xflat, j] using hlim (hopen.mem_nhds hbase_plus)
+  have hΩminus :
+      ∀ᶠ ε : ℝ in nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)),
+        reducedNormalToOS45CommonEdgeComplexCLM
+            (d := d) i hi
+            (reducedNormalLowerCanonicalRay (d := d) i hi p ε) ∈
+          BHW.os45FlatCommonChartOmega d (m + 1) σadj := by
+    have hLcont : Continuous fun γ => L γ := L.continuous
+    have hγ := reducedNormalLowerCanonicalRay_tendsto (d := d) i hi p
+    have hlim := hLcont.tendsto _ |>.comp hγ
+    have hopen : IsOpen (BHW.os45FlatCommonChartOmega d (m + 1) σadj) :=
+      BHW.isOpen_os45FlatCommonChartOmega d (m + 1) σadj
+    simpa [L, xflat, j] using hlim (hopen.mem_nhds hbase_minus)
+  have hplus_fred :
+      Filter.Tendsto
+        (fun ε : ℝ =>
+          Fred.toFun
+              (BHW.reducedDiffMap (m + 1) d
+                (BHW.permAct (d := d) σ0.symm
+                  ((BHW.os45QuarterTurnCLE (d := d) (n := m + 1)).symm
+                    (BHW.unflattenCfg (m + 1) d
+                      (reducedNormalToOS45CommonEdgeComplexCLM
+                        (d := d) i hi
+                        (reducedNormalUpperCanonicalRay
+                          (d := d) i hi p ε)))))) -
+            canonicalReducedBranch (d := d) OS lgc m ε
+              (reducedCoordInv (d := d) i j
+                (reducedAdjacent_succ_ne i hi) p))
+        (nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)) : Filter ℝ)
+        (nhds 0) := by
+    simpa [σ0, BHW.permAct, j] using hplus_fred_normalization
+  have hminus_fred :
+      Filter.Tendsto
+        (fun ε : ℝ =>
+          Fred.toFun
+              (BHW.reducedDiffMap (m + 1) d
+                (BHW.permAct (d := d) σadj.symm
+                  ((BHW.os45QuarterTurnCLE (d := d) (n := m + 1)).symm
+                    (BHW.unflattenCfg (m + 1) d
+                      (reducedNormalToOS45CommonEdgeComplexCLM
+                        (d := d) i hi
+                        (reducedNormalLowerCanonicalRay
+                          (d := d) i hi p ε)))))) -
+            canonicalReducedBranch (d := d) OS lgc m ε
+              (reducedCoordInv (d := d) i j
+                (reducedAdjacent_succ_ne i hi)
+                (reducedSignFlip (d := d) i j p)))
+        (nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)) : Filter ℝ)
+        (nhds 0) := by
+    simpa [σadj, j] using hminus_fred_normalization
+  have hplus_transfer :=
+    tendsto_reducedNormalUpper_os45Branch_sub_canonicalReducedBranch_of_reducedExtension_os45Ray_normalization
+      (d := d) OS lgc σ0 Fred p hΩplus hplus_fred
+  have hminus_transfer :=
+    tendsto_reducedNormalLower_os45Branch_sub_canonicalReducedBranch_of_reducedExtension_os45Ray_normalization
+      (d := d) OS lgc σadj Fred p hΩminus hminus_fred
+  simpa [j, σ0, σadj] using
+    reducedNormalSignFlip_pointwise_of_OS45HdiffGerm_asymptotic
+      (d := d) OS lgc P U hU_open hU_sub hU_nonempty p hpU
+      Ucx Hdiff hUcx_open hUcx_connected hwick_mem hcommon_mem
+      hHdiff_holo hwick_pairing_zero hcommon_trace
+      hplus_transfer hminus_transfer
 
 end AdjacentNormal
 
