@@ -183,6 +183,137 @@ noncomputable def reducedNormalCoordFlatComplexMap
       (fun a => (z a).im) k μ : ℂ) * Complex.I
 
 omit [NeZero d] in
+/-- Complex-linear version of `reducedNormalCoordFlatComplexMap`.
+
+This is the analytic pullback map needed to compose holomorphic reduced/source
+functions with the flattened reduced-normal chart. -/
+noncomputable def reducedNormalCoordFlatComplexCLM
+    {m : ℕ} (i : Fin (m + 1)) (hi : i.val + 1 < m + 1) :
+    SCV.ComplexChartSpace ((d + 1) +
+      Fintype.card (SpectatorIndex (m + 1) i ⟨i.val + 1, hi⟩) *
+        (d + 1)) →L[ℂ] BHW.ReducedNPointConfig d m where
+  toFun := reducedNormalCoordFlatComplexMap (d := d) i hi
+  map_add' := by
+    intro z w
+    ext k μ
+    change
+      (((reducedNormalCoordFlatCLE (d := d) i hi).symm
+          ((fun a => (z a).re) + (fun a => (w a).re)) k μ : ℂ) +
+        ((reducedNormalCoordFlatCLE (d := d) i hi).symm
+          ((fun a => (z a).im) + (fun a => (w a).im)) k μ : ℂ) *
+          Complex.I) =
+        (((reducedNormalCoordFlatCLE (d := d) i hi).symm
+            (fun a => (z a).re) k μ : ℂ) +
+          ((reducedNormalCoordFlatCLE (d := d) i hi).symm
+            (fun a => (z a).im) k μ : ℂ) * Complex.I) +
+        (((reducedNormalCoordFlatCLE (d := d) i hi).symm
+            (fun a => (w a).re) k μ : ℂ) +
+          ((reducedNormalCoordFlatCLE (d := d) i hi).symm
+            (fun a => (w a).im) k μ : ℂ) * Complex.I)
+    rw [map_add, map_add]
+    simp [Pi.add_apply]
+    ring_nf
+  map_smul' := by
+    intro c z
+    ext k μ
+    change
+      (((reducedNormalCoordFlatCLE (d := d) i hi).symm
+          ((c.re • (fun a => (z a).re)) -
+            (c.im • (fun a => (z a).im))) k μ : ℂ) +
+        ((reducedNormalCoordFlatCLE (d := d) i hi).symm
+          ((c.re • (fun a => (z a).im)) +
+            (c.im • (fun a => (z a).re))) k μ : ℂ) * Complex.I) =
+        c *
+          (((reducedNormalCoordFlatCLE (d := d) i hi).symm
+              (fun a => (z a).re) k μ : ℂ) +
+            ((reducedNormalCoordFlatCLE (d := d) i hi).symm
+              (fun a => (z a).im) k μ : ℂ) * Complex.I)
+    rw [map_sub, map_add, map_smul, map_smul, map_smul, map_smul]
+    apply Complex.ext <;>
+      simp [Complex.add_re, Complex.add_im, Complex.mul_re, Complex.mul_im,
+        Complex.ofReal_re, Complex.ofReal_im, Complex.I_re, Complex.I_im,
+        Pi.add_apply, Pi.sub_apply, Pi.smul_apply]
+  cont := by
+    let q : ℕ :=
+      (d + 1) +
+        Fintype.card (SpectatorIndex (m + 1) i ⟨i.val + 1, hi⟩) *
+          (d + 1)
+    let L : (Fin q → ℝ) →L[ℝ] NPointDomain d m :=
+      ((reducedNormalCoordFlatCLE (d := d) i hi).symm).toContinuousLinearMap
+    have hre : Continuous (fun z : SCV.ComplexChartSpace q =>
+        fun a => (z a).re) :=
+      continuous_pi fun a =>
+        Complex.continuous_re.comp (continuous_apply a)
+    have him : Continuous (fun z : SCV.ComplexChartSpace q =>
+        fun a => (z a).im) :=
+      continuous_pi fun a =>
+        Complex.continuous_im.comp (continuous_apply a)
+    have hLre : Continuous (fun z : SCV.ComplexChartSpace q =>
+        L (fun a => (z a).re)) := L.continuous.comp hre
+    have hLim : Continuous (fun z : SCV.ComplexChartSpace q =>
+        L (fun a => (z a).im)) := L.continuous.comp him
+    apply continuous_pi
+    intro k
+    apply continuous_pi
+    intro μ
+    have hreal : Continuous (fun z : SCV.ComplexChartSpace q =>
+        (L (fun a => (z a).re) k μ : ℂ)) :=
+      Complex.continuous_ofReal.comp
+        ((continuous_apply μ).comp ((continuous_apply k).comp hLre))
+    have himag : Continuous (fun z : SCV.ComplexChartSpace q =>
+        (L (fun a => (z a).im) k μ : ℂ)) :=
+      Complex.continuous_ofReal.comp
+        ((continuous_apply μ).comp ((continuous_apply k).comp hLim))
+    simpa [reducedNormalCoordFlatComplexMap, L, q] using
+      hreal.add (himag.mul continuous_const)
+
+omit [NeZero d] in
+@[simp]
+theorem reducedNormalCoordFlatComplexCLM_apply
+    {m : ℕ} (i : Fin (m + 1)) (hi : i.val + 1 < m + 1)
+    (z : SCV.ComplexChartSpace ((d + 1) +
+      Fintype.card (SpectatorIndex (m + 1) i ⟨i.val + 1, hi⟩) *
+        (d + 1))) :
+    reducedNormalCoordFlatComplexCLM (d := d) i hi z =
+      reducedNormalCoordFlatComplexMap (d := d) i hi z :=
+  rfl
+
+omit [NeZero d] in
+/-- The flattened reduced-normal complex inverse is holomorphic as a
+complex-linear map. -/
+theorem reducedNormalCoordFlatComplexMap_differentiable
+    {m : ℕ} (i : Fin (m + 1)) (hi : i.val + 1 < m + 1) :
+    Differentiable ℂ (reducedNormalCoordFlatComplexMap (d := d) i hi) := by
+  exact (reducedNormalCoordFlatComplexCLM (d := d) i hi).differentiable
+
+omit [NeZero d] in
+/-- The reduced PET pulls back to an open side domain in flattened
+reduced-normal coordinates. -/
+theorem isOpen_reducedNormalCoordFlatComplexMap_preimage_reducedPET
+    {m : ℕ} (i : Fin (m + 1)) (hi : i.val + 1 < m + 1) :
+    IsOpen ((reducedNormalCoordFlatComplexMap (d := d) i hi) ⁻¹'
+      BHW.ReducedPermutedExtendedTubeN d m) := by
+  exact (isOpen_reducedPermutedExtendedTubeN (d := d) m).preimage
+    (reducedNormalCoordFlatComplexMap_differentiable (d := d) i hi).continuous
+
+omit [NeZero d] in
+/-- Pulling a reduced BHW extension back by the flattened reduced-normal chart
+gives a holomorphic side branch on the PET preimage. -/
+theorem reducedNormalCoordFlatComplexMap_pullback_reducedExtension_holomorphic
+    {m : ℕ} (i : Fin (m + 1)) (hi : i.val + 1 < m + 1)
+    {F : BHW.ReducedNPointConfig d m → ℂ}
+    (Fred : BHW.ReducedBHWExtensionData (d := d) (n := m + 1) F) :
+    DifferentiableOn ℂ
+      (fun z => Fred.toFun (reducedNormalCoordFlatComplexMap (d := d) i hi z))
+      ((reducedNormalCoordFlatComplexMap (d := d) i hi) ⁻¹'
+        BHW.ReducedPermutedExtendedTubeN d m) := by
+  have hL : Differentiable ℂ (reducedNormalCoordFlatComplexMap (d := d) i hi) :=
+    reducedNormalCoordFlatComplexMap_differentiable (d := d) i hi
+  simpa [BHW.ReducedPermutedExtendedTubeN] using
+    DifferentiableOn.comp Fred.holomorphic hL.differentiableOn
+      (by intro z hz; exact hz)
+
+omit [NeZero d] in
 /-- On real points, the complexified flattened inverse chart is the original
 real inverse chart, embedded in the reduced complex coordinates. -/
 theorem reducedNormalCoordFlatComplexMap_realEmbed
@@ -587,6 +718,84 @@ theorem reducedNormalCoordFlatComplexMap_upperCanonicalRay
     rw [hreal, hflat]
   simp [reducedNormalCoordFlatComplexMap, hreal_apply, himag_apply,
     canonicalReducedDirectionC]
+
+omit [NeZero d] in
+@[simp]
+theorem reducedNormalCoordFlatComplexCLM_upperCanonicalRay
+    {m : ℕ} (i : Fin (m + 1)) (hi : i.val + 1 < m + 1)
+    (p : ReducedSpace d m i ⟨i.val + 1, hi⟩) (ε : ℝ) :
+    reducedNormalCoordFlatComplexCLM (d := d) i hi
+        (reducedNormalUpperCanonicalRay (d := d) i hi p ε) =
+      fun k μ =>
+        (reducedCoordInv (d := d) i ⟨i.val + 1, hi⟩
+          (reducedAdjacent_succ_ne i hi) p k μ : ℂ) +
+          (ε : ℂ) * canonicalReducedDirectionC (d := d) m k μ *
+            Complex.I := by
+  simpa using
+    reducedNormalCoordFlatComplexMap_upperCanonicalRay
+      (d := d) i hi p ε
+
+theorem reducedNormalUpperCanonicalRay_reducedExtension_rep
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {m : ℕ} (i : Fin (m + 1)) (hi : i.val + 1 < m + 1)
+    (Fred : BHW.ReducedBHWExtensionData (d := d) (n := m + 1)
+      (bvt_F_reduced (d := d) OS lgc m))
+    (p : ReducedSpace d m i ⟨i.val + 1, hi⟩) :
+    ∀ᶠ ε : ℝ in nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)),
+      Fred.toFun
+          (reducedNormalCoordFlatComplexCLM (d := d) i hi
+            (reducedNormalUpperCanonicalRay (d := d) i hi p ε)) =
+        canonicalReducedBranch (d := d) OS lgc m ε
+          (reducedCoordInv (d := d) i ⟨i.val + 1, hi⟩
+            (reducedAdjacent_succ_ne i hi) p) := by
+  have hpos : ∀ᶠ ε : ℝ in nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)),
+      0 < ε := self_mem_nhdsWithin
+  refine hpos.mono ?_
+  intro ε hε
+  have heq :=
+    bvt_F_reduced_canonicalApproach_eq_reducedExtension
+      (d := d) OS lgc m Fred
+      (reducedCoordInv (d := d) i ⟨i.val + 1, hi⟩
+        (reducedAdjacent_succ_ne i hi) p)
+      hε
+  rw [reducedNormalCoordFlatComplexCLM_upperCanonicalRay]
+  simpa [canonicalReducedBranch] using heq.symm
+
+theorem reducedNormalUpperCanonicalRay_reducedExtension_transfer
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {m : ℕ} (i : Fin (m + 1)) (hi : i.val + 1 < m + 1)
+    (Fred : BHW.ReducedBHWExtensionData (d := d) (n := m + 1)
+      (bvt_F_reduced (d := d) OS lgc m))
+    (p : ReducedSpace d m i ⟨i.val + 1, hi⟩) :
+    Filter.Tendsto
+      (fun ε : ℝ =>
+        Fred.toFun
+            (reducedNormalCoordFlatComplexCLM (d := d) i hi
+              (reducedNormalUpperCanonicalRay (d := d) i hi p ε)) -
+          canonicalReducedBranch (d := d) OS lgc m ε
+            (reducedCoordInv (d := d) i ⟨i.val + 1, hi⟩
+              (reducedAdjacent_succ_ne i hi) p))
+      (nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)) : Filter ℝ)
+      (nhds 0) := by
+  have hrep :=
+    reducedNormalUpperCanonicalRay_reducedExtension_rep
+      (d := d) OS lgc i hi Fred p
+  have hzero : ∀ᶠ ε : ℝ in nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)),
+      Fred.toFun
+          (reducedNormalCoordFlatComplexCLM (d := d) i hi
+            (reducedNormalUpperCanonicalRay (d := d) i hi p ε)) -
+        canonicalReducedBranch (d := d) OS lgc m ε
+          (reducedCoordInv (d := d) i ⟨i.val + 1, hi⟩
+            (reducedAdjacent_succ_ne i hi) p) = 0 := by
+    refine hrep.mono ?_
+    intro ε hε
+    rw [hε]
+    ring
+  refine Filter.Tendsto.congr' ?_ tendsto_const_nhds
+  filter_upwards [hzero] with ε hε
+  exact hε.symm
 
 omit [NeZero d] in
 /-- The complexified inverse reduced-normal chart sends the lower flattened
