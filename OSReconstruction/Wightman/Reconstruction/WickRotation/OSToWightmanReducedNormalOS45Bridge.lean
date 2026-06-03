@@ -3412,6 +3412,95 @@ theorem reducedNormalAbsoluteSectionCLM_apply_flatten
   simp
 
 omit [NeZero d] in
+/-- The zero-center reduced-normal representative has the same successive
+reduced differences as the absolute source configuration it represents.
+
+This is the algebraic bridge needed before applying the Figure-2-4
+cone-height packet to a lifted reduced test: an arbitrary source point is first
+collapsed to its reduced differences, converted to adjacent normal coordinates,
+and reconstructed with pair center zero; reduced differences are unchanged. -/
+theorem reducedNormalAbsoluteSectionCLM_reducedDiffMapReal_eq
+    {m : ℕ} {i : Fin (m + 1)} {hi : i.val + 1 < m + 1}
+    (u : NPointDomain d (m + 1)) :
+    BHW.reducedDiffMapReal (m + 1) d
+        (reducedNormalAbsoluteSectionCLM (d := d) i hi
+          (reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩
+            ((reducedCoordCLE (d := d) i ⟨i.val + 1, hi⟩
+              (reducedAdjacent_succ_ne i hi))
+              (BHW.reducedDiffMapReal (m + 1) d u)))) =
+      BHW.reducedDiffMapReal (m + 1) d u := by
+  simpa [reducedNormalAbsoluteSectionCLM_apply_flatten] using
+    reducedCoordInv_left (d := d) i ⟨i.val + 1, hi⟩
+      (reducedAdjacent_succ_ne i hi)
+      (BHW.reducedDiffMapReal (m + 1) d u)
+
+omit [NeZero d] in
+/-- Equality of reduced real differences determines every pairwise real
+difference.  This is the uniform-translation fact needed when the OS45 common
+edge later permutes source labels before taking adjacent differences. -/
+theorem reducedDiffMapReal_eq_pair_sub_eq
+    {m : ℕ} {x y : NPointDomain d (m + 1)}
+    (hxy : BHW.reducedDiffMapReal (m + 1) d x =
+      BHW.reducedDiffMapReal (m + 1) d y)
+    (a b : Fin (m + 1)) (μ : Fin (d + 1)) :
+    x a μ - x b μ = y a μ - y b μ := by
+  have hx := reducedSection_reducedDiffMapReal_eq_sub_basepoint (d := d) m x
+  have hy := reducedSection_reducedDiffMapReal_eq_sub_basepoint (d := d) m y
+  have hsec : (fun k μ => x k μ - x 0 μ) =
+      (fun k μ => y k μ - y 0 μ) := by
+    rw [← hx, ← hy, hxy]
+  have ha := congrFun (congrFun hsec a) μ
+  have hb := congrFun (congrFun hsec b) μ
+  linarith
+
+omit [NeZero d] in
+/-- The OS45 common-edge real projection depends only on reduced real
+differences, even after a source-label permutation and the half-time
+normalization. -/
+theorem reducedDiffMapReal_os45CommonEdgeRealPoint_eq_of_reducedDiffMapReal_eq
+    {m : ℕ} (σ : Equiv.Perm (Fin (m + 1)))
+    {x y : NPointDomain d (m + 1)}
+    (hxy : BHW.reducedDiffMapReal (m + 1) d x =
+      BHW.reducedDiffMapReal (m + 1) d y) :
+    BHW.reducedDiffMapReal (m + 1) d
+        (BHW.os45CommonEdgeRealPoint (d := d) (n := m + 1) σ x) =
+      BHW.reducedDiffMapReal (m + 1) d
+        (BHW.os45CommonEdgeRealPoint (d := d) (n := m + 1) σ y) := by
+  ext k μ
+  rw [BHW.reducedDiffMapReal_apply, BHW.reducedDiffMapReal_apply]
+  let a : Fin (m + 1) := σ ⟨k.val + 1, by omega⟩
+  let b : Fin (m + 1) := σ ⟨k.val, by omega⟩
+  have hpair : x a μ - x b μ = y a μ - y b μ :=
+    reducedDiffMapReal_eq_pair_sub_eq (d := d) hxy a b μ
+  by_cases hμ : μ = (0 : Fin (d + 1))
+  · subst μ
+    simp [BHW.os45CommonEdgeRealPoint]
+    linarith
+  · simpa [BHW.os45CommonEdgeRealPoint, hμ, a, b] using hpair
+
+omit [NeZero d] in
+/-- Specializing the common-edge invariance to the reduced-normal zero-center
+section: replacing a source point by its reduced-normal representative leaves
+all OS45 common-edge reduced real differences unchanged. -/
+theorem reducedNormalAbsoluteSectionCLM_os45CommonEdgeRealPoint_reducedDiffMapReal_eq
+    {m : ℕ} {i : Fin (m + 1)} {hi : i.val + 1 < m + 1}
+    (σ : Equiv.Perm (Fin (m + 1))) (u : NPointDomain d (m + 1)) :
+    BHW.reducedDiffMapReal (m + 1) d
+        (BHW.os45CommonEdgeRealPoint (d := d) (n := m + 1) σ
+          (reducedNormalAbsoluteSectionCLM (d := d) i hi
+            (reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩
+              ((reducedCoordCLE (d := d) i ⟨i.val + 1, hi⟩
+                (reducedAdjacent_succ_ne i hi))
+                (BHW.reducedDiffMapReal (m + 1) d u))))) =
+      BHW.reducedDiffMapReal (m + 1) d
+        (BHW.os45CommonEdgeRealPoint (d := d) (n := m + 1) σ u) := by
+  exact
+    reducedDiffMapReal_os45CommonEdgeRealPoint_eq_of_reducedDiffMapReal_eq
+      (d := d) σ
+      (reducedNormalAbsoluteSectionCLM_reducedDiffMapReal_eq
+        (d := d) (i := i) (hi := hi) u)
+
+omit [NeZero d] in
 /-- The OS45 flat common-edge coordinates associated to a flattened reduced
 normal point. -/
 noncomputable def reducedNormalToOS45CommonEdgeFlatCLM
