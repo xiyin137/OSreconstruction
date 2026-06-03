@@ -1080,6 +1080,62 @@ theorem continuous_os45FlatCommonChartSourceSide_moving_fixed_source
   ext k
   simp [BHW.os45FlatCommonChartSourceSide, e, Q, Pi.add_apply]
 
+/-- Pointwise endpoint convergence for a terminal branch along the moving OS45
+source-side path.
+
+This is the common-edge endpoint value reached by the shifted source argument
+`e.symm (e u - (sgn * eps) • eta)`.  It intentionally stops at the OS45
+zero-height branch value; the reduced canonical/adjacent boundary comparison is
+the separate branch-normalization leaf. -/
+theorem tendsto_comp_os45FlatCommonChartSourceSide_moving_nhdsWithin
+    (ρperm : Equiv.Perm (Fin n))
+    (sgn : ℝ)
+    (η : BHW.OS45FlatCommonChartReal d n)
+    (u : NPointDomain d n)
+    {U : Set (Fin n → Fin (d + 1) → ℂ)}
+    (hU_open : IsOpen U)
+    {F : (Fin n → Fin (d + 1) → ℂ) → ℂ}
+    (hF_cont : ContinuousOn F U)
+    (h0 :
+      BHW.os45FlatCommonChartSourceSide d n ρperm sgn 0 η u ∈ U) :
+    Tendsto
+      (fun eps : ℝ =>
+        F
+          (BHW.os45FlatCommonChartSourceSideMoving
+            (d := d) (n := n) ρperm sgn η eps u))
+      (𝓝[Set.Ioi 0] (0 : ℝ))
+      (𝓝
+        (F (BHW.os45FlatCommonChartSourceSide d n ρperm sgn 0 η u))) := by
+  let e := BHW.os45CommonEdgeFlatCLE d n ρperm
+  let moving : ℝ → Fin n → Fin (d + 1) → ℂ := fun eps =>
+    BHW.os45FlatCommonChartSourceSideMoving
+      (d := d) (n := n) ρperm sgn η eps u
+  have hzero_arg : e.symm (e u - (sgn * (0 : ℝ)) • η) = u := by
+    rw [mul_zero, zero_smul, sub_zero]
+    exact e.symm_apply_apply u
+  have hzero :
+      moving 0 = BHW.os45FlatCommonChartSourceSide d n ρperm sgn 0 η u := by
+    change
+      BHW.os45FlatCommonChartSourceSide d n ρperm sgn (0 : ℝ) η
+          (e.symm (e u - (sgn * (0 : ℝ)) • η)) =
+        BHW.os45FlatCommonChartSourceSide d n ρperm sgn 0 η u
+    rw [hzero_arg]
+  have hpath : Tendsto moving (𝓝[Set.Ioi 0] (0 : ℝ))
+      (𝓝 (BHW.os45FlatCommonChartSourceSide d n ρperm sgn 0 η u)) := by
+    have hcont :=
+      BHW.continuous_os45FlatCommonChartSourceSide_moving_fixed_source
+        (d := d) (n := n) ρperm sgn η u
+    have hnhds : Tendsto moving (𝓝 (0 : ℝ))
+        (𝓝 (BHW.os45FlatCommonChartSourceSide d n ρperm sgn 0 η u)) := by
+      simpa [moving, BHW.os45FlatCommonChartSourceSideMoving, e, hzero,
+        map_sub, map_smul] using hcont.tendsto (0 : ℝ)
+    exact hnhds.mono_left nhdsWithin_le_nhds
+  have hpath_mem :
+      ∀ᶠ eps : ℝ in 𝓝[Set.Ioi 0] (0 : ℝ), moving eps ∈ U :=
+    hpath (hU_open.mem_nhds h0)
+  exact (hF_cont.continuousWithinAt h0).tendsto.comp
+    (tendsto_nhdsWithin_iff.mpr ⟨hpath, hpath_mem⟩)
+
 /-- Compact-source-support collar for the moving OS45 source-side path used by
 the shifted endpoint DCT packet. -/
 theorem eventually_forall_os45FlatCommonChartSourceSide_moving_mem_of_compact
@@ -1729,31 +1785,16 @@ theorem tendsto_integral_comp_os45FlatCommonChartSourceSide_moving_mul_of_hasCom
           (𝓝 (F (BHW.os45FlatCommonChartSourceSide d n ρperm sgn 0 η u) * φ u)) := by
     intro u
     by_cases hu : u ∈ K
-    · have hzero_arg : e.symm (e u - (sgn * (0 : ℝ)) • η) = u := by
-        rw [mul_zero, zero_smul, sub_zero]
-        exact e.symm_apply_apply u
-      have hzero : moving (0 : ℝ) u =
-          BHW.os45FlatCommonChartSourceSide d n ρperm sgn 0 η u := by
-        change
-          BHW.os45FlatCommonChartSourceSide d n ρperm sgn (0 : ℝ) η
-              (e.symm (e u - (sgn * (0 : ℝ)) • η)) =
-            BHW.os45FlatCommonChartSourceSide d n ρperm sgn 0 η u
-        rw [hzero_arg]
-      have hpath_cont : Continuous (fun eps : ℝ => moving eps u) := by
-        simpa [moving, BHW.os45FlatCommonChartSourceSideMoving, e] using
-          BHW.continuous_os45FlatCommonChartSourceSide_moving_fixed_source
-            (d := d) (n := n) ρperm sgn η u
-      have hpath_tendsto :
-          Tendsto (fun eps : ℝ => moving eps u) (𝓝 (0 : ℝ))
-            (𝓝 (BHW.os45FlatCommonChartSourceSide d n ρperm sgn 0 η u)) := by
-        rw [← hzero]
-        exact hpath_cont.continuousAt
-      have hF_at :
-          ContinuousAt F (BHW.os45FlatCommonChartSourceSide d n ρperm sgn 0 η u) :=
-        hF_cont.continuousAt (hU_open.mem_nhds (h0 u hu))
-      exact
-        ((hF_at.tendsto.comp hpath_tendsto).mono_left nhdsWithin_le_nhds).mul
-          tendsto_const_nhds
+    · have hF_tendsto :
+          Tendsto
+            (fun eps : ℝ => F (moving eps u))
+            (𝓝[Set.Ioi 0] (0 : ℝ))
+            (𝓝 (F (BHW.os45FlatCommonChartSourceSide
+              d n ρperm sgn 0 η u))) := by
+        simpa [moving] using
+          BHW.tendsto_comp_os45FlatCommonChartSourceSide_moving_nhdsWithin
+            (d := d) (n := n) ρperm sgn η u hU_open hF_cont (h0 u hu)
+      exact hF_tendsto.mul tendsto_const_nhds
     · have hzero : φ u = 0 := image_eq_zero_of_notMem_tsupport hu
       simp [hzero]
   rcases
