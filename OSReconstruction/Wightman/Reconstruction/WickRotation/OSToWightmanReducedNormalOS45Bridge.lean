@@ -8279,14 +8279,29 @@ theorem reducedLocalAdjacentBoundaryCLMInvariant_of_pointwise_OS412_sourceWindow
             (d := d) i ⟨i.val + 1, hi⟩ →
           ∃ P : BHW.OS45Figure24CanonicalSourcePatchData
               (d := d) hd (m + 1) i hi,
-            ∃ _H : BHW.OS45BHWJostHullData (d := d) hd (m + 1) i hi P,
-              ∃ _D : BHW.OS45Figure24SourceCutoffData P,
-                ∃ _hCompactFigure24 :
-                    BHW.OS45CompactFigure24WickPairingEq
-                      (d := d) (m + 1) i hi OS lgc,
+            ∃ U : Set (NPointDomain d (m + 1)),
+              IsOpen U ∧ U ⊆ P.V ∧
                   coordInv (d := d) i ⟨i.val + 1, hi⟩
-                      (reducedAdjacent_succ_ne i hi)
-                      ((0 : SpacetimeDim d), p) ∈ P.V ∧
+                    (reducedAdjacent_succ_ne i hi)
+                    ((0 : SpacetimeDim d), p) ∈ U ∧
+                  SCV.RepresentsDistributionOn
+                    (0 : SchwartzMap
+                      (NPointDomain d (m + 1)) ℂ →L[ℂ] ℂ)
+                    (fun u : NPointDomain d (m + 1) =>
+                      BHW.os45PulledRealBranch
+                          (d := d) (n := m + 1) OS lgc
+                          (P.τ.symm * (1 : Equiv.Perm (Fin (m + 1))))
+                          (BHW.realEmbed
+                            (BHW.os45CommonEdgeRealPoint
+                              (d := d) (n := m + 1)
+                              (1 : Equiv.Perm (Fin (m + 1))) u)) -
+                        BHW.os45PulledRealBranch
+                          (d := d) (n := m + 1) OS lgc
+                          (1 : Equiv.Perm (Fin (m + 1)))
+                          (BHW.realEmbed
+                            (BHW.os45CommonEdgeRealPoint
+                              (d := d) (n := m + 1)
+                              (1 : Equiv.Perm (Fin (m + 1))) u))) U ∧
                   Filter.Tendsto
                     (fun ε : ℝ =>
                       BHW.os45FlatCommonChartBranch d (m + 1) OS lgc
@@ -8345,11 +8360,7 @@ theorem reducedLocalAdjacentBoundaryCLMInvariant_of_pointwise_OS412_sourceWindow
       (reducedCoord_mem_reducedSelectedSpacelike_iff
         (d := d) i j η).2 hη_edge
   rcases hpoint m i hi p (by simpa [p, j] using hp) with
-    ⟨P, H, D, hCompactFigure24, hpP, hplus_transfer, hminus_transfer⟩
-  rcases
-      H.exists_sourceWindow_sourceRepresentsZero_of_OS412_sourceSide
-        OS lgc hCompactFigure24 D hpP with
-    ⟨U, hU_open, hU_sub, hpU, hrep⟩
+    ⟨P, U, hU_open, hU_sub, hpU, hrep, hplus_transfer, hminus_transfer⟩
   refine ⟨P, U, hU_open, hU_sub, ?_, hrep, ?_, ?_⟩
   · simpa [p, j] using hpU
   · simpa [p, j] using hplus_transfer
@@ -8375,14 +8386,29 @@ theorem reducedLocalAdjacentBoundaryCLMInvariant_of_pointwise_OS412_sourceWindow
             (d := d) i ⟨i.val + 1, hi⟩ →
           ∃ P : BHW.OS45Figure24CanonicalSourcePatchData
               (d := d) hd (m + 1) i hi,
-            ∃ _H : BHW.OS45BHWJostHullData (d := d) hd (m + 1) i hi P,
-              ∃ _D : BHW.OS45Figure24SourceCutoffData P,
-                ∃ _hCompactFigure24 :
-                    BHW.OS45CompactFigure24WickPairingEq
-                      (d := d) (m + 1) i hi OS lgc,
+            ∃ U : Set (NPointDomain d (m + 1)),
+              IsOpen U ∧ U ⊆ P.V ∧
                   coordInv (d := d) i ⟨i.val + 1, hi⟩
-                      (reducedAdjacent_succ_ne i hi)
-                      ((0 : SpacetimeDim d), p) ∈ P.V ∧
+                    (reducedAdjacent_succ_ne i hi)
+                    ((0 : SpacetimeDim d), p) ∈ U ∧
+                  SCV.RepresentsDistributionOn
+                    (0 : SchwartzMap
+                      (NPointDomain d (m + 1)) ℂ →L[ℂ] ℂ)
+                    (fun u : NPointDomain d (m + 1) =>
+                      BHW.os45PulledRealBranch
+                          (d := d) (n := m + 1) OS lgc
+                          (P.τ.symm * (1 : Equiv.Perm (Fin (m + 1))))
+                          (BHW.realEmbed
+                            (BHW.os45CommonEdgeRealPoint
+                              (d := d) (n := m + 1)
+                              (1 : Equiv.Perm (Fin (m + 1))) u)) -
+                        BHW.os45PulledRealBranch
+                          (d := d) (n := m + 1) OS lgc
+                          (1 : Equiv.Perm (Fin (m + 1)))
+                          (BHW.realEmbed
+                            (BHW.os45CommonEdgeRealPoint
+                              (d := d) (n := m + 1)
+                              (1 : Equiv.Perm (Fin (m + 1))) u))) U ∧
                   Filter.Tendsto
                     (fun ε : ℝ =>
                       let ηsrc : BHW.OS45FlatCommonChartReal d (m + 1) :=
@@ -8441,9 +8467,9 @@ theorem reducedLocalAdjacentBoundaryCLMInvariant_of_pointwise_OS412_sourceWindow
       (d := d) hd OS lgc χ ?_
   intro m i hi p hp
   rcases hpoint m i hi p hp with
-    ⟨P, H, D, hCompactFigure24, hpP,
+    ⟨P, U, hU_open, hU_sub, hpU, hrep,
       hplus_source_transfer, hminus_source_transfer⟩
-  refine ⟨P, H, D, hCompactFigure24, hpP, ?_, ?_⟩
+  refine ⟨P, U, hU_open, hU_sub, hpU, hrep, ?_, ?_⟩
   · refine Filter.Tendsto.congr' ?_ hplus_source_transfer
     filter_upwards with ε
     have hcoord :=
