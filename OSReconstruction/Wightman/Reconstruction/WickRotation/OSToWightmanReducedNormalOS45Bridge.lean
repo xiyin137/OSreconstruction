@@ -2103,10 +2103,11 @@ theorem tendsto_flatCommonChart_sideBranch_difference_zero_reducedTestLift_of_Hd
 the honest flat side-branch carrier.
 
 The Hdiff/source-window theorem supplies the moving-source flat side-branch
-limit.  The remaining assumptions are exactly the endpoint transport/reindexing
-facts identifying those flat side integrals with the canonical reduced and
-adjacent-after-swap reduced branch integrals.  This avoids asserting the false
-unshifted source-variable PET coordinate normal form. -/
+limit.  The remaining assumptions are exactly the asymptotic endpoint
+transport/reindexing facts identifying those flat side integrals with the
+canonical reduced and adjacent-after-swap reduced branch integrals up to the
+common-edge Jacobian.  This avoids asserting the false unshifted source-variable
+PET coordinate normal form. -/
 theorem tendsto_canonicalAfterSwapBranch_difference_zero_reducedTestLift_of_HdiffGerm_and_flat_transport
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS)
@@ -2194,7 +2195,8 @@ theorem tendsto_canonicalAfterSwapBranch_difference_zero_reducedTestLift_of_Hdif
               SchwartzNPoint d (m + 1)) :
             NPointDomain d (m + 1) → ℂ) ⊆ Usrc)
     (hplus_flat_transport :
-      ∀ᶠ ε : ℝ in nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)),
+      Filter.Tendsto
+        (fun ε : ℝ =>
         (∫ x : BHW.OS45FlatCommonChartReal d (m + 1),
           BHW.os45FlatCommonChartBranch d (m + 1) OS lgc
             (1 : Equiv.Perm (Fin (m + 1)))
@@ -2206,12 +2208,15 @@ theorem tendsto_canonicalAfterSwapBranch_difference_zero_reducedTestLift_of_Hdif
                 (1 : Equiv.Perm (Fin (m + 1)))).symm)
               (BHW.reducedTestLift m d χ.toSchwartz ψ :
                 SchwartzNPoint d (m + 1)) :
-              SchwartzMap (BHW.OS45FlatCommonChartReal d (m + 1)) ℂ) x) =
+              SchwartzMap (BHW.OS45FlatCommonChartReal d (m + 1)) ℂ) x) -
           (BHW.os45CommonEdgeFlatJacobianAbs (m + 1) : ℂ) *
             ∫ ξ : NPointDomain d m,
               canonicalReducedBranch (d := d) OS lgc m ε ξ * ψ ξ)
+        (nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)) : Filter ℝ)
+        (nhds 0))
     (hminus_flat_transport :
-      ∀ᶠ ε : ℝ in nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)),
+      Filter.Tendsto
+        (fun ε : ℝ =>
         (∫ x : BHW.OS45FlatCommonChartReal d (m + 1),
           BHW.os45FlatCommonChartBranch d (m + 1) OS lgc
             (P.τ.symm * (1 : Equiv.Perm (Fin (m + 1))))
@@ -2223,12 +2228,14 @@ theorem tendsto_canonicalAfterSwapBranch_difference_zero_reducedTestLift_of_Hdif
                 (1 : Equiv.Perm (Fin (m + 1)))).symm)
               (BHW.reducedTestLift m d χ.toSchwartz ψ :
                 SchwartzNPoint d (m + 1)) :
-              SchwartzMap (BHW.OS45FlatCommonChartReal d (m + 1)) ℂ) x) =
+              SchwartzMap (BHW.OS45FlatCommonChartReal d (m + 1)) ℂ) x) -
           (BHW.os45CommonEdgeFlatJacobianAbs (m + 1) : ℂ) *
             ∫ ξ : NPointDomain d m,
               canonicalAfterReducedSwapBranch
                   (d := d) OS lgc m i ⟨i.val + 1, hi⟩ ε ξ *
-                ψ ξ) :
+                ψ ξ)
+        (nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)) : Filter ℝ)
+        (nhds 0)) :
     Filter.Tendsto
       (fun ε : ℝ =>
         (∫ ξ : NPointDomain d m,
@@ -2247,26 +2254,32 @@ theorem tendsto_canonicalAfterSwapBranch_difference_zero_reducedTestLift_of_Hdif
       (BHW.os45CommonEdgeFlatCLE d (m + 1)
         (1 : Equiv.Perm (Fin (m + 1)))).symm)
       (BHW.reducedTestLift m d χ.toSchwartz ψ : SchwartzNPoint d (m + 1))
+  let A : ℝ → ℂ := fun ε =>
+    ∫ x : BHW.OS45FlatCommonChartReal d (m + 1),
+      BHW.os45FlatCommonChartBranch d (m + 1) OS lgc
+        (1 : Equiv.Perm (Fin (m + 1)))
+        (fun a =>
+          (x a : ℂ) + ((((1 : ℝ) * ε) • ηsrc) a : ℂ) * Complex.I) *
+        φFlat x
+  let B : ℝ → ℂ := fun ε =>
+    ∫ x : BHW.OS45FlatCommonChartReal d (m + 1),
+      BHW.os45FlatCommonChartBranch d (m + 1) OS lgc
+        (P.τ.symm * (1 : Equiv.Perm (Fin (m + 1))))
+        (fun a =>
+          (x a : ℂ) + ((((-1 : ℝ) * ε) • ηsrc) a : ℂ) * Complex.I) *
+        φFlat x
+  let C : ℝ → ℂ := fun ε =>
+    ∫ ξ : NPointDomain d m,
+      canonicalReducedBranch (d := d) OS lgc m ε ξ * ψ ξ
+  let R : ℝ → ℂ := fun ε =>
+    ∫ ξ : NPointDomain d m,
+      canonicalAfterReducedSwapBranch (d := d) OS lgc m i j ε ξ * ψ ξ
   have hflat :
       Filter.Tendsto
-        (fun ε : ℝ =>
-          (∫ x : BHW.OS45FlatCommonChartReal d (m + 1),
-            BHW.os45FlatCommonChartBranch d (m + 1) OS lgc
-              (1 : Equiv.Perm (Fin (m + 1)))
-              (fun a =>
-                (x a : ℂ) +
-                  ((((1 : ℝ) * ε) • ηsrc) a : ℂ) * Complex.I) *
-              φFlat x) -
-          ∫ x : BHW.OS45FlatCommonChartReal d (m + 1),
-            BHW.os45FlatCommonChartBranch d (m + 1) OS lgc
-              (P.τ.symm * (1 : Equiv.Perm (Fin (m + 1))))
-              (fun a =>
-                (x a : ℂ) +
-                  ((((-1 : ℝ) * ε) • ηsrc) a : ℂ) * Complex.I) *
-              φFlat x)
+        (fun ε : ℝ => A ε - B ε)
         l
         (nhds 0) := by
-    simpa [l, φFlat] using
+    simpa [l, φFlat, A, B] using
       tendsto_flatCommonChart_sideBranch_difference_zero_reducedTestLift_of_HdiffGerm
         (d := d) OS lgc D U hU_open hU_nonempty Ucx Hdiff
         hUcx_open hUcx_connected hwick_mem hcommon_mem hHdiff_holo
@@ -2274,20 +2287,32 @@ theorem tendsto_canonicalAfterSwapBranch_difference_zero_reducedTestLift_of_Hdif
         hFplus_cont hFminus_cont hUsrc_open hUsrc_sub_K hKsrc hKsrc_sub_U
         hUsrcP ηsrc hηsrcC h0_plus h0_minus χ.toSchwartz ψ
         hχ_compact hψ_compact hliftU
-  have hscaled_sub_after :
+  have hplusT :
       Filter.Tendsto
-        (fun ε : ℝ =>
-          J *
-            ((∫ ξ : NPointDomain d m,
-              canonicalReducedBranch (d := d) OS lgc m ε ξ * ψ ξ) -
-            ∫ ξ : NPointDomain d m,
-              canonicalAfterReducedSwapBranch
-                  (d := d) OS lgc m i j ε ξ * ψ ξ))
+        (fun ε : ℝ => A ε - J * C ε)
         l
         (nhds 0) := by
-    refine Filter.Tendsto.congr' ?_ hflat
-    filter_upwards [hplus_flat_transport, hminus_flat_transport] with ε hplus hminus
-    rw [hplus, hminus]
+    simpa [l, φFlat, J, A, C] using hplus_flat_transport
+  have hminusT :
+      Filter.Tendsto
+        (fun ε : ℝ => B ε - J * R ε)
+        l
+        (nhds 0) := by
+    simpa [l, φFlat, J, j, B, R] using hminus_flat_transport
+  have hscaled_sub_after :
+      Filter.Tendsto
+        (fun ε : ℝ => J * (C ε - R ε))
+        l
+        (nhds 0) := by
+    have hcomb :
+        Filter.Tendsto
+          (fun ε : ℝ =>
+            ((A ε - B ε) - (A ε - J * C ε)) + (B ε - J * R ε))
+          l
+          (nhds 0) := by
+      simpa using ((hflat.sub hplusT).add hminusT)
+    refine Filter.Tendsto.congr' ?_ hcomb
+    filter_upwards with ε
     ring
   have hJ_ne : J ≠ 0 := by
     dsimp [J]
@@ -2295,55 +2320,28 @@ theorem tendsto_canonicalAfterSwapBranch_difference_zero_reducedTestLift_of_Hdif
       (ne_of_gt (BHW.os45CommonEdgeFlatJacobianAbs_pos (m + 1)))
   have hcanonical_sub_after :
       Filter.Tendsto
-        (fun ε : ℝ =>
-          (∫ ξ : NPointDomain d m,
-            canonicalReducedBranch (d := d) OS lgc m ε ξ * ψ ξ) -
-          ∫ ξ : NPointDomain d m,
-            canonicalAfterReducedSwapBranch
-                (d := d) OS lgc m i j ε ξ * ψ ξ)
+        (fun ε : ℝ => C ε - R ε)
         l
         (nhds 0) := by
     have hscaled_div :
         Filter.Tendsto
-          (fun ε : ℝ =>
-            J⁻¹ *
-              (J *
-                ((∫ ξ : NPointDomain d m,
-                  canonicalReducedBranch (d := d) OS lgc m ε ξ * ψ ξ) -
-                ∫ ξ : NPointDomain d m,
-                  canonicalAfterReducedSwapBranch
-                      (d := d) OS lgc m i j ε ξ * ψ ξ)))
+          (fun ε : ℝ => J⁻¹ * (J * (C ε - R ε)))
           l
           (nhds 0) := by
-      simpa using (tendsto_const_nhds.mul hscaled_sub_after :
-        Filter.Tendsto
-          (fun ε : ℝ =>
-            J⁻¹ *
-              (J *
-                ((∫ ξ : NPointDomain d m,
-                  canonicalReducedBranch (d := d) OS lgc m ε ξ * ψ ξ) -
-                ∫ ξ : NPointDomain d m,
-                  canonicalAfterReducedSwapBranch
-                      (d := d) OS lgc m i j ε ξ * ψ ξ)))
-          l
-          (nhds (J⁻¹ * 0)))
+      exact
+        (tendsto_const_nhds.mul hscaled_sub_after).mono_right (by simp)
     refine Filter.Tendsto.congr' ?_ hscaled_div
     filter_upwards with ε
     rw [← mul_assoc, inv_mul_cancel₀ hJ_ne, one_mul]
   have hneg :
       Filter.Tendsto
-        (fun ε : ℝ =>
-          -((∫ ξ : NPointDomain d m,
-            canonicalReducedBranch (d := d) OS lgc m ε ξ * ψ ξ) -
-          ∫ ξ : NPointDomain d m,
-            canonicalAfterReducedSwapBranch
-                (d := d) OS lgc m i j ε ξ * ψ ξ))
+        (fun ε : ℝ => -(C ε - R ε))
         (nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)) : Filter ℝ)
         (nhds 0) := by
     simpa [l] using hcanonical_sub_after.neg
   refine Filter.Tendsto.congr' ?_ hneg
   filter_upwards with ε
-  simp only [j]
+  simp only [j, C, R]
   ring
 
 namespace AdjacentNormal
@@ -4992,8 +4990,8 @@ local boundary-CLM invariant at the integrated level.
 This is the corrected distributional Path-2 consumer after the source-side
 transport-shape audit.  The moving-source Hdiff theorem proves the flat
 side-branch difference limit; the two remaining hypotheses are the genuine
-flat-to-reduced endpoint transport/reindexing equalities for the compact
-reduced test. -/
+flat-to-reduced endpoint transport/reindexing limits for the compact reduced
+test. -/
 theorem reducedLocalAdjacentBoundaryCLMInvariant_of_local_OS45HdiffGerm_integrated_flat_transport
     (hd : 2 ≤ d)
     (OS : OsterwalderSchraderAxioms d)
@@ -5108,8 +5106,8 @@ theorem reducedLocalAdjacentBoundaryCLMInvariant_of_local_OS45HdiffGerm_integrat
                                     tsupport
                                       (ψ : NPointDomain d m → ℂ) ⊆
                                   Usrc ∧
-                                (∀ᶠ ε : ℝ in
-                                  nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)),
+                                Filter.Tendsto
+                                  (fun ε : ℝ =>
                                   (∫ x : BHW.OS45FlatCommonChartReal d (m + 1),
                                     BHW.os45FlatCommonChartBranch d (m + 1)
                                       OS lgc
@@ -5127,15 +5125,18 @@ theorem reducedLocalAdjacentBoundaryCLMInvariant_of_local_OS45HdiffGerm_integrat
                                           ψ : SchwartzNPoint d (m + 1)) :
                                         SchwartzMap
                                           (BHW.OS45FlatCommonChartReal d (m + 1))
-                                          ℂ) x) =
+                                          ℂ) x) -
                                     (BHW.os45CommonEdgeFlatJacobianAbs
                                         (m + 1) : ℂ) *
                                       ∫ ξ : NPointDomain d m,
                                         canonicalReducedBranch
                                             (d := d) OS lgc m ε ξ *
-                                          ψ ξ) ∧
-                                (∀ᶠ ε : ℝ in
-                                  nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)),
+                                          ψ ξ)
+                                  (nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)) :
+                                    Filter ℝ)
+                                  (nhds 0) ∧
+                                Filter.Tendsto
+                                  (fun ε : ℝ =>
                                   (∫ x : BHW.OS45FlatCommonChartReal d (m + 1),
                                     BHW.os45FlatCommonChartBranch d (m + 1)
                                       OS lgc
@@ -5154,14 +5155,17 @@ theorem reducedLocalAdjacentBoundaryCLMInvariant_of_local_OS45HdiffGerm_integrat
                                           ψ : SchwartzNPoint d (m + 1)) :
                                         SchwartzMap
                                           (BHW.OS45FlatCommonChartReal d (m + 1))
-                                          ℂ) x) =
+                                          ℂ) x) -
                                     (BHW.os45CommonEdgeFlatJacobianAbs
                                         (m + 1) : ℂ) *
                                       ∫ ξ : NPointDomain d m,
                                         canonicalAfterReducedSwapBranch
                                             (d := d) OS lgc m i
                                             ⟨i.val + 1, hi⟩ ε ξ *
-                                          ψ ξ)) :
+                                          ψ ξ)
+                                  (nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)) :
+                                    Filter ℝ)
+                                  (nhds 0)) :
     _root_.OSReconstruction.ReducedLocalAdjacentBoundaryCLMInvariant
       (d := d) OS lgc χ := by
   refine
