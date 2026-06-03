@@ -834,6 +834,130 @@ theorem tendsto_extendF_bvt_F_sub_canonicalReducedBranch_of_reducedDiff_tendsto
   refine Filter.Tendsto.congr' hselected_to_ext.symm ?_
   simpa using hFred_src.sub hFred_can
 
+/-- Moving source-side value transport through a reduced PET extension, lower
+adjacent branch.
+
+This is the flexible lower-side companion to
+`tendsto_extendF_bvt_F_sub_canonicalReducedBranch_of_reducedDiff_tendsto`: the
+moving absolute source path only has to remain on the extended tube and have
+reduced differences converging to the same real reduced edge as the swapped
+canonical approach. -/
+theorem tendsto_extendF_bvt_F_sub_adjacentReducedPermutedBranch_of_reducedDiff_tendsto
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (m : ℕ) (i j : Fin (m + 1))
+    (Fred : BHW.ReducedBHWExtensionData (d := d) (n := m + 1)
+      (bvt_F_reduced (d := d) OS lgc m))
+    (ξ : NPointDomain d m)
+    (z : ℝ → Fin (m + 1) → Fin (d + 1) → ℂ)
+    (hξ_pet :
+      (fun k μ => (ξ k μ : ℂ)) ∈
+        BHW.ReducedPermutedExtendedTubeN d m)
+    (hET :
+      ∀ᶠ ε : ℝ in nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)),
+        z ε ∈ BHW.ExtendedTube d (m + 1))
+    (hred_tendsto :
+      Filter.Tendsto
+        (fun ε : ℝ => BHW.reducedDiffMap (m + 1) d (z ε))
+        (nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)) : Filter ℝ)
+        (nhds (fun k μ => (ξ k μ : ℂ)))) :
+    Filter.Tendsto
+      (fun ε : ℝ =>
+        BHW.extendF (bvt_F OS lgc (m + 1)) (z ε) -
+          adjacentReducedPermutedBranch (d := d) OS lgc m i j ε ξ)
+      (nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)) : Filter ℝ)
+      (nhds 0) := by
+  let l : Filter ℝ := nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ))
+  let ξC : BHW.ReducedNPointConfig d m := fun k μ => (ξ k μ : ℂ)
+  let ζperm : ℝ → BHW.ReducedNPointConfig d m := fun ε k μ =>
+    (ξ k μ : ℂ) +
+      ε * permutedCanonicalReducedDirectionC (d := d) m (Equiv.swap i j) k μ *
+        Complex.I
+  have hpos : ∀ᶠ ε : ℝ in l, 0 < ε := by
+    exact self_mem_nhdsWithin
+  have hperm_pet :
+      ∀ᶠ ε : ℝ in l, ζperm ε ∈ BHW.ReducedPermutedExtendedTubeN d m := by
+    simpa [l, ζperm] using
+      permutedReducedApproach_eventually_mem_reducedPermutedExtendedTubeN
+        (d := d) m i j ξ hξ_pet
+  have hεC : Filter.Tendsto (fun ε : ℝ => (ε : ℂ)) l (nhds 0) := by
+    have hid : Filter.Tendsto (fun ε : ℝ => ε) l (nhds (0 : ℝ)) := by
+      exact Filter.tendsto_id'.2 nhdsWithin_le_nhds
+    exact (Complex.continuous_ofReal.tendsto (0 : ℝ)).comp hid
+  have hζperm_tendsto : Filter.Tendsto ζperm l (nhds ξC) := by
+    rw [tendsto_pi_nhds]
+    intro k
+    rw [tendsto_pi_nhds]
+    intro μ
+    have hterm :
+        Filter.Tendsto
+          (fun ε : ℝ =>
+            (ε : ℂ) *
+              permutedCanonicalReducedDirectionC
+                (d := d) m (Equiv.swap i j) k μ *
+              Complex.I) l (nhds 0) := by
+      simpa [mul_assoc] using
+        (hεC.mul_const
+          (permutedCanonicalReducedDirectionC
+            (d := d) m (Equiv.swap i j) k μ * Complex.I))
+    simpa [ζperm, ξC] using (tendsto_const_nhds.add hterm)
+  have hred_within :
+      Filter.Tendsto
+        (fun ε : ℝ => BHW.reducedDiffMap (m + 1) d (z ε)) l
+        (nhdsWithin ξC (BHW.ReducedPermutedExtendedTubeN d m)) := by
+    have hred_pet :
+        ∀ᶠ ε : ℝ in l,
+          BHW.reducedDiffMap (m + 1) d (z ε) ∈
+            BHW.ReducedPermutedExtendedTubeN d m := by
+      filter_upwards [hET] with ε hεET
+      exact
+        ⟨z ε, BHW.extendedTube_subset_permutedExtendedTube hεET, rfl⟩
+    exact tendsto_nhdsWithin_iff.mpr ⟨by simpa [ξC] using hred_tendsto, hred_pet⟩
+  have hperm_within :
+      Filter.Tendsto ζperm l
+        (nhdsWithin ξC (BHW.ReducedPermutedExtendedTubeN d m)) :=
+    tendsto_nhdsWithin_iff.mpr ⟨hζperm_tendsto, hperm_pet⟩
+  have hFred_cont :
+      ContinuousWithinAt Fred.toFun
+        (BHW.ReducedPermutedExtendedTubeN d m) ξC :=
+    Fred.holomorphic.continuousOn.continuousWithinAt (by simpa [ξC] using hξ_pet)
+  have hFred_src :
+      Filter.Tendsto
+        (fun ε : ℝ => Fred.toFun (BHW.reducedDiffMap (m + 1) d (z ε))) l
+        (nhds (Fred.toFun ξC)) :=
+    hFred_cont.tendsto.comp hred_within
+  have hFred_perm :
+      Filter.Tendsto (fun ε : ℝ => Fred.toFun (ζperm ε)) l
+        (nhds (Fred.toFun ξC)) :=
+    hFred_cont.tendsto.comp hperm_within
+  have hsource_eq :
+      (fun ε : ℝ => BHW.extendF (bvt_F OS lgc (m + 1)) (z ε)) =ᶠ[l]
+        (fun ε : ℝ => Fred.toFun (BHW.reducedDiffMap (m + 1) d (z ε))) := by
+    filter_upwards [hET] with ε hεET
+    exact
+      extendF_bvt_F_eq_reducedExtension_on_extendedTube
+        (d := d) OS lgc m Fred (z ε) hεET
+  have hbranch_eq :
+      (fun ε : ℝ => adjacentReducedPermutedBranch (d := d) OS lgc m i j ε ξ) =ᶠ[l]
+        (fun ε : ℝ => Fred.toFun (ζperm ε)) := by
+    filter_upwards [hpos, hperm_pet] with ε hε hεpet
+    change bvt_F_reduced (d := d) OS lgc m (ζperm ε) =
+      Fred.toFun (ζperm ε)
+    simpa [ζperm] using
+      bvt_F_reduced_permutedApproach_eq_reducedExtension
+        (d := d) OS lgc m i j Fred ξ hε hεpet
+  have hselected_to_ext :
+      (fun ε : ℝ =>
+        BHW.extendF (bvt_F OS lgc (m + 1)) (z ε) -
+          adjacentReducedPermutedBranch (d := d) OS lgc m i j ε ξ) =ᶠ[l]
+      (fun ε : ℝ =>
+        Fred.toFun (BHW.reducedDiffMap (m + 1) d (z ε)) -
+          Fred.toFun (ζperm ε)) := by
+    filter_upwards [hsource_eq, hbranch_eq] with ε hsrc hbranch
+    rw [hsrc, hbranch]
+  refine Filter.Tendsto.congr' hselected_to_ext.symm ?_
+  simpa using hFred_src.sub hFred_perm
+
 /-- The canonical OS45 flat source-side direction becomes the canonical reduced
 imaginary direction after quotienting by reduced differences. -/
 theorem reducedDiffMap_os45FlatCommonChartSourceSideDirection_canonical_id_eq
