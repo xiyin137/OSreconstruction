@@ -368,6 +368,14 @@ specialization only when that collar is genuinely Jost-localized; it is too
 strong as the blanket theorem-2 producer because it forces the zero-center
 representative into a full Jost patch.
 
+Likewise, the selected-collar producer should not be phrased as membership in
+the existing `sourceOrientedExtendedTubeDomain`: that domain is the oriented
+image of the ordinary full `ExtendedTube`, and the current source-oriented
+real-environment API still carries a full `JostSet` hypothesis.  The missing
+input is a selected/frozen-spectator mixed-tube EOW packet with common
+real-edge boundary value, not a proof that arbitrary frozen spectators already
+lie in the full oriented extended-tube image.
+
 Do not replace that source-transfer proof body with a direct cone-height
 source-side ray to fixed canonical reduced branch shortcut: the OS45
 moving-source/quarter-turn contribution is part of the Hdiff/source
