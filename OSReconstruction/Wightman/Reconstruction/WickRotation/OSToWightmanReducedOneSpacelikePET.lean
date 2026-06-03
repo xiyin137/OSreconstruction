@@ -553,18 +553,16 @@ theorem AdjacentNormal.reducedNormalCanonicalRayEOWBranchDataOn_zero_one_of_sele
         (AdjacentNormal.reducedNormalFlattenCLE (d := d)
           (0 : Fin 2) (1 : Fin 2) p)) :=
     hΩminus_open.mem_nhds (hminus0 _ hpE)
-  have hplus_rep :
+  have hplus_ext :
       ∀ᶠ ε : ℝ in nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)),
         Fplus (AdjacentNormal.reducedNormalUpperCanonicalRay
             (d := d) (0 : Fin 2) (by decide) p ε) =
-          canonicalReducedBranch (d := d) OS lgc 1 ε
-            (AdjacentNormal.reducedCoordInv (d := d)
-              (0 : Fin 2) (1 : Fin 2) (by decide) p) := by
-    have hpos : ∀ᶠ ε : ℝ in nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)),
-        0 < ε := by
-      exact self_mem_nhdsWithin
-    refine hpos.mono ?_
-    intro ε hε
+          Fred.toFun
+            (AdjacentNormal.reducedNormalCoordFlatComplexCLM
+              (d := d) (0 : Fin 2) (by decide)
+              (AdjacentNormal.reducedNormalUpperCanonicalRay
+                (d := d) (0 : Fin 2) (by decide) p ε)) := by
+    filter_upwards with ε
     have hξ :=
       AdjacentNormal.reducedCoordInv_zero_one_eq_selected (d := d) p
     have harg :
@@ -630,23 +628,18 @@ theorem AdjacentNormal.reducedNormalCanonicalRayEOWBranchDataOn_zero_one_of_sele
       simp [AdjacentNormal.reducedNormalUpperCanonicalRay,
         hdir_head, hξ0, canonicalReducedDirectionC]
       exact hp_head
-    have heq := bvt_F_reduced_canonicalApproach_eq_reducedExtension
-        (d := d) OS lgc 1 Fred
-        (AdjacentNormal.reducedCoordInv (d := d)
-          (0 : Fin 2) (1 : Fin 2) (by decide) p) hε
-    rw [canonicalReducedBranch]
     change Fred.toFun
         (fun _ : Fin 1 => fun μ : Fin (d + 1) =>
           AdjacentNormal.reducedNormalUpperCanonicalRay
             (d := d) (0 : Fin 2) (by decide) p ε
               (Fin.castAdd tail μ)) =
-      bvt_F_reduced (d := d) OS lgc 1
-        (fun k μ =>
-          (AdjacentNormal.reducedCoordInv (d := d)
-            (0 : Fin 2) (1 : Fin 2) (by decide) p k μ : ℂ) +
-            ε * canonicalReducedDirectionC (d := d) 1 k μ * Complex.I)
-    rw [harg]
-    exact heq.symm
+      Fred.toFun
+        (AdjacentNormal.reducedNormalCoordFlatComplexCLM
+          (d := d) (0 : Fin 2) (by decide)
+          (AdjacentNormal.reducedNormalUpperCanonicalRay
+            (d := d) (0 : Fin 2) (by decide) p ε))
+    rw [AdjacentNormal.reducedNormalCoordFlatComplexCLM_upperCanonicalRay]
+    exact congrArg Fred.toFun harg
   have hminus_rep :
       ∀ᶠ ε : ℝ in nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)),
         Fminus (AdjacentNormal.reducedNormalLowerCanonicalRay
@@ -770,13 +763,13 @@ theorem AdjacentNormal.reducedNormalCanonicalRayEOWBranchDataOn_zero_one_of_sele
     dsimp [E, tail]
     exact AdjacentNormal.isOpen_reducedNormalFlattenedSelectedSpacelike
       (d := d) (0 : Fin 2) (1 : Fin 2)
-  exact ⟨AdjacentNormal.ReducedNormalCanonicalRayEOWBranchDataOn.ofRealEdgeMem
+  exact ⟨AdjacentNormal.ReducedNormalCanonicalRayEOWBranchDataOn.ofUpperReducedExtension
     (d := d) (OS := OS) (lgc := lgc)
     (m := 1) (i := (0 : Fin 2)) (hi := by decide) (p := p)
-    E hE_open
+    Fred E hE_open
     hpE Ωplus Ωminus C hΩplus_open hΩminus_open hC_open hC_conv hC_ne
     hplus0 hminus0 Fplus Fminus hFplus_diff hFminus_diff bv hbv_cont
-    hFplus_bv hFminus_bv hplus_nhds hminus_nhds hplus_rep hminus_rep⟩
+    hFplus_bv hFminus_bv hplus_nhds hminus_nhds hplus_ext hminus_rep⟩
 
 /-- Adjacent-index form of the two-point/no-spectator reduced-normal EOW
 branch-data producer. -/
