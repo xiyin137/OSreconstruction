@@ -705,6 +705,41 @@ theorem reducedTestLift_hasCompactSupport
     SchwartzMap.compCLMOfContinuousLinearEquiv_apply] using hcomp
 
 omit [NeZero d] in
+/-- Topological support of a reduced test lift lies over the topological support
+of the reduced test under the reduced-difference projection. -/
+theorem reducedTestLift_tsupport_subset_reducedDiff_preimage_tsupport
+    {m : ℕ}
+    (χ : SchwartzMap (SpacetimeDim d) ℂ)
+    (φ : SchwartzNPoint d m) :
+    tsupport
+        ((BHW.reducedTestLift m d χ φ : SchwartzNPoint d (m + 1)) :
+          NPointDomain d (m + 1) → ℂ) ⊆
+      (BHW.reducedDiffMapRealCLM (m + 1) d) ⁻¹'
+        tsupport (φ : NPointDomain d m → ℂ) := by
+  let f : NPointDomain d (m + 1) → ℂ :=
+    ((BHW.reducedTestLift m d χ φ : SchwartzNPoint d (m + 1)) :
+      NPointDomain d (m + 1) → ℂ)
+  have hsupport :
+      Function.support f ⊆
+        (BHW.reducedDiffMapRealCLM (m + 1) d) ⁻¹'
+          tsupport (φ : NPointDomain d m → ℂ) := by
+    intro x hx
+    have hφ_ne :
+        (φ : NPointDomain d m → ℂ)
+            (BHW.reducedDiffMapReal (m + 1) d x) ≠ 0 := by
+      intro hzero
+      apply hx
+      change BHW.reducedTestLift m d χ φ x = 0
+      rw [BHW.reducedTestLift_apply, mul_eq_zero]
+      exact Or.inr hzero
+    simpa [BHW.reducedDiffMapRealCLM] using
+      subset_tsupport (φ : NPointDomain d m → ℂ) hφ_ne
+  exact
+    closure_minimal hsupport
+      ((isClosed_tsupport (φ : NPointDomain d m → ℂ)).preimage
+        (BHW.reducedDiffMapRealCLM (m + 1) d).continuous)
+
+omit [NeZero d] in
 theorem reducedTestLift_reduced_support_subset
     {m : ℕ} (i : Fin (m + 1)) (hi : i.val + 1 < m + 1)
     (χ : SchwartzMap (SpacetimeDim d) ℂ)

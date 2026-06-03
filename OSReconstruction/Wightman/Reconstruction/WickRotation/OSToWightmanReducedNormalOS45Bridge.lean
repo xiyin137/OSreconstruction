@@ -4640,11 +4640,9 @@ theorem reducedLocalAdjacentBoundaryCLMInvariant_of_local_OS45HdiffGerm_integrat
                                       d (m + 1)
                                       (1 : Equiv.Perm (Fin (m + 1)))
                                       (-1 : ℝ) 0 ηsrc u ∈ Ωminus) ∧
-                                  tsupport
-                                      ((BHW.reducedTestLift m d
-                                          (BHW.normalizedCutoffOfBump d).toSchwartz
-                                          ψ : SchwartzNPoint d (m + 1)) :
-                                        NPointDomain d (m + 1) → ℂ) ⊆
+                                  (BHW.reducedDiffMapRealCLM (m + 1) d) ⁻¹'
+                                      tsupport
+                                        (ψ : NPointDomain d m → ℂ) ⊆
                                     Usrc ∧
                                   (∀ᶠ ε : ℝ in
                                     nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)),
@@ -4720,7 +4718,17 @@ theorem reducedLocalAdjacentBoundaryCLMInvariant_of_local_OS45HdiffGerm_integrat
       hcommon_mem, hHdiff_holo, hwick_pairing_zero, hcommon_trace,
       hΩplus_open, hΩminus_open, hFplus_cont, hFminus_cont,
       hUsrc_open, hUsrc_sub_K, hKsrc, hKsrc_sub_U, hUsrcP,
-      h0_plus, h0_minus, hliftU, hplus_transport, hminus_transport⟩
+      h0_plus, h0_minus, hredSupportU, hplus_transport, hminus_transport⟩
+  have hliftU :
+      tsupport
+          ((BHW.reducedTestLift m d
+              (BHW.normalizedCutoffOfBump d).toSchwartz ψ :
+              SchwartzNPoint d (m + 1)) :
+            NPointDomain d (m + 1) → ℂ) ⊆ Usrc := by
+    exact
+      (reducedTestLift_tsupport_subset_reducedDiff_preimage_tsupport
+        (d := d) (m := m)
+        (BHW.normalizedCutoffOfBump d).toSchwartz ψ).trans hredSupportU
   exact
     tendsto_canonicalAfterSwapBranch_difference_zero_reducedTestLift_of_HdiffGerm_and_transport
       (d := d) OS lgc D Fred U hU_open hU_nonempty Ucx Hdiff
