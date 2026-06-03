@@ -339,6 +339,56 @@ theorem tendsto_flatCommonChart_branch_integral_sub_sourceSide_target_zero_of_sh
   rw [hflat_source]
   ring
 
+/-- Reindex the shifted source-side pairing back to the fixed source test.
+
+The source variable is translated by
+`(os45CommonEdgeFlatCLE d n ρperm).symm ((sgn * ε) • η)`, so the shifted flat
+test `φ (e u + (sgn * ε) • η)` becomes `φ (e u)` and the branch is evaluated
+at the moving source point
+`e.symm (e u - (sgn * ε) • η)`.  This is pure Lebesgue translation and
+coordinate algebra; no branch-limit or boundary-value theorem is used. -/
+theorem integral_sourceSide_shiftedTest_eq_movingSource_fixedTest
+    (ρperm : Equiv.Perm (Fin n))
+    (sgn ε : ℝ)
+    (η : BHW.OS45FlatCommonChartReal d n)
+    (φ : BHW.OS45FlatCommonChartReal d n → ℂ)
+    (F : (Fin n → Fin (d + 1) → ℂ) → ℂ) :
+    (∫ u : NPointDomain d n,
+      F (BHW.os45FlatCommonChartSourceSide d n ρperm sgn ε η u) *
+        φ (BHW.os45CommonEdgeFlatCLE d n ρperm u + (sgn * ε) • η)) =
+      ∫ u : NPointDomain d n,
+        F (BHW.os45FlatCommonChartSourceSide d n ρperm sgn ε η
+          ((BHW.os45CommonEdgeFlatCLE d n ρperm).symm
+            (BHW.os45CommonEdgeFlatCLE d n ρperm u - (sgn * ε) • η))) *
+          φ (BHW.os45CommonEdgeFlatCLE d n ρperm u) := by
+  let e : NPointDomain d n ≃L[ℝ] BHW.OS45FlatCommonChartReal d n :=
+    BHW.os45CommonEdgeFlatCLE d n ρperm
+  let a : BHW.OS45FlatCommonChartReal d n := (sgn * ε) • η
+  let t : NPointDomain d n := e.symm a
+  let g : NPointDomain d n → ℂ := fun u =>
+    F (BHW.os45FlatCommonChartSourceSide d n ρperm sgn ε η
+      (e.symm (e u - a))) * φ (e u)
+  have htranslate :
+      (∫ u : NPointDomain d n, g (u + t)) =
+        ∫ u : NPointDomain d n, g u :=
+    MeasureTheory.integral_add_right_eq_self
+      (μ := (volume : Measure (NPointDomain d n))) g t
+  calc
+    (∫ u : NPointDomain d n,
+      F (BHW.os45FlatCommonChartSourceSide d n ρperm sgn ε η u) *
+        φ (BHW.os45CommonEdgeFlatCLE d n ρperm u + (sgn * ε) • η)) =
+        ∫ u : NPointDomain d n, g (u + t) := by
+          refine MeasureTheory.integral_congr_ae ?_
+          filter_upwards with u
+          simp [g, e, a, t, sub_eq_add_neg, add_assoc]
+    _ = ∫ u : NPointDomain d n, g u := htranslate
+    _ = ∫ u : NPointDomain d n,
+        F (BHW.os45FlatCommonChartSourceSide d n ρperm sgn ε η
+          ((BHW.os45CommonEdgeFlatCLE d n ρperm).symm
+            (BHW.os45CommonEdgeFlatCLE d n ρperm u - (sgn * ε) • η))) *
+          φ (BHW.os45CommonEdgeFlatCLE d n ρperm u) := by
+          rfl
+
 /-- Source-side pullback with the flat test translated so the real side-shift
 cancels on source variables.
 
