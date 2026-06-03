@@ -933,6 +933,174 @@ theorem reducedDiffMap_os45FlatCommonChartSourceSide_canonicalHeight_moved_upper
   rw [BHW.reducedDiffMap_os45FlatCommonChartSourceSide_zero]
   simp
 
+/-- The negative canonical OS45 side direction descends to the negative
+canonical reduced imaginary direction. -/
+theorem reducedDiffMap_os45FlatCommonChartSourceSideDirection_canonical_id_neg_eq
+    (m : ℕ) :
+    BHW.reducedDiffMap (m + 1) d
+        (BHW.os45FlatCommonChartSourceSideDirection
+          (d := d) (n := m + 1)
+          (1 : Equiv.Perm (Fin (m + 1))) (-1 : ℝ)
+          (BHW.os45CommonEdgeFlatCLE d (m + 1)
+            (1 : Equiv.Perm (Fin (m + 1)))
+            (canonicalForwardConeDirection (d := d) (m + 1)))) =
+      fun k μ =>
+        -(canonicalReducedDirectionC (d := d) m k μ * Complex.I) := by
+  let ηc : BHW.OS45FlatCommonChartReal d (m + 1) :=
+    BHW.os45CommonEdgeFlatCLE d (m + 1)
+      (1 : Equiv.Perm (Fin (m + 1)))
+      (canonicalForwardConeDirection (d := d) (m + 1))
+  have hdir :
+      BHW.os45FlatCommonChartSourceSideDirection
+          (d := d) (n := m + 1)
+          (1 : Equiv.Perm (Fin (m + 1))) (-1 : ℝ) ηc =
+        -BHW.os45FlatCommonChartSourceSideDirection
+          (d := d) (n := m + 1)
+          (1 : Equiv.Perm (Fin (m + 1))) (1 : ℝ) ηc := by
+    ext k μ
+    by_cases hμ : μ = 0
+    · subst μ
+      simp [BHW.os45FlatCommonChartSourceSideDirection, ηc,
+        BHW.os45QuarterTurnCLE_symm_apply, BHW.unflattenCfg]
+      ring_nf
+    · simp [BHW.os45FlatCommonChartSourceSideDirection, ηc,
+        BHW.os45QuarterTurnCLE_symm_apply, BHW.unflattenCfg, hμ,
+        add_comm]
+  rw [show
+      BHW.os45CommonEdgeFlatCLE d (m + 1)
+          (1 : Equiv.Perm (Fin (m + 1)))
+          (canonicalForwardConeDirection (d := d) (m + 1)) = ηc by
+        rfl]
+  rw [hdir, map_neg]
+  ext k μ
+  have hplus :=
+    congrFun
+      (congrFun
+        (reducedDiffMap_os45FlatCommonChartSourceSideDirection_canonical_id_eq
+          (d := d) m) k) μ
+  change
+    -((BHW.reducedDiffMap (m + 1) d)
+        (BHW.os45FlatCommonChartSourceSideDirection
+          (d := d) (n := m + 1)
+          (1 : Equiv.Perm (Fin (m + 1))) (1 : ℝ) ηc) k μ) =
+      -(canonicalReducedDirectionC (d := d) m k μ * Complex.I)
+  simpa [ηc] using congrArg (fun z : ℂ => -z) hplus
+
+/-- Lower moved-source packet in its honest affine reduced-coordinate form.
+
+After applying the adjacent branch permutation, the zero-height base is the
+Wick carrier of the moved source reindexed by the branch permutation, and the
+side-height direction is the induced reduced permutation of the negative
+canonical reduced imaginary direction.  This is the coordinate packet the
+endpoint DCT/reindexing leaf must compare with the canonical-after-swap
+branch. -/
+theorem reducedDiffMap_permAct_os45FlatCommonChartSourceSide_canonicalHeight_moved_lower_affine_wickBase
+    (m : ℕ) (τ : Equiv.Perm (Fin (m + 1)))
+    (ε : ℝ) (u : NPointDomain d (m + 1)) :
+    let e : NPointDomain d (m + 1) ≃L[ℝ]
+        BHW.OS45FlatCommonChartReal d (m + 1) :=
+      BHW.os45CommonEdgeFlatCLE d (m + 1)
+        (1 : Equiv.Perm (Fin (m + 1)))
+    let ηc : BHW.OS45FlatCommonChartReal d (m + 1) :=
+      e (canonicalForwardConeDirection (d := d) (m + 1))
+    let a : BHW.OS45FlatCommonChartReal d (m + 1) :=
+      ((-1 : ℝ) * ε) • ηc
+    BHW.reducedDiffMap (m + 1) d
+        (BHW.permAct (d := d) τ
+          (BHW.os45FlatCommonChartSourceSide d (m + 1)
+            (1 : Equiv.Perm (Fin (m + 1))) (-1 : ℝ) ε ηc
+            (e.symm (e u - a)))) =
+      BHW.reducedDiffMap (m + 1) d
+        (BHW.os45QuarterTurnConfig (d := d) (n := m + 1)
+          (fun k =>
+            wickRotatePoint ((e.symm (e u - a)) (τ k)))) +
+        (ε : ℂ) •
+          BHW.permOnReducedDiff (d := d) (n := m + 1) τ
+            (fun k μ =>
+              -(canonicalReducedDirectionC (d := d) m k μ * Complex.I)) := by
+  intro e ηc a
+  let zε : Fin (m + 1) → Fin (d + 1) → ℂ :=
+    BHW.os45FlatCommonChartSourceSide d (m + 1)
+      (1 : Equiv.Perm (Fin (m + 1))) (-1 : ℝ) ε ηc
+      (e.symm (e u - a))
+  let z0 : Fin (m + 1) → Fin (d + 1) → ℂ :=
+    BHW.os45FlatCommonChartSourceSide d (m + 1)
+      (1 : Equiv.Perm (Fin (m + 1))) (-1 : ℝ) 0 ηc
+      (e.symm (e u - a))
+  let dir : Fin (m + 1) → Fin (d + 1) → ℂ :=
+    BHW.os45FlatCommonChartSourceSideDirection
+      (d := d) (n := m + 1)
+      (1 : Equiv.Perm (Fin (m + 1))) (-1 : ℝ) ηc
+  have hzε :
+      BHW.reducedDiffMap (m + 1) d (BHW.permAct (d := d) τ zε) =
+        BHW.permOnReducedDiff (d := d) (n := m + 1) τ
+          (BHW.reducedDiffMap (m + 1) d zε) := by
+    simpa [zε, BHW.permAct] using
+      (BHW.permOnReducedDiff_reducedDiffMap
+        (d := d) (n := m + 1) τ zε).symm
+  have hz0 :
+      BHW.reducedDiffMap (m + 1) d (BHW.permAct (d := d) τ z0) =
+        BHW.permOnReducedDiff (d := d) (n := m + 1) τ
+          (BHW.reducedDiffMap (m + 1) d z0) := by
+    simpa [z0, BHW.permAct] using
+      (BHW.permOnReducedDiff_reducedDiffMap
+        (d := d) (n := m + 1) τ z0).symm
+  have hsource_aff :
+      BHW.reducedDiffMap (m + 1) d zε =
+        BHW.reducedDiffMap (m + 1) d z0 +
+          (ε : ℂ) • BHW.reducedDiffMap (m + 1) d dir := by
+    simpa [zε, z0, dir] using
+      BHW.reducedDiffMap_os45FlatCommonChartSourceSide_affine
+        (d := d) (n := m + 1)
+        (1 : Equiv.Perm (Fin (m + 1))) (-1 : ℝ) ε ηc
+        (e.symm (e u - a))
+  have hdir :
+      BHW.reducedDiffMap (m + 1) d dir =
+        fun k μ =>
+          -(canonicalReducedDirectionC (d := d) m k μ * Complex.I) := by
+    simpa [dir, ηc, e] using
+      reducedDiffMap_os45FlatCommonChartSourceSideDirection_canonical_id_neg_eq
+        (d := d) m
+  have hzero_base :
+      BHW.permAct (d := d) τ z0 =
+        BHW.os45QuarterTurnConfig (d := d) (n := m + 1)
+          (fun k =>
+            wickRotatePoint ((e.symm (e u - a)) (τ k))) := by
+    simpa [z0] using
+      BHW.permAct_os45FlatCommonChartSourceSide_zero
+        (d := d) (n := m + 1) τ
+        (1 : Equiv.Perm (Fin (m + 1))) (-1 : ℝ) ηc
+        (e.symm (e u - a))
+  calc
+    BHW.reducedDiffMap (m + 1) d (BHW.permAct (d := d) τ zε)
+        = BHW.permOnReducedDiff (d := d) (n := m + 1) τ
+            (BHW.reducedDiffMap (m + 1) d zε) := hzε
+    _ = BHW.permOnReducedDiff (d := d) (n := m + 1) τ
+          (BHW.reducedDiffMap (m + 1) d z0 +
+            (ε : ℂ) • BHW.reducedDiffMap (m + 1) d dir) := by
+          rw [hsource_aff]
+    _ = BHW.permOnReducedDiff (d := d) (n := m + 1) τ
+          (BHW.reducedDiffMap (m + 1) d z0) +
+        (ε : ℂ) •
+          BHW.permOnReducedDiff (d := d) (n := m + 1) τ
+            (BHW.reducedDiffMap (m + 1) d dir) := by
+          rw [map_add, map_smul]
+    _ = BHW.reducedDiffMap (m + 1) d (BHW.permAct (d := d) τ z0) +
+        (ε : ℂ) •
+          BHW.permOnReducedDiff (d := d) (n := m + 1) τ
+            (BHW.reducedDiffMap (m + 1) d dir) := by
+          rw [← hz0]
+    _ = BHW.reducedDiffMap (m + 1) d
+          (BHW.os45QuarterTurnConfig (d := d) (n := m + 1)
+            (fun k =>
+              wickRotatePoint ((e.symm (e u - a)) (τ k)))) +
+        (ε : ℂ) •
+          BHW.permOnReducedDiff (d := d) (n := m + 1) τ
+            (fun k μ =>
+              -(canonicalReducedDirectionC (d := d) m k μ * Complex.I)) := by
+          rw [hdir]
+          rw [hzero_base]
+
 set_option maxHeartbeats 1200000 in
 /-- Uniform compact-source upper ET membership for the canonical OS45
 cone-height.
