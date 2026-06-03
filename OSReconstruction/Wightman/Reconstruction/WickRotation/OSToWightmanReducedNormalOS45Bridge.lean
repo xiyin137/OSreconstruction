@@ -458,7 +458,7 @@ theorem tendsto_canonicalSubAdjacentReducedBranch_of_sourceSide_transport
         (∫ u : NPointDomain d (m + 1),
           canonicalReducedBranch (d := d) OS lgc m ε (ξplus u) *
             φ u) -
-        ∫ u : NPointDomain d (m + 1),
+        (∫ u : NPointDomain d (m + 1),
           adjacentReducedPermutedBranch (d := d) OS lgc m i j ε
               (ξminus u) *
             φ u)
@@ -470,7 +470,7 @@ theorem tendsto_canonicalSubAdjacentReducedBranch_of_sourceSide_transport
   have hplus_eq :
       (∫ u : NPointDomain d (m + 1),
         BHW.extendF (bvt_F OS lgc (m + 1)) (zplus ε u) * φ u) =
-        ∫ u : NPointDomain d (m + 1),
+        (∫ u : NPointDomain d (m + 1),
           canonicalReducedBranch (d := d) OS lgc m ε (ξplus u) *
             φ u :=
     integral_extendF_bvt_F_eq_canonicalReducedBranch_of_support
@@ -1101,7 +1101,7 @@ theorem reducedDiffMap_permAct_os45FlatCommonChartSourceSide_canonicalHeight_mov
           rw [hdir]
           rw [hzero_base]
 
-set_option maxHeartbeats 1200000 in
+set_option maxHeartbeats 1200000
 /-- Uniform compact-source upper ET membership for the canonical OS45
 cone-height.
 
@@ -1193,7 +1193,7 @@ theorem eventually_forall_sourceSide_canonicalHeight_upper_mem_extendedTube_of_c
       (e.symm (e u - a))).1 hflat
   simpa [e, ηc, a] using hET
 
-set_option maxHeartbeats 1200000 in
+set_option maxHeartbeats 1200000
 /-- Uniform compact-source lower ET membership for the canonical OS45
 cone-height, with the adjacent branch permutation applied. -/
 theorem eventually_forall_sourceSide_canonicalHeight_lower_mem_extendedTube_of_compact_source
@@ -3461,6 +3461,598 @@ theorem sourceSide_shifted_reduced_transport_of_endpoint_transports
   filter_upwards with ε
   simp only [plusSource, minusSource, canonicalTarget, adjacentTarget, φFlat]
   ring
+
+set_option maxHeartbeats 1200000 in
+/-- Upper shifted source-side endpoint transport from pointwise source transfer
+and a dominated-convergence packet.
+
+This is the DCT/reindexing half of the upper endpoint leaf.  The hypotheses that
+remain are the genuine analytic inputs: pointwise convergence of the moving
+source-side branch to the canonical reduced branch on the reduced-test support,
+plus a single integrable domination packet for that difference. -/
+theorem sourceSide_shifted_upper_reduced_endpoint_of_pointwise_bound
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {m : ℕ}
+    (ηsrc : BHW.OS45FlatCommonChartReal d (m + 1))
+    (χ : BHW.NormalizedBasepointCutoff d)
+    (ψ : SchwartzNPoint d m)
+    (bound : NPointDomain d (m + 1) → ℝ)
+    (hpointwise :
+      ∀ u : NPointDomain d (m + 1),
+        ((BHW.reducedTestLift m d χ.toSchwartz ψ :
+            SchwartzNPoint d (m + 1)) :
+            NPointDomain d (m + 1) → ℂ) u ≠ 0 →
+          Filter.Tendsto
+            (fun ε : ℝ =>
+              BHW.extendF (bvt_F OS lgc (m + 1))
+                (BHW.permAct (d := d)
+                  (1 : Equiv.Perm (Fin (m + 1))).symm
+                  (BHW.os45FlatCommonChartSourceSide d (m + 1)
+                    (1 : Equiv.Perm (Fin (m + 1))) (1 : ℝ) ε ηsrc
+                    ((BHW.os45CommonEdgeFlatCLE d (m + 1)
+                      (1 : Equiv.Perm (Fin (m + 1)))).symm
+                        (BHW.os45CommonEdgeFlatCLE d (m + 1)
+                          (1 : Equiv.Perm (Fin (m + 1))) u -
+                          ε • ηsrc)))) -
+                canonicalReducedBranch (d := d) OS lgc m ε
+                  (BHW.reducedDiffMapReal (m + 1) d u))
+            (nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)) : Filter ℝ)
+            (nhds 0))
+    (hmeas :
+      ∀ᶠ ε : ℝ in nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)),
+        AEStronglyMeasurable
+          (fun u : NPointDomain d (m + 1) =>
+            (BHW.extendF (bvt_F OS lgc (m + 1))
+                (BHW.permAct (d := d)
+                  (1 : Equiv.Perm (Fin (m + 1))).symm
+                  (BHW.os45FlatCommonChartSourceSide d (m + 1)
+                    (1 : Equiv.Perm (Fin (m + 1))) (1 : ℝ) ε ηsrc
+                    ((BHW.os45CommonEdgeFlatCLE d (m + 1)
+                      (1 : Equiv.Perm (Fin (m + 1)))).symm
+                        (BHW.os45CommonEdgeFlatCLE d (m + 1)
+                          (1 : Equiv.Perm (Fin (m + 1))) u -
+                          ε • ηsrc)))) -
+              canonicalReducedBranch (d := d) OS lgc m ε
+                (BHW.reducedDiffMapReal (m + 1) d u)) *
+              ((BHW.reducedTestLift m d χ.toSchwartz ψ :
+                  SchwartzNPoint d (m + 1)) :
+                  NPointDomain d (m + 1) → ℂ) u)
+          volume)
+    (hbound_integrable : Integrable bound volume)
+    (hbound :
+      ∀ᶠ ε : ℝ in nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)),
+        ∀ᵐ u : NPointDomain d (m + 1) ∂volume,
+          ‖(BHW.extendF (bvt_F OS lgc (m + 1))
+                (BHW.permAct (d := d)
+                  (1 : Equiv.Perm (Fin (m + 1))).symm
+                  (BHW.os45FlatCommonChartSourceSide d (m + 1)
+                    (1 : Equiv.Perm (Fin (m + 1))) (1 : ℝ) ε ηsrc
+                    ((BHW.os45CommonEdgeFlatCLE d (m + 1)
+                      (1 : Equiv.Perm (Fin (m + 1)))).symm
+                        (BHW.os45CommonEdgeFlatCLE d (m + 1)
+                          (1 : Equiv.Perm (Fin (m + 1))) u -
+                          ε • ηsrc)))) -
+              canonicalReducedBranch (d := d) OS lgc m ε
+                (BHW.reducedDiffMapReal (m + 1) d u)) *
+              ((BHW.reducedTestLift m d χ.toSchwartz ψ :
+                  SchwartzNPoint d (m + 1)) :
+                  NPointDomain d (m + 1) → ℂ) u‖ ≤ bound u) :
+    Filter.Tendsto
+      (fun ε : ℝ =>
+        (∫ u : NPointDomain d (m + 1),
+          BHW.extendF (bvt_F OS lgc (m + 1))
+            (BHW.permAct (d := d)
+              (1 : Equiv.Perm (Fin (m + 1))).symm
+              (BHW.os45FlatCommonChartSourceSide d (m + 1)
+                (1 : Equiv.Perm (Fin (m + 1))) (1 : ℝ) ε ηsrc u)) *
+            ((SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
+              (BHW.os45CommonEdgeFlatCLE d (m + 1)
+                (1 : Equiv.Perm (Fin (m + 1)))).symm)
+              (BHW.reducedTestLift m d χ.toSchwartz ψ :
+                SchwartzNPoint d (m + 1)) :
+              SchwartzMap (BHW.OS45FlatCommonChartReal d (m + 1)) ℂ)
+              (BHW.os45CommonEdgeFlatCLE d (m + 1)
+                (1 : Equiv.Perm (Fin (m + 1))) u + ε • ηsrc)) -
+          ∫ ξ : NPointDomain d m,
+            canonicalReducedBranch (d := d) OS lgc m ε ξ * ψ ξ)
+      (nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)) : Filter ℝ)
+      (nhds 0) := by
+  let l : Filter ℝ := nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ))
+  let e : NPointDomain d (m + 1) ≃L[ℝ]
+      BHW.OS45FlatCommonChartReal d (m + 1) :=
+    BHW.os45CommonEdgeFlatCLE d (m + 1)
+      (1 : Equiv.Perm (Fin (m + 1)))
+  let f : SchwartzNPoint d (m + 1) :=
+    BHW.reducedTestLift m d χ.toSchwartz ψ
+  let φFlat : SchwartzMap (BHW.OS45FlatCommonChartReal d (m + 1)) ℂ :=
+    (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ e.symm) f
+  let sourceMoving : ℝ → NPointDomain d (m + 1) → ℂ := fun ε u =>
+    BHW.extendF (bvt_F OS lgc (m + 1))
+      (BHW.permAct (d := d)
+        (1 : Equiv.Perm (Fin (m + 1))).symm
+        (BHW.os45FlatCommonChartSourceSide d (m + 1)
+          (1 : Equiv.Perm (Fin (m + 1))) (1 : ℝ) ε ηsrc
+          (e.symm (e u - ε • ηsrc))))
+  let canLift : ℝ → NPointDomain d (m + 1) → ℂ := fun ε u =>
+    canonicalReducedBranch (d := d) OS lgc m ε
+      (BHW.reducedDiffMapReal (m + 1) d u)
+  let diff : ℝ → NPointDomain d (m + 1) → ℂ := fun ε u =>
+    (sourceMoving ε u - canLift ε u) * (f : NPointDomain d (m + 1) → ℂ) u
+  let Target : ℝ → ℂ := fun ε =>
+    ∫ ξ : NPointDomain d m,
+      canonicalReducedBranch (d := d) OS lgc m ε ξ * ψ ξ
+  have hdiff_meas :
+      ∀ᶠ ε : ℝ in l,
+        AEStronglyMeasurable (diff ε) volume := by
+    simpa [l, diff, sourceMoving, canLift, f, e] using hmeas
+  have hdiff_bound :
+      ∀ᶠ ε : ℝ in l,
+        ∀ᵐ u : NPointDomain d (m + 1) ∂volume,
+          ‖diff ε u‖ ≤ bound u := by
+    simpa [l, diff, sourceMoving, canLift, f, e] using hbound
+  have hdiff_tendsto :
+      Filter.Tendsto
+        (fun ε : ℝ => ∫ u : NPointDomain d (m + 1), diff ε u)
+        l (nhds 0) := by
+    have hDCT :
+        Filter.Tendsto
+          (fun ε : ℝ => ∫ u : NPointDomain d (m + 1), diff ε u)
+          l (nhds (∫ u : NPointDomain d (m + 1), (0 : ℂ))) := by
+      exact
+        MeasureTheory.tendsto_integral_filter_of_dominated_convergence
+          bound hdiff_meas hdiff_bound hbound_integrable
+          (by
+            refine Filter.Eventually.of_forall ?_
+            intro u
+            by_cases hfu :
+                (f : NPointDomain d (m + 1) → ℂ) u = 0
+            · simp [diff, hfu]
+            · simpa [diff, sourceMoving, canLift, f, e, l] using
+                (hpointwise u hfu).mul tendsto_const_nhds)
+    simpa using hDCT
+  have hcan_int :
+      ∀ᶠ (ε : ℝ) in l,
+        Integrable (fun u : NPointDomain d (m + 1) =>
+          canLift ε u * (f : NPointDomain d (m + 1) → ℂ) u) volume := by
+    simpa [l, canLift, f] using
+      bvt_F_reduced_canonical_integrable_eventually
+        (d := d) OS lgc m f
+  have hdiff_int :
+      ∀ᶠ (ε : ℝ) in l, Integrable (diff ε) volume := by
+    filter_upwards [hdiff_meas, hdiff_bound] with ε hmeasε hboundε
+    exact hbound_integrable.mono' hmeasε hboundε
+  have hmoving :
+      Filter.Tendsto
+        (fun ε : ℝ =>
+          (∫ u : NPointDomain d (m + 1),
+            sourceMoving ε u * (f : NPointDomain d (m + 1) → ℂ) u) -
+            Target ε)
+        l (nhds 0) := by
+    refine Filter.Tendsto.congr' ?_ hdiff_tendsto
+    filter_upwards [hcan_int, hdiff_int] with ε hcanε hdiffε
+    let sourceIntegrand : NPointDomain d (m + 1) → ℂ := fun u =>
+      sourceMoving ε u * (f : NPointDomain d (m + 1) → ℂ) u
+    let canIntegrand : NPointDomain d (m + 1) → ℂ := fun u =>
+      canLift ε u * (f : NPointDomain d (m + 1) → ℂ) u
+    have hsource_eq :
+        sourceIntegrand = fun u =>
+          diff ε u + canIntegrand u := by
+      funext u
+      simp [sourceIntegrand, diff]
+      ring
+    have hsource_int : Integrable sourceIntegrand volume := by
+      rw [hsource_eq]
+      exact hdiffε.add hcanε
+    have hsplit :
+        (∫ u : NPointDomain d (m + 1), sourceIntegrand u) -
+            ∫ u : NPointDomain d (m + 1), canIntegrand u =
+          ∫ u : NPointDomain d (m + 1), diff ε u := by
+      rw [← MeasureTheory.integral_sub hsource_int hcanε]
+      congr 1
+      funext u
+      simp [sourceIntegrand, diff]
+      ring
+    have hcan_lift :
+        (∫ u : NPointDomain d (m + 1), canIntegrand u) =
+          Target ε := by
+      simpa [Target, canIntegrand, canLift, f] using
+        integral_reducedTestLift_eq_reduced
+          (d := d) m χ ψ
+          (canonicalReducedBranch (d := d) OS lgc m ε) hcanε
+    calc
+      (∫ u : NPointDomain d (m + 1), diff ε u)
+          = (∫ u : NPointDomain d (m + 1), sourceIntegrand u) -
+              ∫ u : NPointDomain d (m + 1), canIntegrand u := hsplit.symm
+      _ = (∫ u : NPointDomain d (m + 1),
+            sourceMoving ε u * (f : NPointDomain d (m + 1) → ℂ) u) -
+            Target ε := by
+              rw [hcan_lift]
+  refine Filter.Tendsto.congr' ?_ hmoving
+  filter_upwards with ε
+  have hφeq : ∀ u : NPointDomain d (m + 1),
+      φFlat (e u) = (f : NPointDomain d (m + 1) → ℂ) u := by
+    intro u
+    simp [φFlat, e, SchwartzMap.compCLMOfContinuousLinearEquiv_apply]
+  have hreindex :=
+    BHW.integral_sourceSide_shiftedTest_eq_movingSource_fixedTest
+      (d := d) (n := m + 1)
+      (1 : Equiv.Perm (Fin (m + 1))) (1 : ℝ) ε ηsrc
+      (fun x : BHW.OS45FlatCommonChartReal d (m + 1) => φFlat x)
+      (fun z : Fin (m + 1) → Fin (d + 1) → ℂ =>
+        BHW.extendF (bvt_F OS lgc (m + 1))
+          (BHW.permAct (d := d)
+            (1 : Equiv.Perm (Fin (m + 1))).symm z))
+  change
+      ((∫ u : NPointDomain d (m + 1),
+          sourceMoving ε u * (f : NPointDomain d (m + 1) → ℂ) u) -
+        Target ε) =
+      ((∫ u : NPointDomain d (m + 1),
+          BHW.extendF (bvt_F OS lgc (m + 1))
+            (BHW.permAct (d := d)
+              (1 : Equiv.Perm (Fin (m + 1))).symm
+              (BHW.os45FlatCommonChartSourceSide d (m + 1)
+                (1 : Equiv.Perm (Fin (m + 1))) (1 : ℝ) ε ηsrc u)) *
+            φFlat (BHW.os45CommonEdgeFlatCLE d (m + 1)
+              (1 : Equiv.Perm (Fin (m + 1))) u + ε • ηsrc)) -
+        Target ε)
+  have hmoving_eq :
+      (∫ u : NPointDomain d (m + 1),
+          sourceMoving ε u * (f : NPointDomain d (m + 1) → ℂ) u) =
+        ∫ u : NPointDomain d (m + 1),
+          BHW.extendF (bvt_F OS lgc (m + 1))
+            (BHW.permAct (d := d)
+              (1 : Equiv.Perm (Fin (m + 1))).symm
+              (BHW.os45FlatCommonChartSourceSide d (m + 1)
+                (1 : Equiv.Perm (Fin (m + 1))) (1 : ℝ) ε ηsrc
+                ((BHW.os45CommonEdgeFlatCLE d (m + 1)
+                  (1 : Equiv.Perm (Fin (m + 1)))).symm
+                    (BHW.os45CommonEdgeFlatCLE d (m + 1)
+                      (1 : Equiv.Perm (Fin (m + 1))) u -
+                      ε • ηsrc)))) *
+            φFlat (BHW.os45CommonEdgeFlatCLE d (m + 1)
+              (1 : Equiv.Perm (Fin (m + 1))) u)) := by
+    refine MeasureTheory.integral_congr_ae ?_
+    filter_upwards with u
+    simp [sourceMoving, e, hφeq u]
+  have hshift_eq :
+      (∫ u : NPointDomain d (m + 1),
+          BHW.extendF (bvt_F OS lgc (m + 1))
+            (BHW.permAct (d := d)
+              (1 : Equiv.Perm (Fin (m + 1))).symm
+              (BHW.os45FlatCommonChartSourceSide d (m + 1)
+                (1 : Equiv.Perm (Fin (m + 1))) (1 : ℝ) ε ηsrc u)) *
+            φFlat (BHW.os45CommonEdgeFlatCLE d (m + 1)
+              (1 : Equiv.Perm (Fin (m + 1))) u + ε • ηsrc)) =
+        (∫ u : NPointDomain d (m + 1),
+          BHW.extendF (bvt_F OS lgc (m + 1))
+            (BHW.permAct (d := d)
+              (1 : Equiv.Perm (Fin (m + 1))).symm
+              (BHW.os45FlatCommonChartSourceSide d (m + 1)
+                (1 : Equiv.Perm (Fin (m + 1))) (1 : ℝ) ε ηsrc
+                ((BHW.os45CommonEdgeFlatCLE d (m + 1)
+                  (1 : Equiv.Perm (Fin (m + 1)))).symm
+                    (BHW.os45CommonEdgeFlatCLE d (m + 1)
+                      (1 : Equiv.Perm (Fin (m + 1))) u -
+                      ε • ηsrc)))) *
+            φFlat (BHW.os45CommonEdgeFlatCLE d (m + 1)
+              (1 : Equiv.Perm (Fin (m + 1))) u)) := by
+    simpa [one_mul] using hreindex
+  rw [hmoving_eq, hshift_eq]
+
+set_option maxHeartbeats 1200000 in
+/-- Lower shifted source-side endpoint transport from pointwise source transfer
+and a dominated-convergence packet.
+
+This is the adjacent lower companion to
+`sourceSide_shifted_upper_reduced_endpoint_of_pointwise_bound`: it performs the
+DCT/reindexing passage from the moving source-side branch to the
+canonical-after-swap reduced endpoint, leaving the pointwise OS transfer and the
+domination packet as the visible analytic inputs. -/
+theorem sourceSide_shifted_lower_reduced_endpoint_of_pointwise_bound
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {m : ℕ} {hd : 2 ≤ d} {i : Fin (m + 1)}
+    {hi : i.val + 1 < m + 1}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd (m + 1) i hi}
+    (ηsrc : BHW.OS45FlatCommonChartReal d (m + 1))
+    (χ : BHW.NormalizedBasepointCutoff d)
+    (ψ : SchwartzNPoint d m)
+    (bound : NPointDomain d (m + 1) → ℝ)
+    (hpointwise :
+      ∀ u : NPointDomain d (m + 1),
+        ((BHW.reducedTestLift m d χ.toSchwartz ψ :
+            SchwartzNPoint d (m + 1)) :
+            NPointDomain d (m + 1) → ℂ) u ≠ 0 →
+          Filter.Tendsto
+            (fun ε : ℝ =>
+              BHW.extendF (bvt_F OS lgc (m + 1))
+                (BHW.permAct (d := d)
+                  (P.τ.symm * (1 : Equiv.Perm (Fin (m + 1)))).symm
+                  (BHW.os45FlatCommonChartSourceSide d (m + 1)
+                    (1 : Equiv.Perm (Fin (m + 1))) (-1 : ℝ) ε ηsrc
+                    ((BHW.os45CommonEdgeFlatCLE d (m + 1)
+                      (1 : Equiv.Perm (Fin (m + 1)))).symm
+                        (BHW.os45CommonEdgeFlatCLE d (m + 1)
+                          (1 : Equiv.Perm (Fin (m + 1))) u -
+                          (((-1 : ℝ) * ε) • ηsrc))))) -
+                canonicalAfterReducedSwapBranch
+                  (d := d) OS lgc m i ⟨i.val + 1, hi⟩ ε
+                  (BHW.reducedDiffMapReal (m + 1) d u))
+            (nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)) : Filter ℝ)
+            (nhds 0))
+    (hmeas :
+      ∀ᶠ ε : ℝ in nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)),
+        AEStronglyMeasurable
+          (fun u : NPointDomain d (m + 1) =>
+            (BHW.extendF (bvt_F OS lgc (m + 1))
+                (BHW.permAct (d := d)
+                  (P.τ.symm * (1 : Equiv.Perm (Fin (m + 1)))).symm
+                  (BHW.os45FlatCommonChartSourceSide d (m + 1)
+                    (1 : Equiv.Perm (Fin (m + 1))) (-1 : ℝ) ε ηsrc
+                    ((BHW.os45CommonEdgeFlatCLE d (m + 1)
+                      (1 : Equiv.Perm (Fin (m + 1)))).symm
+                        (BHW.os45CommonEdgeFlatCLE d (m + 1)
+                          (1 : Equiv.Perm (Fin (m + 1))) u -
+                          (((-1 : ℝ) * ε) • ηsrc))))) -
+              canonicalAfterReducedSwapBranch
+                (d := d) OS lgc m i ⟨i.val + 1, hi⟩ ε
+                (BHW.reducedDiffMapReal (m + 1) d u)) *
+              ((BHW.reducedTestLift m d χ.toSchwartz ψ :
+                  SchwartzNPoint d (m + 1)) :
+                  NPointDomain d (m + 1) → ℂ) u)
+          volume)
+    (hbound_integrable : Integrable bound volume)
+    (hbound :
+      ∀ᶠ ε : ℝ in nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)),
+        ∀ᵐ u : NPointDomain d (m + 1) ∂volume,
+          ‖(BHW.extendF (bvt_F OS lgc (m + 1))
+                (BHW.permAct (d := d)
+                  (P.τ.symm * (1 : Equiv.Perm (Fin (m + 1)))).symm
+                  (BHW.os45FlatCommonChartSourceSide d (m + 1)
+                    (1 : Equiv.Perm (Fin (m + 1))) (-1 : ℝ) ε ηsrc
+                    ((BHW.os45CommonEdgeFlatCLE d (m + 1)
+                      (1 : Equiv.Perm (Fin (m + 1)))).symm
+                        (BHW.os45CommonEdgeFlatCLE d (m + 1)
+                          (1 : Equiv.Perm (Fin (m + 1))) u -
+                          (((-1 : ℝ) * ε) • ηsrc))))) -
+              canonicalAfterReducedSwapBranch
+                (d := d) OS lgc m i ⟨i.val + 1, hi⟩ ε
+                (BHW.reducedDiffMapReal (m + 1) d u)) *
+              ((BHW.reducedTestLift m d χ.toSchwartz ψ :
+                  SchwartzNPoint d (m + 1)) :
+                  NPointDomain d (m + 1) → ℂ) u‖ ≤ bound u) :
+    Filter.Tendsto
+      (fun ε : ℝ =>
+        (∫ u : NPointDomain d (m + 1),
+          BHW.extendF (bvt_F OS lgc (m + 1))
+            (BHW.permAct (d := d)
+              (P.τ.symm * (1 : Equiv.Perm (Fin (m + 1)))).symm
+              (BHW.os45FlatCommonChartSourceSide d (m + 1)
+                (1 : Equiv.Perm (Fin (m + 1))) (-1 : ℝ) ε ηsrc u)) *
+            ((SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
+              (BHW.os45CommonEdgeFlatCLE d (m + 1)
+                (1 : Equiv.Perm (Fin (m + 1)))).symm)
+              (BHW.reducedTestLift m d χ.toSchwartz ψ :
+                SchwartzNPoint d (m + 1)) :
+              SchwartzMap (BHW.OS45FlatCommonChartReal d (m + 1)) ℂ)
+              (BHW.os45CommonEdgeFlatCLE d (m + 1)
+                (1 : Equiv.Perm (Fin (m + 1))) u +
+                  (((-1 : ℝ) * ε) • ηsrc))) -
+          ∫ ξ : NPointDomain d m,
+            canonicalAfterReducedSwapBranch
+                (d := d) OS lgc m i ⟨i.val + 1, hi⟩ ε ξ *
+              ψ ξ)
+      (nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)) : Filter ℝ)
+      (nhds 0) := by
+  let j : Fin (m + 1) := ⟨i.val + 1, hi⟩
+  let l : Filter ℝ := nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ))
+  let e : NPointDomain d (m + 1) ≃L[ℝ]
+      BHW.OS45FlatCommonChartReal d (m + 1) :=
+    BHW.os45CommonEdgeFlatCLE d (m + 1)
+      (1 : Equiv.Perm (Fin (m + 1)))
+  let f : SchwartzNPoint d (m + 1) :=
+    BHW.reducedTestLift m d χ.toSchwartz ψ
+  let φFlat : SchwartzMap (BHW.OS45FlatCommonChartReal d (m + 1)) ℂ :=
+    (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ e.symm) f
+  let sourceMoving : ℝ → NPointDomain d (m + 1) → ℂ := fun ε u =>
+    BHW.extendF (bvt_F OS lgc (m + 1))
+      (BHW.permAct (d := d)
+        (P.τ.symm * (1 : Equiv.Perm (Fin (m + 1)))).symm
+        (BHW.os45FlatCommonChartSourceSide d (m + 1)
+          (1 : Equiv.Perm (Fin (m + 1))) (-1 : ℝ) ε ηsrc
+          (e.symm (e u - (((-1 : ℝ) * ε) • ηsrc)))))
+  let canLift : ℝ → NPointDomain d (m + 1) → ℂ := fun ε u =>
+    canonicalAfterReducedSwapBranch (d := d) OS lgc m i j ε
+      (BHW.reducedDiffMapReal (m + 1) d u)
+  let diff : ℝ → NPointDomain d (m + 1) → ℂ := fun ε u =>
+    (sourceMoving ε u - canLift ε u) * (f : NPointDomain d (m + 1) → ℂ) u
+  let Target : ℝ → ℂ := fun ε =>
+    ∫ ξ : NPointDomain d m,
+      canonicalAfterReducedSwapBranch (d := d) OS lgc m i j ε ξ * ψ ξ
+  have hdiff_meas :
+      ∀ᶠ ε : ℝ in l,
+        AEStronglyMeasurable (diff ε) volume := by
+    simpa [l, diff, sourceMoving, canLift, f, e, j] using hmeas
+  have hdiff_bound :
+      ∀ᶠ ε : ℝ in l,
+        ∀ᵐ u : NPointDomain d (m + 1) ∂volume,
+          ‖diff ε u‖ ≤ bound u := by
+    simpa [l, diff, sourceMoving, canLift, f, e, j] using hbound
+  have hdiff_tendsto :
+      Filter.Tendsto
+        (fun ε : ℝ => ∫ u : NPointDomain d (m + 1), diff ε u)
+        l (nhds 0) := by
+    have hDCT :
+        Filter.Tendsto
+          (fun ε : ℝ => ∫ u : NPointDomain d (m + 1), diff ε u)
+          l (nhds (∫ u : NPointDomain d (m + 1), (0 : ℂ))) := by
+      exact
+        MeasureTheory.tendsto_integral_filter_of_dominated_convergence
+          bound hdiff_meas hdiff_bound hbound_integrable
+          (by
+            refine Filter.Eventually.of_forall ?_
+            intro u
+            by_cases hfu :
+                (f : NPointDomain d (m + 1) → ℂ) u = 0
+            · simp [diff, hfu]
+            · simpa [diff, sourceMoving, canLift, f, e, j, l] using
+                (hpointwise u hfu).mul tendsto_const_nhds)
+    simpa using hDCT
+  let Gadj : ℝ → NPointDomain d m → ℂ := fun ε ξ =>
+    adjacentReducedPermutedBranch (d := d) OS lgc m i j ε ξ
+  have hadj_int :
+      ∀ᶠ (ε : ℝ) in l,
+        Integrable (fun u : NPointDomain d (m + 1) =>
+          Gadj ε (BHW.reducedDiffMapReal (m + 1) d u) *
+            (f : NPointDomain d (m + 1) → ℂ) u) volume := by
+    simpa [l, Gadj, f] using
+      bvt_F_reduced_permuted_integrable_eventually
+        (d := d) OS lgc m i j f
+  have hcan_int :
+      ∀ᶠ (ε : ℝ) in l,
+        Integrable (fun u : NPointDomain d (m + 1) =>
+          canLift ε u * (f : NPointDomain d (m + 1) → ℂ) u) volume := by
+    filter_upwards [hadj_int] with ε hadjε
+    have heq :
+        (fun u : NPointDomain d (m + 1) =>
+          canLift ε u * (f : NPointDomain d (m + 1) → ℂ) u) =
+        fun u : NPointDomain d (m + 1) =>
+          Gadj ε (BHW.reducedDiffMapReal (m + 1) d u) *
+            (f : NPointDomain d (m + 1) → ℂ) u := by
+      funext u
+      rw [show canLift ε u =
+          Gadj ε (BHW.reducedDiffMapReal (m + 1) d u) by
+        simpa [canLift, Gadj, j] using
+          (adjacentReducedPermutedBranch_eq_canonicalAfterReducedSwapBranch
+            (d := d) OS lgc m i j ε
+            (BHW.reducedDiffMapReal (m + 1) d u)).symm]
+    rw [heq]
+    exact hadjε
+  have hdiff_int :
+      ∀ᶠ (ε : ℝ) in l, Integrable (diff ε) volume := by
+    filter_upwards [hdiff_meas, hdiff_bound] with ε hmeasε hboundε
+    exact hbound_integrable.mono' hmeasε hboundε
+  have hmoving :
+      Filter.Tendsto
+        (fun ε : ℝ =>
+          (∫ u : NPointDomain d (m + 1),
+            sourceMoving ε u * (f : NPointDomain d (m + 1) → ℂ) u) -
+            Target ε)
+        l (nhds 0) := by
+    refine Filter.Tendsto.congr' ?_ hdiff_tendsto
+    filter_upwards [hcan_int, hdiff_int] with ε hcanε hdiffε
+    let sourceIntegrand : NPointDomain d (m + 1) → ℂ := fun u =>
+      sourceMoving ε u * (f : NPointDomain d (m + 1) → ℂ) u
+    let canIntegrand : NPointDomain d (m + 1) → ℂ := fun u =>
+      canLift ε u * (f : NPointDomain d (m + 1) → ℂ) u
+    have hsource_eq :
+        sourceIntegrand = fun u =>
+          diff ε u + canIntegrand u := by
+      funext u
+      simp [sourceIntegrand, canIntegrand, diff]
+      ring
+    have hsource_int : Integrable sourceIntegrand volume := by
+      rw [hsource_eq]
+      exact hdiffε.add hcanε
+    have hsplit :
+        (∫ u : NPointDomain d (m + 1), sourceIntegrand u) -
+            ∫ u : NPointDomain d (m + 1), canIntegrand u =
+          ∫ u : NPointDomain d (m + 1), diff ε u := by
+      rw [← MeasureTheory.integral_sub hsource_int hcanε]
+      congr 1
+      funext u
+      simp [sourceIntegrand, diff]
+      ring
+    have hcan_lift :
+        (∫ u : NPointDomain d (m + 1), canIntegrand u) =
+          Target ε := by
+      simpa [Target, canIntegrand, canLift, f, j] using
+        integral_reducedTestLift_eq_reduced
+          (d := d) m χ ψ
+          (canonicalAfterReducedSwapBranch (d := d) OS lgc m i j ε) hcanε
+    calc
+      (∫ u : NPointDomain d (m + 1), diff ε u)
+          = (∫ u : NPointDomain d (m + 1), sourceIntegrand u) -
+              ∫ u : NPointDomain d (m + 1), canIntegrand u := hsplit.symm
+      _ = (∫ u : NPointDomain d (m + 1),
+            sourceMoving ε u * (f : NPointDomain d (m + 1) → ℂ) u) -
+            Target ε := by
+              rw [hcan_lift]
+  refine Filter.Tendsto.congr' ?_ hmoving
+  filter_upwards with ε
+  have hφeq : ∀ u : NPointDomain d (m + 1),
+      φFlat (e u) = (f : NPointDomain d (m + 1) → ℂ) u := by
+    intro u
+    simp [φFlat, e, SchwartzMap.compCLMOfContinuousLinearEquiv_apply]
+  have hreindex :=
+    BHW.integral_sourceSide_shiftedTest_eq_movingSource_fixedTest
+      (d := d) (n := m + 1)
+      (1 : Equiv.Perm (Fin (m + 1))) (-1 : ℝ) ε ηsrc
+      (fun x : BHW.OS45FlatCommonChartReal d (m + 1) => φFlat x)
+      (fun z : Fin (m + 1) → Fin (d + 1) → ℂ =>
+        BHW.extendF (bvt_F OS lgc (m + 1))
+          (BHW.permAct (d := d)
+            (P.τ.symm * (1 : Equiv.Perm (Fin (m + 1)))).symm z))
+  change
+      ((∫ u : NPointDomain d (m + 1),
+          sourceMoving ε u * (f : NPointDomain d (m + 1) → ℂ) u) -
+        Target ε) =
+      ((∫ u : NPointDomain d (m + 1),
+          BHW.extendF (bvt_F OS lgc (m + 1))
+            (BHW.permAct (d := d)
+              (P.τ.symm * (1 : Equiv.Perm (Fin (m + 1)))).symm
+              (BHW.os45FlatCommonChartSourceSide d (m + 1)
+                (1 : Equiv.Perm (Fin (m + 1))) (-1 : ℝ) ε ηsrc u)) *
+            φFlat (BHW.os45CommonEdgeFlatCLE d (m + 1)
+              (1 : Equiv.Perm (Fin (m + 1))) u +
+                (((-1 : ℝ) * ε) • ηsrc))) -
+        Target ε)
+  have hmoving_eq :
+      (∫ u : NPointDomain d (m + 1),
+          sourceMoving ε u * (f : NPointDomain d (m + 1) → ℂ) u) =
+        (∫ u : NPointDomain d (m + 1),
+          BHW.extendF (bvt_F OS lgc (m + 1))
+            (BHW.permAct (d := d)
+              (P.τ.symm * (1 : Equiv.Perm (Fin (m + 1)))).symm
+              (BHW.os45FlatCommonChartSourceSide d (m + 1)
+                (1 : Equiv.Perm (Fin (m + 1))) (-1 : ℝ) ε ηsrc
+                ((BHW.os45CommonEdgeFlatCLE d (m + 1)
+                  (1 : Equiv.Perm (Fin (m + 1)))).symm
+                    (BHW.os45CommonEdgeFlatCLE d (m + 1)
+                      (1 : Equiv.Perm (Fin (m + 1))) u -
+                      (((-1 : ℝ) * ε) • ηsrc))))) *
+            φFlat (BHW.os45CommonEdgeFlatCLE d (m + 1)
+              (1 : Equiv.Perm (Fin (m + 1))) u)) := by
+    refine MeasureTheory.integral_congr_ae ?_
+    filter_upwards with u
+    simp [sourceMoving, e, hφeq u]
+  have hshift_eq :
+      (∫ u : NPointDomain d (m + 1),
+          BHW.extendF (bvt_F OS lgc (m + 1))
+            (BHW.permAct (d := d)
+              (P.τ.symm * (1 : Equiv.Perm (Fin (m + 1)))).symm
+              (BHW.os45FlatCommonChartSourceSide d (m + 1)
+                (1 : Equiv.Perm (Fin (m + 1))) (-1 : ℝ) ε ηsrc u)) *
+            φFlat (BHW.os45CommonEdgeFlatCLE d (m + 1)
+              (1 : Equiv.Perm (Fin (m + 1))) u +
+                (((-1 : ℝ) * ε) • ηsrc))) =
+        (∫ u : NPointDomain d (m + 1),
+          BHW.extendF (bvt_F OS lgc (m + 1))
+            (BHW.permAct (d := d)
+              (P.τ.symm * (1 : Equiv.Perm (Fin (m + 1)))).symm
+              (BHW.os45FlatCommonChartSourceSide d (m + 1)
+                (1 : Equiv.Perm (Fin (m + 1))) (-1 : ℝ) ε ηsrc
+                ((BHW.os45CommonEdgeFlatCLE d (m + 1)
+                  (1 : Equiv.Perm (Fin (m + 1)))).symm
+                    (BHW.os45CommonEdgeFlatCLE d (m + 1)
+                      (1 : Equiv.Perm (Fin (m + 1))) u -
+                      (((-1 : ℝ) * ε) • ηsrc))))) *
+            φFlat (BHW.os45CommonEdgeFlatCLE d (m + 1)
+              (1 : Equiv.Perm (Fin (m + 1))) u)) := by
+    exact hreindex
+  rw [hmoving_eq, hshift_eq]
 
 /-- Hdiff-germ form of the integrated reduced branch-difference theorem using
 shifted source-side endpoint transport.
@@ -9834,6 +10426,200 @@ theorem reducedDiffMap_coneHeight_sourceSide_eq_lowerCanonicalRay
       simpa [zcan, BHW.permAct] using
         (BHW.permOnReducedDiff_reducedDiffMap
           (d := d) (n := m + 1) σ zcan)
+
+omit [NeZero d] in
+/-- The OS45 quarter-turned upper reduced-normal ray has a definite
+zero-height boundary in reduced-difference coordinates.
+
+The limit is the reduced difference of the inverse-quarter-turned common-edge
+carrier, not the ordinary real canonical reduced edge.  This is the coordinate
+endpoint targeted by the remaining endpoint DCT/source-normalization step. -/
+theorem tendsto_reducedDiffMap_permAct_os45QuarterTurnCLE_symm_reducedNormalUpperCanonicalRay_boundary
+    {m : ℕ} {i : Fin (m + 1)} {hi : i.val + 1 < m + 1}
+    (σ : Equiv.Perm (Fin (m + 1)))
+    (p : ReducedSpace d m i ⟨i.val + 1, hi⟩) :
+    Filter.Tendsto
+      (fun ε : ℝ =>
+        BHW.reducedDiffMap (m + 1) d
+          (BHW.permAct (d := d) σ
+            ((BHW.os45QuarterTurnCLE (d := d) (n := m + 1)).symm
+              (BHW.unflattenCfg (m + 1) d
+                (reducedNormalToOS45CommonEdgeComplexCLM
+                  (d := d) i hi
+                  (reducedNormalUpperCanonicalRay (d := d) i hi p ε))))))
+      (nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)) : Filter ℝ)
+      (nhds
+        (BHW.reducedDiffMap (m + 1) d
+          (BHW.permAct (d := d) σ
+            ((BHW.os45QuarterTurnCLE (d := d) (n := m + 1)).symm
+              (BHW.unflattenCfg (m + 1) d
+                (SCV.realEmbed
+                  (reducedNormalToOS45CommonEdgeFlatCLM (d := d) i hi
+                    (reducedNormalFlattenCLE
+                      (d := d) i ⟨i.val + 1, hi⟩ p)))))))) := by
+  let L := reducedNormalToOS45CommonEdgeComplexCLM (d := d) i hi
+  let Q := BHW.os45QuarterTurnCLE (d := d) (n := m + 1)
+  let T :
+      SCV.ComplexChartSpace ((d + 1) +
+        Fintype.card (SpectatorIndex (m + 1) i ⟨i.val + 1, hi⟩) *
+          (d + 1)) →
+        BHW.ReducedNPointConfig d m := fun γ =>
+    BHW.reducedDiffMap (m + 1) d
+      (BHW.permAct (d := d) σ
+        (Q.symm (BHW.unflattenCfg (m + 1) d (L γ))))
+  have hT_cont : Continuous T := by
+    have hL : Continuous fun γ => L γ := L.continuous
+    have hun : Continuous fun γ => BHW.unflattenCfg (m + 1) d (L γ) := by
+      exact (differentiable_unflattenCfg_local (m + 1) d).continuous.comp hL
+    have hperm :
+        Continuous fun γ =>
+          BHW.permAct (d := d) σ
+            (Q.symm (BHW.unflattenCfg (m + 1) d (L γ))) := by
+      exact
+        (continuous_pi fun k =>
+          continuous_pi fun μ =>
+            (continuous_apply μ).comp
+              ((continuous_apply (σ k)).comp (Q.symm.continuous.comp hun)))
+    exact (BHW.reducedDiffMap (m + 1) d).continuous.comp hperm
+  have hγ := reducedNormalUpperCanonicalRay_tendsto (d := d) i hi p
+  have hcomp := hT_cont.tendsto _ |>.comp hγ
+  simpa [T, L, Q] using hcomp
+
+omit [NeZero d] in
+/-- Lower companion to
+`tendsto_reducedDiffMap_permAct_os45QuarterTurnCLE_symm_reducedNormalUpperCanonicalRay_boundary`. -/
+theorem tendsto_reducedDiffMap_permAct_os45QuarterTurnCLE_symm_reducedNormalLowerCanonicalRay_boundary
+    {m : ℕ} {i : Fin (m + 1)} {hi : i.val + 1 < m + 1}
+    (σ : Equiv.Perm (Fin (m + 1)))
+    (p : ReducedSpace d m i ⟨i.val + 1, hi⟩) :
+    Filter.Tendsto
+      (fun ε : ℝ =>
+        BHW.reducedDiffMap (m + 1) d
+          (BHW.permAct (d := d) σ
+            ((BHW.os45QuarterTurnCLE (d := d) (n := m + 1)).symm
+              (BHW.unflattenCfg (m + 1) d
+                (reducedNormalToOS45CommonEdgeComplexCLM
+                  (d := d) i hi
+                  (reducedNormalLowerCanonicalRay (d := d) i hi p ε))))))
+      (nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)) : Filter ℝ)
+      (nhds
+        (BHW.reducedDiffMap (m + 1) d
+          (BHW.permAct (d := d) σ
+            ((BHW.os45QuarterTurnCLE (d := d) (n := m + 1)).symm
+              (BHW.unflattenCfg (m + 1) d
+                (SCV.realEmbed
+                  (reducedNormalToOS45CommonEdgeFlatCLM (d := d) i hi
+                    (reducedNormalFlattenCLE
+                      (d := d) i ⟨i.val + 1, hi⟩ p)))))))) := by
+  let L := reducedNormalToOS45CommonEdgeComplexCLM (d := d) i hi
+  let Q := BHW.os45QuarterTurnCLE (d := d) (n := m + 1)
+  let T :
+      SCV.ComplexChartSpace ((d + 1) +
+        Fintype.card (SpectatorIndex (m + 1) i ⟨i.val + 1, hi⟩) *
+          (d + 1)) →
+        BHW.ReducedNPointConfig d m := fun γ =>
+    BHW.reducedDiffMap (m + 1) d
+      (BHW.permAct (d := d) σ
+        (Q.symm (BHW.unflattenCfg (m + 1) d (L γ))))
+  have hT_cont : Continuous T := by
+    have hL : Continuous fun γ => L γ := L.continuous
+    have hun : Continuous fun γ => BHW.unflattenCfg (m + 1) d (L γ) := by
+      exact (differentiable_unflattenCfg_local (m + 1) d).continuous.comp hL
+    have hperm :
+        Continuous fun γ =>
+          BHW.permAct (d := d) σ
+            (Q.symm (BHW.unflattenCfg (m + 1) d (L γ))) := by
+      exact
+        (continuous_pi fun k =>
+          continuous_pi fun μ =>
+            (continuous_apply μ).comp
+              ((continuous_apply (σ k)).comp (Q.symm.continuous.comp hun)))
+    exact (BHW.reducedDiffMap (m + 1) d).continuous.comp hperm
+  have hγ := reducedNormalLowerCanonicalRay_tendsto (d := d) i hi p
+  have hcomp := hT_cont.tendsto _ |>.comp hγ
+  simpa [T, L, Q] using hcomp
+
+/-- The actual upper cone-height source-side packet converges, in reduced
+difference coordinates, to the OS45 zero-height common-edge boundary. -/
+theorem tendsto_reducedDiffMap_coneHeight_sourceSide_upper_boundary
+    {m : ℕ} {i : Fin (m + 1)} {hi : i.val + 1 < m + 1}
+    (σ : Equiv.Perm (Fin (m + 1)))
+    (p : ReducedSpace d m i ⟨i.val + 1, hi⟩) :
+    Filter.Tendsto
+      (fun ε : ℝ =>
+        let ηc : BHW.OS45FlatCommonChartReal d (m + 1) :=
+          BHW.os45CommonEdgeFlatCLE d (m + 1)
+            (1 : Equiv.Perm (Fin (m + 1)))
+            (canonicalForwardConeDirection (d := d) (m + 1))
+        let x0 : BHW.OS45FlatCommonChartReal d (m + 1) :=
+          reducedNormalToOS45CommonEdgeFlatCLM (d := d) i hi
+            (reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩ p)
+        let uε : NPointDomain d (m + 1) :=
+          (BHW.os45CommonEdgeFlatCLE d (m + 1)
+            (1 : Equiv.Perm (Fin (m + 1)))).symm (x0 - ε • ηc)
+        BHW.reducedDiffMap (m + 1) d
+          (BHW.permAct (d := d) σ
+            (BHW.os45FlatCommonChartSourceSide d (m + 1)
+              (1 : Equiv.Perm (Fin (m + 1))) (1 : ℝ) ε ηc uε)))
+      (nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)) : Filter ℝ)
+      (nhds
+        (BHW.reducedDiffMap (m + 1) d
+          (BHW.permAct (d := d) σ
+            ((BHW.os45QuarterTurnCLE (d := d) (n := m + 1)).symm
+              (BHW.unflattenCfg (m + 1) d
+                (SCV.realEmbed
+                  (reducedNormalToOS45CommonEdgeFlatCLM (d := d) i hi
+                    (reducedNormalFlattenCLE
+                      (d := d) i ⟨i.val + 1, hi⟩ p)))))))) := by
+  have htarget :=
+    tendsto_reducedDiffMap_permAct_os45QuarterTurnCLE_symm_reducedNormalUpperCanonicalRay_boundary
+      (d := d) (i := i) (hi := hi) σ p
+  refine Filter.Tendsto.congr' ?_ htarget
+  filter_upwards with ε
+  exact
+    (reducedDiffMap_coneHeight_sourceSide_eq_upperCanonicalRay
+      (d := d) (i := i) (hi := hi) σ p ε).symm
+
+/-- Lower companion to
+`tendsto_reducedDiffMap_coneHeight_sourceSide_upper_boundary`. -/
+theorem tendsto_reducedDiffMap_coneHeight_sourceSide_lower_boundary
+    {m : ℕ} {i : Fin (m + 1)} {hi : i.val + 1 < m + 1}
+    (σ : Equiv.Perm (Fin (m + 1)))
+    (p : ReducedSpace d m i ⟨i.val + 1, hi⟩) :
+    Filter.Tendsto
+      (fun ε : ℝ =>
+        let ηc : BHW.OS45FlatCommonChartReal d (m + 1) :=
+          BHW.os45CommonEdgeFlatCLE d (m + 1)
+            (1 : Equiv.Perm (Fin (m + 1)))
+            (canonicalForwardConeDirection (d := d) (m + 1))
+        let x0 : BHW.OS45FlatCommonChartReal d (m + 1) :=
+          reducedNormalToOS45CommonEdgeFlatCLM (d := d) i hi
+            (reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩ p)
+        let uε : NPointDomain d (m + 1) :=
+          (BHW.os45CommonEdgeFlatCLE d (m + 1)
+            (1 : Equiv.Perm (Fin (m + 1)))).symm (x0 + ε • ηc)
+        BHW.reducedDiffMap (m + 1) d
+          (BHW.permAct (d := d) σ
+            (BHW.os45FlatCommonChartSourceSide d (m + 1)
+              (1 : Equiv.Perm (Fin (m + 1))) (-1 : ℝ) ε ηc uε)))
+      (nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)) : Filter ℝ)
+      (nhds
+        (BHW.reducedDiffMap (m + 1) d
+          (BHW.permAct (d := d) σ
+            ((BHW.os45QuarterTurnCLE (d := d) (n := m + 1)).symm
+              (BHW.unflattenCfg (m + 1) d
+                (SCV.realEmbed
+                  (reducedNormalToOS45CommonEdgeFlatCLM (d := d) i hi
+                    (reducedNormalFlattenCLE
+                      (d := d) i ⟨i.val + 1, hi⟩ p)))))))) := by
+  have htarget :=
+    tendsto_reducedDiffMap_permAct_os45QuarterTurnCLE_symm_reducedNormalLowerCanonicalRay_boundary
+      (d := d) (i := i) (hi := hi) σ p
+  refine Filter.Tendsto.congr' ?_ htarget
+  filter_upwards with ε
+  exact
+    (reducedDiffMap_coneHeight_sourceSide_eq_lowerCanonicalRay
+      (d := d) (i := i) (hi := hi) σ p ε).symm
 
 set_option maxHeartbeats 1200000 in
 /-- The deterministic upper OS45 source-side ray selected by the cone-valid
