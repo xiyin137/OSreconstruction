@@ -3555,6 +3555,150 @@ theorem tendsto_canonicalAfterSwapBranch_difference_zero_reducedTestLift_of_Hdif
   simp only [j, C, R]
   ring
 
+/-- Shifted source-side endpoint DCT against a lifted reduced test.
+
+This is the source-side specialization of
+`BHW.tendsto_integral_comp_os45FlatCommonChartSourceSide_moving_mul_of_hasCompactSupport`:
+after reindexing the shifted flat test back to the fixed lifted reduced test,
+the endpoint integral converges to the zero-height OS45 source-side integral.
+The result does not identify that zero-height carrier with a reduced canonical
+branch; that carrier-normalization is the remaining analytic leaf. -/
+theorem tendsto_sourceSide_shifted_extendF_zeroHeight_reducedTestLift
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {m : ℕ}
+    (σ ρperm : Equiv.Perm (Fin (m + 1)))
+    (sgn : ℝ)
+    (ηsrc : BHW.OS45FlatCommonChartReal d (m + 1))
+    {Ω : Set (Fin (m + 1) → Fin (d + 1) → ℂ)}
+    (hΩ_open : IsOpen Ω)
+    (hF_cont :
+      ContinuousOn
+        (fun z : Fin (m + 1) → Fin (d + 1) → ℂ =>
+          BHW.extendF (bvt_F OS lgc (m + 1))
+            (BHW.permAct (d := d) σ z)) Ω)
+    {Usrc Ksrc : Set (NPointDomain d (m + 1))}
+    (hUsrc_sub_K : Usrc ⊆ Ksrc)
+    (h0 :
+      ∀ u ∈ Ksrc,
+        BHW.os45FlatCommonChartSourceSide d (m + 1)
+          ρperm sgn 0 ηsrc u ∈ Ω)
+    (χ : SchwartzMap (SpacetimeDim d) ℂ)
+    (ψ : SchwartzNPoint d m)
+    (hχ_compact : HasCompactSupport (χ : SpacetimeDim d → ℂ))
+    (hψ_compact : HasCompactSupport (ψ : NPointDomain d m → ℂ))
+    (hliftU :
+      tsupport
+          ((BHW.reducedTestLift m d χ ψ : SchwartzNPoint d (m + 1)) :
+            NPointDomain d (m + 1) → ℂ) ⊆ Usrc) :
+    let e : NPointDomain d (m + 1) ≃L[ℝ]
+        BHW.OS45FlatCommonChartReal d (m + 1) :=
+      BHW.os45CommonEdgeFlatCLE d (m + 1) ρperm
+    let f : SchwartzNPoint d (m + 1) :=
+      BHW.reducedTestLift m d χ ψ
+    let φFlat : SchwartzMap (BHW.OS45FlatCommonChartReal d (m + 1)) ℂ :=
+      (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ e.symm) f
+    Filter.Tendsto
+      (fun ε : ℝ =>
+        ∫ u : NPointDomain d (m + 1),
+          BHW.extendF (bvt_F OS lgc (m + 1))
+            (BHW.permAct (d := d) σ
+              (BHW.os45FlatCommonChartSourceSide d (m + 1)
+                ρperm sgn ε ηsrc u)) *
+            φFlat (e u + (sgn * ε) • ηsrc))
+      (nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)) : Filter ℝ)
+      (nhds
+        (∫ u : NPointDomain d (m + 1),
+          BHW.extendF (bvt_F OS lgc (m + 1))
+            (BHW.permAct (d := d) σ
+              (BHW.os45FlatCommonChartSourceSide d (m + 1)
+                ρperm sgn 0 ηsrc u)) *
+            (f : NPointDomain d (m + 1) → ℂ) u)) := by
+  intro e f φFlat
+  let F : (Fin (m + 1) → Fin (d + 1) → ℂ) → ℂ := fun z =>
+    BHW.extendF (bvt_F OS lgc (m + 1)) (BHW.permAct (d := d) σ z)
+  have hf_compact :
+      HasCompactSupport (f : NPointDomain d (m + 1) → ℂ) := by
+    simpa [f] using
+      reducedTestLift_hasCompactSupport
+        (d := d) χ ψ hχ_compact hψ_compact
+  have hf_cont : Continuous (f : NPointDomain d (m + 1) → ℂ) := by
+    simpa [f] using
+      (BHW.reducedTestLift m d χ ψ : SchwartzNPoint d (m + 1)).continuous
+  have h0_support :
+      ∀ u ∈ tsupport (f : NPointDomain d (m + 1) → ℂ),
+        BHW.os45FlatCommonChartSourceSide d (m + 1)
+          ρperm sgn 0 ηsrc u ∈ Ω := by
+    intro u hu
+    exact h0 u (hUsrc_sub_K (hliftU (by simpa [f] using hu)))
+  have hDCT :
+      Filter.Tendsto
+        (fun ε : ℝ =>
+          ∫ u : NPointDomain d (m + 1),
+            F
+              (BHW.os45FlatCommonChartSourceSideMoving
+                (d := d) (n := m + 1) ρperm sgn ηsrc ε u) *
+              (f : NPointDomain d (m + 1) → ℂ) u)
+        (nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)) : Filter ℝ)
+        (nhds
+          (∫ u : NPointDomain d (m + 1),
+            F (BHW.os45FlatCommonChartSourceSide d (m + 1)
+              ρperm sgn 0 ηsrc u) *
+              (f : NPointDomain d (m + 1) → ℂ) u)) := by
+    exact
+      BHW.tendsto_integral_comp_os45FlatCommonChartSourceSide_moving_mul_of_hasCompactSupport
+        (d := d) (n := m + 1) ρperm sgn ηsrc hΩ_open
+        (by simpa [F] using hF_cont)
+        hf_compact hf_cont h0_support
+  refine Filter.Tendsto.congr' ?_ hDCT
+  filter_upwards with ε
+  have hφeq : ∀ u : NPointDomain d (m + 1),
+      φFlat (e u) = (f : NPointDomain d (m + 1) → ℂ) u := by
+    intro u
+    simp [φFlat, SchwartzMap.compCLMOfContinuousLinearEquiv_apply]
+  have hreindex :=
+    BHW.integral_sourceSide_shiftedTest_eq_movingSource_fixedTest
+      (d := d) (n := m + 1) ρperm sgn ε ηsrc
+      (fun x : BHW.OS45FlatCommonChartReal d (m + 1) => φFlat x)
+      F
+  symm
+  calc
+    (∫ u : NPointDomain d (m + 1),
+        BHW.extendF (bvt_F OS lgc (m + 1))
+          (BHW.permAct (d := d) σ
+            (BHW.os45FlatCommonChartSourceSide d (m + 1)
+              ρperm sgn ε ηsrc u)) *
+          φFlat (e u + (sgn * ε) • ηsrc)) =
+      ∫ u : NPointDomain d (m + 1),
+        F (BHW.os45FlatCommonChartSourceSide d (m + 1)
+          ρperm sgn ε ηsrc u) *
+          φFlat (BHW.os45CommonEdgeFlatCLE d (m + 1) ρperm u +
+            (sgn * ε) • ηsrc) := by
+        rfl
+    _ =
+      ∫ u : NPointDomain d (m + 1),
+        F
+          (BHW.os45FlatCommonChartSourceSide d (m + 1)
+            ρperm sgn ε ηsrc
+            ((BHW.os45CommonEdgeFlatCLE d (m + 1) ρperm).symm
+              (BHW.os45CommonEdgeFlatCLE d (m + 1) ρperm u -
+                (sgn * ε) • ηsrc))) *
+          φFlat (BHW.os45CommonEdgeFlatCLE d (m + 1) ρperm u) := by
+        exact hreindex
+    _ =
+      ∫ u : NPointDomain d (m + 1),
+        F
+          (BHW.os45FlatCommonChartSourceSideMoving
+            (d := d) (n := m + 1) ρperm sgn ηsrc ε u) *
+          (f : NPointDomain d (m + 1) → ℂ) u := by
+        refine MeasureTheory.integral_congr_ae ?_
+        filter_upwards with u
+        rw [show
+            φFlat (BHW.os45CommonEdgeFlatCLE d (m + 1) ρperm u) =
+              (f : NPointDomain d (m + 1) → ℂ) u by
+            simpa [e] using hφeq u]
+        rfl
+
 /-- Split upper/lower shifted source-side endpoint limits into the combined
 transport hypothesis consumed by the integrated Hdiff handoff.
 
