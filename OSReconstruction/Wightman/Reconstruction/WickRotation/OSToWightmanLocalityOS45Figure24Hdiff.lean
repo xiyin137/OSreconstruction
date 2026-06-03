@@ -5209,6 +5209,152 @@ theorem OS45BHWJostHullData.os45CommonEdge_sourceRepresentsZero_of_sourcePairing
       bvIn bvOut hbvIn_cont hbvOut_cont hsideIn_bvIn
       hsideOut_bvOut (by simpa [E] using h414_integrals)
 
+/-- OS-I `(4.12)`--`(4.14)` source-side transport supplies the local
+horizontal-difference germ on a Figure-2-4 source window.
+
+This exposes the Hdiff packet that
+`OS45BHWJostHullData.os45CommonEdge_sourceRepresentsZero_of_OS412_sourceSide`
+uses internally.  It is the right producer for the corrected side-zero
+transport route, where downstream consumers need the holomorphic Hdiff germ
+rather than just its induced `RepresentsDistributionOn 0` statement. -/
+theorem OS45BHWJostHullData.os45CommonEdge_localHdiffGerm_of_OS412_sourceSide
+    [NeZero d]
+    {hd : 2 ≤ d} {i : Fin n} {hi : i.val + 1 < n}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData (d := d) hd n i hi}
+    (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {U : Set (NPointDomain d n)}
+    (hU_open : IsOpen U)
+    (hU_compact : IsCompact (closure U))
+    (hU_connected : IsConnected U)
+    (hU_closure : closure U ⊆ P.V)
+    (_D : BHW.OS45Figure24SourceCutoffData P) :
+    ∃ Ucx : Set (Fin n → Fin (d + 1) → ℂ),
+      IsOpen Ucx ∧
+      IsConnected Ucx ∧
+      (∀ u ∈ U, (fun k => wickRotatePoint (u k)) ∈ Ucx) ∧
+      (∀ u ∈ U,
+        (BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+          (BHW.realEmbed
+            (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+              (1 : Equiv.Perm (Fin n)) u)) ∈ Ucx) ∧
+      ∃ Hdiff : (Fin n → Fin (d + 1) → ℂ) → ℂ,
+        DifferentiableOn ℂ Hdiff Ucx ∧
+        (∀ θ : SchwartzNPoint d n,
+          HasCompactSupport (θ : NPointDomain d n → ℂ) →
+          tsupport (θ : NPointDomain d n → ℂ) ⊆ U →
+          ∫ u : NPointDomain d n,
+            Hdiff (fun k => wickRotatePoint (u k)) * θ u = 0) ∧
+        (∀ u ∈ U,
+          Hdiff
+            ((BHW.os45QuarterTurnCLE (d := d) (n := n)).symm
+              (BHW.realEmbed
+                (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                  (1 : Equiv.Perm (Fin n)) u))) =
+            BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+                (BHW.realEmbed
+                  (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                    (1 : Equiv.Perm (Fin n)) u)) -
+              BHW.os45PulledRealBranch (d := d) (n := n) OS lgc
+                (1 : Equiv.Perm (Fin n))
+                (BHW.realEmbed
+                  (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                    (1 : Equiv.Perm (Fin n)) u))) := by
+  classical
+  let e := BHW.os45CommonEdgeFlatCLE d n (1 : Equiv.Perm (Fin n))
+  let E : Set (BHW.OS45FlatCommonChartReal d n) := e '' U
+  let bvIn : BHW.OS45FlatCommonChartReal d n → ℂ := fun x =>
+    BHW.os45FlatCommonChartBranch d n OS lgc
+      (1 : Equiv.Perm (Fin n)) (SCV.realEmbed x)
+  let bvOut : BHW.OS45FlatCommonChartReal d n → ℂ := fun x =>
+    BHW.os45FlatCommonChartBranch d n OS lgc
+      (P.τ.symm * (1 : Equiv.Perm (Fin n))) (SCV.realEmbed x)
+  have hU_sub : U ⊆ P.V := fun u hu => hU_closure (subset_closure hu)
+  have hE_sub :
+      E ⊆ BHW.os45FlatCommonChartEdgeSet d n P
+        (1 : Equiv.Perm (Fin n)) := by
+    rintro x ⟨u, huU, rfl⟩
+    exact
+      (BHW.os45CommonEdgeFlatCLE_mem_edgeSet_iff d n P
+        (1 : Equiv.Perm (Fin n)) u).mpr (hU_sub huU)
+  have hbvIn_cont : ContinuousOn bvIn E := by
+    exact
+      (BHW.continuousOn_os45FlatCommonChartBranch_realEdge
+        (d := d) hd OS lgc (P := P)
+        (1 : Equiv.Perm (Fin n)) (1 : Equiv.Perm (Fin n))
+        (BHW.os45FlatCommonChart_real_mem_omega_id
+          (d := d) hd (P := P))).mono hE_sub
+  have hbvOut_cont : ContinuousOn bvOut E := by
+    exact
+      (BHW.continuousOn_os45FlatCommonChartBranch_realEdge
+        (d := d) hd OS lgc (P := P)
+        (P.τ.symm * (1 : Equiv.Perm (Fin n)))
+        (1 : Equiv.Perm (Fin n))
+        (BHW.os45FlatCommonChart_real_mem_omega_adjacent
+          (d := d) hd (P := P))).mono hE_sub
+  have hsideIn_bvIn :
+      ∀ x ∈ E,
+        Filter.Tendsto
+          (BHW.os45FlatCommonChartBranch d n OS lgc
+            (1 : Equiv.Perm (Fin n)))
+          (nhdsWithin (SCV.realEmbed x)
+            (BHW.os45FlatCommonChartOmega d n
+              (1 : Equiv.Perm (Fin n))))
+          (nhds (bvIn x)) := by
+    intro x hx
+    have hxΩ :
+        SCV.realEmbed x ∈
+          BHW.os45FlatCommonChartOmega d n
+            (1 : Equiv.Perm (Fin n)) :=
+      BHW.os45FlatCommonChart_real_mem_omega_id
+        (d := d) hd (P := P) x (hE_sub hx)
+    simpa [bvIn] using
+      BHW.tendsto_os45FlatCommonChartBranch_realEdge
+        (d := d) OS lgc (1 : Equiv.Perm (Fin n)) hxΩ
+  have hsideOut_bvOut :
+      ∀ x ∈ E,
+        Filter.Tendsto
+          (BHW.os45FlatCommonChartBranch d n OS lgc
+            (P.τ.symm * (1 : Equiv.Perm (Fin n))))
+          (nhdsWithin (SCV.realEmbed x)
+            (BHW.os45FlatCommonChartOmega d n
+              (P.τ.symm * (1 : Equiv.Perm (Fin n)))))
+          (nhds (bvOut x)) := by
+    intro x hx
+    have hxΩ :
+        SCV.realEmbed x ∈
+          BHW.os45FlatCommonChartOmega d n
+            (P.τ.symm * (1 : Equiv.Perm (Fin n))) :=
+      BHW.os45FlatCommonChart_real_mem_omega_adjacent
+        (d := d) hd (P := P) x (hE_sub hx)
+    simpa [bvOut] using
+      BHW.tendsto_os45FlatCommonChartBranch_realEdge
+        (d := d) OS lgc
+        (P.τ.symm * (1 : Equiv.Perm (Fin n))) hxΩ
+  have h414_integrals :
+      ∀ φ : SchwartzMap (BHW.OS45FlatCommonChartReal d n) ℂ,
+        HasCompactSupport
+          (φ : BHW.OS45FlatCommonChartReal d n → ℂ) →
+        tsupport (φ : BHW.OS45FlatCommonChartReal d n → ℂ) ⊆ E →
+        (∫ x : BHW.OS45FlatCommonChartReal d n, bvOut x * φ x) =
+          ∫ x : BHW.OS45FlatCommonChartReal d n, bvIn x * φ x := by
+    intro φ hφ_compact hφE
+    simpa [bvIn, bvOut, E, e] using
+      H.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_smearing
+        OS lgc hU_open hU_compact hU_connected hU_closure
+        φ hφ_compact (by simpa [E, e] using hφE)
+  exact
+    H.os45CommonEdge_localHdiffGerm_of_local414_integrals
+      OS lgc hU_open hU_compact hU_connected hU_closure
+      bvIn bvOut
+      (by simpa [E, e] using hbvIn_cont)
+      (by simpa [E, e] using hbvOut_cont)
+      (by simpa [E, e] using hsideIn_bvIn)
+      (by simpa [E, e] using hsideOut_bvOut)
+      (by simpa [E, e] using h414_integrals)
+
 /-- Production entry for the OS-I `(4.12)`--`(4.14)` source-side transport.
 
 The live proof body is the monograph part-(b) common-edge step: prove equality

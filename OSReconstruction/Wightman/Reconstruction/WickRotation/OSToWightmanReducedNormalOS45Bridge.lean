@@ -9161,6 +9161,124 @@ theorem reducedLocalAdjacentBoundaryCLMInvariant_of_local_OS412SourceWindow_inte
       hUsrc_open, hUsrc_sub_K, hKsrc, hUsrcP, h0_plus, h0_minus,
       hrep, hredSupportU, hplus_transport, hminus_transport⟩
 
+set_option maxHeartbeats 1200000 in
+/-- OS412 source windows with Figure-2-4 side-zero endpoint transport supply
+the integrated reduced local boundary-CLM invariant.
+
+This is the corrected OS412/Jost source-window handoff after the OS45 carrier
+audit.  The source-window argument supplies the Hdiff germ directly via
+`OS45BHWJostHullData.os45CommonEdge_localHdiffGerm_of_OS412_sourceSide`, and
+the remaining finite-height input is the side-zero source-current endpoint
+transport, not the overstrong unshifted reduced-coordinate identity. -/
+theorem reducedLocalAdjacentBoundaryCLMInvariant_of_local_OS412SourceWindow_integrated_sideZero_transport
+    (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (χ : BHW.NormalizedBasepointCutoff d)
+    (hlocal :
+      ∀ (m : ℕ) (i : Fin (m + 1)) (hi : i.val + 1 < m + 1)
+        (φ : SchwartzNPoint d m),
+        HasCompactSupport (φ : NPointDomain d m → ℂ) →
+        tsupport (φ : NPointDomain d m → ℂ) ⊆
+          reducedSpacelikeSwapEdge (d := d) m i ⟨i.val + 1, hi⟩ →
+        ∀ ξ ∈ tsupport (φ : NPointDomain d m → ℂ),
+          ∃ V : Set (NPointDomain d m),
+            IsOpen V ∧ ξ ∈ V ∧
+            ∀ ψ : SchwartzNPoint d m,
+              HasCompactSupport (ψ : NPointDomain d m → ℂ) →
+              tsupport (ψ : NPointDomain d m → ℂ) ⊆ V →
+                ∃ P : BHW.OS45Figure24CanonicalSourcePatchData
+                    (d := d) hd (m + 1) i hi,
+                  ∃ _H : BHW.OS45BHWJostHullData
+                      (d := d) hd (m + 1) i hi P,
+                    ∃ D : BHW.OS45Figure24SourceCutoffData P,
+                      ∃ Ωplus Ωminus :
+                          Set (Fin (m + 1) → Fin (d + 1) → ℂ),
+                        ∃ Uwin Usrc Ksrc :
+                            Set (NPointDomain d (m + 1)),
+                          ∃ ηsrc :
+                              BHW.OS45FlatCommonChartReal d (m + 1),
+                            IsOpen Ωplus ∧ IsOpen Ωminus ∧
+                            ContinuousOn
+                              (fun z : Fin (m + 1) →
+                                  Fin (d + 1) → ℂ =>
+                                BHW.extendF (bvt_F OS lgc (m + 1)) z)
+                              Ωplus ∧
+                            ContinuousOn
+                              (fun z : Fin (m + 1) →
+                                  Fin (d + 1) → ℂ =>
+                                BHW.extendF (bvt_F OS lgc (m + 1))
+                                  (BHW.permAct (d := d)
+                                    (P.τ.symm *
+                                      (1 : Equiv.Perm (Fin (m + 1)))).symm
+                                    z))
+                              Ωminus ∧
+                            IsOpen Uwin ∧ IsCompact (closure Uwin) ∧
+                            IsConnected Uwin ∧ closure Uwin ⊆ P.V ∧
+                            IsOpen Usrc ∧ Usrc ⊆ Ksrc ∧ IsCompact Ksrc ∧
+                            Ksrc ⊆ Uwin ∧
+                            ηsrc ∈ BHW.os45FlatCommonChartCone d (m + 1) ∧
+                            (∀ u ∈ Ksrc,
+                              BHW.os45FlatCommonChartSourceSide d (m + 1)
+                                (1 : Equiv.Perm (Fin (m + 1)))
+                                (1 : ℝ) 0 ηsrc u ∈ Ωplus) ∧
+                            (∀ u ∈ Ksrc,
+                              BHW.os45FlatCommonChartSourceSide d (m + 1)
+                                (1 : Equiv.Perm (Fin (m + 1)))
+                                (-1 : ℝ) 0 ηsrc u ∈ Ωminus) ∧
+                            (BHW.reducedDiffMapRealCLM (m + 1) d) ⁻¹'
+                                tsupport (ψ : NPointDomain d m → ℂ) ⊆
+                              Usrc ∧
+                            sourceSideSideZeroReducedEndpointTransport
+                              (d := d) OS lgc D ηsrc
+                              (BHW.normalizedCutoffOfBump d) ψ) :
+    _root_.OSReconstruction.ReducedLocalAdjacentBoundaryCLMInvariant
+      (d := d) OS lgc χ := by
+  refine
+    _root_.OSReconstruction.reducedLocalAdjacentBoundaryCLMInvariant_of_local_branchDifference
+      (d := d) OS lgc χ ?_
+  intro m i hi φ hφ_compact hφ_tsupport ξ hξ
+  rcases hlocal m i hi φ hφ_compact hφ_tsupport ξ hξ with
+    ⟨V, hV_open, hξV, hVlocal⟩
+  refine ⟨V, hV_open, hξV, ?_⟩
+  intro ψ hψ_compact hψ_tsupport
+  rcases hVlocal ψ hψ_compact hψ_tsupport with
+    ⟨P, H, D, Ωplus, Ωminus, Uwin, Usrc, Ksrc, ηsrc,
+      hΩplus_open, hΩminus_open, hFplus_cont, hFminus_cont,
+      hUwin_open, hUwin_compact, hUwin_connected, hUwin_closure,
+      hUsrc_open, hUsrc_sub_K, hKsrc, hKsrc_sub_Uwin, hηsrcC,
+      h0_plus, h0_minus, hredSupportU, hsideZero⟩
+  rcases
+      H.os45CommonEdge_localHdiffGerm_of_OS412_sourceSide
+        OS lgc hUwin_open hUwin_compact hUwin_connected
+        hUwin_closure D with
+    ⟨Ucx, hUcx_open, hUcx_connected, hwick_mem, hcommon_mem,
+      Hdiff, hHdiff_holo, hwick_pairing_zero, hcommon_trace⟩
+  have hUwin_nonempty : Uwin.Nonempty := hUwin_connected.nonempty
+  have hUsrcP : Usrc ⊆ P.V := by
+    intro u hu
+    exact hUwin_closure (subset_closure (hKsrc_sub_Uwin (hUsrc_sub_K hu)))
+  have hliftU :
+      tsupport
+          ((BHW.reducedTestLift m d
+              (BHW.normalizedCutoffOfBump d).toSchwartz ψ :
+              SchwartzNPoint d (m + 1)) :
+            NPointDomain d (m + 1) → ℂ) ⊆ Usrc := by
+    exact
+      (reducedTestLift_tsupport_subset_reducedDiff_preimage_tsupport
+        (d := d) (m := m)
+        (BHW.normalizedCutoffOfBump d).toSchwartz ψ).trans hredSupportU
+  exact
+    tendsto_canonicalAfterSwapBranch_difference_zero_reducedTestLift_of_HdiffGerm_and_sideZeroEndpointTransport
+      (d := d) OS lgc D Uwin hUwin_open hUwin_nonempty Ucx Hdiff
+      hUcx_open hUcx_connected hwick_mem hcommon_mem hHdiff_holo
+      hwick_pairing_zero hcommon_trace hΩplus_open hΩminus_open
+      hFplus_cont hFminus_cont hUsrc_open hUsrc_sub_K hKsrc
+      hKsrc_sub_Uwin hUsrcP ηsrc hηsrcC h0_plus h0_minus
+      (BHW.normalizedCutoffOfBump d) ψ
+      (BHW.normalizedCutoffOfBump_hasCompactSupport d) hψ_compact
+      hliftU hsideZero
+
 /-- Pointwise OS-I source-window packets supply the reduced local boundary-CLM
 invariant.
 
