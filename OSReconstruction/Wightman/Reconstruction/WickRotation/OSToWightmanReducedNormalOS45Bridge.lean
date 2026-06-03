@@ -2099,6 +2099,207 @@ theorem tendsto_flatCommonChart_sideBranch_difference_zero_reducedTestLift_of_Hd
       hUsrc_open hUsrc_sub_K hKsrc hUsrcP η hηC h0_plus h0_minus
       hrepUsrc χ ψ hχ_compact hψ_compact hliftU
 
+/-- Hdiff-germ form of the integrated reduced branch-difference theorem using
+the honest flat side-branch carrier.
+
+The Hdiff/source-window theorem supplies the moving-source flat side-branch
+limit.  The remaining assumptions are exactly the endpoint transport/reindexing
+facts identifying those flat side integrals with the canonical reduced and
+adjacent-after-swap reduced branch integrals.  This avoids asserting the false
+unshifted source-variable PET coordinate normal form. -/
+theorem tendsto_canonicalAfterSwapBranch_difference_zero_reducedTestLift_of_HdiffGerm_and_flat_transport
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {m : ℕ} {hd : 2 ≤ d} {i : Fin (m + 1)}
+    {hi : i.val + 1 < m + 1}
+    {P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd (m + 1) i hi}
+    (D : BHW.OS45Figure24SourceCutoffData P)
+    (U : Set (NPointDomain d (m + 1)))
+    (hU_open : IsOpen U)
+    (hU_nonempty : U.Nonempty)
+    (Ucx : Set (Fin (m + 1) → Fin (d + 1) → ℂ))
+    (Hdiff : (Fin (m + 1) → Fin (d + 1) → ℂ) → ℂ)
+    (hUcx_open : IsOpen Ucx)
+    (hUcx_connected : IsConnected Ucx)
+    (hwick_mem :
+      ∀ u ∈ U, (fun k => wickRotatePoint (u k)) ∈ Ucx)
+    (hcommon_mem :
+      ∀ u ∈ U,
+        (BHW.os45QuarterTurnCLE (d := d) (n := m + 1)).symm
+          (BHW.realEmbed
+            (BHW.os45CommonEdgeRealPoint (d := d) (n := m + 1)
+              (1 : Equiv.Perm (Fin (m + 1))) u)) ∈ Ucx)
+    (hHdiff_holo : DifferentiableOn ℂ Hdiff Ucx)
+    (hwick_pairing_zero :
+      ∀ θ : SchwartzNPoint d (m + 1),
+        HasCompactSupport (θ : NPointDomain d (m + 1) → ℂ) →
+        tsupport (θ : NPointDomain d (m + 1) → ℂ) ⊆ U →
+        ∫ u : NPointDomain d (m + 1),
+          Hdiff (fun k => wickRotatePoint (u k)) * θ u = 0)
+    (hcommon_trace :
+      ∀ u ∈ U,
+        Hdiff
+          ((BHW.os45QuarterTurnCLE (d := d) (n := m + 1)).symm
+            (BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := m + 1)
+                (1 : Equiv.Perm (Fin (m + 1))) u))) =
+          BHW.os45PulledRealBranch (d := d) (n := m + 1) OS lgc
+              (P.τ.symm * (1 : Equiv.Perm (Fin (m + 1))))
+              (BHW.realEmbed
+                (BHW.os45CommonEdgeRealPoint (d := d) (n := m + 1)
+                  (1 : Equiv.Perm (Fin (m + 1))) u)) -
+            BHW.os45PulledRealBranch (d := d) (n := m + 1) OS lgc
+              (1 : Equiv.Perm (Fin (m + 1)))
+              (BHW.realEmbed
+                (BHW.os45CommonEdgeRealPoint (d := d) (n := m + 1)
+                  (1 : Equiv.Perm (Fin (m + 1))) u)))
+    {Ωplus Ωminus : Set (Fin (m + 1) → Fin (d + 1) → ℂ)}
+    (hΩplus_open : IsOpen Ωplus)
+    (hΩminus_open : IsOpen Ωminus)
+    (hFplus_cont :
+      ContinuousOn
+        (fun z : Fin (m + 1) → Fin (d + 1) → ℂ =>
+          BHW.extendF (bvt_F OS lgc (m + 1)) z) Ωplus)
+    (hFminus_cont :
+      ContinuousOn
+        (fun z : Fin (m + 1) → Fin (d + 1) → ℂ =>
+          BHW.extendF (bvt_F OS lgc (m + 1))
+            (BHW.permAct (d := d)
+              (P.τ.symm * (1 : Equiv.Perm (Fin (m + 1)))).symm z))
+        Ωminus)
+    {Usrc Ksrc : Set (NPointDomain d (m + 1))}
+    (hUsrc_open : IsOpen Usrc)
+    (hUsrc_sub_K : Usrc ⊆ Ksrc)
+    (hKsrc : IsCompact Ksrc)
+    (hKsrc_sub_U : Ksrc ⊆ U)
+    (hUsrcP : Usrc ⊆ P.V)
+    (ηsrc : BHW.OS45FlatCommonChartReal d (m + 1))
+    (hηsrcC : ηsrc ∈ BHW.os45FlatCommonChartCone d (m + 1))
+    (h0_plus :
+      ∀ u ∈ Ksrc,
+        BHW.os45FlatCommonChartSourceSide d (m + 1)
+          (1 : Equiv.Perm (Fin (m + 1))) (1 : ℝ) 0 ηsrc u ∈ Ωplus)
+    (h0_minus :
+      ∀ u ∈ Ksrc,
+        BHW.os45FlatCommonChartSourceSide d (m + 1)
+          (1 : Equiv.Perm (Fin (m + 1))) (-1 : ℝ) 0 ηsrc u ∈ Ωminus)
+    (χ : BHW.NormalizedBasepointCutoff d)
+    (ψ : SchwartzNPoint d m)
+    (hχ_compact : HasCompactSupport (χ.toSchwartz : SpacetimeDim d → ℂ))
+    (hψ_compact : HasCompactSupport (ψ : NPointDomain d m → ℂ))
+    (hliftU :
+      tsupport
+          ((BHW.reducedTestLift m d χ.toSchwartz ψ :
+              SchwartzNPoint d (m + 1)) :
+            NPointDomain d (m + 1) → ℂ) ⊆ Usrc)
+    (hplus_flat_transport :
+      ∀ᶠ ε : ℝ in nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)),
+        (∫ x : BHW.OS45FlatCommonChartReal d (m + 1),
+          BHW.os45FlatCommonChartBranch d (m + 1) OS lgc
+            (1 : Equiv.Perm (Fin (m + 1)))
+            (fun a =>
+              (x a : ℂ) +
+                ((((1 : ℝ) * ε) • ηsrc) a : ℂ) * Complex.I) *
+            ((SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
+              (BHW.os45CommonEdgeFlatCLE d (m + 1)
+                (1 : Equiv.Perm (Fin (m + 1)))).symm)
+              (BHW.reducedTestLift m d χ.toSchwartz ψ :
+                SchwartzNPoint d (m + 1)) :
+              SchwartzMap (BHW.OS45FlatCommonChartReal d (m + 1)) ℂ) x) =
+          ∫ ξ : NPointDomain d m,
+            canonicalReducedBranch (d := d) OS lgc m ε ξ * ψ ξ)
+    (hminus_flat_transport :
+      ∀ᶠ ε : ℝ in nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)),
+        (∫ x : BHW.OS45FlatCommonChartReal d (m + 1),
+          BHW.os45FlatCommonChartBranch d (m + 1) OS lgc
+            (P.τ.symm * (1 : Equiv.Perm (Fin (m + 1))))
+            (fun a =>
+              (x a : ℂ) +
+                ((((-1 : ℝ) * ε) • ηsrc) a : ℂ) * Complex.I) *
+            ((SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
+              (BHW.os45CommonEdgeFlatCLE d (m + 1)
+                (1 : Equiv.Perm (Fin (m + 1)))).symm)
+              (BHW.reducedTestLift m d χ.toSchwartz ψ :
+                SchwartzNPoint d (m + 1)) :
+              SchwartzMap (BHW.OS45FlatCommonChartReal d (m + 1)) ℂ) x) =
+          ∫ ξ : NPointDomain d m,
+            canonicalAfterReducedSwapBranch
+                (d := d) OS lgc m i ⟨i.val + 1, hi⟩ ε ξ *
+              ψ ξ) :
+    Filter.Tendsto
+      (fun ε : ℝ =>
+        (∫ ξ : NPointDomain d m,
+          canonicalAfterReducedSwapBranch
+              (d := d) OS lgc m i ⟨i.val + 1, hi⟩ ε ξ *
+            ψ ξ) -
+        ∫ ξ : NPointDomain d m,
+          canonicalReducedBranch (d := d) OS lgc m ε ξ * ψ ξ)
+      (nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)) : Filter ℝ)
+      (nhds 0) := by
+  let j : Fin (m + 1) := ⟨i.val + 1, hi⟩
+  let l : Filter ℝ := nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ))
+  let φFlat : SchwartzMap (BHW.OS45FlatCommonChartReal d (m + 1)) ℂ :=
+    (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
+      (BHW.os45CommonEdgeFlatCLE d (m + 1)
+        (1 : Equiv.Perm (Fin (m + 1)))).symm)
+      (BHW.reducedTestLift m d χ.toSchwartz ψ : SchwartzNPoint d (m + 1))
+  have hflat :
+      Filter.Tendsto
+        (fun ε : ℝ =>
+          (∫ x : BHW.OS45FlatCommonChartReal d (m + 1),
+            BHW.os45FlatCommonChartBranch d (m + 1) OS lgc
+              (1 : Equiv.Perm (Fin (m + 1)))
+              (fun a =>
+                (x a : ℂ) +
+                  ((((1 : ℝ) * ε) • ηsrc) a : ℂ) * Complex.I) *
+              φFlat x) -
+          ∫ x : BHW.OS45FlatCommonChartReal d (m + 1),
+            BHW.os45FlatCommonChartBranch d (m + 1) OS lgc
+              (P.τ.symm * (1 : Equiv.Perm (Fin (m + 1))))
+              (fun a =>
+                (x a : ℂ) +
+                  ((((-1 : ℝ) * ε) • ηsrc) a : ℂ) * Complex.I) *
+              φFlat x)
+        l
+        (nhds 0) := by
+    simpa [l, φFlat] using
+      tendsto_flatCommonChart_sideBranch_difference_zero_reducedTestLift_of_HdiffGerm
+        (d := d) OS lgc D U hU_open hU_nonempty Ucx Hdiff
+        hUcx_open hUcx_connected hwick_mem hcommon_mem hHdiff_holo
+        hwick_pairing_zero hcommon_trace hΩplus_open hΩminus_open
+        hFplus_cont hFminus_cont hUsrc_open hUsrc_sub_K hKsrc hKsrc_sub_U
+        hUsrcP ηsrc hηsrcC h0_plus h0_minus χ.toSchwartz ψ
+        hχ_compact hψ_compact hliftU
+  have hcanonical_sub_after :
+      Filter.Tendsto
+        (fun ε : ℝ =>
+          (∫ ξ : NPointDomain d m,
+            canonicalReducedBranch (d := d) OS lgc m ε ξ * ψ ξ) -
+          ∫ ξ : NPointDomain d m,
+            canonicalAfterReducedSwapBranch
+                (d := d) OS lgc m i j ε ξ * ψ ξ)
+        l
+        (nhds 0) := by
+    refine Filter.Tendsto.congr' ?_ hflat
+    filter_upwards [hplus_flat_transport, hminus_flat_transport] with ε hplus hminus
+    rw [hplus, hminus]
+  have hneg :
+      Filter.Tendsto
+        (fun ε : ℝ =>
+          -((∫ ξ : NPointDomain d m,
+            canonicalReducedBranch (d := d) OS lgc m ε ξ * ψ ξ) -
+          ∫ ξ : NPointDomain d m,
+            canonicalAfterReducedSwapBranch
+                (d := d) OS lgc m i j ε ξ * ψ ξ))
+        (nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)) : Filter ℝ)
+        (nhds 0) := by
+    simpa [l] using hcanonical_sub_after.neg
+  refine Filter.Tendsto.congr' ?_ hneg
+  filter_upwards with ε
+  simp only [j]
+  ring
+
 namespace AdjacentNormal
 
 omit [NeZero d] in
@@ -4738,6 +4939,217 @@ theorem reducedLocalAdjacentBoundaryCLMInvariant_of_local_OS45HdiffGerm_integrat
       hUsrcP ηsrc h0_plus h0_minus (BHW.normalizedCutoffOfBump d) ψ
       (BHW.normalizedCutoffOfBump_hasCompactSupport d) hψ_compact
       hliftU hplus_transport hminus_transport
+
+/-- Local Hdiff germs with flat side-branch endpoint transport supply the reduced
+local boundary-CLM invariant at the integrated level.
+
+This is the corrected distributional Path-2 consumer after the source-side
+transport-shape audit.  The moving-source Hdiff theorem proves the flat
+side-branch difference limit; the two remaining hypotheses are the genuine
+flat-to-reduced endpoint transport/reindexing equalities for the compact
+reduced test. -/
+theorem reducedLocalAdjacentBoundaryCLMInvariant_of_local_OS45HdiffGerm_integrated_flat_transport
+    (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (χ : BHW.NormalizedBasepointCutoff d)
+    (hlocal :
+      ∀ (m : ℕ) (i : Fin (m + 1)) (hi : i.val + 1 < m + 1)
+        (φ : SchwartzNPoint d m),
+        HasCompactSupport (φ : NPointDomain d m → ℂ) →
+        tsupport (φ : NPointDomain d m → ℂ) ⊆
+          reducedSpacelikeSwapEdge (d := d) m i ⟨i.val + 1, hi⟩ →
+        ∀ ξ ∈ tsupport (φ : NPointDomain d m → ℂ),
+          ∃ V : Set (NPointDomain d m),
+            IsOpen V ∧ ξ ∈ V ∧
+            ∀ ψ : SchwartzNPoint d m,
+              HasCompactSupport (ψ : NPointDomain d m → ℂ) →
+              tsupport (ψ : NPointDomain d m → ℂ) ⊆ V →
+                ∃ P : BHW.OS45Figure24CanonicalSourcePatchData
+                    (d := d) hd (m + 1) i hi,
+                  ∃ _D : BHW.OS45Figure24SourceCutoffData P,
+                    ∃ U : Set (NPointDomain d (m + 1)),
+                      ∃ Ucx : Set
+                          (Fin (m + 1) → Fin (d + 1) → ℂ),
+                        ∃ Hdiff :
+                            (Fin (m + 1) →
+                              Fin (d + 1) → ℂ) → ℂ,
+                          ∃ Ωplus Ωminus :
+                              Set (Fin (m + 1) →
+                                Fin (d + 1) → ℂ),
+                            ∃ Usrc Ksrc :
+                                Set (NPointDomain d (m + 1)),
+                              ∃ ηsrc :
+                                  BHW.OS45FlatCommonChartReal d (m + 1),
+                                IsOpen U ∧ U.Nonempty ∧
+                                IsOpen Ucx ∧ IsConnected Ucx ∧
+                                (∀ u ∈ U,
+                                  (fun k => wickRotatePoint (u k)) ∈ Ucx) ∧
+                                (∀ u ∈ U,
+                                  (BHW.os45QuarterTurnCLE
+                                      (d := d) (n := m + 1)).symm
+                                    (BHW.realEmbed
+                                      (BHW.os45CommonEdgeRealPoint
+                                        (d := d) (n := m + 1)
+                                        (1 : Equiv.Perm (Fin (m + 1)))
+                                        u)) ∈ Ucx) ∧
+                                DifferentiableOn ℂ Hdiff Ucx ∧
+                                (∀ θ : SchwartzNPoint d (m + 1),
+                                  HasCompactSupport
+                                    (θ : NPointDomain d (m + 1) → ℂ) →
+                                  tsupport
+                                      (θ :
+                                        NPointDomain d (m + 1) → ℂ) ⊆ U →
+                                  ∫ u : NPointDomain d (m + 1),
+                                    Hdiff (fun k => wickRotatePoint (u k)) *
+                                      θ u = 0) ∧
+                                (∀ u ∈ U,
+                                  Hdiff
+                                    ((BHW.os45QuarterTurnCLE
+                                        (d := d) (n := m + 1)).symm
+                                      (BHW.realEmbed
+                                        (BHW.os45CommonEdgeRealPoint
+                                          (d := d) (n := m + 1)
+                                          (1 : Equiv.Perm (Fin (m + 1)))
+                                          u))) =
+                                    BHW.os45PulledRealBranch
+                                        (d := d) (n := m + 1) OS lgc
+                                        (P.τ.symm *
+                                          (1 : Equiv.Perm (Fin (m + 1))))
+                                        (BHW.realEmbed
+                                          (BHW.os45CommonEdgeRealPoint
+                                            (d := d) (n := m + 1)
+                                            (1 : Equiv.Perm (Fin (m + 1)))
+                                            u)) -
+                                      BHW.os45PulledRealBranch
+                                        (d := d) (n := m + 1) OS lgc
+                                        (1 : Equiv.Perm (Fin (m + 1)))
+                                        (BHW.realEmbed
+                                          (BHW.os45CommonEdgeRealPoint
+                                            (d := d) (n := m + 1)
+                                            (1 : Equiv.Perm (Fin (m + 1)))
+                                            u))) ∧
+                                IsOpen Ωplus ∧ IsOpen Ωminus ∧
+                                ContinuousOn
+                                  (fun z : Fin (m + 1) →
+                                      Fin (d + 1) → ℂ =>
+                                    BHW.extendF (bvt_F OS lgc (m + 1)) z)
+                                  Ωplus ∧
+                                ContinuousOn
+                                  (fun z : Fin (m + 1) →
+                                      Fin (d + 1) → ℂ =>
+                                    BHW.extendF (bvt_F OS lgc (m + 1))
+                                      (BHW.permAct (d := d)
+                                        (P.τ.symm *
+                                          (1 : Equiv.Perm (Fin (m + 1)))).symm
+                                        z))
+                                  Ωminus ∧
+                                IsOpen Usrc ∧ Usrc ⊆ Ksrc ∧
+                                IsCompact Ksrc ∧ Ksrc ⊆ U ∧
+                                Usrc ⊆ P.V ∧
+                                ηsrc ∈ BHW.os45FlatCommonChartCone d (m + 1) ∧
+                                (∀ u ∈ Ksrc,
+                                  BHW.os45FlatCommonChartSourceSide
+                                    d (m + 1)
+                                    (1 : Equiv.Perm (Fin (m + 1)))
+                                    (1 : ℝ) 0 ηsrc u ∈ Ωplus) ∧
+                                (∀ u ∈ Ksrc,
+                                  BHW.os45FlatCommonChartSourceSide
+                                    d (m + 1)
+                                    (1 : Equiv.Perm (Fin (m + 1)))
+                                    (-1 : ℝ) 0 ηsrc u ∈ Ωminus) ∧
+                                (BHW.reducedDiffMapRealCLM (m + 1) d) ⁻¹'
+                                    tsupport
+                                      (ψ : NPointDomain d m → ℂ) ⊆
+                                  Usrc ∧
+                                (∀ᶠ ε : ℝ in
+                                  nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)),
+                                  (∫ x : BHW.OS45FlatCommonChartReal d (m + 1),
+                                    BHW.os45FlatCommonChartBranch d (m + 1)
+                                      OS lgc
+                                      (1 : Equiv.Perm (Fin (m + 1)))
+                                      (fun a =>
+                                        (x a : ℂ) +
+                                          ((((1 : ℝ) * ε) • ηsrc) a : ℂ) *
+                                            Complex.I) *
+                                      ((SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
+                                        (BHW.os45CommonEdgeFlatCLE d (m + 1)
+                                          (1 : Equiv.Perm
+                                            (Fin (m + 1)))).symm)
+                                        (BHW.reducedTestLift m d
+                                          (BHW.normalizedCutoffOfBump d).toSchwartz
+                                          ψ : SchwartzNPoint d (m + 1)) :
+                                        SchwartzMap
+                                          (BHW.OS45FlatCommonChartReal d (m + 1))
+                                          ℂ) x) =
+                                    ∫ ξ : NPointDomain d m,
+                                      canonicalReducedBranch
+                                          (d := d) OS lgc m ε ξ *
+                                        ψ ξ) ∧
+                                (∀ᶠ ε : ℝ in
+                                  nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)),
+                                  (∫ x : BHW.OS45FlatCommonChartReal d (m + 1),
+                                    BHW.os45FlatCommonChartBranch d (m + 1)
+                                      OS lgc
+                                      (P.τ.symm *
+                                        (1 : Equiv.Perm (Fin (m + 1))))
+                                      (fun a =>
+                                        (x a : ℂ) +
+                                          ((((-1 : ℝ) * ε) • ηsrc) a : ℂ) *
+                                            Complex.I) *
+                                      ((SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
+                                        (BHW.os45CommonEdgeFlatCLE d (m + 1)
+                                          (1 : Equiv.Perm
+                                            (Fin (m + 1)))).symm)
+                                        (BHW.reducedTestLift m d
+                                          (BHW.normalizedCutoffOfBump d).toSchwartz
+                                          ψ : SchwartzNPoint d (m + 1)) :
+                                        SchwartzMap
+                                          (BHW.OS45FlatCommonChartReal d (m + 1))
+                                          ℂ) x) =
+                                    ∫ ξ : NPointDomain d m,
+                                      canonicalAfterReducedSwapBranch
+                                          (d := d) OS lgc m i
+                                          ⟨i.val + 1, hi⟩ ε ξ *
+                                        ψ ξ)) :
+    _root_.OSReconstruction.ReducedLocalAdjacentBoundaryCLMInvariant
+      (d := d) OS lgc χ := by
+  refine
+    _root_.OSReconstruction.reducedLocalAdjacentBoundaryCLMInvariant_of_local_branchDifference
+      (d := d) OS lgc χ ?_
+  intro m i hi φ hφ_compact hφ_tsupport ξ hξ
+  rcases hlocal m i hi φ hφ_compact hφ_tsupport ξ hξ with
+    ⟨V, hV_open, hξV, hVlocal⟩
+  refine ⟨V, hV_open, hξV, ?_⟩
+  intro ψ hψ_compact hψ_tsupport
+  rcases hVlocal ψ hψ_compact hψ_tsupport with
+    ⟨P, D, U, Ucx, Hdiff, Ωplus, Ωminus, Usrc, Ksrc, ηsrc,
+      hU_open, hU_nonempty, hUcx_open, hUcx_connected, hwick_mem,
+      hcommon_mem, hHdiff_holo, hwick_pairing_zero, hcommon_trace,
+      hΩplus_open, hΩminus_open, hFplus_cont, hFminus_cont,
+      hUsrc_open, hUsrc_sub_K, hKsrc, hKsrc_sub_U, hUsrcP, hηsrcC,
+      h0_plus, h0_minus, hredSupportU, hplus_flat_transport,
+      hminus_flat_transport⟩
+  have hliftU :
+      tsupport
+          ((BHW.reducedTestLift m d
+              (BHW.normalizedCutoffOfBump d).toSchwartz ψ :
+              SchwartzNPoint d (m + 1)) :
+            NPointDomain d (m + 1) → ℂ) ⊆ Usrc := by
+    exact
+      (reducedTestLift_tsupport_subset_reducedDiff_preimage_tsupport
+        (d := d) (m := m)
+        (BHW.normalizedCutoffOfBump d).toSchwartz ψ).trans hredSupportU
+  exact
+    tendsto_canonicalAfterSwapBranch_difference_zero_reducedTestLift_of_HdiffGerm_and_flat_transport
+      (d := d) OS lgc D U hU_open hU_nonempty Ucx Hdiff
+      hUcx_open hUcx_connected hwick_mem hcommon_mem hHdiff_holo
+      hwick_pairing_zero hcommon_trace hΩplus_open hΩminus_open
+      hFplus_cont hFminus_cont hUsrc_open hUsrc_sub_K hKsrc hKsrc_sub_U
+      hUsrcP ηsrc hηsrcC h0_plus h0_minus
+      (BHW.normalizedCutoffOfBump d) ψ
+      (BHW.normalizedCutoffOfBump_hasCompactSupport d) hψ_compact
+      hliftU hplus_flat_transport hminus_flat_transport
 
 /-- Pull a Ruelle-overlap equality seed back to a reduced-normal branch packet.
 
