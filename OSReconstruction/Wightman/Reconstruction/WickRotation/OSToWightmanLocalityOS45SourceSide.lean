@@ -995,6 +995,91 @@ theorem continuous_os45FlatCommonChartSourceSide_moving
   ext k
   simp [BHW.os45FlatCommonChartSourceSide, e, Q, Pi.add_apply]
 
+/-- The shifted moving-source OS45 source-side path used in endpoint DCT. -/
+def os45FlatCommonChartSourceSideMoving
+    (ρperm : Equiv.Perm (Fin n))
+    (sgn : ℝ)
+    (η : BHW.OS45FlatCommonChartReal d n)
+    (eps : ℝ)
+    (u : NPointDomain d n) :
+    Fin n → Fin (d + 1) → ℂ :=
+  let e := BHW.os45CommonEdgeFlatCLE d n ρperm
+  BHW.os45FlatCommonChartSourceSide d n ρperm sgn eps η
+    (e.symm (e u - (sgn * eps) • η))
+
+/-- Continuity of the moving OS45 source-side path as a function of source
+variable with side height fixed. -/
+theorem continuous_os45FlatCommonChartSourceSide_moving_fixed_eps
+    (ρperm : Equiv.Perm (Fin n))
+    (sgn eps : ℝ)
+    (η : BHW.OS45FlatCommonChartReal d n) :
+    Continuous fun u : NPointDomain d n =>
+      let e := BHW.os45CommonEdgeFlatCLE d n ρperm
+      BHW.os45FlatCommonChartSourceSide d n ρperm sgn eps η
+        (e.symm (e u - (sgn * eps) • η)) := by
+  let Q := BHW.os45QuarterTurnCLE (d := d) (n := n)
+  let e := BHW.os45CommonEdgeFlatCLE d n ρperm
+  have hscale : Continuous (fun _u : NPointDomain d n => (sgn * eps) • η) := by
+    exact continuous_const
+  have he : Continuous (fun u : NPointDomain d n => e u) := e.continuous
+  have hvec : Continuous (fun u : NPointDomain d n =>
+      fun a : Fin (n * (d + 1)) =>
+        ((e u) a : ℂ) + (((sgn * eps) • η) a : ℂ) * Complex.I) := by
+    refine continuous_pi ?_
+    intro a
+    have hreal : Continuous (fun u : NPointDomain d n => (e u) a) :=
+      (continuous_apply a).comp he
+    have him : Continuous (fun u : NPointDomain d n => ((sgn * eps) • η) a) :=
+      (continuous_apply a).comp hscale
+    exact (Complex.continuous_ofReal.comp hreal).add
+      ((Complex.continuous_ofReal.comp him).mul continuous_const)
+  have hun : Continuous (fun u : NPointDomain d n =>
+      BHW.unflattenCfg n d
+        (fun a : Fin (n * (d + 1)) =>
+          ((e u) a : ℂ) + (((sgn * eps) • η) a : ℂ) * Complex.I)) := by
+    exact (differentiable_unflattenCfg_local n d).continuous.comp hvec
+  have hmain := Q.symm.continuous.comp hun
+  convert hmain using 2
+  funext u
+  ext k
+  simp [BHW.os45FlatCommonChartSourceSide, e, Q, Pi.add_apply]
+
+/-- Continuity of the moving OS45 source-side path in side height with the
+outer source variable fixed. -/
+theorem continuous_os45FlatCommonChartSourceSide_moving_fixed_source
+    (ρperm : Equiv.Perm (Fin n))
+    (sgn : ℝ)
+    (η : BHW.OS45FlatCommonChartReal d n)
+    (u : NPointDomain d n) :
+    Continuous fun eps : ℝ =>
+      let e := BHW.os45CommonEdgeFlatCLE d n ρperm
+      BHW.os45FlatCommonChartSourceSide d n ρperm sgn eps η
+        (e.symm (e u - (sgn * eps) • η)) := by
+  let Q := BHW.os45QuarterTurnCLE (d := d) (n := n)
+  let e := BHW.os45CommonEdgeFlatCLE d n ρperm
+  have hscale : Continuous (fun eps : ℝ => (sgn * eps) • η) := by
+    exact (continuous_const.mul continuous_id).smul continuous_const
+  have hvec : Continuous (fun eps : ℝ =>
+      fun a : Fin (n * (d + 1)) =>
+        ((e u) a : ℂ) + (((sgn * eps) • η) a : ℂ) * Complex.I) := by
+    refine continuous_pi ?_
+    intro a
+    have hreal : Continuous (fun _eps : ℝ => (e u) a) := continuous_const
+    have him : Continuous (fun eps : ℝ => ((sgn * eps) • η) a) :=
+      (continuous_apply a).comp hscale
+    exact (Complex.continuous_ofReal.comp hreal).add
+      ((Complex.continuous_ofReal.comp him).mul continuous_const)
+  have hun : Continuous (fun eps : ℝ =>
+      BHW.unflattenCfg n d
+        (fun a : Fin (n * (d + 1)) =>
+          ((e u) a : ℂ) + (((sgn * eps) • η) a : ℂ) * Complex.I)) := by
+    exact (differentiable_unflattenCfg_local n d).continuous.comp hvec
+  have hmain := Q.symm.continuous.comp hun
+  convert hmain using 2
+  funext eps
+  ext k
+  simp [BHW.os45FlatCommonChartSourceSide, e, Q, Pi.add_apply]
+
 /-- Compact-source-support collar for the moving OS45 source-side path used by
 the shifted endpoint DCT packet. -/
 theorem eventually_forall_os45FlatCommonChartSourceSide_moving_mem_of_compact
@@ -1585,6 +1670,144 @@ theorem tendsto_integral_comp_os45FlatCommonChartSourceSide_mul_of_hasCompactSup
       BHW.aestronglyMeasurable_zeroExtension_mul_of_compactSupport
         (μ := volume) (K := K) hK_compact
         hbranch_cont_on_K hφ_cont.continuousOn hzero_off
+  apply MeasureTheory.tendsto_integral_filter_of_dominated_convergence
+    (bound := g)
+  · exact h_meas
+  · exact hg_bound
+  · exact hg_int
+  · exact Eventually.of_forall h_pointwise
+
+/-- Endpoint dominated convergence for a terminal branch along the moving OS45
+source-side path.
+
+This is the fixed-test DCT packet for the shifted source argument
+`e.symm (e u - (sgn * eps) • eta)`.  It proves only compact-support analytic
+control for a continuous branch on a carrier; it does not identify the branch
+with a reduced boundary value. -/
+theorem tendsto_integral_comp_os45FlatCommonChartSourceSide_moving_mul_of_hasCompactSupport
+    (ρperm : Equiv.Perm (Fin n))
+    (sgn : ℝ)
+    (η : BHW.OS45FlatCommonChartReal d n)
+    {U : Set (Fin n → Fin (d + 1) → ℂ)}
+    (hU_open : IsOpen U)
+    {F : (Fin n → Fin (d + 1) → ℂ) → ℂ}
+    (hF_cont : ContinuousOn F U)
+    {φ : NPointDomain d n → ℂ}
+    (hφ_compact : HasCompactSupport φ)
+    (hφ_cont : Continuous φ)
+    (h0 :
+      ∀ u ∈ tsupport φ,
+        BHW.os45FlatCommonChartSourceSide d n ρperm sgn 0 η u ∈ U) :
+    Tendsto
+      (fun eps : ℝ =>
+        ∫ u : NPointDomain d n,
+          F
+            (BHW.os45FlatCommonChartSourceSideMoving
+              (d := d) (n := n) ρperm sgn η eps u) * φ u)
+      (𝓝[Set.Ioi 0] (0 : ℝ))
+      (𝓝
+        (∫ u : NPointDomain d n,
+          F (BHW.os45FlatCommonChartSourceSide d n ρperm sgn 0 η u) * φ u)) := by
+  let K : Set (NPointDomain d n) := tsupport φ
+  let e := BHW.os45CommonEdgeFlatCLE d n ρperm
+  let moving : ℝ → NPointDomain d n → Fin n → Fin (d + 1) → ℂ :=
+    fun eps u =>
+      BHW.os45FlatCommonChartSourceSideMoving
+        (d := d) (n := n) ρperm sgn η eps u
+  have hK_compact : IsCompact K := hφ_compact.isCompact
+  have h_eventual_collar :
+      ∀ᶠ eps in 𝓝[Set.Ioi 0] (0 : ℝ),
+        ∀ u ∈ K, moving eps u ∈ U := by
+    simpa [moving, BHW.os45FlatCommonChartSourceSideMoving, e] using
+      BHW.eventually_forall_os45FlatCommonChartSourceSide_moving_mem_of_compact
+        (d := d) (n := n) ρperm sgn η hK_compact hU_open h0
+  have h_pointwise :
+      ∀ u : NPointDomain d n,
+        Tendsto
+          (fun eps : ℝ => F (moving eps u) * φ u)
+          (𝓝[Set.Ioi 0] (0 : ℝ))
+          (𝓝 (F (BHW.os45FlatCommonChartSourceSide d n ρperm sgn 0 η u) * φ u)) := by
+    intro u
+    by_cases hu : u ∈ K
+    · have hzero_arg : e.symm (e u - (sgn * (0 : ℝ)) • η) = u := by
+        rw [mul_zero, zero_smul, sub_zero]
+        exact e.symm_apply_apply u
+      have hzero : moving (0 : ℝ) u =
+          BHW.os45FlatCommonChartSourceSide d n ρperm sgn 0 η u := by
+        change
+          BHW.os45FlatCommonChartSourceSide d n ρperm sgn (0 : ℝ) η
+              (e.symm (e u - (sgn * (0 : ℝ)) • η)) =
+            BHW.os45FlatCommonChartSourceSide d n ρperm sgn 0 η u
+        rw [hzero_arg]
+      have hpath_cont : Continuous (fun eps : ℝ => moving eps u) := by
+        simpa [moving, BHW.os45FlatCommonChartSourceSideMoving, e] using
+          BHW.continuous_os45FlatCommonChartSourceSide_moving_fixed_source
+            (d := d) (n := n) ρperm sgn η u
+      have hpath_tendsto :
+          Tendsto (fun eps : ℝ => moving eps u) (𝓝 (0 : ℝ))
+            (𝓝 (BHW.os45FlatCommonChartSourceSide d n ρperm sgn 0 η u)) := by
+        rw [← hzero]
+        exact hpath_cont.continuousAt
+      have hF_at :
+          ContinuousAt F (BHW.os45FlatCommonChartSourceSide d n ρperm sgn 0 η u) :=
+        hF_cont.continuousAt (hU_open.mem_nhds (h0 u hu))
+      exact
+        ((hF_at.tendsto.comp hpath_tendsto).mono_left nhdsWithin_le_nhds).mul
+          tendsto_const_nhds
+    · have hzero : φ u = 0 := image_eq_zero_of_notMem_tsupport hu
+      simp [hzero]
+  rcases
+    BHW.exists_bound_eventually_forall_norm_comp_os45FlatCommonChartSourceSide_moving
+      (d := d) (n := n) ρperm sgn η hK_compact hU_open h0 hF_cont with
+    ⟨M, _hM_nonneg, hM_bound⟩
+  let g : NPointDomain d n → ℝ := fun u => M * ‖φ u‖
+  have hg_int : Integrable g := by
+    have hφ_int : Integrable φ := hφ_cont.integrable_of_hasCompactSupport hφ_compact
+    simpa [g, mul_comm, mul_left_comm, mul_assoc] using
+      (hφ_int.norm.const_mul M)
+  have hg_bound :
+      ∀ᶠ eps in 𝓝[Set.Ioi 0] (0 : ℝ),
+        ∀ᵐ u : NPointDomain d n,
+          ‖F (moving eps u) * φ u‖ ≤ g u := by
+    filter_upwards [hM_bound] with eps hM_eps
+    filter_upwards with u
+    by_cases hu : u ∈ K
+    · calc
+        ‖F (moving eps u) * φ u‖
+            = ‖F (moving eps u)‖ * ‖φ u‖ := by
+              rw [norm_mul]
+        _ ≤ M * ‖φ u‖ :=
+            mul_le_mul_of_nonneg_right (hM_eps u hu) (norm_nonneg _)
+        _ = g u := rfl
+    · have hzero : φ u = 0 := image_eq_zero_of_notMem_tsupport hu
+      simp [g, hzero]
+  have h_meas :
+      ∀ᶠ eps in 𝓝[Set.Ioi 0] (0 : ℝ),
+        AEStronglyMeasurable
+          (fun u : NPointDomain d n => F (moving eps u) * φ u) := by
+    filter_upwards [h_eventual_collar] with eps heps
+    have hsource_cont : Continuous fun u : NPointDomain d n => moving eps u := by
+      simpa [moving, BHW.os45FlatCommonChartSourceSideMoving, e] using
+        BHW.continuous_os45FlatCommonChartSourceSide_moving_fixed_eps
+          (d := d) (n := n) ρperm sgn eps η
+    have hbranch_cont_on_K :
+        ContinuousOn (fun u : NPointDomain d n => F (moving eps u)) K := by
+      exact hF_cont.comp hsource_cont.continuousOn heps
+    have hzero_off :
+        ∀ u ∉ K, F (moving eps u) * φ u = 0 := by
+      intro u hu
+      have hzero : φ u = 0 := image_eq_zero_of_notMem_tsupport hu
+      simp [hzero]
+    exact
+      BHW.aestronglyMeasurable_zeroExtension_mul_of_compactSupport
+        (μ := volume) (K := K) hK_compact
+        hbranch_cont_on_K hφ_cont.continuousOn hzero_off
+  change Tendsto
+    (fun eps : ℝ => ∫ u : NPointDomain d n, F (moving eps u) * φ u)
+    (𝓝[Set.Ioi 0] (0 : ℝ))
+    (𝓝
+      (∫ u : NPointDomain d n,
+        F (BHW.os45FlatCommonChartSourceSide d n ρperm sgn 0 η u) * φ u))
   apply MeasureTheory.tendsto_integral_filter_of_dominated_convergence
     (bound := g)
   · exact h_meas
