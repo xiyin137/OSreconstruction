@@ -5092,9 +5092,10 @@ height preserves the upper moving source-side ray after quotienting by reduced
 differences.
 
 This is the coordinate bridge left after selecting the correct side-height for
-OS-I Section 4.5: the analytic branch value still has to be transported through
-the reduced extension/uniqueness step, but no further coordinate correction is
-needed. -/
+OS-I Section 4.5.  Its target is still the OS45 quarter-turned absolute
+reduced-normal ray; it is not a direct rewrite to the ordinary canonical
+reduced PET approach.  The remaining branch-transfer leaf is the analytic
+height/source-side comparison that removes this OS45 normalization. -/
 theorem reducedDiffMap_coneHeight_sourceSide_eq_upperCanonicalRay
     {m : ℕ} {i : Fin (m + 1)} {hi : i.val + 1 < m + 1}
     (σ : Equiv.Perm (Fin (m + 1)))
@@ -5244,7 +5245,11 @@ theorem reducedDiffMap_coneHeight_sourceSide_eq_upperCanonicalRay
 set_option maxHeartbeats 1200000 in
 /-- Replacing the reduced-normal side-height by the cone-valid canonical OS45
 height preserves the lower moving source-side ray after quotienting by reduced
-differences, including after the selected adjacent branch permutation. -/
+differences, including after the selected adjacent branch permutation.
+
+As in the upper case, the target is the OS45 quarter-turned absolute lower
+reduced-normal ray.  It should not be used as a direct adjacent positive-PET
+reduced-difference normal form. -/
 theorem reducedDiffMap_coneHeight_sourceSide_eq_lowerCanonicalRay
     {m : ℕ} {i : Fin (m + 1)} {hi : i.val + 1 < m + 1}
     (σ : Equiv.Perm (Fin (m + 1)))

@@ -2345,6 +2345,32 @@ theorem bvt_W_swap_pairing_of_spacelike_from_closedSupportCanonicalInvariant
       (reducedCanonicalAdjacentSwapBoundaryInvariantSchwartz_of_closedSupportCanonicalInvariant
         (d := d) OS lgc χ hclosed)
 
+/-- Local reduced boundary-CLM invariance is enough for theorem-2 adjacent
+locality.
+
+This exposes the Path-2 last mile directly: Hdiff/source-representation
+producers only need to build `ReducedLocalAdjacentBoundaryCLMInvariant`; the
+closed-support canonical invariant and the boundary-value swap statement are
+then obtained by the already checked support handoff. -/
+theorem bvt_W_swap_pairing_of_spacelike_from_local_reducedBoundaryCLMInvariant
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (χ : BHW.NormalizedBasepointCutoff d)
+    (hlocalCLM :
+      ReducedLocalAdjacentBoundaryCLMInvariant (d := d) OS lgc χ) :
+    ∀ (n : ℕ) (i : Fin n) (hi : i.val + 1 < n) (f g : SchwartzNPoint d n),
+      (∀ x, f.toFun x ≠ 0 →
+        MinkowskiSpace.AreSpacelikeSeparated d
+          (x i) (x ⟨i.val + 1, hi⟩)) →
+      (∀ x, g.toFun x =
+        f.toFun (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k))) →
+      bvt_W OS lgc n f = bvt_W OS lgc n g := by
+  exact
+    bvt_W_swap_pairing_of_spacelike_from_closedSupportCanonicalInvariant
+      (d := d) OS lgc χ
+      (reducedCanonicalAdjacentSwapBoundaryInvariantSchwartzClosedSupport_of_local_reducedBoundaryCLMInvariant
+        (d := d) OS lgc χ hlocalCLM)
+
 /-- Collar-local reduced-normal EOW branch data is the theorem-2 final-mile
 input.
 
