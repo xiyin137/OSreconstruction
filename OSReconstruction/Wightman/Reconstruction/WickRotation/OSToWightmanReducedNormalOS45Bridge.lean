@@ -958,6 +958,131 @@ theorem tendsto_extendF_bvt_F_sub_adjacentReducedPermutedBranch_of_reducedDiff_t
   refine Filter.Tendsto.congr' hselected_to_ext.symm ?_
   simpa using hFred_src.sub hFred_perm
 
+/-- Along a shifted moving-source OS45 source-side path, reduced differences
+converge to the zero-height common-edge carrier.
+
+This is the topology half of the endpoint normalization.  It deliberately
+targets the actual zero-height OS45 carrier, not the raw real reduced
+difference coordinates. -/
+theorem tendsto_reducedDiffMap_permAct_os45FlatCommonChartSourceSide_moved_zero
+    (m : ℕ)
+    (ρperm σ : Equiv.Perm (Fin (m + 1)))
+    (sgn : ℝ)
+    (η : BHW.OS45FlatCommonChartReal d (m + 1))
+    (u : NPointDomain d (m + 1)) :
+    Filter.Tendsto
+      (fun ε : ℝ =>
+        BHW.reducedDiffMap (m + 1) d
+          (BHW.permAct (d := d) σ
+            (BHW.os45FlatCommonChartSourceSide d (m + 1)
+              ρperm sgn ε η
+              ((BHW.os45CommonEdgeFlatCLE d (m + 1) ρperm).symm
+                (BHW.os45CommonEdgeFlatCLE d (m + 1) ρperm u -
+                  (sgn * ε) • η)))))
+      (nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)) : Filter ℝ)
+      (nhds
+        (BHW.reducedDiffMap (m + 1) d
+          (BHW.permAct (d := d) σ
+            (BHW.os45FlatCommonChartSourceSide d (m + 1)
+              ρperm sgn 0 η u)))) := by
+  let l : Filter ℝ := nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ))
+  let e : NPointDomain d (m + 1) ≃L[ℝ]
+      BHW.OS45FlatCommonChartReal d (m + 1) :=
+    BHW.os45CommonEdgeFlatCLE d (m + 1) ρperm
+  have hε : Filter.Tendsto (fun ε : ℝ => ε) l (nhds (0 : ℝ)) := by
+    exact Filter.tendsto_id'.2 nhdsWithin_le_nhds
+  have hmul : Filter.Tendsto (fun ε : ℝ => sgn * ε) l (nhds 0) := by
+    simpa using tendsto_const_nhds.mul hε
+  have hsource :
+      Filter.Tendsto
+        (fun ε : ℝ => e.symm (e u - (sgn * ε) • η)) l
+        (nhds u) := by
+    have hη :
+        Filter.Tendsto
+          (fun _ε : ℝ => e.symm η) l
+          (nhds (e.symm η)) := tendsto_const_nhds
+    have hshift :
+        Filter.Tendsto
+          (fun ε : ℝ => (sgn * ε) • e.symm η) l
+          (nhds (0 : NPointDomain d (m + 1))) := by
+      simpa using hmul.smul hη
+    have hsource' :
+        Filter.Tendsto
+          (fun ε : ℝ => u - (sgn * ε) • e.symm η) l
+          (nhds (u - 0)) :=
+      tendsto_const_nhds.sub hshift
+    simpa [map_sub, map_smul] using hsource'
+  have hpair :
+      Filter.Tendsto
+        (fun ε : ℝ => (ε, e.symm (e u - (sgn * ε) • η))) l
+        (nhds ((0 : ℝ), u)) :=
+    hε.prodMk_nhds hsource
+  have hsourceSide :
+      Filter.Tendsto
+        (fun ε : ℝ =>
+          BHW.os45FlatCommonChartSourceSide d (m + 1)
+            ρperm sgn ε η
+            (e.symm (e u - (sgn * ε) • η))) l
+        (nhds
+          (BHW.os45FlatCommonChartSourceSide d (m + 1)
+            ρperm sgn 0 η u)) := by
+    have hcont :=
+      BHW.continuous_os45FlatCommonChartSourceSide
+        (d := d) (n := m + 1) ρperm sgn η
+    simpa [e] using (hcont.tendsto ((0 : ℝ), u)).comp hpair
+  have hperm :
+      Filter.Tendsto
+        (fun ε : ℝ =>
+          BHW.permAct (d := d) σ
+            (BHW.os45FlatCommonChartSourceSide d (m + 1)
+              ρperm sgn ε η
+              (e.symm (e u - (sgn * ε) • η)))) l
+        (nhds
+          (BHW.permAct (d := d) σ
+            (BHW.os45FlatCommonChartSourceSide d (m + 1)
+              ρperm sgn 0 η u))) := by
+    exact (BHW.continuous_permAct (d := d) σ).tendsto _ |>.comp hsourceSide
+  simpa [e] using
+    ((BHW.reducedDiffMap (m + 1) d).continuous.tendsto _).comp hperm
+
+/-- Coordinate form of the zero-height OS45 common-edge carrier after passing
+to reduced differences.
+
+The time reduced difference is multiplied by `(1 + I) / 2`; the spatial
+reduced differences are the ordinary real reduced differences.  This is the
+exact carrier-normalization mismatch left for the endpoint theorem. -/
+theorem reducedDiffMap_permAct_os45FlatCommonChartSourceSide_zero_eq_commonEdgeCarrier
+    (m : ℕ)
+    (ρperm σ : Equiv.Perm (Fin (m + 1)))
+    (sgn : ℝ)
+    (η : BHW.OS45FlatCommonChartReal d (m + 1))
+    (u : NPointDomain d (m + 1)) :
+    BHW.reducedDiffMap (m + 1) d
+        (BHW.permAct (d := d) σ
+          (BHW.os45FlatCommonChartSourceSide d (m + 1)
+            ρperm sgn 0 η u)) =
+      fun k μ =>
+        if μ = 0 then
+          ((1 + Complex.I) / 2 : ℂ) *
+            (BHW.reducedDiffMapReal (m + 1) d
+              (fun r => u (ρperm (σ r))) k 0 : ℂ)
+        else
+          (BHW.reducedDiffMapReal (m + 1) d
+            (fun r => u (ρperm (σ r))) k μ : ℂ) := by
+  ext k μ
+  rw [BHW.reducedDiffMap_eq_successive_differences]
+  rw [BHW.permAct_os45FlatCommonChartSourceSide_zero]
+  rw [BHW.reducedDiffMapReal_apply]
+  by_cases hμ : μ = 0
+  · subst μ
+    simp [BHW.os45QuarterTurnConfig, wickRotatePoint]
+    ring_nf
+    rw [Complex.I_sq]
+    ring
+  · simp only [BHW.os45QuarterTurnConfig, wickRotatePoint, hμ, ↓reduceIte]
+    rw [BHW.reducedDiffMapReal_apply]
+    norm_num
+
 /-- The canonical OS45 flat source-side direction becomes the canonical reduced
 imaginary direction after quotienting by reduced differences. -/
 theorem reducedDiffMap_os45FlatCommonChartSourceSideDirection_canonical_id_eq

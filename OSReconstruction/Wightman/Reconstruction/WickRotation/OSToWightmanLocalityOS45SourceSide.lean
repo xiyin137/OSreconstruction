@@ -956,6 +956,183 @@ theorem exists_bound_eventually_forall_norm_comp_os45FlatCommonChartSourceSide
     ⟨(eps, u), ⟨heps_Icc, huK⟩, rfl⟩
   exact (hM0 _ hz_collar).trans (le_max_left _ _)
 
+/-- Continuity of the genuine OS45 source-side chart along the shifted source
+argument that occurs in the endpoint DCT packet. -/
+theorem continuous_os45FlatCommonChartSourceSide_moving
+    (ρperm : Equiv.Perm (Fin n))
+    (sgn : ℝ)
+    (η : BHW.OS45FlatCommonChartReal d n) :
+    Continuous (fun p : ℝ × NPointDomain d n =>
+      let e := BHW.os45CommonEdgeFlatCLE d n ρperm
+      BHW.os45FlatCommonChartSourceSide d n ρperm sgn p.1 η
+        (e.symm (e p.2 - (sgn * p.1) • η))) := by
+  let Q := BHW.os45QuarterTurnCLE (d := d) (n := n)
+  let e := BHW.os45CommonEdgeFlatCLE d n ρperm
+  have hscale : Continuous (fun p : ℝ × NPointDomain d n => (sgn * p.1) • η) := by
+    exact (continuous_const.mul continuous_fst).smul continuous_const
+  have he : Continuous (fun p : ℝ × NPointDomain d n => e p.2) :=
+    e.continuous.comp continuous_snd
+  have hvec : Continuous (fun p : ℝ × NPointDomain d n =>
+      fun a : Fin (n * (d + 1)) =>
+        ((e p.2) a : ℂ) + (((sgn * p.1) • η) a : ℂ) * Complex.I) := by
+    refine continuous_pi ?_
+    intro a
+    have hreal : Continuous (fun p : ℝ × NPointDomain d n => (e p.2) a) :=
+      (continuous_apply a).comp he
+    have him : Continuous (fun p : ℝ × NPointDomain d n =>
+        ((sgn * p.1) • η) a) :=
+      (continuous_apply a).comp hscale
+    exact (Complex.continuous_ofReal.comp hreal).add
+      ((Complex.continuous_ofReal.comp him).mul continuous_const)
+  have hun : Continuous (fun p : ℝ × NPointDomain d n =>
+      BHW.unflattenCfg n d
+        (fun a : Fin (n * (d + 1)) =>
+          ((e p.2) a : ℂ) + (((sgn * p.1) • η) a : ℂ) * Complex.I)) := by
+    exact (differentiable_unflattenCfg_local n d).continuous.comp hvec
+  have hmain := Q.symm.continuous.comp hun
+  convert hmain using 2
+  funext p
+  ext k
+  simp [BHW.os45FlatCommonChartSourceSide, e, Q, Pi.add_apply]
+
+/-- Compact-source-support collar for the moving OS45 source-side path used by
+the shifted endpoint DCT packet. -/
+theorem eventually_forall_os45FlatCommonChartSourceSide_moving_mem_of_compact
+    (ρperm : Equiv.Perm (Fin n))
+    (sgn : ℝ)
+    (η : BHW.OS45FlatCommonChartReal d n)
+    {K : Set (NPointDomain d n)}
+    (hK : IsCompact K)
+    {U : Set (Fin n → Fin (d + 1) → ℂ)}
+    (hU_open : IsOpen U)
+    (h0 :
+      ∀ u ∈ K,
+        BHW.os45FlatCommonChartSourceSide d n ρperm sgn 0 η u ∈ U) :
+    ∀ᶠ eps in 𝓝[Set.Ioi 0] (0 : ℝ),
+      ∀ u ∈ K,
+        let e := BHW.os45CommonEdgeFlatCLE d n ρperm
+        BHW.os45FlatCommonChartSourceSide d n ρperm sgn eps η
+          (e.symm (e u - (sgn * eps) • η)) ∈ U := by
+  let e := BHW.os45CommonEdgeFlatCLE d n ρperm
+  let moving : ℝ × NPointDomain d n → Fin n → Fin (d + 1) → ℂ :=
+    fun p =>
+      BHW.os45FlatCommonChartSourceSide d n ρperm sgn p.1 η
+        (e.symm (e p.2 - (sgn * p.1) • η))
+  have hcont : Continuous moving := by
+    change Continuous (fun p : ℝ × NPointDomain d n =>
+      BHW.os45FlatCommonChartSourceSide d n ρperm sgn p.1 η
+        (e.symm (e p.2 - (sgn * p.1) • η)))
+    exact
+      BHW.continuous_os45FlatCommonChartSourceSide_moving
+        (d := d) (n := n) ρperm sgn η
+  have hlocal :
+      ∀ u ∈ K,
+        ∀ᶠ p : ℝ × NPointDomain d n in 𝓝 ((0 : ℝ), u),
+          moving p ∈ U := by
+    intro u hu
+    have harg_zero :
+        e.symm (e u - (sgn * (0 : ℝ)) • η) = u := by
+      simp [e]
+    have h0_moving : moving ((0 : ℝ), u) ∈ U := by
+      change
+        BHW.os45FlatCommonChartSourceSide d n ρperm sgn (0 : ℝ) η
+          (e.symm (e u - (sgn * (0 : ℝ)) • η)) ∈ U
+      rw [harg_zero]
+      exact h0 u hu
+    exact hcont.continuousAt.preimage_mem_nhds
+      (hU_open.mem_nhds h0_moving)
+  have hnhds :
+      ∀ᶠ eps in 𝓝 (0 : ℝ),
+        ∀ u ∈ K, moving (eps, u) ∈ U :=
+    hK.eventually_forall_of_forall_eventually hlocal
+  change
+    ∀ᶠ eps in 𝓝[Set.Ioi 0] (0 : ℝ),
+      ∀ u ∈ K, moving (eps, u) ∈ U
+  exact hnhds.filter_mono nhdsWithin_le_nhds
+
+/-- Uniform branch bound on the compact collar for the moving OS45 source-side
+path used by the shifted endpoint DCT packet. -/
+theorem exists_bound_eventually_forall_norm_comp_os45FlatCommonChartSourceSide_moving
+    (ρperm : Equiv.Perm (Fin n))
+    (sgn : ℝ)
+    (η : BHW.OS45FlatCommonChartReal d n)
+    {K : Set (NPointDomain d n)}
+    (hK : IsCompact K)
+    {U : Set (Fin n → Fin (d + 1) → ℂ)}
+    (hU_open : IsOpen U)
+    (h0 :
+      ∀ u ∈ K,
+        BHW.os45FlatCommonChartSourceSide d n ρperm sgn 0 η u ∈ U)
+    {F : (Fin n → Fin (d + 1) → ℂ) → ℂ}
+    (hF_cont : ContinuousOn F U) :
+    ∃ M : ℝ, 0 ≤ M ∧
+      ∀ᶠ eps in 𝓝[Set.Ioi 0] (0 : ℝ),
+        ∀ u ∈ K,
+          let e := BHW.os45CommonEdgeFlatCLE d n ρperm
+          ‖F (BHW.os45FlatCommonChartSourceSide d n ρperm sgn eps η
+            (e.symm (e u - (sgn * eps) • η)))‖ ≤ M := by
+  let e := BHW.os45CommonEdgeFlatCLE d n ρperm
+  let moving : ℝ × NPointDomain d n → Fin n → Fin (d + 1) → ℂ :=
+    fun p =>
+      BHW.os45FlatCommonChartSourceSide d n ρperm sgn p.1 η
+        (e.symm (e p.2 - (sgn * p.1) • η))
+  have hcont : Continuous moving := by
+    change Continuous (fun p : ℝ × NPointDomain d n =>
+      BHW.os45FlatCommonChartSourceSide d n ρperm sgn p.1 η
+        (e.symm (e p.2 - (sgn * p.1) • η)))
+    exact
+      BHW.continuous_os45FlatCommonChartSourceSide_moving
+        (d := d) (n := n) ρperm sgn η
+  have hlocal :
+      ∀ u ∈ K,
+        ∀ᶠ p : ℝ × NPointDomain d n in 𝓝 ((0 : ℝ), u),
+          moving p ∈ U := by
+    intro u hu
+    have harg_zero :
+        e.symm (e u - (sgn * (0 : ℝ)) • η) = u := by
+      simp [e]
+    have h0_moving : moving ((0 : ℝ), u) ∈ U := by
+      change
+        BHW.os45FlatCommonChartSourceSide d n ρperm sgn (0 : ℝ) η
+          (e.symm (e u - (sgn * (0 : ℝ)) • η)) ∈ U
+      rw [harg_zero]
+      exact h0 u hu
+    exact hcont.continuousAt.preimage_mem_nhds
+      (hU_open.mem_nhds h0_moving)
+  have hnhds :
+      ∀ᶠ eps in 𝓝 (0 : ℝ),
+        ∀ u ∈ K, moving (eps, u) ∈ U :=
+    hK.eventually_forall_of_forall_eventually hlocal
+  obtain ⟨r, hr_pos, hr_sub⟩ := Metric.mem_nhds_iff.mp hnhds
+  let δ : ℝ := r / 2
+  have hδ_pos : 0 < δ := half_pos hr_pos
+  let collar : Set (Fin n → Fin (d + 1) → ℂ) :=
+    moving '' (Set.Icc (0 : ℝ) δ ×ˢ K)
+  have hcollar_compact : IsCompact collar := by
+    exact (isCompact_Icc.prod hK).image hcont
+  have hcollar_sub : collar ⊆ U := by
+    rintro z ⟨p, hp, rfl⟩
+    rcases p with ⟨eps, u⟩
+    rcases hp with ⟨heps, huK⟩
+    have heps_ball : eps ∈ Metric.ball (0 : ℝ) r := by
+      have heps_lt : eps < r :=
+        heps.2.trans_lt (half_lt_self hr_pos)
+      simpa [Metric.mem_ball, Real.dist_eq, abs_of_nonneg heps.1]
+        using heps_lt
+    exact hr_sub heps_ball u huK
+  obtain ⟨M0, hM0⟩ :=
+    hcollar_compact.exists_bound_of_continuousOn
+      (hF_cont.mono hcollar_sub)
+  refine ⟨max M0 0, le_max_right _ _, ?_⟩
+  filter_upwards
+    [self_mem_nhdsWithin, nhdsWithin_le_nhds (Iio_mem_nhds hδ_pos)]
+    with eps heps_pos heps_lt u huK
+  have heps_Icc : eps ∈ Set.Icc (0 : ℝ) δ := ⟨heps_pos.le, heps_lt.le⟩
+  have hz_collar : moving (eps, u) ∈ collar :=
+    ⟨(eps, u), ⟨heps_Icc, huK⟩, rfl⟩
+  change ‖F (moving (eps, u))‖ ≤ max M0 0
+  exact (hM0 _ hz_collar).trans (le_max_left _ _)
+
 /-- Pointwise convergence of a branch along the genuine OS45 source-side path,
 from continuity on an open carrier containing the zero side-height endpoint. -/
 theorem tendsto_comp_os45FlatCommonChartSourceSide_nhdsWithin
