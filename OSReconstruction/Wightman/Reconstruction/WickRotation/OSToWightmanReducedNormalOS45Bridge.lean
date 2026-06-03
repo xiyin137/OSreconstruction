@@ -11831,6 +11831,485 @@ theorem tendsto_reducedExtension_os45QuarterTurnCLE_symm_reducedNormalLowerRay_b
     Fred.holomorphic.continuousOn.continuousWithinAt hζ0_pet
   exact hFred_cont.tendsto.comp hwithin
 
+-- At zero canonical height, the complexified reduced-normal flat chart is the
+-- ordinary real reduced coordinate selected by the inverse normal chart.
+omit [NeZero d] in
+@[simp]
+theorem reducedNormalCoordFlatComplexCLM_realEmbed_flatten
+    {m : ℕ} (i : Fin (m + 1)) (hi : i.val + 1 < m + 1)
+    (p : ReducedSpace d m i ⟨i.val + 1, hi⟩) :
+    reducedNormalCoordFlatComplexCLM (d := d) i hi
+        (SCV.realEmbed
+          (reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩ p)) =
+      fun k μ =>
+        (reducedCoordInv (d := d) i ⟨i.val + 1, hi⟩
+          (reducedAdjacent_succ_ne i hi) p k μ : ℂ) := by
+  calc
+    reducedNormalCoordFlatComplexCLM (d := d) i hi
+        (SCV.realEmbed
+          (reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩ p)) =
+      fun k μ =>
+        ((reducedNormalCoordFlatCLE (d := d) i hi).symm
+          (reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩ p) k μ : ℂ) := by
+        simpa using
+          reducedNormalCoordFlatComplexMap_realEmbed (d := d) i hi
+            (reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩ p)
+    _ =
+      fun k μ =>
+        (reducedCoordInv (d := d) i ⟨i.val + 1, hi⟩
+          (reducedAdjacent_succ_ne i hi) p k μ : ℂ) := by
+        rw [reducedNormalCoordFlatCLE_symm_flatten (d := d) i hi p]
+
+/-- The ordinary reduced-normal real endpoint selected by a Figure-2-4 source
+patch is a reduced PET point. -/
+theorem reducedNormalCoordFlatComplexCLM_upperRealEndpoint_mem_reducedPET
+    {m : ℕ} {i : Fin (m + 1)} {hi : i.val + 1 < m + 1}
+    {hd : 2 ≤ d}
+    (P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd (m + 1) i hi)
+    (p : ReducedSpace d m i ⟨i.val + 1, hi⟩)
+    (hpP :
+      coordInv (d := d) i ⟨i.val + 1, hi⟩
+          (reducedAdjacent_succ_ne i hi)
+          ((0 : SpacetimeDim d), p) ∈ P.V) :
+    reducedNormalCoordFlatComplexCLM (d := d) i hi
+        (SCV.realEmbed
+          (reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩ p)) ∈
+      BHW.ReducedPermutedExtendedTubeN d m := by
+  let u0 : NPointDomain d (m + 1) :=
+    coordInv (d := d) i ⟨i.val + 1, hi⟩
+      (reducedAdjacent_succ_ne i hi)
+      ((0 : SpacetimeDim d), p)
+  have hET : BHW.realEmbed u0 ∈ BHW.ExtendedTube d (m + 1) := by
+    simpa [u0] using P.V_ET u0 hpP
+  have hraw :
+      reducedNormalCoordFlatComplexCLM (d := d) i hi
+          (SCV.realEmbed
+            (reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩ p)) =
+        BHW.reducedDiffMap (m + 1) d (BHW.realEmbed u0) := by
+    have hflat :=
+      reducedNormalCoordFlatComplexCLM_realEmbed_flatten
+        (d := d) i hi p
+    have hcoord :
+        (fun k μ =>
+          (reducedCoordInv (d := d) i ⟨i.val + 1, hi⟩
+            (reducedAdjacent_succ_ne i hi) p k μ : ℂ)) =
+        fun k μ => (BHW.reducedDiffMapReal (m + 1) d u0 k μ : ℂ) := by
+      simp [u0, reducedCoordInv]
+    have hred_real :
+        BHW.reducedDiffMap (m + 1) d (BHW.realEmbed u0) =
+          fun k μ => (BHW.reducedDiffMapReal (m + 1) d u0 k μ : ℂ) := by
+      ext k μ
+      rw [BHW.reducedDiffMap_eq_successive_differences,
+        BHW.reducedDiffMapReal_apply]
+      simp [BHW.realEmbed]
+    exact hflat.trans (hcoord.trans hred_real.symm)
+  exact ⟨BHW.realEmbed u0,
+    BHW.extendedTube_subset_permutedExtendedTube hET, hraw.symm⟩
+
+/-- The reduced PET extension has an honest endpoint limit along the ordinary
+upper canonical reduced-normal ray, at the raw canonical reduced endpoint. -/
+theorem tendsto_reducedExtension_reducedNormalUpperCanonicalRay_endpoint
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {m : ℕ} {i : Fin (m + 1)} {hi : i.val + 1 < m + 1}
+    {hd : 2 ≤ d}
+    (P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd (m + 1) i hi)
+    (Fred : BHW.ReducedBHWExtensionData (d := d) (n := m + 1)
+      (bvt_F_reduced (d := d) OS lgc m))
+    (p : ReducedSpace d m i ⟨i.val + 1, hi⟩)
+    (hpP :
+      coordInv (d := d) i ⟨i.val + 1, hi⟩
+          (reducedAdjacent_succ_ne i hi)
+          ((0 : SpacetimeDim d), p) ∈ P.V) :
+    Filter.Tendsto
+      (fun ε : ℝ =>
+        Fred.toFun
+          (reducedNormalCoordFlatComplexCLM (d := d) i hi
+            (reducedNormalUpperCanonicalRay (d := d) i hi p ε)))
+      (nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)) : Filter ℝ)
+      (nhds
+        (Fred.toFun
+          (reducedNormalCoordFlatComplexCLM (d := d) i hi
+            (SCV.realEmbed
+              (reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩ p))))) := by
+  let l : Filter ℝ := nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ))
+  let ζ0 : BHW.ReducedNPointConfig d m :=
+    reducedNormalCoordFlatComplexCLM (d := d) i hi
+      (SCV.realEmbed
+        (reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩ p))
+  have hζ0_pet : ζ0 ∈ BHW.ReducedPermutedExtendedTubeN d m := by
+    simpa [ζ0] using
+      reducedNormalCoordFlatComplexCLM_upperRealEndpoint_mem_reducedPET
+        (d := d) P p hpP
+  have hray_tendsto :
+      Filter.Tendsto
+        (fun ε : ℝ =>
+          reducedNormalCoordFlatComplexCLM (d := d) i hi
+            (reducedNormalUpperCanonicalRay (d := d) i hi p ε))
+        l (nhds ζ0) := by
+    have hγ := reducedNormalUpperCanonicalRay_tendsto (d := d) i hi p
+    have hcont :
+        Continuous fun γ =>
+          reducedNormalCoordFlatComplexCLM (d := d) i hi γ :=
+      (reducedNormalCoordFlatComplexCLM (d := d) i hi).continuous
+    simpa [l, ζ0] using hcont.tendsto _ |>.comp hγ
+  have hray_pet :
+      ∀ᶠ ε : ℝ in l,
+        reducedNormalCoordFlatComplexCLM (d := d) i hi
+            (reducedNormalUpperCanonicalRay (d := d) i hi p ε) ∈
+          BHW.ReducedPermutedExtendedTubeN d m := by
+    have hopen : IsOpen (BHW.ReducedPermutedExtendedTubeN d m) :=
+      isOpen_reducedPermutedExtendedTubeN (d := d) m
+    have hnhds : BHW.ReducedPermutedExtendedTubeN d m ∈ nhds ζ0 :=
+      hopen.mem_nhds hζ0_pet
+    exact hray_tendsto hnhds
+  have hwithin :
+      Filter.Tendsto
+        (fun ε : ℝ =>
+          reducedNormalCoordFlatComplexCLM (d := d) i hi
+            (reducedNormalUpperCanonicalRay (d := d) i hi p ε))
+        l (nhdsWithin ζ0 (BHW.ReducedPermutedExtendedTubeN d m)) :=
+    tendsto_nhdsWithin_iff.mpr ⟨hray_tendsto, hray_pet⟩
+  have hFred_cont :
+      ContinuousWithinAt Fred.toFun (BHW.ReducedPermutedExtendedTubeN d m) ζ0 :=
+    Fred.holomorphic.continuousOn.continuousWithinAt hζ0_pet
+  simpa [ζ0, l] using hFred_cont.tendsto.comp hwithin
+
+/-- The sign-flipped ordinary reduced-normal real endpoint selected by a
+Figure-2-4 source patch is a reduced PET point. -/
+theorem reducedNormalCoordFlatComplexCLM_signFlipRealEndpoint_mem_reducedPET
+    {m : ℕ} {i : Fin (m + 1)} {hi : i.val + 1 < m + 1}
+    {hd : 2 ≤ d}
+    (P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd (m + 1) i hi)
+    (p : ReducedSpace d m i ⟨i.val + 1, hi⟩)
+    (hpP :
+      coordInv (d := d) i ⟨i.val + 1, hi⟩
+          (reducedAdjacent_succ_ne i hi)
+          ((0 : SpacetimeDim d), p) ∈ P.V) :
+    reducedNormalCoordFlatComplexCLM (d := d) i hi
+        (SCV.realEmbed
+          (reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩
+            (reducedSignFlip (d := d) i ⟨i.val + 1, hi⟩ p))) ∈
+      BHW.ReducedPermutedExtendedTubeN d m := by
+  let j : Fin (m + 1) := ⟨i.val + 1, hi⟩
+  let τ : Equiv.Perm (Fin (m + 1)) := Equiv.swap i j
+  let u0 : NPointDomain d (m + 1) :=
+    coordInv (d := d) i j
+      (reducedAdjacent_succ_ne i hi)
+      ((0 : SpacetimeDim d), p)
+  let uτ : NPointDomain d (m + 1) := fun k => u0 (τ k)
+  have hET : BHW.realEmbed uτ ∈ BHW.ExtendedTube d (m + 1) := by
+    simpa [uτ, u0, τ, j, P.τ_eq] using P.V_swapET u0 hpP
+  have hraw :
+      reducedNormalCoordFlatComplexCLM (d := d) i hi
+          (SCV.realEmbed
+            (reducedNormalFlattenCLE (d := d) i j
+              (reducedSignFlip (d := d) i j p))) =
+        BHW.reducedDiffMap (m + 1) d (BHW.realEmbed uτ) := by
+    have hflat :=
+      reducedNormalCoordFlatComplexCLM_realEmbed_flatten
+        (d := d) i hi (reducedSignFlip (d := d) i j p)
+    have hflip :
+        reducedCoordInv (d := d) i j (reducedAdjacent_succ_ne i hi)
+            (reducedSignFlip (d := d) i j p) =
+          realPermOnReducedDiff (d := d) m τ
+            (reducedCoordInv (d := d) i j (reducedAdjacent_succ_ne i hi) p) := by
+      simpa [j, τ] using
+        reducedCoordInv_reducedSignFlip_eq_realPerm_adjacentSwap
+          (d := d) i hi p
+    have hcoord0 :
+        reducedCoordInv (d := d) i j (reducedAdjacent_succ_ne i hi) p =
+          BHW.reducedDiffMapReal (m + 1) d u0 := by
+      simp [u0, reducedCoordInv]
+    have hperm_real :
+        BHW.reducedDiffMapReal (m + 1) d uτ =
+          realPermOnReducedDiff (d := d) m τ
+            (BHW.reducedDiffMapReal (m + 1) d u0) := by
+      simpa [uτ, τ] using
+        reducedDiffMapReal_permute_absolute (d := d) m τ u0
+    have hcoord :
+        (fun k μ =>
+          (reducedCoordInv (d := d) i j (reducedAdjacent_succ_ne i hi)
+            (reducedSignFlip (d := d) i j p) k μ : ℂ)) =
+        fun k μ => (BHW.reducedDiffMapReal (m + 1) d uτ k μ : ℂ) := by
+      rw [hflip, hcoord0, ← hperm_real]
+      rfl
+    have hred_real :
+        BHW.reducedDiffMap (m + 1) d (BHW.realEmbed uτ) =
+          fun k μ => (BHW.reducedDiffMapReal (m + 1) d uτ k μ : ℂ) := by
+      ext k μ
+      rw [BHW.reducedDiffMap_eq_successive_differences,
+        BHW.reducedDiffMapReal_apply]
+      simp [BHW.realEmbed]
+    exact hflat.trans (hcoord.trans hred_real.symm)
+  exact ⟨BHW.realEmbed uτ,
+    BHW.extendedTube_subset_permutedExtendedTube hET, by
+      simpa [j] using hraw.symm⟩
+
+/-- The reduced PET extension has an honest endpoint limit along the ordinary
+upper canonical reduced-normal ray based at the sign-flipped point. -/
+theorem tendsto_reducedExtension_reducedNormalSignFlipUpperCanonicalRay_endpoint
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {m : ℕ} {i : Fin (m + 1)} {hi : i.val + 1 < m + 1}
+    {hd : 2 ≤ d}
+    (P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd (m + 1) i hi)
+    (Fred : BHW.ReducedBHWExtensionData (d := d) (n := m + 1)
+      (bvt_F_reduced (d := d) OS lgc m))
+    (p : ReducedSpace d m i ⟨i.val + 1, hi⟩)
+    (hpP :
+      coordInv (d := d) i ⟨i.val + 1, hi⟩
+          (reducedAdjacent_succ_ne i hi)
+          ((0 : SpacetimeDim d), p) ∈ P.V) :
+    Filter.Tendsto
+      (fun ε : ℝ =>
+        Fred.toFun
+          (reducedNormalCoordFlatComplexCLM (d := d) i hi
+            (reducedNormalUpperCanonicalRay (d := d) i hi
+              (reducedSignFlip (d := d) i ⟨i.val + 1, hi⟩ p) ε)))
+      (nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)) : Filter ℝ)
+      (nhds
+        (Fred.toFun
+          (reducedNormalCoordFlatComplexCLM (d := d) i hi
+            (SCV.realEmbed
+              (reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩
+                (reducedSignFlip (d := d) i ⟨i.val + 1, hi⟩ p)))))) := by
+  let l : Filter ℝ := nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ))
+  let pflip : ReducedSpace d m i ⟨i.val + 1, hi⟩ :=
+    reducedSignFlip (d := d) i ⟨i.val + 1, hi⟩ p
+  let ζ0 : BHW.ReducedNPointConfig d m :=
+    reducedNormalCoordFlatComplexCLM (d := d) i hi
+      (SCV.realEmbed
+        (reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩ pflip))
+  have hζ0_pet : ζ0 ∈ BHW.ReducedPermutedExtendedTubeN d m := by
+    simpa [ζ0, pflip] using
+      reducedNormalCoordFlatComplexCLM_signFlipRealEndpoint_mem_reducedPET
+        (d := d) P p hpP
+  have hray_tendsto :
+      Filter.Tendsto
+        (fun ε : ℝ =>
+          reducedNormalCoordFlatComplexCLM (d := d) i hi
+            (reducedNormalUpperCanonicalRay (d := d) i hi pflip ε))
+        l (nhds ζ0) := by
+    have hγ := reducedNormalUpperCanonicalRay_tendsto (d := d) i hi pflip
+    have hcont :
+        Continuous fun γ =>
+          reducedNormalCoordFlatComplexCLM (d := d) i hi γ :=
+      (reducedNormalCoordFlatComplexCLM (d := d) i hi).continuous
+    simpa [l, ζ0, pflip] using hcont.tendsto _ |>.comp hγ
+  have hray_pet :
+      ∀ᶠ ε : ℝ in l,
+        reducedNormalCoordFlatComplexCLM (d := d) i hi
+            (reducedNormalUpperCanonicalRay (d := d) i hi pflip ε) ∈
+          BHW.ReducedPermutedExtendedTubeN d m := by
+    have hopen : IsOpen (BHW.ReducedPermutedExtendedTubeN d m) :=
+      isOpen_reducedPermutedExtendedTubeN (d := d) m
+    have hnhds : BHW.ReducedPermutedExtendedTubeN d m ∈ nhds ζ0 :=
+      hopen.mem_nhds hζ0_pet
+    exact hray_tendsto hnhds
+  have hwithin :
+      Filter.Tendsto
+        (fun ε : ℝ =>
+          reducedNormalCoordFlatComplexCLM (d := d) i hi
+            (reducedNormalUpperCanonicalRay (d := d) i hi pflip ε))
+        l (nhdsWithin ζ0 (BHW.ReducedPermutedExtendedTubeN d m)) :=
+    tendsto_nhdsWithin_iff.mpr ⟨hray_tendsto, hray_pet⟩
+  have hFred_cont :
+      ContinuousWithinAt Fred.toFun (BHW.ReducedPermutedExtendedTubeN d m) ζ0 :=
+    Fred.holomorphic.continuousOn.continuousWithinAt hζ0_pet
+  simpa [ζ0, l, pflip] using hFred_cont.tendsto.comp hwithin
+
+/-- Upper OS45-to-canonical Fred ray comparison from the concrete endpoint
+value equality between the OS45 common-edge carrier and the ordinary canonical
+reduced endpoint. -/
+theorem tendsto_reducedExtension_os45UpperRay_sub_canonicalRay_of_endpoint_value_eq
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {m : ℕ} {i : Fin (m + 1)} {hi : i.val + 1 < m + 1}
+    {hd : 2 ≤ d}
+    (P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd (m + 1) i hi)
+    (Fred : BHW.ReducedBHWExtensionData (d := d) (n := m + 1)
+      (bvt_F_reduced (d := d) OS lgc m))
+    (p : ReducedSpace d m i ⟨i.val + 1, hi⟩)
+    (hpP :
+      coordInv (d := d) i ⟨i.val + 1, hi⟩
+          (reducedAdjacent_succ_ne i hi)
+          ((0 : SpacetimeDim d), p) ∈ P.V)
+    (hendpoint :
+      Fred.toFun
+          (BHW.reducedDiffMap (m + 1) d
+            ((BHW.os45QuarterTurnCLE (d := d) (n := m + 1)).symm
+              (BHW.unflattenCfg (m + 1) d
+                (SCV.realEmbed
+                  (reducedNormalToOS45CommonEdgeFlatCLM (d := d) i hi
+                    (reducedNormalFlattenCLE
+                      (d := d) i ⟨i.val + 1, hi⟩ p)))))) =
+        Fred.toFun
+          (reducedNormalCoordFlatComplexCLM (d := d) i hi
+            (SCV.realEmbed
+              (reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩ p)))) :
+    Filter.Tendsto
+      (fun ε : ℝ =>
+        Fred.toFun
+            (BHW.reducedDiffMap (m + 1) d
+              ((BHW.os45QuarterTurnCLE (d := d) (n := m + 1)).symm
+                (BHW.unflattenCfg (m + 1) d
+                  (reducedNormalToOS45CommonEdgeComplexCLM
+                    (d := d) i hi
+                    (reducedNormalUpperCanonicalRay
+                      (d := d) i hi p ε))))) -
+          Fred.toFun
+            (reducedNormalCoordFlatComplexCLM (d := d) i hi
+              (reducedNormalUpperCanonicalRay (d := d) i hi p ε)))
+      (nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)) : Filter ℝ)
+      (nhds 0) := by
+  let l : Filter ℝ := nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ))
+  let A : ℝ → ℂ := fun ε =>
+    Fred.toFun
+      (BHW.reducedDiffMap (m + 1) d
+        ((BHW.os45QuarterTurnCLE (d := d) (n := m + 1)).symm
+          (BHW.unflattenCfg (m + 1) d
+            (reducedNormalToOS45CommonEdgeComplexCLM
+              (d := d) i hi
+              (reducedNormalUpperCanonicalRay (d := d) i hi p ε)))))
+  let B : ℝ → ℂ := fun ε =>
+    Fred.toFun
+      (reducedNormalCoordFlatComplexCLM (d := d) i hi
+        (reducedNormalUpperCanonicalRay (d := d) i hi p ε))
+  let a0 : ℂ :=
+    Fred.toFun
+      (BHW.reducedDiffMap (m + 1) d
+        ((BHW.os45QuarterTurnCLE (d := d) (n := m + 1)).symm
+          (BHW.unflattenCfg (m + 1) d
+            (SCV.realEmbed
+              (reducedNormalToOS45CommonEdgeFlatCLM (d := d) i hi
+                (reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩ p))))))
+  let b0 : ℂ :=
+    Fred.toFun
+      (reducedNormalCoordFlatComplexCLM (d := d) i hi
+        (SCV.realEmbed
+          (reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩ p)))
+  have hA : Filter.Tendsto A l (nhds a0) := by
+    simpa [A, a0, l] using
+      tendsto_reducedExtension_os45QuarterTurnCLE_symm_reducedNormalUpperRay_boundary
+        (d := d) OS lgc P Fred p hpP
+  have hB : Filter.Tendsto B l (nhds b0) := by
+    simpa [B, b0, l] using
+      tendsto_reducedExtension_reducedNormalUpperCanonicalRay_endpoint
+        (d := d) OS lgc P Fred p hpP
+  have hzero : a0 - b0 = 0 := by
+    have h : a0 = b0 := by
+      simpa [a0, b0] using hendpoint
+    rw [h]
+    ring
+  change Filter.Tendsto (fun ε : ℝ => A ε - B ε) l (nhds 0)
+  simpa [hzero] using hA.sub hB
+
+/-- Lower OS45-to-canonical Fred ray comparison from the concrete endpoint
+value equality between the adjacent OS45 carrier and the sign-flipped canonical
+reduced endpoint. -/
+theorem tendsto_reducedExtension_os45LowerRay_sub_signFlipCanonicalRay_of_endpoint_value_eq
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {m : ℕ} {i : Fin (m + 1)} {hi : i.val + 1 < m + 1}
+    {hd : 2 ≤ d}
+    (P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd (m + 1) i hi)
+    (Fred : BHW.ReducedBHWExtensionData (d := d) (n := m + 1)
+      (bvt_F_reduced (d := d) OS lgc m))
+    (p : ReducedSpace d m i ⟨i.val + 1, hi⟩)
+    (hpP :
+      coordInv (d := d) i ⟨i.val + 1, hi⟩
+          (reducedAdjacent_succ_ne i hi)
+          ((0 : SpacetimeDim d), p) ∈ P.V)
+    (hendpoint :
+      Fred.toFun
+          (BHW.reducedDiffMap (m + 1) d
+            (BHW.permAct (d := d)
+              ((P.τ.symm * (1 : Equiv.Perm (Fin (m + 1)))).symm)
+              ((BHW.os45QuarterTurnCLE (d := d) (n := m + 1)).symm
+                (BHW.unflattenCfg (m + 1) d
+                  (SCV.realEmbed
+                    (reducedNormalToOS45CommonEdgeFlatCLM (d := d) i hi
+                      (reducedNormalFlattenCLE
+                        (d := d) i ⟨i.val + 1, hi⟩ p))))))) =
+        Fred.toFun
+          (reducedNormalCoordFlatComplexCLM (d := d) i hi
+            (SCV.realEmbed
+              (reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩
+                (reducedSignFlip (d := d) i ⟨i.val + 1, hi⟩ p))))) :
+    Filter.Tendsto
+      (fun ε : ℝ =>
+        Fred.toFun
+            (BHW.reducedDiffMap (m + 1) d
+              (BHW.permAct (d := d)
+                ((P.τ.symm * (1 : Equiv.Perm (Fin (m + 1)))).symm)
+                ((BHW.os45QuarterTurnCLE (d := d) (n := m + 1)).symm
+                  (BHW.unflattenCfg (m + 1) d
+                    (reducedNormalToOS45CommonEdgeComplexCLM
+                      (d := d) i hi
+                      (reducedNormalLowerCanonicalRay
+                        (d := d) i hi p ε)))))) -
+          Fred.toFun
+            (reducedNormalCoordFlatComplexCLM (d := d) i hi
+              (reducedNormalUpperCanonicalRay (d := d) i hi
+                (reducedSignFlip (d := d) i ⟨i.val + 1, hi⟩ p) ε)))
+      (nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)) : Filter ℝ)
+      (nhds 0) := by
+  let l : Filter ℝ := nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ))
+  let σ : Equiv.Perm (Fin (m + 1)) :=
+    ((P.τ.symm * (1 : Equiv.Perm (Fin (m + 1)))).symm)
+  let pflip : ReducedSpace d m i ⟨i.val + 1, hi⟩ :=
+    reducedSignFlip (d := d) i ⟨i.val + 1, hi⟩ p
+  let A : ℝ → ℂ := fun ε =>
+    Fred.toFun
+      (BHW.reducedDiffMap (m + 1) d
+        (BHW.permAct (d := d) σ
+          ((BHW.os45QuarterTurnCLE (d := d) (n := m + 1)).symm
+            (BHW.unflattenCfg (m + 1) d
+              (reducedNormalToOS45CommonEdgeComplexCLM
+                (d := d) i hi
+                (reducedNormalLowerCanonicalRay (d := d) i hi p ε))))))
+  let B : ℝ → ℂ := fun ε =>
+    Fred.toFun
+      (reducedNormalCoordFlatComplexCLM (d := d) i hi
+        (reducedNormalUpperCanonicalRay (d := d) i hi pflip ε))
+  let a0 : ℂ :=
+    Fred.toFun
+      (BHW.reducedDiffMap (m + 1) d
+        (BHW.permAct (d := d) σ
+          ((BHW.os45QuarterTurnCLE (d := d) (n := m + 1)).symm
+            (BHW.unflattenCfg (m + 1) d
+              (SCV.realEmbed
+                (reducedNormalToOS45CommonEdgeFlatCLM (d := d) i hi
+                  (reducedNormalFlattenCLE
+                    (d := d) i ⟨i.val + 1, hi⟩ p)))))))
+  let b0 : ℂ :=
+    Fred.toFun
+      (reducedNormalCoordFlatComplexCLM (d := d) i hi
+        (SCV.realEmbed
+          (reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩ pflip)))
+  have hA : Filter.Tendsto A l (nhds a0) := by
+    simpa [A, a0, l, σ] using
+      tendsto_reducedExtension_os45QuarterTurnCLE_symm_reducedNormalLowerRay_boundary
+        (d := d) OS lgc P Fred p hpP
+  have hB : Filter.Tendsto B l (nhds b0) := by
+    simpa [B, b0, l, pflip] using
+      tendsto_reducedExtension_reducedNormalSignFlipUpperCanonicalRay_endpoint
+        (d := d) OS lgc P Fred p hpP
+  have hzero : a0 - b0 = 0 := by
+    have h : a0 = b0 := by
+      simpa [a0, b0, σ, pflip] using hendpoint
+    rw [h]
+    ring
+  change Filter.Tendsto (fun ε : ℝ => A ε - B ε) l (nhds 0)
+  simpa [hzero] using hA.sub hB
+
 /-- The actual upper cone-height source-side packet converges, in reduced
 difference coordinates, to the OS45 zero-height common-edge boundary. -/
 theorem tendsto_reducedDiffMap_coneHeight_sourceSide_upper_boundary
@@ -12846,14 +13325,14 @@ theorem tendsto_reducedNormalLower_os45Branch_sub_canonicalReducedBranch_of_redu
       hΩε
   rw [hbranch]
 
-/-- Local Hdiff sign-flip handoff with only the explicit Fred-level OS45 ray
-comparisons left as hypotheses.
+/-- Local Hdiff sign-flip handoff with only the explicit Fred-level endpoint
+value equalities left as hypotheses.
 
 The local Hdiff germ supplies the common-boundary EOW comparison.  The two
 branch-transfer hypotheses needed by that comparison are produced here from
-the checked OS45 branch-domain topology plus the stated Fred-level
-OS45-ray-to-canonical-ray comparisons. -/
-theorem reducedNormalSignFlip_pointwise_of_OS45HdiffGerm_fred_ray_comparison
+the checked OS45 branch-domain topology plus the endpoint equality reductions
+for the OS45 carrier and ordinary canonical reduced endpoints. -/
+theorem reducedNormalSignFlip_pointwise_of_OS45HdiffGerm_endpoint_value_eq
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS)
     {m : ℕ} {i : Fin (m + 1)} {hi : i.val + 1 < m + 1}
@@ -12907,40 +13386,35 @@ theorem reducedNormalSignFlip_pointwise_of_OS45HdiffGerm_fred_ray_comparison
               (BHW.realEmbed
                 (BHW.os45CommonEdgeRealPoint (d := d) (n := m + 1)
                   (1 : Equiv.Perm (Fin (m + 1))) u)))
-    (hplus_fred_ray_comparison :
-      Filter.Tendsto
-        (fun ε : ℝ =>
-          Fred.toFun
-            (BHW.reducedDiffMap (m + 1) d
+    (hplus_endpoint_eq :
+      Fred.toFun
+          (BHW.reducedDiffMap (m + 1) d
+            ((BHW.os45QuarterTurnCLE (d := d) (n := m + 1)).symm
+              (BHW.unflattenCfg (m + 1) d
+                (SCV.realEmbed
+                  (reducedNormalToOS45CommonEdgeFlatCLM (d := d) i hi
+                    (reducedNormalFlattenCLE
+                      (d := d) i ⟨i.val + 1, hi⟩ p)))))) =
+        Fred.toFun
+          (reducedNormalCoordFlatComplexCLM (d := d) i hi
+            (SCV.realEmbed
+              (reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩ p))))
+    (hminus_endpoint_eq :
+      Fred.toFun
+          (BHW.reducedDiffMap (m + 1) d
+            (BHW.permAct (d := d)
+              ((P.τ.symm * (1 : Equiv.Perm (Fin (m + 1)))).symm)
               ((BHW.os45QuarterTurnCLE (d := d) (n := m + 1)).symm
                 (BHW.unflattenCfg (m + 1) d
-                  (reducedNormalToOS45CommonEdgeComplexCLM
-                    (d := d) i hi
-                    (reducedNormalUpperCanonicalRay (d := d) i hi p ε))))) -
-            Fred.toFun
-              (reducedNormalCoordFlatComplexCLM (d := d) i hi
-                (reducedNormalUpperCanonicalRay (d := d) i hi p ε)))
-        (nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)) : Filter ℝ)
-        (nhds 0))
-    (hminus_fred_ray_comparison :
-      Filter.Tendsto
-        (fun ε : ℝ =>
-          Fred.toFun
-            (BHW.reducedDiffMap (m + 1) d
-              (BHW.permAct (d := d)
-                ((P.τ.symm * (1 : Equiv.Perm (Fin (m + 1)))).symm)
-                ((BHW.os45QuarterTurnCLE (d := d) (n := m + 1)).symm
-                  (BHW.unflattenCfg (m + 1) d
-                    (reducedNormalToOS45CommonEdgeComplexCLM
-                      (d := d) i hi
-                      (reducedNormalLowerCanonicalRay
-                        (d := d) i hi p ε)))))) -
-            Fred.toFun
-              (reducedNormalCoordFlatComplexCLM (d := d) i hi
-                (reducedNormalUpperCanonicalRay (d := d) i hi
-                  (reducedSignFlip (d := d) i ⟨i.val + 1, hi⟩ p) ε)))
-        (nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)) : Filter ℝ)
-        (nhds 0)) :
+                  (SCV.realEmbed
+                    (reducedNormalToOS45CommonEdgeFlatCLM (d := d) i hi
+                      (reducedNormalFlattenCLE
+                        (d := d) i ⟨i.val + 1, hi⟩ p))))))) =
+        Fred.toFun
+          (reducedNormalCoordFlatComplexCLM (d := d) i hi
+            (SCV.realEmbed
+              (reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩
+                (reducedSignFlip (d := d) i ⟨i.val + 1, hi⟩ p))))) :
     Filter.Tendsto
       (fun ε : ℝ =>
         canonicalReducedBranch (d := d) OS lgc m ε
@@ -12956,6 +13430,17 @@ theorem reducedNormalSignFlip_pointwise_of_OS45HdiffGerm_fred_ray_comparison
   let σ0 : Equiv.Perm (Fin (m + 1)) := 1
   let σadj : Equiv.Perm (Fin (m + 1)) :=
     P.τ.symm * (1 : Equiv.Perm (Fin (m + 1)))
+  have hpP :
+      coordInv (d := d) i ⟨i.val + 1, hi⟩
+          (reducedAdjacent_succ_ne i hi)
+          ((0 : SpacetimeDim d), p) ∈ P.V :=
+    hU_sub hpU
+  have hplus_fred_ray_comparison :=
+    tendsto_reducedExtension_os45UpperRay_sub_canonicalRay_of_endpoint_value_eq
+      (d := d) OS lgc P Fred p hpP hplus_endpoint_eq
+  have hminus_fred_ray_comparison :=
+    tendsto_reducedExtension_os45LowerRay_sub_signFlipCanonicalRay_of_endpoint_value_eq
+      (d := d) OS lgc P Fred p hpP hminus_endpoint_eq
   have hplus_fred_normalization :=
     tendsto_reducedExtension_os45UpperRay_sub_canonicalReducedBranch_of_os45Ray_sub_canonicalRay
       (d := d) OS lgc (1 : Equiv.Perm (Fin (m + 1))) Fred p
