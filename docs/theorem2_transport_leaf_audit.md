@@ -454,3 +454,48 @@ are therefore the correct coordinate bridge.  The next reduced-local-CLM
 producer should combine the source-side moving/endpoint integral theorems with
 the local zero source representation, not try to identify the fixed flat EOW
 integral directly with the reduced canonical branch integral.
+
+## 2026-06-03 Source-Oriented Producer Audit
+
+The source-oriented scalar representative and real-compatible full-frame
+kernel are useful route infrastructure, but they do not yet prove the missing
+arbitrary-spectator theorem-2 producer.  The checked final consumer is still
+
+```lean
+bvt_W_swap_pairing_of_spacelike_from_pointwise_normalCanonicalRayEOWBranchDataOn
+```
+
+with pointwise input
+
+```text
+forall p in AdjacentNormal.reducedSelectedSpacelike,
+  Nonempty (AdjacentNormal.ReducedNormalCanonicalRayEOWBranchDataOn ... p)
+```
+
+The `m = 1` no-spectator PET theorem
+
+```lean
+AdjacentNormal.reducedNormalCanonicalRayEOWBranchDataOn_noSpectator_of_selected
+```
+
+is only a sanity check for the case where the selected adjacent coordinate is
+the whole reduced configuration.  It does not remove the frozen-spectator
+mixed-tube/EOW obligation.
+
+The source-oriented route should therefore target these three local leaves:
+
+- `sourceOrientedSelectedReducedRealEdge_mem_extendedTubeDomain`: selected
+  reduced-normal real-edge configurations map into the source-oriented
+  extended-tube domain without strengthening the support point to a full Jost
+  packet.
+- `sourceOrientedSelectedReducedCanonicalRays_same_germ`: the upper and lower
+  canonical reduced rays land in the same source-oriented invariant germ as
+  the real-edge point for small positive height.
+- `sourceOrientedSelectedReducedRayEOWBranchDataOn_of_normalRiemann`: assemble
+  those two facts with `SourceOrientedNormalRiemannExtensionInput` and
+  `sourceOrientedVarietyGermHolomorphicOn_extendF_descent_of_normalRiemann`
+  into `ReducedNormalCanonicalRayEOWBranchDataOn`.
+
+This keeps the producer local to the reduced selected-adjacent data rather than
+re-entering the Figure-2-4 `P.V` route, whose real-edge membership is stronger
+than the theorem-2 hypothesis for arbitrary frozen spectators.
