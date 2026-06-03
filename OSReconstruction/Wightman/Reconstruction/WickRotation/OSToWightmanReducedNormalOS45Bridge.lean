@@ -13363,10 +13363,6 @@ theorem reducedNormalSignFlip_pointwise_of_OS45HdiffGerm_extendF_endpoint_eq
               (reducedAdjacent_succ_ne i hi) p))
       (nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)) : Filter ℝ)
       (nhds 0) := by
-  let j : Fin (m + 1) := ⟨i.val + 1, hi⟩
-  let σ0 : Equiv.Perm (Fin (m + 1)) := 1
-  let σadj : Equiv.Perm (Fin (m + 1)) :=
-    P.τ.symm * (1 : Equiv.Perm (Fin (m + 1)))
   have hpP :
       coordInv (d := d) i ⟨i.val + 1, hi⟩
           (reducedAdjacent_succ_ne i hi)
@@ -13384,127 +13380,12 @@ theorem reducedNormalSignFlip_pointwise_of_OS45HdiffGerm_extendF_endpoint_eq
   have hminus_fred_ray_comparison :=
     tendsto_reducedExtension_os45LowerRay_sub_signFlipCanonicalRay_of_endpoint_value_eq
       (d := d) OS lgc P Fred p hpP hminus_endpoint_eq
-  have hplus_fred_normalization :=
-    tendsto_reducedExtension_os45UpperRay_sub_canonicalReducedBranch_of_os45Ray_sub_canonicalRay
-      (d := d) OS lgc (1 : Equiv.Perm (Fin (m + 1))) Fred p
-      hplus_fred_ray_comparison
-  have hminus_fred_normalization :=
-    tendsto_reducedExtension_os45LowerRay_sub_canonicalReducedBranch_of_os45Ray_sub_signFlipCanonicalRay
-      (d := d) OS lgc σadj.symm Fred p hminus_fred_ray_comparison
-  let L : SCV.ComplexChartSpace ((d + 1) +
-      Fintype.card (SpectatorIndex (m + 1) i j) * (d + 1)) →L[ℂ]
-        BHW.OS45FlatCommonChartSpace d (m + 1) :=
-    reducedNormalToOS45CommonEdgeComplexCLM (d := d) i hi
-  let xflat :
-      Fin ((d + 1) +
-        Fintype.card (SpectatorIndex (m + 1) i j) * (d + 1)) → ℝ :=
-    reducedNormalFlattenCLE (d := d) i j p
-  have hx_source :
-      xflat ∈ reducedNormalOS45SourcePreimage (d := d) i hi U := by
-    simpa [xflat, j] using
-      (reducedNormalFlatten_mem_reducedNormalOS45SourcePreimage_iff
-        (d := d) i hi U p).2 hpU
-  have hbase_plus :
-      L (SCV.realEmbed xflat) ∈
-        BHW.os45FlatCommonChartOmega d (m + 1) σ0 := by
-    have hL :
-        L (SCV.realEmbed xflat) =
-          SCV.realEmbed
-            (reducedNormalToOS45CommonEdgeFlatCLM (d := d) i hi xflat) := by
-      simpa [L, xflat, j] using
-        reducedNormalToOS45CommonEdgeComplexCLM_realEmbed
-          (d := d) i hi xflat
-    rw [hL]
-    simpa [σ0, SCV.realEmbed] using
-      reducedNormalToOS45CommonEdgeFlatCLM_real_mem_omega_id_of_sourcePreimage
-        (d := d) hd (P := P) hU_sub hx_source
-  have hbase_minus :
-      L (SCV.realEmbed xflat) ∈
-        BHW.os45FlatCommonChartOmega d (m + 1) σadj := by
-    have hL :
-        L (SCV.realEmbed xflat) =
-          SCV.realEmbed
-            (reducedNormalToOS45CommonEdgeFlatCLM (d := d) i hi xflat) := by
-      simpa [L, xflat, j] using
-        reducedNormalToOS45CommonEdgeComplexCLM_realEmbed
-          (d := d) i hi xflat
-    rw [hL]
-    simpa [σadj, SCV.realEmbed] using
-      reducedNormalToOS45CommonEdgeFlatCLM_real_mem_omega_adjacent_of_sourcePreimage
-        (d := d) hd (P := P) hU_sub hx_source
-  have hΩplus :
-      ∀ᶠ ε : ℝ in nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)),
-        reducedNormalToOS45CommonEdgeComplexCLM
-            (d := d) i hi
-            (reducedNormalUpperCanonicalRay (d := d) i hi p ε) ∈
-          BHW.os45FlatCommonChartOmega d (m + 1) σ0 := by
-    have hLcont : Continuous fun γ => L γ := L.continuous
-    have hγ := reducedNormalUpperCanonicalRay_tendsto (d := d) i hi p
-    have hlim := hLcont.tendsto _ |>.comp hγ
-    have hopen : IsOpen (BHW.os45FlatCommonChartOmega d (m + 1) σ0) :=
-      BHW.isOpen_os45FlatCommonChartOmega d (m + 1) σ0
-    simpa [L, xflat, j] using hlim (hopen.mem_nhds hbase_plus)
-  have hΩminus :
-      ∀ᶠ ε : ℝ in nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)),
-        reducedNormalToOS45CommonEdgeComplexCLM
-            (d := d) i hi
-            (reducedNormalLowerCanonicalRay (d := d) i hi p ε) ∈
-          BHW.os45FlatCommonChartOmega d (m + 1) σadj := by
-    have hLcont : Continuous fun γ => L γ := L.continuous
-    have hγ := reducedNormalLowerCanonicalRay_tendsto (d := d) i hi p
-    have hlim := hLcont.tendsto _ |>.comp hγ
-    have hopen : IsOpen (BHW.os45FlatCommonChartOmega d (m + 1) σadj) :=
-      BHW.isOpen_os45FlatCommonChartOmega d (m + 1) σadj
-    simpa [L, xflat, j] using hlim (hopen.mem_nhds hbase_minus)
-  have hplus_fred :
-      Filter.Tendsto
-        (fun ε : ℝ =>
-          Fred.toFun
-              (BHW.reducedDiffMap (m + 1) d
-                (BHW.permAct (d := d) σ0.symm
-                  ((BHW.os45QuarterTurnCLE (d := d) (n := m + 1)).symm
-                    (BHW.unflattenCfg (m + 1) d
-                      (reducedNormalToOS45CommonEdgeComplexCLM
-                        (d := d) i hi
-                        (reducedNormalUpperCanonicalRay
-                          (d := d) i hi p ε)))))) -
-            canonicalReducedBranch (d := d) OS lgc m ε
-              (reducedCoordInv (d := d) i j
-                (reducedAdjacent_succ_ne i hi) p))
-        (nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)) : Filter ℝ)
-        (nhds 0) := by
-    simpa [σ0, BHW.permAct, j] using hplus_fred_normalization
-  have hminus_fred :
-      Filter.Tendsto
-        (fun ε : ℝ =>
-          Fred.toFun
-              (BHW.reducedDiffMap (m + 1) d
-                (BHW.permAct (d := d) σadj.symm
-                  ((BHW.os45QuarterTurnCLE (d := d) (n := m + 1)).symm
-                    (BHW.unflattenCfg (m + 1) d
-                      (reducedNormalToOS45CommonEdgeComplexCLM
-                        (d := d) i hi
-                        (reducedNormalLowerCanonicalRay
-                          (d := d) i hi p ε)))))) -
-            canonicalReducedBranch (d := d) OS lgc m ε
-              (reducedCoordInv (d := d) i j
-                (reducedAdjacent_succ_ne i hi)
-                (reducedSignFlip (d := d) i j p)))
-        (nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)) : Filter ℝ)
-        (nhds 0) := by
-    simpa [σadj, j] using hminus_fred_normalization
-  have hplus_transfer :=
-    tendsto_reducedNormalUpper_os45Branch_sub_canonicalReducedBranch_of_reducedExtension_os45Ray_normalization
-      (d := d) OS lgc σ0 Fred p hΩplus hplus_fred
-  have hminus_transfer :=
-    tendsto_reducedNormalLower_os45Branch_sub_canonicalReducedBranch_of_reducedExtension_os45Ray_normalization
-      (d := d) OS lgc σadj Fred p hΩminus hminus_fred
-  simpa [j, σ0, σadj] using
-    reducedNormalSignFlip_pointwise_of_OS45HdiffGerm_asymptotic
-      (d := d) OS lgc P U hU_open hU_sub hU_nonempty p hpU
+  exact
+    reducedNormalSignFlip_pointwise_of_OS45HdiffGerm_os45Ray_comparison
+      (d := d) OS lgc P U hU_open hU_sub hU_nonempty p hpU Fred
       Ucx Hdiff hUcx_open hUcx_connected hwick_mem hcommon_mem
       hHdiff_holo hwick_pairing_zero hcommon_trace
-      hplus_transfer hminus_transfer
+      hplus_fred_ray_comparison hminus_fred_ray_comparison
 
 end AdjacentNormal
 
