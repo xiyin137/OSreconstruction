@@ -196,6 +196,43 @@ theorem OS45Figure24SourceCutoffData.toZeroDiagonalCLM_flatPullback_eq
   simpa [BHW.OS45Figure24SourceCutoffData.toZeroDiagonalCLM] using
     D.toSchwartzNPointCLM_flatPullback_eq ρperm ψ hψV
 
+/-- Pointwise shifted-source form of the OS45 side-height branch.
+
+After translating the source variable by `-(sgn * ε) • η` in flat common-edge
+coordinates, the real base of the flat side-height point is the original
+`e u`.  This is the coordinate identity underneath the shifted source-side
+endpoint DCT; it deliberately does not identify the resulting point with an
+ordinary reduced canonical ray. -/
+theorem os45FlatCommonChartBranch_shiftedSource_eq_extendF
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (σ ρperm : Equiv.Perm (Fin n))
+    (sgn ε : ℝ)
+    (η : BHW.OS45FlatCommonChartReal d n)
+    (u : NPointDomain d n) :
+    let e : NPointDomain d n ≃L[ℝ]
+        BHW.OS45FlatCommonChartReal d n :=
+      BHW.os45CommonEdgeFlatCLE d n ρperm
+    let a : BHW.OS45FlatCommonChartReal d n := (sgn * ε) • η
+    BHW.os45FlatCommonChartBranch d n OS lgc σ
+        (fun j => (e u j : ℂ) + (a j : ℂ) * Complex.I) =
+      BHW.extendF (bvt_F OS lgc n)
+        (BHW.permAct (d := d) σ.symm
+          (BHW.os45FlatCommonChartSourceSide d n ρperm sgn ε η
+            (e.symm (e u - a)))) := by
+  intro e a
+  rw [show
+      (fun j => (e u j : ℂ) + (a j : ℂ) * Complex.I) =
+        fun j =>
+          ((BHW.os45CommonEdgeFlatCLE d n ρperm (e.symm (e u - a)) +
+              (sgn * ε) • η) j : ℂ) +
+            (((sgn * ε) • η) j : ℂ) * Complex.I by
+    funext j
+    simp [e, a, sub_eq_add_neg, Pi.add_apply]]
+  simpa [e, a] using
+    BHW.os45FlatCommonChartBranch_sourceSide_eq_extendF
+      d n OS lgc σ ρperm sgn ε η (e.symm (e u - a))
+
 /-- Signed side-height branch integral pulled to source variables and unfolded
 to the exact `extendF` value on the OS45 source-side configuration, without the
 Figure-2-4 cutoff specialization.
