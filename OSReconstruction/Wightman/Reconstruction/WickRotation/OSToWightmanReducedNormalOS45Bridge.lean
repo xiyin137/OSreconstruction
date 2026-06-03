@@ -898,6 +898,280 @@ theorem reducedDiffMap_os45FlatCommonChartSourceSide_canonical_id_affine
   rw [reducedDiffMap_os45FlatCommonChartSourceSideDirection_canonical_id_eq
     (d := d) m]
 
+set_option maxHeartbeats 1200000 in
+/-- Uniform compact-source upper ET membership for the canonical OS45
+cone-height.
+
+This is the Figure-2-4 local-wedge geometry needed by the integrated endpoint:
+one collar radius works for every source point in a compact source window
+inside `P.V`. -/
+theorem eventually_forall_sourceSide_canonicalHeight_upper_mem_extendedTube_of_compact_source
+    {m : ℕ} {i : Fin (m + 1)} {hi : i.val + 1 < m + 1}
+    {hd : 2 ≤ d}
+    (P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd (m + 1) i hi)
+    {Ksrc : Set (NPointDomain d (m + 1))}
+    (hKsrc : IsCompact Ksrc) (hKsrc_sub : Ksrc ⊆ P.V) :
+    ∀ᶠ ε : ℝ in nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)),
+      ∀ u ∈ Ksrc,
+        let e : NPointDomain d (m + 1) ≃L[ℝ]
+            BHW.OS45FlatCommonChartReal d (m + 1) :=
+          BHW.os45CommonEdgeFlatCLE d (m + 1)
+            (1 : Equiv.Perm (Fin (m + 1)))
+        let ηc : BHW.OS45FlatCommonChartReal d (m + 1) :=
+          e (canonicalForwardConeDirection (d := d) (m + 1))
+        let a : BHW.OS45FlatCommonChartReal d (m + 1) :=
+          ((1 : ℝ) * ε) • ηc
+        BHW.os45FlatCommonChartSourceSide d (m + 1)
+            (1 : Equiv.Perm (Fin (m + 1))) (1 : ℝ) ε ηc
+            (e.symm (e u - a)) ∈
+          BHW.ExtendedTube d (m + 1) := by
+  classical
+  let e : NPointDomain d (m + 1) ≃L[ℝ]
+      BHW.OS45FlatCommonChartReal d (m + 1) :=
+    BHW.os45CommonEdgeFlatCLE d (m + 1)
+      (1 : Equiv.Perm (Fin (m + 1)))
+  let ηc : BHW.OS45FlatCommonChartReal d (m + 1) :=
+    e (canonicalForwardConeDirection (d := d) (m + 1))
+  let K : Set (BHW.OS45FlatCommonChartReal d (m + 1)) := e '' Ksrc
+  have hK : IsCompact K := hKsrc.image e.continuous
+  have hK_sub :
+      K ⊆ BHW.os45FlatCommonChartEdgeSet d (m + 1) P
+        (1 : Equiv.Perm (Fin (m + 1))) := by
+    intro x hx
+    rcases hx with ⟨u, huK, rfl⟩
+    exact
+      (BHW.os45CommonEdgeFlatCLE_mem_edgeSet_iff d (m + 1) P
+        (1 : Equiv.Perm (Fin (m + 1))) u).2 (hKsrc_sub huK)
+  have hηc_cone : ηc ∈ BHW.os45FlatCommonChartCone d (m + 1) := by
+    simpa [e, ηc] using
+      BHW.os45CommonEdgeFlatCLE_canonicalForwardConeDirection_mem_cone
+        (d := d) m
+  have hKη_sub : ({ηc} : Set (BHW.OS45FlatCommonChartReal d (m + 1))) ⊆
+      BHW.os45FlatCommonChartCone d (m + 1) := by
+    intro η hη
+    rw [Set.mem_singleton_iff] at hη
+    subst η
+    exact hηc_cone
+  obtain ⟨r, hr_pos, hside⟩ :=
+    BHW.os45_BHWJost_flatCommonChart_localWedge_of_figure24
+      (d := d) hd (P := P) K hK hK_sub
+      ({ηc} : Set (BHW.OS45FlatCommonChartReal d (m + 1)))
+      isCompact_singleton hKη_sub
+  have hsmall :
+      ∀ᶠ ε : ℝ in nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)), ε < r := by
+    exact nhdsWithin_le_nhds (Iio_mem_nhds hr_pos)
+  filter_upwards [self_mem_nhdsWithin, hsmall] with ε hε_pos hε_lt u huK
+  let a : BHW.OS45FlatCommonChartReal d (m + 1) := ((1 : ℝ) * ε) • ηc
+  have homega :
+      (fun b => (e u b : ℂ) + (ε : ℂ) * (ηc b : ℂ) * Complex.I) ∈
+        BHW.os45FlatCommonChartOmega d (m + 1)
+          (1 : Equiv.Perm (Fin (m + 1))) :=
+    (hside (e u) ⟨u, huK, rfl⟩ ηc (by simp) ε hε_pos hε_lt).1
+  have hflat_eq :
+      (fun b =>
+          ((e (e.symm (e u - a)) + ((1 : ℝ) * ε) • ηc) b : ℂ) +
+            ((((1 : ℝ) * ε) • ηc) b : ℂ) * Complex.I) =
+        fun b => (e u b : ℂ) + (ε : ℂ) * (ηc b : ℂ) * Complex.I := by
+    funext b
+    simp [a, sub_eq_add_neg, Pi.add_apply, Pi.smul_apply, smul_eq_mul]
+  have hflat :
+      (fun b =>
+          ((e (e.symm (e u - a)) + ((1 : ℝ) * ε) • ηc) b : ℂ) +
+            ((((1 : ℝ) * ε) • ηc) b : ℂ) * Complex.I) ∈
+        BHW.os45FlatCommonChartOmega d (m + 1)
+          (1 : Equiv.Perm (Fin (m + 1))) := by
+    rw [hflat_eq]
+    exact homega
+  have hET :=
+    (BHW.os45FlatCommonChartSourceSide_mem_extendedTube_iff
+      d (m + 1) (1 : Equiv.Perm (Fin (m + 1)))
+      (1 : Equiv.Perm (Fin (m + 1))) (1 : ℝ) ε ηc
+      (e.symm (e u - a))).1 hflat
+  simpa [e, ηc, a] using hET
+
+set_option maxHeartbeats 1200000 in
+/-- Uniform compact-source lower ET membership for the canonical OS45
+cone-height, with the adjacent branch permutation applied. -/
+theorem eventually_forall_sourceSide_canonicalHeight_lower_mem_extendedTube_of_compact_source
+    {m : ℕ} {i : Fin (m + 1)} {hi : i.val + 1 < m + 1}
+    {hd : 2 ≤ d}
+    (P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd (m + 1) i hi)
+    {Ksrc : Set (NPointDomain d (m + 1))}
+    (hKsrc : IsCompact Ksrc) (hKsrc_sub : Ksrc ⊆ P.V) :
+    ∀ᶠ ε : ℝ in nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)),
+      ∀ u ∈ Ksrc,
+        let e : NPointDomain d (m + 1) ≃L[ℝ]
+            BHW.OS45FlatCommonChartReal d (m + 1) :=
+          BHW.os45CommonEdgeFlatCLE d (m + 1)
+            (1 : Equiv.Perm (Fin (m + 1)))
+        let ηc : BHW.OS45FlatCommonChartReal d (m + 1) :=
+          e (canonicalForwardConeDirection (d := d) (m + 1))
+        let a : BHW.OS45FlatCommonChartReal d (m + 1) :=
+          ((-1 : ℝ) * ε) • ηc
+        BHW.permAct (d := d)
+            ((P.τ.symm * (1 : Equiv.Perm (Fin (m + 1)))).symm)
+            (BHW.os45FlatCommonChartSourceSide d (m + 1)
+              (1 : Equiv.Perm (Fin (m + 1))) (-1 : ℝ) ε ηc
+              (e.symm (e u - a))) ∈
+          BHW.ExtendedTube d (m + 1) := by
+  classical
+  let e : NPointDomain d (m + 1) ≃L[ℝ]
+      BHW.OS45FlatCommonChartReal d (m + 1) :=
+    BHW.os45CommonEdgeFlatCLE d (m + 1)
+      (1 : Equiv.Perm (Fin (m + 1)))
+  let ηc : BHW.OS45FlatCommonChartReal d (m + 1) :=
+    e (canonicalForwardConeDirection (d := d) (m + 1))
+  let K : Set (BHW.OS45FlatCommonChartReal d (m + 1)) := e '' Ksrc
+  have hK : IsCompact K := hKsrc.image e.continuous
+  have hK_sub :
+      K ⊆ BHW.os45FlatCommonChartEdgeSet d (m + 1) P
+        (1 : Equiv.Perm (Fin (m + 1))) := by
+    intro x hx
+    rcases hx with ⟨u, huK, rfl⟩
+    exact
+      (BHW.os45CommonEdgeFlatCLE_mem_edgeSet_iff d (m + 1) P
+        (1 : Equiv.Perm (Fin (m + 1))) u).2 (hKsrc_sub huK)
+  have hηc_cone : ηc ∈ BHW.os45FlatCommonChartCone d (m + 1) := by
+    simpa [e, ηc] using
+      BHW.os45CommonEdgeFlatCLE_canonicalForwardConeDirection_mem_cone
+        (d := d) m
+  have hKη_sub : ({ηc} : Set (BHW.OS45FlatCommonChartReal d (m + 1))) ⊆
+      BHW.os45FlatCommonChartCone d (m + 1) := by
+    intro η hη
+    rw [Set.mem_singleton_iff] at hη
+    subst η
+    exact hηc_cone
+  obtain ⟨r, hr_pos, hside⟩ :=
+    BHW.os45_BHWJost_flatCommonChart_localWedge_of_figure24
+      (d := d) hd (P := P) K hK hK_sub
+      ({ηc} : Set (BHW.OS45FlatCommonChartReal d (m + 1)))
+      isCompact_singleton hKη_sub
+  have hsmall :
+      ∀ᶠ ε : ℝ in nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)), ε < r := by
+    exact nhdsWithin_le_nhds (Iio_mem_nhds hr_pos)
+  filter_upwards [self_mem_nhdsWithin, hsmall] with ε hε_pos hε_lt u huK
+  let a : BHW.OS45FlatCommonChartReal d (m + 1) := ((-1 : ℝ) * ε) • ηc
+  have homega :
+      (fun b => (e u b : ℂ) - (ε : ℂ) * (ηc b : ℂ) * Complex.I) ∈
+        BHW.os45FlatCommonChartOmega d (m + 1)
+          (P.τ.symm * (1 : Equiv.Perm (Fin (m + 1)))) :=
+    (hside (e u) ⟨u, huK, rfl⟩ ηc (by simp) ε hε_pos hε_lt).2
+  have hflat_eq :
+      (fun b =>
+          ((e (e.symm (e u - a)) + ((-1 : ℝ) * ε) • ηc) b : ℂ) +
+            ((((-1 : ℝ) * ε) • ηc) b : ℂ) * Complex.I) =
+        fun b => (e u b : ℂ) - (ε : ℂ) * (ηc b : ℂ) * Complex.I := by
+    funext b
+    simp [a, sub_eq_add_neg, Pi.add_apply, Pi.smul_apply, smul_eq_mul]
+  have hflat :
+      (fun b =>
+          ((e (e.symm (e u - a)) + ((-1 : ℝ) * ε) • ηc) b : ℂ) +
+            ((((-1 : ℝ) * ε) • ηc) b : ℂ) * Complex.I) ∈
+        BHW.os45FlatCommonChartOmega d (m + 1)
+          (P.τ.symm * (1 : Equiv.Perm (Fin (m + 1)))) := by
+    rw [hflat_eq]
+    exact homega
+  have hET :=
+    (BHW.os45FlatCommonChartSourceSide_mem_extendedTube_iff
+      d (m + 1) (P.τ.symm * (1 : Equiv.Perm (Fin (m + 1))))
+      (1 : Equiv.Perm (Fin (m + 1))) (-1 : ℝ) ε ηc
+      (e.symm (e u - a))).1 hflat
+  simpa [e, ηc, a] using hET
+
+set_option maxHeartbeats 1200000 in
+/-- Support-form upper ET collar for the canonical OS45 cone-height.
+
+This is the honest geometric support input produced from a compact source
+window containing the topological support of the lifted reduced test. -/
+theorem eventually_sourceSide_canonicalHeight_upper_mem_extendedTube_of_lift_tsupport_subset_compact
+    {m : ℕ} {i : Fin (m + 1)} {hi : i.val + 1 < m + 1}
+    {hd : 2 ≤ d}
+    (P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd (m + 1) i hi)
+    {Ksrc : Set (NPointDomain d (m + 1))}
+    (hKsrc : IsCompact Ksrc) (hKsrc_sub : Ksrc ⊆ P.V)
+    (χ : SchwartzMap (SpacetimeDim d) ℂ) (ψ : SchwartzNPoint d m)
+    (hliftK :
+      tsupport
+          ((BHW.reducedTestLift m d χ ψ : SchwartzNPoint d (m + 1)) :
+            NPointDomain d (m + 1) → ℂ) ⊆ Ksrc) :
+    ∀ᶠ ε : ℝ in nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)),
+      ∀ u : NPointDomain d (m + 1),
+        ((BHW.reducedTestLift m d χ ψ : SchwartzNPoint d (m + 1)) :
+          NPointDomain d (m + 1) → ℂ) u ≠ 0 →
+          let e : NPointDomain d (m + 1) ≃L[ℝ]
+              BHW.OS45FlatCommonChartReal d (m + 1) :=
+            BHW.os45CommonEdgeFlatCLE d (m + 1)
+              (1 : Equiv.Perm (Fin (m + 1)))
+          let ηc : BHW.OS45FlatCommonChartReal d (m + 1) :=
+            e (canonicalForwardConeDirection (d := d) (m + 1))
+          let a : BHW.OS45FlatCommonChartReal d (m + 1) :=
+            ((1 : ℝ) * ε) • ηc
+          BHW.os45FlatCommonChartSourceSide d (m + 1)
+              (1 : Equiv.Perm (Fin (m + 1))) (1 : ℝ) ε ηc
+              (e.symm (e u - a)) ∈
+            BHW.ExtendedTube d (m + 1) := by
+  let f : NPointDomain d (m + 1) → ℂ :=
+    ((BHW.reducedTestLift m d χ ψ : SchwartzNPoint d (m + 1)) :
+      NPointDomain d (m + 1) → ℂ)
+  have hmem :=
+    eventually_forall_sourceSide_canonicalHeight_upper_mem_extendedTube_of_compact_source
+      (d := d) P hKsrc hKsrc_sub
+  filter_upwards [hmem] with ε hε u hu
+  have huK : u ∈ Ksrc := by
+    have hu_support : u ∈ Function.support f :=
+      Function.mem_support.mpr (by simpa [f] using hu)
+    exact hliftK (subset_tsupport f hu_support)
+  simpa [f] using hε u huK
+
+set_option maxHeartbeats 1200000 in
+/-- Support-form lower ET collar for the canonical OS45 cone-height, after the
+adjacent branch permutation. -/
+theorem eventually_sourceSide_canonicalHeight_lower_mem_extendedTube_of_lift_tsupport_subset_compact
+    {m : ℕ} {i : Fin (m + 1)} {hi : i.val + 1 < m + 1}
+    {hd : 2 ≤ d}
+    (P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd (m + 1) i hi)
+    {Ksrc : Set (NPointDomain d (m + 1))}
+    (hKsrc : IsCompact Ksrc) (hKsrc_sub : Ksrc ⊆ P.V)
+    (χ : SchwartzMap (SpacetimeDim d) ℂ) (ψ : SchwartzNPoint d m)
+    (hliftK :
+      tsupport
+          ((BHW.reducedTestLift m d χ ψ : SchwartzNPoint d (m + 1)) :
+            NPointDomain d (m + 1) → ℂ) ⊆ Ksrc) :
+    ∀ᶠ ε : ℝ in nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)),
+      ∀ u : NPointDomain d (m + 1),
+        ((BHW.reducedTestLift m d χ ψ : SchwartzNPoint d (m + 1)) :
+          NPointDomain d (m + 1) → ℂ) u ≠ 0 →
+          let e : NPointDomain d (m + 1) ≃L[ℝ]
+              BHW.OS45FlatCommonChartReal d (m + 1) :=
+            BHW.os45CommonEdgeFlatCLE d (m + 1)
+              (1 : Equiv.Perm (Fin (m + 1)))
+          let ηc : BHW.OS45FlatCommonChartReal d (m + 1) :=
+            e (canonicalForwardConeDirection (d := d) (m + 1))
+          let a : BHW.OS45FlatCommonChartReal d (m + 1) :=
+            ((-1 : ℝ) * ε) • ηc
+          BHW.permAct (d := d)
+              ((P.τ.symm * (1 : Equiv.Perm (Fin (m + 1)))).symm)
+              (BHW.os45FlatCommonChartSourceSide d (m + 1)
+                (1 : Equiv.Perm (Fin (m + 1))) (-1 : ℝ) ε ηc
+                (e.symm (e u - a))) ∈
+            BHW.ExtendedTube d (m + 1) := by
+  let f : NPointDomain d (m + 1) → ℂ :=
+    ((BHW.reducedTestLift m d χ ψ : SchwartzNPoint d (m + 1)) :
+      NPointDomain d (m + 1) → ℂ)
+  have hmem :=
+    eventually_forall_sourceSide_canonicalHeight_lower_mem_extendedTube_of_compact_source
+      (d := d) P hKsrc hKsrc_sub
+  filter_upwards [hmem] with ε hε u hu
+  have huK : u ∈ Ksrc := by
+    have hu_support : u ∈ Function.support f :=
+      Function.mem_support.mpr (by simpa [f] using hu)
+    exact hliftK (subset_tsupport f hu_support)
+  simpa [f] using hε u huK
+
 omit [NeZero d] in
 /-- The reduced-test lift has the source-collar support required after pulling
 it to OS45 flat common-edge coordinates.
@@ -3479,6 +3753,26 @@ theorem reducedDiffMapReal_os45CommonEdgeRealPoint_eq_of_reducedDiffMapReal_eq
   · simpa [BHW.os45CommonEdgeRealPoint, hμ, a, b] using hpair
 
 omit [NeZero d] in
+/-- Chart-native form of
+`reducedDiffMapReal_os45CommonEdgeRealPoint_eq_of_reducedDiffMapReal_eq`: after
+passing through the flattened OS45 common-edge equivalence and unflattening by
+the real chart equivalence, only reduced real differences remain visible. -/
+theorem reducedDiffMapReal_flattenCLEquivReal_symm_os45CommonEdgeFlatCLE_eq_of_reducedDiffMapReal_eq
+    {m : ℕ} (σ : Equiv.Perm (Fin (m + 1)))
+    {x y : NPointDomain d (m + 1)}
+    (hxy : BHW.reducedDiffMapReal (m + 1) d x =
+      BHW.reducedDiffMapReal (m + 1) d y) :
+    BHW.reducedDiffMapReal (m + 1) d
+        ((flattenCLEquivReal (m + 1) (d + 1)).symm
+          ((BHW.os45CommonEdgeFlatCLE d (m + 1) σ) x)) =
+      BHW.reducedDiffMapReal (m + 1) d
+        ((flattenCLEquivReal (m + 1) (d + 1)).symm
+          ((BHW.os45CommonEdgeFlatCLE d (m + 1) σ) y)) := by
+  simpa [BHW.os45CommonEdgeFlatCLE] using
+    reducedDiffMapReal_os45CommonEdgeRealPoint_eq_of_reducedDiffMapReal_eq
+      (d := d) σ hxy
+
+omit [NeZero d] in
 /-- Specializing the common-edge invariance to the reduced-normal zero-center
 section: replacing a source point by its reduced-normal representative leaves
 all OS45 common-edge reduced real differences unchanged. -/
@@ -3496,6 +3790,30 @@ theorem reducedNormalAbsoluteSectionCLM_os45CommonEdgeRealPoint_reducedDiffMapRe
         (BHW.os45CommonEdgeRealPoint (d := d) (n := m + 1) σ u) := by
   exact
     reducedDiffMapReal_os45CommonEdgeRealPoint_eq_of_reducedDiffMapReal_eq
+      (d := d) σ
+      (reducedNormalAbsoluteSectionCLM_reducedDiffMapReal_eq
+        (d := d) (i := i) (hi := hi) u)
+
+omit [NeZero d] in
+/-- Flattened-chart specialization of the reduced-normal section invariance:
+the source point and its zero-center reduced-normal representative have the same
+reduced real differences after the OS45 flat common-edge chart is inverted. -/
+theorem reducedNormalAbsoluteSectionCLM_flattenCLEquivReal_symm_os45CommonEdgeFlatCLE_reducedDiffMapReal_eq
+    {m : ℕ} {i : Fin (m + 1)} {hi : i.val + 1 < m + 1}
+    (σ : Equiv.Perm (Fin (m + 1))) (u : NPointDomain d (m + 1)) :
+    BHW.reducedDiffMapReal (m + 1) d
+        ((flattenCLEquivReal (m + 1) (d + 1)).symm
+          ((BHW.os45CommonEdgeFlatCLE d (m + 1) σ)
+            (reducedNormalAbsoluteSectionCLM (d := d) i hi
+              (reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩
+                ((reducedCoordCLE (d := d) i ⟨i.val + 1, hi⟩
+                  (reducedAdjacent_succ_ne i hi))
+                  (BHW.reducedDiffMapReal (m + 1) d u)))))) =
+      BHW.reducedDiffMapReal (m + 1) d
+        ((flattenCLEquivReal (m + 1) (d + 1)).symm
+          ((BHW.os45CommonEdgeFlatCLE d (m + 1) σ) u)) := by
+  exact
+    reducedDiffMapReal_flattenCLEquivReal_symm_os45CommonEdgeFlatCLE_eq_of_reducedDiffMapReal_eq
       (d := d) σ
       (reducedNormalAbsoluteSectionCLM_reducedDiffMapReal_eq
         (d := d) (i := i) (hi := hi) u)
@@ -3895,6 +4213,54 @@ theorem reducedNormalFlatten_mem_reducedNormalOS45SourcePatchPreimage_iff
           (reducedAdjacent_succ_ne i hi)
           ((0 : SpacetimeDim d), p) ∈ P.V := by
   simp [reducedNormalOS45SourcePatchPreimage]
+
+/-- If a reduced test is supported in the reduced-normal preimage of the OS45
+source patch, then every nonzero point of its absolute reduced lift has a
+zero-center reduced-normal representative in that source patch.
+
+This is the support-routing form needed by the cone-height packet: it uses a
+condition on reduced variables, not an invalid claim that the arbitrary
+absolute lift and its zero-center representative share source-patch
+membership. -/
+theorem reducedTestLift_support_zeroCenterSection_mem_sourcePatch
+    {m : ℕ} {i : Fin (m + 1)} {hi : i.val + 1 < m + 1}
+    {hd : 2 ≤ d}
+    (P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd (m + 1) i hi)
+    (χ : SchwartzMap (SpacetimeDim d) ℂ)
+    (ψ : SchwartzNPoint d m)
+    (hψ_patch :
+      tsupport (ψ : NPointDomain d m → ℂ) ⊆
+        {ξ : NPointDomain d m |
+          reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩
+            ((reducedCoordCLE (d := d) i ⟨i.val + 1, hi⟩
+              (reducedAdjacent_succ_ne i hi)) ξ) ∈
+            reducedNormalOS45SourcePatchPreimage (d := d) i hi P})
+    {u : NPointDomain d (m + 1)}
+    (hu : ((BHW.reducedTestLift m d χ ψ : SchwartzNPoint d (m + 1)) :
+        NPointDomain d (m + 1) → ℂ) u ≠ 0) :
+    reducedNormalAbsoluteSectionCLM (d := d) i hi
+        (reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩
+          ((reducedCoordCLE (d := d) i ⟨i.val + 1, hi⟩
+            (reducedAdjacent_succ_ne i hi))
+            (BHW.reducedDiffMapReal (m + 1) d u))) ∈ P.V := by
+  let f : NPointDomain d (m + 1) → ℂ :=
+    ((BHW.reducedTestLift m d χ ψ : SchwartzNPoint d (m + 1)) :
+      NPointDomain d (m + 1) → ℂ)
+  have hu_support : u ∈ Function.support f := by
+    exact Function.mem_support.mpr (by simpa [f] using hu)
+  have hu_tsupport : u ∈ tsupport f :=
+    subset_tsupport f hu_support
+  have hred :
+      BHW.reducedDiffMapReal (m + 1) d u ∈
+        tsupport (ψ : NPointDomain d m → ℂ) := by
+    have hsubset :=
+      reducedTestLift_tsupport_subset_reducedDiff_preimage_tsupport
+        (d := d) (m := m) χ ψ
+    simpa [f, BHW.reducedDiffMapRealCLM] using hsubset hu_tsupport
+  have hξ := hψ_patch hred
+  simpa [reducedNormalOS45SourcePatchPreimage,
+    reducedNormalAbsoluteSectionCLM_apply_flatten] using hξ
 
 /-- The reduced-normal preimage of an arbitrary source window.  This is the
 local form used after a selected Jost seed has narrowed the Figure-2-4 patch to
