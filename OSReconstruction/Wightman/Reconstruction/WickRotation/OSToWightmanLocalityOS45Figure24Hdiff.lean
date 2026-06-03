@@ -5224,6 +5224,8 @@ theorem OS45BHWJostHullData.os45CommonEdge_localHdiffGerm_of_OS412_sourceSide
     (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P)
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS)
+    (hCompactFigure24 :
+      BHW.OS45CompactFigure24WickPairingEq (d := d) n i hi OS lgc)
     {U : Set (NPointDomain d n)}
     (hU_open : IsOpen U)
     (hU_compact : IsCompact (closure U))
@@ -5343,7 +5345,8 @@ theorem OS45BHWJostHullData.os45CommonEdge_localHdiffGerm_of_OS412_sourceSide
     intro φ hφ_compact hφE
     simpa [bvIn, bvOut, E, e] using
       H.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_smearing
-        OS lgc hU_open hU_compact hU_connected hU_closure
+        OS lgc hCompactFigure24
+        hU_open hU_compact hU_connected hU_closure
         φ hφ_compact (by simpa [E, e] using hφE)
   exact
     H.os45CommonEdge_localHdiffGerm_of_local414_integrals
@@ -5367,6 +5370,8 @@ theorem OS45BHWJostHullData.os45CommonEdge_sourceRepresentsZero_of_OS412_sourceS
     (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P)
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS)
+    (hCompactFigure24 :
+      BHW.OS45CompactFigure24WickPairingEq (d := d) n i hi OS lgc)
     {U : Set (NPointDomain d n)}
     (hU_open : IsOpen U)
     (hU_compact : IsCompact (closure U))
@@ -5467,7 +5472,8 @@ theorem OS45BHWJostHullData.os45CommonEdge_sourceRepresentsZero_of_OS412_sourceS
     intro φ hφ_compact hφE
     simpa [bvIn, bvOut, E, e] using
       H.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_smearing
-        OS lgc hU_open hU_compact hU_connected hU_closure
+        OS lgc hCompactFigure24
+        hU_open hU_compact hU_connected hU_closure
         φ hφ_compact (by simpa [E, e] using hφE)
   exact
     H.os45CommonEdge_sourceRepresentsZero_of_local414_integrals
@@ -5494,6 +5500,8 @@ theorem OS45BHWJostHullData.exists_sourceWindow_sourceRepresentsZero_of_OS412_so
     (H : BHW.OS45BHWJostHullData (d := d) hd n i hi P)
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS)
+    (hCompactFigure24 :
+      BHW.OS45CompactFigure24WickPairingEq (d := d) n i hi OS lgc)
     (D : BHW.OS45Figure24SourceCutoffData P)
     {u0 : NPointDomain d n}
     (hu0 : u0 ∈ P.V) :
@@ -5520,7 +5528,8 @@ theorem OS45BHWJostHullData.exists_sourceWindow_sourceRepresentsZero_of_OS412_so
     exact hU_closure (subset_closure hu)
   · exact
       H.os45CommonEdge_sourceRepresentsZero_of_OS412_sourceSide
-        OS lgc hU_open hU_compact hU_connected hU_closure D
+        OS lgc hCompactFigure24
+        hU_open hU_compact hU_connected hU_closure D
 
 /-- Compact Figure-2-4 edge equality supplies the active source-zero
 representation on a local initial-overlap collar.

@@ -334,110 +334,10 @@ private theorem os45_flat_minus_selector_to_sourceSide
     exact tendsto_const_nhds.mul hscaled
   simpa [J, hJ_ne, mul_assoc] using hdescaled
 
-/-- The public distributional adjacent-swap theorem supplies the compact
-Figure-2-4 real Jost pairing packet for the canonical source patch.
-
-This is an upstream OS-I input: the pointwise equality on the real source patch
-comes from the checked distributional boundary values of `bvt_F` and weak local
-commutativity of `bvt_W`, not from an `S'_n` branch or a previously seeded
-initial-overlap equality. -/
-private noncomputable def os45_compactFigure24WickPairingEq_of_distributional_locality
-    [NeZero d]
-    {hd : 2 ≤ d} {i : Fin n} {hi : i.val + 1 < n}
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS) :
-    BHW.OS45CompactFigure24WickPairingEq (d := d) n i hi OS lgc := by
-  classical
-  refine
-    BHW.os45CompactFigure24WickPairingEq_of_sourcePatchPairing
-      (d := d) hd OS lgc n i hi ?_
-  intro ψ hψ_compact hψ_supp
-  let V : Set (NPointDomain d n) :=
-    BHW.os45Figure24SourcePatch (d := d) n i hi
-  let ip1 : Fin n := ⟨i.val + 1, hi⟩
-  have hF_holo :
-      DifferentiableOn ℂ (bvt_F OS lgc n) (BHW.ForwardTube d n) := by
-    simpa [BHW_forwardTube_eq (d := d) (n := n)] using
-      bvt_F_holomorphic (d := d) OS lgc n
-  have hF_lorentz :
-      ∀ (Λ : RestrictedLorentzGroup d)
-        (z : Fin n → Fin (d + 1) → ℂ), z ∈ BHW.ForwardTube d n →
-        bvt_F OS lgc n
-          (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * z k ν) =
-        bvt_F OS lgc n z := by
-    intro Λ z hz
-    exact bvt_F_restrictedLorentzInvariant_forwardTube
-      (d := d) OS lgc n Λ z
-      ((BHW_forwardTube_eq (d := d) (n := n)) ▸ hz)
-  have hF_bv :
-      ∀ (f : SchwartzNPoint d n) (η : Fin n → Fin (d + 1) → ℝ),
-        InForwardCone d n η →
-        Tendsto
-          (fun ε : ℝ =>
-            ∫ x : NPointDomain d n,
-              bvt_F OS lgc n
-                (fun k μ => (x k μ : ℂ) + ε * (η k μ : ℂ) * Complex.I) *
-                f x)
-          (𝓝[Set.Ioi 0] (0 : ℝ))
-          (𝓝 (bvt_W OS lgc n f)) := by
-    intro f η hη
-    exact bvt_boundary_values (d := d) OS lgc n f η hη
-  have hF_local :
-      IsAdjacentLocallyCommutativeWeak d (bvt_W OS lgc) :=
-    bvt_locally_commutative (d := d) OS lgc
-  have hV_open : IsOpen V := by
-    simpa [V] using
-      BHW.isOpen_os45Figure24SourcePatch (d := d) n i hi
-  have hV_sp :
-      ∀ x ∈ V, ∑ μ, minkowskiSignature d μ *
-        (x ip1 μ - x i μ) ^ 2 > 0 := by
-    intro x hx
-    have hxJ : x ∈ BHW.JostSet d n :=
-      (BHW.os45Figure24SourcePatch_jost
-        (d := d) hd n i hi) (by simpa [V] using hx)
-    have hip1_ne_i : ip1 ≠ i := by
-      intro h
-      have hval : i.val + 1 = i.val := congrArg Fin.val h
-      exact Nat.succ_ne_self i.val hval
-    simpa [ip1, BHW.IsSpacelike] using hxJ.2 ip1 i hip1_ne_i
-  have hV_ET :
-      ∀ x ∈ V, BHW.realEmbed x ∈ BHW.ExtendedTube d n := by
-    intro x hx
-    exact
-      BHW.os45Figure24SourcePatch_realEmbed_mem_extendedTube
-        (d := d) hd n i hi x (by simpa [V] using hx)
-  have hV_swapET :
-      ∀ x ∈ V,
-        BHW.realEmbed (fun k => x (Equiv.swap i ip1 k)) ∈
-          BHW.ExtendedTube d n := by
-    intro x hx
-    exact
-      BHW.os45Figure24SourcePatch_swapRealEmbed_mem_extendedTube
-        (d := d) hd n i hi x (by simpa [V, ip1] using hx)
-  have hpoint :
-      ∀ x ∈ V,
-        BHW.extendF (bvt_F OS lgc n)
-          (fun k => BHW.realEmbed x (Equiv.swap i ip1 k)) =
-        BHW.extendF (bvt_F OS lgc n) (BHW.realEmbed x) :=
-    BHW.extendF_adjSwap_eq_on_realOpen_of_distributional_local_commutativity
-      (d := d) (n := n) (bvt_F OS lgc n) hF_holo hF_lorentz
-      (bvt_W OS lgc) hF_bv hF_local i hi V hV_open hV_sp hV_ET
-      hV_swapET
-  refine MeasureTheory.integral_congr_ae (Filter.Eventually.of_forall ?_)
-  intro x
-  by_cases hx : x ∈ V
-  · have hx_eq := hpoint x hx
-    exact congrArg (fun c : ℂ => c * ψ x) (by
-      simpa [BHW.realEmbed, ip1] using hx_eq.symm)
-  · have hψ_zero : ψ x = 0 :=
-      image_eq_zero_of_notMem_tsupport
-        (fun hψx => hx (by simpa [V] using hψ_supp hψx))
-    simp [hψ_zero]
-
 /-- OS-I Section 4.5 Jost/EOW smearing should produce the local `(4.14)`
 flat common-edge compact-test equality.
 
-This is the paper-facing producer missing upstream of
+This is the paper-facing consumer upstream of
 `OS45BHWJostHullData.os45CommonEdge_sourceRepresentsZero_of_local414_integrals`
 and `OS45BHWJostHullData.os45CommonEdge_sourceRepresentsZero_of_sourcePairings`.
 The proof body should follow the monograph part-(b) route: construct Jost
@@ -446,11 +346,12 @@ symmetry plus the identity theorem to identify the two holomorphic branches,
 apply distributional EOW on the common real edge, then smear by a finite
 partition of unity over the compact support of `φ`.
 
-The checked proof now gets the compact Figure-2-4 real Jost pairing directly
-from distributional adjacent-swap locality for `bvt_F`, transports it through
-the Ruelle/common-edge bridge to the deterministic adjacent Wick pairing, and
-then uses the existing source-representation and flat-chart EOW consumers.
-No local `S'_n` branch, Hdiff producer, or selected-data packet is used. -/
+The checked proof now consumes the compact Figure-2-4 real Jost pairing packet
+explicitly, transports it through the Ruelle/common-edge bridge to the
+deterministic adjacent Wick pairing, and then uses the existing
+source-representation and flat-chart EOW consumers.  Producing the compact
+packet without theorem-2 locality remains the upstream OS-I `(4.12)`--`(4.14)`
+branch/source step. -/
 theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_smearing
     [NeZero d]
     {hd : 2 ≤ d} {i : Fin n} {hi : i.val + 1 < n}
@@ -458,6 +359,8 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
     (_H : BHW.OS45BHWJostHullData (d := d) hd n i hi P)
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS)
+    (hCompactFigure24 :
+      BHW.OS45CompactFigure24WickPairingEq (d := d) n i hi OS lgc)
     {U : Set (NPointDomain d n)}
     (hU_open : IsOpen U)
     (hU_compact : IsCompact (closure U))
@@ -512,10 +415,6 @@ theorem OS45BHWJostHullData.os45CommonEdge_local414_integrals_of_OSI45_jostEOW_s
         BHW.isConnected_adjSwapExtendedOverlap_of_forwardOverlapConnected
           (d := d) n i hi hAdjacentForwardOverlap_connected
       simpa [BHW.adjSwapExtendedOverlapSet, BHW.permAct, P.τ_eq] using hraw
-  have hCompactFigure24 :
-      BHW.OS45CompactFigure24WickPairingEq (d := d) n i hi OS lgc :=
-    BHW.os45_compactFigure24WickPairingEq_of_distributional_locality
-      (d := d) (n := n) (hd := hd) (i := i) (hi := hi) OS lgc
   have hTransported_wick_pairing :
       ∀ ψ : SchwartzNPoint d n,
         HasCompactSupport (ψ : NPointDomain d n → ℂ) →
