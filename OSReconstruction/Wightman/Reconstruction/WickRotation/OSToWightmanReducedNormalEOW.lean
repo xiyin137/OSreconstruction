@@ -1257,6 +1257,96 @@ def ReducedNormalCanonicalRayEOWBranchDataOn.ofRealEdgeMem
   hplus_rep := hplus_rep
   hminus_rep := hminus_rep
 
+/-- Build collar-local canonical-ray branch data when the plus branch has
+already been continued from the reduced BHW extension along the upper canonical
+ray.
+
+This isolates the theorem-2 OS-I continuation leaf: the upper-ray reduced PET
+representative is supplied by `Fred`, while the remaining hypotheses are exactly
+the lower/sign-flipped branch and common real-edge boundary data on the chosen
+collar. -/
+def ReducedNormalCanonicalRayEOWBranchDataOn.ofUpperReducedExtension
+    {OS : OsterwalderSchraderAxioms d}
+    {lgc : OSLinearGrowthCondition d OS}
+    {m : ℕ} {i : Fin (m + 1)} {hi : i.val + 1 < m + 1}
+    {p : ReducedSpace d m i ⟨i.val + 1, hi⟩}
+    (Fred : BHW.ReducedBHWExtensionData (d := d) (n := m + 1)
+      (bvt_F_reduced (d := d) OS lgc m))
+    (E : Set (Fin ((d + 1) +
+        Fintype.card (SpectatorIndex (m + 1) i ⟨i.val + 1, hi⟩) *
+          (d + 1)) → ℝ))
+    (hE_open : IsOpen E)
+    (hpE :
+      reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩ p ∈ E)
+    (Ωplus Ωminus : Set
+      (SCV.ComplexChartSpace ((d + 1) +
+        Fintype.card (SpectatorIndex (m + 1) i ⟨i.val + 1, hi⟩) *
+          (d + 1))))
+    (C : Set (Fin ((d + 1) +
+        Fintype.card (SpectatorIndex (m + 1) i ⟨i.val + 1, hi⟩) *
+          (d + 1)) → ℝ))
+    (hΩplus_open : IsOpen Ωplus)
+    (hΩminus_open : IsOpen Ωminus)
+    (hC_open : IsOpen C)
+    (hC_conv : Convex ℝ C)
+    (hC_ne : C.Nonempty)
+    (hplus0 :
+      ∀ x ∈ E, SCV.realEmbed x ∈ Ωplus)
+    (hminus0 :
+      ∀ x ∈ E, SCV.realEmbed x ∈ Ωminus)
+    (Fplus Fminus :
+      SCV.ComplexChartSpace ((d + 1) +
+        Fintype.card (SpectatorIndex (m + 1) i ⟨i.val + 1, hi⟩) *
+          (d + 1)) → ℂ)
+    (hFplus_diff : DifferentiableOn ℂ Fplus Ωplus)
+    (hFminus_diff : DifferentiableOn ℂ Fminus Ωminus)
+    (bv : (Fin ((d + 1) +
+        Fintype.card (SpectatorIndex (m + 1) i ⟨i.val + 1, hi⟩) *
+          (d + 1)) → ℝ) → ℂ)
+    (hbv_cont : ContinuousOn bv E)
+    (hFplus_bv :
+      ∀ x ∈ E,
+        Filter.Tendsto Fplus
+          (nhdsWithin (SCV.realEmbed x) Ωplus) (nhds (bv x)))
+    (hFminus_bv :
+      ∀ x ∈ E,
+        Filter.Tendsto Fminus
+          (nhdsWithin (SCV.realEmbed x) Ωminus) (nhds (bv x)))
+    (hplus_nhds :
+      Ωplus ∈ nhds
+        (SCV.realEmbed
+          (reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩ p)))
+    (hminus_nhds :
+      Ωminus ∈ nhds
+        (SCV.realEmbed
+          (reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩ p)))
+    (hplus_ext :
+      ∀ᶠ ε : ℝ in nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)),
+        Fplus (reducedNormalUpperCanonicalRay (d := d) i hi p ε) =
+          Fred.toFun
+            (reducedNormalCoordFlatComplexCLM (d := d) i hi
+              (reducedNormalUpperCanonicalRay (d := d) i hi p ε)))
+    (hminus_rep :
+      ∀ᶠ ε : ℝ in nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)),
+        Fminus (reducedNormalLowerCanonicalRay (d := d) i hi p ε) =
+          canonicalReducedBranch (d := d) OS lgc m ε
+            (reducedCoordInv (d := d) i ⟨i.val + 1, hi⟩
+              (reducedAdjacent_succ_ne i hi)
+              (reducedSignFlip (d := d) i ⟨i.val + 1, hi⟩ p))) :
+    ReducedNormalCanonicalRayEOWBranchDataOn (d := d) OS lgc i hi p := by
+  refine
+    ReducedNormalCanonicalRayEOWBranchDataOn.ofRealEdgeMem
+      (d := d) (OS := OS) (lgc := lgc) (m := m) (i := i) (hi := hi)
+      (p := p) E hE_open hpE Ωplus Ωminus C hΩplus_open hΩminus_open
+      hC_open hC_conv hC_ne hplus0 hminus0 Fplus Fminus hFplus_diff
+      hFminus_diff bv hbv_cont hFplus_bv hFminus_bv hplus_nhds hminus_nhds
+      ?_ hminus_rep
+  filter_upwards
+    [hplus_ext,
+      reducedNormalUpperCanonicalRay_reducedExtension_rep
+        (d := d) OS lgc i hi Fred p] with ε hplus hFred
+  exact hplus.trans hFred
+
 /-- Build canonical-ray branch data when the side domains are open
 neighborhoods of the whole reduced normal real edge.
 
