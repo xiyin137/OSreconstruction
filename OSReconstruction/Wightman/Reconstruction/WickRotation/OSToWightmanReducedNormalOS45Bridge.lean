@@ -11860,6 +11860,104 @@ theorem reducedNormalCoordFlatComplexCLM_realEmbed_flatten
           (reducedAdjacent_succ_ne i hi) p k μ : ℂ) := by
         rw [reducedNormalCoordFlatCLE_symm_flatten (d := d) i hi p]
 
+omit [NeZero d] in
+-- The raw ordinary reduced-normal endpoint is exactly the reduced-difference
+-- quotient of its zero-center absolute source representative.
+theorem reducedNormalCoordFlatComplexCLM_upperRealEndpoint_eq_reducedDiffMap_realEmbed
+    {m : ℕ} (i : Fin (m + 1)) (hi : i.val + 1 < m + 1)
+    (p : ReducedSpace d m i ⟨i.val + 1, hi⟩) :
+    reducedNormalCoordFlatComplexCLM (d := d) i hi
+        (SCV.realEmbed
+          (reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩ p)) =
+      BHW.reducedDiffMap (m + 1) d
+        (BHW.realEmbed
+          (coordInv (d := d) i ⟨i.val + 1, hi⟩
+            (reducedAdjacent_succ_ne i hi)
+            ((0 : SpacetimeDim d), p))) := by
+  let u0 : NPointDomain d (m + 1) :=
+    coordInv (d := d) i ⟨i.val + 1, hi⟩
+      (reducedAdjacent_succ_ne i hi)
+      ((0 : SpacetimeDim d), p)
+  have hflat :=
+    reducedNormalCoordFlatComplexCLM_realEmbed_flatten
+      (d := d) i hi p
+  have hcoord :
+      (fun k μ =>
+        (reducedCoordInv (d := d) i ⟨i.val + 1, hi⟩
+          (reducedAdjacent_succ_ne i hi) p k μ : ℂ)) =
+      fun k μ => (BHW.reducedDiffMapReal (m + 1) d u0 k μ : ℂ) := by
+    simp [u0, reducedCoordInv]
+  have hred_real :
+      BHW.reducedDiffMap (m + 1) d (BHW.realEmbed u0) =
+        fun k μ => (BHW.reducedDiffMapReal (m + 1) d u0 k μ : ℂ) := by
+    ext k μ
+    rw [BHW.reducedDiffMap_eq_successive_differences,
+      BHW.reducedDiffMapReal_apply]
+    simp [BHW.realEmbed]
+  exact hflat.trans (hcoord.trans hred_real.symm)
+
+omit [NeZero d] in
+-- The sign-flipped reduced-normal endpoint is the reduced-difference quotient
+-- of the adjacent-swapped zero-center absolute source representative.
+theorem reducedNormalCoordFlatComplexCLM_signFlipRealEndpoint_eq_reducedDiffMap_realEmbed_swap
+    {m : ℕ} (i : Fin (m + 1)) (hi : i.val + 1 < m + 1)
+    (p : ReducedSpace d m i ⟨i.val + 1, hi⟩) :
+    reducedNormalCoordFlatComplexCLM (d := d) i hi
+        (SCV.realEmbed
+          (reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩
+            (reducedSignFlip (d := d) i ⟨i.val + 1, hi⟩ p))) =
+      BHW.reducedDiffMap (m + 1) d
+        (BHW.realEmbed
+          (fun k =>
+            coordInv (d := d) i ⟨i.val + 1, hi⟩
+              (reducedAdjacent_succ_ne i hi)
+              ((0 : SpacetimeDim d), p)
+              (Equiv.swap i ⟨i.val + 1, hi⟩ k))) := by
+  let j : Fin (m + 1) := ⟨i.val + 1, hi⟩
+  let τ : Equiv.Perm (Fin (m + 1)) := Equiv.swap i j
+  let u0 : NPointDomain d (m + 1) :=
+    coordInv (d := d) i j
+      (reducedAdjacent_succ_ne i hi)
+      ((0 : SpacetimeDim d), p)
+  let uτ : NPointDomain d (m + 1) := fun k => u0 (τ k)
+  have hflat :=
+    reducedNormalCoordFlatComplexCLM_realEmbed_flatten
+      (d := d) i hi (reducedSignFlip (d := d) i j p)
+  have hflip :
+      reducedCoordInv (d := d) i j (reducedAdjacent_succ_ne i hi)
+          (reducedSignFlip (d := d) i j p) =
+        realPermOnReducedDiff (d := d) m τ
+          (reducedCoordInv (d := d) i j (reducedAdjacent_succ_ne i hi) p) := by
+    simpa [j, τ] using
+      reducedCoordInv_reducedSignFlip_eq_realPerm_adjacentSwap
+        (d := d) i hi p
+  have hcoord0 :
+      reducedCoordInv (d := d) i j (reducedAdjacent_succ_ne i hi) p =
+        BHW.reducedDiffMapReal (m + 1) d u0 := by
+    simp [u0, reducedCoordInv]
+  have hperm_real :
+      BHW.reducedDiffMapReal (m + 1) d uτ =
+        realPermOnReducedDiff (d := d) m τ
+          (BHW.reducedDiffMapReal (m + 1) d u0) := by
+    simpa [uτ, τ] using
+      reducedDiffMapReal_permute_absolute (d := d) m τ u0
+  have hcoord :
+      (fun k μ =>
+        (reducedCoordInv (d := d) i j (reducedAdjacent_succ_ne i hi)
+          (reducedSignFlip (d := d) i j p) k μ : ℂ)) =
+      fun k μ => (BHW.reducedDiffMapReal (m + 1) d uτ k μ : ℂ) := by
+    rw [hflip, hcoord0, ← hperm_real]
+    rfl
+  have hred_real :
+      BHW.reducedDiffMap (m + 1) d (BHW.realEmbed uτ) =
+        fun k μ => (BHW.reducedDiffMapReal (m + 1) d uτ k μ : ℂ) := by
+    ext k μ
+    rw [BHW.reducedDiffMap_eq_successive_differences,
+      BHW.reducedDiffMapReal_apply]
+    simp [BHW.realEmbed]
+  exact hflat.trans (hcoord.trans (by
+    simpa [uτ, u0, τ, j] using hred_real.symm))
+
 /-- The ordinary reduced-normal real endpoint selected by a Figure-2-4 source
 patch is a reduced PET point. -/
 theorem reducedNormalCoordFlatComplexCLM_upperRealEndpoint_mem_reducedPET
@@ -11887,23 +11985,9 @@ theorem reducedNormalCoordFlatComplexCLM_upperRealEndpoint_mem_reducedPET
           (SCV.realEmbed
             (reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩ p)) =
         BHW.reducedDiffMap (m + 1) d (BHW.realEmbed u0) := by
-    have hflat :=
-      reducedNormalCoordFlatComplexCLM_realEmbed_flatten
+    simpa [u0] using
+      reducedNormalCoordFlatComplexCLM_upperRealEndpoint_eq_reducedDiffMap_realEmbed
         (d := d) i hi p
-    have hcoord :
-        (fun k μ =>
-          (reducedCoordInv (d := d) i ⟨i.val + 1, hi⟩
-            (reducedAdjacent_succ_ne i hi) p k μ : ℂ)) =
-        fun k μ => (BHW.reducedDiffMapReal (m + 1) d u0 k μ : ℂ) := by
-      simp [u0, reducedCoordInv]
-    have hred_real :
-        BHW.reducedDiffMap (m + 1) d (BHW.realEmbed u0) =
-          fun k μ => (BHW.reducedDiffMapReal (m + 1) d u0 k μ : ℂ) := by
-      ext k μ
-      rw [BHW.reducedDiffMap_eq_successive_differences,
-        BHW.reducedDiffMapReal_apply]
-      simp [BHW.realEmbed]
-    exact hflat.trans (hcoord.trans hred_real.symm)
   exact ⟨BHW.realEmbed u0,
     BHW.extendedTube_subset_permutedExtendedTube hET, hraw.symm⟩
 
@@ -12009,42 +12093,9 @@ theorem reducedNormalCoordFlatComplexCLM_signFlipRealEndpoint_mem_reducedPET
             (reducedNormalFlattenCLE (d := d) i j
               (reducedSignFlip (d := d) i j p))) =
         BHW.reducedDiffMap (m + 1) d (BHW.realEmbed uτ) := by
-    have hflat :=
-      reducedNormalCoordFlatComplexCLM_realEmbed_flatten
-        (d := d) i hi (reducedSignFlip (d := d) i j p)
-    have hflip :
-        reducedCoordInv (d := d) i j (reducedAdjacent_succ_ne i hi)
-            (reducedSignFlip (d := d) i j p) =
-          realPermOnReducedDiff (d := d) m τ
-            (reducedCoordInv (d := d) i j (reducedAdjacent_succ_ne i hi) p) := by
-      simpa [j, τ] using
-        reducedCoordInv_reducedSignFlip_eq_realPerm_adjacentSwap
-          (d := d) i hi p
-    have hcoord0 :
-        reducedCoordInv (d := d) i j (reducedAdjacent_succ_ne i hi) p =
-          BHW.reducedDiffMapReal (m + 1) d u0 := by
-      simp [u0, reducedCoordInv]
-    have hperm_real :
-        BHW.reducedDiffMapReal (m + 1) d uτ =
-          realPermOnReducedDiff (d := d) m τ
-            (BHW.reducedDiffMapReal (m + 1) d u0) := by
-      simpa [uτ, τ] using
-        reducedDiffMapReal_permute_absolute (d := d) m τ u0
-    have hcoord :
-        (fun k μ =>
-          (reducedCoordInv (d := d) i j (reducedAdjacent_succ_ne i hi)
-            (reducedSignFlip (d := d) i j p) k μ : ℂ)) =
-        fun k μ => (BHW.reducedDiffMapReal (m + 1) d uτ k μ : ℂ) := by
-      rw [hflip, hcoord0, ← hperm_real]
-      rfl
-    have hred_real :
-        BHW.reducedDiffMap (m + 1) d (BHW.realEmbed uτ) =
-          fun k μ => (BHW.reducedDiffMapReal (m + 1) d uτ k μ : ℂ) := by
-      ext k μ
-      rw [BHW.reducedDiffMap_eq_successive_differences,
-        BHW.reducedDiffMapReal_apply]
-      simp [BHW.realEmbed]
-    exact hflat.trans (hcoord.trans hred_real.symm)
+    simpa [uτ, u0, τ, j] using
+      reducedNormalCoordFlatComplexCLM_signFlipRealEndpoint_eq_reducedDiffMap_realEmbed_swap
+        (d := d) i hi p
   exact ⟨BHW.realEmbed uτ,
     BHW.extendedTube_subset_permutedExtendedTube hET, by
       simpa [j] using hraw.symm⟩
@@ -12122,6 +12173,201 @@ theorem tendsto_reducedExtension_reducedNormalSignFlipUpperCanonicalRay_endpoint
       ContinuousWithinAt Fred.toFun (BHW.ReducedPermutedExtendedTubeN d m) ζ0 :=
     Fred.holomorphic.continuousOn.continuousWithinAt hζ0_pet
   simpa [ζ0, l, pflip] using hFred_cont.tendsto.comp hwithin
+
+/-- Upper Fred endpoint equality from the absolute `extendF` equality between
+the OS45 common-edge carrier and the ordinary zero-center source endpoint. -/
+theorem reducedExtension_upper_endpoint_value_eq_of_extendF_commonEdge_eq_realEndpoint
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {m : ℕ} {i : Fin (m + 1)} {hi : i.val + 1 < m + 1}
+    {hd : 2 ≤ d}
+    (P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd (m + 1) i hi)
+    (Fred : BHW.ReducedBHWExtensionData (d := d) (n := m + 1)
+      (bvt_F_reduced (d := d) OS lgc m))
+    (p : ReducedSpace d m i ⟨i.val + 1, hi⟩)
+    (hpP :
+      coordInv (d := d) i ⟨i.val + 1, hi⟩
+          (reducedAdjacent_succ_ne i hi)
+          ((0 : SpacetimeDim d), p) ∈ P.V)
+    (hendpoint_abs :
+      BHW.extendF (bvt_F OS lgc (m + 1))
+          ((BHW.os45QuarterTurnCLE (d := d) (n := m + 1)).symm
+            (BHW.unflattenCfg (m + 1) d
+              (SCV.realEmbed
+                (reducedNormalToOS45CommonEdgeFlatCLM (d := d) i hi
+                  (reducedNormalFlattenCLE
+                    (d := d) i ⟨i.val + 1, hi⟩ p))))) =
+        BHW.extendF (bvt_F OS lgc (m + 1))
+          (BHW.realEmbed
+            (coordInv (d := d) i ⟨i.val + 1, hi⟩
+              (reducedAdjacent_succ_ne i hi)
+              ((0 : SpacetimeDim d), p)))) :
+    Fred.toFun
+        (BHW.reducedDiffMap (m + 1) d
+          ((BHW.os45QuarterTurnCLE (d := d) (n := m + 1)).symm
+            (BHW.unflattenCfg (m + 1) d
+              (SCV.realEmbed
+                (reducedNormalToOS45CommonEdgeFlatCLM (d := d) i hi
+                  (reducedNormalFlattenCLE
+                    (d := d) i ⟨i.val + 1, hi⟩ p)))))) =
+      Fred.toFun
+        (reducedNormalCoordFlatComplexCLM (d := d) i hi
+          (SCV.realEmbed
+            (reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩ p))) := by
+  let u0 : NPointDomain d (m + 1) :=
+    coordInv (d := d) i ⟨i.val + 1, hi⟩
+      (reducedAdjacent_succ_ne i hi)
+      ((0 : SpacetimeDim d), p)
+  let zcommon : Fin (m + 1) → Fin (d + 1) → ℂ :=
+    (BHW.os45QuarterTurnCLE (d := d) (n := m + 1)).symm
+      (BHW.unflattenCfg (m + 1) d
+        (SCV.realEmbed
+          (reducedNormalToOS45CommonEdgeFlatCLM (d := d) i hi
+            (reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩ p))))
+  let zraw : Fin (m + 1) → Fin (d + 1) → ℂ := BHW.realEmbed u0
+  have hcommon :=
+    BHW.os45Figure24_commonEdge_mem_initialSectorOverlap
+      (d := d) (n := m + 1) (hd := hd) (P := P)
+      (x := u0) (subset_closure hpP)
+  have hcommonET : zcommon ∈ BHW.ExtendedTube d (m + 1) := by
+    simpa [zcommon, u0, reducedNormalToOS45CommonEdgeFlatCLM,
+      reducedNormalAbsoluteSectionCLM_apply_flatten, BHW.os45CommonEdgeFlatCLE,
+      SCV.realEmbed, BHW.flattenCfgReal, BHW.unflattenCfg, BHW.realEmbed,
+      flattenCLEquivReal_apply] using hcommon.1
+  have hrawET : zraw ∈ BHW.ExtendedTube d (m + 1) := by
+    simpa [zraw, u0] using P.V_ET u0 hpP
+  have hcommonFred :=
+    extendF_bvt_F_eq_reducedExtension_on_extendedTube
+      (d := d) OS lgc m Fred zcommon hcommonET
+  have hrawFred :=
+    extendF_bvt_F_eq_reducedExtension_on_extendedTube
+      (d := d) OS lgc m Fred zraw hrawET
+  have hrawAlign :
+      reducedNormalCoordFlatComplexCLM (d := d) i hi
+          (SCV.realEmbed
+            (reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩ p)) =
+        BHW.reducedDiffMap (m + 1) d zraw := by
+    simpa [zraw, u0] using
+      reducedNormalCoordFlatComplexCLM_upperRealEndpoint_eq_reducedDiffMap_realEmbed
+        (d := d) i hi p
+  calc
+    Fred.toFun (BHW.reducedDiffMap (m + 1) d zcommon) =
+        BHW.extendF (bvt_F OS lgc (m + 1)) zcommon := hcommonFred.symm
+    _ = BHW.extendF (bvt_F OS lgc (m + 1)) zraw := by
+          simpa [zcommon, zraw, u0] using hendpoint_abs
+    _ = Fred.toFun (BHW.reducedDiffMap (m + 1) d zraw) := hrawFred
+    _ = Fred.toFun
+          (reducedNormalCoordFlatComplexCLM (d := d) i hi
+            (SCV.realEmbed
+              (reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩ p))) := by
+          rw [← hrawAlign]
+
+/-- Lower Fred endpoint equality from the absolute `extendF` equality between
+the adjacent OS45 common-edge carrier and the sign-flipped source endpoint. -/
+theorem reducedExtension_lower_endpoint_value_eq_of_extendF_commonEdge_eq_signFlipEndpoint
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {m : ℕ} {i : Fin (m + 1)} {hi : i.val + 1 < m + 1}
+    {hd : 2 ≤ d}
+    (P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd (m + 1) i hi)
+    (Fred : BHW.ReducedBHWExtensionData (d := d) (n := m + 1)
+      (bvt_F_reduced (d := d) OS lgc m))
+    (p : ReducedSpace d m i ⟨i.val + 1, hi⟩)
+    (hpP :
+      coordInv (d := d) i ⟨i.val + 1, hi⟩
+          (reducedAdjacent_succ_ne i hi)
+          ((0 : SpacetimeDim d), p) ∈ P.V)
+    (hendpoint_abs :
+      BHW.extendF (bvt_F OS lgc (m + 1))
+          (BHW.permAct (d := d)
+            ((P.τ.symm * (1 : Equiv.Perm (Fin (m + 1)))).symm)
+            ((BHW.os45QuarterTurnCLE (d := d) (n := m + 1)).symm
+              (BHW.unflattenCfg (m + 1) d
+                (SCV.realEmbed
+                  (reducedNormalToOS45CommonEdgeFlatCLM (d := d) i hi
+                    (reducedNormalFlattenCLE
+                      (d := d) i ⟨i.val + 1, hi⟩ p)))))) =
+        BHW.extendF (bvt_F OS lgc (m + 1))
+          (BHW.realEmbed
+            (fun k =>
+              coordInv (d := d) i ⟨i.val + 1, hi⟩
+                (reducedAdjacent_succ_ne i hi)
+                ((0 : SpacetimeDim d), p)
+                (Equiv.swap i ⟨i.val + 1, hi⟩ k)))) :
+    Fred.toFun
+        (BHW.reducedDiffMap (m + 1) d
+          (BHW.permAct (d := d)
+            ((P.τ.symm * (1 : Equiv.Perm (Fin (m + 1)))).symm)
+            ((BHW.os45QuarterTurnCLE (d := d) (n := m + 1)).symm
+              (BHW.unflattenCfg (m + 1) d
+                (SCV.realEmbed
+                  (reducedNormalToOS45CommonEdgeFlatCLM (d := d) i hi
+                    (reducedNormalFlattenCLE
+                      (d := d) i ⟨i.val + 1, hi⟩ p))))))) =
+      Fred.toFun
+        (reducedNormalCoordFlatComplexCLM (d := d) i hi
+          (SCV.realEmbed
+            (reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩
+              (reducedSignFlip (d := d) i ⟨i.val + 1, hi⟩ p)))) := by
+  let j : Fin (m + 1) := ⟨i.val + 1, hi⟩
+  let σ : Equiv.Perm (Fin (m + 1)) :=
+    ((P.τ.symm * (1 : Equiv.Perm (Fin (m + 1)))).symm)
+  let τ : Equiv.Perm (Fin (m + 1)) := Equiv.swap i j
+  let u0 : NPointDomain d (m + 1) :=
+    coordInv (d := d) i j
+      (reducedAdjacent_succ_ne i hi)
+      ((0 : SpacetimeDim d), p)
+  let uτ : NPointDomain d (m + 1) := fun k => u0 (τ k)
+  let zbase : Fin (m + 1) → Fin (d + 1) → ℂ :=
+    (BHW.os45QuarterTurnCLE (d := d) (n := m + 1)).symm
+      (BHW.unflattenCfg (m + 1) d
+        (SCV.realEmbed
+          (reducedNormalToOS45CommonEdgeFlatCLM (d := d) i hi
+            (reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩ p))))
+  let zcommon : Fin (m + 1) → Fin (d + 1) → ℂ :=
+    BHW.permAct (d := d) σ zbase
+  let zraw : Fin (m + 1) → Fin (d + 1) → ℂ := BHW.realEmbed uτ
+  have hcommon :=
+    BHW.os45Figure24_commonEdge_mem_initialSectorOverlap
+      (d := d) (n := m + 1) (hd := hd) (P := P)
+      (x := u0) (subset_closure hpP)
+  have hcommonET : zcommon ∈ BHW.ExtendedTube d (m + 1) := by
+    simpa [zcommon, zbase, σ, u0, BHW.permutedExtendedTubeSector,
+      BHW.permAct, reducedNormalToOS45CommonEdgeFlatCLM,
+      reducedNormalAbsoluteSectionCLM_apply_flatten, BHW.os45CommonEdgeFlatCLE,
+      SCV.realEmbed, BHW.flattenCfgReal, BHW.unflattenCfg, BHW.realEmbed,
+      flattenCLEquivReal_apply] using hcommon.2
+  have hrawET : zraw ∈ BHW.ExtendedTube d (m + 1) := by
+    simpa [zraw, uτ, u0, τ, j, P.τ_eq] using P.V_swapET u0 hpP
+  have hcommonFred :=
+    extendF_bvt_F_eq_reducedExtension_on_extendedTube
+      (d := d) OS lgc m Fred zcommon hcommonET
+  have hrawFred :=
+    extendF_bvt_F_eq_reducedExtension_on_extendedTube
+      (d := d) OS lgc m Fred zraw hrawET
+  have hrawAlign :
+      reducedNormalCoordFlatComplexCLM (d := d) i hi
+          (SCV.realEmbed
+            (reducedNormalFlattenCLE (d := d) i j
+              (reducedSignFlip (d := d) i j p))) =
+        BHW.reducedDiffMap (m + 1) d zraw := by
+    simpa [zraw, uτ, u0, τ, j] using
+      reducedNormalCoordFlatComplexCLM_signFlipRealEndpoint_eq_reducedDiffMap_realEmbed_swap
+        (d := d) i hi p
+  calc
+    Fred.toFun (BHW.reducedDiffMap (m + 1) d zcommon) =
+        BHW.extendF (bvt_F OS lgc (m + 1)) zcommon := hcommonFred.symm
+    _ = BHW.extendF (bvt_F OS lgc (m + 1)) zraw := by
+          simpa [zcommon, zbase, zraw, σ, uτ, u0, τ, j] using hendpoint_abs
+    _ = Fred.toFun (BHW.reducedDiffMap (m + 1) d zraw) := hrawFred
+    _ = Fred.toFun
+          (reducedNormalCoordFlatComplexCLM (d := d) i hi
+            (SCV.realEmbed
+              (reducedNormalFlattenCLE (d := d) i j
+                (reducedSignFlip (d := d) i j p)))) := by
+          rw [← hrawAlign]
 
 /-- Upper OS45-to-canonical Fred ray comparison from the concrete endpoint
 value equality between the OS45 common-edge carrier and the ordinary canonical
@@ -13325,14 +13571,15 @@ theorem tendsto_reducedNormalLower_os45Branch_sub_canonicalReducedBranch_of_redu
       hΩε
   rw [hbranch]
 
-/-- Local Hdiff sign-flip handoff with only the explicit Fred-level endpoint
-value equalities left as hypotheses.
+/-- Local Hdiff sign-flip handoff with only the absolute OS45 `extendF`
+endpoint value equalities left as hypotheses.
 
 The local Hdiff germ supplies the common-boundary EOW comparison.  The two
 branch-transfer hypotheses needed by that comparison are produced here from
-the checked OS45 branch-domain topology plus the endpoint equality reductions
-for the OS45 carrier and ordinary canonical reduced endpoints. -/
-theorem reducedNormalSignFlip_pointwise_of_OS45HdiffGerm_endpoint_value_eq
+the checked OS45 branch-domain topology plus the absolute-to-Fred endpoint
+equality reductions for the OS45 carrier and ordinary canonical reduced
+endpoints. -/
+theorem reducedNormalSignFlip_pointwise_of_OS45HdiffGerm_extendF_endpoint_eq
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS)
     {m : ℕ} {i : Fin (m + 1)} {hi : i.val + 1 < m + 1}
@@ -13386,35 +13633,36 @@ theorem reducedNormalSignFlip_pointwise_of_OS45HdiffGerm_endpoint_value_eq
               (BHW.realEmbed
                 (BHW.os45CommonEdgeRealPoint (d := d) (n := m + 1)
                   (1 : Equiv.Perm (Fin (m + 1))) u)))
-    (hplus_endpoint_eq :
-      Fred.toFun
-          (BHW.reducedDiffMap (m + 1) d
+    (hplus_extendF_endpoint_eq :
+      BHW.extendF (bvt_F OS lgc (m + 1))
+          ((BHW.os45QuarterTurnCLE (d := d) (n := m + 1)).symm
+            (BHW.unflattenCfg (m + 1) d
+              (SCV.realEmbed
+                (reducedNormalToOS45CommonEdgeFlatCLM (d := d) i hi
+                  (reducedNormalFlattenCLE
+                    (d := d) i ⟨i.val + 1, hi⟩ p))))) =
+        BHW.extendF (bvt_F OS lgc (m + 1))
+          (BHW.realEmbed
+            (coordInv (d := d) i ⟨i.val + 1, hi⟩
+              (reducedAdjacent_succ_ne i hi)
+              ((0 : SpacetimeDim d), p))))
+    (hminus_extendF_endpoint_eq :
+      BHW.extendF (bvt_F OS lgc (m + 1))
+          (BHW.permAct (d := d)
+            ((P.τ.symm * (1 : Equiv.Perm (Fin (m + 1)))).symm)
             ((BHW.os45QuarterTurnCLE (d := d) (n := m + 1)).symm
               (BHW.unflattenCfg (m + 1) d
                 (SCV.realEmbed
                   (reducedNormalToOS45CommonEdgeFlatCLM (d := d) i hi
                     (reducedNormalFlattenCLE
                       (d := d) i ⟨i.val + 1, hi⟩ p)))))) =
-        Fred.toFun
-          (reducedNormalCoordFlatComplexCLM (d := d) i hi
-            (SCV.realEmbed
-              (reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩ p))))
-    (hminus_endpoint_eq :
-      Fred.toFun
-          (BHW.reducedDiffMap (m + 1) d
-            (BHW.permAct (d := d)
-              ((P.τ.symm * (1 : Equiv.Perm (Fin (m + 1)))).symm)
-              ((BHW.os45QuarterTurnCLE (d := d) (n := m + 1)).symm
-                (BHW.unflattenCfg (m + 1) d
-                  (SCV.realEmbed
-                    (reducedNormalToOS45CommonEdgeFlatCLM (d := d) i hi
-                      (reducedNormalFlattenCLE
-                        (d := d) i ⟨i.val + 1, hi⟩ p))))))) =
-        Fred.toFun
-          (reducedNormalCoordFlatComplexCLM (d := d) i hi
-            (SCV.realEmbed
-              (reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩
-                (reducedSignFlip (d := d) i ⟨i.val + 1, hi⟩ p))))) :
+        BHW.extendF (bvt_F OS lgc (m + 1))
+          (BHW.realEmbed
+            (fun k =>
+              coordInv (d := d) i ⟨i.val + 1, hi⟩
+                (reducedAdjacent_succ_ne i hi)
+                ((0 : SpacetimeDim d), p)
+                (Equiv.swap i ⟨i.val + 1, hi⟩ k)))) :
     Filter.Tendsto
       (fun ε : ℝ =>
         canonicalReducedBranch (d := d) OS lgc m ε
@@ -13435,6 +13683,12 @@ theorem reducedNormalSignFlip_pointwise_of_OS45HdiffGerm_endpoint_value_eq
           (reducedAdjacent_succ_ne i hi)
           ((0 : SpacetimeDim d), p) ∈ P.V :=
     hU_sub hpU
+  have hplus_endpoint_eq :=
+    reducedExtension_upper_endpoint_value_eq_of_extendF_commonEdge_eq_realEndpoint
+      (d := d) OS lgc P Fred p hpP hplus_extendF_endpoint_eq
+  have hminus_endpoint_eq :=
+    reducedExtension_lower_endpoint_value_eq_of_extendF_commonEdge_eq_signFlipEndpoint
+      (d := d) OS lgc P Fred p hpP hminus_extendF_endpoint_eq
   have hplus_fred_ray_comparison :=
     tendsto_reducedExtension_os45UpperRay_sub_canonicalRay_of_endpoint_value_eq
       (d := d) OS lgc P Fred p hpP hplus_endpoint_eq
