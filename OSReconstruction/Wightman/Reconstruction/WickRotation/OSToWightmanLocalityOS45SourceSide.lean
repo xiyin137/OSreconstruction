@@ -259,6 +259,86 @@ theorem os45FlatCommonChart_branch_integral_eq_sourceSide_extendF_shift
               (sgn * ε) • η) := by
         congr 1
 
+/-- Asymptotic endpoint transport from shifted source variables back to the
+fixed flat side-height integral.
+
+This is only the coordinate/Jacobian layer: if the shifted source-side pairing
+has the desired endpoint limit, then the corresponding fixed flat side integral
+has the same endpoint limit after multiplying by the common-edge Jacobian.  The
+analytic/DCT content is exactly the source-side hypothesis. -/
+theorem tendsto_flatCommonChart_branch_integral_sub_sourceSide_target_zero_of_shift
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (σ ρperm : Equiv.Perm (Fin n))
+    (sgn : ℝ)
+    (η : BHW.OS45FlatCommonChartReal d n)
+    (φ : SchwartzMap (BHW.OS45FlatCommonChartReal d n) ℂ)
+    (Target : ℝ → ℂ)
+    (hflat_int :
+      ∀ᶠ ε : ℝ in nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)),
+        Integrable
+          (fun x : BHW.OS45FlatCommonChartReal d n =>
+            BHW.os45FlatCommonChartBranch d n OS lgc σ
+              (fun j =>
+                ((x + (sgn * ε) • η) j : ℂ) +
+                  (((sgn * ε) • η) j : ℂ) * Complex.I) *
+            φ (x + (sgn * ε) • η)))
+    (hsource :
+      Tendsto
+        (fun ε : ℝ =>
+          (∫ u : NPointDomain d n,
+            BHW.extendF (bvt_F OS lgc n)
+              (BHW.permAct (d := d) σ.symm
+                (BHW.os45FlatCommonChartSourceSide
+                  d n ρperm sgn ε η u)) *
+              φ (BHW.os45CommonEdgeFlatCLE d n ρperm u +
+                (sgn * ε) • η)) -
+          Target ε)
+        (nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)) : Filter ℝ)
+        (nhds 0)) :
+    Tendsto
+      (fun ε : ℝ =>
+        (∫ x : BHW.OS45FlatCommonChartReal d n,
+          BHW.os45FlatCommonChartBranch d n OS lgc σ
+            (fun j =>
+              (x j : ℂ) + (((sgn * ε) • η) j : ℂ) * Complex.I) *
+            φ x) -
+        (BHW.os45CommonEdgeFlatJacobianAbs n : ℂ) * Target ε)
+      (nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)) : Filter ℝ)
+      (nhds 0) := by
+  let l : Filter ℝ := nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ))
+  let J : ℂ := (BHW.os45CommonEdgeFlatJacobianAbs n : ℂ)
+  let flat : ℝ → ℂ := fun ε =>
+    ∫ x : BHW.OS45FlatCommonChartReal d n,
+      BHW.os45FlatCommonChartBranch d n OS lgc σ
+        (fun j => (x j : ℂ) + (((sgn * ε) • η) j : ℂ) * Complex.I) *
+        φ x
+  let source : ℝ → ℂ := fun ε =>
+    ∫ u : NPointDomain d n,
+      BHW.extendF (bvt_F OS lgc n)
+        (BHW.permAct (d := d) σ.symm
+          (BHW.os45FlatCommonChartSourceSide d n ρperm sgn ε η u)) *
+        φ (BHW.os45CommonEdgeFlatCLE d n ρperm u + (sgn * ε) • η)
+  have hsource' :
+      Tendsto (fun ε : ℝ => source ε - Target ε) l (nhds 0) := by
+    simpa [l, source] using hsource
+  have hscaled :
+      Tendsto (fun ε : ℝ => J * (source ε - Target ε)) l (nhds 0) := by
+    simpa [J] using
+      (tendsto_const_nhds.mul hsource' :
+        Tendsto (fun ε : ℝ => J * (source ε - Target ε)) l
+          (nhds (J * 0)))
+  refine Tendsto.congr' ?_ hscaled
+  filter_upwards [hflat_int] with ε hε_int
+  have hpull :=
+    BHW.os45FlatCommonChart_branch_integral_eq_sourceSide_extendF_shift
+      (d := d) (n := n) OS lgc σ ρperm sgn ε η φ hε_int
+  have hflat_source : flat ε = J * source ε := by
+    simpa [flat, source, J] using hpull
+  change J * (source ε - Target ε) = flat ε - J * Target ε
+  rw [hflat_source]
+  ring
+
 /-- Source-side pullback with the flat test translated so the real side-shift
 cancels on source variables.
 
