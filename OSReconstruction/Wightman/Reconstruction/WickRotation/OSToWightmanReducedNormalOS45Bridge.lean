@@ -236,9 +236,49 @@ theorem extendF_bvt_F_eq_reducedExtension_on_extendedTube
               (Fred.agrees_on_reducedForwardTube _ hred_w_forward).symm
   calc
     BHW.extendF (bvt_F OS lgc (m + 1)) z
-        = bvt_F OS lgc (m + 1) w := hext
-    _ = Fred.toFun (BHW.reducedDiffMap (m + 1) d w) := hw_factor
-    _ = Fred.toFun (BHW.reducedDiffMap (m + 1) d z) := hFred_lor.symm
+        = bvt_F OS lgc (m + 1) w := by exact hext
+    _ = Fred.toFun (BHW.reducedDiffMap (m + 1) d w) := by
+        exact hw_factor
+    _ = Fred.toFun (BHW.reducedDiffMap (m + 1) d z) := by
+        exact hFred_lor.symm
+
+/-- On its natural OS45 branch domain, the flat common-chart branch factors
+through any reduced PET extension after quotienting by reduced differences.
+
+This is the branch-side version of
+`extendF_bvt_F_eq_reducedExtension_on_extendedTube`: the domain hypothesis is
+exactly the statement that undoing the OS45 quarter-turn and branch label lands
+in the extended tube. -/
+theorem os45FlatCommonChartBranch_eq_reducedExtension_on_domain
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (m : ℕ)
+    (σ : Equiv.Perm (Fin (m + 1)))
+    (Fred : BHW.ReducedBHWExtensionData (d := d) (n := m + 1)
+      (bvt_F_reduced (d := d) OS lgc m))
+    (w : BHW.OS45FlatCommonChartSpace d (m + 1))
+    (hw : w ∈ BHW.os45FlatCommonChartOmega d (m + 1) σ) :
+    BHW.os45FlatCommonChartBranch d (m + 1) OS lgc σ w =
+      Fred.toFun
+        (BHW.reducedDiffMap (m + 1) d
+          (BHW.permAct (d := d) σ.symm
+            ((BHW.os45QuarterTurnCLE (d := d) (n := m + 1)).symm
+              (BHW.unflattenCfg (m + 1) d w)))) := by
+  have hET :
+      BHW.permAct (d := d) σ.symm
+          ((BHW.os45QuarterTurnCLE (d := d) (n := m + 1)).symm
+            (BHW.unflattenCfg (m + 1) d w)) ∈
+        BHW.ExtendedTube d (m + 1) := by
+    simpa [BHW.os45FlatCommonChartOmega, BHW.os45PulledRealBranchDomain]
+      using hw
+  have hext :=
+    extendF_bvt_F_eq_reducedExtension_on_extendedTube
+      (d := d) OS lgc m Fred
+      (BHW.permAct (d := d) σ.symm
+        ((BHW.os45QuarterTurnCLE (d := d) (n := m + 1)).symm
+          (BHW.unflattenCfg (m + 1) d w)))
+      hET
+  simpa [BHW.os45FlatCommonChartBranch, BHW.os45PulledRealBranch] using hext
 
 /-- Finite-height source-side value transport after quotienting by reduced
 differences, in the support-local form needed for the fixed-test integral
@@ -11887,54 +11927,31 @@ theorem eventually_sourceSide_coneHeight_upper_extendF_eq_reducedExtension_os45R
     eventually_sourceSide_coneHeight_upper_transport_packet
       (d := d) P p hpP
   filter_upwards [hpacket] with ε hε
+  let ηc : BHW.OS45FlatCommonChartReal d (m + 1) :=
+    BHW.os45CommonEdgeFlatCLE d (m + 1)
+      (1 : Equiv.Perm (Fin (m + 1)))
+      (canonicalForwardConeDirection (d := d) (m + 1))
+  let x0 : BHW.OS45FlatCommonChartReal d (m + 1) :=
+    reducedNormalToOS45CommonEdgeFlatCLM (d := d) i hi
+      (reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩ p)
+  let uε : NPointDomain d (m + 1) :=
+    (BHW.os45CommonEdgeFlatCLE d (m + 1)
+      (1 : Equiv.Perm (Fin (m + 1)))).symm (x0 - ε • ηc)
   rcases hε with ⟨hET, hred⟩
   have hext :=
     extendF_bvt_F_eq_reducedExtension_on_extendedTube
       (d := d) OS lgc m Fred
       (BHW.os45FlatCommonChartSourceSide d (m + 1)
-        (1 : Equiv.Perm (Fin (m + 1))) (1 : ℝ) ε
-        (BHW.os45CommonEdgeFlatCLE d (m + 1)
-          (1 : Equiv.Perm (Fin (m + 1)))
-          (canonicalForwardConeDirection (d := d) (m + 1)))
-        ((BHW.os45CommonEdgeFlatCLE d (m + 1)
-          (1 : Equiv.Perm (Fin (m + 1)))).symm
-          (reducedNormalToOS45CommonEdgeFlatCLM (d := d) i hi
-              (reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩ p) -
-            ε •
-              BHW.os45CommonEdgeFlatCLE d (m + 1)
-                (1 : Equiv.Perm (Fin (m + 1)))
-                (canonicalForwardConeDirection (d := d) (m + 1)))))
+        (1 : Equiv.Perm (Fin (m + 1))) (1 : ℝ) ε ηc uε)
       hET
   calc
     BHW.extendF (bvt_F OS lgc (m + 1))
         (BHW.os45FlatCommonChartSourceSide d (m + 1)
-          (1 : Equiv.Perm (Fin (m + 1))) (1 : ℝ) ε
-          (BHW.os45CommonEdgeFlatCLE d (m + 1)
-            (1 : Equiv.Perm (Fin (m + 1)))
-            (canonicalForwardConeDirection (d := d) (m + 1)))
-          ((BHW.os45CommonEdgeFlatCLE d (m + 1)
-            (1 : Equiv.Perm (Fin (m + 1)))).symm
-            (reducedNormalToOS45CommonEdgeFlatCLM (d := d) i hi
-                (reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩ p) -
-              ε •
-                BHW.os45CommonEdgeFlatCLE d (m + 1)
-                  (1 : Equiv.Perm (Fin (m + 1)))
-                  (canonicalForwardConeDirection (d := d) (m + 1))))) =
+          (1 : Equiv.Perm (Fin (m + 1))) (1 : ℝ) ε ηc uε) =
       Fred.toFun
         (BHW.reducedDiffMap (m + 1) d
           (BHW.os45FlatCommonChartSourceSide d (m + 1)
-            (1 : Equiv.Perm (Fin (m + 1))) (1 : ℝ) ε
-            (BHW.os45CommonEdgeFlatCLE d (m + 1)
-              (1 : Equiv.Perm (Fin (m + 1)))
-              (canonicalForwardConeDirection (d := d) (m + 1)))
-            ((BHW.os45CommonEdgeFlatCLE d (m + 1)
-              (1 : Equiv.Perm (Fin (m + 1)))).symm
-              (reducedNormalToOS45CommonEdgeFlatCLM (d := d) i hi
-                  (reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩ p) -
-                ε •
-                  BHW.os45CommonEdgeFlatCLE d (m + 1)
-                    (1 : Equiv.Perm (Fin (m + 1)))
-                    (canonicalForwardConeDirection (d := d) (m + 1)))))) := hext
+            (1 : Equiv.Perm (Fin (m + 1))) (1 : ℝ) ε ηc uε)) := hext
     _ = Fred.toFun
           (BHW.reducedDiffMap (m + 1) d
             ((BHW.os45QuarterTurnCLE (d := d) (n := m + 1)).symm
@@ -11989,6 +12006,16 @@ theorem eventually_sourceSide_coneHeight_lower_extendF_eq_reducedExtension_os45R
     eventually_sourceSide_coneHeight_lower_transport_packet
       (d := d) P p hpP
   filter_upwards [hpacket] with ε hε
+  let ηc : BHW.OS45FlatCommonChartReal d (m + 1) :=
+    BHW.os45CommonEdgeFlatCLE d (m + 1)
+      (1 : Equiv.Perm (Fin (m + 1)))
+      (canonicalForwardConeDirection (d := d) (m + 1))
+  let x0 : BHW.OS45FlatCommonChartReal d (m + 1) :=
+    reducedNormalToOS45CommonEdgeFlatCLM (d := d) i hi
+      (reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩ p)
+  let uε : NPointDomain d (m + 1) :=
+    (BHW.os45CommonEdgeFlatCLE d (m + 1)
+      (1 : Equiv.Perm (Fin (m + 1)))).symm (x0 + ε • ηc)
   rcases hε with ⟨hET, hred⟩
   have hext :=
     extendF_bvt_F_eq_reducedExtension_on_extendedTube
@@ -11996,53 +12023,20 @@ theorem eventually_sourceSide_coneHeight_lower_extendF_eq_reducedExtension_os45R
       (BHW.permAct (d := d)
         ((P.τ.symm * (1 : Equiv.Perm (Fin (m + 1)))).symm)
         (BHW.os45FlatCommonChartSourceSide d (m + 1)
-          (1 : Equiv.Perm (Fin (m + 1))) (-1 : ℝ) ε
-          (BHW.os45CommonEdgeFlatCLE d (m + 1)
-            (1 : Equiv.Perm (Fin (m + 1)))
-            (canonicalForwardConeDirection (d := d) (m + 1)))
-          ((BHW.os45CommonEdgeFlatCLE d (m + 1)
-            (1 : Equiv.Perm (Fin (m + 1)))).symm
-            (reducedNormalToOS45CommonEdgeFlatCLM (d := d) i hi
-                (reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩ p) +
-              ε •
-                BHW.os45CommonEdgeFlatCLE d (m + 1)
-                  (1 : Equiv.Perm (Fin (m + 1)))
-                  (canonicalForwardConeDirection (d := d) (m + 1))))))
+          (1 : Equiv.Perm (Fin (m + 1))) (-1 : ℝ) ε ηc uε))
       hET
   calc
     BHW.extendF (bvt_F OS lgc (m + 1))
         (BHW.permAct (d := d)
           ((P.τ.symm * (1 : Equiv.Perm (Fin (m + 1)))).symm)
           (BHW.os45FlatCommonChartSourceSide d (m + 1)
-            (1 : Equiv.Perm (Fin (m + 1))) (-1 : ℝ) ε
-            (BHW.os45CommonEdgeFlatCLE d (m + 1)
-              (1 : Equiv.Perm (Fin (m + 1)))
-              (canonicalForwardConeDirection (d := d) (m + 1)))
-            ((BHW.os45CommonEdgeFlatCLE d (m + 1)
-              (1 : Equiv.Perm (Fin (m + 1)))).symm
-              (reducedNormalToOS45CommonEdgeFlatCLM (d := d) i hi
-                  (reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩ p) +
-                ε •
-                  BHW.os45CommonEdgeFlatCLE d (m + 1)
-                    (1 : Equiv.Perm (Fin (m + 1)))
-                    (canonicalForwardConeDirection (d := d) (m + 1)))))) =
+            (1 : Equiv.Perm (Fin (m + 1))) (-1 : ℝ) ε ηc uε)) =
       Fred.toFun
         (BHW.reducedDiffMap (m + 1) d
           (BHW.permAct (d := d)
             ((P.τ.symm * (1 : Equiv.Perm (Fin (m + 1)))).symm)
             (BHW.os45FlatCommonChartSourceSide d (m + 1)
-              (1 : Equiv.Perm (Fin (m + 1))) (-1 : ℝ) ε
-              (BHW.os45CommonEdgeFlatCLE d (m + 1)
-                (1 : Equiv.Perm (Fin (m + 1)))
-                (canonicalForwardConeDirection (d := d) (m + 1)))
-              ((BHW.os45CommonEdgeFlatCLE d (m + 1)
-                (1 : Equiv.Perm (Fin (m + 1)))).symm
-                (reducedNormalToOS45CommonEdgeFlatCLM (d := d) i hi
-                    (reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩ p) +
-                  ε •
-                    BHW.os45CommonEdgeFlatCLE d (m + 1)
-                      (1 : Equiv.Perm (Fin (m + 1)))
-                      (canonicalForwardConeDirection (d := d) (m + 1))))))) := hext
+              (1 : Equiv.Perm (Fin (m + 1))) (-1 : ℝ) ε ηc uε))) := hext
     _ = Fred.toFun
           (BHW.reducedDiffMap (m + 1) d
             (BHW.permAct (d := d)
@@ -12051,8 +12045,125 @@ theorem eventually_sourceSide_coneHeight_lower_extendF_eq_reducedExtension_os45R
                 (BHW.unflattenCfg (m + 1) d
                   (reducedNormalToOS45CommonEdgeComplexCLM
                     (d := d) i hi
-                    (reducedNormalLowerCanonicalRay (d := d) i hi p ε)))))) := by
+                  (reducedNormalLowerCanonicalRay (d := d) i hi p ε)))))) := by
       rw [hred]
+
+/-- Upper reduced-normal OS45 branch transfer, reduced to the analytic
+normalization of the reduced PET extension on the OS45 quarter-turned ray.
+
+The conclusion is the `hplus_transfer` shape used by the asymptotic EOW
+consumer; the remaining hypothesis is exactly the Fred-level OS45 carrier to
+ordinary canonical-ray boundary normalization. -/
+theorem tendsto_reducedNormalUpper_os45Branch_sub_canonicalReducedBranch_of_reducedExtension_os45Ray_normalization
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {m : ℕ} {i : Fin (m + 1)} {hi : i.val + 1 < m + 1}
+    (σ : Equiv.Perm (Fin (m + 1)))
+    (Fred : BHW.ReducedBHWExtensionData (d := d) (n := m + 1)
+      (bvt_F_reduced (d := d) OS lgc m))
+    (p : ReducedSpace d m i ⟨i.val + 1, hi⟩)
+    (hΩ :
+      ∀ᶠ ε : ℝ in nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)),
+        reducedNormalToOS45CommonEdgeComplexCLM
+            (d := d) i hi
+            (reducedNormalUpperCanonicalRay (d := d) i hi p ε) ∈
+          BHW.os45FlatCommonChartOmega d (m + 1) σ)
+    (hFred_normalization :
+      Filter.Tendsto
+        (fun ε : ℝ =>
+          Fred.toFun
+              (BHW.reducedDiffMap (m + 1) d
+                (BHW.permAct (d := d) σ.symm
+                  ((BHW.os45QuarterTurnCLE (d := d) (n := m + 1)).symm
+                    (BHW.unflattenCfg (m + 1) d
+                      (reducedNormalToOS45CommonEdgeComplexCLM
+                        (d := d) i hi
+                        (reducedNormalUpperCanonicalRay
+                          (d := d) i hi p ε)))))) -
+            canonicalReducedBranch (d := d) OS lgc m ε
+              (reducedCoordInv (d := d) i ⟨i.val + 1, hi⟩
+                (reducedAdjacent_succ_ne i hi) p))
+        (nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)) : Filter ℝ)
+        (nhds 0)) :
+    Filter.Tendsto
+      (fun ε : ℝ =>
+        BHW.os45FlatCommonChartBranch d (m + 1) OS lgc σ
+            (reducedNormalToOS45CommonEdgeComplexCLM
+              (d := d) i hi
+              (reducedNormalUpperCanonicalRay (d := d) i hi p ε)) -
+          canonicalReducedBranch (d := d) OS lgc m ε
+            (reducedCoordInv (d := d) i ⟨i.val + 1, hi⟩
+              (reducedAdjacent_succ_ne i hi) p))
+      (nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)) : Filter ℝ)
+      (nhds 0) := by
+  refine Filter.Tendsto.congr' ?_ hFred_normalization
+  filter_upwards [hΩ] with ε hΩε
+  have hbranch :=
+    os45FlatCommonChartBranch_eq_reducedExtension_on_domain
+      (d := d) OS lgc m σ Fred
+      (reducedNormalToOS45CommonEdgeComplexCLM
+        (d := d) i hi
+        (reducedNormalUpperCanonicalRay (d := d) i hi p ε))
+      hΩε
+  rw [hbranch]
+
+/-- Lower companion to
+`tendsto_reducedNormalUpper_os45Branch_sub_canonicalReducedBranch_of_reducedExtension_os45Ray_normalization`,
+matching the `hminus_transfer` shape for the sign-flipped reduced point. -/
+theorem tendsto_reducedNormalLower_os45Branch_sub_canonicalReducedBranch_of_reducedExtension_os45Ray_normalization
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {m : ℕ} {i : Fin (m + 1)} {hi : i.val + 1 < m + 1}
+    (σ : Equiv.Perm (Fin (m + 1)))
+    (Fred : BHW.ReducedBHWExtensionData (d := d) (n := m + 1)
+      (bvt_F_reduced (d := d) OS lgc m))
+    (p : ReducedSpace d m i ⟨i.val + 1, hi⟩)
+    (hΩ :
+      ∀ᶠ ε : ℝ in nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)),
+        reducedNormalToOS45CommonEdgeComplexCLM
+            (d := d) i hi
+            (reducedNormalLowerCanonicalRay (d := d) i hi p ε) ∈
+          BHW.os45FlatCommonChartOmega d (m + 1) σ)
+    (hFred_normalization :
+      Filter.Tendsto
+        (fun ε : ℝ =>
+          Fred.toFun
+              (BHW.reducedDiffMap (m + 1) d
+                (BHW.permAct (d := d) σ.symm
+                  ((BHW.os45QuarterTurnCLE (d := d) (n := m + 1)).symm
+                    (BHW.unflattenCfg (m + 1) d
+                      (reducedNormalToOS45CommonEdgeComplexCLM
+                        (d := d) i hi
+                        (reducedNormalLowerCanonicalRay
+                          (d := d) i hi p ε)))))) -
+            canonicalReducedBranch (d := d) OS lgc m ε
+              (reducedCoordInv (d := d) i ⟨i.val + 1, hi⟩
+                (reducedAdjacent_succ_ne i hi)
+                (reducedSignFlip (d := d) i ⟨i.val + 1, hi⟩ p)))
+        (nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)) : Filter ℝ)
+        (nhds 0)) :
+    Filter.Tendsto
+      (fun ε : ℝ =>
+        BHW.os45FlatCommonChartBranch d (m + 1) OS lgc σ
+            (reducedNormalToOS45CommonEdgeComplexCLM
+              (d := d) i hi
+              (reducedNormalLowerCanonicalRay (d := d) i hi p ε)) -
+          canonicalReducedBranch (d := d) OS lgc m ε
+            (reducedCoordInv (d := d) i ⟨i.val + 1, hi⟩
+              (reducedAdjacent_succ_ne i hi)
+              (reducedSignFlip (d := d) i ⟨i.val + 1, hi⟩ p)))
+      (nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)) : Filter ℝ)
+      (nhds 0) := by
+  refine Filter.Tendsto.congr' ?_ hFred_normalization
+  filter_upwards [hΩ] with ε hΩε
+  have hbranch :=
+    os45FlatCommonChartBranch_eq_reducedExtension_on_domain
+      (d := d) OS lgc m σ Fred
+      (reducedNormalToOS45CommonEdgeComplexCLM
+        (d := d) i hi
+        (reducedNormalLowerCanonicalRay (d := d) i hi p ε))
+      hΩε
+  rw [hbranch]
 
 end AdjacentNormal
 
