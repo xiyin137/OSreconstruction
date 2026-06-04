@@ -6123,6 +6123,205 @@ theorem reducedNormalAbsoluteSectionCLM_apply_flatten
   simp
 
 omit [NeZero d] in
+/-- Flattened absolute source coordinates associated to a flattened
+reduced-normal point. -/
+noncomputable def reducedNormalAbsoluteSectionFlatCLM
+    {m : ℕ} (i : Fin (m + 1)) (hi : i.val + 1 < m + 1) :
+    (Fin ((d + 1) +
+      Fintype.card (SpectatorIndex (m + 1) i ⟨i.val + 1, hi⟩) *
+        (d + 1)) → ℝ) →L[ℝ]
+      (Fin ((m + 1) * (d + 1)) → ℝ) :=
+  ((flattenCLEquivReal (m + 1) (d + 1)).toContinuousLinearMap).comp
+    (reducedNormalAbsoluteSectionCLM (d := d) i hi)
+
+omit [NeZero d] in
+@[simp]
+theorem reducedNormalAbsoluteSectionFlatCLM_apply
+    {m : ℕ} (i : Fin (m + 1)) (hi : i.val + 1 < m + 1)
+    (u : Fin ((d + 1) +
+      Fintype.card (SpectatorIndex (m + 1) i ⟨i.val + 1, hi⟩) *
+        (d + 1)) → ℝ) :
+    reducedNormalAbsoluteSectionFlatCLM (d := d) i hi u =
+      BHW.flattenCfgReal (m + 1) d
+        (reducedNormalAbsoluteSectionCLM (d := d) i hi u) := by
+  rfl
+
+omit [NeZero d] in
+/-- Complex-linear extension of the zero-center absolute source section in
+flattened source coordinates. -/
+noncomputable def reducedNormalAbsoluteSectionComplexCLM
+    {m : ℕ} (i : Fin (m + 1)) (hi : i.val + 1 < m + 1) :
+    SCV.ComplexChartSpace ((d + 1) +
+      Fintype.card (SpectatorIndex (m + 1) i ⟨i.val + 1, hi⟩) *
+        (d + 1)) →L[ℂ]
+      SCV.ComplexChartSpace ((m + 1) * (d + 1)) :=
+  SCV.realCLMComplexification
+    (reducedNormalAbsoluteSectionFlatCLM (d := d) i hi)
+
+omit [NeZero d] in
+/-- Complex source tuple obtained from the reduced-normal zero-center section. -/
+noncomputable def reducedNormalAbsoluteSourceSection
+    {m : ℕ} (i : Fin (m + 1)) (hi : i.val + 1 < m + 1) :
+    SCV.ComplexChartSpace ((d + 1) +
+      Fintype.card (SpectatorIndex (m + 1) i ⟨i.val + 1, hi⟩) *
+        (d + 1)) →
+      Fin (m + 1) → Fin (d + 1) → ℂ :=
+  fun z =>
+    BHW.unflattenCfg (m + 1) d
+      (reducedNormalAbsoluteSectionComplexCLM (d := d) i hi z)
+
+omit [NeZero d] in
+/-- Source-oriented invariant of the reduced-normal zero-center source
+section. -/
+noncomputable def reducedNormalSourceOrientedInvariantMap
+    {m : ℕ} (i : Fin (m + 1)) (hi : i.val + 1 < m + 1) :
+    SCV.ComplexChartSpace ((d + 1) +
+      Fintype.card (SpectatorIndex (m + 1) i ⟨i.val + 1, hi⟩) *
+        (d + 1)) →
+      BHW.SourceOrientedGramData d (m + 1) :=
+  fun z =>
+    BHW.sourceOrientedMinkowskiInvariant d (m + 1)
+      (reducedNormalAbsoluteSourceSection (d := d) i hi z)
+
+omit [NeZero d] in
+@[simp]
+theorem reducedNormalAbsoluteSectionComplexCLM_realEmbed
+    {m : ℕ} (i : Fin (m + 1)) (hi : i.val + 1 < m + 1)
+    (u : Fin ((d + 1) +
+      Fintype.card (SpectatorIndex (m + 1) i ⟨i.val + 1, hi⟩) *
+        (d + 1)) → ℝ) :
+    reducedNormalAbsoluteSectionComplexCLM (d := d) i hi
+        (SCV.realEmbed u) =
+      SCV.realEmbed
+        (BHW.flattenCfgReal (m + 1) d
+          (reducedNormalAbsoluteSectionCLM (d := d) i hi u)) := by
+  rw [reducedNormalAbsoluteSectionComplexCLM,
+    SCV.realCLMComplexification_realEmbed]
+  rfl
+
+omit [NeZero d] in
+@[simp]
+theorem reducedNormalAbsoluteSourceSection_realEmbed
+    {m : ℕ} (i : Fin (m + 1)) (hi : i.val + 1 < m + 1)
+    (u : Fin ((d + 1) +
+      Fintype.card (SpectatorIndex (m + 1) i ⟨i.val + 1, hi⟩) *
+        (d + 1)) → ℝ) :
+    reducedNormalAbsoluteSourceSection (d := d) i hi (SCV.realEmbed u) =
+      BHW.realEmbed (reducedNormalAbsoluteSectionCLM (d := d) i hi u) := by
+  rw [reducedNormalAbsoluteSourceSection,
+    reducedNormalAbsoluteSectionComplexCLM_realEmbed]
+  change
+    BHW.unflattenCfg (m + 1) d
+        (fun a => (BHW.flattenCfgReal (m + 1) d
+          (reducedNormalAbsoluteSectionCLM (d := d) i hi u) a : ℂ)) =
+      BHW.realEmbed (reducedNormalAbsoluteSectionCLM (d := d) i hi u)
+  exact
+    BHW.unflattenCfg_ofReal_flattenCfgReal
+      (m + 1) d (reducedNormalAbsoluteSectionCLM (d := d) i hi u)
+
+omit [NeZero d] in
+@[simp]
+theorem reducedNormalSourceOrientedInvariantMap_realEmbed
+    {m : ℕ} (i : Fin (m + 1)) (hi : i.val + 1 < m + 1)
+    (u : Fin ((d + 1) +
+      Fintype.card (SpectatorIndex (m + 1) i ⟨i.val + 1, hi⟩) *
+        (d + 1)) → ℝ) :
+    reducedNormalSourceOrientedInvariantMap (d := d) i hi (SCV.realEmbed u) =
+      BHW.sourceRealOrientedMinkowskiInvariant d (m + 1)
+        (reducedNormalAbsoluteSectionCLM (d := d) i hi u) := by
+  rw [reducedNormalSourceOrientedInvariantMap,
+    reducedNormalAbsoluteSourceSection_realEmbed]
+  rfl
+
+omit [NeZero d] in
+/-- The concrete reduced-normal source-oriented map is polynomial in the
+complexified reduced-normal coordinates. -/
+theorem reducedNormalSourceOrientedInvariantMap_differentiable
+    {m : ℕ} (i : Fin (m + 1)) (hi : i.val + 1 < m + 1) :
+    Differentiable ℂ
+      (reducedNormalSourceOrientedInvariantMap (d := d) i hi) := by
+  have hsource : Differentiable ℂ
+      (reducedNormalAbsoluteSourceSection (d := d) i hi) := by
+    exact (differentiable_unflattenCfg_local (m + 1) d).comp
+      (reducedNormalAbsoluteSectionComplexCLM (d := d) i hi).differentiable
+  exact (BHW.differentiable_sourceOrientedMinkowskiInvariant
+    (d := d) (n := m + 1)).comp hsource
+
+omit [NeZero d] in
+theorem reducedNormalSourceOrientedInvariantMap_mem_variety
+    {m : ℕ} (i : Fin (m + 1)) (hi : i.val + 1 < m + 1)
+    (z : SCV.ComplexChartSpace ((d + 1) +
+      Fintype.card (SpectatorIndex (m + 1) i ⟨i.val + 1, hi⟩) *
+        (d + 1))) :
+    reducedNormalSourceOrientedInvariantMap (d := d) i hi z ∈
+      BHW.sourceOrientedGramVariety d (m + 1) := by
+  exact ⟨reducedNormalAbsoluteSourceSection (d := d) i hi z, rfl⟩
+
+omit [NeZero d] in
+/-- Pull a germ representative back along the concrete reduced-normal source
+map on a complex side domain. -/
+theorem reducedNormalSourceRepresentative_pullback_differentiableOn
+    {m : ℕ} (i : Fin (m + 1)) (hi : i.val + 1 < m + 1)
+    {Ω : Set (SCV.ComplexChartSpace ((d + 1) +
+      Fintype.card (SpectatorIndex (m + 1) i ⟨i.val + 1, hi⟩) *
+        (d + 1)))}
+    {Φ Ψ : BHW.SourceOrientedGramData d (m + 1) → ℂ}
+    {U0 : Set (BHW.SourceOrientedGramData d (m + 1))}
+    (hΓ_U0 : ∀ z ∈ Ω,
+      reducedNormalSourceOrientedInvariantMap (d := d) i hi z ∈ U0)
+    (hΨ_diff : DifferentiableOn ℂ Ψ U0)
+    (hEq : Set.EqOn Φ Ψ (U0 ∩ BHW.sourceOrientedGramVariety d (m + 1))) :
+    DifferentiableOn ℂ
+      (fun z => Φ (reducedNormalSourceOrientedInvariantMap (d := d) i hi z))
+      Ω := by
+  exact
+    BHW.sourceOrientedRepresentative_pullback_differentiableOn
+      (d := d) (n := m + 1)
+      (hΓ_diff :=
+        (reducedNormalSourceOrientedInvariantMap_differentiable
+          (d := d) i hi).differentiableOn)
+      hΓ_U0
+      (by
+        intro z _hz
+        exact reducedNormalSourceOrientedInvariantMap_mem_variety
+          (d := d) i hi z)
+      hΨ_diff hEq
+
+omit [NeZero d] in
+/-- Real-edge continuity version of
+`reducedNormalSourceRepresentative_pullback_differentiableOn`. -/
+theorem reducedNormalSourceRepresentative_pullback_continuousOn
+    {m : ℕ} (i : Fin (m + 1)) (hi : i.val + 1 < m + 1)
+    {E : Set (Fin ((d + 1) +
+      Fintype.card (SpectatorIndex (m + 1) i ⟨i.val + 1, hi⟩) *
+        (d + 1)) → ℝ)}
+    {Φ Ψ : BHW.SourceOrientedGramData d (m + 1) → ℂ}
+    {U0 : Set (BHW.SourceOrientedGramData d (m + 1))}
+    (hΓ_U0 : ∀ x ∈ E,
+      BHW.sourceRealOrientedMinkowskiInvariant d (m + 1)
+        (reducedNormalAbsoluteSectionCLM (d := d) i hi x) ∈ U0)
+    (hΨ_cont : ContinuousOn Ψ U0)
+    (hEq : Set.EqOn Φ Ψ (U0 ∩ BHW.sourceOrientedGramVariety d (m + 1))) :
+    ContinuousOn
+      (fun x => Φ (BHW.sourceRealOrientedMinkowskiInvariant d (m + 1)
+        (reducedNormalAbsoluteSectionCLM (d := d) i hi x))) E := by
+  have hΓ_cont : ContinuousOn
+      (fun x => BHW.sourceRealOrientedMinkowskiInvariant d (m + 1)
+        (reducedNormalAbsoluteSectionCLM (d := d) i hi x)) E := by
+    exact ((BHW.continuous_sourceRealOrientedMinkowskiInvariant d (m + 1)).comp
+      (reducedNormalAbsoluteSectionCLM (d := d) i hi).continuous).continuousOn
+  exact
+    BHW.sourceOrientedRepresentative_pullback_continuousOn
+      (d := d) (n := m + 1)
+      (hΓ_cont := hΓ_cont)
+      hΓ_U0
+      (by
+        intro x _hx
+        exact BHW.sourceRealOrientedMinkowskiInvariant_mem_variety
+          d (m + 1) (reducedNormalAbsoluteSectionCLM (d := d) i hi x))
+      hΨ_cont hEq
+
+omit [NeZero d] in
 /-- The zero-center reduced-normal representative has the same successive
 reduced differences as the absolute source configuration it represents.
 

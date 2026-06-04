@@ -1,3 +1,4 @@
+import OSReconstruction.ComplexLieGroups.MatrixLieGroup
 import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.IndexSetD1
 import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SourceExtension
 
@@ -12,6 +13,8 @@ transformations.
 -/
 
 noncomputable section
+
+open scoped Matrix.Norms.Operator
 
 open Complex Topology Matrix LorentzLieGroup Classical Filter NormedSpace
 
@@ -231,6 +234,54 @@ theorem continuous_sourceOrientedMinkowskiInvariant :
     (continuous_sourceMinkowskiGram (d := d) (n := n))
     (continuous_pi fun ι =>
       continuous_sourceFullFrameDet (d := d) (n := n) ι)
+
+/-- The complex source Gram coordinates are polynomial functions of the source
+tuple. -/
+@[fun_prop]
+theorem differentiable_sourceMinkowskiGram :
+    Differentiable ℂ (sourceMinkowskiGram d n) := by
+  rw [differentiable_pi]
+  intro i
+  rw [differentiable_pi]
+  intro j
+  change Differentiable ℂ (fun x : Fin n → Fin (d + 1) → ℂ =>
+    ∑ μ : Fin (d + 1),
+      (MinkowskiSpace.metricSignature d μ : ℂ) * x i μ * x j μ)
+  fun_prop
+
+/-- The selected full-frame matrix is a linear coordinate projection of the
+source tuple. -/
+@[fun_prop]
+theorem differentiable_sourceFullFrameMatrix
+    (ι : Fin (d + 1) ↪ Fin n) :
+    Differentiable ℂ (sourceFullFrameMatrix d n ι) := by
+  change Differentiable ℂ (fun z : Fin n → Fin (d + 1) → ℂ =>
+    fun a : Fin (d + 1) => fun μ : Fin (d + 1) => z (ι a) μ)
+  fun_prop
+
+/-- The selected full-frame determinant is polynomial in the source tuple. -/
+@[fun_prop]
+theorem differentiable_sourceFullFrameDet
+    (ι : Fin (d + 1) ↪ Fin n) :
+    Differentiable ℂ (fun z : Fin n → Fin (d + 1) → ℂ =>
+      sourceFullFrameDet d n ι z) := by
+  have hdet : Differentiable ℂ
+      (fun M : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ => M.det) := by
+    exact (MatrixLieGroup.contDiff_det (d + 1)).differentiable (by simp)
+  exact hdet.comp (differentiable_sourceFullFrameMatrix (d := d) (n := n) ι)
+
+/-- The oriented source invariant is a polynomial map into Gram-plus-frame
+coordinates. -/
+@[fun_prop]
+theorem differentiable_sourceOrientedMinkowskiInvariant :
+    Differentiable ℂ (sourceOrientedMinkowskiInvariant d n) := by
+  simpa [sourceOrientedMinkowskiInvariant] using
+    Differentiable.prodMk
+      (differentiable_sourceMinkowskiGram (d := d) (n := n))
+      (by
+        rw [differentiable_pi]
+        intro ι
+        exact differentiable_sourceFullFrameDet (d := d) (n := n) ι)
 
 /-- Coordinate permutation on oriented source data is continuous. -/
 theorem continuous_sourcePermuteOrientedGram
