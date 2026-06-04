@@ -381,6 +381,50 @@ theorem SourceOrientedVarietyGermHolomorphicOn.sub
   · intro H hH
     exact hUΦ_sub ⟨hH.1.1, hH.2⟩
 
+/-- A single ambient representative of a source-oriented germ pulls back to a
+holomorphic function along any holomorphic map into the oriented source
+variety.  This is the local branch form used once a mixed-tube source section
+has been chosen inside one representative chart. -/
+theorem sourceOrientedRepresentative_pullback_differentiableOn
+    {E : Type*} [NormedAddCommGroup E] [NormedSpace ℂ E]
+    {Ω : Set E}
+    {Γ : E → SourceOrientedGramData d n}
+    {Φ Ψ : SourceOrientedGramData d n → ℂ}
+    {U0 : Set (SourceOrientedGramData d n)}
+    (hΓ_diff : DifferentiableOn ℂ Γ Ω)
+    (hΓ_U0 : ∀ x ∈ Ω, Γ x ∈ U0)
+    (hΓ_var : ∀ x ∈ Ω, Γ x ∈ sourceOrientedGramVariety d n)
+    (hΨ_diff : DifferentiableOn ℂ Ψ U0)
+    (hEq : Set.EqOn Φ Ψ (U0 ∩ sourceOrientedGramVariety d n)) :
+    DifferentiableOn ℂ (fun x => Φ (Γ x)) Ω := by
+  have hcomp : DifferentiableOn ℂ (fun x => Ψ (Γ x)) Ω := by
+    exact DifferentiableOn.comp hΨ_diff hΓ_diff hΓ_U0
+  refine hcomp.congr ?_
+  intro x hx
+  exact hEq ⟨hΓ_U0 x hx, hΓ_var x hx⟩
+
+/-- Continuous version of
+`sourceOrientedRepresentative_pullback_differentiableOn`, used for real-edge
+boundary traces after a source section has been restricted to the source
+variety. -/
+theorem sourceOrientedRepresentative_pullback_continuousOn
+    {E : Type*} [TopologicalSpace E]
+    {Ω : Set E}
+    {Γ : E → SourceOrientedGramData d n}
+    {Φ Ψ : SourceOrientedGramData d n → ℂ}
+    {U0 : Set (SourceOrientedGramData d n)}
+    (hΓ_cont : ContinuousOn Γ Ω)
+    (hΓ_U0 : ∀ x ∈ Ω, Γ x ∈ U0)
+    (hΓ_var : ∀ x ∈ Ω, Γ x ∈ sourceOrientedGramVariety d n)
+    (hΨ_cont : ContinuousOn Ψ U0)
+    (hEq : Set.EqOn Φ Ψ (U0 ∩ sourceOrientedGramVariety d n)) :
+    ContinuousOn (fun x => Φ (Γ x)) Ω := by
+  have hcomp : ContinuousOn (fun x => Ψ (Γ x)) Ω := by
+    exact hΨ_cont.comp hΓ_cont hΓ_U0
+  refine hcomp.congr ?_
+  intro x hx
+  exact hEq ⟨hΓ_U0 x hx, hΓ_var x hx⟩
+
 /-- Full-frame matrices commute with source-label permutations. -/
 theorem sourceFullFrameMatrix_permAct
     (ι : Fin (d + 1) ↪ Fin n)
