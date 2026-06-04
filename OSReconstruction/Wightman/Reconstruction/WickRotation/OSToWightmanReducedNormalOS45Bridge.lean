@@ -3323,6 +3323,166 @@ theorem sourceSide_shifted_reduced_transport_of_endpoint_transports
   simp only [plusSource, minusSource, canonicalTarget, adjacentTarget, φFlat]
   ring
 
+/-- Upper shifted source-side endpoint measurability from compact support and
+local carrier continuity.
+
+This discharges the `hplus_meas` leaf in
+`sourceSide_shifted_upper_reduced_endpoint_of_pointwise_bound` once the moving
+source-side branch has a continuous local carrier on a compact source collar.
+It does not assert the pointwise branch transfer or any uniform domination. -/
+theorem sourceSide_shifted_upper_reduced_endpoint_aestronglyMeasurable
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {m : ℕ}
+    (ηsrc : BHW.OS45FlatCommonChartReal d (m + 1))
+    {Ωplus : Set (Fin (m + 1) → Fin (d + 1) → ℂ)}
+    (hΩplus_open : IsOpen Ωplus)
+    (hFplus_cont :
+      ContinuousOn
+        (fun z : Fin (m + 1) → Fin (d + 1) → ℂ =>
+          BHW.extendF (bvt_F OS lgc (m + 1))
+            (BHW.permAct (d := d)
+              (1 : Equiv.Perm (Fin (m + 1))).symm z)) Ωplus)
+    {Ksrc : Set (NPointDomain d (m + 1))}
+    (hKsrc : IsCompact Ksrc)
+    (h0_plus :
+      ∀ u ∈ Ksrc,
+        BHW.os45FlatCommonChartSourceSide d (m + 1)
+          (1 : Equiv.Perm (Fin (m + 1))) (1 : ℝ) 0 ηsrc u ∈ Ωplus)
+    (χ : BHW.NormalizedBasepointCutoff d)
+    (ψ : SchwartzNPoint d m)
+    (hliftK :
+      tsupport
+          ((BHW.reducedTestLift m d χ.toSchwartz ψ :
+              SchwartzNPoint d (m + 1)) :
+            NPointDomain d (m + 1) → ℂ) ⊆ Ksrc) :
+    ∀ᶠ ε : ℝ in nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)),
+      AEStronglyMeasurable
+        (fun u : NPointDomain d (m + 1) =>
+          (BHW.extendF (bvt_F OS lgc (m + 1))
+              (BHW.permAct (d := d)
+                (1 : Equiv.Perm (Fin (m + 1))).symm
+                (BHW.os45FlatCommonChartSourceSide d (m + 1)
+                  (1 : Equiv.Perm (Fin (m + 1))) (1 : ℝ) ε ηsrc
+                  ((BHW.os45CommonEdgeFlatCLE d (m + 1)
+                    (1 : Equiv.Perm (Fin (m + 1)))).symm
+                      (BHW.os45CommonEdgeFlatCLE d (m + 1)
+                        (1 : Equiv.Perm (Fin (m + 1))) u -
+                        ε • ηsrc)))) -
+            canonicalReducedBranch (d := d) OS lgc m ε
+              (BHW.reducedDiffMapReal (m + 1) d u)) *
+            ((BHW.reducedTestLift m d χ.toSchwartz ψ :
+                SchwartzNPoint d (m + 1)) :
+              NPointDomain d (m + 1) → ℂ) u)
+        volume := by
+  let l : Filter ℝ := nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ))
+  let e : NPointDomain d (m + 1) ≃L[ℝ]
+      BHW.OS45FlatCommonChartReal d (m + 1) :=
+    BHW.os45CommonEdgeFlatCLE d (m + 1)
+      (1 : Equiv.Perm (Fin (m + 1)))
+  let f : SchwartzNPoint d (m + 1) :=
+    BHW.reducedTestLift m d χ.toSchwartz ψ
+  let sourceMoving : ℝ → NPointDomain d (m + 1) → ℂ := fun ε u =>
+    BHW.extendF (bvt_F OS lgc (m + 1))
+      (BHW.permAct (d := d)
+        (1 : Equiv.Perm (Fin (m + 1))).symm
+        (BHW.os45FlatCommonChartSourceSide d (m + 1)
+          (1 : Equiv.Perm (Fin (m + 1))) (1 : ℝ) ε ηsrc
+          (e.symm (e u - ε • ηsrc))))
+  let canLift : ℝ → NPointDomain d (m + 1) → ℂ := fun ε u =>
+    canonicalReducedBranch (d := d) OS lgc m ε
+      (BHW.reducedDiffMapReal (m + 1) d u)
+  have hmem :
+      ∀ᶠ ε : ℝ in l,
+        ∀ u ∈ Ksrc,
+          BHW.os45FlatCommonChartSourceSide d (m + 1)
+            (1 : Equiv.Perm (Fin (m + 1))) (1 : ℝ) ε ηsrc
+            (e.symm (e u - ε • ηsrc)) ∈ Ωplus := by
+    simpa [l, e, one_mul, BHW.os45FlatCommonChartSourceSideMoving] using
+      BHW.eventually_forall_os45FlatCommonChartSourceSide_moving_mem_of_compact
+        (d := d) (n := m + 1)
+        (1 : Equiv.Perm (Fin (m + 1))) (1 : ℝ) ηsrc
+        hKsrc hΩplus_open h0_plus
+  have hpos : ∀ᶠ ε : ℝ in l, 0 < ε := by
+    simpa [l] using (self_mem_nhdsWithin :
+      ∀ᶠ ε : ℝ in nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)), ε ∈ Set.Ioi 0)
+  filter_upwards [hmem, hpos] with ε hmemε hε_pos
+  have hsource_cont :
+      Continuous fun u : NPointDomain d (m + 1) =>
+        BHW.os45FlatCommonChartSourceSide d (m + 1)
+          (1 : Equiv.Perm (Fin (m + 1))) (1 : ℝ) ε ηsrc
+          (e.symm (e u - ε • ηsrc)) := by
+    simpa [e, one_mul, BHW.os45FlatCommonChartSourceSideMoving] using
+      BHW.continuous_os45FlatCommonChartSourceSide_moving_fixed_eps
+        (d := d) (n := m + 1)
+        (1 : Equiv.Perm (Fin (m + 1))) (1 : ℝ) ε ηsrc
+  have hsource_branch_cont :
+      ContinuousOn (fun u : NPointDomain d (m + 1) => sourceMoving ε u) Ksrc := by
+    exact hFplus_cont.comp hsource_cont.continuousOn hmemε
+  have hred_cont :
+      Continuous fun u : NPointDomain d (m + 1) =>
+        BHW.reducedDiffMapReal (m + 1) d u := by
+    simpa [BHW.reducedDiffMapRealCLM] using
+      (BHW.reducedDiffMapRealCLM (m + 1) d).continuous
+  have harg_cont :
+      Continuous
+        (fun u : NPointDomain d (m + 1) =>
+          fun k μ =>
+            (BHW.reducedDiffMapReal (m + 1) d u k μ : ℂ) +
+              ε * canonicalReducedDirectionC (d := d) m k μ * Complex.I) := by
+    refine continuous_pi ?_
+    intro k
+    refine continuous_pi ?_
+    intro μ
+    have hcoord :
+        Continuous fun u : NPointDomain d (m + 1) =>
+          BHW.reducedDiffMapReal (m + 1) d u k μ :=
+      (continuous_apply μ).comp ((continuous_apply k).comp hred_cont)
+    exact (Complex.continuous_ofReal.comp hcoord).add continuous_const
+  have hcan_cont :
+      ContinuousOn (fun u : NPointDomain d (m + 1) => canLift ε u) Ksrc := by
+    have hcont_univ :
+        ContinuousOn
+          (fun u : NPointDomain d (m + 1) =>
+            bvt_F_reduced (d := d) OS lgc m
+              (fun k μ =>
+                (BHW.reducedDiffMapReal (m + 1) d u k μ : ℂ) +
+                  ε * canonicalReducedDirectionC (d := d) m k μ * Complex.I))
+          Set.univ := by
+      refine
+        (bvt_F_reduced_holomorphicOn_reducedForwardTube
+          (d := d) OS lgc m).continuousOn.comp harg_cont.continuousOn ?_
+      intro u _hu
+      exact reducedCanonicalApproach_mem_reducedForwardTube
+        (d := d) m (BHW.reducedDiffMapReal (m + 1) d u) hε_pos
+    simpa [canLift, canonicalReducedBranch] using
+      hcont_univ.mono (Set.subset_univ Ksrc)
+  have hdiff_cont :
+      ContinuousOn
+        (fun u : NPointDomain d (m + 1) => sourceMoving ε u - canLift ε u)
+        Ksrc :=
+    hsource_branch_cont.sub hcan_cont
+  have hf_zero_off :
+      ∀ u : NPointDomain d (m + 1), u ∉ Ksrc →
+        (f : NPointDomain d (m + 1) → ℂ) u = 0 := by
+    intro u huK
+    exact image_eq_zero_of_notMem_tsupport (fun hu => huK (hliftK (by simpa [f] using hu)))
+  have hzero_off :
+      ∀ u : NPointDomain d (m + 1), u ∉ Ksrc →
+        (sourceMoving ε u - canLift ε u) *
+          (f : NPointDomain d (m + 1) → ℂ) u = 0 := by
+    intro u hu
+    simp [hf_zero_off u hu]
+  have hmeas :
+      AEStronglyMeasurable
+        (fun u : NPointDomain d (m + 1) =>
+          (sourceMoving ε u - canLift ε u) *
+            (f : NPointDomain d (m + 1) → ℂ) u) volume :=
+    BHW.aestronglyMeasurable_zeroExtension_mul_of_compactSupport
+      (μ := volume) (K := Ksrc) hKsrc
+      hdiff_cont f.continuous.continuousOn hzero_off
+  simpa [sourceMoving, canLift, f, e] using hmeas
+
 set_option maxHeartbeats 1200000 in
 /-- Upper shifted source-side endpoint transport from pointwise source transfer
 and a dominated-convergence packet.
