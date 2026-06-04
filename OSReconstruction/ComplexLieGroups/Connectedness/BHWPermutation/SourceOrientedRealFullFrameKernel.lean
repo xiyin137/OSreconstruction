@@ -1760,6 +1760,46 @@ theorem sourceFullFrameRealCompatibleSelectedKernelCoordAmbientC_reconstructInva
   rw [hsymm]
   rfl
 
+set_option synthInstance.maxHeartbeats 120000 in
+set_option maxHeartbeats 500000 in
+/-- Reconstructing from a raw compatible model coordinate and then reading the
+selected symmetric ambient coordinate gives the determinant-gauge symmetric
+slice coordinate of the first model component. -/
+theorem sourceFullFrameRealCompatibleSelectedSymmetricCoordAmbient_invRaw_eq
+    {d n : ℕ}
+    (ι : Fin (d + 1) ↪ Fin n)
+    {x0 : Fin n → Fin (d + 1) → ℝ}
+    (hM0R : IsUnit (sourceRealFullFrameMatrix d n ι x0).det)
+    (F : SourceFullFrameRealSliceFiniteCoordData d
+      (sourceRealFullFrameMatrix d n ι x0) hM0R)
+    (y : sourceFullFrameRealCompatibleChartModel ι F.realModelDim) :
+    sourceFullFrameSelectedSymmetricCoordAmbient d n ι
+        (sourceFullFrameRealCompatibleChartInvRaw ι hM0R F y) =
+      sourceFullFrameGaugeSliceMapSymmetric d
+        ((sourceRealFullFrameMatrix d n ι x0).map Complex.ofReal)
+        (sourceFullFrameExplicitGaugeSliceData d
+          (sourceFullFrame_matrix_map_ofReal_det_isUnit d hM0R))
+        (F.complexCoordEquiv y.1) := by
+  let M0 := (sourceRealFullFrameMatrix d n ι x0).map Complex.ofReal
+  let S := sourceFullFrameExplicitGaugeSliceData d
+    (sourceFullFrame_matrix_map_ofReal_det_isUnit d hM0R)
+  let yg : sourceFullFrameMaxRankChartModel d n ι M0 S :=
+    sourceFullFrameRealCompatibleChartModelToGaugeModel ι hM0R F y
+  let H : SourceOrientedGramData d n :=
+    sourceFullFrameRealCompatibleChartInvRaw ι hM0R F y
+  have hHvar : H ∈ sourceOrientedGramVariety d n := by
+    simpa [H, sourceFullFrameRealCompatibleChartInvRaw, M0, S, yg] using
+      sourceFullFrameGauge_reconstructInvariant_mem_variety d n ι M0 S yg
+  rw [sourceFullFrameSelectedSymmetricCoordAmbient_eq_of_mem_variety
+    d n ι hHvar]
+  apply Subtype.ext
+  simpa [H, M0, S, yg, sourceFullFrameRealCompatibleChartInvRaw,
+    sourceFullFrameRealCompatibleChartModelToGaugeModel,
+    sourceFullFrameSelectedSymmetricCoordOfSource,
+    sourceFullFrameGaugeSliceMapSymmetric] using
+    sourceFullFrameOrientedCoordOfSource_reconstructInvariant_eq
+      d n ι M0 S yg
+
 /-- The raw determinant-direction compatible chart domain.  It is deliberately
 spelled as the conjunction of the source-variety condition, the selected
 determinant-nonzero condition, and the two ambient-chart source/target shrink
@@ -1791,6 +1831,164 @@ def sourceFullFrameRealCompatibleChartDomain
               ι hM0R F G)) ∈
         (sourceFullFrameRealCompatibleSymmetricEquationOpenPartialHomeomorphC
           d hM0R).source}
+
+/-- The ambient-open part of the raw determinant-direction compatible chart
+domain, before intersecting with the oriented source variety. -/
+def sourceFullFrameRealCompatibleChartDomainAmbient
+    {d n : ℕ}
+    (ι : Fin (d + 1) ↪ Fin n)
+    {x0 : Fin n → Fin (d + 1) → ℝ}
+    (hM0R : IsUnit (sourceRealFullFrameMatrix d n ι x0).det)
+    (F : SourceFullFrameRealSliceFiniteCoordData d
+      (sourceRealFullFrameMatrix d n ι x0) hM0R) :
+    Set (SourceOrientedGramData d n) :=
+  {G |
+    G.det ι ≠ 0 ∧
+      sourceFullFrameSelectedSymmetricCoordAmbient d n ι G ∈
+        (sourceFullFrameRealCompatibleSymmetricEquationOpenPartialHomeomorphC
+          d hM0R).source ∧
+      sourceFullFrameRealCompatibleSelectedKernelCoordAmbientC
+          d n ι hM0R F G ∈
+        (sourceFullFrameRealCompatibleNormalizedKernelOpenPartialHomeomorphC
+          d hM0R F).target ∧
+      sourceFullFrameGaugeSliceMapSymmetric d
+          ((sourceRealFullFrameMatrix d n ι x0).map Complex.ofReal)
+          (sourceFullFrameExplicitGaugeSliceData d
+            (sourceFullFrame_matrix_map_ofReal_det_isUnit d hM0R))
+          (F.complexCoordEquiv
+            (sourceFullFrameRealCompatibleSelectedKernelSourceCoordC
+              ι hM0R F G)) ∈
+        (sourceFullFrameRealCompatibleSymmetricEquationOpenPartialHomeomorphC
+          d hM0R).source}
+
+/-- The raw determinant-direction compatible chart domain is the ambient-open
+part intersected with the oriented source variety. -/
+theorem sourceFullFrameRealCompatibleChartDomain_eq_ambient
+    {d n : ℕ}
+    (ι : Fin (d + 1) ↪ Fin n)
+    {x0 : Fin n → Fin (d + 1) → ℝ}
+    (hM0R : IsUnit (sourceRealFullFrameMatrix d n ι x0).det)
+    (F : SourceFullFrameRealSliceFiniteCoordData d
+      (sourceRealFullFrameMatrix d n ι x0) hM0R) :
+    sourceFullFrameRealCompatibleChartDomain ι hM0R F =
+      sourceFullFrameRealCompatibleChartDomainAmbient ι hM0R F ∩
+        sourceOrientedGramVariety d n := by
+  ext G
+  constructor
+  · intro hG
+    exact
+      ⟨⟨hG.2.1, hG.2.2.1, hG.2.2.2.1, hG.2.2.2.2⟩,
+        hG.1⟩
+  · intro hG
+    exact
+      ⟨hG.2, hG.1.1, hG.1.2.1, hG.1.2.2.1, hG.1.2.2.2⟩
+
+set_option synthInstance.maxHeartbeats 120000 in
+set_option maxHeartbeats 500000 in
+/-- The ambient part of the raw determinant-direction compatible chart domain
+is open. -/
+theorem sourceFullFrameRealCompatibleChartDomainAmbient_open
+    {d n : ℕ}
+    (ι : Fin (d + 1) ↪ Fin n)
+    {x0 : Fin n → Fin (d + 1) → ℝ}
+    (hM0R : IsUnit (sourceRealFullFrameMatrix d n ι x0).det)
+    (F : SourceFullFrameRealSliceFiniteCoordData d
+      (sourceRealFullFrameMatrix d n ι x0) hM0R) :
+    IsOpen (sourceFullFrameRealCompatibleChartDomainAmbient ι hM0R F) := by
+  let M0 := (sourceRealFullFrameMatrix d n ι x0).map Complex.ofReal
+  let S := sourceFullFrameExplicitGaugeSliceData d
+    (sourceFullFrame_matrix_map_ofReal_det_isUnit d hM0R)
+  let eK :=
+    sourceFullFrameRealCompatibleNormalizedKernelOpenPartialHomeomorphC
+      d hM0R F
+  let eSym :=
+    sourceFullFrameRealCompatibleSymmetricEquationOpenPartialHomeomorphC
+      d hM0R
+  let selectedKernel : SourceOrientedGramData d n → (Fin F.realModelDim → ℂ) :=
+    sourceFullFrameRealCompatibleSelectedKernelCoordAmbientC d n ι hM0R F
+  let Kset : Set (SourceOrientedGramData d n) :=
+    {G | selectedKernel G ∈ eK.target}
+  let gaugeAfterKernel : SourceOrientedGramData d n →
+      sourceFullFrameSymmetricCoordSubmodule d :=
+    fun G =>
+      sourceFullFrameGaugeSliceMapSymmetric d M0 S
+        (F.complexCoordEquiv (eK.symm (selectedKernel G)))
+  have hdet_cont :
+      Continuous (fun G : SourceOrientedGramData d n => G.det ι) :=
+    (continuous_apply ι).comp
+      (continuous_sourceOrientedGramData_det (d := d) (n := n))
+  have hdet_open :
+      IsOpen {G : SourceOrientedGramData d n | G.det ι ≠ 0} :=
+    isOpen_ne_fun hdet_cont continuous_const
+  have hsymm_open :
+      IsOpen
+        {G : SourceOrientedGramData d n |
+          sourceFullFrameSelectedSymmetricCoordAmbient d n ι G ∈ eSym.source} :=
+    eSym.open_source.preimage
+      (continuous_sourceFullFrameSelectedSymmetricCoordAmbient d n ι)
+  have hkernel_open : IsOpen Kset :=
+    eK.open_target.preimage
+      (continuous_sourceFullFrameRealCompatibleSelectedKernelCoordAmbientC
+        ι hM0R F)
+  have hkernel_source_cont :
+      ContinuousOn (fun G : SourceOrientedGramData d n =>
+        eK.symm (selectedKernel G)) Kset :=
+    eK.continuousOn_symm.comp
+      ((continuous_sourceFullFrameRealCompatibleSelectedKernelCoordAmbientC
+        ι hM0R F).continuousOn)
+      (by
+        intro G hG
+        exact hG)
+  have hgauge_total :
+      Continuous (fun q : Fin F.realModelDim → ℂ =>
+        sourceFullFrameGaugeSliceMapSymmetric d M0 S
+          (F.complexCoordEquiv q)) :=
+    (contDiff_sourceFullFrameGaugeSliceMapSymmetric d S).continuous.comp
+      F.complexCoordEquiv.continuous
+  have hgauge_cont :
+      ContinuousOn gaugeAfterKernel Kset :=
+    hgauge_total.continuousOn.comp hkernel_source_cont
+      (by
+        intro G hG
+        exact Set.mem_univ _)
+  have hkernel_gauge_open :
+      IsOpen
+        {G : SourceOrientedGramData d n |
+          selectedKernel G ∈ eK.target ∧
+            sourceFullFrameGaugeSliceMapSymmetric d M0 S
+              (F.complexCoordEquiv
+                (sourceFullFrameRealCompatibleSelectedKernelSourceCoordC
+                  ι hM0R F G)) ∈ eSym.source} := by
+    rcases (continuousOn_iff'.mp hgauge_cont) eSym.source eSym.open_source with
+      ⟨U, hU_open, hpre_eq⟩
+    have hopen :
+        IsOpen ({G : SourceOrientedGramData d n |
+          gaugeAfterKernel G ∈ eSym.source} ∩ Kset) := by
+      change IsOpen (gaugeAfterKernel ⁻¹' eSym.source ∩ Kset)
+      rw [hpre_eq]
+      exact hU_open.inter hkernel_open
+    simpa [Kset, gaugeAfterKernel, selectedKernel,
+      sourceFullFrameRealCompatibleSelectedKernelSourceCoordC, Set.inter_comm,
+      and_left_comm, and_assoc] using hopen
+  simpa [sourceFullFrameRealCompatibleChartDomainAmbient, M0, S, eK, eSym,
+    selectedKernel, and_assoc] using
+    hdet_open.inter (hsymm_open.inter hkernel_gauge_open)
+
+/-- The raw determinant-direction compatible chart domain is relatively open
+in the oriented source variety. -/
+theorem sourceFullFrameRealCompatibleChartDomain_relOpen
+    {d n : ℕ}
+    (ι : Fin (d + 1) ↪ Fin n)
+    {x0 : Fin n → Fin (d + 1) → ℝ}
+    (hM0R : IsUnit (sourceRealFullFrameMatrix d n ι x0).det)
+    (F : SourceFullFrameRealSliceFiniteCoordData d
+      (sourceRealFullFrameMatrix d n ι x0) hM0R) :
+    IsRelOpenInSourceOrientedGramVariety d n
+      (sourceFullFrameRealCompatibleChartDomain ι hM0R F) := by
+  refine
+    ⟨sourceFullFrameRealCompatibleChartDomainAmbient ι hM0R F,
+      sourceFullFrameRealCompatibleChartDomainAmbient_open ι hM0R F, ?_⟩
+  exact sourceFullFrameRealCompatibleChartDomain_eq_ambient ι hM0R F
 
 theorem sourceFullFrameRealCompatibleChartDomain_mem_variety
     {d n : ℕ}
@@ -1994,6 +2192,42 @@ theorem sourceFullFrameRealCompatibleSelectedKernelSourceCoordC_base
 
 set_option synthInstance.maxHeartbeats 120000 in
 set_option maxHeartbeats 500000 in
+/-- On compatible model points whose first coordinate belongs to the finite
+kernel-chart source, raw reconstruction reads back that first coordinate as
+the selected kernel source coordinate. -/
+theorem sourceFullFrameRealCompatibleSelectedKernelSourceCoordC_invRaw_eq_of_source
+    {d n : ℕ}
+    {ι : Fin (d + 1) ↪ Fin n}
+    {x0 : Fin n → Fin (d + 1) → ℝ}
+    {hM0R : IsUnit (sourceRealFullFrameMatrix d n ι x0).det}
+    {F : SourceFullFrameRealSliceFiniteCoordData d
+      (sourceRealFullFrameMatrix d n ι x0) hM0R}
+    {y : sourceFullFrameRealCompatibleChartModel ι F.realModelDim}
+    (hy_source :
+      y.1 ∈
+        (sourceFullFrameRealCompatibleNormalizedKernelOpenPartialHomeomorphC
+          d hM0R F).source) :
+    sourceFullFrameRealCompatibleSelectedKernelSourceCoordC ι hM0R F
+        (sourceFullFrameRealCompatibleChartInvRaw ι hM0R F y) = y.1 := by
+  let eK :=
+    sourceFullFrameRealCompatibleNormalizedKernelOpenPartialHomeomorphC
+      d hM0R F
+  unfold sourceFullFrameRealCompatibleSelectedKernelSourceCoordC
+  calc
+    eK.symm
+        (sourceFullFrameRealCompatibleSelectedKernelCoordAmbientC
+          d n ι hM0R F
+          (sourceFullFrameRealCompatibleChartInvRaw ι hM0R F y))
+        =
+      eK.symm
+        (sourceFullFrameRealCompatibleNormalizedKernelMap d hM0R F y.1) := by
+        rw [sourceFullFrameRealCompatibleSelectedKernelCoordAmbientC_reconstructInvariant_eq]
+    _ = eK.symm (eK y.1) := by
+        rw [sourceFullFrameRealCompatibleNormalizedKernelOpenPartialHomeomorphC_coe]
+    _ = y.1 := eK.left_inv hy_source
+
+set_option synthInstance.maxHeartbeats 120000 in
+set_option maxHeartbeats 500000 in
 /-- On model points whose first coordinate lies in the compatible finite
 kernel-chart source, raw reconstruction is a right inverse as soon as the
 reconstructed invariant lies in the raw chart domain. -/
@@ -2098,6 +2332,172 @@ theorem sourceFullFrameRealCompatibleModelChartDomain_inv_mem_domain
     sourceFullFrameRealCompatibleChartInvRaw ι hM0R F y ∈
       sourceFullFrameRealCompatibleChartDomain ι hM0R F :=
   hy.2
+
+/-- The same model-side domain written as an explicitly open predicate:
+finite kernel source, determinant-direction symmetric source, and reconstructed
+selected-frame determinant nonzero. -/
+def sourceFullFrameRealCompatibleModelChartOpenDomain
+    {d n : ℕ}
+    (ι : Fin (d + 1) ↪ Fin n)
+    {x0 : Fin n → Fin (d + 1) → ℝ}
+    (hM0R : IsUnit (sourceRealFullFrameMatrix d n ι x0).det)
+    (F : SourceFullFrameRealSliceFiniteCoordData d
+      (sourceRealFullFrameMatrix d n ι x0) hM0R) :
+    Set (sourceFullFrameRealCompatibleChartModel ι F.realModelDim) :=
+  {y |
+    y.1 ∈
+      (sourceFullFrameRealCompatibleNormalizedKernelOpenPartialHomeomorphC
+        d hM0R F).source ∧
+    sourceFullFrameGaugeSliceMapSymmetric d
+        ((sourceRealFullFrameMatrix d n ι x0).map Complex.ofReal)
+        (sourceFullFrameExplicitGaugeSliceData d
+          (sourceFullFrame_matrix_map_ofReal_det_isUnit d hM0R))
+        (F.complexCoordEquiv y.1) ∈
+      (sourceFullFrameRealCompatibleSymmetricEquationOpenPartialHomeomorphC
+        d hM0R).source ∧
+    sourceFullFrameRealCompatibleChartModelToGaugeModel ι hM0R F y ∈
+      sourceFullFrameGaugeModelDetNonzero d n ι
+        ((sourceRealFullFrameMatrix d n ι x0).map Complex.ofReal)
+        (sourceFullFrameExplicitGaugeSliceData d
+          (sourceFullFrame_matrix_map_ofReal_det_isUnit d hM0R))}
+
+set_option synthInstance.maxHeartbeats 120000 in
+set_option maxHeartbeats 500000 in
+/-- The raw reconstruction membership condition is equivalent to the explicit
+open model-side conditions. -/
+theorem sourceFullFrameRealCompatibleModelChartDomain_eq_openDomain
+    {d n : ℕ}
+    (ι : Fin (d + 1) ↪ Fin n)
+    {x0 : Fin n → Fin (d + 1) → ℝ}
+    (hM0R : IsUnit (sourceRealFullFrameMatrix d n ι x0).det)
+    (F : SourceFullFrameRealSliceFiniteCoordData d
+      (sourceRealFullFrameMatrix d n ι x0) hM0R) :
+    sourceFullFrameRealCompatibleModelChartDomain ι hM0R F =
+      sourceFullFrameRealCompatibleModelChartOpenDomain ι hM0R F := by
+  ext y
+  let M0 := (sourceRealFullFrameMatrix d n ι x0).map Complex.ofReal
+  let S := sourceFullFrameExplicitGaugeSliceData d
+    (sourceFullFrame_matrix_map_ofReal_det_isUnit d hM0R)
+  let eK :=
+    sourceFullFrameRealCompatibleNormalizedKernelOpenPartialHomeomorphC
+      d hM0R F
+  constructor
+  · intro hy
+    constructor
+    · exact sourceFullFrameRealCompatibleModelChartDomain_source hy
+    constructor
+    · have hsymm :=
+        sourceFullFrameRealCompatibleChartDomain_selectedSymmetric_mem_source
+          (sourceFullFrameRealCompatibleModelChartDomain_inv_mem_domain hy)
+      rw [sourceFullFrameRealCompatibleSelectedSymmetricCoordAmbient_invRaw_eq]
+        at hsymm
+      simpa [M0, S] using hsymm
+    · have hdet :=
+        sourceFullFrameRealCompatibleChartDomain_det_ne_zero
+          (sourceFullFrameRealCompatibleModelChartDomain_inv_mem_domain hy)
+      rw [mem_sourceFullFrameGaugeModelDetNonzero]
+      rw [← sourceFullFrameGauge_reconstructInvariant_selectedDet
+        d n ι M0 S
+        (sourceFullFrameRealCompatibleChartModelToGaugeModel ι hM0R F y)]
+      simpa [sourceFullFrameRealCompatibleChartInvRaw, M0, S] using hdet
+  · intro hy
+    constructor
+    · exact hy.1
+    · have hvar :
+          sourceFullFrameRealCompatibleChartInvRaw ι hM0R F y ∈
+            sourceOrientedGramVariety d n := by
+        simpa [sourceFullFrameRealCompatibleChartInvRaw, M0, S] using
+          sourceFullFrameGauge_reconstructInvariant_mem_variety d n ι M0 S
+            (sourceFullFrameRealCompatibleChartModelToGaugeModel ι hM0R F y)
+      have hdet :
+          (sourceFullFrameRealCompatibleChartInvRaw ι hM0R F y).det ι ≠ 0 := by
+        change
+          (sourceFullFrameGauge_reconstructInvariant d n ι M0 S
+            (sourceFullFrameRealCompatibleChartModelToGaugeModel ι hM0R F y)).det
+              ι ≠ 0
+        rw [sourceFullFrameGauge_reconstructInvariant_selectedDet
+          d n ι M0 S
+          (sourceFullFrameRealCompatibleChartModelToGaugeModel ι hM0R F y)]
+        simpa [sourceFullFrameRealCompatibleChartInvRaw, M0, S] using
+          (mem_sourceFullFrameGaugeModelDetNonzero.mp hy.2.2)
+      have hsymm :
+          sourceFullFrameSelectedSymmetricCoordAmbient d n ι
+              (sourceFullFrameRealCompatibleChartInvRaw ι hM0R F y) ∈
+            (sourceFullFrameRealCompatibleSymmetricEquationOpenPartialHomeomorphC
+              d hM0R).source := by
+        rw [sourceFullFrameRealCompatibleSelectedSymmetricCoordAmbient_invRaw_eq]
+        simpa [M0, S] using hy.2.1
+      have hkernel :
+          sourceFullFrameRealCompatibleSelectedKernelCoordAmbientC
+              d n ι hM0R F
+              (sourceFullFrameRealCompatibleChartInvRaw ι hM0R F y) ∈
+            eK.target := by
+        rw [sourceFullFrameRealCompatibleSelectedKernelCoordAmbientC_reconstructInvariant_eq]
+        rw [← sourceFullFrameRealCompatibleNormalizedKernelOpenPartialHomeomorphC_coe]
+        exact eK.map_source hy.1
+      have hgauge :
+          sourceFullFrameGaugeSliceMapSymmetric d M0 S
+              (F.complexCoordEquiv
+                (sourceFullFrameRealCompatibleSelectedKernelSourceCoordC
+                  ι hM0R F
+                  (sourceFullFrameRealCompatibleChartInvRaw ι hM0R F y))) ∈
+            (sourceFullFrameRealCompatibleSymmetricEquationOpenPartialHomeomorphC
+              d hM0R).source := by
+        rw [sourceFullFrameRealCompatibleSelectedKernelSourceCoordC_invRaw_eq_of_source
+          hy.1]
+        simpa [M0, S] using hy.2.1
+      exact ⟨hvar, hdet, hsymm, hkernel, by
+        simpa [M0, S] using hgauge⟩
+
+set_option synthInstance.maxHeartbeats 120000 in
+set_option maxHeartbeats 500000 in
+/-- The model-side raw chart domain is open. -/
+theorem sourceFullFrameRealCompatibleModelChartDomain_open
+    {d n : ℕ}
+    (ι : Fin (d + 1) ↪ Fin n)
+    {x0 : Fin n → Fin (d + 1) → ℝ}
+    (hM0R : IsUnit (sourceRealFullFrameMatrix d n ι x0).det)
+    (F : SourceFullFrameRealSliceFiniteCoordData d
+      (sourceRealFullFrameMatrix d n ι x0) hM0R) :
+    IsOpen (sourceFullFrameRealCompatibleModelChartDomain ι hM0R F) := by
+  rw [sourceFullFrameRealCompatibleModelChartDomain_eq_openDomain]
+  let M0 := (sourceRealFullFrameMatrix d n ι x0).map Complex.ofReal
+  let S := sourceFullFrameExplicitGaugeSliceData d
+    (sourceFullFrame_matrix_map_ofReal_det_isUnit d hM0R)
+  let eK :=
+    sourceFullFrameRealCompatibleNormalizedKernelOpenPartialHomeomorphC
+      d hM0R F
+  let eSym :=
+    sourceFullFrameRealCompatibleSymmetricEquationOpenPartialHomeomorphC
+      d hM0R
+  have hsource_open :
+      IsOpen
+        {y : sourceFullFrameRealCompatibleChartModel ι F.realModelDim |
+          y.1 ∈ eK.source} :=
+    eK.open_source.preimage continuous_fst
+  have hgauge_cont :
+      Continuous
+        (fun y : sourceFullFrameRealCompatibleChartModel ι F.realModelDim =>
+          sourceFullFrameGaugeSliceMapSymmetric d M0 S
+            (F.complexCoordEquiv y.1)) :=
+    (contDiff_sourceFullFrameGaugeSliceMapSymmetric d S).continuous.comp
+      (F.complexCoordEquiv.continuous.comp continuous_fst)
+  have hgauge_open :
+      IsOpen
+        {y : sourceFullFrameRealCompatibleChartModel ι F.realModelDim |
+          sourceFullFrameGaugeSliceMapSymmetric d M0 S
+              (F.complexCoordEquiv y.1) ∈ eSym.source} :=
+    eSym.open_source.preimage hgauge_cont
+  have hdet_open :
+      IsOpen
+        {y : sourceFullFrameRealCompatibleChartModel ι F.realModelDim |
+          sourceFullFrameRealCompatibleChartModelToGaugeModel ι hM0R F y ∈
+            sourceFullFrameGaugeModelDetNonzero d n ι M0 S} :=
+    (sourceFullFrameGaugeModelDetNonzero_open d n ι M0 S).preimage
+      (continuous_sourceFullFrameRealCompatibleChartModelToGaugeModel
+        ι hM0R F)
+  simpa [sourceFullFrameRealCompatibleModelChartOpenDomain, M0, S, eK, eSym]
+    using hsource_open.inter (hgauge_open.inter hdet_open)
 
 /-- The raw model-side domain is contained in the image of the raw chart on
 the raw source-domain. -/
@@ -2526,6 +2926,182 @@ noncomputable def sourceFullFrameRealCompatibleLocalBiholomorphRaw
   inv_continuousOn :=
     continuousOn_sourceFullFrameRealCompatibleChartInvRaw_on_image
 
+/-- The shrunken compatible source patch is relatively open in the oriented
+source variety. -/
+theorem sourceFullFrameRealCompatibleShrunkenChartDomain_relOpen
+    {d n : ℕ}
+    (ι : Fin (d + 1) ↪ Fin n)
+    {x0 : Fin n → Fin (d + 1) → ℝ}
+    (hM0R : IsUnit (sourceRealFullFrameMatrix d n ι x0).det)
+    (F : SourceFullFrameRealSliceFiniteCoordData d
+      (sourceRealFullFrameMatrix d n ι x0) hM0R) :
+    IsRelOpenInSourceOrientedGramVariety d n
+      (sourceFullFrameRealCompatibleShrunkenChartDomain ι hM0R F) := by
+  exact
+    LocalBiholomorphOnSourceOrientedVariety.inv_image_open_relOpen
+      (d := d) (n := n)
+      (sourceFullFrameRealCompatibleChartDomain_relOpen ι hM0R F)
+      (sourceFullFrameRealCompatibleLocalBiholomorphRaw ι hM0R F)
+      (sourceFullFrameRealCompatibleModelChartDomain_open ι hM0R F)
+      (sourceFullFrameRealCompatibleModelChartDomain_subset_image
+        (ι := ι) (hM0R := hM0R) (F := F))
+
+/-- Local biholomorphic inverse data for the image-open compatible source
+shrink. -/
+noncomputable def sourceFullFrameRealCompatibleLocalBiholomorphShrunken
+    {d n : ℕ}
+    (ι : Fin (d + 1) ↪ Fin n)
+    {x0 : Fin n → Fin (d + 1) → ℝ}
+    (hM0R : IsUnit (sourceRealFullFrameMatrix d n ι x0).det)
+    (F : SourceFullFrameRealSliceFiniteCoordData d
+      (sourceRealFullFrameMatrix d n ι x0) hM0R) :
+    LocalBiholomorphOnSourceOrientedVariety d n
+      (sourceFullFrameRealCompatibleShrunkenChartDomain ι hM0R F)
+      (sourceFullFrameRealCompatibleChartRaw ι hM0R F) where
+  inv := sourceFullFrameRealCompatibleChartInvRaw ι hM0R F
+  left_inv_on := by
+    intro G hG
+    exact
+      sourceFullFrameRealCompatibleChartInvRaw_left_inv
+        (sourceFullFrameRealCompatibleShrunkenChartDomain_subset_rawDomain hG)
+  right_inv_on := by
+    intro y hy
+    exact
+      sourceFullFrameRealCompatibleChartRaw_right_inv_on_image
+        (Set.mem_of_subset_of_mem
+          (Set.image_mono
+            (sourceFullFrameRealCompatibleShrunkenChartDomain_subset_rawDomain
+              (ι := ι) (hM0R := hM0R) (F := F)))
+          hy)
+  inv_mem_on := by
+    intro y hy
+    have hy_model :
+        y ∈ sourceFullFrameRealCompatibleModelChartDomain ι hM0R F := by
+      rw [← sourceFullFrameRealCompatibleChartRaw_image_shrunkenDomain
+        (ι := ι) (hM0R := hM0R) (F := F)]
+      exact hy
+    exact ⟨y, hy_model, rfl⟩
+  chart_continuousOn :=
+    continuousOn_sourceFullFrameRealCompatibleChartRaw.mono
+      (sourceFullFrameRealCompatibleShrunkenChartDomain_subset_rawDomain
+        (ι := ι) (hM0R := hM0R) (F := F))
+  inv_differentiableOn :=
+    differentiableOn_sourceFullFrameRealCompatibleChartInvRaw_on_image.mono
+      (Set.image_mono
+        (sourceFullFrameRealCompatibleShrunkenChartDomain_subset_rawDomain
+          (ι := ι) (hM0R := hM0R) (F := F)))
+  inv_continuousOn :=
+    continuousOn_sourceFullFrameRealCompatibleChartInvRaw_on_image.mono
+      (Set.image_mono
+        (sourceFullFrameRealCompatibleShrunkenChartDomain_subset_rawDomain
+          (ι := ι) (hM0R := hM0R) (F := F)))
+
+/-- Raw product-coordinate max-rank chart data from the compatible complex
+determinant-direction IFT shrink. -/
+noncomputable def sourceFullFrameRealCompatibleMaxRankChartDataRaw
+    {d n : ℕ}
+    (ι : Fin (d + 1) ↪ Fin n)
+    {x0 : Fin n → Fin (d + 1) → ℝ}
+    (hM0R : IsUnit (sourceRealFullFrameMatrix d n ι x0).det)
+    (F : SourceFullFrameRealSliceFiniteCoordData d
+      (sourceRealFullFrameMatrix d n ι x0) hM0R) :
+    SourceOrientedMaxRankChartData d n
+      (M := sourceFullFrameRealCompatibleChartModel ι F.realModelDim)
+      (sourceRealOrientedMinkowskiInvariant d n x0) where
+  Ω := sourceFullFrameRealCompatibleShrunkenChartDomain ι hM0R F
+  Ω_relOpen :=
+    sourceFullFrameRealCompatibleShrunkenChartDomain_relOpen ι hM0R F
+  center_mem := by
+    let G0 := sourceRealOrientedMinkowskiInvariant d n x0
+    refine
+      ⟨sourceFullFrameRealCompatibleChartRaw ι hM0R F G0,
+        sourceFullFrameRealCompatibleChartRaw_center_mem_modelChartDomain
+          ι hM0R F,
+        ?_⟩
+    exact
+      sourceFullFrameRealCompatibleChartInvRaw_left_inv
+        (sourceFullFrameRealCompatibleChartDomain_center_mem ι hM0R F)
+  Ω_maxRank := by
+    intro G hG
+    exact
+      sourceFullFrameRealCompatibleChartDomain_maxRank
+        (sourceFullFrameRealCompatibleShrunkenChartDomain_subset_rawDomain hG)
+  chart := sourceFullFrameRealCompatibleChartRaw ι hM0R F
+  chart_open := by
+    rw [sourceFullFrameRealCompatibleChartRaw_image_shrunkenDomain
+      (ι := ι) (hM0R := hM0R) (F := F)]
+    exact sourceFullFrameRealCompatibleModelChartDomain_open ι hM0R F
+  chart_biholomorphic :=
+    sourceFullFrameRealCompatibleLocalBiholomorphShrunken ι hM0R F
+
+/-- Finite `Fin m -> ℂ` max-rank chart data obtained from the raw compatible
+product chart by the explicit finite reindexing equivalence shared with the
+real coordinates. -/
+noncomputable def sourceOrientedFullFrameMaxRankChartData_of_realCompatibleSlice
+    {d n : ℕ}
+    (ι : Fin (d + 1) ↪ Fin n)
+    {x0 : Fin n → Fin (d + 1) → ℝ}
+    (hM0R : IsUnit (sourceRealFullFrameMatrix d n ι x0).det)
+    (F : SourceFullFrameRealSliceFiniteCoordData d
+      (sourceRealFullFrameMatrix d n ι x0) hM0R) :
+    Σ m : ℕ,
+      SourceOrientedMaxRankChartData d n
+        (M := Fin m → ℂ)
+        (sourceRealOrientedMinkowskiInvariant d n x0) :=
+  ⟨Fintype.card (sourceFullFrameRealCompatibleModelIndex ι F.realModelDim),
+    (sourceFullFrameRealCompatibleMaxRankChartDataRaw ι hM0R F).postcomp_continuousLinearEquiv
+      ((sourceFullFrameRealCompatibleCoordEquivC ι F.realModelDim).symm.toContinuousLinearEquiv)⟩
+
+theorem isOpen_sourceRealOrientedMinkowskiInvariant_preimage_relOpen
+    {d n : ℕ}
+    {U : Set (SourceOrientedGramData d n)}
+    (hU : IsRelOpenInSourceOrientedGramVariety d n U) :
+    IsOpen {x : Fin n → Fin (d + 1) → ℝ |
+      sourceRealOrientedMinkowskiInvariant d n x ∈ U} := by
+  rcases hU with ⟨U0, hU0_open, hU_eq⟩
+  have hpre :
+      {x : Fin n → Fin (d + 1) → ℝ |
+        sourceRealOrientedMinkowskiInvariant d n x ∈ U} =
+        (sourceRealOrientedMinkowskiInvariant d n) ⁻¹' U0 := by
+    ext x
+    rw [hU_eq]
+    simp [sourceRealOrientedMinkowskiInvariant_mem_variety d n x]
+  rw [hpre]
+  exact hU0_open.preimage (continuous_sourceRealOrientedMinkowskiInvariant d n)
+
+theorem sourceOrientedFullFrameMaxRankChartData_of_realCompatibleSlice_mem_rawDomain
+    {d n : ℕ}
+    (ι : Fin (d + 1) ↪ Fin n)
+    {x0 : Fin n → Fin (d + 1) → ℝ}
+    (hM0R : IsUnit (sourceRealFullFrameMatrix d n ι x0).det)
+    (F : SourceFullFrameRealSliceFiniteCoordData d
+      (sourceRealFullFrameMatrix d n ι x0) hM0R)
+    {G : SourceOrientedGramData d n}
+    (hG :
+      G ∈ (sourceOrientedFullFrameMaxRankChartData_of_realCompatibleSlice
+        ι hM0R F).2.Ω) :
+    G ∈ sourceFullFrameRealCompatibleChartDomain ι hM0R F := by
+  apply sourceFullFrameRealCompatibleShrunkenChartDomain_subset_rawDomain
+  simpa [sourceOrientedFullFrameMaxRankChartData_of_realCompatibleSlice,
+    sourceFullFrameRealCompatibleMaxRankChartDataRaw,
+    SourceOrientedMaxRankChartData.postcomp_continuousLinearEquiv] using hG
+
+theorem sourceOrientedFullFrameMaxRankChartData_of_realCompatibleSlice_chart_eq_raw
+    {d n : ℕ}
+    (ι : Fin (d + 1) ↪ Fin n)
+    {x0 : Fin n → Fin (d + 1) → ℝ}
+    (hM0R : IsUnit (sourceRealFullFrameMatrix d n ι x0).det)
+    (F : SourceFullFrameRealSliceFiniteCoordData d
+      (sourceRealFullFrameMatrix d n ι x0) hM0R)
+    (G : SourceOrientedGramData d n) :
+    sourceFullFrameRealCompatibleCoordEquivC ι F.realModelDim
+        ((sourceOrientedFullFrameMaxRankChartData_of_realCompatibleSlice
+          ι hM0R F).2.chart G) =
+      sourceFullFrameRealCompatibleChartRaw ι hM0R F G := by
+  simp [sourceOrientedFullFrameMaxRankChartData_of_realCompatibleSlice,
+    sourceFullFrameRealCompatibleMaxRankChartDataRaw,
+    SourceOrientedMaxRankChartData.postcomp_continuousLinearEquiv]
+
 /-- Complex derivative of the frame-level target coordinate used by the
 selected-frame product-chart construction. -/
 noncomputable def sourceFullFrameRealCompatibleFrameTargetDerivC
@@ -2730,6 +3306,52 @@ noncomputable def sourceFullFrameRealCompatibleFrameTargetCoordR
     sourceFullFrameComplexCoordinateReCLM F.realModelDim
       (sourceFullFrameRealCompatibleFrameTargetCoordC d hM0R F
         (M.map Complex.ofReal))
+
+theorem sourceFullFrameRealCompatibleFrameTargetCoordC_real_complexify
+    (d : ℕ)
+    {M0R : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ}
+    (hM0R : IsUnit M0R.det)
+    (F : SourceFullFrameRealSliceFiniteCoordData d M0R hM0R)
+    (M : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ) :
+    SCV.realToComplex
+        (sourceFullFrameRealCompatibleFrameTargetCoordR d hM0R F M) =
+      sourceFullFrameRealCompatibleFrameTargetCoordC d hM0R F
+        (M.map Complex.ofReal) := by
+  let H : sourceFullFrameSymmetricCoordSubmodule d :=
+    sourceFullFrameSymmetrizeCoord d
+        (sourceFullFrameOrientedGramCoord d (M.map Complex.ofReal)) -
+      sourceFullFrameSymmetricBase d (M0R.map Complex.ofReal)
+  have hHgram : ∀ a b : Fin (d + 1),
+      Complex.im ((H : SourceFullFrameOrientedCoord d).1 a b) = 0 := by
+    intro a b
+    simp [H, sourceFullFrameSymmetrizeCoord, sourceFullFrameOrientedGramCoord,
+      sourceFullFrameSymmetricBase, sourceFullFrameOrientedGram]
+  have hHdet :
+      Complex.im ((H : SourceFullFrameOrientedCoord d).2) = 0 := by
+    simp [H, sourceFullFrameSymmetricBase, sourceFullFrameOrientedGramCoord,
+      sourceFullFrameOrientedGram, sourceFullFrame_matrix_map_ofReal_det]
+  have hproj :=
+    sourceFullFrameRealCompatibleKernelProjection_im_zero d hM0R H hHgram hHdet
+  have him :
+      ∀ i : Fin F.realModelDim,
+        Complex.im
+          (sourceFullFrameRealCompatibleFrameTargetCoordC d hM0R F
+            (M.map Complex.ofReal) i) = 0 := by
+    intro i
+    change
+      Complex.im
+          (((sourceFullFrameRealSliceKernelCoordEquiv d hM0R F).symm
+            (sourceFullFrameRealCompatibleKernelProjection d hM0R H)) i) = 0
+    exact
+      sourceFullFrameRealSliceKernelCoordEquiv_symm_real_im
+        d hM0R F
+        (sourceFullFrameRealCompatibleKernelProjection d hM0R H)
+        hproj.1 hproj.2 i
+  ext i
+  apply Complex.ext
+  · simp [sourceFullFrameRealCompatibleFrameTargetCoordR,
+      sourceFullFrameComplexCoordinateReCLM]
+  · simpa using (him i).symm
 
 /-- The real frame-level target coordinate is continuous. -/
 theorem continuous_sourceFullFrameRealCompatibleFrameTargetCoordR
@@ -2947,6 +3569,72 @@ noncomputable def sourceFullFrameRealCompatibleFrameKernelCoordR
     (sourceFullFrameRealCompatibleNormalizedKernelOpenPartialHomeomorph
       d hM0R F).symm
         (sourceFullFrameRealCompatibleFrameTargetCoordR d hM0R F M)
+
+set_option synthInstance.maxHeartbeats 120000 in
+set_option maxHeartbeats 400000 in
+theorem sourceFullFrameRealCompatibleSelectedKernelSourceCoordC_realInvariant_eq
+    {d n : ℕ}
+    (ι : Fin (d + 1) ↪ Fin n)
+    {x0 x : Fin n → Fin (d + 1) → ℝ}
+    (hM0R : IsUnit (sourceRealFullFrameMatrix d n ι x0).det)
+    (F : SourceFullFrameRealSliceFiniteCoordData d
+      (sourceRealFullFrameMatrix d n ι x0) hM0R)
+    (hchart :
+      sourceRealOrientedMinkowskiInvariant d n x ∈
+        sourceFullFrameRealCompatibleChartDomain ι hM0R F)
+    (hframe :
+      sourceRealFullFrameMatrix d n ι x ∈
+        sourceFullFrameRealCompatibleFrameDomain d hM0R F)
+    (hsource :
+      SCV.realToComplex
+          (sourceFullFrameRealCompatibleFrameKernelCoordR d hM0R F
+            (sourceRealFullFrameMatrix d n ι x)) ∈
+        (sourceFullFrameRealCompatibleNormalizedKernelOpenPartialHomeomorphC
+          d hM0R F).source) :
+    sourceFullFrameRealCompatibleSelectedKernelSourceCoordC ι hM0R F
+        (sourceRealOrientedMinkowskiInvariant d n x) =
+      SCV.realToComplex
+        (sourceFullFrameRealCompatibleFrameKernelCoordR d hM0R F
+          (sourceRealFullFrameMatrix d n ι x)) := by
+  let eC :=
+    sourceFullFrameRealCompatibleNormalizedKernelOpenPartialHomeomorphC
+      d hM0R F
+  let eR :=
+    sourceFullFrameRealCompatibleNormalizedKernelOpenPartialHomeomorph
+      d hM0R F
+  let M := sourceRealFullFrameMatrix d n ι x
+  let qR := sourceFullFrameRealCompatibleFrameKernelCoordR d hM0R F M
+  have htargetC :
+      sourceFullFrameRealCompatibleFrameTargetCoordC d hM0R F
+          (M.map Complex.ofReal) ∈ eC.target := by
+    have htarget :=
+      sourceFullFrameRealCompatibleChartDomain_selectedKernel_mem_target
+        hchart
+    simpa [eC, M] using htarget
+  have htargetR :
+      sourceFullFrameRealCompatibleFrameTargetCoordR d hM0R F M ∈
+        eR.target := hframe.1
+  have hrightR :
+      eR qR = sourceFullFrameRealCompatibleFrameTargetCoordR d hM0R F M := by
+    simpa [qR, sourceFullFrameRealCompatibleFrameKernelCoordR, eR] using
+      eR.right_inv htargetR
+  have hmapC :
+      eC (SCV.realToComplex qR) =
+        sourceFullFrameRealCompatibleFrameTargetCoordC d hM0R F
+          (M.map Complex.ofReal) := by
+    rw [sourceFullFrameRealCompatibleNormalizedKernelOpenPartialHomeomorphC_coe]
+    rw [← sourceFullFrameRealCompatibleFrameTargetCoordC_real_complexify]
+    rw [← sourceFullFrameRealCompatibleNormalizedKernelMapReal_complexify]
+    simpa [eR] using congrArg SCV.realToComplex hrightR
+  have hsymm :
+      eC.symm
+          (sourceFullFrameRealCompatibleFrameTargetCoordC d hM0R F
+            (M.map Complex.ofReal)) =
+        SCV.realToComplex qR :=
+    ((eC.eq_symm_apply hsource htargetC).mpr hmapC).symm
+  unfold sourceFullFrameRealCompatibleSelectedKernelSourceCoordC
+  rw [sourceFullFrameRealCompatibleSelectedKernelCoordAmbientC_realInvariant]
+  simpa [eC, M, qR] using hsymm
 
 /-- The real selected-frame slice coordinate is continuous on the local
 real-compatible frame domain. -/
@@ -3187,6 +3875,269 @@ noncomputable def sourceFullFrameRealSelectedFrameProductChartData_of_realCompat
       exact hf.implicitToOpenPartialHomeomorph_fst hsurj M
     change (eProd (eT M)).1 = eK.symm (f M)
     simp [eProd, hfirstT]
+
+set_option synthInstance.maxHeartbeats 200000 in
+set_option maxHeartbeats 900000 in
+/-- The determinant-nonzero real-compatible full-frame slice produces the
+implicit chart data consumed by the generic oriented real-chart interface. -/
+noncomputable def sourceFullFrameRealCompatibleImplicitChartData_of_realCompatibleSlice
+    {d n : ℕ}
+    (ι : Fin (d + 1) ↪ Fin n)
+    {x0 : Fin n → Fin (d + 1) → ℝ}
+    (hM0R : IsUnit (sourceRealFullFrameMatrix d n ι x0).det)
+    (F : SourceFullFrameRealSliceFiniteCoordData d
+      (sourceRealFullFrameMatrix d n ι x0) hM0R) :
+    SourceFullFrameRealCompatibleImplicitChartData d n ι x0 hM0R.ne_zero := by
+  let S :=
+    sourceFullFrameRealGaugeSliceData_of_frameKernelCoord_realExtension
+      d hM0R F
+  let P :=
+    sourceFullFrameRealSelectedFrameProductChartData_of_realCompatibleSlice
+      (ι := ι) hM0R F
+  rcases P with ⟨O, P⟩
+  rcases P with ⟨instO, Dchart⟩
+  letI : TopologicalSpace O := instO
+  let D := Dchart.toOpenData
+  let MC := sourceOrientedFullFrameMaxRankChartData_of_realCompatibleSlice
+    ι hM0R F
+  let m := MC.1
+  let C := MC.2
+  let coordEquivR := sourceFullFrameRealCompatibleCoordEquivR ι F.realModelDim
+  let coordEquivC := sourceFullFrameRealCompatibleCoordEquivC ι F.realModelDim
+  let sourcePatch : Set (Fin n → Fin (d + 1) → ℝ) :=
+    (sourceRealFullFrameSplitHomeomorph d n ι).symm '' D.W
+  let chartPatch : Set (Fin n → Fin (d + 1) → ℝ) :=
+    {x | sourceRealOrientedMinkowskiInvariant d n x ∈ C.Ω}
+  let realCoord : (Fin n → Fin (d + 1) → ℝ) → Fin m → ℝ :=
+    fun x => coordEquivR.symm (sourceFullFrameRealKernelMixedCoord S x)
+  let qForSource : (Fin n → Fin (d + 1) → ℝ) → Fin F.realModelDim → ℂ :=
+    fun x => SCV.realToComplex ((coordEquivR (realCoord x)).1)
+  let eC :=
+    sourceFullFrameRealCompatibleNormalizedKernelOpenPartialHomeomorphC
+      d hM0R F
+  have hsourcePatch_open : IsOpen sourcePatch := by
+    simpa [sourcePatch] using D.source_patch_open
+  have hchartPatch_open : IsOpen chartPatch := by
+    simpa [chartPatch] using
+      isOpen_sourceRealOrientedMinkowskiInvariant_preimage_relOpen C.Ω_relOpen
+  have hrealCoord_cont : ContinuousOn realCoord sourcePatch := by
+    simpa [realCoord, sourcePatch] using
+      D.realCoord_continuousOn_source_patch coordEquivR
+  have hrealToComplex_cont :
+      Continuous (fun q : Fin F.realModelDim → ℝ => SCV.realToComplex q) := by
+    apply continuous_pi
+    intro i
+    exact Complex.continuous_ofReal.comp (continuous_apply i)
+  have hcoord_cont :
+      Continuous (fun u : Fin m → ℝ => coordEquivR u) :=
+    LinearMap.continuous_of_finiteDimensional coordEquivR.toLinearMap
+  have hqModel_cont :
+      Continuous (fun u : Fin m → ℝ =>
+        SCV.realToComplex ((coordEquivR u).1)) :=
+    hrealToComplex_cont.comp (continuous_fst.comp hcoord_cont)
+  have hq_cont : ContinuousOn qForSource sourcePatch := by
+    exact hqModel_cont.comp_continuousOn hrealCoord_cont
+  have hVsource_exists :=
+    (continuousOn_iff'.mp hq_cont) eC.source eC.open_source
+  let Vsource : Set (Fin n → Fin (d + 1) → ℝ) :=
+    Classical.choose hVsource_exists
+  have hVsource_open : IsOpen Vsource :=
+    (Classical.choose_spec hVsource_exists).1
+  have hVsource_eq :
+      qForSource ⁻¹' eC.source ∩ sourcePatch =
+        Vsource ∩ sourcePatch :=
+    (Classical.choose_spec hVsource_exists).2
+  let E0 : Set (Fin n → Fin (d + 1) → ℝ) :=
+    sourcePatch ∩ chartPatch ∩ Vsource
+  have hq_source_of_mem :
+      ∀ {x : Fin n → Fin (d + 1) → ℝ}, x ∈ E0 →
+        qForSource x ∈ eC.source := by
+    intro x hx
+    rcases hx with ⟨⟨hxPatch, _hxChart⟩, hxV⟩
+    have hxV' : x ∈ Vsource ∩ sourcePatch := ⟨hxV, hxPatch⟩
+    have hxpre : x ∈ qForSource ⁻¹' eC.source ∩ sourcePatch := by
+      rw [hVsource_eq]
+      exact hxV'
+    exact hxpre.1
+  have hqForSource_eq_kernel :
+      ∀ {x : Fin n → Fin (d + 1) → ℝ}, x ∈ E0 →
+        qForSource x =
+          SCV.realToComplex
+            (sourceFullFrameRealCompatibleFrameKernelCoordR d hM0R F
+              (sourceRealFullFrameMatrix d n ι x)) := by
+    intro x hx
+    rcases hx with ⟨⟨hxPatch, _hxChart⟩, _hxV⟩
+    have hreal :=
+      D.realCoord_eq_kernel_mixed_on_source_patch coordEquivR x hxPatch
+    have hreal' :
+        coordEquivR
+            (coordEquivR.symm
+              (sourceFullFrameRealKernelMixedCoord S x)) =
+          (S.realKernelCoord (sourceRealFullFrameMatrix d n ι x),
+            sourceRealSelectedMixedRows d n ι x) := by
+      change
+        coordEquivR
+            (coordEquivR.symm
+              (sourceFullFrameRealKernelMixedCoord
+                (sourceFullFrameRealGaugeSliceData_of_frameKernelCoord_realExtension
+                  d hM0R F) x)) =
+          ((sourceFullFrameRealGaugeSliceData_of_frameKernelCoord_realExtension
+              d hM0R F).realKernelCoord (sourceRealFullFrameMatrix d n ι x),
+            sourceRealSelectedMixedRows d n ι x)
+      exact hreal
+    dsimp [qForSource, realCoord]
+    rw [hreal']
+    simp [S, sourceFullFrameRealGaugeSliceData_of_frameKernelCoord_realExtension,
+      sourceFullFrameRealGaugeSliceData_of_frameKernelCoord]
+  refine
+    { slice := S
+      m := m
+      C := C
+      coordEquivR := coordEquivR
+      coordEquivC := coordEquivC
+      coordEquiv_realToComplex := by
+        simpa [coordEquivR, coordEquivC, m] using
+          sourceFullFrameRealCompatibleCoordEquiv_realToComplex
+            (ι := ι) F.realModelDim
+      E0 := E0
+      E0_open := ?_
+      center_mem := ?_
+      invariant_mem_chart := ?_
+      frame_mem_domain := ?_
+      realCoord := realCoord
+      realCoord_eq_kernel_mixed := ?_
+      chart_eq_kernel_mixed := ?_
+      realCoord_continuousOn := ?_
+      realCoord_image_open := ?_ }
+  · exact (hsourcePatch_open.inter hchartPatch_open).inter hVsource_open
+  · have hxPatch : x0 ∈ sourcePatch := by
+      simpa [sourcePatch] using D.center_mem_source_patch
+    have hxChart : x0 ∈ chartPatch := by
+      simpa [chartPatch, C] using C.center_mem
+    have hq0 : qForSource x0 ∈ eC.source := by
+      have hreal :=
+        D.realCoord_eq_kernel_mixed_on_source_patch coordEquivR x0 hxPatch
+      have hreal' :
+          coordEquivR
+              (coordEquivR.symm
+                (sourceFullFrameRealKernelMixedCoord S x0)) =
+            (S.realKernelCoord (sourceRealFullFrameMatrix d n ι x0),
+              sourceRealSelectedMixedRows d n ι x0) := by
+        change
+          coordEquivR
+              (coordEquivR.symm
+                (sourceFullFrameRealKernelMixedCoord
+                  (sourceFullFrameRealGaugeSliceData_of_frameKernelCoord_realExtension
+                    d hM0R F) x0)) =
+            ((sourceFullFrameRealGaugeSliceData_of_frameKernelCoord_realExtension
+                d hM0R F).realKernelCoord (sourceRealFullFrameMatrix d n ι x0),
+              sourceRealSelectedMixedRows d n ι x0)
+        exact hreal
+      have hq0_eq : qForSource x0 = 0 := by
+        dsimp [qForSource, realCoord]
+        rw [hreal']
+        ext i
+        simp [S, SCV.realToComplex,
+          sourceFullFrameRealGaugeSliceData_of_frameKernelCoord_realExtension,
+          sourceFullFrameRealGaugeSliceData_of_frameKernelCoord]
+      simpa [hq0_eq, eC] using
+        sourceFullFrameRealCompatibleNormalizedKernelC_zero_mem_chartSource
+          d hM0R F
+    have hxpre : x0 ∈ qForSource ⁻¹' eC.source ∩ sourcePatch :=
+      ⟨hq0, hxPatch⟩
+    have hxV' : x0 ∈ Vsource ∩ sourcePatch := by
+      rw [← hVsource_eq]
+      exact hxpre
+    exact ⟨⟨hxPatch, hxChart⟩, hxV'.1⟩
+  · intro x hx
+    exact hx.1.2
+  · intro x hx
+    rcases hx with ⟨⟨hxPatch, _hxChart⟩, _hxV⟩
+    simpa [S] using D.source_patch_frame_mem_domain hxPatch
+  · intro x hx
+    rcases hx with ⟨⟨hxPatch, _hxChart⟩, _hxV⟩
+    simpa [realCoord] using
+      D.realCoord_eq_kernel_mixed_on_source_patch coordEquivR x hxPatch
+  · intro x hx
+    let G := sourceRealOrientedMinkowskiInvariant d n x
+    rcases hx with ⟨⟨hxPatch, hxChart⟩, hxV⟩
+    have hrawDomain :
+        G ∈ sourceFullFrameRealCompatibleChartDomain ι hM0R F := by
+      exact
+        sourceOrientedFullFrameMaxRankChartData_of_realCompatibleSlice_mem_rawDomain
+          ι hM0R F (by simpa [G, C] using hxChart)
+    have hframeS := D.source_patch_frame_mem_domain hxPatch
+    have hframe :
+        sourceRealFullFrameMatrix d n ι x ∈
+          sourceFullFrameRealCompatibleFrameDomain d hM0R F := by
+      simpa [S, sourceFullFrameRealGaugeSliceData_of_frameKernelCoord_realExtension,
+        sourceFullFrameRealGaugeSliceData_of_frameKernelCoord] using hframeS
+    have hsource :
+        SCV.realToComplex
+            (sourceFullFrameRealCompatibleFrameKernelCoordR d hM0R F
+              (sourceRealFullFrameMatrix d n ι x)) ∈ eC.source := by
+      have hqsource : qForSource x ∈ eC.source := hq_source_of_mem
+        (show x ∈ E0 from ⟨⟨hxPatch, hxChart⟩, hxV⟩)
+      have hqeq := hqForSource_eq_kernel
+        (show x ∈ E0 from ⟨⟨hxPatch, hxChart⟩, hxV⟩)
+      simpa [hqeq] using hqsource
+    have hkernel :=
+      sourceFullFrameRealCompatibleSelectedKernelSourceCoordC_realInvariant_eq
+        ι hM0R F hrawDomain hframe hsource
+    have hchartRaw :=
+      sourceOrientedFullFrameMaxRankChartData_of_realCompatibleSlice_chart_eq_raw
+        ι hM0R F G
+    have hchartRaw' :
+        coordEquivC (C.chart G) =
+          sourceFullFrameRealCompatibleChartRaw ι hM0R F G := by
+      simpa [coordEquivC, C] using hchartRaw
+    change
+      coordEquivC (C.chart G) =
+        (S.realModelToComplexSlice.symm
+          (S.complexKernelCoord
+            ((sourceRealFullFrameMatrix d n ι x).map Complex.ofReal)),
+          sourceSelectedMixedRows d n ι G)
+    rw [hchartRaw']
+    dsimp [sourceFullFrameRealCompatibleChartRaw]
+    apply Prod.ext
+    · rw [hkernel]
+      rw [S.complexKernelCoord_real_eq]
+      exact (S.realModelToComplexSlice.symm_apply_apply _).symm
+    · rfl
+  · exact hrealCoord_cont.mono (by
+      intro x hx
+      exact hx.1.1)
+  · intro U hU_open hU_sub
+    exact
+      D.realCoord_image_open_on_source_subset coordEquivR hU_open
+        (by
+          intro x hx
+          exact (hU_sub hx).1.1)
+
+/-- Pointwise determinant-regular real-compatible implicit chart data. -/
+theorem sourceFullFrameRealCompatibleImplicitChartData
+    {d n : ℕ}
+    (ι : Fin (d + 1) ↪ Fin n)
+    {x0 : Fin n → Fin (d + 1) → ℝ}
+    (hdet : sourceRealFullFrameDet d n ι x0 ≠ 0) :
+    Nonempty (SourceFullFrameRealCompatibleImplicitChartData d n ι x0 hdet) := by
+  have hM0R : IsUnit (sourceRealFullFrameMatrix d n ι x0).det :=
+    isUnit_iff_ne_zero.mpr (by
+      simpa [sourceRealFullFrameDet] using hdet)
+  rcases sourceFullFrameRealSliceFiniteCoordData d hM0R with ⟨F⟩
+  exact
+    ⟨by
+      simpa [sourceRealFullFrameDet] using
+        sourceFullFrameRealCompatibleImplicitChartData_of_realCompatibleSlice
+          ι hM0R F⟩
+
+/-- The checked determinant-regular real-compatible full-frame implicit chart
+producer. -/
+theorem sourceFullFrameRealCompatibleImplicitChartProducer
+    (d n : ℕ) :
+    SourceFullFrameRealCompatibleImplicitChartProducer d n := by
+  intro ι x0 hdet
+  exact sourceFullFrameRealCompatibleImplicitChartData ι hdet
 
 /-- The checked real-compatible full-frame gauge-slice packet at a real
 determinant-nonzero base. -/
