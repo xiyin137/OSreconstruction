@@ -6780,6 +6780,102 @@ theorem sourceOrientedEqOn_reducedNormalOS45SourcePreimage_of_fullFrameDetNonzer
   exact hEqU (hE_U
     (reducedNormalAbsoluteSectionCLM (d := d) i hi u) hsrc)
 
+/-- A determinant-regular reduced-normal point has an open reduced-normal
+collar on which source-oriented equality restricts from a source window.
+
+Given any honest source-open window `V` containing the zero-center absolute
+section of `p`, this theorem shrinks `V` by the full-frame determinant-nonzero
+locus and pulls that source-open determinant-regular patch back to reduced
+normal coordinates.  The resulting collar is the local edge set shape needed
+before invoking the reduced-normal EOW handoff. -/
+theorem exists_reducedNormalDetRegularSourceCollar_sourceOrientedEqOn
+    {m : ℕ}
+    (hd : 2 ≤ d)
+    (hn : d + 1 ≤ m + 1)
+    (i : Fin (m + 1)) (hi : i.val + 1 < m + 1)
+    (ι : Fin (d + 1) ↪ Fin (m + 1))
+    (p : ReducedSpace d m i ⟨i.val + 1, hi⟩)
+    {V : Set (NPointDomain d (m + 1))}
+    (hV_open : IsOpen V)
+    (hpV :
+      reducedNormalAbsoluteSectionCLM (d := d) i hi
+        (reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩ p) ∈ V)
+    (hdetp :
+      BHW.sourceRealFullFrameDet d (m + 1) ι
+        (reducedNormalAbsoluteSectionCLM (d := d) i hi
+          (reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩ p)) ≠ 0)
+    {U : Set (BHW.SourceOrientedGramData d (m + 1))}
+    {Φ Ψ : BHW.SourceOrientedGramData d (m + 1) → ℂ}
+    (hU_rel : BHW.IsRelOpenInSourceOrientedGramVariety d (m + 1) U)
+    (hU_conn : IsConnected U)
+    (hV_U :
+      ∀ x ∈ V, BHW.sourceRealFullFrameDet d (m + 1) ι x ≠ 0 →
+        BHW.sourceRealOrientedMinkowskiInvariant d (m + 1) x ∈ U)
+    (hΦ : BHW.SourceOrientedVarietyGermHolomorphicOn d (m + 1) Φ U)
+    (hΨ : BHW.SourceOrientedVarietyGermHolomorphicOn d (m + 1) Ψ U)
+    (hEq_real :
+      ∀ x ∈ V, BHW.sourceRealFullFrameDet d (m + 1) ι x ≠ 0 →
+        Φ (BHW.sourceRealOrientedMinkowskiInvariant d (m + 1) x) =
+          Ψ (BHW.sourceRealOrientedMinkowskiInvariant d (m + 1) x)) :
+    ∃ E : Set (Fin ((d + 1) +
+        Fintype.card
+          (SpectatorIndex (m + 1) i ⟨i.val + 1, hi⟩) *
+          (d + 1)) → ℝ),
+      IsOpen E ∧
+      reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩ p ∈ E ∧
+      (∀ u ∈ E,
+        reducedNormalAbsoluteSectionCLM (d := d) i hi u ∈ V ∧
+        BHW.sourceRealFullFrameDet d (m + 1) ι
+          (reducedNormalAbsoluteSectionCLM (d := d) i hi u) ≠ 0) ∧
+      ∀ u ∈ E,
+        Φ (BHW.sourceRealOrientedMinkowskiInvariant d (m + 1)
+              (reducedNormalAbsoluteSectionCLM (d := d) i hi u)) =
+          Ψ (BHW.sourceRealOrientedMinkowskiInvariant d (m + 1)
+              (reducedNormalAbsoluteSectionCLM (d := d) i hi u)) := by
+  let Esrc : Set (NPointDomain d (m + 1)) :=
+    V ∩ {x | BHW.sourceRealFullFrameDet d (m + 1) ι x ≠ 0}
+  let E : Set (Fin ((d + 1) +
+      Fintype.card
+        (SpectatorIndex (m + 1) i ⟨i.val + 1, hi⟩) *
+        (d + 1)) → ℝ) :=
+    reducedNormalOS45SourcePreimage (d := d) i hi Esrc
+  have hEsrc_open : IsOpen Esrc := by
+    exact hV_open.inter (BHW.sourceRealFullFrameDet_nonzero_isOpen d (m + 1) ι)
+  have hEsrc_nonempty : Esrc.Nonempty := by
+    exact
+      ⟨reducedNormalAbsoluteSectionCLM (d := d) i hi
+          (reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩ p),
+        hpV, hdetp⟩
+  have hdet :
+      ∀ x ∈ Esrc, BHW.sourceRealFullFrameDet d (m + 1) ι x ≠ 0 := by
+    intro x hx
+    exact hx.2
+  have hE_open : IsOpen E := by
+    exact isOpen_reducedNormalOS45SourcePreimage (d := d) i hi hEsrc_open
+  have hpE :
+      reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩ p ∈ E := by
+    exact ⟨hpV, hdetp⟩
+  have hEqE :
+      ∀ u ∈ E,
+        Φ (BHW.sourceRealOrientedMinkowskiInvariant d (m + 1)
+              (reducedNormalAbsoluteSectionCLM (d := d) i hi u)) =
+          Ψ (BHW.sourceRealOrientedMinkowskiInvariant d (m + 1)
+              (reducedNormalAbsoluteSectionCLM (d := d) i hi u)) := by
+    exact
+      sourceOrientedEqOn_reducedNormalOS45SourcePreimage_of_fullFrameDetNonzero
+        (d := d) hd hn i hi ι hEsrc_open hEsrc_nonempty hdet
+        hU_rel hU_conn
+        (by
+          intro x hx
+          exact hV_U x hx.1 hx.2)
+        hΦ hΨ
+        (by
+          intro x hx
+          exact hEq_real x hx.1 hx.2)
+  refine ⟨E, hE_open, hpE, ?_, hEqE⟩
+  intro u hu
+  exact hu
+
 theorem reducedNormalOS45SourcePreimage_subset_patchPreimage
     {m : ℕ} (i : Fin (m + 1)) (hi : i.val + 1 < m + 1)
     {hd : 2 ≤ d}
