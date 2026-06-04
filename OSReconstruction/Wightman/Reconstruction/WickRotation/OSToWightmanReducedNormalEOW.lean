@@ -2048,6 +2048,120 @@ theorem reducedNormalSignFlip_pointwise_of_localEOW_asymptoticBranchDataOn
   filter_upwards with ε
   ring
 
+/-- Collar-local reduced normal EOW handoff with separate boundary traces.
+
+This is the form matched to source-oriented uniqueness: the two side branches
+may come with their own real-edge boundary value functions, and the caller only
+has to prove that those boundary traces agree on the selected collar. -/
+theorem reducedNormalSignFlip_pointwise_of_localEOW_asymptoticBoundaryEqOn
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {m : ℕ} (i : Fin (m + 1)) (hi : i.val + 1 < m + 1)
+    (p : ReducedSpace d m i ⟨i.val + 1, hi⟩)
+    (E : Set (Fin ((d + 1) +
+        Fintype.card
+          (SpectatorIndex (m + 1) i ⟨i.val + 1, hi⟩) *
+          (d + 1)) → ℝ))
+    (hE_open : IsOpen E)
+    (hpE :
+      reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩ p ∈ E)
+    (Ωplus Ωminus : Set
+      (SCV.ComplexChartSpace ((d + 1) +
+        Fintype.card
+          (SpectatorIndex (m + 1) i ⟨i.val + 1, hi⟩) *
+          (d + 1))))
+    (C : Set (Fin ((d + 1) +
+        Fintype.card
+          (SpectatorIndex (m + 1) i ⟨i.val + 1, hi⟩) *
+          (d + 1)) → ℝ))
+    (hΩplus_open : IsOpen Ωplus) (hΩminus_open : IsOpen Ωminus)
+    (hC_open : IsOpen C) (hC_conv : Convex ℝ C) (hC_ne : C.Nonempty)
+    (hlocal_wedge :
+      ∀ K : Set (Fin ((d + 1) +
+          Fintype.card
+            (SpectatorIndex (m + 1) i ⟨i.val + 1, hi⟩) *
+            (d + 1)) → ℝ),
+        IsCompact K →
+        K ⊆ E →
+        ∀ Kη : Set (Fin ((d + 1) +
+            Fintype.card
+              (SpectatorIndex (m + 1) i ⟨i.val + 1, hi⟩) *
+              (d + 1)) → ℝ),
+          IsCompact Kη → Kη ⊆ C →
+          ∃ r : ℝ, 0 < r ∧
+            ∀ x ∈ K, ∀ η ∈ Kη, ∀ ε : ℝ, 0 < ε → ε < r →
+              (fun a => (x a : ℂ) + (ε : ℂ) * (η a : ℂ) * Complex.I) ∈
+                  Ωplus ∧
+              (fun a => (x a : ℂ) - (ε : ℂ) * (η a : ℂ) * Complex.I) ∈
+                  Ωminus)
+    (Fplus Fminus :
+      SCV.ComplexChartSpace ((d + 1) +
+        Fintype.card
+          (SpectatorIndex (m + 1) i ⟨i.val + 1, hi⟩) *
+          (d + 1)) → ℂ)
+    (hFplus_diff : DifferentiableOn ℂ Fplus Ωplus)
+    (hFminus_diff : DifferentiableOn ℂ Fminus Ωminus)
+    (bvplus bvminus : (Fin ((d + 1) +
+        Fintype.card
+          (SpectatorIndex (m + 1) i ⟨i.val + 1, hi⟩) *
+          (d + 1)) → ℝ) → ℂ)
+    (hbvplus_cont : ContinuousOn bvplus E)
+    (hFplus_bv :
+      ∀ x ∈ E,
+        Filter.Tendsto Fplus
+          (nhdsWithin (SCV.realEmbed x) Ωplus) (nhds (bvplus x)))
+    (hFminus_bv :
+      ∀ x ∈ E,
+        Filter.Tendsto Fminus
+          (nhdsWithin (SCV.realEmbed x) Ωminus) (nhds (bvminus x)))
+    (hbv_eq : ∀ x ∈ E, bvminus x = bvplus x)
+    (hplus_nhds :
+      Ωplus ∈ nhds
+        (SCV.realEmbed
+          (reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩ p)))
+    (hminus_nhds :
+      Ωminus ∈ nhds
+        (SCV.realEmbed
+          (reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩ p)))
+    (hplus_transfer :
+      Filter.Tendsto
+        (fun ε : ℝ =>
+          Fplus (reducedNormalUpperCanonicalRay (d := d) i hi p ε) -
+            canonicalReducedBranch (d := d) OS lgc m ε
+              (reducedCoordInv (d := d) i ⟨i.val + 1, hi⟩
+                (reducedAdjacent_succ_ne i hi) p))
+        (nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)) : Filter ℝ)
+        (nhds 0))
+    (hminus_transfer :
+      Filter.Tendsto
+        (fun ε : ℝ =>
+          Fminus (reducedNormalLowerCanonicalRay (d := d) i hi p ε) -
+            canonicalReducedBranch (d := d) OS lgc m ε
+              (reducedCoordInv (d := d) i ⟨i.val + 1, hi⟩
+                (reducedAdjacent_succ_ne i hi)
+                (reducedSignFlip (d := d) i ⟨i.val + 1, hi⟩ p)))
+        (nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)) : Filter ℝ)
+        (nhds 0)) :
+    Filter.Tendsto
+      (fun ε : ℝ =>
+        canonicalReducedBranch (d := d) OS lgc m ε
+            (reducedCoordInv (d := d) i ⟨i.val + 1, hi⟩
+              (reducedAdjacent_succ_ne i hi)
+              (reducedSignFlip (d := d) i ⟨i.val + 1, hi⟩ p)) -
+          canonicalReducedBranch (d := d) OS lgc m ε
+            (reducedCoordInv (d := d) i ⟨i.val + 1, hi⟩
+              (reducedAdjacent_succ_ne i hi) p))
+      (nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)) : Filter ℝ)
+      (nhds 0) := by
+  refine
+    reducedNormalSignFlip_pointwise_of_localEOW_asymptoticBranchDataOn
+      (d := d) OS lgc i hi p E hE_open hpE Ωplus Ωminus C
+      hΩplus_open hΩminus_open hC_open hC_conv hC_ne hlocal_wedge
+      Fplus Fminus hFplus_diff hFminus_diff bvplus hbvplus_cont
+      hFplus_bv ?_ hplus_nhds hminus_nhds hplus_transfer hminus_transfer
+  intro x hx
+  simpa [hbv_eq x hx] using hFminus_bv x hx
+
 /-- Branch-specific reduced normal EOW handoff with asymptotic branch transfer.
 
 This is the faithful OS-I `(4.14)` interface: the side branches supplied by the
