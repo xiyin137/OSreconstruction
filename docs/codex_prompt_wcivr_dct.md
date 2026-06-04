@@ -130,12 +130,17 @@ on the relevant domain is available, that suffices.
 - Then `lake build OSReconstruction.Wightman.Reconstruction.WickRotation.RuelleClusterBound`
   (produces oleans). If anything cross-module looks off, `lake clean` + full
   `lake build` to rule out a stale-olean artifact.
-- Finally confirm the axiom footprint: append (temporarily) and run
-  `#print axioms OSReconstruction.W_analytic_cluster_integral_via_ruelle`; it must
-  NOT contain `sorryAx`. It WILL legitimately list the project's named axioms that
-  `W_analytic_BHW`, `F_ext_on_translatedPET_total`, and the `RuelleAnalyticClusterHypotheses`
-  fields transitively depend on — that is expected; just ensure no `sorryAx`.
-  Remove the `#print` line before finishing.
+- Confirm the NEW lemma is clean: `#print axioms OSReconstruction.block_regulator_dominator_integrable`
+  must be `[propext, Classical.choice, Quot.sound]` only (no `sorryAx`).
+- `#print axioms OSReconstruction.W_analytic_cluster_integral_via_ruelle` will
+  legitimately list the project's named axioms AND `sorryAx` — the latter is
+  inherited from the open upstream BHW infrastructure (`W_analytic_BHW`,
+  `F_ext_on_translatedPET_total`, `bhw_euclidean_kernel_measurable` → ... →
+  `PermutationFlowBlocker.lean:55,119`), not a local hole. Do not try to eliminate
+  it (see the Deliverable note). Just ensure this PR adds **no new** `sorryAx`
+  source: no literal `sorry`/`admit`/`axiom` in the diff, and every BHW-rooted
+  lemma you call is pre-existing. Remove any temporary `#print` line before
+  finishing.
 
 ## Constraints
 
@@ -153,7 +158,20 @@ on the relevant domain is available, that suffices.
 
 ## Deliverable
 
-`RuelleClusterBound.lean` with **zero `sorry`**, `lake build` clean, and
-`#print axioms W_analytic_cluster_integral_via_ruelle` free of `sorryAx`. Short
-note: helper lemmas added, the product-integrability + cobounded-conversion lemma
-names used, and any API gap hit.
+`RuelleClusterBound.lean` with **zero literal `sorry`/`admit`/`axiom`** added,
+`lake build` clean, and the new crux lemma `block_regulator_dominator_integrable`
+verifying with no `sorryAx`. Short note: helper lemmas added, the
+product-integrability + cobounded-conversion lemma names used, and any API gap hit.
+
+**Note on the axiom footprint (corrected 2026-06-04).** An earlier draft of this
+prompt required `#print axioms W_analytic_cluster_integral_via_ruelle` to be free
+of `sorryAx`. That is **not achievable** while the upstream BHW infrastructure is
+open: `F_ext_on_translatedPET_total` appears in the theorem's *statement* and the
+`RuelleAnalyticClusterHypotheses` fields are stated about `W_analytic_BHW`, so the
+proof necessarily crosses the pre-existing F_ext↔W_analytic bridges
+(`joint_F_ext_eq_W_analytic`, `F_ext_on_translatedPET_total_eq_on_PET`) and the
+pre-existing `bhw_euclidean_kernel_measurable` — all of which transitively depend
+on `bargmann_hall_wightman` → `PermutationFlowBlocker.lean` (`sorry` at 55, 119).
+The achievable, correct goal (and PR #92's scope) is therefore: **introduce no new
+`sorryAx` source and reduce the cluster theorem to the pre-existing BHW debt.** The
+theorem becomes `sorryAx`-clean automatically once `PermutationFlowBlocker` closes.
