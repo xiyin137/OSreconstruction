@@ -14027,6 +14027,106 @@ theorem reducedNormal_lower_endpoint_abs_of_sourceCommonEdge_rawSwap
                 (Equiv.swap i ⟨i.val + 1, hi⟩ k))) := by
         simpa [u0, j] using hraw_swap_endpoint_abs
 
+/-- A connected OS adjacent EOW difference envelope gives pointwise equality of
+the adjacent real-edge `extendF` traces on its real slice.
+
+This is the pointwise form of the equality already used in the compact
+distributional consumer: OS Euclidean permutation symmetry kills the Wick trace
+of the envelope, and distributional uniqueness propagates that zero to the
+real-edge trace. -/
+theorem extendF_adjacent_realEdge_eq_of_osEOWDifferenceEnvelope
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {n : ℕ} {τ : Equiv.Perm (Fin n)}
+    {V : Set (NPointDomain d n)}
+    (hV_open : IsOpen V)
+    (hV_nonempty : V.Nonempty)
+    (E : BHW.AdjacentOSEOWDifferenceEnvelope (d := d) OS lgc n τ V)
+    (x : NPointDomain d n) (hx : x ∈ V) :
+    BHW.extendF (bvt_F OS lgc n)
+        (BHW.realEmbed (fun k => x (τ k))) =
+      BHW.extendF (bvt_F OS lgc n) (BHW.realEmbed x) := by
+  have hWickZero :
+      ∀ x ∈ V, E.H (fun k => wickRotatePoint (x k)) = 0 := by
+    intro x hx
+    have hEq :
+        bvt_F OS lgc n (fun k => wickRotatePoint (x (τ k))) =
+          bvt_F OS lgc n (fun k => wickRotatePoint (x k)) := by
+      simpa using
+        (bvt_F_acrOne_package (d := d) OS lgc n).2.2.1 τ
+          (fun k => wickRotatePoint (x k))
+    have hsub :
+        bvt_F OS lgc n (fun k => wickRotatePoint (x (τ k))) -
+          bvt_F OS lgc n (fun k => wickRotatePoint (x k)) = 0 :=
+      sub_eq_zero.mpr hEq
+    simpa [E.wick_diff x hx] using hsub
+  have hEqOn_H : Set.EqOn E.H (fun _ => 0) E.U := by
+    refine
+      eqOn_openConnected_of_distributional_wickSection_eq_on_realOpen
+        (d := d) (n := n)
+        E.U V E.U_open E.U_connected hV_open hV_nonempty E.wick_mem
+        E.H (fun _ => 0) E.H_holo
+        (by intro z hz; exact differentiableWithinAt_const (x := z) (c := (0 : ℂ)))
+        ?_
+    intro ψ _hψ_compact hψ_tsupport
+    exact
+      BHW.integral_eq_of_tsupport_subset_of_pointwise_on
+        (d := d) (n := n) V
+        (fun x => E.H (fun k => wickRotatePoint (x k)))
+        (fun _ => 0)
+        ψ hψ_tsupport hWickZero
+  have hHx : E.H (BHW.realEmbed x) = 0 := hEqOn_H (E.real_mem x hx)
+  have hsub :
+      BHW.extendF (bvt_F OS lgc n)
+          (BHW.realEmbed (fun k => x (τ k))) -
+        BHW.extendF (bvt_F OS lgc n) (BHW.realEmbed x) = 0 := by
+    simpa [E.real_diff x hx] using hHx
+  exact sub_eq_zero.mp hsub
+
+/-- The raw adjacent-swap endpoint equality follows from a local adjacent EOW
+difference envelope on the source window containing the zero-center
+representative. -/
+theorem raw_adjacent_swap_endpoint_abs_of_osEOWDifferenceEnvelope
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {m : ℕ} {i : Fin (m + 1)} {hi : i.val + 1 < m + 1}
+    {hd : 2 ≤ d}
+    (P : BHW.OS45Figure24CanonicalSourcePatchData
+      (d := d) hd (m + 1) i hi)
+    (U : Set (NPointDomain d (m + 1)))
+    (hU_open : IsOpen U)
+    (hU_nonempty : U.Nonempty)
+    (p : ReducedSpace d m i ⟨i.val + 1, hi⟩)
+    (hpU :
+      coordInv (d := d) i ⟨i.val + 1, hi⟩
+          (reducedAdjacent_succ_ne i hi)
+          ((0 : SpacetimeDim d), p) ∈ U)
+    (E : BHW.AdjacentOSEOWDifferenceEnvelope
+      (d := d) OS lgc (m + 1) P.τ U) :
+    BHW.extendF (bvt_F OS lgc (m + 1))
+        (BHW.realEmbed
+          (coordInv (d := d) i ⟨i.val + 1, hi⟩
+            (reducedAdjacent_succ_ne i hi)
+            ((0 : SpacetimeDim d), p))) =
+      BHW.extendF (bvt_F OS lgc (m + 1))
+        (BHW.realEmbed
+          (fun k =>
+            coordInv (d := d) i ⟨i.val + 1, hi⟩
+              (reducedAdjacent_succ_ne i hi)
+              ((0 : SpacetimeDim d), p)
+              (Equiv.swap i ⟨i.val + 1, hi⟩ k))) := by
+  let j : Fin (m + 1) := ⟨i.val + 1, hi⟩
+  let u0 : NPointDomain d (m + 1) :=
+    coordInv (d := d) i j
+      (reducedAdjacent_succ_ne i hi)
+      ((0 : SpacetimeDim d), p)
+  have hpoint :=
+    extendF_adjacent_realEdge_eq_of_osEOWDifferenceEnvelope
+      (d := d) OS lgc
+      (n := m + 1) (τ := P.τ) (V := U)
+      hU_open hU_nonempty E u0 (by simpa [u0, j] using hpU)
+  simpa [u0, j, P.τ_eq] using hpoint.symm
+
 /-- Upper OS45-to-canonical Fred ray comparison from the concrete endpoint
 value equality between the OS45 common-edge carrier and the ordinary canonical
 reduced endpoint. -/
@@ -15229,14 +15329,15 @@ theorem tendsto_reducedNormalLower_os45Branch_sub_canonicalReducedBranch_of_redu
       hΩε
   rw [hbranch]
 
-/-- Local Hdiff sign-flip handoff with endpoint equalities as the explicit
+/-- Local Hdiff sign-flip handoff with endpoint equalities exposed at the
 OS45 carrier-normalization leaves.
 
 This is the pointwise theorem-2 bridge after the OS45 carrier audit: the
 Hdiff germ supplies the common-edge EOW comparison, the source window supplies
 the two local OS45 branch-domain packets, and the remaining endpoint inputs are
-the upper carrier normalization, the source common-edge equality, and the raw
-Euclidean adjacent-swap endpoint equality.  The lower absolute endpoint equality
+the upper carrier normalization, the source common-edge equality, and the local
+adjacent EOW envelope whose real trace proves the raw Euclidean adjacent-swap
+endpoint equality.  The raw swap equality, the lower absolute endpoint equality,
 and then the Fred-level OS45 ray comparisons are derived internally. -/
 theorem reducedNormalSignFlip_pointwise_of_OS45HdiffGerm_endpoint_equalities
     (OS : OsterwalderSchraderAxioms d)
@@ -15275,9 +15376,9 @@ theorem reducedNormalSignFlip_pointwise_of_OS45HdiffGerm_endpoint_equalities
         tsupport (φ : NPointDomain d (m + 1) → ℂ) ⊆ U →
         ∫ u : NPointDomain d (m + 1),
           Hdiff (fun k => wickRotatePoint (u k)) * φ u = 0)
-    (hcommon_trace :
-      ∀ u ∈ U,
-        Hdiff
+      (hcommon_trace :
+        ∀ u ∈ U,
+          Hdiff
           ((BHW.os45QuarterTurnCLE (d := d) (n := m + 1)).symm
             (BHW.realEmbed
               (BHW.os45CommonEdgeRealPoint (d := d) (n := m + 1)
@@ -15285,16 +15386,19 @@ theorem reducedNormalSignFlip_pointwise_of_OS45HdiffGerm_endpoint_equalities
           BHW.os45PulledRealBranch (d := d) (n := m + 1) OS lgc
               (P.τ.symm * (1 : Equiv.Perm (Fin (m + 1))))
               (BHW.realEmbed
-                (BHW.os45CommonEdgeRealPoint (d := d) (n := m + 1)
-                  (1 : Equiv.Perm (Fin (m + 1))) u)) -
-          BHW.os45PulledRealBranch (d := d) (n := m + 1) OS lgc
-                (1 : Equiv.Perm (Fin (m + 1)))
-                (BHW.realEmbed
                   (BHW.os45CommonEdgeRealPoint (d := d) (n := m + 1)
-                    (1 : Equiv.Perm (Fin (m + 1))) u)))
-    (hsource_commonEdge :
-      BHW.os45PulledRealBranch (d := d) (n := m + 1) OS lgc
-          (P.τ.symm * (1 : Equiv.Perm (Fin (m + 1))))
+                    (1 : Equiv.Perm (Fin (m + 1))) u)) -
+            BHW.os45PulledRealBranch (d := d) (n := m + 1) OS lgc
+                  (1 : Equiv.Perm (Fin (m + 1)))
+                  (BHW.realEmbed
+                    (BHW.os45CommonEdgeRealPoint (d := d) (n := m + 1)
+                      (1 : Equiv.Perm (Fin (m + 1))) u)))
+      (hraw_edge_envelope :
+        BHW.AdjacentOSEOWDifferenceEnvelope
+          (d := d) OS lgc (m + 1) P.τ U)
+      (hsource_commonEdge :
+        BHW.os45PulledRealBranch (d := d) (n := m + 1) OS lgc
+            (P.τ.symm * (1 : Equiv.Perm (Fin (m + 1))))
           (BHW.realEmbed
             (BHW.os45CommonEdgeRealPoint (d := d) (n := m + 1)
               (1 : Equiv.Perm (Fin (m + 1)))
@@ -15318,24 +15422,11 @@ theorem reducedNormalSignFlip_pointwise_of_OS45HdiffGerm_endpoint_equalities
                   (reducedNormalFlattenCLE
                     (d := d) i ⟨i.val + 1, hi⟩ p))))) =
         BHW.extendF (bvt_F OS lgc (m + 1))
-            (BHW.realEmbed
-              (coordInv (d := d) i ⟨i.val + 1, hi⟩
-                (reducedAdjacent_succ_ne i hi)
-                ((0 : SpacetimeDim d), p))))
-      (hraw_swap_endpoint_abs :
-        BHW.extendF (bvt_F OS lgc (m + 1))
-            (BHW.realEmbed
-              (coordInv (d := d) i ⟨i.val + 1, hi⟩
-                (reducedAdjacent_succ_ne i hi)
-                ((0 : SpacetimeDim d), p))) =
-          BHW.extendF (bvt_F OS lgc (m + 1))
-            (BHW.realEmbed
-              (fun k =>
-                coordInv (d := d) i ⟨i.val + 1, hi⟩
-                (reducedAdjacent_succ_ne i hi)
-                ((0 : SpacetimeDim d), p)
-                (Equiv.swap i ⟨i.val + 1, hi⟩ k)))) :
-    Filter.Tendsto
+              (BHW.realEmbed
+                (coordInv (d := d) i ⟨i.val + 1, hi⟩
+                  (reducedAdjacent_succ_ne i hi)
+                  ((0 : SpacetimeDim d), p)))) :
+      Filter.Tendsto
       (fun ε : ℝ =>
         canonicalReducedBranch (d := d) OS lgc m ε
             (reducedCoordInv (d := d) i ⟨i.val + 1, hi⟩
@@ -15371,6 +15462,22 @@ theorem reducedNormalSignFlip_pointwise_of_OS45HdiffGerm_endpoint_equalities
     exact
       reducedExtension_upper_endpoint_value_eq_of_extendF_commonEdge_eq_realEndpoint
         (d := d) OS lgc P Fred p hpP hplus_endpoint_abs
+  have hraw_swap_endpoint_abs :
+      BHW.extendF (bvt_F OS lgc (m + 1))
+          (BHW.realEmbed
+            (coordInv (d := d) i ⟨i.val + 1, hi⟩
+              (reducedAdjacent_succ_ne i hi)
+              ((0 : SpacetimeDim d), p))) =
+        BHW.extendF (bvt_F OS lgc (m + 1))
+          (BHW.realEmbed
+            (fun k =>
+              coordInv (d := d) i ⟨i.val + 1, hi⟩
+                (reducedAdjacent_succ_ne i hi)
+                ((0 : SpacetimeDim d), p)
+                (Equiv.swap i ⟨i.val + 1, hi⟩ k))) := by
+    exact
+      raw_adjacent_swap_endpoint_abs_of_osEOWDifferenceEnvelope
+        (d := d) OS lgc P U hU_open hU_nonempty p hpU hraw_edge_envelope
   have hminus_endpoint_abs :
       BHW.extendF (bvt_F OS lgc (m + 1))
           (BHW.permAct (d := d)
@@ -15388,10 +15495,10 @@ theorem reducedNormalSignFlip_pointwise_of_OS45HdiffGerm_endpoint_equalities
                 (reducedAdjacent_succ_ne i hi)
                 ((0 : SpacetimeDim d), p)
                 (Equiv.swap i ⟨i.val + 1, hi⟩ k))) := by
-      exact
-        reducedNormal_lower_endpoint_abs_of_sourceCommonEdge_rawSwap
-          (d := d) OS lgc P p hsource_commonEdge
-          hplus_endpoint_abs hraw_swap_endpoint_abs
+    exact
+      reducedNormal_lower_endpoint_abs_of_sourceCommonEdge_rawSwap
+        (d := d) OS lgc P p hsource_commonEdge
+        hplus_endpoint_abs hraw_swap_endpoint_abs
   have hminus_endpoint :
       Fred.toFun
           (BHW.reducedDiffMap (m + 1) d
@@ -15548,7 +15655,7 @@ This is the integrated form of
 the current carrier-normalization surface after the OS45 audit: the local
 Hdiff germ supplies the common-edge EOW comparison, while the remaining
 real-edge leaves are the upper endpoint normalization, source common-edge
-branch equality, and raw adjacent-swap endpoint equality. -/
+branch equality, and adjacent real-edge EOW envelope. -/
 theorem reducedLocalAdjacentBoundaryCLMInvariant_of_local_OS45HdiffGerm_endpoint_equalities
     (hd : 2 ≤ d)
     (OS : OsterwalderSchraderAxioms d)
@@ -15624,6 +15731,9 @@ theorem reducedLocalAdjacentBoundaryCLMInvariant_of_local_OS45HdiffGerm_endpoint
                                     (BHW.os45CommonEdgeRealPoint
                                       (d := d) (n := m + 1)
                                       (1 : Equiv.Perm (Fin (m + 1))) u))) ∧
+                          Nonempty
+                            (BHW.AdjacentOSEOWDifferenceEnvelope
+                              (d := d) OS lgc (m + 1) P.τ U) ∧
                           BHW.os45PulledRealBranch
                               (d := d) (n := m + 1) OS lgc
                               (P.τ.symm *
@@ -15667,25 +15777,7 @@ theorem reducedLocalAdjacentBoundaryCLMInvariant_of_local_OS45HdiffGerm_endpoint
                                   (reducedAdjacent_succ_ne i hi)
                                   ((0 : SpacetimeDim d),
                                     reducedCoord
-                                      (d := d) i ⟨i.val + 1, hi⟩ η))) ∧
-                          BHW.extendF (bvt_F OS lgc (m + 1))
-                              (BHW.realEmbed
-                                (coordInv (d := d) i ⟨i.val + 1, hi⟩
-                                  (reducedAdjacent_succ_ne i hi)
-                                  ((0 : SpacetimeDim d),
-                                    reducedCoord
-                                      (d := d) i ⟨i.val + 1, hi⟩ η))) =
-                            BHW.extendF (bvt_F OS lgc (m + 1))
-                              (BHW.realEmbed
-                                (fun k =>
-                                  coordInv (d := d) i ⟨i.val + 1, hi⟩
-                                    (reducedAdjacent_succ_ne i hi)
-                                    ((0 : SpacetimeDim d),
-                                      reducedCoord
-                                        (d := d) i
-                                        ⟨i.val + 1, hi⟩ η)
-                                    (Equiv.swap i
-                                      ⟨i.val + 1, hi⟩ k)))) :
+                                      (d := d) i ⟨i.val + 1, hi⟩ η)))) :
     _root_.OSReconstruction.ReducedLocalAdjacentBoundaryCLMInvariant
       (d := d) OS lgc χ := by
   exact
@@ -15700,7 +15792,7 @@ theorem reducedLocalAdjacentBoundaryCLMInvariant_of_local_OS45HdiffGerm_endpoint
           ⟨P, U, Ucx, Hdiff, Fred, hU_open, hU_sub, hpU,
             hUcx_open, hUcx_connected, hwick_mem, hcommon_mem,
             hHdiff_holo, hwick_pairing_zero, hcommon_trace,
-            hsource_commonEdge, hplus_endpoint_abs, hraw_swap_endpoint_abs⟩
+            hraw_edge_envelope, hsource_commonEdge, hplus_endpoint_abs⟩
         let j : Fin (m + 1) := ⟨i.val + 1, hi⟩
         let p : ReducedSpace d m i j :=
           reducedCoord (d := d) i j η
@@ -15714,9 +15806,9 @@ theorem reducedLocalAdjacentBoundaryCLMInvariant_of_local_OS45HdiffGerm_endpoint
             (d := d) OS lgc P U hU_open hU_sub hU_nonempty p hpU'
             Fred Ucx Hdiff hUcx_open hUcx_connected hwick_mem hcommon_mem
             hHdiff_holo hwick_pairing_zero hcommon_trace
+            (Classical.choice hraw_edge_envelope)
             (by simpa [p, j] using hsource_commonEdge)
-            (by simpa [p, j] using hplus_endpoint_abs)
-            (by simpa [p, j] using hraw_swap_endpoint_abs))
+            (by simpa [p, j] using hplus_endpoint_abs))
 
 end AdjacentNormal
 
