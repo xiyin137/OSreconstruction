@@ -6732,6 +6732,54 @@ theorem reducedNormalFlatten_mem_reducedNormalOS45SourcePreimage_iff
           ((0 : SpacetimeDim d), p) ∈ U := by
   simp [reducedNormalOS45SourcePreimage]
 
+/-- Determinant-regular source-oriented equality restricts to the
+zero-center reduced-normal section.
+
+The source patch `Esrc` is an honest open set in the full source variables.
+The reduced-normal collar is only its preimage under
+`reducedNormalAbsoluteSectionCLM`; this theorem intentionally keeps the
+full-source thickening as an explicit hypothesis rather than treating the
+frozen-spectator edge as source-open. -/
+theorem sourceOrientedEqOn_reducedNormalOS45SourcePreimage_of_fullFrameDetNonzero
+    {m : ℕ}
+    (hd : 2 ≤ d)
+    (hn : d + 1 ≤ m + 1)
+    (i : Fin (m + 1)) (hi : i.val + 1 < m + 1)
+    (ι : Fin (d + 1) ↪ Fin (m + 1))
+    {Esrc : Set (NPointDomain d (m + 1))}
+    (hEsrc_open : IsOpen Esrc)
+    (hEsrc_nonempty : Esrc.Nonempty)
+    (hdet :
+      ∀ x ∈ Esrc, BHW.sourceRealFullFrameDet d (m + 1) ι x ≠ 0)
+    {U : Set (BHW.SourceOrientedGramData d (m + 1))}
+    {Φ Ψ : BHW.SourceOrientedGramData d (m + 1) → ℂ}
+    (hU_rel : BHW.IsRelOpenInSourceOrientedGramVariety d (m + 1) U)
+    (hU_conn : IsConnected U)
+    (hE_U :
+      ∀ x ∈ Esrc, BHW.sourceRealOrientedMinkowskiInvariant d (m + 1) x ∈ U)
+    (hΦ : BHW.SourceOrientedVarietyGermHolomorphicOn d (m + 1) Φ U)
+    (hΨ : BHW.SourceOrientedVarietyGermHolomorphicOn d (m + 1) Ψ U)
+    (hEq_real :
+      ∀ x ∈ Esrc,
+        Φ (BHW.sourceRealOrientedMinkowskiInvariant d (m + 1) x) =
+          Ψ (BHW.sourceRealOrientedMinkowskiInvariant d (m + 1) x)) :
+    ∀ u ∈ reducedNormalOS45SourcePreimage (d := d) i hi Esrc,
+      Φ (BHW.sourceRealOrientedMinkowskiInvariant d (m + 1)
+            (reducedNormalAbsoluteSectionCLM (d := d) i hi u)) =
+        Ψ (BHW.sourceRealOrientedMinkowskiInvariant d (m + 1)
+            (reducedNormalAbsoluteSectionCLM (d := d) i hi u)) := by
+  have hEqU : Set.EqOn Φ Ψ U :=
+    BHW.sourceOrientedEqOn_of_fullFrameDetNonzero
+      (d := d) (n := m + 1) hd hn ι
+      hEsrc_open hEsrc_nonempty hdet
+      hU_rel hU_conn hE_U hΦ hΨ hEq_real
+  intro u hu
+  have hsrc :
+      reducedNormalAbsoluteSectionCLM (d := d) i hi u ∈ Esrc := by
+    simpa [reducedNormalOS45SourcePreimage] using hu
+  exact hEqU (hE_U
+    (reducedNormalAbsoluteSectionCLM (d := d) i hi u) hsrc)
+
 theorem reducedNormalOS45SourcePreimage_subset_patchPreimage
     {m : ℕ} (i : Fin (m + 1)) (hi : i.val + 1 < m + 1)
     {hd : 2 ≤ d}
