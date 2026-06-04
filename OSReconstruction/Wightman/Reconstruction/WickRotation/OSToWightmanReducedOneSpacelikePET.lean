@@ -792,4 +792,38 @@ theorem AdjacentNormal.reducedNormalCanonicalRayEOWBranchDataOn_noSpectator_of_s
     AdjacentNormal.reducedNormalCanonicalRayEOWBranchDataOn_zero_one_of_selected
       (d := d) OS lgc Fred p hp
 
+/-- In the two-point/no-spectator case, selected spacelikeness gives the exact
+pointwise reduced-normal sign-flip convergence consumed by the theorem-2
+final-mile handoff. -/
+theorem AdjacentNormal.reducedNormalSignFlip_pointwise_noSpectator_of_selected
+    [NeZero d]
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (Fred : BHW.ReducedBHWExtensionData (d := d) (n := 2)
+      (bvt_F_reduced (d := d) OS lgc 1))
+    (i : Fin 2) (hi : i.val + 1 < 2)
+    (p : AdjacentNormal.ReducedSpace d 1 i ⟨i.val + 1, hi⟩)
+    (hp : p ∈ AdjacentNormal.reducedSelectedSpacelike
+      (d := d) i ⟨i.val + 1, hi⟩) :
+    Filter.Tendsto
+      (fun ε : ℝ =>
+        canonicalReducedBranch (d := d) OS lgc 1 ε
+            (AdjacentNormal.reducedCoordInv (d := d)
+              i ⟨i.val + 1, hi⟩
+              (AdjacentNormal.reducedAdjacent_succ_ne i hi)
+              (AdjacentNormal.reducedSignFlip
+                (d := d) i ⟨i.val + 1, hi⟩ p)) -
+          canonicalReducedBranch (d := d) OS lgc 1 ε
+            (AdjacentNormal.reducedCoordInv (d := d)
+              i ⟨i.val + 1, hi⟩
+              (AdjacentNormal.reducedAdjacent_succ_ne i hi) p))
+      (nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)) : Filter ℝ)
+      (nhds 0) := by
+  rcases
+    AdjacentNormal.reducedNormalCanonicalRayEOWBranchDataOn_noSpectator_of_selected
+      (d := d) OS lgc Fred i hi p hp with ⟨D⟩
+  exact
+    AdjacentNormal.ReducedNormalCanonicalRayEOWBranchDataOn.signFlip_pointwise
+      (d := d) OS lgc i hi p D
+
 end OSReconstruction
