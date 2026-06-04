@@ -583,6 +583,46 @@ theorem sourceComplexGramVariety_local_rankExact_connected_basis_regular
     rw [hO_inter]
     exact hO_conn
 
+/-- Regular-rank points of the source complex Gram variety have relatively
+open connected neighborhoods inside any prescribed ambient neighborhood. -/
+theorem sourceComplexGramVariety_local_connectedRelOpen_basis_regular
+    (d n : ℕ)
+    (hD : d + 1 < n)
+    {Z0 : Fin n → Fin n → ℂ}
+    (hZ0reg : Z0 ∈ sourceSymmetricRankExactStratum n (d + 1))
+    {N0 : Set (Fin n → Fin n → ℂ)}
+    (hN0_open : IsOpen N0)
+    (hZ0N0 : Z0 ∈ N0) :
+    ∃ V : Set (Fin n → Fin n → ℂ),
+      Z0 ∈ V ∧
+      IsRelOpenInSourceComplexGramVariety d n V ∧
+      IsConnected V ∧
+      V ⊆ N0 ∩ sourceComplexGramVariety d n := by
+  have hDle : d + 1 ≤ n := Nat.le_of_lt hD
+  rcases sourceSymmetricRankExactStratum_exists_complexRegular_realization
+      d n hDle hZ0reg with
+    ⟨z0, hz0reg, hz0Gram⟩
+  let Vsrc : Set (Fin n → Fin (d + 1) → ℂ) :=
+    {z | sourceMinkowskiGram d n z ∈ N0}
+  have hVsrc_open : IsOpen Vsrc :=
+    hN0_open.preimage (contDiff_sourceMinkowskiGram d n).continuous
+  have hz0Vsrc : z0 ∈ Vsrc := by
+    simpa [Vsrc, hz0Gram] using hZ0N0
+  rcases sourceComplexGramMap_localConnectedRelOpenImage_in_open_of_complexRegular
+      d n hDle hz0reg hVsrc_open hz0Vsrc with
+    ⟨Usrc, _hUsrc_open, _hUsrc_conn, _hz0Usrc, hUsrc_sub,
+      O, hZ0O, hO_rel, _hO_image, hO_rank, hO_conn, hO_surj⟩
+  have hZ0O' : Z0 ∈ O := by
+    simpa [hz0Gram] using hZ0O
+  refine ⟨O, hZ0O', hO_rel, hO_conn, ?_⟩
+  intro G hGO
+  rcases hO_surj G hGO with ⟨z, hzU, hzG⟩
+  refine ⟨?_, ?_⟩
+  · rw [← hzG]
+    exact hUsrc_sub hzU
+  · exact sourceSymmetricRankExactStratum_subset_sourceComplexGramVariety
+      d n (d + 1) le_rfl (hO_rank hGO)
+
 /-- Every source complex Gram-variety point has arbitrarily small relatively
 open neighborhoods whose rank-`d+1` part is connected.  This is the local
 Hall-Wightman source-variety connectedness input: regular points use the
@@ -619,26 +659,248 @@ theorem sourceComplexGramVariety_local_rankExact_connected_basis
       sourceComplexGramVariety_local_rankExact_connected_basis_singular
         d n hD hZ0 (by simpa [M0] using hsing) hN0_open hZ0N0
 
+/-- In the strict arity range, every source complex Gram-variety point has
+arbitrarily small relatively open connected neighborhoods.  Regular points use
+the source-Gram implicit chart; singular points use the rank-`≤`
+Schur-product tube. -/
+theorem sourceComplexGramVariety_local_connectedRelOpen_basis_strict
+    (d n : ℕ)
+    (hD : d + 1 < n)
+    {Z0 : Fin n → Fin n → ℂ}
+    (hZ0 : Z0 ∈ sourceComplexGramVariety d n)
+    {N0 : Set (Fin n → Fin n → ℂ)}
+    (hN0_open : IsOpen N0)
+    (hZ0N0 : Z0 ∈ N0) :
+    ∃ V : Set (Fin n → Fin n → ℂ),
+      Z0 ∈ V ∧
+      IsRelOpenInSourceComplexGramVariety d n V ∧
+      IsConnected V ∧
+      V ⊆ N0 ∩ sourceComplexGramVariety d n := by
+  let M0 : Matrix (Fin n) (Fin n) ℂ := Matrix.of fun i j => Z0 i j
+  have hZ0_rank_le : Z0 ∈ sourceSymmetricMatrixSpace n ∧
+      M0.rank ≤ d + 1 := by
+    have h := hZ0
+    rw [sourceComplexGramVariety_eq_rank_le] at h
+    simpa [M0] using h
+  by_cases hreg : M0.rank = d + 1
+  · have hZ0reg : Z0 ∈ sourceSymmetricRankExactStratum n (d + 1) := by
+      exact ⟨hZ0_rank_le.1, by simpa [M0] using hreg⟩
+    exact
+      sourceComplexGramVariety_local_connectedRelOpen_basis_regular
+        d n hD hZ0reg hN0_open hZ0N0
+  · have hsing : M0.rank < d + 1 := by
+      omega
+    exact
+      sourceComplexGramVariety_local_connectedRelOpen_basis_singular
+        d n hD hZ0 (by simpa [M0] using hsing) hN0_open hZ0N0
+
+/-- A small ball in the affine space of source symmetric matrices is
+connected. -/
+theorem isConnected_sourceSymmetricMatrixSpace_ball
+    (n : ℕ)
+    {Z0 : Fin n → Fin n → ℂ}
+    (hZ0sym : Z0 ∈ sourceSymmetricMatrixSpace n)
+    {ε : ℝ} (hε : 0 < ε) :
+    IsConnected (Metric.ball Z0 ε ∩ sourceSymmetricMatrixSpace n) := by
+  have hsymConvex : Convex ℝ (sourceSymmetricMatrixSpace n) := by
+    intro Z hZ W hW a b ha hb hab i j
+    simp [Pi.add_apply, Pi.smul_apply, hZ i j, hW i j]
+  have hconv : Convex ℝ (Metric.ball Z0 ε ∩ sourceSymmetricMatrixSpace n) :=
+    (convex_ball Z0 ε).inter hsymConvex
+  have hne : (Metric.ball Z0 ε ∩ sourceSymmetricMatrixSpace n).Nonempty :=
+    ⟨Z0, Metric.mem_ball_self hε, hZ0sym⟩
+  exact hconv.isConnected hne
+
+/-- Every source complex Gram-variety point has arbitrarily small relatively
+open connected neighborhoods.  In the easy arity range this is the full
+symmetric affine space; in the strict range it is supplied by the regular
+source-Gram chart and the rank-`≤` Schur-product tube. -/
+theorem sourceComplexGramVariety_local_connectedRelOpen_basis
+    (d n : ℕ)
+    {Z0 : Fin n → Fin n → ℂ}
+    (hZ0 : Z0 ∈ sourceComplexGramVariety d n)
+    {N0 : Set (Fin n → Fin n → ℂ)}
+    (hN0_open : IsOpen N0)
+    (hZ0N0 : Z0 ∈ N0) :
+    ∃ V : Set (Fin n → Fin n → ℂ),
+      Z0 ∈ V ∧
+      IsRelOpenInSourceComplexGramVariety d n V ∧
+      IsConnected V ∧
+      V ⊆ N0 ∩ sourceComplexGramVariety d n := by
+  by_cases hn : n ≤ d + 1
+  · have hZ0sym : Z0 ∈ sourceSymmetricMatrixSpace n := by
+      rw [sourceComplexGramVariety_eq_sourceSymmetricMatrixSpace_of_le d n hn] at hZ0
+      exact hZ0
+    have hN_nhds : N0 ∈ 𝓝 Z0 := hN0_open.mem_nhds hZ0N0
+    rw [Metric.mem_nhds_iff] at hN_nhds
+    rcases hN_nhds with ⟨ε, hε, hεsub⟩
+    let V : Set (Fin n → Fin n → ℂ) :=
+      Metric.ball Z0 ε ∩ sourceComplexGramVariety d n
+    refine ⟨V, ?_, ?_, ?_, ?_⟩
+    · exact ⟨Metric.mem_ball_self hε, hZ0⟩
+    · exact ⟨Metric.ball Z0 ε, Metric.isOpen_ball, rfl⟩
+    · have hVeq :
+          V = Metric.ball Z0 ε ∩ sourceSymmetricMatrixSpace n := by
+        simp [V, sourceComplexGramVariety_eq_sourceSymmetricMatrixSpace_of_le d n hn]
+      rw [hVeq]
+      exact isConnected_sourceSymmetricMatrixSpace_ball n hZ0sym hε
+    · intro Z hZ
+      exact ⟨hεsub hZ.1, hZ.2⟩
+  · have hD : d + 1 < n := by omega
+    exact
+      sourceComplexGramVariety_local_connectedRelOpen_basis_strict
+        d n hD hZ0 hN0_open hZ0N0
+
+/-- Relative openness in the source Gram variety is stable under arbitrary
+indexed unions. -/
+theorem IsRelOpenInSourceComplexGramVariety.iUnion
+    (d n : ℕ)
+    {ι : Type*}
+    {U : ι → Set (Fin n → Fin n → ℂ)}
+    (hU : ∀ i, IsRelOpenInSourceComplexGramVariety d n (U i)) :
+    IsRelOpenInSourceComplexGramVariety d n (⋃ i, U i) := by
+  classical
+  choose U0 hU0_open hU0_eq using hU
+  refine ⟨⋃ i, U0 i, isOpen_iUnion hU0_open, ?_⟩
+  ext Z
+  simp [hU0_eq]
+
+/-- Connected components of relatively open source-variety domains are
+relatively open in the source Gram variety. -/
+theorem sourceComplexGramVariety_connectedComponentIn_relOpen
+    (d n : ℕ)
+    {D : Set (Fin n → Fin n → ℂ)}
+    (hD_rel : IsRelOpenInSourceComplexGramVariety d n D)
+    {Z0 : Fin n → Fin n → ℂ}
+    (hZ0D : Z0 ∈ D) :
+    IsRelOpenInSourceComplexGramVariety d n (connectedComponentIn D Z0) := by
+  classical
+  have _hZ0D : Z0 ∈ D := hZ0D
+  rcases hD_rel with ⟨D0, hD0_open, hD_eq⟩
+  let C : Set (Fin n → Fin n → ℂ) := connectedComponentIn D Z0
+  let Index : Type := {Y : Fin n → Fin n → ℂ // Y ∈ C}
+  have hloc : ∀ Y : Index,
+      ∃ V : Set (Fin n → Fin n → ℂ),
+        Y.1 ∈ V ∧
+        IsRelOpenInSourceComplexGramVariety d n V ∧
+        IsConnected V ∧
+        V ⊆ D ∧
+        V ⊆ C := by
+    intro Y
+    have hYD : Y.1 ∈ D := connectedComponentIn_subset D Z0 Y.2
+    have hYD0 : Y.1 ∈ D0 := by
+      rw [hD_eq] at hYD
+      exact hYD.1
+    have hYvar : Y.1 ∈ sourceComplexGramVariety d n := by
+      rw [hD_eq] at hYD
+      exact hYD.2
+    rcases sourceComplexGramVariety_local_connectedRelOpen_basis
+        d n hYvar hD0_open hYD0 with
+      ⟨V, hYV, hV_rel, hV_conn, hV_sub⟩
+    have hV_D : V ⊆ D := by
+      intro Z hZ
+      rw [hD_eq]
+      exact hV_sub hZ
+    have hV_C : V ⊆ C := by
+      have hV_compY : V ⊆ connectedComponentIn D Y.1 :=
+        hV_conn.isPreconnected.subset_connectedComponentIn hYV hV_D
+      have hCeq : C = connectedComponentIn D Y.1 := connectedComponentIn_eq Y.2
+      intro Z hZ
+      rw [hCeq]
+      exact hV_compY hZ
+    exact ⟨V, hYV, hV_rel, hV_conn, hV_D, hV_C⟩
+  choose V hV_mem hV_rel _hV_conn _hV_D hV_C using hloc
+  have hC_eq : C = ⋃ Y : Index, V Y := by
+    ext Z
+    constructor
+    · intro hZC
+      exact Set.mem_iUnion.2 ⟨⟨Z, hZC⟩, hV_mem ⟨Z, hZC⟩⟩
+    · intro hZUnion
+      rcases Set.mem_iUnion.1 hZUnion with ⟨Y, hZY⟩
+      exact hV_C Y hZY
+  rw [show connectedComponentIn D Z0 = C by rfl, hC_eq]
+  exact IsRelOpenInSourceComplexGramVariety.iUnion d n hV_rel
+
+/-- A connected relatively open source tube following a continuous path inside
+a relatively open source-variety domain.  The proof uses the connected
+component of the path start point; compactness is not needed beyond the
+downstream theorem surface retained by the route documents. -/
+theorem sourceComplexGramVariety_connectedRelOpenTube_around_compactPath
+    (d n : ℕ)
+    {D : Set (Fin n → Fin n → ℂ)}
+    (hD_rel : IsRelOpenInSourceComplexGramVariety d n D)
+    {γ : unitInterval → Fin n → Fin n → ℂ}
+    (hγ_cont : Continuous γ)
+    (hγD : ∀ t, γ t ∈ D)
+    {W0 : Set (Fin n → Fin n → ℂ)}
+    (hW0_rel : IsRelOpenInSourceComplexGramVariety d n W0)
+    (hW0_conn : IsConnected W0)
+    (hW0_nonempty : W0.Nonempty)
+    (hW0D : W0 ⊆ D)
+    (hstart : γ (0 : unitInterval) ∈ W0) :
+    ∃ Wtube : Set (Fin n → Fin n → ℂ),
+      IsRelOpenInSourceComplexGramVariety d n Wtube ∧
+      IsConnected Wtube ∧
+      W0 ⊆ Wtube ∧
+      Wtube ⊆ D ∧
+      (∀ t, γ t ∈ Wtube) := by
+  classical
+  let Zstart : Fin n → Fin n → ℂ := γ (0 : unitInterval)
+  let Wtube : Set (Fin n → Fin n → ℂ) := connectedComponentIn D Zstart
+  have hZstartD : Zstart ∈ D := hγD 0
+  have _hW0_rel : IsRelOpenInSourceComplexGramVariety d n W0 := hW0_rel
+  have _hW0_nonempty : W0.Nonempty := hW0_nonempty
+  refine ⟨Wtube, ?_, ?_, ?_, ?_, ?_⟩
+  · exact sourceComplexGramVariety_connectedComponentIn_relOpen d n hD_rel hZstartD
+  · simpa [Wtube, Zstart] using (isConnected_connectedComponentIn_iff.mpr hZstartD)
+  · simpa [Wtube, Zstart] using
+      hW0_conn.isPreconnected.subset_connectedComponentIn hstart hW0D
+  · intro Z hZ
+    simpa [Wtube, Zstart] using connectedComponentIn_subset D Zstart hZ
+  · intro t
+    have hγ_pre : IsPreconnected (Set.range γ) := isPreconnected_range hγ_cont
+    have hγ_base : Zstart ∈ Set.range γ := ⟨0, rfl⟩
+    have hγ_range_D : Set.range γ ⊆ D := by
+      intro Z hZ
+      rcases hZ with ⟨s, rfl⟩
+      exact hγD s
+    have hγ_sub : Set.range γ ⊆ connectedComponentIn D Zstart :=
+      hγ_pre.subset_connectedComponentIn hγ_base hγ_range_D
+    simpa [Wtube, Zstart] using hγ_sub ⟨t, rfl⟩
+
 /-- Pull back a variety-holomorphic scalar along the source complex Gram map. -/
-theorem SourceVarietyHolomorphicOn.comp_sourceMinkowskiGram
+theorem SourceVarietyGermHolomorphicOn.comp_sourceMinkowskiGram
     (d n : ℕ)
     {U : Set (Fin n → Fin n → ℂ)}
     {H : (Fin n → Fin n → ℂ) → ℂ}
     {V : Set (Fin n → Fin (d + 1) → ℂ)}
-    (hH : SourceVarietyHolomorphicOn d n H U)
+    (hH : SourceVarietyGermHolomorphicOn d n H U)
     (hGramU : sourceMinkowskiGram d n '' V ⊆ U) :
     DifferentiableOn ℂ (fun z => H (sourceMinkowskiGram d n z)) V := by
   intro z hzV
   have hG : sourceMinkowskiGram d n z ∈ U :=
     hGramU ⟨z, hzV, rfl⟩
   rcases hH (sourceMinkowskiGram d n z) hG with
-    ⟨U0, hU0_open, hGU0, hHdiffU0, _hU0_sub⟩
-  have hHat : DifferentiableAt ℂ H (sourceMinkowskiGram d n z) :=
-    (hHdiffU0 (sourceMinkowskiGram d n z) hGU0).differentiableAt
+    ⟨U0, H0, hU0_open, hGU0, hH0diffU0, hEq, _hU0_sub⟩
+  have hH0at : DifferentiableAt ℂ H0 (sourceMinkowskiGram d n z) :=
+    (hH0diffU0 (sourceMinkowskiGram d n z) hGU0).differentiableAt
       (hU0_open.mem_nhds hGU0)
   have hgram : Differentiable ℂ (sourceMinkowskiGram d n) :=
     (contDiff_sourceMinkowskiGram d n).differentiable (by simp)
-  exact (hHat.comp z hgram.differentiableAt).differentiableWithinAt
+  have hcomp :
+      DifferentiableWithinAt ℂ
+        (fun z => H0 (sourceMinkowskiGram d n z)) V z :=
+    (hH0at.comp z hgram.differentiableAt).differentiableWithinAt
+  have heq :
+      (fun z => H (sourceMinkowskiGram d n z)) =ᶠ[𝓝[V] z]
+        (fun z => H0 (sourceMinkowskiGram d n z)) := by
+    have hGramU0_event :
+        ∀ᶠ y in 𝓝[V] z, sourceMinkowskiGram d n y ∈ U0 :=
+      hgram.continuous.continuousAt.continuousWithinAt.preimage_mem_nhdsWithin
+        (hU0_open.mem_nhds hGU0)
+    filter_upwards [hGramU0_event] with y hyU0
+    exact hEq ⟨hyU0, ⟨y, rfl⟩⟩
+  exact hcomp.congr_of_eventuallyEq_of_mem heq hzV
 
 /-- Local identity propagation on the regular rank stratum of the source
 complex Gram variety. -/
@@ -648,7 +910,7 @@ theorem sourceComplexGramVariety_rankExact_local_identity_near_point
     {U : Set (Fin n → Fin n → ℂ)}
     {H : (Fin n → Fin n → ℂ) → ℂ}
     (hU_rel : IsRelOpenInSourceComplexGramVariety d n U)
-    (hH : SourceVarietyHolomorphicOn d n H U)
+    (hH : SourceVarietyGermHolomorphicOn d n H U)
     {Z0 : Fin n → Fin n → ℂ}
     (hZ0U : Z0 ∈ U)
     (hZ0reg : Z0 ∈ sourceSymmetricRankExactStratum n (d + 1))
@@ -719,7 +981,7 @@ theorem sourceComplexGramVariety_rankExact_local_identity_near_point
   have hdiff :
       DifferentiableOn ℂ
         (fun z => H (sourceMinkowskiGram d n z)) Usrc :=
-    SourceVarietyHolomorphicOn.comp_sourceMinkowskiGram
+    SourceVarietyGermHolomorphicOn.comp_sourceMinkowskiGram
       d n hH hGramU
   have hagree :
       (fun z => H (sourceMinkowskiGram d n z)) =ᶠ[nhds z1]
@@ -986,7 +1248,7 @@ theorem sourceComplexGramVariety_rankExact_identity_principle_of_connected
     (hW_rel : IsRelOpenInSourceComplexGramVariety d n W)
     (hW_ne : W.Nonempty)
     (hW_sub : W ⊆ U)
-    (hH : SourceVarietyHolomorphicOn d n H U)
+    (hH : SourceVarietyGermHolomorphicOn d n H U)
     (hW_zero : Set.EqOn H 0 W) :
     Set.EqOn H 0
       (U ∩ sourceSymmetricRankExactStratum n (d + 1)) := by
@@ -1158,7 +1420,7 @@ theorem sourceComplexGramVariety_rankExact_identity_principle
     (hW_rel : IsRelOpenInSourceComplexGramVariety d n W)
     (hW_ne : W.Nonempty)
     (hW_sub : W ⊆ U)
-    (hH : SourceVarietyHolomorphicOn d n H U)
+    (hH : SourceVarietyGermHolomorphicOn d n H U)
     (hW_zero : Set.EqOn H 0 W) :
     Set.EqOn H 0
       (U ∩ sourceSymmetricRankExactStratum n (d + 1)) :=
@@ -1214,7 +1476,7 @@ theorem sourceComplexGramVariety_identity_principle_of_connected_rankExact
     (hW_rel : IsRelOpenInSourceComplexGramVariety d n W)
     (hW_ne : W.Nonempty)
     (hW_sub : W ⊆ U)
-    (hH : SourceVarietyHolomorphicOn d n H U)
+    (hH : SourceVarietyGermHolomorphicOn d n H U)
     (hW_zero : Set.EqOn H 0 W) :
     Set.EqOn H 0 U := by
   have hDle : d + 1 ≤ n := Nat.le_of_lt hD
@@ -1225,7 +1487,9 @@ theorem sourceComplexGramVariety_identity_principle_of_connected_rankExact
       d n hD hU_rel hUreg_conn hW_rel hW_ne hW_sub hH hW_zero
   exact
     sourceComplexGramVariety_relOpen_eqOn_zero_of_eqOn_rankExact
-      d n hDle hU_rel (SourceVarietyHolomorphicOn.continuousOn d n hH)
+      d n hDle hU_rel
+      (SourceVarietyGermHolomorphicOn.continuousOn d n hH
+        (IsRelOpenInSourceComplexGramVariety.subset hU_rel))
       hzero_rankExact
 
 /-- Source complex Gram-variety identity principle in all arities.  The easy
@@ -1240,7 +1504,7 @@ theorem sourceComplexGramVariety_identity_principle
     (hW_rel : IsRelOpenInSourceComplexGramVariety d n W)
     (hW_ne : W.Nonempty)
     (hW_sub : W ⊆ U)
-    (hH : SourceVarietyHolomorphicOn d n H U)
+    (hH : SourceVarietyGermHolomorphicOn d n H U)
     (hW_zero : Set.EqOn H 0 W) :
     Set.EqOn H 0 U := by
   by_cases hn : n ≤ d + 1
@@ -1254,5 +1518,79 @@ theorem sourceComplexGramVariety_identity_principle
         (sourceComplexGramVariety_rankExact_inter_relOpen_isConnected
           d n hD hU_rel hU_conn)
         hW_rel hW_ne hW_sub hH hW_zero
+
+/-- Propagate an adjacent scalar equality from a seed set through a connected
+source-scalar corridor by the source-variety identity principle.  This is
+generic in the represented holomorphic function; OS-specific data are supplied
+only when instantiating `SourceScalarRepresentativeData`. -/
+theorem os45AdjacentScalarEq_on_quarterTurnCorridor
+    [NeZero d]
+    (n : Nat) (i : Fin n) (hi : i.val + 1 < n)
+    {F : (Fin n → Fin (d + 1) → ℂ) → ℂ}
+    (hRep : BHW.SourceScalarRepresentativeData (d := d) n F)
+    (Wseed Wscal : Set (Fin n -> Fin n -> ℂ))
+    (hWscal_relOpen : BHW.IsRelOpenInSourceComplexGramVariety d n Wscal)
+    (hWscal_connected : IsConnected Wscal)
+    (hWseed_relOpen : BHW.IsRelOpenInSourceComplexGramVariety d n Wseed)
+    (hWseed_nonempty : Wseed.Nonempty)
+    (hWseed_subset : Wseed ⊆ Wscal)
+    (hWscal_double :
+      Wscal ⊆
+        BHW.sourceDoublePermutationGramDomain d n
+          (Equiv.swap i ⟨i.val + 1, hi⟩))
+    (hSeed :
+      let τ : Equiv.Perm (Fin n) := Equiv.swap i ⟨i.val + 1, hi⟩
+      Set.EqOn
+        (fun Z => hRep.Phi (BHW.sourcePermuteComplexGram n τ Z))
+        hRep.Phi
+        Wseed) :
+    let τ : Equiv.Perm (Fin n) := Equiv.swap i ⟨i.val + 1, hi⟩
+    Set.EqOn
+      (fun Z => hRep.Phi (BHW.sourcePermuteComplexGram n τ Z))
+      hRep.Phi
+      Wscal := by
+  classical
+  dsimp
+  let τ : Equiv.Perm (Fin n) := Equiv.swap i ⟨i.val + 1, hi⟩
+  let Φ : (Fin n → Fin n → ℂ) → ℂ :=
+    fun Z => hRep.Phi (BHW.sourcePermuteComplexGram n τ Z)
+  let Ψ : (Fin n → Fin n → ℂ) → ℂ := hRep.Phi
+  have hWscal_subset_U : Wscal ⊆ hRep.U := by
+    intro Z hZ
+    have hdouble : Z ∈ BHW.sourceDoublePermutationGramDomain d n τ := by
+      simpa [τ] using hWscal_double hZ
+    simpa [hRep.U_eq] using hdouble.1
+  have hWscal_subset_permU :
+      Wscal ⊆ {Z | BHW.sourcePermuteComplexGram n τ Z ∈ hRep.U} := by
+    intro Z hZ
+    have hdouble : Z ∈ BHW.sourceDoublePermutationGramDomain d n τ := by
+      simpa [τ] using hWscal_double hZ
+    simpa [hRep.U_eq] using hdouble.2
+  have hΨ_holo : BHW.SourceVarietyGermHolomorphicOn d n Ψ Wscal := by
+    exact BHW.SourceVarietyGermHolomorphicOn.of_subset_relOpen
+      (d := d) (n := n) hRep.Phi_holomorphic hWscal_relOpen hWscal_subset_U
+  have hΦ_holo : BHW.SourceVarietyGermHolomorphicOn d n Φ Wscal := by
+    have hpre : BHW.SourceVarietyGermHolomorphicOn d n Φ
+        {Z | BHW.sourcePermuteComplexGram n τ Z ∈ hRep.U} := by
+      simpa [Φ] using
+        BHW.SourceVarietyGermHolomorphicOn.precomp_sourcePermuteComplexGram
+          (d := d) (n := n) hRep.Phi_holomorphic τ
+    exact BHW.SourceVarietyGermHolomorphicOn.of_subset_relOpen
+      (d := d) (n := n) hpre hWscal_relOpen hWscal_subset_permU
+  let H : (Fin n → Fin n → ℂ) → ℂ := fun Z => Φ Z - Ψ Z
+  have hH_holo : BHW.SourceVarietyGermHolomorphicOn d n H Wscal := by
+    simpa [H] using
+      BHW.SourceVarietyGermHolomorphicOn.sub (d := d) (n := n) hΦ_holo hΨ_holo
+  have hW_zero : Set.EqOn H 0 Wseed := by
+    intro Z hZW
+    have hEq := hSeed hZW
+    exact sub_eq_zero.mpr hEq
+  have hH_zero : Set.EqOn H 0 Wscal :=
+    BHW.sourceComplexGramVariety_identity_principle
+      (d := d) (n := n) hWscal_relOpen hWscal_connected
+      hWseed_relOpen hWseed_nonempty hWseed_subset hH_holo hW_zero
+  intro Z hZW
+  have hzero := hH_zero hZW
+  simpa [H, Φ, Ψ, τ] using sub_eq_zero.mp hzero
 
 end BHW

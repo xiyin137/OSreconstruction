@@ -45,8 +45,9 @@ theorem orbitSet_isPreconnected_d1_of_mem_extendedTube
   have hu_core : u ∈ BHWCore.ForwardTube 1 n := by
     simpa [ForwardTube, BHWCore.ForwardTube] using huFT
   have hpre_u : IsPreconnected (orbitSet (d := 1) u) := by
-    simpa [orbitSet, complexLorentzAction, ForwardTube, BHWCore.complexLorentzAction,
-      BHWCore.ForwardTube] using orbitSet_isPreconnected_d1 (n := n) u hu_core
+    simpa [orbitSet, complexLorentzAction, complexLorentzVectorAction, ForwardTube,
+      BHWCore.complexLorentzAction, BHWCore.ForwardTube] using
+      orbitSet_isPreconnected_d1 (n := n) u hu_core
   exact orbitSet_isPreconnected_of_orbit_eq (d := 1) (n := n) u z Δ hz_eq hpre_u
 
 /-- For fixed `w`, if `σ · w ∈ ET` then the corresponding `d = 1` index slice
@@ -60,7 +61,8 @@ theorem permLambdaSlice_isPreconnected_d1_of_perm_mem_ET
   let S : Set (ComplexLorentzGroup 1) :=
     {Γ : ComplexLorentzGroup 1 | complexLorentzAction Γ u ∈ ForwardTube 1 n}
   have hS_pre : IsPreconnected S := by
-    simpa [S, ForwardTube, complexLorentzAction, BHWCore.ForwardTube, BHWCore.complexLorentzAction]
+    simpa [S, ForwardTube, complexLorentzAction, complexLorentzVectorAction,
+      BHWCore.ForwardTube, BHWCore.complexLorentzAction]
       using orbitSet_isPreconnected_d1 (n := n) u (by
         simpa [ForwardTube, BHWCore.ForwardTube] using huFT)
   have hmul_cont : Continuous (fun Γ : ComplexLorentzGroup 1 => Γ * Δ⁻¹) :=

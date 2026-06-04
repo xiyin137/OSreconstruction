@@ -223,7 +223,7 @@ theorem W_analytic_swap_boundary_pairing_eq {d n : ℕ} [NeZero d]
         (fun ε : ℝ => ∫ x : NPointDomain d n,
           W_analytic (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x))
         (nhdsWithin 0 (Set.Ioi 0)) (nhds (W n f)))
-    (hLC : IsLocallyCommutativeWeak d W)
+    (hLC : IsAdjacentLocallyCommutativeWeak d W)
     (i : Fin n) (hi : i.val + 1 < n) :
     ∀ (f g : SchwartzNPoint d n),
       HasCompactSupport (f : NPointDomain d n → ℂ) →
@@ -276,7 +276,7 @@ theorem analytic_extended_local_commutativity {d n : ℕ} [NeZero d]
         (fun ε : ℝ => ∫ x : NPointDomain d n,
           W_analytic (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x))
         (nhdsWithin 0 (Set.Ioi 0)) (nhds (W n f)))
-    (hLC : IsLocallyCommutativeWeak d W)
+    (hLC : IsAdjacentLocallyCommutativeWeak d W)
     (i : Fin n) (hi : i.val + 1 < n)
     (x : Fin n → Fin (d + 1) → ℝ)
     (hx_sp : MinkowskiSpace.minkowskiNormSq d
@@ -329,7 +329,7 @@ theorem analytic_boundary_local_commutativity_of_boundary_continuous {d n : ℕ}
         (fun ε : ℝ => ∫ x : NPointDomain d n,
           W_analytic (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x))
         (nhdsWithin 0 (Set.Ioi 0)) (nhds (W n f)))
-    (hLC : IsLocallyCommutativeWeak d W)
+    (hLC : IsAdjacentLocallyCommutativeWeak d W)
     (i : Fin n) (hi : i.val + 1 < n)
     (x : Fin n → Fin (d + 1) → ℝ)
     (hx : MinkowskiSpace.minkowskiNormSq d

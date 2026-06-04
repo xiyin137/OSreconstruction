@@ -119,11 +119,7 @@ theorem forwardTube_subset_extendedTube :
     ForwardTube d n ⊆ ExtendedTube d n := by
   intro z hz
   refine Set.mem_iUnion.mpr ⟨1, z, hz, ?_⟩
-  ext k μ
-  simp only [complexLorentzAction,
-    show (1 : ComplexLorentzGroup d).val = (1 : Matrix _ _ ℂ) from rfl,
-    Matrix.one_apply, ite_mul, one_mul, zero_mul,
-    Finset.sum_ite_eq, Finset.mem_univ, ↓reduceIte]
+  exact (complexLorentzAction_one z).symm
 
 /-- The extended tube is contained in the permuted extended tube. -/
 theorem extendedTube_subset_permutedExtendedTube :

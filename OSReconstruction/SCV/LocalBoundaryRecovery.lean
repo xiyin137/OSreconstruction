@@ -4,6 +4,7 @@ Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
 import OSReconstruction.SCV.LaplaceSchwartz
+import OSReconstruction.SCV.LocalEOWSideContinuity
 
 /-!
 # Local Boundary Recovery for Tempered Fourier-Laplace Packages
@@ -173,5 +174,63 @@ theorem fourierLaplace_boundary_recovery_on_open_of_tempered {m : ℕ}
     _hC hconv ⟨η, hη⟩ hcone hF hTempered U hU hcontU f hf_supp hf_compact η hη
   -- By uniqueness of limits
   exact tendsto_nhds_unique h_dist h_int
+
+/-- **Local side boundary recovery from an already supplied boundary limit.**
+
+This is the compact-support recovery step needed when the holomorphic side is
+only known on a local collar rather than on a global tube.  It does not produce
+the boundary functional `Tφ`; it identifies any supplied one-sided
+distributional limit with the zero-height trace pairing, using the local
+side-radius hypothesis and compact support. -/
+theorem localSide_boundary_recovery_of_tendsto {m : ℕ}
+    {E C : Set (Fin m → ℝ)}
+    {Ωc : Set (ComplexChartSpace m)}
+    (hΩc_open : IsOpen Ωc)
+    (F : ComplexChartSpace m → ℂ)
+    (hF_cont : ContinuousOn F Ωc)
+    (hreal_mem : ∀ x ∈ E, (fun a => (x a : ℂ)) ∈ Ωc)
+    (sgn : ℝ)
+    (hside :
+      ∀ K : Set (Fin m → ℝ), IsCompact K → K ⊆ E →
+        ∀ Kη : Set (Fin m → ℝ), IsCompact Kη → Kη ⊆ C →
+          ∃ r : ℝ, 0 < r ∧
+            ∀ x ∈ K, ∀ η ∈ Kη, ∀ ε : ℝ, 0 < ε → ε < r →
+              (fun a => (x a : ℂ) +
+                (sgn : ℂ) * (ε : ℂ) * (η a : ℂ) * Complex.I) ∈ Ωc)
+    (η : Fin m → ℝ) (hηC : η ∈ C)
+    (φ : SchwartzMap (Fin m → ℝ) ℂ)
+    (hφ_compact : HasCompactSupport (φ : (Fin m → ℝ) → ℂ))
+    (hφE : tsupport (φ : (Fin m → ℝ) → ℂ) ⊆ E)
+    (Tφ : ℂ)
+    (hboundary :
+      Tendsto
+        (fun ε : ℝ =>
+          ∫ x : Fin m → ℝ,
+            F (fun a => (x a : ℂ) +
+              (sgn : ℂ) * (ε : ℂ) * (η a : ℂ) * Complex.I) * φ x)
+        (𝓝[Set.Ioi 0] (0 : ℝ)) (𝓝 Tφ)) :
+    Tφ = ∫ x : Fin m → ℝ, F (fun a => (x a : ℂ)) * φ x := by
+  have hKηC : ({η} : Set (Fin m → ℝ)) ⊆ C := by
+    intro y hy
+    simpa [Set.mem_singleton_iff.mp hy] using hηC
+  have hunif :=
+    SCV.tendstoUniformlyOn_sideIntegral_of_zeroHeight_pairing
+      (E := E) (C := C) (Ωc := Ωc)
+      hΩc_open F hF_cont hreal_mem sgn hside
+      ({η} : Set (Fin m → ℝ)) isCompact_singleton hKηC
+      φ hφ_compact hφE
+      (∫ x : Fin m → ℝ, F (fun a => (x a : ℂ)) * φ x)
+      rfl
+  have hpoint :
+      Tendsto
+        (fun ε : ℝ =>
+          ∫ x : Fin m → ℝ,
+            F (fun a => (x a : ℂ) +
+              (sgn : ℂ) * (ε : ℂ) * (η a : ℂ) * Complex.I) * φ x)
+        (𝓝[Set.Ioi 0] (0 : ℝ))
+        (𝓝 (∫ x : Fin m → ℝ, F (fun a => (x a : ℂ)) * φ x)) := by
+    have hηmem : η ∈ ({η} : Set (Fin m → ℝ)) := by simp
+    simpa using hunif.tendsto_at hηmem
+  exact tendsto_nhds_unique hboundary hpoint
 
 end SCV

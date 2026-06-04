@@ -223,6 +223,55 @@ noncomputable def section43TimeProductTensor
     SchwartzMap (Fin n → ℝ) ℂ :=
   SchwartzMap.productTensor fs
 
+/-- Translate a one-dimensional Schwartz function:
+`(section43TranslateSchwartzReal t₀ f)(x) = f (x + t₀)`. -/
+def section43TranslateSchwartzReal (t₀ : ℝ) (f : SchwartzMap ℝ ℂ) :
+    SchwartzMap ℝ ℂ :=
+  ⟨fun x => f (x + t₀),
+   f.smooth'.comp (contDiff_id.add contDiff_const),
+   fun k n => by
+     obtain ⟨Ck, hCk⟩ := f.decay' k n
+     obtain ⟨C0, hC0⟩ := f.decay' 0 n
+     have hderiv : ∀ x, iteratedFDeriv ℝ n (fun z => f.toFun (z + t₀)) x =
+         iteratedFDeriv ℝ n f.toFun (x + t₀) :=
+       fun x => iteratedFDeriv_comp_add_right n t₀ x
+     have hC0' : ∀ y, ‖iteratedFDeriv ℝ n f.toFun y‖ ≤ C0 := by
+       intro y
+       have := hC0 y
+       simp [pow_zero] at this
+       linarith
+     refine ⟨2 ^ (k - 1) * (Ck + ‖t₀‖ ^ k * C0), fun x => ?_⟩
+     show ‖x‖ ^ k *
+       ‖iteratedFDeriv ℝ n (fun z => f.toFun (z + t₀)) x‖ ≤ _
+     rw [hderiv]
+     have hnorm_x : ‖x‖ ≤ ‖x + t₀‖ + ‖t₀‖ := by
+       calc
+         ‖x‖ = ‖(x + t₀) - t₀‖ := by ring_nf
+         _ ≤ ‖x + t₀‖ + ‖t₀‖ := norm_sub_le _ _
+     calc
+       ‖x‖ ^ k * ‖iteratedFDeriv ℝ n f.toFun (x + t₀)‖
+           ≤ (‖x + t₀‖ + ‖t₀‖) ^ k *
+             ‖iteratedFDeriv ℝ n f.toFun (x + t₀)‖ := by
+             gcongr
+       _ ≤ (2 ^ (k - 1) * (‖x + t₀‖ ^ k + ‖t₀‖ ^ k)) *
+             ‖iteratedFDeriv ℝ n f.toFun (x + t₀)‖ := by
+             gcongr
+             exact add_pow_le (norm_nonneg _) (norm_nonneg _) k
+       _ = 2 ^ (k - 1) *
+             (‖x + t₀‖ ^ k *
+                ‖iteratedFDeriv ℝ n f.toFun (x + t₀)‖ +
+              ‖t₀‖ ^ k *
+                ‖iteratedFDeriv ℝ n f.toFun (x + t₀)‖) := by
+             ring
+       _ ≤ 2 ^ (k - 1) * (Ck + ‖t₀‖ ^ k * C0) := by
+             gcongr
+             · exact hCk (x + t₀)
+             · exact hC0' (x + t₀)⟩
+
+@[simp] theorem section43TranslateSchwartzReal_apply
+    (t₀ : ℝ) (f : SchwartzMap ℝ ℂ) (x : ℝ) :
+    section43TranslateSchwartzReal t₀ f x = f (x + t₀) := rfl
+
 /-- Identify finite time tuples with tuples of one-point time functions, so the
 existing product-tensor density theorem at `d = 0` can be transported to
 `SchwartzMap (Fin n → ℝ) ℂ`. -/
@@ -869,6 +918,55 @@ noncomputable def section43TimeProductSource
       exact (gs i).positive
         (tsupport_section43TimeProductTensor_subset_pi_tsupport gs hx i)
     compact := hasCompactSupport_section43TimeProductTensor gs }
+
+/-- Translating a one-dimensional compact strict-positive source to the right
+by a nonnegative amount keeps it a compact strict-positive source. -/
+noncomputable def section43CompactPositiveTimeSource1D_translateRight
+    (g : Section43CompactPositiveTimeSource1D) (a : ℝ) (ha : 0 ≤ a) :
+    Section43CompactPositiveTimeSource1D :=
+  { f := section43TranslateSchwartzReal (-a) g.f
+    positive := by
+      intro x hx
+      have hx_pre :
+          x + (-a) ∈ tsupport (g.f : ℝ → ℂ) := by
+        change x ∈ tsupport ((g.f : SchwartzMap ℝ ℂ) ∘ fun y : ℝ => y + (-a)) at hx
+        exact tsupport_comp_subset_preimage
+          (g.f : ℝ → ℂ)
+          (f := fun y : ℝ => y + (-a))
+          (Homeomorph.addRight (-a)).continuous hx
+      have hpre : 0 < x + (-a) := g.positive hx_pre
+      have hxa : a < x := by
+        linarith
+      exact lt_of_le_of_lt ha hxa
+    compact := by
+      change HasCompactSupport ((g.f : SchwartzMap ℝ ℂ) ∘ fun y : ℝ => y + (-a))
+      simpa [Function.comp_def] using
+        g.compact.comp_homeomorph (Homeomorph.addRight (-a)) }
+
+/-- A translated finite product source is the product of the translated
+one-dimensional sources. -/
+theorem section43TimeProductSource_translateRight_apply
+    {m : ℕ}
+    (gs : Fin m → Section43CompactPositiveTimeSource1D)
+    (a : Fin m → ℝ) (ha : ∀ i : Fin m, 0 ≤ a i)
+    (x : Fin m → ℝ) :
+    (SCV.translateSchwartz (-a) (section43TimeProductSource gs).f) x =
+      (section43TimeProductSource
+        (fun i : Fin m =>
+          section43CompactPositiveTimeSource1D_translateRight
+            (gs i) (a i) (ha i))).f x := by
+  rw [SCV.translateSchwartz_apply]
+  change
+    (section43TimeProductTensor (fun i : Fin m => (gs i).f)) (x + -a) =
+      (section43TimeProductTensor
+        (fun i : Fin m =>
+          (section43CompactPositiveTimeSource1D_translateRight
+            (gs i) (a i) (ha i)).f)) x
+  rw [section43TimeProductTensor, SchwartzMap.productTensor_apply,
+    section43TimeProductTensor, SchwartzMap.productTensor_apply]
+  refine Finset.prod_congr rfl ?_
+  intro i _hi
+  simp [Pi.add_apply, section43CompactPositiveTimeSource1D_translateRight]
 
 /-- The raw multitime one-sided Laplace scalar of a compact strict-positive
 finite-time source. -/
@@ -1915,6 +2013,258 @@ theorem section43TimeProductSource_integral_eq_product_raw
     (fun i : Fin n => fun t : ℝ =>
       Complex.exp (-(t : ℂ) * (σ i : ℂ)) * (gs i).f t)
 
+/-- One-dimensional normalized compact positive source supported in an
+arbitrarily small ball around zero. -/
+theorem exists_section43CompactPositiveTimeSource1D_approx_identity
+    (ε : ℝ) (hε : 0 < ε) :
+    ∃ g : Section43CompactPositiveTimeSource1D,
+      (∀ x : ℝ, 0 ≤ (g.f x).re) ∧
+      (∀ x : ℝ, (g.f x).im = 0) ∧
+      (∫ x : ℝ, g.f x = 1) ∧
+      Function.support (g.f : ℝ → ℂ) ⊆ Metric.ball (0 : ℝ) ε := by
+  let c : ℝ := ε / 2
+  let b : ContDiffBump c := ⟨ε / 8, ε / 4, by linarith, by linarith⟩
+  let f : ℝ → ℂ := fun x => (b x : ℂ)
+  have hf_smooth : ContDiff ℝ (↑(⊤ : ℕ∞)) f :=
+    (Complex.ofRealCLM.contDiff.of_le le_top).comp b.contDiff
+  have hf_compact : HasCompactSupport f :=
+    b.hasCompactSupport.comp_left Complex.ofReal_zero
+  let g₀ := HasCompactSupport.toSchwartzMap hf_compact hf_smooth
+  have hg₀_int_ne : ∫ x : ℝ, g₀ x ≠ 0 := by
+    change ∫ x, (↑(b x) : ℂ) ≠ 0
+    rw [integral_complex_ofReal]
+    exact Complex.ofReal_ne_zero.mpr (ne_of_gt b.integral_pos)
+  let φ : SchwartzMap ℝ ℂ := (∫ x : ℝ, g₀ x)⁻¹ • g₀
+  have hφ_pos : tsupport (φ : ℝ → ℂ) ⊆ Set.Ioi (0 : ℝ) := by
+    intro x hx
+    have hsubset : tsupport (φ : ℝ → ℂ) ⊆ tsupport (g₀ : ℝ → ℂ) := by
+      exact tsupport_smul_subset_right
+        (fun _ : ℝ => (∫ u : ℝ, g₀ u)⁻¹)
+        (g₀ : ℝ → ℂ)
+    have hx_supp : x ∈ Metric.closedBall c (ε / 4 : ℝ) := by
+      have h_tsup_f : tsupport f ⊆ Metric.closedBall c (ε / 4) := by
+        intro y hy
+        rw [← b.tsupport_eq]
+        exact tsupport_comp_subset Complex.ofReal_zero _ hy
+      exact h_tsup_f (hsubset hx)
+    rw [Metric.mem_closedBall, Real.dist_eq] at hx_supp
+    have hcoord' := abs_le.mp hx_supp
+    simp [c] at hcoord'
+    show 0 < x
+    linarith
+  have hφ_compact : HasCompactSupport (φ : ℝ → ℂ) :=
+    hf_compact.smul_left
+  let g : Section43CompactPositiveTimeSource1D :=
+    { f := φ
+      positive := hφ_pos
+      compact := hφ_compact }
+  refine ⟨g, ?_, ?_, ?_, ?_⟩
+  · intro x
+    simp only [g, φ, SchwartzMap.smul_apply, smul_eq_mul]
+    rw [Complex.mul_re]
+    have hg₀_im : (g₀ x).im = 0 := Complex.ofReal_im (b x)
+    have hg₀_re : 0 ≤ (g₀ x).re := Complex.ofReal_re (b x) ▸ b.nonneg
+    have hint_im : (∫ u : ℝ, g₀ u).im = 0 := by
+      rw [show (fun u => g₀ u) = (fun u => (↑(b u) : ℂ)) from rfl]
+      rw [integral_complex_ofReal]
+      simp
+    have hinv_im : ((∫ u : ℝ, g₀ u)⁻¹).im = 0 := by
+      rw [Complex.inv_im, hint_im]
+      ring_nf
+    rw [hg₀_im, hinv_im]
+    ring_nf
+    apply mul_nonneg _ hg₀_re
+    rw [Complex.inv_re]
+    apply div_nonneg
+    · change 0 ≤ (∫ u, (↑(b u) : ℂ)).re
+      rw [integral_complex_ofReal]
+      simp only [Complex.ofReal_re]
+      exact le_of_lt b.integral_pos
+    · exact Complex.normSq_nonneg _
+  · intro x
+    simp only [g, φ, SchwartzMap.smul_apply, smul_eq_mul]
+    rw [Complex.mul_im]
+    have hg₀_im : (g₀ x).im = 0 := Complex.ofReal_im (b x)
+    have hint_im : (∫ u : ℝ, g₀ u).im = 0 := by
+      rw [show (fun u => g₀ u) = (fun u => (↑(b u) : ℂ)) from rfl]
+      rw [integral_complex_ofReal]
+      simp
+    have hinv_im : ((∫ u : ℝ, g₀ u)⁻¹).im = 0 := by
+      rw [Complex.inv_im, hint_im]
+      ring_nf
+    rw [hg₀_im, hinv_im]
+    ring_nf
+  · change ∫ x : ℝ, (∫ u : ℝ, g₀ u)⁻¹ • g₀ x = 1
+    rw [MeasureTheory.integral_smul]
+    simpa [smul_eq_mul] using inv_mul_cancel₀ hg₀_int_ne
+  · intro x hx
+    have hx_tsupport : x ∈ tsupport (φ : ℝ → ℂ) :=
+      subset_tsupport _ hx
+    have hsubset : tsupport (φ : ℝ → ℂ) ⊆ tsupport (g₀ : ℝ → ℂ) := by
+      exact tsupport_smul_subset_right
+        (fun _ : ℝ => (∫ u : ℝ, g₀ u)⁻¹)
+        (g₀ : ℝ → ℂ)
+    have hx_supp : x ∈ Metric.closedBall c (ε / 4 : ℝ) := by
+      have h_tsup_f : tsupport f ⊆ Metric.closedBall c (ε / 4) := by
+        intro y hy
+        rw [← b.tsupport_eq]
+        exact tsupport_comp_subset Complex.ofReal_zero _ hy
+      exact h_tsup_f (hsubset hx_tsupport)
+    rw [Metric.mem_ball]
+    have hc : dist c (0 : ℝ) = ε / 2 := by
+      simp [c, abs_of_pos hε]
+    have hx' : dist x c ≤ ε / 4 := by
+      simpa [Metric.mem_closedBall] using hx_supp
+    linarith [dist_triangle x c 0]
+
+/-- Finite product-source approximate identity at a fixed scale. -/
+theorem exists_section43TimeProductSource_approx_identity
+    {m : ℕ} (ε : ℝ) (hε : 0 < ε) :
+    ∃ gs : Fin m → Section43CompactPositiveTimeSource1D,
+      (∀ x : Fin m → ℝ, 0 ≤ ((section43TimeProductSource gs).f x).re) ∧
+      (∀ x : Fin m → ℝ, ((section43TimeProductSource gs).f x).im = 0) ∧
+      (∫ x : Fin m → ℝ, (section43TimeProductSource gs).f x = 1) ∧
+      Function.support ((section43TimeProductSource gs).f : (Fin m → ℝ) → ℂ) ⊆
+        Metric.ball (0 : Fin m → ℝ) ε := by
+  obtain ⟨g, hg_nonneg, hg_real, hg_int, hg_support⟩ :=
+    exists_section43CompactPositiveTimeSource1D_approx_identity
+      (ε / 2) (by linarith)
+  let gs : Fin m → Section43CompactPositiveTimeSource1D := fun _ => g
+  refine ⟨gs, ?_, ?_, ?_, ?_⟩
+  · intro x
+    change
+      0 ≤
+        ((section43TimeProductTensor (fun i : Fin m => (gs i).f)) x).re
+    rw [section43TimeProductTensor, SchwartzMap.productTensor_apply]
+    have hprod :
+        0 ≤ (∏ i : Fin m, (gs i).f (x i)).re ∧
+          (∏ i : Fin m, (gs i).f (x i)).im = 0 := by
+      classical
+      refine Finset.induction_on (Finset.univ : Finset (Fin m)) ?_ ?_
+      · simp
+      · intro a s has ih
+        rw [Finset.prod_insert has]
+        have ha_nonneg : 0 ≤ ((gs a).f (x a)).re := by
+          simpa [gs] using hg_nonneg (x a)
+        have ha_real : ((gs a).f (x a)).im = 0 := by
+          simpa [gs] using hg_real (x a)
+        constructor
+        · rw [Complex.mul_re, ha_real, ih.2]
+          ring_nf
+          exact mul_nonneg ha_nonneg ih.1
+        · rw [Complex.mul_im, ha_real, ih.2]
+          ring
+    exact hprod.1
+  · intro x
+    change
+      ((section43TimeProductTensor (fun i : Fin m => (gs i).f)) x).im = 0
+    rw [section43TimeProductTensor, SchwartzMap.productTensor_apply]
+    have hprod :
+        0 ≤ (∏ i : Fin m, (gs i).f (x i)).re ∧
+          (∏ i : Fin m, (gs i).f (x i)).im = 0 := by
+      classical
+      refine Finset.induction_on (Finset.univ : Finset (Fin m)) ?_ ?_
+      · simp
+      · intro a s has ih
+        rw [Finset.prod_insert has]
+        have ha_nonneg : 0 ≤ ((gs a).f (x a)).re := by
+          simpa [gs] using hg_nonneg (x a)
+        have ha_real : ((gs a).f (x a)).im = 0 := by
+          simpa [gs] using hg_real (x a)
+        constructor
+        · rw [Complex.mul_re, ha_real, ih.2]
+          ring_nf
+          exact mul_nonneg ha_nonneg ih.1
+        · rw [Complex.mul_im, ha_real, ih.2]
+          ring
+    exact hprod.2
+  · have hraw := section43TimeProductSource_integral_eq_product_raw
+      (gs := gs) (σ := fun _ : Fin m => 0)
+    calc
+      ∫ x : Fin m → ℝ, (section43TimeProductSource gs).f x
+          =
+        ∫ x : Fin m → ℝ,
+          Complex.exp (-(∑ i : Fin m, (x i : ℂ) * ((0 : ℝ) : ℂ))) *
+            (section43TimeProductSource gs).f x := by
+            simp
+      _ =
+        ∏ i : Fin m,
+          ∫ t : ℝ, Complex.exp (-(t : ℂ) * (((fun _ : Fin m => 0) i : ℝ) : ℂ)) *
+            (gs i).f t := hraw
+      _ = ∏ _i : Fin m, (1 : ℂ) := by
+            refine Finset.prod_congr rfl ?_
+            intro i _hi
+            simpa [gs] using hg_int
+      _ = 1 := by simp
+  · intro x hx
+    rw [Metric.mem_ball]
+    have hx_prod_ne :
+        (∏ i : Fin m, (gs i).f (x i)) ≠ 0 := by
+      simpa [Function.mem_support, section43TimeProductSource,
+        section43TimeProductTensor, SchwartzMap.productTensor_apply] using hx
+    have hcoord :
+        ∀ i : Fin m, ‖x i‖ ≤ ε / 2 := by
+      intro i
+      have hxi_ne : (gs i).f (x i) ≠ 0 := by
+        intro hzero
+        exact hx_prod_ne (Finset.prod_eq_zero (Finset.mem_univ i) hzero)
+      have hxi_support :
+          x i ∈ Function.support ((gs i).f : ℝ → ℂ) := by
+        simpa [Function.mem_support] using hxi_ne
+      have hxi_ball : x i ∈ Metric.ball (0 : ℝ) (ε / 2) := by
+        simpa [gs] using hg_support hxi_support
+      have hxi_norm : ‖x i‖ < ε / 2 := by
+        simpa [Metric.mem_ball, dist_eq_norm] using hxi_ball
+      exact le_of_lt hxi_norm
+    have hx_norm_le : ‖x‖ ≤ ε / 2 :=
+      (pi_norm_le_iff_of_nonneg (by linarith)).mpr hcoord
+    have hx_norm_lt : ‖x‖ < ε := by linarith
+    simpa [dist_eq_norm] using hx_norm_lt
+
+/-- A shrinking approximate identity whose members are genuine Section 4.3
+finite product sources. -/
+theorem exists_section43TimeProductSource_shrinking_approx_identity
+    (m : ℕ) :
+    ∃ (gs : ℕ → Fin m → Section43CompactPositiveTimeSource1D) (r : ℕ → ℝ),
+      (∀ n x, 0 ≤ ((section43TimeProductSource (gs n)).f x).re) ∧
+      (∀ n x, ((section43TimeProductSource (gs n)).f x).im = 0) ∧
+      (∀ n, ∫ x : Fin m → ℝ, (section43TimeProductSource (gs n)).f x = 1) ∧
+      (∀ n,
+        Function.support
+          ((section43TimeProductSource (gs n)).f : (Fin m → ℝ) → ℂ) ⊆
+            Metric.ball (0 : Fin m → ℝ) (r n)) ∧
+      Tendsto r atTop (𝓝 0) := by
+  let gs : ℕ → Fin m → Section43CompactPositiveTimeSource1D := fun n =>
+    Classical.choose
+      (exists_section43TimeProductSource_approx_identity
+        (m := m) (1 / (n + 1 : ℝ)) (by positivity))
+  have hs :
+      ∀ n,
+        (∀ x : Fin m → ℝ, 0 ≤ ((section43TimeProductSource (gs n)).f x).re) ∧
+        (∀ x : Fin m → ℝ, ((section43TimeProductSource (gs n)).f x).im = 0) ∧
+        (∫ x : Fin m → ℝ, (section43TimeProductSource (gs n)).f x = 1) ∧
+        Function.support
+          ((section43TimeProductSource (gs n)).f : (Fin m → ℝ) → ℂ) ⊆
+            Metric.ball (0 : Fin m → ℝ) (1 / (n + 1 : ℝ)) := by
+    intro n
+    simpa [gs] using
+      (Classical.choose_spec
+        (exists_section43TimeProductSource_approx_identity
+          (m := m) (1 / (n + 1 : ℝ)) (by positivity)))
+  let r : ℕ → ℝ := fun n => 1 / (n + 1 : ℝ)
+  refine ⟨gs, r, ?_, ?_, ?_, ?_, ?_⟩
+  · intro n x
+    exact (hs n).1 x
+  · intro n x
+    exact (hs n).2.1 x
+  · intro n
+    exact (hs n).2.2.1
+  · intro n
+    exact (hs n).2.2.2
+  · simpa [r, Nat.cast_add, Nat.cast_one] using
+      (tendsto_one_div_add_atTop_nhds_zero_nat :
+        Tendsto (fun n : ℕ => (1 / ((n : ℝ) + 1))) atTop (𝓝 0))
+
 /-- On the closed positive orthant, the product tensor of the one-variable
 cutoff Laplace representatives is the multitime Laplace integral of the product
 source. -/
@@ -1969,5 +2319,862 @@ theorem exists_section43IteratedLaplaceRepresentative_productSource
   ⟨section43TimeProductTensor
       (fun i : Fin n => section43OneSidedLaplaceSchwartzRepresentative1D (gs i)),
     section43TimeProductTensor_oneSidedLaplaceRepresentative gs⟩
+
+/-- Multitime imaginary-axis kernel obtained by tensoring the one-variable
+Paley-Wiener kernels coordinatewise. -/
+noncomputable def section43TimeImagAxisProductKernel
+    {n : ℕ} (τ : Fin n → ℝ) : SchwartzMap (Fin n → ℝ) ℂ :=
+  section43TimeProductTensor (fun i : Fin n => section43ImagAxisPsiKernel (τ i))
+
+/-- On the closed positive time cone in `σ` and strict-positive `τ`, the
+product imaginary-axis kernel is the usual multitime Laplace exponential. -/
+theorem section43TimeImagAxisProductKernel_apply_of_pos_of_nonneg
+    {n : ℕ} {τ σ : Fin n → ℝ}
+    (hτ : τ ∈ section43TimeStrictPositiveRegion n)
+    (hσ : σ ∈ section43TimePositiveRegion n) :
+    section43TimeImagAxisProductKernel τ σ =
+      Complex.exp (-(∑ i : Fin n, (τ i : ℂ) * (σ i : ℂ))) := by
+  rw [section43TimeImagAxisProductKernel, section43TimeProductTensor,
+    SchwartzMap.productTensor_apply]
+  calc
+    (∏ i : Fin n, section43ImagAxisPsiKernel (τ i) (σ i))
+        = ∏ i : Fin n, Complex.exp (-(τ i : ℂ) * (σ i : ℂ)) := by
+            refine Finset.prod_congr rfl ?_
+            intro i _hi
+            exact section43ImagAxisPsiKernel_apply_of_pos_of_nonneg
+              (hτ i) (hσ i)
+    _ = Complex.exp (∑ i : Fin n, -(τ i : ℂ) * (σ i : ℂ)) := by
+            exact (Complex.exp_sum Finset.univ
+              (fun i : Fin n => -(τ i : ℂ) * (σ i : ℂ))).symm
+    _ = Complex.exp (-(∑ i : Fin n, (τ i : ℂ) * (σ i : ℂ))) := by
+            congr 1
+            rw [← Finset.sum_neg_distrib]
+            exact Finset.sum_congr rfl (fun i _hi => by ring)
+
+/-- Head/tail form of the multitime imaginary-axis product kernel. -/
+theorem section43TimeImagAxisProductKernel_cons
+    {n : ℕ} (t : ℝ) (τ : Fin n → ℝ) :
+    section43TimeImagAxisProductKernel (Fin.cons t τ) =
+      (section43ImagAxisPsiKernel t).prependField
+        (section43TimeImagAxisProductKernel τ) := by
+  rfl
+
+/-- The multitime product kernel is Schwartz-continuous on the strict positive
+orthant. -/
+theorem continuousOn_section43TimeImagAxisProductKernel_strictPositive
+    {n : ℕ} :
+    ContinuousOn section43TimeImagAxisProductKernel
+      (section43TimeStrictPositiveRegion n) := by
+  have hcoords :
+      ContinuousOn
+        (fun τ : Fin n → ℝ =>
+          fun i : Fin n => section43ImagAxisPsiKernel (τ i))
+        (section43TimeStrictPositiveRegion n) := by
+    apply continuousOn_pi.mpr
+    intro i
+    exact continuousOn_section43ImagAxisPsiKernel_Ioi.comp
+      (continuous_apply i).continuousOn
+      (fun τ hτ => hτ i)
+  simpa [section43TimeImagAxisProductKernel] using
+    (SchwartzMap.productTensor_continuous (E := ℝ) (n := n)).comp_continuousOn hcoords
+
+/-- Head/tail form of a compact product source. -/
+theorem section43TimeProductSource_cons
+    {n : ℕ} (gs : Fin (n + 1) → Section43CompactPositiveTimeSource1D)
+    (t : ℝ) (τ : Fin n → ℝ) :
+    (section43TimeProductSource gs).f (Fin.cons t τ) =
+      (gs 0).f t *
+        (section43TimeProductSource (fun j : Fin n => gs j.succ)).f τ := by
+  rfl
+
+/-- Compact-support integrability of the successor head/tail scalar kernel
+against a compact product source.  This is the analytic `hpair` needed by the
+recursive product-kernel Fubini packet. -/
+theorem integrable_section43TimeImagAxisProductKernel_pair_source
+    {n : ℕ}
+    (T : SchwartzMap (Fin (n + 1) → ℝ) ℂ →L[ℂ] ℂ)
+    (gs : Fin (n + 1) → Section43CompactPositiveTimeSource1D) :
+    Integrable
+      (fun z : ℝ × (Fin n → ℝ) =>
+        T (section43TimeImagAxisProductKernel (Fin.cons z.1 z.2)) *
+          ∏ i : Fin (n + 1),
+            (gs i).f ((Fin.cons z.1 z.2 : Fin (n + 1) → ℝ) i)) := by
+  classical
+  let K : Set (ℝ × (Fin n → ℝ)) :=
+    (tsupport ((gs 0).f : ℝ → ℂ)) ×ˢ
+      Set.pi Set.univ (fun j : Fin n =>
+        tsupport ((gs j.succ).f : ℝ → ℂ))
+  have hK_compact : IsCompact K := by
+    have htail :
+        IsCompact
+          (Set.pi Set.univ (fun j : Fin n =>
+            tsupport ((gs j.succ).f : ℝ → ℂ))) :=
+      isCompact_univ_pi (fun j => (gs j.succ).compact.isCompact)
+    exact (gs 0).compact.isCompact.prod htail
+  have hcons_cont :
+      Continuous (fun z : ℝ × (Fin n → ℝ) =>
+        (Fin.cons z.1 z.2 : Fin (n + 1) → ℝ)) := by
+    apply continuous_pi
+    intro i
+    refine Fin.cases ?hcons_head ?hcons_tail i
+    · exact continuous_fst
+    · intro j
+      exact (continuous_apply j).comp continuous_snd
+  have hK_to_strict :
+      ∀ z ∈ K,
+        (Fin.cons z.1 z.2 : Fin (n + 1) → ℝ) ∈
+          section43TimeStrictPositiveRegion (n + 1) := by
+    intro z hz i
+    rcases hz with ⟨hz0, hztail⟩
+    refine Fin.cases ?hstrict_head ?hstrict_tail i
+    · exact (gs 0).positive hz0
+    · intro j
+      exact (gs j.succ).positive (hztail j trivial)
+  have hkernel_cont :
+      ContinuousOn
+        (fun z : ℝ × (Fin n → ℝ) =>
+          section43TimeImagAxisProductKernel
+            (Fin.cons z.1 z.2 : Fin (n + 1) → ℝ))
+        K :=
+    continuousOn_section43TimeImagAxisProductKernel_strictPositive.comp
+      hcons_cont.continuousOn hK_to_strict
+  have hscalar_cont :
+      ContinuousOn
+        (fun z : ℝ × (Fin n → ℝ) =>
+          T (section43TimeImagAxisProductKernel
+            (Fin.cons z.1 z.2 : Fin (n + 1) → ℝ)))
+        K :=
+    T.continuous.comp_continuousOn hkernel_cont
+  have hweight_cont :
+      Continuous
+        (fun z : ℝ × (Fin n → ℝ) =>
+          ∏ i : Fin (n + 1),
+            (gs i).f ((Fin.cons z.1 z.2 : Fin (n + 1) → ℝ) i)) := by
+    refine continuous_finset_prod _ ?_
+    intro i _hi
+    exact (gs i).f.continuous.comp ((continuous_apply i).comp hcons_cont)
+  have hintegrand_cont :
+      ContinuousOn
+        (fun z : ℝ × (Fin n → ℝ) =>
+          T (section43TimeImagAxisProductKernel
+              (Fin.cons z.1 z.2 : Fin (n + 1) → ℝ)) *
+            ∏ i : Fin (n + 1),
+              (gs i).f ((Fin.cons z.1 z.2 : Fin (n + 1) → ℝ) i))
+        K :=
+    hscalar_cont.mul hweight_cont.continuousOn
+  have hsupp :
+      Function.support
+        (fun z : ℝ × (Fin n → ℝ) =>
+          T (section43TimeImagAxisProductKernel
+              (Fin.cons z.1 z.2 : Fin (n + 1) → ℝ)) *
+            ∏ i : Fin (n + 1),
+              (gs i).f ((Fin.cons z.1 z.2 : Fin (n + 1) → ℝ) i))
+        ⊆ K := by
+    intro z hz
+    have hprod_ne :
+        (∏ i : Fin (n + 1),
+          (gs i).f ((Fin.cons z.1 z.2 : Fin (n + 1) → ℝ) i)) ≠ 0 :=
+      (mul_ne_zero_iff.mp hz).2
+    have h0_ne : (gs 0).f z.1 ≠ 0 := by
+      simpa using
+        (Finset.prod_ne_zero_iff.mp hprod_ne 0 (Finset.mem_univ 0))
+    have htail_ne :
+        ∀ j : Fin n, (gs j.succ).f (z.2 j) ≠ 0 := by
+      intro j
+      simpa using
+        (Finset.prod_ne_zero_iff.mp hprod_ne j.succ
+          (Finset.mem_univ j.succ))
+    exact ⟨subset_tsupport _ h0_ne, fun j _hj => subset_tsupport _ (htail_ne j)⟩
+  have hIntOn :
+      IntegrableOn
+        (fun z : ℝ × (Fin n → ℝ) =>
+          T (section43TimeImagAxisProductKernel
+              (Fin.cons z.1 z.2 : Fin (n + 1) → ℝ)) *
+            ∏ i : Fin (n + 1),
+              (gs i).f ((Fin.cons z.1 z.2 : Fin (n + 1) → ℝ) i))
+        K :=
+    hintegrand_cont.integrableOn_compact hK_compact
+  exact (integrableOn_iff_integrable_of_support_subset hsupp).mp hIntOn
+
+/-- With a compact strict-positive product source, the product imaginary-axis
+kernel and the raw multitime exponential kernel agree pointwise after
+multiplication by the source. -/
+theorem section43TimeImagAxisProductKernel_apply_mul_productSource_of_nonneg
+    {n : ℕ} (gs : Fin n → Section43CompactPositiveTimeSource1D)
+    {σ : Fin n → ℝ} (hσ : σ ∈ section43TimePositiveRegion n)
+    (τ : Fin n → ℝ) :
+    section43TimeImagAxisProductKernel τ σ *
+        (section43TimeProductSource gs).f τ =
+      Complex.exp (-(∑ i : Fin n, (τ i : ℂ) * (σ i : ℂ))) *
+        (section43TimeProductSource gs).f τ := by
+  by_cases hsource : (section43TimeProductSource gs).f τ = 0
+  · simp [hsource]
+  · have hτ_support :
+        τ ∈ tsupport ((section43TimeProductSource gs).f : (Fin n → ℝ) → ℂ) :=
+      subset_tsupport _ hsource
+    have hτ : τ ∈ section43TimeStrictPositiveRegion n :=
+      (section43TimeProductSource gs).positive hτ_support
+    rw [section43TimeImagAxisProductKernel_apply_of_pos_of_nonneg hτ hσ]
+
+/-- Product-source Laplace representatives can equivalently be written with the
+tensor imaginary-axis kernel. This is the local finite-product bridge used
+before scalarizing against Section 4.3 finite probes. -/
+theorem section43TimeProductTensor_oneSidedLaplaceRepresentative_eq_integral_kernel
+    {n : ℕ} (gs : Fin n → Section43CompactPositiveTimeSource1D)
+    {σ : Fin n → ℝ} (hσ : σ ∈ section43TimePositiveRegion n) :
+    (section43TimeProductTensor
+      (fun i : Fin n => section43OneSidedLaplaceSchwartzRepresentative1D (gs i)) :
+        SchwartzMap (Fin n → ℝ) ℂ) σ =
+    ∫ τ : Fin n → ℝ,
+      section43TimeImagAxisProductKernel τ σ *
+        (section43TimeProductSource gs).f τ := by
+  rw [section43TimeProductTensor_oneSidedLaplaceRepresentative_eq_integral gs hσ]
+  refine integral_congr_ae ?_
+  filter_upwards with τ
+  exact
+    (section43TimeImagAxisProductKernel_apply_mul_productSource_of_nonneg
+      gs hσ τ).symm
+
+/-- One tensor slot can be scalarized by the existing one-dimensional finite
+probe Fubini theorem, after composing the scalar functional with the product
+tensor update map. -/
+theorem section43TimeProductTensor_slot_scalar_fubini
+    {n : ℕ}
+    (T : SchwartzMap (Fin n → ℝ) ℂ →L[ℂ] ℂ)
+    (fs : Fin n → SchwartzMap ℝ ℂ)
+    (i : Fin n)
+    (g : Section43CompactPositiveTimeSource1D) :
+    T (section43TimeProductTensor
+        (Function.update fs i (section43OneSidedLaplaceSchwartzRepresentative1D g))) =
+      ∫ t : ℝ,
+        T (section43TimeProductTensor
+          (Function.update fs i (section43ImagAxisPsiKernel t))) * g.f t := by
+  let Ti : SchwartzMap ℝ ℂ →L[ℂ] ℂ :=
+    T.comp (SchwartzMap.productTensorUpdateCLM (E := ℝ) i fs)
+  have h := section43OneSidedLaplace_scalar_fubini_apply Ti g
+  simpa [Ti, section43TimeProductTensor, SchwartzMap.productTensorUpdateCLM_apply]
+    using h
+
+/-- Partial tensor factors: slots in `s` are imaginary-axis kernels, and the
+remaining slots are compact one-sided Laplace representatives. -/
+noncomputable def section43PartialImagAxisProductFactors
+    {n : ℕ} (gs : Fin n → Section43CompactPositiveTimeSource1D)
+    (τ : Fin n → ℝ) (s : Finset (Fin n)) :
+    Fin n → SchwartzMap ℝ ℂ :=
+  fun i =>
+    if i ∈ s then
+      section43ImagAxisPsiKernel (τ i)
+    else
+      section43OneSidedLaplaceSchwartzRepresentative1D (gs i)
+
+/-- Product tensor with some slots already transported to the imaginary-axis
+kernel side. -/
+noncomputable def section43PartialImagAxisProductTensor
+    {n : ℕ} (gs : Fin n → Section43CompactPositiveTimeSource1D)
+    (τ : Fin n → ℝ) (s : Finset (Fin n)) :
+    SchwartzMap (Fin n → ℝ) ℂ :=
+  section43TimeProductTensor (section43PartialImagAxisProductFactors gs τ s)
+
+/-- With no transported slots, the partial tensor is the original product of
+one-sided Laplace representatives. -/
+theorem section43PartialImagAxisProductTensor_empty
+    {n : ℕ} (gs : Fin n → Section43CompactPositiveTimeSource1D)
+    (τ : Fin n → ℝ) :
+    section43PartialImagAxisProductTensor gs τ ∅ =
+      section43TimeProductTensor
+        (fun i : Fin n => section43OneSidedLaplaceSchwartzRepresentative1D (gs i)) := by
+  ext σ
+  simp [section43PartialImagAxisProductTensor,
+    section43PartialImagAxisProductFactors, section43TimeProductTensor,
+    SchwartzMap.productTensor_apply]
+
+/-- With every slot transported, the partial tensor is the multitime
+imaginary-axis product kernel. -/
+theorem section43PartialImagAxisProductTensor_univ
+    {n : ℕ} (gs : Fin n → Section43CompactPositiveTimeSource1D)
+    (τ : Fin n → ℝ) :
+    section43PartialImagAxisProductTensor gs τ Finset.univ =
+      section43TimeImagAxisProductKernel τ := by
+  ext σ
+  simp [section43PartialImagAxisProductTensor,
+    section43PartialImagAxisProductFactors, section43TimeImagAxisProductKernel,
+    section43TimeProductTensor, SchwartzMap.productTensor_apply]
+
+/-- Iteration-ready slot step: if slot `i` has not yet been transported, then
+the partial tensor is the scalar integral of the partial tensor with `i`
+inserted into the imaginary-axis kernel set. -/
+theorem section43PartialImagAxisProductTensor_slot_scalar_fubini
+    {n : ℕ}
+    (T : SchwartzMap (Fin n → ℝ) ℂ →L[ℂ] ℂ)
+    (gs : Fin n → Section43CompactPositiveTimeSource1D)
+    (τ : Fin n → ℝ)
+    (s : Finset (Fin n))
+    (i : Fin n) (hi : i ∉ s) :
+    T (section43PartialImagAxisProductTensor gs τ s) =
+      ∫ t : ℝ,
+        T (section43PartialImagAxisProductTensor
+          gs (Function.update τ i t) (insert i s)) * (gs i).f t := by
+  let fs := section43PartialImagAxisProductFactors gs τ s
+  have hleft_factors :
+      Function.update fs i
+          (section43OneSidedLaplaceSchwartzRepresentative1D (gs i)) =
+        section43PartialImagAxisProductFactors gs τ s := by
+    funext j
+    by_cases hji : j = i
+    · subst hji
+      simp [fs, section43PartialImagAxisProductFactors, hi]
+    · simp [fs, Function.update, hji]
+  have hright_factors :
+      ∀ t : ℝ,
+        Function.update fs i (section43ImagAxisPsiKernel t) =
+          section43PartialImagAxisProductFactors
+            gs (Function.update τ i t) (insert i s) := by
+    intro t
+    funext j
+    by_cases hji : j = i
+    · subst hji
+      simp [fs, section43PartialImagAxisProductFactors]
+    · have hj_insert : j ∈ insert i s ↔ j ∈ s := by
+        simp [hji]
+      simp [fs, section43PartialImagAxisProductFactors,
+        Function.update, hji, hj_insert]
+  calc
+    T (section43PartialImagAxisProductTensor gs τ s)
+        =
+      T (section43TimeProductTensor
+        (Function.update fs i
+          (section43OneSidedLaplaceSchwartzRepresentative1D (gs i)))) := by
+          rw [hleft_factors]
+          rfl
+    _ =
+      ∫ t : ℝ,
+        T (section43TimeProductTensor
+          (Function.update fs i (section43ImagAxisPsiKernel t))) *
+            (gs i).f t :=
+          section43TimeProductTensor_slot_scalar_fubini T fs i (gs i)
+    _ =
+      ∫ t : ℝ,
+        T (section43PartialImagAxisProductTensor
+          gs (Function.update τ i t) (insert i s)) * (gs i).f t := by
+          refine integral_congr_ae ?_
+          filter_upwards with t
+          rw [hright_factors t]
+          rfl
+
+/-- Nested scalar integral obtained by transporting a list of tensor slots to
+the imaginary-axis kernel side one at a time. -/
+noncomputable def section43PartialImagAxisProductTensorIteratedScalar
+    {n : ℕ}
+    (T : SchwartzMap (Fin n → ℝ) ℂ →L[ℂ] ℂ)
+    (gs : Fin n → Section43CompactPositiveTimeSource1D) :
+    (Fin n → ℝ) → Finset (Fin n) → List (Fin n) → ℂ
+  | τ, s, [] => T (section43PartialImagAxisProductTensor gs τ s)
+  | τ, s, i :: rest =>
+      ∫ t : ℝ,
+        section43PartialImagAxisProductTensorIteratedScalar T gs
+          (Function.update τ i t) (insert i s) rest * (gs i).f t
+
+/-- Iterating the slot scalarization lemma along a duplicate-free list of slots
+gives exactly the corresponding nested scalar integral. -/
+theorem section43PartialImagAxisProductTensor_eq_iteratedScalar
+    {n : ℕ}
+    (T : SchwartzMap (Fin n → ℝ) ℂ →L[ℂ] ℂ)
+    (gs : Fin n → Section43CompactPositiveTimeSource1D)
+    (τ : Fin n → ℝ)
+    (s : Finset (Fin n))
+    (slots : List (Fin n))
+    (hslots : slots.Nodup)
+    (hdisj : ∀ i ∈ slots, i ∉ s) :
+    T (section43PartialImagAxisProductTensor gs τ s) =
+      section43PartialImagAxisProductTensorIteratedScalar
+        T gs τ s slots := by
+  induction slots generalizing τ s with
+  | nil =>
+      rfl
+  | cons i rest ih =>
+      have hi_not_s : i ∉ s := hdisj i (by simp)
+      have hrest_nodup : rest.Nodup := by
+        exact hslots.tail
+      have hi_not_rest : i ∉ rest := by
+        exact (List.nodup_cons.mp hslots).1
+      have hrest_disj :
+          ∀ j ∈ rest, j ∉ insert i s := by
+        intro j hj
+        have hj_not_s : j ∉ s := hdisj j (by simp [hj])
+        have hj_ne_i : j ≠ i := by
+          intro hji
+          exact hi_not_rest (by simpa [hji] using hj)
+        simpa [hj_ne_i] using hj_not_s
+      calc
+        T (section43PartialImagAxisProductTensor gs τ s)
+            =
+          ∫ t : ℝ,
+            T (section43PartialImagAxisProductTensor
+              gs (Function.update τ i t) (insert i s)) * (gs i).f t :=
+              section43PartialImagAxisProductTensor_slot_scalar_fubini
+                T gs τ s i hi_not_s
+        _ =
+          ∫ t : ℝ,
+            section43PartialImagAxisProductTensorIteratedScalar
+              T gs (Function.update τ i t) (insert i s) rest * (gs i).f t := by
+              refine integral_congr_ae ?_
+              filter_upwards with t
+              rw [ih (Function.update τ i t) (insert i s)
+                hrest_nodup hrest_disj]
+
+/-- Complete nested scalarization of all product-time slots, starting from the
+product of one-sided Laplace representatives. -/
+theorem section43TimeProductTensor_allSlots_iteratedScalar
+    {n : ℕ}
+    (T : SchwartzMap (Fin n → ℝ) ℂ →L[ℂ] ℂ)
+    (gs : Fin n → Section43CompactPositiveTimeSource1D)
+    (τ : Fin n → ℝ) :
+    T (section43TimeProductTensor
+        (fun i : Fin n => section43OneSidedLaplaceSchwartzRepresentative1D (gs i))) =
+      section43PartialImagAxisProductTensorIteratedScalar
+        T gs τ ∅ (Finset.univ : Finset (Fin n)).toList := by
+  rw [← section43PartialImagAxisProductTensor_empty gs τ]
+  exact
+    section43PartialImagAxisProductTensor_eq_iteratedScalar
+      T gs τ ∅ (Finset.univ : Finset (Fin n)).toList
+      (Finset.nodup_toList _)
+      (by intro i _hi; simp)
+
+/-- Nested scalar integral whose terminal leaf is the actual multitime
+imaginary-axis product kernel. -/
+noncomputable def section43TimeImagAxisProductKernelIteratedScalar
+    {n : ℕ}
+    (T : SchwartzMap (Fin n → ℝ) ℂ →L[ℂ] ℂ)
+    (gs : Fin n → Section43CompactPositiveTimeSource1D) :
+    (Fin n → ℝ) → List (Fin n) → ℂ
+  | τ, [] => T (section43TimeImagAxisProductKernel τ)
+  | τ, i :: rest =>
+      ∫ t : ℝ,
+        section43TimeImagAxisProductKernelIteratedScalar T gs
+          (Function.update τ i t) rest * (gs i).f t
+
+/-- Bridge from the partial-tensor accumulator to the terminal-kernel nested
+scalar integral, once the accumulated set and remaining slots cover all
+coordinates. -/
+theorem section43PartialImagAxisProductTensorIteratedScalar_eq_kernelIteratedScalar
+    {n : ℕ}
+    (T : SchwartzMap (Fin n → ℝ) ℂ →L[ℂ] ℂ)
+    (gs : Fin n → Section43CompactPositiveTimeSource1D)
+    (τ : Fin n → ℝ)
+    (s : Finset (Fin n))
+    (slots : List (Fin n))
+    (hcover : s ∪ slots.toFinset = Finset.univ) :
+    section43PartialImagAxisProductTensorIteratedScalar T gs τ s slots =
+      section43TimeImagAxisProductKernelIteratedScalar T gs τ slots := by
+  induction slots generalizing τ s with
+  | nil =>
+      have hs : s = Finset.univ := by
+        simpa using hcover
+      simp [section43PartialImagAxisProductTensorIteratedScalar,
+        section43TimeImagAxisProductKernelIteratedScalar, hs,
+        section43PartialImagAxisProductTensor_univ]
+  | cons i rest ih =>
+      have hcover_rest :
+          insert i s ∪ rest.toFinset = Finset.univ := by
+        simpa [Finset.union_assoc, Finset.union_comm, Finset.union_left_comm]
+          using hcover
+      simp [section43PartialImagAxisProductTensorIteratedScalar,
+        section43TimeImagAxisProductKernelIteratedScalar]
+      refine integral_congr_ae ?_
+      filter_upwards with t
+      rw [ih (Function.update τ i t) (insert i s) hcover_rest]
+
+/-- Complete scalarization in the natural finite-coordinate order, with the
+terminal leaf rewritten to the actual product imaginary-axis kernel. -/
+theorem section43TimeProductTensor_allSlots_kernelIteratedScalar_finRange
+    {n : ℕ}
+    (T : SchwartzMap (Fin n → ℝ) ℂ →L[ℂ] ℂ)
+    (gs : Fin n → Section43CompactPositiveTimeSource1D)
+    (τ : Fin n → ℝ) :
+    T (section43TimeProductTensor
+        (fun i : Fin n => section43OneSidedLaplaceSchwartzRepresentative1D (gs i))) =
+      section43TimeImagAxisProductKernelIteratedScalar
+        T gs τ (List.finRange n) := by
+  calc
+    T (section43TimeProductTensor
+        (fun i : Fin n => section43OneSidedLaplaceSchwartzRepresentative1D (gs i)))
+        =
+      section43PartialImagAxisProductTensorIteratedScalar
+        T gs τ ∅ (List.finRange n) := by
+          rw [← section43PartialImagAxisProductTensor_empty gs τ]
+          exact
+            section43PartialImagAxisProductTensor_eq_iteratedScalar
+              T gs τ ∅ (List.finRange n)
+              (List.nodup_finRange n)
+              (by intro i _hi; simp)
+    _ =
+      section43TimeImagAxisProductKernelIteratedScalar
+        T gs τ (List.finRange n) :=
+          section43PartialImagAxisProductTensorIteratedScalar_eq_kernelIteratedScalar
+            T gs τ ∅ (List.finRange n) (by simp)
+
+/-- Generic weighted version of the slot-update nested integral. -/
+noncomputable def finRangeWeightedIteratedIntegral
+    {n : ℕ} (F : (Fin n → ℝ) → ℂ) (w : Fin n → ℝ → ℂ) :
+    (Fin n → ℝ) → List (Fin n) → ℂ
+  | τ, [] => F τ
+  | τ, i :: rest =>
+      ∫ t : ℝ,
+        finRangeWeightedIteratedIntegral F w
+          (Function.update τ i t) rest * w i t
+
+private theorem Fin_tail_update_succ
+    {n : ℕ} (τ : Fin (n + 1) → ℝ) (j : Fin n) (a : ℝ) :
+    Fin.tail (Function.update τ j.succ a) =
+      Function.update (Fin.tail τ) j a := by
+  funext k
+  by_cases h : k = j
+  · subst h
+    simp [Fin.tail, Function.update]
+  · have hs : k.succ ≠ j.succ := by
+      exact (Fin.succ_injective n).ne h
+    simp [Fin.tail, Function.update, h, hs]
+
+private theorem update_succ_zero
+    {n : ℕ} (τ : Fin (n + 1) → ℝ) (j : Fin n) (a : ℝ) :
+    (Function.update τ j.succ a) 0 = τ 0 := by
+  have h : (0 : Fin (n + 1)) ≠ j.succ := by
+    exact (Fin.succ_ne_zero j).symm
+  simp [Function.update, h]
+
+/-- Updating successor slots in `Fin (n+1)` is the same as updating the tail
+variables in `Fin n`, with the head held fixed. -/
+theorem finRangeWeightedIteratedIntegral_map_succ
+    {n : ℕ}
+    (F : (Fin (n + 1) → ℝ) → ℂ)
+    (w : Fin (n + 1) → ℝ → ℂ)
+    (τ : Fin (n + 1) → ℝ)
+    (slots : List (Fin n)) :
+    finRangeWeightedIteratedIntegral F w τ (slots.map Fin.succ) =
+      finRangeWeightedIteratedIntegral
+        (fun y : Fin n → ℝ => F (Fin.cons (τ 0) y))
+        (fun j : Fin n => w j.succ)
+        (Fin.tail τ) slots := by
+  induction slots generalizing τ with
+  | nil =>
+      simp [finRangeWeightedIteratedIntegral]
+  | cons j rest ih =>
+      simp [finRangeWeightedIteratedIntegral]
+      refine integral_congr_ae ?_
+      filter_upwards with t
+      rw [ih (Function.update τ j.succ t)]
+      rw [update_succ_zero τ j t, Fin_tail_update_succ τ j t]
+
+private theorem integral_finSucc_cons_eq_section43
+    {m : ℕ} (f : (Fin (m + 1) → ℝ) → ℂ) :
+    (∫ z : ℝ × (Fin m → ℝ), f (Fin.cons z.1 z.2)) =
+      (∫ x : Fin (m + 1) → ℝ, f x) := by
+  have h :=
+    ((MeasureTheory.measurePreserving_piFinSuccAbove
+        (fun _ => (MeasureTheory.volume : MeasureTheory.Measure ℝ)) 0).symm).integral_comp'
+      (g := f)
+  simpa [MeasurableEquiv.piFinSuccAbove_symm_apply, Fin.insertNthEquiv,
+    Fin.insertNth_zero, Fin.zero_succAbove, cast_eq, Fin.cons_zero] using h
+
+/-- Explicit hypotheses needed to flatten the recursive finite Fubini
+integral.  These are intentionally stronger than necessary: the Section 4.3
+compact-source application should prove them from compact support rather than
+hide the Fubini side conditions. -/
+def finRangeWeightedFlattenable :
+    {n : ℕ} → ((Fin n → ℝ) → ℂ) → (Fin n → ℝ → ℂ) → Prop
+  | 0, _F, _w => True
+  | n + 1, F, w =>
+      Integrable
+        (fun z : ℝ × (Fin n → ℝ) =>
+          F (Fin.cons z.1 z.2) *
+            ∏ i : Fin (n + 1),
+              w i ((Fin.cons z.1 z.2 : Fin (n + 1) → ℝ) i)) ∧
+      ∀ t : ℝ,
+        finRangeWeightedFlattenable
+          (fun y : Fin n → ℝ => F (Fin.cons t y))
+          (fun j : Fin n => w j.succ)
+
+/-- Finite-coordinate flattening of the natural `List.finRange` slot-update
+nested integral into a single product-space integral. -/
+theorem finRangeWeightedIteratedIntegral_finRange_eq_integral
+    {n : ℕ}
+    (F : (Fin n → ℝ) → ℂ)
+    (w : Fin n → ℝ → ℂ)
+    (τ : Fin n → ℝ)
+    (hflat : finRangeWeightedFlattenable F w) :
+    finRangeWeightedIteratedIntegral F w τ (List.finRange n) =
+      ∫ x : Fin n → ℝ, F x * ∏ i : Fin n, w i (x i) := by
+  induction n with
+  | zero =>
+      have hfun :
+          (fun x : Fin 0 → ℝ => F x) =
+            fun _ : Fin 0 → ℝ => F τ := by
+        funext x
+        have hx : x = τ := by
+          funext i
+          exact Fin.elim0 i
+        simp [hx]
+      simp [finRangeWeightedIteratedIntegral]
+      rw [hfun]
+      rw [MeasureTheory.integral_unique (μ := MeasureTheory.volume)
+        (f := fun _ : Fin 0 → ℝ => F τ)]
+      rw [show
+        ((MeasureTheory.volume : MeasureTheory.Measure (Fin 0 → ℝ)).real Set.univ : ℝ) =
+          1 by
+            rw [MeasureTheory.Measure.real]
+            have hvol :
+                (MeasureTheory.volume : MeasureTheory.Measure (Fin 0 → ℝ)) Set.univ = 1 := by
+              exact
+                MeasureTheory.Measure.pi_empty_univ
+                  (μ := fun _ : Fin 0 =>
+                    (MeasureTheory.volume : MeasureTheory.Measure ℝ))
+                  (β := fun _ : Fin 0 => ℝ)
+            rw [hvol]
+            norm_num]
+      exact (one_smul ℝ (F τ)).symm
+  | succ n ih =>
+      rcases hflat with ⟨hpair, htail⟩
+      calc
+        finRangeWeightedIteratedIntegral F w τ (List.finRange (n + 1))
+            =
+          ∫ t : ℝ,
+            finRangeWeightedIteratedIntegral F w
+              (Function.update τ (0 : Fin (n + 1)) t)
+              ((List.finRange n).map Fin.succ) * w 0 t := by
+              simp [List.finRange_succ,
+                finRangeWeightedIteratedIntegral]
+        _ =
+          ∫ t : ℝ,
+            (∫ y : Fin n → ℝ,
+              F (Fin.cons t y) * ∏ j : Fin n, w j.succ (y j)) *
+                w 0 t := by
+              refine integral_congr_ae ?_
+              filter_upwards with t
+              rw [finRangeWeightedIteratedIntegral_map_succ
+                F w (Function.update τ (0 : Fin (n + 1)) t)
+                (List.finRange n)]
+              have hhead :
+                  (Function.update τ (0 : Fin (n + 1)) t) 0 = t := by
+                simp [Function.update]
+              rw [hhead]
+              rw [ih
+                (fun y : Fin n → ℝ => F (Fin.cons t y))
+                (fun j : Fin n => w j.succ)
+                (Fin.tail (Function.update τ (0 : Fin (n + 1)) t))
+                (htail t)]
+        _ =
+          ∫ t : ℝ,
+            ∫ y : Fin n → ℝ,
+              (F (Fin.cons t y) * ∏ j : Fin n, w j.succ (y j)) *
+                w 0 t := by
+              refine integral_congr_ae ?_
+              filter_upwards with t
+              exact (MeasureTheory.integral_mul_const (w 0 t)
+                (fun y : Fin n → ℝ =>
+                  F (Fin.cons t y) * ∏ j : Fin n, w j.succ (y j))).symm
+        _ =
+          ∫ t : ℝ,
+            ∫ y : Fin n → ℝ,
+              F (Fin.cons t y) *
+                ∏ i : Fin (n + 1),
+                  w i ((Fin.cons t y : Fin (n + 1) → ℝ) i) := by
+              refine integral_congr_ae ?_
+              filter_upwards with t
+              refine integral_congr_ae ?_
+              filter_upwards with y
+              rw [Fin.prod_univ_succ]
+              simp [mul_assoc, mul_comm]
+        _ =
+          ∫ z : ℝ × (Fin n → ℝ),
+            F (Fin.cons z.1 z.2) *
+              ∏ i : Fin (n + 1),
+                w i ((Fin.cons z.1 z.2 : Fin (n + 1) → ℝ) i) := by
+              exact (MeasureTheory.integral_prod
+                (f := fun z : ℝ × (Fin n → ℝ) =>
+                  F (Fin.cons z.1 z.2) *
+                    ∏ i : Fin (n + 1),
+                      w i ((Fin.cons z.1 z.2 : Fin (n + 1) → ℝ) i))
+                hpair).symm
+        _ =
+          ∫ x : Fin (n + 1) → ℝ, F x * ∏ i : Fin (n + 1), w i (x i) := by
+              exact integral_finSucc_cons_eq_section43
+                (m := n)
+                (fun x : Fin (n + 1) → ℝ =>
+                  F x * ∏ i : Fin (n + 1), w i (x i))
+
+/-- Identification of the Section 4.3 terminal-kernel nested integral with the
+generic weighted slot-update recursion. -/
+theorem section43TimeImagAxisProductKernelIteratedScalar_eq_weighted
+    {n : ℕ}
+    (T : SchwartzMap (Fin n → ℝ) ℂ →L[ℂ] ℂ)
+    (gs : Fin n → Section43CompactPositiveTimeSource1D)
+    (τ : Fin n → ℝ)
+    (slots : List (Fin n)) :
+    section43TimeImagAxisProductKernelIteratedScalar T gs τ slots =
+      finRangeWeightedIteratedIntegral
+        (fun τ : Fin n → ℝ => T (section43TimeImagAxisProductKernel τ))
+        (fun i : Fin n => (gs i).f)
+        τ slots := by
+  induction slots generalizing τ with
+  | nil =>
+      simp [section43TimeImagAxisProductKernelIteratedScalar,
+        finRangeWeightedIteratedIntegral]
+  | cons i rest ih =>
+      simp [section43TimeImagAxisProductKernelIteratedScalar,
+        finRangeWeightedIteratedIntegral]
+      refine integral_congr_ae ?_
+      filter_upwards with t
+      rw [ih (Function.update τ i t)]
+
+/-- Flattened Section 4.3 product-kernel Fubini theorem, with the recursive
+Fubini/integrability obligations made explicit. -/
+theorem section43TimeProductTensor_allSlots_flattened_of_flattenable
+    {n : ℕ}
+    (T : SchwartzMap (Fin n → ℝ) ℂ →L[ℂ] ℂ)
+    (gs : Fin n → Section43CompactPositiveTimeSource1D)
+    (τ : Fin n → ℝ)
+    (hflat :
+      finRangeWeightedFlattenable
+        (fun τ : Fin n → ℝ => T (section43TimeImagAxisProductKernel τ))
+        (fun i : Fin n => (gs i).f)) :
+    T (section43TimeProductTensor
+        (fun i : Fin n => section43OneSidedLaplaceSchwartzRepresentative1D (gs i))) =
+      ∫ τ : Fin n → ℝ,
+        T (section43TimeImagAxisProductKernel τ) *
+          (section43TimeProductSource gs).f τ := by
+  rw [section43TimeProductTensor_allSlots_kernelIteratedScalar_finRange]
+  rw [section43TimeImagAxisProductKernelIteratedScalar_eq_weighted]
+  rw [finRangeWeightedIteratedIntegral_finRange_eq_integral
+    (fun τ : Fin n → ℝ => T (section43TimeImagAxisProductKernel τ))
+    (fun i : Fin n => (gs i).f) τ hflat]
+  refine integral_congr_ae ?_
+  filter_upwards with x
+  simp [section43TimeProductSource, section43TimeProductTensor,
+    SchwartzMap.productTensor_apply]
+
+private theorem section43TimeImagAxisProductKernel_fin_one
+    (t : ℝ) (y : Fin 0 → ℝ) :
+    section43TimeImagAxisProductKernel (Fin.cons t y) =
+      SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
+        (ContinuousLinearEquiv.funUnique (Fin 1) ℝ ℝ)
+        (section43ImagAxisPsiKernel t) := by
+  ext σ
+  simp [section43TimeImagAxisProductKernel, section43TimeProductTensor,
+    SchwartzMap.productTensor_apply,
+    SchwartzMap.compCLMOfContinuousLinearEquiv_apply]
+
+/-- One-coordinate compact-source flattenability.  This is the first
+nontrivial instance of the product Fubini packet, reduced faithfully to the
+one-dimensional finite-probe integrability theorem. -/
+theorem section43TimeImagAxisProductKernel_flattenable_one
+    (T : SchwartzMap (Fin 1 → ℝ) ℂ →L[ℂ] ℂ)
+    (gs : Fin 1 → Section43CompactPositiveTimeSource1D) :
+    finRangeWeightedFlattenable
+      (fun τ : Fin 1 → ℝ => T (section43TimeImagAxisProductKernel τ))
+      (fun i : Fin 1 => (gs i).f) := by
+  constructor
+  · let L : SchwartzMap ℝ ℂ →L[ℂ] SchwartzMap (Fin 1 → ℝ) ℂ :=
+      SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
+        (ContinuousLinearEquiv.funUnique (Fin 1) ℝ ℝ)
+    let T1 : SchwartzMap ℝ ℂ →L[ℂ] ℂ := T.comp L
+    have h1 :
+        Integrable
+          (fun t : ℝ => T1 (section43ImagAxisPsiKernel t) * (gs 0).f t) :=
+      integrable_section43ImagAxisPsiKernel_source_apply_clm T1 (gs 0)
+    have hprod :
+        Integrable
+          (fun z : ℝ × (Fin 0 → ℝ) =>
+            T1 (section43ImagAxisPsiKernel z.1) * (gs 0).f z.1) :=
+      h1.comp_fst (MeasureTheory.volume : MeasureTheory.Measure (Fin 0 → ℝ))
+    refine hprod.congr ?_
+    filter_upwards with z
+    have hkernel := section43TimeImagAxisProductKernel_fin_one z.1 z.2
+    simp [T1, L, hkernel]
+  · intro t
+    trivial
+
+/-- Successor assembly for the product-kernel flattenability packet: once the
+head/tail product integrability is available and every fixed head reduces to
+the tail packet through `prependField`, the successor packet follows. -/
+theorem section43TimeImagAxisProductKernel_flattenable_succ_of_pair_integrable
+    {n : ℕ}
+    (T : SchwartzMap (Fin (n + 1) → ℝ) ℂ →L[ℂ] ℂ)
+    (gs : Fin (n + 1) → Section43CompactPositiveTimeSource1D)
+    (hpair :
+      Integrable
+        (fun z : ℝ × (Fin n → ℝ) =>
+          T (section43TimeImagAxisProductKernel (Fin.cons z.1 z.2)) *
+            ∏ i : Fin (n + 1),
+              (gs i).f ((Fin.cons z.1 z.2 : Fin (n + 1) → ℝ) i)))
+    (htail :
+      ∀ t : ℝ,
+        finRangeWeightedFlattenable
+          (fun τ : Fin n → ℝ =>
+            (T.comp (SchwartzMap.prependFieldCLMRight
+              (E := ℝ) (section43ImagAxisPsiKernel t)))
+              (section43TimeImagAxisProductKernel τ))
+          (fun j : Fin n => (gs j.succ).f)) :
+    finRangeWeightedFlattenable
+      (fun τ : Fin (n + 1) → ℝ =>
+        T (section43TimeImagAxisProductKernel τ))
+      (fun i : Fin (n + 1) => (gs i).f) := by
+  constructor
+  · exact hpair
+  · intro t
+    convert htail t using 2
+
+/-- Compact-source flattenability for every finite product imaginary-axis
+kernel.  The successor step is exactly the compact-support `hpair` plus the
+head-fixed tail packet. -/
+theorem section43TimeImagAxisProductKernel_flattenable :
+    ∀ {n : ℕ}
+      (T : SchwartzMap (Fin n → ℝ) ℂ →L[ℂ] ℂ)
+      (gs : Fin n → Section43CompactPositiveTimeSource1D),
+      finRangeWeightedFlattenable
+        (fun τ : Fin n → ℝ =>
+          T (section43TimeImagAxisProductKernel τ))
+        (fun i : Fin n => (gs i).f)
+  | 0, _T, _gs => trivial
+  | n + 1, T, gs => by
+      refine
+        section43TimeImagAxisProductKernel_flattenable_succ_of_pair_integrable
+          T gs ?hpair ?htail
+      · exact integrable_section43TimeImagAxisProductKernel_pair_source T gs
+      · intro t
+        exact
+          section43TimeImagAxisProductKernel_flattenable
+            (T.comp (SchwartzMap.prependFieldCLMRight
+              (E := ℝ) (section43ImagAxisPsiKernel t)))
+            (fun j : Fin n => gs j.succ)
+
+/-- Fully flattened finite product-kernel Fubini identity for compact
+positive-time product sources. -/
+theorem section43TimeProductTensor_allSlots_flattened
+    {n : ℕ}
+    (T : SchwartzMap (Fin n → ℝ) ℂ →L[ℂ] ℂ)
+    (gs : Fin n → Section43CompactPositiveTimeSource1D)
+    (τ : Fin n → ℝ) :
+    T (section43TimeProductTensor
+        (fun i : Fin n => section43OneSidedLaplaceSchwartzRepresentative1D (gs i))) =
+      ∫ ξ : Fin n → ℝ,
+        T (section43TimeImagAxisProductKernel ξ) *
+          (section43TimeProductSource gs).f ξ := by
+  exact
+    section43TimeProductTensor_allSlots_flattened_of_flattenable
+      T gs τ (section43TimeImagAxisProductKernel_flattenable T gs)
+
+/-- Fully flattened one-coordinate product-kernel Fubini identity. -/
+theorem section43TimeProductTensor_oneSlot_flattened
+    (T : SchwartzMap (Fin 1 → ℝ) ℂ →L[ℂ] ℂ)
+    (gs : Fin 1 → Section43CompactPositiveTimeSource1D)
+    (τ : Fin 1 → ℝ) :
+    T (section43TimeProductTensor
+        (fun i : Fin 1 => section43OneSidedLaplaceSchwartzRepresentative1D (gs i))) =
+      ∫ ξ : Fin 1 → ℝ,
+        T (section43TimeImagAxisProductKernel ξ) *
+          (section43TimeProductSource gs).f ξ := by
+  exact
+    section43TimeProductTensor_allSlots_flattened_of_flattenable
+      T gs τ (section43TimeImagAxisProductKernel_flattenable_one T gs)
 
 end OSReconstruction

@@ -195,9 +195,10 @@ theorem bvt_W_conjTensorProduct_eq_of_section43FrequencyProjection_eq_succRight
     _ = Tflat
           (physicsFourierFlatCLM
             (flattenSchwartzNPoint (d := d) (φ₁.conjTensorProduct ψ₁))) := by
-          simpa using
+          have h :=
             hTflat_bv
               (flattenSchwartzNPoint (d := d) (φ₁.conjTensorProduct ψ₁))
+          exact h
     _ = Tflat
           (physicsFourierFlatCLM
             (flattenSchwartzNPoint (d := d) (φ₂.conjTensorProduct ψ₂))) := by
@@ -205,9 +206,10 @@ theorem bvt_W_conjTensorProduct_eq_of_section43FrequencyProjection_eq_succRight
     _ = bvt_W OS lgc (n + (m + 1))
             (unflattenSchwartzNPoint (d := d)
               (flattenSchwartzNPoint (d := d) (φ₂.conjTensorProduct ψ₂))) := by
-          simpa using
+          have h :=
             (hTflat_bv
               (flattenSchwartzNPoint (d := d) (φ₂.conjTensorProduct ψ₂))).symm
+          exact h
     _ = bvt_W OS lgc (n + (m + 1)) (φ₂.conjTensorProduct ψ₂) := by
           rw [hflat₂]
 
@@ -492,6 +494,104 @@ theorem continuous_bvt_W_pairing_descended_frequencyProjection
     unfold bvt_W_pairing_descended_frequencyProjection section43PositiveEnergyQuotientMap
     rfl
   exact hcomp
+
+/-- The descended Wightman tensor scalar is linear in its right Section 4.3
+frequency quotient argument. -/
+theorem bvt_W_pairing_descended_frequencyProjection_add_right
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (n m : ℕ)
+    (u : Section43PositiveEnergyComponent (d := d) n)
+    (v w : Section43PositiveEnergyComponent (d := d) m) :
+    bvt_W_pairing_descended_frequencyProjection (d := d) OS lgc n m u (v + w) =
+      bvt_W_pairing_descended_frequencyProjection (d := d) OS lgc n m u v +
+        bvt_W_pairing_descended_frequencyProjection (d := d) OS lgc n m u w := by
+  refine Quotient.inductionOn u ?_
+  intro Φ
+  refine Quotient.inductionOn v ?_
+  intro Ψ
+  refine Quotient.inductionOn w ?_
+  intro Ω
+  change
+    bvt_W OS lgc (n + m)
+        ((section43FrequencyRepresentativeInv d n Φ).conjTensorProduct
+          (section43FrequencyRepresentativeInv d m (Ψ + Ω))) =
+      bvt_W OS lgc (n + m)
+          ((section43FrequencyRepresentativeInv d n Φ).conjTensorProduct
+            (section43FrequencyRepresentativeInv d m Ψ)) +
+        bvt_W OS lgc (n + m)
+          ((section43FrequencyRepresentativeInv d n Φ).conjTensorProduct
+            (section43FrequencyRepresentativeInv d m Ω))
+  rw [map_add]
+  rw [SchwartzMap.conjTensorProduct_add_right]
+  exact (bvt_W_linear (d := d) OS lgc (n + m)).map_add _ _
+
+/-- The descended Wightman tensor scalar is homogeneous in its right Section
+4.3 frequency quotient argument. -/
+theorem bvt_W_pairing_descended_frequencyProjection_smul_right
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (n m : ℕ)
+    (u : Section43PositiveEnergyComponent (d := d) n)
+    (c : ℂ)
+    (v : Section43PositiveEnergyComponent (d := d) m) :
+    bvt_W_pairing_descended_frequencyProjection (d := d) OS lgc n m u (c • v) =
+      c • bvt_W_pairing_descended_frequencyProjection (d := d) OS lgc n m u v := by
+  refine Quotient.inductionOn u ?_
+  intro Φ
+  refine Quotient.inductionOn v ?_
+  intro Ψ
+  change
+    bvt_W OS lgc (n + m)
+        ((section43FrequencyRepresentativeInv d n Φ).conjTensorProduct
+          (section43FrequencyRepresentativeInv d m (c • Ψ))) =
+      c • bvt_W OS lgc (n + m)
+        ((section43FrequencyRepresentativeInv d n Φ).conjTensorProduct
+          (section43FrequencyRepresentativeInv d m Ψ))
+  rw [map_smul]
+  rw [SchwartzMap.conjTensorProduct_smul_right]
+  exact (bvt_W_linear (d := d) OS lgc (n + m)).map_smul _ _
+
+/-- Pairing a fixed left Section 4.3 frequency quotient against the descended
+Wightman tensor scalar gives a continuous linear functional of the right
+quotient. -/
+noncomputable def bvt_W_pairing_descended_frequencyProjection_rightCLM
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (n m : ℕ)
+    (u : Section43PositiveEnergyComponent (d := d) n) :
+    Section43PositiveEnergyComponent (d := d) m →L[ℂ] ℂ where
+  toLinearMap :=
+    { toFun := fun v =>
+        bvt_W_pairing_descended_frequencyProjection (d := d) OS lgc n m u v
+      map_add' :=
+        bvt_W_pairing_descended_frequencyProjection_add_right
+          (d := d) OS lgc n m u
+      map_smul' :=
+        bvt_W_pairing_descended_frequencyProjection_smul_right
+          (d := d) OS lgc n m u }
+  cont := by
+    have hcont_pair :
+        Continuous fun v : Section43PositiveEnergyComponent (d := d) m =>
+          bvt_W_pairing_descended_frequencyProjection (d := d) OS lgc n m u v := by
+      have hprod :
+          Continuous fun v : Section43PositiveEnergyComponent (d := d) m =>
+            (u, v) :=
+        continuous_const.prodMk continuous_id
+      exact
+        (continuous_bvt_W_pairing_descended_frequencyProjection
+          (d := d) OS lgc n m).comp hprod
+    exact hcont_pair
+
+@[simp] theorem bvt_W_pairing_descended_frequencyProjection_rightCLM_apply
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (n m : ℕ)
+    (u : Section43PositiveEnergyComponent (d := d) n)
+    (v : Section43PositiveEnergyComponent (d := d) m) :
+    bvt_W_pairing_descended_frequencyProjection_rightCLM
+        (d := d) OS lgc n m u v =
+      bvt_W_pairing_descended_frequencyProjection (d := d) OS lgc n m u v := rfl
 
 /-- The finite product of Section 4.3 component frequency quotients up to
 degree `B`. -/

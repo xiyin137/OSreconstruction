@@ -11,6 +11,29 @@ namespace BHW
 
 variable {d n : ℕ}
 
+/-- First spatial axis used by the Figure-2-4 `(3,4,5)` rotation. -/
+def figure24Axis1 (hd : 2 ≤ d) : Fin (d + 1) := ⟨1, by omega⟩
+
+/-- Second spatial axis used by the Figure-2-4 `(3,4,5)` rotation. -/
+def figure24Axis2 (hd : 2 ≤ d) : Fin (d + 1) := ⟨2, by omega⟩
+
+/-- The explicit adjacent Figure-2-4 spatial rotation on configurations.  Time
+is fixed, the first two spatial axes are rotated by the `(3,4,5)` matrix, and
+all remaining spatial coordinates are unchanged. -/
+def figure24RotateAdjacentConfig
+    (hd : 2 ≤ d)
+    (z : Fin n → Fin (d + 1) → ℂ) :
+    Fin n → Fin (d + 1) → ℂ :=
+  fun k μ =>
+    if μ = 0 then z k μ
+    else if μ = BHW.figure24Axis1 (d := d) hd then
+      ((3 / 5 : ℝ) : ℂ) * z k (BHW.figure24Axis1 (d := d) hd) -
+        ((4 / 5 : ℝ) : ℂ) * z k (BHW.figure24Axis2 (d := d) hd)
+    else if μ = BHW.figure24Axis2 (d := d) hd then
+      ((4 / 5 : ℝ) : ℂ) * z k (BHW.figure24Axis1 (d := d) hd) +
+        ((3 / 5 : ℝ) : ℂ) * z k (BHW.figure24Axis2 (d := d) hd)
+    else z k μ
+
 private def e1 (hd : 2 ≤ d) : Fin (d + 1) := ⟨1, by omega⟩
 private def e2 (hd : 2 ≤ d) : Fin (d + 1) := ⟨2, by omega⟩
 
@@ -1103,6 +1126,221 @@ private lemma swapWitnessRealSwapped_mem_extendedTube
     _ = complexLorentzAction R (complexLorentzAction Λ w) := by simpa [hrepr]
     _ = complexLorentzAction (R * Λ) w := by
       rw [← complexLorentzAction_mul]
+
+/-- The public Figure-2-4 coordinate rotation is inverted by the corresponding
+`(3,4,5)` complex Lorentz rotation. -/
+theorem figure24RotateAdjacentConfig_lorentz_inverse
+    (hd : 2 ≤ d) :
+    ∃ Λfig : ComplexLorentzGroup d,
+      ∀ z : Fin n → Fin (d + 1) → ℂ,
+        complexLorentzAction Λfig
+          (figure24RotateAdjacentConfig (d := d) (n := n) hd z) =
+        z := by
+  have hab : (0 : ℝ) < (3 : ℝ) ^ 2 + (4 : ℝ) ^ 2 := by norm_num
+  have hsqrt : Real.sqrt ((3 : ℝ) ^ 2 + (4 : ℝ) ^ 2) = 5 := by
+    rw [show ((3 : ℝ) ^ 2 + (4 : ℝ) ^ 2) = (5 : ℝ) ^ 2 by norm_num]
+    simpa [abs_of_nonneg (show (0 : ℝ) ≤ 5 by norm_num)] using
+      (Real.sqrt_sq_eq_abs (5 : ℝ))
+  rcases spatial_rotation_e12_plane (d := d) hd (3 : ℝ) (4 : ℝ) hab with
+    ⟨R, hR⟩
+  refine ⟨R, ?_⟩
+  intro z
+  ext k μ
+  rcases hR (fun ν =>
+      figure24RotateAdjacentConfig (d := d) (n := n) hd z k ν) with
+    ⟨h0, h1, h2, hrest⟩
+  have haxis1 : figure24Axis1 (d := d) hd = e1 hd := by
+    apply Fin.ext
+    rfl
+  have haxis2 : figure24Axis2 (d := d) hd = e2 hd := by
+    apply Fin.ext
+    rfl
+  by_cases hμ0 : μ = 0
+  · subst hμ0
+    have h0' :
+        (∑ ν, R.val 0 ν *
+            figure24RotateAdjacentConfig (d := d) (n := n) hd z k ν) =
+          z k 0 := by
+      simpa [figure24RotateAdjacentConfig] using h0
+    simpa [complexLorentzAction] using h0'
+  · by_cases hμ1 : μ = e1 hd
+    · subst hμ1
+      have h1' :
+          (∑ ν, R.val (e1 hd) ν *
+              figure24RotateAdjacentConfig (d := d) (n := n) hd z k ν) =
+            ((3 / 5 : ℝ) : ℂ) *
+                figure24RotateAdjacentConfig (d := d) (n := n) hd z k (e1 hd) +
+              ((4 / 5 : ℝ) : ℂ) *
+                figure24RotateAdjacentConfig (d := d) (n := n) hd z k (e2 hd) := by
+        simpa [e1, e2, hsqrt] using h1
+      have hcoord1 :
+          figure24RotateAdjacentConfig (d := d) (n := n) hd z k (e1 hd) =
+            ((3 / 5 : ℝ) : ℂ) * z k (e1 hd) -
+              ((4 / 5 : ℝ) : ℂ) * z k (e2 hd) := by
+        simp [figure24RotateAdjacentConfig, haxis1, haxis2, e1_ne_zero,
+          e2_ne_zero, e2_ne_e1]
+      have hcoord2 :
+          figure24RotateAdjacentConfig (d := d) (n := n) hd z k (e2 hd) =
+            ((4 / 5 : ℝ) : ℂ) * z k (e1 hd) +
+              ((3 / 5 : ℝ) : ℂ) * z k (e2 hd) := by
+        simp [figure24RotateAdjacentConfig, haxis1, haxis2, e1_ne_zero,
+          e2_ne_zero, e2_ne_e1]
+      have hcalc :
+          ((3 / 5 : ℝ) : ℂ) *
+              figure24RotateAdjacentConfig (d := d) (n := n) hd z k (e1 hd) +
+            ((4 / 5 : ℝ) : ℂ) *
+              figure24RotateAdjacentConfig (d := d) (n := n) hd z k (e2 hd) =
+            z k (e1 hd) := by
+        rw [hcoord1, hcoord2]
+        norm_num
+        ring
+      have hsum :
+          (∑ ν, R.val (e1 hd) ν *
+              figure24RotateAdjacentConfig (d := d) (n := n) hd z k ν) =
+            z k (e1 hd) :=
+        h1'.trans hcalc
+      simpa [complexLorentzAction] using hsum
+    · by_cases hμ2 : μ = e2 hd
+      · subst hμ2
+        have h2' :
+            (∑ ν, R.val (e2 hd) ν *
+                figure24RotateAdjacentConfig (d := d) (n := n) hd z k ν) =
+              -((4 / 5 : ℝ) : ℂ) *
+                  figure24RotateAdjacentConfig (d := d) (n := n) hd z k (e1 hd) +
+                ((3 / 5 : ℝ) : ℂ) *
+                  figure24RotateAdjacentConfig (d := d) (n := n) hd z k (e2 hd) := by
+          simpa [e1, e2, hsqrt] using h2
+        have hcoord1 :
+            figure24RotateAdjacentConfig (d := d) (n := n) hd z k (e1 hd) =
+              ((3 / 5 : ℝ) : ℂ) * z k (e1 hd) -
+                ((4 / 5 : ℝ) : ℂ) * z k (e2 hd) := by
+          simp [figure24RotateAdjacentConfig, haxis1, haxis2, e1_ne_zero,
+            e2_ne_zero, e2_ne_e1]
+        have hcoord2 :
+            figure24RotateAdjacentConfig (d := d) (n := n) hd z k (e2 hd) =
+              ((4 / 5 : ℝ) : ℂ) * z k (e1 hd) +
+                ((3 / 5 : ℝ) : ℂ) * z k (e2 hd) := by
+          simp [figure24RotateAdjacentConfig, haxis1, haxis2, e1_ne_zero,
+            e2_ne_zero, e2_ne_e1]
+        have hcalc :
+            -((4 / 5 : ℝ) : ℂ) *
+                figure24RotateAdjacentConfig (d := d) (n := n) hd z k (e1 hd) +
+              ((3 / 5 : ℝ) : ℂ) *
+                figure24RotateAdjacentConfig (d := d) (n := n) hd z k (e2 hd) =
+              z k (e2 hd) := by
+          rw [hcoord1, hcoord2]
+          norm_num
+          ring
+        have hsum :
+            (∑ ν, R.val (e2 hd) ν *
+                figure24RotateAdjacentConfig (d := d) (n := n) hd z k ν) =
+              z k (e2 hd) :=
+          h2'.trans hcalc
+        simpa [complexLorentzAction] using hsum
+      · have hμ1' : μ ≠ ⟨1, by omega⟩ := by
+          intro h
+          exact hμ1 (by simpa [e1] using h)
+        have hμ2' : μ ≠ ⟨2, by omega⟩ := by
+          intro h
+          exact hμ2 (by simpa [e2] using h)
+        have hfix := hrest μ hμ0 hμ1' hμ2'
+        have hcoord :
+            figure24RotateAdjacentConfig (d := d) (n := n) hd z k μ = z k μ := by
+          have hμaxis1 : μ ≠ figure24Axis1 (d := d) hd := by
+            intro h
+            exact hμ1 (h.trans haxis1)
+          have hμaxis2 : μ ≠ figure24Axis2 (d := d) hd := by
+            intro h
+            exact hμ2 (h.trans haxis2)
+          simp [figure24RotateAdjacentConfig, hμ0, hμaxis1, hμaxis2]
+        have hsum :
+            (∑ ν, R.val μ ν *
+                figure24RotateAdjacentConfig (d := d) (n := n) hd z k ν) =
+              z k μ :=
+          hfix.trans hcoord
+        simpa [complexLorentzAction] using hsum
+
+/-- Figure-2-4 adjacent support packet for the `(3,4,5)` two-plane rotation.
+It exposes the concrete equal-time real witness, the pre-rotated forward-Jost
+witness, the public coordinate formula for that rotation, and the Lorentz
+action that recovers the adjacent relabelled real embedding. -/
+theorem figure24_adjacentTwoPlaneRotationSupport
+    (hd : 2 ≤ d) (i : Fin n) (hi : i.val + 1 < n) :
+    let τ : Equiv.Perm (Fin n) :=
+      Equiv.swap i ⟨i.val + 1, hi⟩
+    ∃ (xfig xrot : Fin n → Fin (d + 1) → ℝ)
+      (Λfig : ComplexLorentzGroup d),
+      (∀ k : Fin n, xfig k 0 = 0) ∧
+      xfig ∈ JostSet d n ∧
+      realEmbed xfig ∈ ExtendedTube d n ∧
+      realEmbed xrot =
+        figure24RotateAdjacentConfig (d := d) (n := n) hd
+          (realEmbed (fun k => xfig (τ k))) ∧
+      xrot ∈ ForwardJostSet d n
+        (Nat.succ_le_of_lt (Nat.lt_of_lt_of_le (Nat.zero_lt_succ _) hd)) ∧
+      complexLorentzAction Λfig (realEmbed xrot) =
+        realEmbed (fun k => xfig (τ k)) := by
+  let τ : Equiv.Perm (Fin n) := Equiv.swap i ⟨i.val + 1, hi⟩
+  let xfig : Fin n → Fin (d + 1) → ℝ :=
+    swapWitnessReal (d := d) (n := n) hd i hi
+  let xrot : Fin n → Fin (d + 1) → ℝ :=
+    swapWitnessRealSwappedRot (d := d) (n := n) hd i hi
+  rcases realEmbed_swapWitnessRealSwapped_eq_action_rot (d := d) (n := n) hd i hi with
+    ⟨R, hR⟩
+  refine ⟨xfig, xrot, R, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  · intro k
+    simp [xfig, swapWitnessReal]
+  · have hd1 : 1 ≤ d :=
+      Nat.succ_le_of_lt (Nat.lt_of_lt_of_le (Nat.zero_lt_succ _) hd)
+    exact (forwardJostSet_subset_jostSet (d := d) (n := n) hd1)
+      (swapWitnessReal_mem_forwardJostSet (d := d) (n := n) hd i hi)
+  · exact swapWitnessReal_mem_extendedTube (d := d) (n := n) hd i hi
+  · have haxis1 : figure24Axis1 (d := d) hd = e1 hd := by
+      apply Fin.ext
+      rfl
+    have haxis2 : figure24Axis2 (d := d) hd = e2 hd := by
+      apply Fin.ext
+      rfl
+    have haxis1_ne0 : figure24Axis1 (d := d) hd ≠ (0 : Fin (d + 1)) := by
+      simpa [haxis1] using e1_ne_zero (d := d) hd
+    have haxis2_ne0 : figure24Axis2 (d := d) hd ≠ (0 : Fin (d + 1)) := by
+      simpa [haxis2] using e2_ne_zero (d := d) hd
+    have haxis2_ne_axis1 :
+        figure24Axis2 (d := d) hd ≠ figure24Axis1 (d := d) hd := by
+      simpa [haxis1, haxis2] using e2_ne_e1 (d := d) hd
+    ext k μ
+    by_cases h0 : μ = 0
+    · subst h0
+      simp [xfig, xrot, τ, realEmbed, figure24RotateAdjacentConfig,
+        swapWitnessRealSwappedRot, swapWitnessRealSwapped]
+    · by_cases h1 : μ = figure24Axis1 (d := d) hd
+      · subst h1
+        simp [xfig, xrot, τ, realEmbed, figure24RotateAdjacentConfig,
+          swapWitnessRealSwappedRot, swapWitnessRealSwapped, haxis1, haxis2,
+          haxis1_ne0, haxis2_ne0, haxis2_ne_axis1, e1_ne_zero, e2_ne_zero,
+          e2_ne_e1]
+        ring_nf
+      · by_cases h2 : μ = figure24Axis2 (d := d) hd
+        · subst h2
+          have haxis1_ne_axis2 :
+              figure24Axis1 (d := d) hd ≠ figure24Axis2 (d := d) hd :=
+            haxis2_ne_axis1.symm
+          simp [xfig, xrot, τ, realEmbed, figure24RotateAdjacentConfig,
+            swapWitnessRealSwappedRot, swapWitnessRealSwapped, haxis1, haxis2,
+            haxis2_ne0, haxis1_ne_axis2, e1_ne_zero, e2_ne_zero, e2_ne_e1]
+        · have hμe1 : μ ≠ e1 hd := by
+            intro h
+            exact h1 (h.trans haxis1.symm)
+          have hμe2 : μ ≠ e2 hd := by
+            intro h
+            exact h2 (h.trans haxis2.symm)
+          simp [xfig, xrot, τ, realEmbed, figure24RotateAdjacentConfig,
+            swapWitnessRealSwappedRot, swapWitnessRealSwapped, h0, h1, h2,
+            haxis1, haxis2, hμe1, hμe2]
+  · exact swapWitnessRealSwappedRot_mem_forwardJostSet (d := d) (n := n) hd i hi
+  · change complexLorentzAction R (realEmbed xrot) =
+      realEmbed (fun k => xfig (τ k))
+    simpa [xfig, xrot, τ, swapWitnessRealSwapped] using hR.symm
 
 theorem adjacent_overlap_witness_exists
     (hd : 2 ≤ d) (i : Fin n) (hi : i.val + 1 < n) :

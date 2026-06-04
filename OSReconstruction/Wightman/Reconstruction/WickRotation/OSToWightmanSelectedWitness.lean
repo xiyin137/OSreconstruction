@@ -297,13 +297,95 @@ theorem bvt_selectedAdjacentOverlap_connected_of_forwardOverlapConnected
       (d := d) n i hi (hFwd i hi)
   simpa [BHW.adjSwapExtendedOverlapSet, BHW.permAct] using hconn
 
-omit [NeZero d] in
+set_option linter.unusedSectionVars false in
+/-- Adjacent-index real double-coset generation supplies exactly the selected
+adjacent ET-overlap connectedness field needed by theorem-2 local Ruelle
+consumers.
+
+This is the narrower theorem-2 surface replacing reliance on the generic
+all-permutation `permSeedSet` blocker for a single adjacent edge. -/
+theorem bvt_selectedAdjacentOverlap_connected_of_adjacentIndexGeneration
+    (n : ℕ) (i : Fin n) (hi : i.val + 1 < n)
+    (Λ0 : ComplexLorentzGroup d)
+    (hΛ0 : Λ0 ∈ BHW.adjSwapForwardOverlapIndexSet (d := d) n i hi)
+    (hgen :
+      ∀ Λ ∈ BHW.adjSwapForwardOverlapIndexSet (d := d) n i hi,
+        ∃ R1 R2 : RestrictedLorentzGroup d,
+          Λ = ComplexLorentzGroup.ofReal R1 * Λ0 *
+            ComplexLorentzGroup.ofReal R2) :
+    IsConnected
+      {z : Fin n → Fin (d + 1) → ℂ |
+        z ∈ BHW.ExtendedTube d n ∧
+          BHW.permAct (d := d) (Equiv.swap i ⟨i.val + 1, hi⟩) z ∈
+            BHW.ExtendedTube d n} := by
+  have hfwd :
+      IsConnected (BHW.adjSwapForwardOverlapSet (d := d) n i hi) :=
+    BHW.isConnected_adjSwapForwardOverlapSet_of_real_double_coset_generation
+      (d := d) n i hi Λ0 hΛ0 hgen
+  have hconn :
+      IsConnected (BHW.adjSwapExtendedOverlapSet (d := d) n i hi) :=
+    BHW.isConnected_adjSwapExtendedOverlap_of_forwardOverlapConnected
+      (d := d) n i hi hfwd
+  simpa [BHW.adjSwapExtendedOverlapSet, BHW.permAct] using hconn
+
+set_option linter.unusedSectionVars false in
+/-- Family form of
+`bvt_selectedAdjacentOverlap_connected_of_adjacentIndexGeneration`, matching the
+field shape of `SelectedAdjacentPermutationEdgeData`. -/
+theorem bvt_selectedAdjacentOverlap_connected_of_adjacentIndexGeneration_all
+    (n : ℕ)
+    (hgenPack :
+      ∀ (i : Fin n) (hi : i.val + 1 < n),
+        ∃ Λ0 : ComplexLorentzGroup d,
+          Λ0 ∈ BHW.adjSwapForwardOverlapIndexSet (d := d) n i hi ∧
+            ∀ Λ ∈ BHW.adjSwapForwardOverlapIndexSet (d := d) n i hi,
+              ∃ R1 R2 : RestrictedLorentzGroup d,
+                Λ = ComplexLorentzGroup.ofReal R1 * Λ0 *
+                  ComplexLorentzGroup.ofReal R2) :
+    ∀ (i : Fin n) (hi : i.val + 1 < n),
+      IsConnected
+        {z : Fin n → Fin (d + 1) → ℂ |
+          z ∈ BHW.ExtendedTube d n ∧
+            BHW.permAct (d := d) (Equiv.swap i ⟨i.val + 1, hi⟩) z ∈
+              BHW.ExtendedTube d n} := by
+  intro i hi
+  rcases hgenPack i hi with ⟨Λ0, hΛ0, hgen⟩
+  exact
+    bvt_selectedAdjacentOverlap_connected_of_adjacentIndexGeneration
+      (d := d) n i hi Λ0 hΛ0 hgen
+
+set_option linter.unusedSectionVars false in
+/-- Selected OS/Jost anchor data plus adjacent-index generation supplies the
+selected adjacent edge packet without using the generic all-permutation
+`permSeedSet` connectedness blocker. -/
+theorem bvt_F_selectedAdjacentPermutationEdgeData_of_selectedJostData_and_adjacentIndexGeneration
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (n : ℕ)
+    (hgenPack :
+      ∀ (i : Fin n) (hi : i.val + 1 < n),
+        ∃ Λ0 : ComplexLorentzGroup d,
+          Λ0 ∈ BHW.adjSwapForwardOverlapIndexSet (d := d) n i hi ∧
+            ∀ Λ ∈ BHW.adjSwapForwardOverlapIndexSet (d := d) n i hi,
+              ∃ R1 R2 : RestrictedLorentzGroup d,
+                Λ = ComplexLorentzGroup.ofReal R1 * Λ0 *
+                  ComplexLorentzGroup.ofReal R2)
+    (hData : SelectedAdjacentDistributionalJostAnchorData OS lgc n) :
+    SelectedAdjacentPermutationEdgeData OS lgc n := by
+  exact
+    bvt_F_selectedAdjacentPermutationEdgeData_of_selectedJostData
+      (d := d) OS lgc n
+      (bvt_selectedAdjacentOverlap_connected_of_adjacentIndexGeneration_all
+        (d := d) n hgenPack)
+      hData
+
+set_option linter.unusedSectionVars false in
 /-- The existing pure BHW `permSeedSet` connectedness blocker gives the adjacent
 ET-overlap connectedness needed by the selected OS edge packet.  This theorem
 introduces no new trust boundary; it only reuses the current geometric blocker
 under the adjacent-transposition specialization. -/
 theorem bvt_selectedAdjacentOverlap_connected_of_permSeedGeometry
-    (n : ℕ) :
+    [NeZero d] (n : ℕ) :
     ∀ (i : Fin n) (hi : i.val + 1 < n),
       IsConnected
         {z : Fin n → Fin (d + 1) → ℂ |
@@ -642,7 +724,7 @@ theorem bvt_F_extendF_petBranchIndependence_of_selectedAdjacentEdgeData
 /-- Selected adjacent OS edge data gives the BHW forward-tube permutation
 invariance conclusion, once the PET sector-fiber geometry is supplied.  This
 is the non-circular selected-witness replacement for the old BHW use of
-`IsLocallyCommutativeWeak`. -/
+`IsAdjacentLocallyCommutativeWeak`. -/
 theorem bvt_F_permutation_invariance_of_selectedAdjacentEdgeData
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS)

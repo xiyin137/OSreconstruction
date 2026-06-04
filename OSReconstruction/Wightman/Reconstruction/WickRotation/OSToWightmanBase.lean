@@ -235,6 +235,74 @@ theorem acr_one_iff_toDiffFlat_mem_tubeDomain_positiveTimeDiff {d k : ℕ} [NeZe
         simpa [BHW.diffCoordEquiv_apply, hi] using hdiff
       simpa [hi, Complex.sub_im, sub_pos] using h1
 
+/-- Osgood bridge on the flattened `ACR(1)` tube: continuity plus separate
+holomorphy in every flat coordinate implies joint holomorphy.  The time
+coordinates are holomorphic on the upper half-plane slices; the spatial
+coordinates are holomorphic on unrestricted complex lines. -/
+theorem differentiableOn_flatPositiveTimeDiffReal_of_slices {d k : ℕ}
+    (G : (Fin (k * (d + 1)) → ℂ) → ℂ)
+    (hcont : ContinuousOn G (SCV.TubeDomain (FlatPositiveTimeDiffReal k d)))
+    (htime : ∀ z ∈ SCV.TubeDomain (FlatPositiveTimeDiffReal k d), ∀ i : Fin k,
+      DifferentiableOn ℂ
+        (fun w => G (Function.update z (finProdFinEquiv (i, (0 : Fin (d + 1)))) w))
+        {w : ℂ | 0 < w.im})
+    (hspatial : ∀ z ∈ SCV.TubeDomain (FlatPositiveTimeDiffReal k d),
+      ∀ i : Fin k, ∀ μ : Fin (d + 1), μ ≠ 0 →
+        DifferentiableOn ℂ
+          (fun w => G (Function.update z (finProdFinEquiv (i, μ)) w)) Set.univ) :
+    DifferentiableOn ℂ G (SCV.TubeDomain (FlatPositiveTimeDiffReal k d)) := by
+  have hopen : IsOpen (SCV.TubeDomain (FlatPositiveTimeDiffReal k d)) :=
+    SCV.tubeDomain_isOpen (isOpen_flatPositiveTimeDiffReal k d)
+  apply SCV.osgood_lemma hopen
+  · exact hcont
+  · intro z hz p
+    let q : Fin k × Fin (d + 1) := finProdFinEquiv.symm p
+    let i : Fin k := q.1
+    let μ : Fin (d + 1) := q.2
+    have hp : p = finProdFinEquiv (i, μ) := by
+      simpa [i, μ, q] using (finProdFinEquiv.apply_symm_apply p).symm
+    by_cases hμ : μ = (0 : Fin (d + 1))
+    · have hz_time : 0 < (z (finProdFinEquiv (i, (0 : Fin (d + 1))))).im := by
+        rw [mem_tubeDomain_flatPositiveTimeDiffReal_iff] at hz
+        exact hz i
+      have hdiff :
+          DifferentiableAt ℂ
+            (fun w => G (Function.update z (finProdFinEquiv (i, (0 : Fin (d + 1)))) w))
+            (z (finProdFinEquiv (i, (0 : Fin (d + 1))))) := by
+        exact (htime z hz i _ hz_time).differentiableAt
+          ((isOpen_lt continuous_const Complex.continuous_im).mem_nhds hz_time)
+      simpa [hp, hμ] using hdiff
+    · have hdiff :
+          DifferentiableAt ℂ
+            (fun w => G (Function.update z (finProdFinEquiv (i, μ)) w))
+            (z (finProdFinEquiv (i, μ))) := by
+        exact (hspatial z hz i μ hμ _ (Set.mem_univ _)).differentiableAt
+          (isOpen_univ.mem_nhds (Set.mem_univ _))
+      simpa [hp] using hdiff
+
+/-- Pull back the flattened Osgood bridge through difference coordinates to get
+full holomorphy on `AnalyticContinuationRegion d k 1`. -/
+theorem differentiableOn_acrOne_of_flat_slices {d k : ℕ} [NeZero d]
+    (G : (Fin (k * (d + 1)) → ℂ) → ℂ)
+    (hcont : ContinuousOn G (SCV.TubeDomain (FlatPositiveTimeDiffReal k d)))
+    (htime : ∀ z ∈ SCV.TubeDomain (FlatPositiveTimeDiffReal k d), ∀ i : Fin k,
+      DifferentiableOn ℂ
+        (fun w => G (Function.update z (finProdFinEquiv (i, (0 : Fin (d + 1)))) w))
+        {w : ℂ | 0 < w.im})
+    (hspatial : ∀ z ∈ SCV.TubeDomain (FlatPositiveTimeDiffReal k d),
+      ∀ i : Fin k, ∀ μ : Fin (d + 1), μ ≠ 0 →
+        DifferentiableOn ℂ
+          (fun w => G (Function.update z (finProdFinEquiv (i, μ)) w)) Set.univ) :
+    DifferentiableOn ℂ
+      (fun z : Fin k → Fin (d + 1) → ℂ => G (BHW.toDiffFlat k d z))
+      (AnalyticContinuationRegion d k 1) := by
+  have hG :
+      DifferentiableOn ℂ G (SCV.TubeDomain (FlatPositiveTimeDiffReal k d)) :=
+    differentiableOn_flatPositiveTimeDiffReal_of_slices
+      G hcont htime hspatial
+  exact hG.comp (differentiable_toDiffFlat_local k d).differentiableOn
+    (fun z hz => (acr_one_iff_toDiffFlat_mem_tubeDomain_positiveTimeDiff z).mp hz)
+
 /-- Embed spatial coordinates into spacetime with zero time component. -/
 def spatialEmbed {d : ℕ} (y : Fin d → ℝ) : SpacetimeDim d :=
   Fin.cons 0 y

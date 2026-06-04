@@ -1281,7 +1281,7 @@ private theorem zeroHeadBlockShift_flatTimeShiftDirection_pairing_nonpos_of_mem_
         ((flattenCLEquivReal (n + m) (d + 1)) '' ForwardConeAbs d (n + m))) :
     ∑ i,
       (((OSReconstruction.castFinCLE
-          (by ring : n * (d + 1) + m * (d + 1) = (n + m) * (d + 1)))
+          (Nat.add_mul n m (d + 1)).symm)
         (OSReconstruction.zeroHeadBlockShift
           (m := n * (d + 1)) (n := m * (d + 1))
           (flatTimeShiftDirection d m))) i) * ξ i ≤ 0 := by
@@ -1463,7 +1463,7 @@ private theorem zeroHeadBlockShift_flatTimeShiftDirection_pairing_nonpos_of_mem_
     linarith [hpair_nonneg, hW_bound, hSneg]
   let vEff : Fin ((n + m) * (d + 1)) → ℝ :=
     ((OSReconstruction.castFinCLE
-      (by ring : n * (d + 1) + m * (d + 1) = (n + m) * (d + 1)))
+      (Nat.add_mul n m (d + 1)).symm)
       (OSReconstruction.zeroHeadBlockShift
         (m := n * (d + 1)) (n := m * (d + 1))
         (flatTimeShiftDirection d m)))
@@ -1575,6 +1575,14 @@ private theorem reindexSchwartzFin_translateSchwartz
     SCV.translateSchwartz_apply, OSReconstruction.reindexSchwartzFin_apply]
   simp
 
+private theorem reindexSchwartzFin_symm_comp_self_local {a b : ℕ} (h : a = b)
+    (F : SchwartzMap (Fin a → ℝ) ℂ) :
+    OSReconstruction.reindexSchwartzFin h.symm
+      (OSReconstruction.reindexSchwartzFin h F) = F := by
+  subst h
+  ext x
+  rfl
+
 /-- Fourier-shift specialization on the exact full-flat translated tensor
 surface produced by `exists_flattened_bvt_W_conjTensorProduct_right_dualCone_distribution_translate`.
 After reindexing the split head/tail block back to the literal `(n+m)`-point
@@ -1587,7 +1595,7 @@ theorem physicsFourierFlatCLM_reindex_translate_zeroHeadBlockShift_apply
     (ξ : Fin ((n + m) * (d + 1)) → ℝ) :
     physicsFourierFlatCLM
         (OSReconstruction.reindexSchwartzFin
-          (by ring : n * (d + 1) + m * (d + 1) = (n + m) * (d + 1))
+          (Nat.add_mul n m (d + 1)).symm
           (SCV.translateSchwartz
             (OSReconstruction.zeroHeadBlockShift (m := n * (d + 1)) (n := m * (d + 1)) a)
             Ψ)) ξ =
@@ -1595,23 +1603,23 @@ theorem physicsFourierFlatCLM_reindex_translate_zeroHeadBlockShift_apply
           (-(Complex.I *
               ∑ i,
                 ((((OSReconstruction.castFinCLE
-                  (by ring : n * (d + 1) + m * (d + 1) = (n + m) * (d + 1)))
+                  (Nat.add_mul n m (d + 1)).symm)
                   (OSReconstruction.zeroHeadBlockShift
                     (m := n * (d + 1)) (n := m * (d + 1)) a)) i : ℝ) : ℂ) *
                   (ξ i : ℂ))) *
         physicsFourierFlatCLM
           (OSReconstruction.reindexSchwartzFin
-            (by ring : n * (d + 1) + m * (d + 1) = (n + m) * (d + 1))
+            (Nat.add_mul n m (d + 1)).symm
             Ψ) ξ := by
   rw [reindexSchwartzFin_translateSchwartz]
   simpa using
     physicsFourierFlatCLM_translateSchwartz_apply
       ((OSReconstruction.castFinCLE
-        (by ring : n * (d + 1) + m * (d + 1) = (n + m) * (d + 1)))
+        (Nat.add_mul n m (d + 1)).symm)
         (OSReconstruction.zeroHeadBlockShift
           (m := n * (d + 1)) (n := m * (d + 1)) a))
       (OSReconstruction.reindexSchwartzFin
-        (by ring : n * (d + 1) + m * (d + 1) = (n + m) * (d + 1))
+        (Nat.add_mul n m (d + 1)).symm
         Ψ)
       ξ
 
@@ -1690,7 +1698,7 @@ theorem zeroHeadBlockShift_flatTimeShiftDirection_pairing_eq_neg_tailTimeSum
     (ξ : Fin ((n + m) * (d + 1)) → ℝ) :
     ∑ i,
       (((OSReconstruction.castFinCLE
-          (by ring : n * (d + 1) + m * (d + 1) = (n + m) * (d + 1)))
+          (Nat.add_mul n m (d + 1)).symm)
         (OSReconstruction.zeroHeadBlockShift
           (m := n * (d + 1)) (n := m * (d + 1))
           (flatTimeShiftDirection d m))) i) * ξ i =
@@ -1707,7 +1715,7 @@ theorem zeroHeadBlockShift_flatTimeShiftDirection_pairing_eq_neg_tailTimeSum
   have hvEff_targetVec :
       vEff =
         ((OSReconstruction.castFinCLE
-          (by ring : n * (d + 1) + m * (d + 1) = (n + m) * (d + 1))) xSplit) := by
+          (Nat.add_mul n m (d + 1)).symm) xSplit) := by
     ext i
     rfl
   let y : Fin (n + m) → Fin (d + 1) → ℝ :=
@@ -1822,7 +1830,7 @@ theorem zeroHeadBlockShift_flatTimeShiftDirection_pairing_nonpos_of_mem_dualCone
         ((flattenCLEquivReal (n + m) (d + 1)) '' ForwardConeAbs d (n + m))) :
     ∑ i,
       (((OSReconstruction.castFinCLE
-          (by ring : n * (d + 1) + m * (d + 1) = (n + m) * (d + 1)))
+          (Nat.add_mul n m (d + 1)).symm)
         (OSReconstruction.zeroHeadBlockShift
           (m := n * (d + 1)) (n := m * (d + 1))
           (flatTimeShiftDirection d m))) i) * ξ i ≤ 0 := by
@@ -2061,7 +2069,7 @@ private theorem exists_flattened_bvt_W_conjTensorProduct_right_dualCone_distribu
             Tflat
               (physicsFourierFlatCLM
                 (OSReconstruction.reindexSchwartzFin
-                  (by ring : n * (d + 1) + m * (d + 1) = (n + m) * (d + 1))
+                  (Nat.add_mul n m (d + 1)).symm
                   ((flattenSchwartzNPoint (d := d) f.borchersConj).tensorProduct ψ))) := by
   obtain ⟨Tflat, hTflat_supp, hTflat_repr⟩ :=
     exists_flattened_bvt_W_dualCone_distribution (d := d) OS lgc (n + m)
@@ -2083,7 +2091,7 @@ private theorem exists_flattened_bvt_W_conjTensorProduct_right_dualCone_distribu
         (d := d) f (unflattenSchwartzNPoint (d := d) ψ)
   have hflat' := congrArg
       (OSReconstruction.reindexSchwartzFin
-        (by ring : n * (d + 1) + m * (d + 1) = (n + m) * (d + 1))) hflat
+        (Nat.add_mul n m (d + 1)).symm) hflat
   have hfull_left :
       unflattenSchwartzNPoint (d := d)
           (flattenSchwartzNPoint (d := d)
@@ -2095,7 +2103,7 @@ private theorem exists_flattened_bvt_W_conjTensorProduct_right_dualCone_distribu
       f.conjTensorProduct (unflattenSchwartzNPoint (d := d) ψ) =
         unflattenSchwartzNPoint (d := d)
           (OSReconstruction.reindexSchwartzFin
-            (by ring : n * (d + 1) + m * (d + 1) = (n + m) * (d + 1))
+            (Nat.add_mul n m (d + 1)).symm
             ((flattenSchwartzNPoint (d := d) f.borchersConj).tensorProduct ψ)) := by
     exact hfull_left.symm.trans
       (congrArg (unflattenSchwartzNPoint (d := d)) hflat')
@@ -2108,17 +2116,17 @@ private theorem exists_flattened_bvt_W_conjTensorProduct_right_dualCone_distribu
     _ = bvt_W OS lgc (n + m)
           (unflattenSchwartzNPoint (d := d)
             (OSReconstruction.reindexSchwartzFin
-              (by ring : n * (d + 1) + m * (d + 1) = (n + m) * (d + 1))
+              (Nat.add_mul n m (d + 1)).symm
               ((flattenSchwartzNPoint (d := d) f.borchersConj).tensorProduct ψ))) := by
             rw [hfull]
     _ = Tflat
           (physicsFourierFlatCLM
             (OSReconstruction.reindexSchwartzFin
-              (by ring : n * (d + 1) + m * (d + 1) = (n + m) * (d + 1))
+              (Nat.add_mul n m (d + 1)).symm
               ((flattenSchwartzNPoint (d := d) f.borchersConj).tensorProduct ψ))) := by
             simpa using hTflat_repr
               (OSReconstruction.reindexSchwartzFin
-                (by ring : n * (d + 1) + m * (d + 1) = (n + m) * (d + 1))
+                (Nat.add_mul n m (d + 1)).symm
                 ((flattenSchwartzNPoint (d := d) f.borchersConj).tensorProduct ψ))
 
 /-- Translate-orbit specialization of
@@ -2143,7 +2151,7 @@ private theorem exists_flattened_bvt_W_conjTensorProduct_right_dualCone_distribu
             Tflat
               (physicsFourierFlatCLM
                 (OSReconstruction.reindexSchwartzFin
-                  (by ring : n * (d + 1) + m * (d + 1) = (n + m) * (d + 1))
+                  (Nat.add_mul n m (d + 1)).symm
                   (SCV.translateSchwartz
                     (OSReconstruction.zeroHeadBlockShift
                       (m := n * (d + 1)) (n := m * (d + 1))
@@ -2677,7 +2685,7 @@ theorem continuous_physicsFourierFlatCLM_reindex_translate_zeroHeadBlockShift
     Continuous (fun t : ℝ =>
       physicsFourierFlatCLM
         (OSReconstruction.reindexSchwartzFin
-          (by ring : n * (d + 1) + m * (d + 1) = (n + m) * (d + 1))
+          (Nat.add_mul n m (d + 1)).symm
           (SCV.translateSchwartz
             (OSReconstruction.zeroHeadBlockShift
               (m := n * (d + 1)) (n := m * (d + 1))
@@ -2694,15 +2702,15 @@ theorem continuous_physicsFourierFlatCLM_reindex_translate_zeroHeadBlockShift
   have hcont_reindex :
       Continuous (fun t : ℝ =>
         OSReconstruction.reindexSchwartzFin
-          (by ring : n * (d + 1) + m * (d + 1) = (n + m) * (d + 1))
+          (Nat.add_mul n m (d + 1)).symm
           (SCV.translateSchwartz (t • η) Ψ)) :=
     ((OSReconstruction.reindexSchwartzFin
-      (by ring : n * (d + 1) + m * (d + 1) = (n + m) * (d + 1))).continuous).comp hcont_base
+      (Nat.add_mul n m (d + 1)).symm).continuous).comp hcont_base
   have hEq :
       (fun t : ℝ =>
         physicsFourierFlatCLM
           (OSReconstruction.reindexSchwartzFin
-            (by ring : n * (d + 1) + m * (d + 1) = (n + m) * (d + 1))
+            (Nat.add_mul n m (d + 1)).symm
             (SCV.translateSchwartz
               (OSReconstruction.zeroHeadBlockShift
                 (m := n * (d + 1)) (n := m * (d + 1))
@@ -2711,7 +2719,7 @@ theorem continuous_physicsFourierFlatCLM_reindex_translate_zeroHeadBlockShift
       (fun t : ℝ =>
         physicsFourierFlatCLM
           (OSReconstruction.reindexSchwartzFin
-            (by ring : n * (d + 1) + m * (d + 1) = (n + m) * (d + 1))
+            (Nat.add_mul n m (d + 1)).symm
             (SCV.translateSchwartz (t • η) Ψ))) := by
     funext t
     simp [η, zeroHeadBlockShift_smul]
@@ -2731,7 +2739,7 @@ theorem exists_bound_seminorm_physicsFourierFlatCLM_reindex_translate_zeroHeadBl
         SchwartzMap.seminorm ℝ k l
           (physicsFourierFlatCLM
             (OSReconstruction.reindexSchwartzFin
-              (by ring : n * (d + 1) + m * (d + 1) = (n + m) * (d + 1))
+              (Nat.add_mul n m (d + 1)).symm
               (SCV.translateSchwartz
                 (OSReconstruction.zeroHeadBlockShift
                   (m := n * (d + 1)) (n := m * (d + 1))
@@ -2749,7 +2757,7 @@ theorem exists_bound_seminorm_physicsFourierFlatCLM_reindex_translate_zeroHeadBl
         SchwartzMap (Fin ((n + m) * (d + 1)) → ℝ) ℂ :=
     (physicsFourierFlatCLM : _).comp
       (OSReconstruction.reindexSchwartzFin
-        (by ring : n * (d + 1) + m * (d + 1) = (n + m) * (d + 1)))
+        (Nat.add_mul n m (d + 1)).symm)
   let q : Seminorm ℂ (SchwartzMap (Fin (n * (d + 1) + m * (d + 1)) → ℝ) ℂ) :=
     (schwartzSeminormFamily ℂ (Fin ((n + m) * (d + 1)) → ℝ) ℂ (k, l)).comp L.toLinearMap
   have hq_cont : Continuous q := by
@@ -2877,7 +2885,7 @@ theorem exists_bound_seminorm_physicsFourierFlatCLM_reindex_translate_zeroHeadBl
     SchwartzMap.seminorm ℝ k l
         (physicsFourierFlatCLM
           (OSReconstruction.reindexSchwartzFin
-            (by ring : n * (d + 1) + m * (d + 1) = (n + m) * (d + 1))
+            (Nat.add_mul n m (d + 1)).symm
             (SCV.translateSchwartz
               (OSReconstruction.zeroHeadBlockShift
                 (m := n * (d + 1)) (n := m * (d + 1))
@@ -3001,7 +3009,7 @@ private theorem conjTensorProduct_timeShift_eq_unflatten_reindex_translate_zeroH
     f.conjTensorProduct (timeShiftSchwartzNPoint (d := d) t g) =
       unflattenSchwartzNPoint (d := d)
         (OSReconstruction.reindexSchwartzFin
-          (by ring : n * (d + 1) + m * (d + 1) = (n + m) * (d + 1))
+          (Nat.add_mul n m (d + 1)).symm
           (SCV.translateSchwartz
             (OSReconstruction.zeroHeadBlockShift
               (m := n * (d + 1)) (n := m * (d + 1))
@@ -3052,7 +3060,7 @@ private theorem conjTensorProduct_timeShift_eq_unflatten_reindex_translate_zeroH
         (d := d) f (unflattenSchwartzNPoint (d := d) ψt)
   have hflat' := congrArg
     (OSReconstruction.reindexSchwartzFin
-      (by ring : n * (d + 1) + m * (d + 1) = (n + m) * (d + 1))) hflat
+      (Nat.add_mul n m (d + 1)).symm) hflat
   have hfull_left :
       unflattenSchwartzNPoint (d := d)
           (flattenSchwartzNPoint (d := d)
@@ -3061,7 +3069,7 @@ private theorem conjTensorProduct_timeShift_eq_unflatten_reindex_translate_zeroH
     ext x
     simp [unflattenSchwartzNPoint_apply, flattenSchwartzNPoint_apply]
   exact hfull_left.symm.trans (by
-    simpa [ψt, Ψ] using
+    simpa [ψt, Ψ, reindexSchwartzFin_symm_comp_self_local] using
       congrArg (unflattenSchwartzNPoint (d := d)) hflat')
 
 /-- The full flattened Fourier-side orbit for translating the right tensor
@@ -3075,7 +3083,7 @@ noncomputable def timeShiftFlatOrbit
     SchwartzMap (Fin ((n + m) * (d + 1)) → ℝ) ℂ :=
   physicsFourierFlatCLM
     (OSReconstruction.reindexSchwartzFin
-      (by ring : n * (d + 1) + m * (d + 1) = (n + m) * (d + 1))
+      (Nat.add_mul n m (d + 1)).symm
       (SCV.translateSchwartz
         (OSReconstruction.zeroHeadBlockShift
           (m := n * (d + 1)) (n := m * (d + 1))
@@ -3279,7 +3287,7 @@ theorem exists_timeShiftKernel_pairing_fourierTest
       intro x
       let φflat : SchwartzMap (Fin ((n + m) * (d + 1)) → ℝ) ℂ :=
         OSReconstruction.reindexSchwartzFin
-          (by ring : n * (d + 1) + m * (d + 1) = (n + m) * (d + 1))
+          (Nat.add_mul n m (d + 1)).symm
           (SCV.translateSchwartz
             (OSReconstruction.zeroHeadBlockShift
               (m := n * (d + 1)) (n := m * (d + 1))
@@ -3350,7 +3358,7 @@ private theorem integral_zeroHeadBlockShift_flatTimeShiftDirection_phase_mul_fou
           (-(Complex.I *
               ((∑ i,
                   (((OSReconstruction.castFinCLE
-                    (by ring : n * (d + 1) + m * (d + 1) = (n + m) * (d + 1)))
+                    (Nat.add_mul n m (d + 1)).symm)
                     (OSReconstruction.zeroHeadBlockShift
                       (m := n * (d + 1)) (n := m * (d + 1))
                       (flatTimeShiftDirection d m))) i) * ξ i : ℝ) : ℂ) * t)) *
@@ -3398,7 +3406,7 @@ private theorem integral_bvt_W_flattened_translate_mul_fourierTransform_eq_zero_
     fun t =>
       physicsFourierFlatCLM
         (OSReconstruction.reindexSchwartzFin
-          (by ring : n * (d + 1) + m * (d + 1) = (n + m) * (d + 1))
+          (Nat.add_mul n m (d + 1)).symm
           (SCV.translateSchwartz
             (OSReconstruction.zeroHeadBlockShift
               (m := n * (d + 1)) (n := m * (d + 1))
@@ -3490,14 +3498,14 @@ private theorem integral_bvt_W_flattened_translate_mul_fourierTransform_eq_zero_
         (-(Complex.I *
             ((∑ i,
                 (((OSReconstruction.castFinCLE
-                  (by ring : n * (d + 1) + m * (d + 1) = (n + m) * (d + 1)))
+                  (Nat.add_mul n m (d + 1)).symm)
                   (OSReconstruction.zeroHeadBlockShift
                     (m := n * (d + 1)) (n := m * (d + 1))
                     (flatTimeShiftDirection d m))) i) * ξ i : ℝ) : ℂ) * t))
     let base : ℂ :=
       physicsFourierFlatCLM
         (OSReconstruction.reindexSchwartzFin
-          (by ring : n * (d + 1) + m * (d + 1) = (n + m) * (d + 1))
+          (Nat.add_mul n m (d + 1)).symm
           Ψ) ξ
     have horbit_phase : ∀ t : ℝ, orbit t ξ = phase t * base := by
       intro t

@@ -709,7 +709,11 @@ theorem near_identity_invariance (n : ℕ)
   -- Rewrite action in terms of exp X
   have haction_eq : complexLorentzAction Λ z =
       fun k μ => ∑ ν, (exp X : Matrix _ _ ℂ) μ ν * z k ν := by
-    ext k μ; simp only [complexLorentzAction]; congr 1; ext ν; rw [← hΛ_eq]
+    ext k μ
+    simp only [complexLorentzAction, complexLorentzVectorAction]
+    apply Finset.sum_congr rfl
+    intro ν _
+    rw [← hΛ_eq]
   rw [haction_eq]
   exact near_identity_core n F hF_holo hF_real_inv hz hδ_pos hA_in_FT hX_lie hX_small
 
@@ -765,7 +769,11 @@ theorem uniform_near_identity_invariance (n : ℕ)
   -- Rewrite action in terms of exp X
   have haction_eq : complexLorentzAction Λ w =
       fun k μ => ∑ ν, (exp X : Matrix _ _ ℂ) μ ν * w k ν := by
-    ext k μ; simp only [complexLorentzAction]; congr 1; ext ν; rw [← hΛ_eq]
+    ext k μ
+    simp only [complexLorentzAction, complexLorentzVectorAction]
+    apply Finset.sum_congr rfl
+    intro ν _
+    rw [← hΛ_eq]
   rw [haction_eq]
   -- For w ∈ B(z₀, ε): ‖A‖ < ε → exp(A)·w ∈ FT
   have hA_in_FT_w : ∀ A : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ, ‖A‖ < ε →
@@ -872,7 +880,8 @@ private lemma orbitSet_locallyPathConnected (w : Fin n → Fin (d + 1) → ℂ)
       ∈ ForwardTube d n := by
     have : (fun k (μ : Fin (d + 1)) => ∑ ν, (Λ₀.val * NormedSpace.exp (0 : E)) μ ν * w k ν) =
         complexLorentzAction Λ₀ w := by
-      ext k μ; simp [NormedSpace.exp_zero, complexLorentzAction]
+      ext k μ
+      simp [NormedSpace.exp_zero, complexLorentzAction, complexLorentzVectorAction]
     rw [this]; exact hΛ₀
   -- Get δ > 0 such that ‖A‖ < δ → (Λ₀ * exp(A)) · w ∈ FT
   obtain ⟨δ, hδ_pos, hδ_sub⟩ :=
@@ -1310,7 +1319,7 @@ private lemma nonemptyDomain_eq_n1 (hn : n ≠ 0) :
     · have hΛv : InOpenForwardCone d (fun μ => ((∑ ν, Λ.val μ ν * v ν)).im) := by
         have h1 : InOpenForwardCone d (fun μ => (complexLorentzAction (n := 1) Λ w1 0 μ).im) :=
           (forwardTube_one_iff (d := d) (complexLorentzAction (n := 1) Λ w1)).1 hΛw1FT
-        simpa [complexLorentzAction, v] using h1
+        simpa [complexLorentzAction, complexLorentzVectorAction, v] using h1
       have hstepFT :
           (fun k : Fin n => fun μ => ((k.val + 1 : ℂ) * (∑ ν, Λ.val μ ν * v ν))) ∈
             ForwardTube d n :=

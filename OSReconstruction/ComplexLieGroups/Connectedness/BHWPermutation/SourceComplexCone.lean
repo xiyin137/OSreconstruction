@@ -33,6 +33,110 @@ theorem matrix_rank_smul_of_ne_zero
   exact Matrix.rank_mul_eq_right_of_isUnit_det
     (c • (1 : Matrix m m ℂ)) A hdet
 
+/-- Scalar multiplication by any complex number cannot increase matrix rank. -/
+theorem matrix_rank_smul_le
+    {m n : Type*} [Fintype m] [Fintype n] [DecidableEq m]
+    (c : ℂ) (A : Matrix m n ℂ) :
+    (c • A).rank ≤ A.rank := by
+  by_cases hc : c = 0
+  · subst c
+    simp
+  · rw [matrix_rank_smul_of_ne_zero c hc A]
+
+/-- Rank-bounded symmetric varieties are cones under complex scalar
+multiplication. -/
+theorem sourceSymmetricRankLEVariety_smul_mem
+    {n D : ℕ} {Z : Fin n → Fin n → ℂ}
+    (hZ : Z ∈ sourceSymmetricRankLEVariety n D)
+    (c : ℂ) :
+    (c • Z) ∈ sourceSymmetricRankLEVariety n D := by
+  rw [sourceSymmetricRankLEVariety_eq_rank_le] at hZ ⊢
+  refine ⟨?_, ?_⟩
+  · intro i j
+    simp [Pi.smul_apply, hZ.1 i j]
+  · let M : Matrix (Fin n) (Fin n) ℂ := Matrix.of fun i j : Fin n => Z i j
+    have hM :
+        (Matrix.of fun i j : Fin n => (c • Z) i j) = c • M := by
+      ext i j
+      simp [M]
+    rw [hM]
+    exact (matrix_rank_smul_le c M).trans hZ.2
+
+/-- Every centered ball meets the rank-`≤` symmetric variety in a
+path-connected set. -/
+theorem sourceSymmetricRankLEVariety_ball_isPathConnected
+    (m r : ℕ) {ε : ℝ} (hε : 0 < ε) :
+    IsPathConnected
+      (Metric.ball (0 : Fin m → Fin m → ℂ) ε ∩
+        sourceSymmetricRankLEVariety m r) := by
+  let Sset : Set (Fin m → Fin m → ℂ) :=
+    Metric.ball (0 : Fin m → Fin m → ℂ) ε ∩
+      sourceSymmetricRankLEVariety m r
+  have h0 : (0 : Fin m → Fin m → ℂ) ∈ Sset := by
+    constructor
+    · simpa [Metric.mem_ball]
+    · rw [sourceSymmetricRankLEVariety_eq_rank_le]
+      refine ⟨?_, ?_⟩
+      · intro i j
+        rfl
+      · have hzero :
+            (Matrix.of (fun i j : Fin m => (0 : Fin m → Fin m → ℂ) i j)) =
+              (0 : Matrix (Fin m) (Fin m) ℂ) := by
+          ext i j
+          simp
+        rw [hzero, Matrix.rank_zero]
+        exact Nat.zero_le r
+  rw [isPathConnected_iff]
+  constructor
+  · exact ⟨0, h0⟩
+  · intro X hX Y hY
+    have joined_to_zero
+        {Z : Fin m → Fin m → ℂ} (hZ : Z ∈ Sset) :
+        JoinedIn Sset Z 0 := by
+      rcases hZ with ⟨hZball, hZrank⟩
+      let f : ℝ → Fin m → Fin m → ℂ :=
+        fun t => (((1 - t : ℝ) : ℂ) • Z)
+      refine JoinedIn.ofLine (f := f) ?_ ?_ ?_ ?_
+      · fun_prop
+      · ext i j
+        simp [f]
+      · ext i j
+        simp [f]
+      · rintro W ⟨t, ht, rfl⟩
+        change t ∈ Set.Icc (0 : ℝ) 1 at ht
+        have hcoeff_nonneg : 0 ≤ 1 - t := sub_nonneg.mpr ht.2
+        have hcoeff_le_one : 1 - t ≤ 1 := by linarith [ht.1]
+        constructor
+        · have hZnorm : ‖Z‖ < ε := by
+            simpa [Metric.mem_ball, dist_eq_norm] using hZball
+          have hnorm : ‖(((1 - t : ℝ) : ℂ) • Z)‖ < ε := by
+            rw [norm_smul, Complex.norm_of_nonneg hcoeff_nonneg]
+            exact
+              (mul_le_of_le_one_left (norm_nonneg Z) hcoeff_le_one).trans_lt
+                hZnorm
+          simpa [Sset, Metric.mem_ball, dist_eq_norm, f] using hnorm
+        · exact sourceSymmetricRankLEVariety_smul_mem hZrank ((1 - t : ℝ) : ℂ)
+    exact (joined_to_zero hX).trans (joined_to_zero hY).symm
+
+/-- Every neighborhood of zero contains a centered open cone piece whose
+intersection with the rank-`≤` symmetric variety is connected. -/
+theorem sourceSymmetricRankLECone_small_connected
+    (m r : ℕ)
+    {N : Set (Fin m → Fin m → ℂ)}
+    (hN_open : IsOpen N)
+    (h0N : (0 : Fin m → Fin m → ℂ) ∈ N) :
+    ∃ C : Set (Fin m → Fin m → ℂ),
+      (0 : Fin m → Fin m → ℂ) ∈ C ∧
+      IsOpen C ∧ C ⊆ N ∧
+      IsConnected (C ∩ sourceSymmetricRankLEVariety m r) := by
+  have hN_nhds : N ∈ 𝓝 (0 : Fin m → Fin m → ℂ) := hN_open.mem_nhds h0N
+  rw [Metric.mem_nhds_iff] at hN_nhds
+  rcases hN_nhds with ⟨ε, hε, hεsub⟩
+  refine ⟨Metric.ball (0 : Fin m → Fin m → ℂ) ε, ?_, Metric.isOpen_ball,
+    hεsub, ?_⟩
+  · simpa [Metric.mem_ball]
+  · exact (sourceSymmetricRankLEVariety_ball_isPathConnected m r hε).isConnected
+
 /-- Rank-exact symmetric strata are cones under nonzero complex scalar
 multiplication. -/
 theorem sourceSymmetricRankExactStratum_smul_mem

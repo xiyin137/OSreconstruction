@@ -72,9 +72,10 @@ theorem permSeedSlice_convex
       trans (↑a * ∑ ν, Λ.val μ ν * w₁ k ν +
           ↑b * ∑ ν, Λ.val μ ν * w₂ k ν)
       · rw [Finset.mul_sum, Finset.mul_sum, ← Finset.sum_add_distrib]
-        congr 1
-        ext ν
-        ring
+        apply Finset.sum_congr rfl
+        intro ν _
+        simp only [Pi.add_apply, Pi.smul_apply, Complex.real_smul]
+        ring_nf
       · rfl
     simp [hlin]
 

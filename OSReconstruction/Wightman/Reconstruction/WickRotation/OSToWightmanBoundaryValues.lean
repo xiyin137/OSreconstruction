@@ -353,6 +353,43 @@ This sorry is the direct boundary-distributional adjacent-swap locality
 statement on the OS route.  It should be supplied by the OS Section 4.5
 branch-difference / boundary-transfer argument, not by any finite-height
 canonical-shell equality.
+
+Active route:
+OS-I frozen-spectator mixed-tube/source-transfer pointwise sign-flip
+boundary convergence on reduced-normal collars ->
+`ReducedLocalAdjacentBoundaryCLMInvariant` ->
+closed-support reduced canonical swap invariance -> this boundary-value
+locality statement.
+
+The paper-facing input shape is the OS-I local mixed-tube continuation around
+an arbitrary adjacent-spacelike support point.  The weakest checked Lean
+final-mile input is now the pointwise convergence consumed by
+`bvt_W_swap_pairing_of_spacelike_from_pointwise_normalSignFlip`; a packaged
+`AdjacentNormal.ReducedNormalCanonicalRayEOWBranchDataOn` on an open
+reduced-normal collar is still a sufficient route to that convergence.  A
+Figure-2-4/Jost local-edge packet is a valid specialization only when that
+collar is genuinely Jost-localized; it is too strong as the blanket theorem-2
+producer because it forces the zero-center representative into a full Jost
+patch.
+
+Likewise, the selected-collar producer should not be phrased as membership in
+the existing `sourceOrientedExtendedTubeDomain`: that domain is the oriented
+image of the ordinary full `ExtendedTube`, and the current source-oriented
+real-environment API still carries a full `JostSet` hypothesis.  The missing
+input is a selected/frozen-spectator mixed-tube source-transfer theorem giving
+the pointwise sign-flip boundary convergence, not a proof that arbitrary
+frozen spectators already lie in the full oriented extended-tube image.
+
+Do not replace that source-transfer proof body with a direct cone-height
+source-side ray to fixed canonical reduced branch shortcut: the OS45
+moving-source/quarter-turn contribution is part of the Hdiff/source
+representation argument and does not disappear as a standalone coordinate
+identity.
+
+The older Route A through `AdjacentReducedRuelleDistributionalLimit` is kept as
+a checked diagnostic route only.  Do not close this frontier by feeding the
+selected/local-edge Ruelle producer downstream, since that can reintroduce the
+old `BHW.localSPrime_twoSectorBranch_of_EOW_BHW` trust boundary.
 -/
 private theorem bvt_W_swap_pairing_of_spacelike
     (OS : OsterwalderSchraderAxioms d)
@@ -726,7 +763,7 @@ theorem bvt_lorentz_covariant (OS : OsterwalderSchraderAxioms d)
 
 theorem bvt_locally_commutative (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) :
-    IsLocallyCommutativeWeak d (bvt_W OS lgc) := by
+    IsAdjacentLocallyCommutativeWeak d (bvt_W OS lgc) := by
   intro n i hi f g hsupp hswap
   exact bvt_W_swap_pairing_of_spacelike (d := d) OS lgc n i hi f g hsupp hswap
 
@@ -988,7 +1025,7 @@ def constructWightmanFunctionsCore (OS : OsterwalderSchraderAxioms d)
 adjacent locality and cluster frontiers are supplied explicitly. -/
 def constructWightmanFunctions (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS)
-    (hlocal : IsLocallyCommutativeWeak d (bvt_W OS lgc))
+    (hlocal : IsAdjacentLocallyCommutativeWeak d (bvt_W OS lgc))
     (hcluster : ∀ (n m : ℕ) (f : SchwartzNPoint d n) (g : SchwartzNPoint d m),
       ∀ ε : ℝ, ε > 0 → ∃ R : ℝ, R > 0 ∧
         ∀ a : SpacetimeDim d, a 0 = 0 → (∑ i : Fin d, (a (Fin.succ i))^2) > R^2 →

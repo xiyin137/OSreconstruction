@@ -248,7 +248,8 @@ theorem permutedExtendedTubeSector_complexLorentzAction_iff
                 simp [lorentz_perm_commute]
         _ = fun k => z (π k) := by
                 rw [complexLorentzAction_inv]
-    simpa [permutedExtendedTubeSector, hrewrite] using h'
+    rw [hrewrite] at h'
+    simpa [permutedExtendedTubeSector] using h'
   · intro h
     have h' : complexLorentzAction Λ (fun k => z (π k)) ∈ ExtendedTube d n :=
       complexLorentzAction_mem_extendedTube n Λ h
