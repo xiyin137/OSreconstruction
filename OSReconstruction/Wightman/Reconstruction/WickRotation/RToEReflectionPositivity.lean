@@ -197,7 +197,9 @@ private theorem exists_flattened_wfn_dualCone_distribution
   obtain ⟨Tflat, hTflat_supp, hTflat_repr⟩ :=
     bv_implies_fourier_support (C := ForwardConeAbs d N)
       hC_open hC_conv hC_cone hC_salient
-      (F := Wanalytic) hF_holo hF_growth Wcl hF_bv
+      (F := Wanalytic) hF_holo
+      (hasCompactSubsetGrowth_of_global_polyGrowth (ForwardConeAbs d N) Wanalytic hF_growth)
+      Wcl hF_bv
   refine ⟨Tflat, hTflat_supp, ?_⟩
   intro φflat
   simpa [Wcl, unflattenSchwartzNPoint] using hTflat_repr φflat
@@ -333,7 +335,9 @@ private theorem exists_rToESection43DualConeFLPackage_of_wightmanFunctions
     exact show eR y' = 0 from by rw [hC_salient y' hy' hy'', map_zero]
   obtain ⟨Tflat, hTflat_supp, hTflat_repr⟩ :=
     bv_implies_fourier_support C hC_open hC_conv hC_cone hC_salient
-      (F_ext_on_translatedPET_total Wfn) hF_holo hF_growth Wcl hF_bv
+      (F_ext_on_translatedPET_total Wfn) hF_holo
+      (hasCompactSubsetGrowth_of_global_polyGrowth C (F_ext_on_translatedPET_total Wfn) hF_growth)
+      Wcl hF_bv
   have hFL_repr :
       ∀ z ∈ TubeDomainSetPi C,
         F_ext_on_translatedPET_total Wfn z =

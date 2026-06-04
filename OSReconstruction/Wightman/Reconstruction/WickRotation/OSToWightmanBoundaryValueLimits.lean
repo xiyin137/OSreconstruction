@@ -279,7 +279,8 @@ private theorem exists_flattened_bvt_W_dualCone_distribution
       DifferentiableOn ℂ (bvt_F OS lgc n)
         (TubeDomainSetPi (ForwardConeAbs d n)) := by
     simpa [forwardTube_eq_imPreimage] using bvt_F_holomorphic (d := d) OS lgc n
-  have hF_growth :
+  -- Global polynomial growth on the tube (from ACR(1) assembly).
+  have hF_global :
       ∃ (C_bd : ℝ) (N : ℕ), C_bd > 0 ∧
         ∀ z, z ∈ TubeDomainSetPi (ForwardConeAbs d n) →
           ‖bvt_F OS lgc n z‖ ≤ C_bd * (1 + ‖z‖) ^ N := by
@@ -296,6 +297,10 @@ private theorem exists_flattened_bvt_W_dualCone_distribution
     intro z hz
     simpa [forwardTube_eq_imPreimage] using
       hbound z (by simpa [forwardTube_eq_imPreimage] using hz)
+  -- Convert to compact-subset form (Vladimirov 25.1 hypothesis).
+  have hF_growth :=
+    hasCompactSubsetGrowth_of_global_polyGrowth
+      (ForwardConeAbs d n) (bvt_F OS lgc n) hF_global
   have hF_bv :
       ∀ (η : Fin n → Fin (d + 1) → ℝ), η ∈ ForwardConeAbs d n →
         ∀ (φ : SchwartzNPoint d n),
@@ -546,7 +551,8 @@ private theorem exists_flattened_bvt_F_dualCone_distribution_with_fourierLaplace
   have hF_holo :
       DifferentiableOn ℂ (bvt_F OS lgc n) (TubeDomainSetPi C) := by
     simpa [C, forwardTube_eq_imPreimage] using bvt_F_holomorphic (d := d) OS lgc n
-  have hF_growth :
+  -- Global polynomial growth on the tube (from ACR(1) assembly).
+  have hF_global :
       ∃ (C_bd : ℝ) (N : ℕ), C_bd > 0 ∧
         ∀ z, z ∈ TubeDomainSetPi C →
           ‖bvt_F OS lgc n z‖ ≤ C_bd * (1 + ‖z‖) ^ N := by
@@ -563,6 +569,9 @@ private theorem exists_flattened_bvt_F_dualCone_distribution_with_fourierLaplace
     intro z hz
     simpa [C, forwardTube_eq_imPreimage] using
       hbound z (by simpa [C, forwardTube_eq_imPreimage] using hz)
+  -- Convert to compact-subset form (Vladimirov 25.1 hypothesis).
+  have hF_growth :=
+    hasCompactSubsetGrowth_of_global_polyGrowth C (bvt_F OS lgc n) hF_global
   have hF_bv :
       ∀ (η : Fin n → Fin (d + 1) → ℝ), η ∈ C →
         ∀ (φ : SchwartzNPoint d n),
@@ -3050,9 +3059,31 @@ private theorem conjTensorProduct_timeShift_eq_unflatten_reindex_translate_zeroH
     simpa [hψ_flat, htail] using
       reindex_flattenSchwartzNPoint_conjTensorProduct_eq_tensorProduct
         (d := d) f (unflattenSchwartzNPoint (d := d) ψt)
-  have hflat' := congrArg
-    (OSReconstruction.reindexSchwartzFin
-      (by ring : n * (d + 1) + m * (d + 1) = (n + m) * (d + 1))) hflat
+  -- Reindex round-trip cancellation, proved at the apply level via the stable
+  -- `reindexSchwartzFin_apply`/`castFinCLE` lemmas. This avoids relying on `simp`
+  -- to collapse the double `reindexSchwartzFin` inside a `simpa`, which is
+  -- defeq-sensitive and was observed to be cache-fragile across machines.
+  have hcancel :
+      OSReconstruction.reindexSchwartzFin
+          (by ring : n * (d + 1) + m * (d + 1) = (n + m) * (d + 1))
+          (OSReconstruction.reindexSchwartzFin
+            (by ring : (n + m) * (d + 1) = n * (d + 1) + m * (d + 1))
+            (flattenSchwartzNPoint (d := d)
+              (f.conjTensorProduct (timeShiftSchwartzNPoint (d := d) t g)))) =
+        flattenSchwartzNPoint (d := d)
+          (f.conjTensorProduct (timeShiftSchwartzNPoint (d := d) t g)) := by
+    -- Inline reindex round-trip cancellation. Keeping `F` abstract means `simp`
+    -- only collapses the cast layer (not the `flatten`/`conjTensorProduct` apply
+    -- chain), so this is robust to dependency-olean state. `h.symm` is defeq to
+    -- the outer `by ring` proof by proof irrelevance.
+    have hgen : ∀ {a b : ℕ} (h : a = b) (F : SchwartzMap (Fin a → ℝ) ℂ),
+        OSReconstruction.reindexSchwartzFin h.symm
+            (OSReconstruction.reindexSchwartzFin h F) = F := by
+      intro a b h F
+      subst h
+      ext x
+      rfl
+    exact hgen (by ring : (n + m) * (d + 1) = n * (d + 1) + m * (d + 1)) _
   have hfull_left :
       unflattenSchwartzNPoint (d := d)
           (flattenSchwartzNPoint (d := d)
@@ -3060,9 +3091,19 @@ private theorem conjTensorProduct_timeShift_eq_unflatten_reindex_translate_zeroH
         f.conjTensorProduct (timeShiftSchwartzNPoint (d := d) t g) := by
     ext x
     simp [unflattenSchwartzNPoint_apply, flattenSchwartzNPoint_apply]
-  exact hfull_left.symm.trans (by
-    simpa [ψt, Ψ] using
-      congrArg (unflattenSchwartzNPoint (d := d)) hflat')
+  have hkey :
+      unflattenSchwartzNPoint (d := d)
+          (OSReconstruction.reindexSchwartzFin
+            (by ring : n * (d + 1) + m * (d + 1) = (n + m) * (d + 1))
+            (SCV.translateSchwartz
+              (OSReconstruction.zeroHeadBlockShift
+                (m := n * (d + 1)) (n := m * (d + 1))
+                (t • flatTimeShiftDirection d m))
+              Ψ)) =
+        f.conjTensorProduct (timeShiftSchwartzNPoint (d := d) t g) := by
+    rw [← hflat, hcancel]
+    exact hfull_left
+  exact hkey.symm
 
 /-- The full flattened Fourier-side orbit for translating the right tensor
 factor in real time. This is the common kernel family used by the horizontal
