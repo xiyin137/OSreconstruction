@@ -679,6 +679,51 @@ noncomputable def clusterLimitIntegrand
 
 /-! ### W_analytic_cluster_integral via Ruelle + DC -/
 
+/-- **Single-block flatness ⇒ the regulated dominator is integrable.**
+
+The Ruelle bound's boundary-distance regulator `(1 + tubeBoundaryDist(wick x)⁻¹)^M`
+blows up as consecutive Euclidean times coincide (the codim-1 diagonal
+`{x_{k,0} = x_{k-1,0}}`). Earlier analysis (`docs/ruelle_bound_vacuity_concern.md`,
+`docs/cluster_ibp_rework_plan.md`) concluded the dominator is not `L¹` and that
+dominated convergence is therefore "structurally impossible" — but that overlooks
+that the test function `f` is **flat** on exactly that diagonal: `tsupport f ⊆
+OrderedPositiveTimeRegion d n`, and the latter is OPEN (strict inequalities
+`0 < x_i0 < x_j0`), so `f` vanishes to infinite order on `∂OPTR ⊇ {gap_k = 0}`.
+
+Consequently `(1 + Δ⁻¹)^M · ‖f‖` is integrable after all:
+- `tubeBoundaryDist(wick x) ≥ c · min_k gap_k` for the within-block gaps
+  `gap_k = x_{k,0} − x_{k-1,0}` (Wick rotation sends Euclidean time to imaginary
+  time; the imaginary difference vector is `(gap_k, 0, …, 0)`, whose distance to
+  `(openForwardConeSet)ᶜ` is `gap_k / √2`).
+- `(1 + Δ⁻¹)^M ≤ 2^M (1 + Σ_k gap_k⁻ᴹ)`, reducing to single-gap terms.
+- For each `k`: `f ≡ 0` on `{gap_k ≤ 0}`, so by 1-D Taylor along `gap_k` with all
+  derivatives vanishing at `0`,
+  `gap_k^{-M} ‖f(x)‖ ≤ (1/M!) · sup_{σ∈[0,gap_k]} ‖∂_{gap_k}^M f(σ, rest)‖`,
+  and `∂^M f` is Schwartz, hence the RHS is integrable (uniformly down to and
+  across the diagonal, including at infinity, by Schwartz decay in `rest`).
+
+With this dominator integrable, `W_analytic_cluster_integral_via_ruelle` closes by
+ordinary `tendsto_integral_filter_of_dominated_convergence` — no IBP, no
+distributional restatement, no GNS/Hilbert machinery.
+
+TODO(cluster-dct): the proof below is the structured plan; the 1-D-Taylor-along-a
+-coordinate bound and its assembly over gaps are the remaining engineering. -/
+theorem block_regulator_dominator_integrable {n : ℕ}
+    (f : SchwartzNPoint d n)
+    (hf : tsupport ((f : SchwartzNPoint d n) : NPointDomain d n → ℂ) ⊆
+      OrderedPositiveTimeRegion d n)
+    (C : ℝ) (N M : ℕ) :
+    MeasureTheory.Integrable
+      (fun x : NPointDomain d n =>
+        C * (1 + ‖(fun k => wickRotatePoint (x k))‖) ^ N
+          * (1 + (tubeBoundaryDist (fun k => wickRotatePoint (x k)))⁻¹) ^ M
+          * ‖f x‖) := by
+  -- Step A: tubeBoundaryDist(wick x) ≥ c · min_k gap_k  (geometry of the cone).
+  -- Step B: (1 + Δ⁻¹)^M ≤ 2^M (1 + Σ_k gap_k⁻ᴹ); reduce to single-gap terms.
+  -- Step C: f ≡ 0 on {gap_k ≤ 0} (from tsupport ⊆ open OPTR); 1-D Taylor along
+  --         gap_k gives gap_k^{-M}‖f‖ ≤ (1/M!) sup_σ ‖∂^M f‖, integrable.
+  sorry
+
 /-- **Cluster theorem for the Wick-rotated boundary integral**.
 
 For OPTR-supported Schwartz `f, g` and a purely spatial translation `a`,
