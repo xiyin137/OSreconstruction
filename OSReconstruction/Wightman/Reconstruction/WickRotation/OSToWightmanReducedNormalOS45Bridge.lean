@@ -7619,6 +7619,168 @@ theorem reducedNormalSignFlip_pointwise_of_detRegularSourceWindow_sourceRepresen
       (by simpa [Fplus, Γ] using hplus_transfer)
       (by simpa [Fminus, Γ] using hminus_transfer)
 
+/-- Local-germ version of
+`reducedNormalSignFlip_pointwise_of_detRegularSourceWindow_sourceRepresentative_openEdge_localEOW`.
+
+At a determinant-regular reduced-normal point, the source-oriented germ data
+choose representative charts for the two side branches.  The source window is
+shrunk to the common real trace of those charts, so real-edge side-domain
+membership and representative-chart hypotheses are derived internally.  The
+remaining analytic inputs are the determinant-regular real-edge equality and
+the two side-to-canonical transfer limits. -/
+theorem reducedNormalSignFlip_pointwise_of_detRegularSourceWindow_localGerm_openEdge_localEOW
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {m : ℕ}
+    (hd : 2 ≤ d)
+    (hn : d + 1 ≤ m + 1)
+    (i : Fin (m + 1)) (hi : i.val + 1 < m + 1)
+    (ι : Fin (d + 1) ↪ Fin (m + 1))
+    (p : ReducedSpace d m i ⟨i.val + 1, hi⟩)
+    {V : Set (NPointDomain d (m + 1))}
+    (hV_open : IsOpen V)
+    (hpV :
+      reducedNormalAbsoluteSectionCLM (d := d) i hi
+        (reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩ p) ∈ V)
+    (hdetp :
+      BHW.sourceRealFullFrameDet d (m + 1) ι
+        (reducedNormalAbsoluteSectionCLM (d := d) i hi
+          (reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩ p)) ≠ 0)
+    {U : Set (BHW.SourceOrientedGramData d (m + 1))}
+    {Φplus Φminus : BHW.SourceOrientedGramData d (m + 1) → ℂ}
+    (hU_rel : BHW.IsRelOpenInSourceOrientedGramVariety d (m + 1) U)
+    (hU_conn : IsConnected U)
+    (hV_U :
+      ∀ x ∈ V, BHW.sourceRealFullFrameDet d (m + 1) ι x ≠ 0 →
+        BHW.sourceRealOrientedMinkowskiInvariant d (m + 1) x ∈ U)
+    (hΦplus : BHW.SourceOrientedVarietyGermHolomorphicOn d (m + 1) Φplus U)
+    (hΦminus : BHW.SourceOrientedVarietyGermHolomorphicOn d (m + 1) Φminus U)
+    (hEq_real :
+      ∀ x ∈ V, BHW.sourceRealFullFrameDet d (m + 1) ι x ≠ 0 →
+        Φplus (BHW.sourceRealOrientedMinkowskiInvariant d (m + 1) x) =
+          Φminus (BHW.sourceRealOrientedMinkowskiInvariant d (m + 1) x))
+    (hplus_transfer :
+      Filter.Tendsto
+        (fun ε : ℝ =>
+          Φplus (reducedNormalSourceOrientedInvariantMap (d := d) i hi
+              (reducedNormalUpperCanonicalRay (d := d) i hi p ε)) -
+            canonicalReducedBranch (d := d) OS lgc m ε
+              (reducedCoordInv (d := d) i ⟨i.val + 1, hi⟩
+                (reducedAdjacent_succ_ne i hi) p))
+        (nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)) : Filter ℝ)
+        (nhds 0))
+    (hminus_transfer :
+      Filter.Tendsto
+        (fun ε : ℝ =>
+          Φminus (reducedNormalSourceOrientedInvariantMap (d := d) i hi
+              (reducedNormalLowerCanonicalRay (d := d) i hi p ε)) -
+            canonicalReducedBranch (d := d) OS lgc m ε
+              (reducedCoordInv (d := d) i ⟨i.val + 1, hi⟩
+                (reducedAdjacent_succ_ne i hi)
+                (reducedSignFlip (d := d) i ⟨i.val + 1, hi⟩ p)))
+        (nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)) : Filter ℝ)
+        (nhds 0)) :
+    Filter.Tendsto
+      (fun ε : ℝ =>
+        canonicalReducedBranch (d := d) OS lgc m ε
+            (reducedCoordInv (d := d) i ⟨i.val + 1, hi⟩
+              (reducedAdjacent_succ_ne i hi)
+              (reducedSignFlip (d := d) i ⟨i.val + 1, hi⟩ p)) -
+          canonicalReducedBranch (d := d) OS lgc m ε
+            (reducedCoordInv (d := d) i ⟨i.val + 1, hi⟩
+              (reducedAdjacent_succ_ne i hi) p))
+      (nhdsWithin (0 : ℝ) (Set.Ioi (0 : ℝ)) : Filter ℝ)
+      (nhds 0) := by
+  let x0 : NPointDomain d (m + 1) :=
+    reducedNormalAbsoluteSectionCLM (d := d) i hi
+      (reducedNormalFlattenCLE (d := d) i ⟨i.val + 1, hi⟩ p)
+  let G0 : BHW.SourceOrientedGramData d (m + 1) :=
+    BHW.sourceRealOrientedMinkowskiInvariant d (m + 1) x0
+  have hG0U : G0 ∈ U := by
+    simpa [G0, x0] using hV_U x0 (by simpa [x0] using hpV) (by simpa [x0] using hdetp)
+  rcases hΦplus G0 hG0U with
+    ⟨Uplus0, Φplus_rep, hUplus0_open, hG0_plus, hΦplus_rep_diff,
+      hΦplus_rep_eq, _hUplus0_sub⟩
+  rcases hΦminus G0 hG0U with
+    ⟨Uminus0, Φminus_rep, hUminus0_open, hG0_minus, hΦminus_rep_diff,
+      hΦminus_rep_eq, _hUminus0_sub⟩
+  let Vloc : Set (NPointDomain d (m + 1)) :=
+    V ∩ {x | BHW.sourceRealOrientedMinkowskiInvariant d (m + 1) x ∈ Uplus0} ∩
+      {x | BHW.sourceRealOrientedMinkowskiInvariant d (m + 1) x ∈ Uminus0}
+  let Γ : SCV.ComplexChartSpace ((d + 1) +
+        Fintype.card
+          (SpectatorIndex (m + 1) i ⟨i.val + 1, hi⟩) *
+          (d + 1)) →
+      BHW.SourceOrientedGramData d (m + 1) :=
+    reducedNormalSourceOrientedInvariantMap (d := d) i hi
+  let Ωplus : Set (SCV.ComplexChartSpace ((d + 1) +
+        Fintype.card
+          (SpectatorIndex (m + 1) i ⟨i.val + 1, hi⟩) *
+          (d + 1))) := Γ ⁻¹' Uplus0
+  let Ωminus : Set (SCV.ComplexChartSpace ((d + 1) +
+        Fintype.card
+          (SpectatorIndex (m + 1) i ⟨i.val + 1, hi⟩) *
+          (d + 1))) := Γ ⁻¹' Uminus0
+  have hVloc_open : IsOpen Vloc := by
+    have hΓreal_cont : Continuous
+        (fun x : NPointDomain d (m + 1) =>
+          BHW.sourceRealOrientedMinkowskiInvariant d (m + 1) x) :=
+      BHW.continuous_sourceRealOrientedMinkowskiInvariant d (m + 1)
+    exact (hV_open.inter (hUplus0_open.preimage hΓreal_cont)).inter
+      (hUminus0_open.preimage hΓreal_cont)
+  have hpVloc : x0 ∈ Vloc := by
+    exact ⟨⟨by simpa [x0] using hpV, by simpa [G0] using hG0_plus⟩,
+      by simpa [G0] using hG0_minus⟩
+  have hΩplus_open : IsOpen Ωplus := by
+    exact hUplus0_open.preimage
+      (reducedNormalSourceOrientedInvariantMap_differentiable
+        (d := d) i hi).continuous
+  have hΩminus_open : IsOpen Ωminus := by
+    exact hUminus0_open.preimage
+      (reducedNormalSourceOrientedInvariantMap_differentiable
+        (d := d) i hi).continuous
+  have hplus0 :
+      ∀ x ∈ reducedNormalDetRegularSourcePreimage (d := d) i hi ι Vloc,
+        SCV.realEmbed x ∈ Ωplus := by
+    intro x hx
+    have hx_src : reducedNormalAbsoluteSectionCLM (d := d) i hi x ∈ Vloc := by
+      exact (show reducedNormalAbsoluteSectionCLM (d := d) i hi x ∈
+          Vloc ∩ {x | BHW.sourceRealFullFrameDet d (m + 1) ι x ≠ 0} from
+        by simpa [reducedNormalDetRegularSourcePreimage,
+          reducedNormalOS45SourcePreimage] using hx).1
+    change Γ (SCV.realEmbed x) ∈ Uplus0
+    simpa [Γ] using hx_src.1.2
+  have hminus0 :
+      ∀ x ∈ reducedNormalDetRegularSourcePreimage (d := d) i hi ι Vloc,
+        SCV.realEmbed x ∈ Ωminus := by
+    intro x hx
+    have hx_src : reducedNormalAbsoluteSectionCLM (d := d) i hi x ∈ Vloc := by
+      exact (show reducedNormalAbsoluteSectionCLM (d := d) i hi x ∈
+          Vloc ∩ {x | BHW.sourceRealFullFrameDet d (m + 1) ι x ≠ 0} from
+        by simpa [reducedNormalDetRegularSourcePreimage,
+          reducedNormalOS45SourcePreimage] using hx).1
+    change Γ (SCV.realEmbed x) ∈ Uminus0
+    simpa [Γ] using hx_src.2
+  exact
+    reducedNormalSignFlip_pointwise_of_detRegularSourceWindow_sourceRepresentative_openEdge_localEOW
+      (d := d) OS lgc hd hn i hi ι p hVloc_open (by simpa [x0] using hpVloc)
+      (by simpa [x0] using hdetp)
+      hU_rel hU_conn
+      (by
+        intro x hx hdetx
+        exact hV_U x hx.1.1 hdetx)
+      hΦplus hΦminus
+      (by
+        intro x hx hdetx
+        exact hEq_real x hx.1.1 hdetx)
+      Ωplus Ωminus hΩplus_open hΩminus_open hplus0 hminus0
+      (Uplus0 := Uplus0) (Uminus0 := Uminus0)
+      (Φplus_rep := Φplus_rep) (Φminus_rep := Φminus_rep)
+      (by intro z hz; exact hz) (by intro z hz; exact hz)
+      hΦplus_rep_diff hΦminus_rep_diff hΦplus_rep_eq hΦminus_rep_eq
+      (by simpa [Γ] using hplus_transfer)
+      (by simpa [Γ] using hminus_transfer)
+
 theorem reducedNormalOS45SourcePreimage_subset_patchPreimage
     {m : ℕ} (i : Fin (m + 1)) (hi : i.val + 1 < m + 1)
     {hd : 2 ≤ d}
