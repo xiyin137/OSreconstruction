@@ -1590,6 +1590,32 @@ theorem sourceOrientedRealEnvironment_of_realCompatibleImplicitChartProducer
       sourceOrientedLocalRealChartData_of_fullFrameRealCompatibleImplicitChartData
         (P ι hx))
 
+/-- A source-open determinant-regular real patch is a source-oriented
+distributional uniqueness patch once the real-compatible full-frame chart
+producer is available.
+
+Unlike `sourceOrientedRealEnvironment_of_realCompatibleImplicitChartProducer`,
+this SCV uniqueness consumer does not require the real patch to be contained
+in `JostSet`; the real-edge branch equality is supplied separately by the
+caller. -/
+theorem sourceOrientedDistributionalUniquenessPatch_of_fullFrameDetNonzero_realCompatibleImplicitChartProducer
+    {d n : ℕ} [NeZero d]
+    (hd : 2 ≤ d)
+    (hn : d + 1 ≤ n)
+    (P : SourceFullFrameRealCompatibleImplicitChartProducer d n)
+    (ι : Fin (d + 1) ↪ Fin n)
+    {E : Set (Fin n → Fin (d + 1) → ℝ)}
+    (hE_open : IsOpen E)
+    (hE_nonempty : E.Nonempty)
+    (hdet :
+      ∀ x ∈ E, sourceRealFullFrameDet d n ι x ≠ 0) :
+    sourceOrientedDistributionalUniquenessPatch d n E :=
+  sourceOrientedDistributionalUniquenessPatch_of_localRealCharts
+    (d := d) (n := n) hd hn hE_nonempty hE_open
+    (fun x hx =>
+      sourceOrientedLocalRealChartData_of_fullFrameRealCompatibleImplicitChartData
+        (P ι (hdet x hx)))
+
 /-- The checked OS45 determinant-regular subpatch becomes an oriented real
 environment from the pointwise real-compatible full-frame chart producer. -/
 theorem os45Figure24_checkedRealPatch_fullFrameOrientedEnvironmentSubpatch_of_realCompatibleImplicitChartProducer

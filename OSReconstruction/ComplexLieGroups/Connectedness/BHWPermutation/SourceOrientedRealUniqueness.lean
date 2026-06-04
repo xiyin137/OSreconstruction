@@ -222,13 +222,21 @@ theorem shrink_to_domain_and_realPatch
 
 end SourceOrientedLocalRealChartData
 
-/-- A Hall-Wightman oriented real environment supplies a nonempty relatively
-open max-rank seed on which a germ-holomorphic scalar vanishes, provided it
-vanishes on the real environment. -/
+/-- A source-open real patch with local real charts supplies a nonempty
+relatively open max-rank seed on which a germ-holomorphic scalar vanishes,
+provided it vanishes on the real patch.
+
+This is the SCV identity-theorem payload of the source-oriented real route.
+It deliberately does not require the real patch to be a full `JostSet` patch:
+Jost membership is only one way to obtain real-edge equality for the functions
+being compared, not part of the totally-real identity theorem itself. -/
 theorem sourceOrientedLocalTotallyReal_zero_seed
     (d n : ℕ)
     {E : Set (Fin n → Fin (d + 1) → ℝ)}
-    (hE : IsHWOrientedRealEnvironment d n E)
+    (hE_nonempty : E.Nonempty)
+    (hE_open : IsOpen E)
+    (hE_local :
+      ∀ x ∈ E, Nonempty (SourceOrientedLocalRealChartData d n x))
     {U : Set (SourceOrientedGramData d n)}
     {H : SourceOrientedGramData d n → ℂ}
     (hU_rel : IsRelOpenInSourceOrientedGramVariety d n U)
@@ -242,14 +250,14 @@ theorem sourceOrientedLocalTotallyReal_zero_seed
       W.Nonempty ∧
       W ⊆ U ∩ {G | SourceOrientedMaxRankAt d n G} ∧
       Set.EqOn H 0 W := by
-  obtain ⟨x0, hx0E⟩ := hE.nonempty
+  obtain ⟨x0, hx0E⟩ := hE_nonempty
   let R : SourceOrientedLocalRealChartData d n x0 :=
-    Classical.choice (hE.local_real_chart x0 hx0E)
+    Classical.choice (hE_local x0 hx0E)
   obtain ⟨Ω, Eseed, hcenter, hΩ_rel, hΩ_sub_Umax, hΩ_sub_C,
       hΩ_chart_open, hΩ_chart_conn, hEseed_open, hx0Eseed,
       hEseed_sub_E, hEseed_sub_R, hEseed_maps⟩ :=
     R.shrink_to_domain_and_realPatch
-      (d := d) (n := n) hE.open_real hx0E hU_rel (hE_U x0 hx0E)
+      (d := d) (n := n) hE_open hx0E hU_rel (hE_U x0 hx0E)
   obtain ⟨φc, hφc_holo, hφc_eq⟩ :=
     SourceOrientedVarietyGermHolomorphicOn.to_maxRank_chart
       (d := d) (n := n) hH R.C hΩ_rel
@@ -294,16 +302,23 @@ theorem sourceOrientedLocalTotallyReal_zero_seed
     hcoord_zero (R.C.chart G) ⟨G, hGΩ, rfl⟩
   simpa [hφ] using hz
 
-/-- Hard-range oriented distributional uniqueness from a Hall-Wightman
-oriented real environment. -/
-theorem sourceOrientedDistributionalUniquenessPatch_of_HWRealEnvironment
+/-- Hard-range oriented distributional uniqueness from a source-open real patch
+with local real charts.
+
+This is the no-Jost SCV uniqueness consumer needed by selected/frozen-spectator
+mixed-tube patches: once branch equality is proved on such a real source
+patch, uniqueness propagates through the connected oriented source domain. -/
+theorem sourceOrientedDistributionalUniquenessPatch_of_localRealCharts
     {d n : ℕ} [NeZero d]
     (hd : 2 ≤ d)
     (hn : d + 1 ≤ n)
     {E : Set (Fin n → Fin (d + 1) → ℝ)}
-    (hE : IsHWOrientedRealEnvironment d n E) :
+    (hE_nonempty : E.Nonempty)
+    (hE_open : IsOpen E)
+    (hE_local :
+      ∀ x ∈ E, Nonempty (SourceOrientedLocalRealChartData d n x)) :
     sourceOrientedDistributionalUniquenessPatch d n E := by
-  refine ⟨hE.nonempty, ?_⟩
+  refine ⟨hE_nonempty, ?_⟩
   intro U Φ Ψ hU_rel hU_conn hE_U hΦ hΨ hEq_real
   let H : SourceOrientedGramData d n → ℂ := fun G => Φ G - Ψ G
   have hH : SourceOrientedVarietyGermHolomorphicOn d n H U :=
@@ -314,7 +329,8 @@ theorem sourceOrientedDistributionalUniquenessPatch_of_HWRealEnvironment
     exact sub_eq_zero.mpr (hEq_real x hx)
   obtain ⟨W, hW_rel, hW_ne, hW_sub_Umax, hW_zero⟩ :=
     sourceOrientedLocalTotallyReal_zero_seed
-      (d := d) (n := n) hE hU_rel hE_U hH hzero_real
+      (d := d) (n := n) hE_nonempty hE_open hE_local
+      hU_rel hE_U hH hzero_real
   have hUmax_conn :
       IsConnected (U ∩ {G | SourceOrientedMaxRankAt d n G}) :=
     sourceOrientedGramVariety_maxRank_inter_relOpen_isConnected_of_headSliceIFT
@@ -327,5 +343,19 @@ theorem sourceOrientedDistributionalUniquenessPatch_of_HWRealEnvironment
       (d := d) (n := n) hn hU_rel hUmax_conn hW_rel hW_ne
       (by intro G hGW; exact (hW_sub_Umax hGW).1)
       hΦ hΨ hW_eq
+
+/-- Hard-range oriented distributional uniqueness from a Hall-Wightman
+oriented real environment. -/
+theorem sourceOrientedDistributionalUniquenessPatch_of_HWRealEnvironment
+    {d n : ℕ} [NeZero d]
+    (hd : 2 ≤ d)
+    (hn : d + 1 ≤ n)
+    {E : Set (Fin n → Fin (d + 1) → ℝ)}
+    (hE : IsHWOrientedRealEnvironment d n E) :
+    sourceOrientedDistributionalUniquenessPatch d n E := by
+  exact
+    sourceOrientedDistributionalUniquenessPatch_of_localRealCharts
+      (d := d) (n := n) hd hn hE.nonempty hE.open_real
+      hE.local_real_chart
 
 end BHW
