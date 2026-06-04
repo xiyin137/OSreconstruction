@@ -4139,6 +4139,73 @@ theorem sourceFullFrameRealCompatibleImplicitChartProducer
   intro ι x0 hdet
   exact sourceFullFrameRealCompatibleImplicitChartData ι hdet
 
+/-- Public determinant-regular local real chart theorem from the checked
+real-compatible full-frame kernel producer. -/
+theorem sourceOrientedLocalRealChartData_of_fullFrameDet_ne_zero
+    {d n : ℕ}
+    (ι : Fin (d + 1) ↪ Fin n)
+    {x0 : Fin n → Fin (d + 1) → ℝ}
+    (hdet : sourceRealFullFrameDet d n ι x0 ≠ 0) :
+    Nonempty (SourceOrientedLocalRealChartData d n x0) :=
+  sourceOrientedLocalRealChartData_of_fullFrameDet_ne_zero_of_realCompatibleImplicitChartProducer
+    (sourceFullFrameRealCompatibleImplicitChartProducer d n) ι hdet
+
+/-- A source-open determinant-regular real patch is a source-oriented
+distributional uniqueness patch with no Jost hypothesis.
+
+This is the determinant-regular selected-collar consumer used by the theorem-2
+source-transfer route: real-edge branch equality is still supplied by the
+caller, but the local real chart payload is now unconditional. -/
+theorem sourceOrientedDistributionalUniquenessPatch_of_fullFrameDetNonzero
+    {d n : ℕ} [NeZero d]
+    (hd : 2 ≤ d)
+    (hn : d + 1 ≤ n)
+    (ι : Fin (d + 1) ↪ Fin n)
+    {E : Set (Fin n → Fin (d + 1) → ℝ)}
+    (hE_open : IsOpen E)
+    (hE_nonempty : E.Nonempty)
+    (hdet :
+      ∀ x ∈ E, sourceRealFullFrameDet d n ι x ≠ 0) :
+    sourceOrientedDistributionalUniquenessPatch d n E :=
+  sourceOrientedDistributionalUniquenessPatch_of_fullFrameDetNonzero_realCompatibleImplicitChartProducer
+    (d := d) (n := n) hd hn
+    (sourceFullFrameRealCompatibleImplicitChartProducer d n) ι
+    hE_open hE_nonempty hdet
+
+/-- Determinant-regular source-edge equality propagates through any connected
+oriented source-variety domain whose real edge contains the patch.
+
+This is the no-Jost equality form needed by a selected/frozen-spectator mixed
+tube packet: once the two candidate source-oriented branches are germ
+holomorphic on the same connected collar and agree on the real edge patch,
+they agree throughout that collar. -/
+theorem sourceOrientedEqOn_of_fullFrameDetNonzero
+    {d n : ℕ} [NeZero d]
+    (hd : 2 ≤ d)
+    (hn : d + 1 ≤ n)
+    (ι : Fin (d + 1) ↪ Fin n)
+    {E : Set (Fin n → Fin (d + 1) → ℝ)}
+    (hE_open : IsOpen E)
+    (hE_nonempty : E.Nonempty)
+    (hdet :
+      ∀ x ∈ E, sourceRealFullFrameDet d n ι x ≠ 0)
+    {U : Set (SourceOrientedGramData d n)}
+    {Φ Ψ : SourceOrientedGramData d n → ℂ}
+    (hU_rel : IsRelOpenInSourceOrientedGramVariety d n U)
+    (hU_conn : IsConnected U)
+    (hE_U :
+      ∀ x ∈ E, sourceRealOrientedMinkowskiInvariant d n x ∈ U)
+    (hΦ : SourceOrientedVarietyGermHolomorphicOn d n Φ U)
+    (hΨ : SourceOrientedVarietyGermHolomorphicOn d n Ψ U)
+    (hEq_real :
+      ∀ x ∈ E,
+        Φ (sourceRealOrientedMinkowskiInvariant d n x) =
+          Ψ (sourceRealOrientedMinkowskiInvariant d n x)) :
+    Set.EqOn Φ Ψ U :=
+  (sourceOrientedDistributionalUniquenessPatch_of_fullFrameDetNonzero
+    (d := d) (n := n) hd hn ι hE_open hE_nonempty hdet).2
+      U Φ Ψ hU_rel hU_conn hE_U hΦ hΨ hEq_real
+
 /-- The checked real-compatible full-frame gauge-slice packet at a real
 determinant-nonzero base. -/
 theorem sourceFullFrameRealGaugeSliceData
