@@ -87,7 +87,7 @@ theorem extendF_adjSwap_pairing_eq_of_distributional_local_commutativity
           F (fun k μ => (x k μ : ℂ) + ε * (η k μ : ℂ) * Complex.I) * f x)
         (nhdsWithin 0 (Set.Ioi 0))
         (nhds (W n f)))
-    (hF_local_dist : IsLocallyCommutativeWeak d W)
+    (hF_local_dist : IsAdjacentLocallyCommutativeWeak d W)
     (i : Fin n) (hi : i.val + 1 < n)
     (f g : SchwartzNPoint d n)
     (hf_compact : HasCompactSupport (f : NPointDomain d n → ℂ))
@@ -163,7 +163,7 @@ theorem extendF_adjSwap_eq_on_realOpen_of_distributional_local_commutativity
           F (fun k μ => (x k μ : ℂ) + ε * (η k μ : ℂ) * Complex.I) * f x)
         (nhdsWithin 0 (Set.Ioi 0))
         (nhds (W n f)))
-    (hF_local_dist : IsLocallyCommutativeWeak d W)
+    (hF_local_dist : IsAdjacentLocallyCommutativeWeak d W)
     (i : Fin n) (hi : i.val + 1 < n)
     (V : Set (Fin n → Fin (d + 1) → ℝ))
     (hV_open : IsOpen V)
@@ -309,7 +309,7 @@ theorem extendF_adjSwap_eq_of_connected_overlap_of_distributional_local_commutat
           F (fun k μ => (x k μ : ℂ) + ε * (η k μ : ℂ) * Complex.I) * f x)
         (nhdsWithin 0 (Set.Ioi 0))
         (nhds (W n f)))
-    (hF_local_dist : IsLocallyCommutativeWeak d W)
+    (hF_local_dist : IsAdjacentLocallyCommutativeWeak d W)
     (i : Fin n) (hi : i.val + 1 < n)
     (hD_conn : IsConnected
       {z : Fin n → Fin (d + 1) → ℂ |

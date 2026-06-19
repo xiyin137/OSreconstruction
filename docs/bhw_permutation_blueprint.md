@@ -55,9 +55,9 @@ Scope note for theorem 2: accepting these deferred blockers puts the
 dimension-one case on the same footing as the higher-dimensional case for the
 BHW permutation-flow endgame.  It does **not** automatically close the
 non-circular OS-to-locality proof.  The second blocker assumes
-`hF_local_dist : IsLocallyCommutativeWeak 1 W`, so it cannot be used to prove
-the target locality theorem for `W := bvt_W OS lgc` unless that locality has
-already been obtained non-circularly.  The OS route must get its `d = 1`
+`hF_local_dist : IsAdjacentLocallyCommutativeWeak 1 W`, so it cannot be used
+to prove the target locality theorem for `W := bvt_W OS lgc` unless that
+locality has already been obtained non-circularly.  The OS route must get its `d = 1`
 supplier from the separate one-dimensional complex-edge / PET theorem recorded
 in `docs/theorem2_locality_blueprint.md`, not from this generic blocker lane.
 So for theorem 2:
@@ -428,7 +428,7 @@ derivation:
 3. prove the source-backed
    `BHW.hallWightman_source_permutedBranch_compatibility_of_distributionalAnchor`
    on `S''_n`;
-4. ensure no theorem in the proof has an `IsLocallyCommutativeWeak`
+4. ensure no theorem in the proof has an `IsAdjacentLocallyCommutativeWeak`
    hypothesis; the current repo surfaces named `bargmann_hall_wightman` and
    `BHW.bargmann_hall_wightman_theorem` take such a hypothesis and are
    circular for theorem 2;
@@ -913,7 +913,7 @@ Implementation locus:
 6. do not consume the top-level
    `BHWPermutation.PermutationFlow.bargmann_hall_wightman_theorem` for theorem
    2, because its current public statement carries
-   `IsLocallyCommutativeWeak` / boundary-distribution inputs and is circular for
+   `IsAdjacentLocallyCommutativeWeak` / boundary-distribution inputs and is circular for
    theorem 2.  The lower-layer, non-circular BHW/PET support in
    `PermutedTubeMonodromy.lean` is permitted as conditional infrastructure but
    is not the checked active entry point:
