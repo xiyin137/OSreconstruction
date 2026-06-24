@@ -646,6 +646,473 @@ lemma schwartz_integrable_add_pow_mul
           exact mul_le_mul_of_nonneg_right h_apl' h_fnonneg
       _ = 2^(k-1) * (‖f x‖ + ‖x‖^k * ‖f x‖) := by ring
 
+/-! ### Time-gap flatness for the Ruelle regulator -/
+
+private def ruelleTimeGap {n : ℕ} (x : NPointDomain d n) (k : Fin n) : ℝ :=
+  if hk : (k : ℕ) = 0 then x k 0
+  else x k 0 - x ⟨(k : ℕ) - 1, by omega⟩ 0
+
+private def ruelleGapBoundaryPoint {n : ℕ} (x : NPointDomain d n) (k : Fin n) :
+    NPointDomain d n :=
+  Function.update x k
+    (Function.update (x k) 0
+      (if hk : (k : ℕ) = 0 then 0 else x ⟨(k : ℕ) - 1, by omega⟩ 0))
+
+private lemma continuous_tubeBoundaryDist {n : ℕ} :
+    Continuous (fun z : Fin n → Fin (d + 1) → ℂ => tubeBoundaryDist (d := d) z) := by
+  by_cases hn : n = 0
+  · subst hn
+    simpa [tubeBoundaryDist] using
+      (continuous_const : Continuous (fun _ : Fin 0 → Fin (d + 1) → ℂ => (1 : ℝ)))
+  · haveI : NeZero n := ⟨hn⟩
+    simp [tubeBoundaryDist, hn]
+    rw [show
+        (fun z : Fin n → Fin (d + 1) → ℂ =>
+          ⨅ k : Fin n,
+            Metric.infDist
+              (fun μ : Fin (d + 1) =>
+                (z k μ).im -
+                  (if k = 0 then 0
+                   else (z ⟨(k : ℕ) - 1, by omega⟩ μ).im))
+              (openForwardConeSet d)ᶜ) =
+        (Finset.univ.inf' Finset.univ_nonempty fun k =>
+          fun z : Fin n → Fin (d + 1) → ℂ =>
+            Metric.infDist
+              (fun μ : Fin (d + 1) =>
+                (z k μ).im -
+                  (if k = 0 then 0
+                   else (z ⟨(k : ℕ) - 1, by omega⟩ μ).im))
+              (openForwardConeSet d)ᶜ) by
+      funext z
+      rw [Finset.inf'_apply]
+      exact Eq.symm (Finset.inf'_univ_eq_ciInf fun k =>
+        Metric.infDist
+          (fun μ : Fin (d + 1) =>
+            (z k μ).im -
+              (if k = 0 then 0
+               else (z ⟨(k : ℕ) - 1, by omega⟩ μ).im))
+          (openForwardConeSet d)ᶜ)]
+    exact Continuous.finset_inf' Finset.univ_nonempty
+      (fun k _ => by
+        refine (Metric.continuous_infDist_pt (s := (openForwardConeSet d)ᶜ)).comp ?_
+        refine continuous_pi fun μ => ?_
+        by_cases hk : k = 0
+        · simp [hk]
+          fun_prop
+        · simp [hk]
+          fun_prop)
+
+private lemma ruelleTimeGap_pos_of_mem_orderedPositiveTimeRegion {n : ℕ}
+    {x : NPointDomain d n} (hx : x ∈ OrderedPositiveTimeRegion d n) (k : Fin n) :
+    0 < ruelleTimeGap (d := d) x k := by
+  unfold ruelleTimeGap
+  by_cases hk : (k : ℕ) = 0
+  · simp [hk, (hx k).1]
+  · simp [hk]
+    let km1 : Fin n := ⟨(k : ℕ) - 1, by omega⟩
+    have hlt : km1 < k := by
+      rw [Fin.lt_def]
+      simp [km1]
+      omega
+    exact (hx km1).2 k hlt
+
+private lemma ruelleGapBoundaryPoint_not_mem_orderedPositiveTimeRegion {n : ℕ}
+    (x : NPointDomain d n) (k : Fin n) :
+    ruelleGapBoundaryPoint (d := d) x k ∉ OrderedPositiveTimeRegion d n := by
+  intro h
+  unfold ruelleGapBoundaryPoint at h
+  by_cases hk : (k : ℕ) = 0
+  · have := (h k).1
+    simp [hk] at this
+  · let km1 : Fin n := ⟨(k : ℕ) - 1, by omega⟩
+    have hlt : km1 < k := by
+      rw [Fin.lt_def]
+      simp [km1]
+      omega
+    have hne : km1 ≠ k := hlt.ne
+    have := (h km1).2 k hlt
+    simp [hk, km1, hne] at this
+
+private lemma ruelleGapBoundaryPoint_sub_apply {n : ℕ}
+    (x : NPointDomain d n) (k j : Fin n) (μ : Fin (d + 1)) :
+    (x - ruelleGapBoundaryPoint (d := d) x k) j μ =
+      if j = k ∧ μ = 0 then ruelleTimeGap (d := d) x k else 0 := by
+  unfold ruelleTimeGap ruelleGapBoundaryPoint
+  by_cases hj : j = k
+  · by_cases hμ : μ = 0
+    · subst hμ
+      by_cases hk : (k : ℕ) = 0 <;> simp [hj, hk]
+    · by_cases hk : (k : ℕ) = 0 <;> simp [hj, hk, hμ]
+  · by_cases hk : (k : ℕ) = 0 <;> simp [hk, hj]
+
+private lemma norm_sub_ruelleGapBoundaryPoint_le {n : ℕ}
+    (x : NPointDomain d n) (k : Fin n) :
+    ‖x - ruelleGapBoundaryPoint (d := d) x k‖ ≤ |ruelleTimeGap (d := d) x k| := by
+  apply (pi_norm_le_iff_of_nonneg (abs_nonneg _)).mpr
+  intro j
+  apply (pi_norm_le_iff_of_nonneg (abs_nonneg _)).mpr
+  intro μ
+  rw [Real.norm_eq_abs]
+  rw [ruelleGapBoundaryPoint_sub_apply]
+  split_ifs <;> simp
+
+private lemma iteratedFDeriv_eq_zero_of_notMem_orderedPositiveTimeRegion {n : ℕ}
+    (f : SchwartzNPoint d n)
+    (hf : tsupport ((f : SchwartzNPoint d n) : NPointDomain d n → ℂ) ⊆
+      OrderedPositiveTimeRegion d n) :
+    ∀ r x, x ∉ OrderedPositiveTimeRegion d n →
+      iteratedFDeriv ℝ r (f : NPointDomain d n → ℂ) x = 0 := by
+  intro r x hxout
+  by_contra hne
+  have hx_support :
+      x ∈ Function.support (iteratedFDeriv ℝ r (f : NPointDomain d n → ℂ)) := by
+    simpa [Function.mem_support, hne]
+  exact hxout
+    (hf ((support_iteratedFDeriv_subset (𝕜 := ℝ) (n := r) (f := ⇑f)) hx_support))
+
+set_option maxHeartbeats 800000 in
+private theorem ruelle_timeGap_weighted_flatness_bound_explicit {n : ℕ}
+    (f : SchwartzNPoint d n)
+    (hf : tsupport ((f : SchwartzNPoint d n) : NPointDomain d n → ℂ) ⊆
+      OrderedPositiveTimeRegion d n)
+    (P m : ℕ) (k : Fin n) :
+    ∀ x : NPointDomain d n,
+      0 < ruelleTimeGap (d := d) x k →
+      ruelleTimeGap (d := d) x k ≤ 1 →
+      (1 + ‖x‖) ^ P * ‖f x‖ ≤
+        (2 ^ (P + P) * ((Finset.Iic (P, m + 1)).sup
+            (schwartzSeminormFamily ℂ (NPointDomain d n) ℂ)) f /
+          (Nat.factorial m : ℝ)) *
+          (ruelleTimeGap (d := d) x k) ^ (m + 1) := by
+  let sem := (Finset.Iic (P, m + 1)).sup
+    (schwartzSeminormFamily ℂ (NPointDomain d n) ℂ)
+  let A : ℝ := 2 ^ (P + P) * sem f
+  let A0 : ℝ := 2 ^ P * sem f
+  intro x hgap_pos hgap_le_one
+  let c : NPointDomain d n := ruelleGapBoundaryPoint (d := d) x k
+  let v : NPointDomain d n := x - c
+  let L : ℝ →L[ℝ] NPointDomain d n :=
+    ContinuousLinearMap.smulRight (1 : ℝ →L[ℝ] ℝ) v
+  let g : ℝ → ℂ :=
+    (fun z : NPointDomain d n => (f : NPointDomain d n → ℂ) (z + c)) ∘ L
+  have hshift_contDiff :
+      ∀ r : ℕ, ContDiff ℝ r
+        (fun z : NPointDomain d n => (f : NPointDomain d n → ℂ) (z + c)) :=
+    fun r => by
+      simpa using ((f : SchwartzNPoint d n).smooth r).comp (contDiff_id.add contDiff_const)
+  have hg_contDiff : ∀ r : ℕ, ContDiff ℝ r g := fun r => by
+    simpa [g] using (ContDiff.comp_continuousLinearMap (g := L) (hf := hshift_contDiff r))
+  have hc_out : c ∉ OrderedPositiveTimeRegion d n := by
+    simpa [c] using ruelleGapBoundaryPoint_not_mem_orderedPositiveTimeRegion (d := d) x k
+  have hTaylor_zero :
+      taylorWithinEval g m (Set.Icc (0 : ℝ) 1) 0 1 = 0 := by
+    rw [taylor_within_apply]
+    apply Finset.sum_eq_zero
+    intro r _hr
+    have hr_zero :
+        iteratedDerivWithin r g (Set.Icc (0 : ℝ) 1) 0 = 0 := by
+      rw [iteratedDerivWithin_eq_iteratedDeriv
+        (uniqueDiffOn_Icc (show (0 : ℝ) < 1 by norm_num))
+        ((hg_contDiff r).contDiffAt) (by simp), iteratedDeriv_eq_iteratedFDeriv]
+      have hcomp :
+          iteratedFDeriv ℝ r g 0 =
+            (iteratedFDeriv ℝ r
+              (fun z : NPointDomain d n => (f : NPointDomain d n → ℂ) (z + c))
+              (L 0)).compContinuousLinearMap fun _ : Fin r => L := by
+        simpa [g] using
+          L.iteratedFDeriv_comp_right
+            (f := fun z : NPointDomain d n => (f : NPointDomain d n → ℂ) (z + c))
+            (hshift_contDiff r) (x := 0) (i := r) le_rfl
+      have hzeroF :
+          iteratedFDeriv ℝ r (f : NPointDomain d n → ℂ) (L 0 + c) = 0 := by
+        have hzero := iteratedFDeriv_eq_zero_of_notMem_orderedPositiveTimeRegion
+          (d := d) f hf r c hc_out
+        simpa [L, ContinuousLinearMap.smulRight_apply] using hzero
+      rw [hcomp, iteratedFDeriv_comp_add_right, hzeroF]
+      simp
+    rw [hr_zero]
+    exact smul_zero _
+  have hv_norm_le_gap : ‖v‖ ≤ ruelleTimeGap (d := d) x k := by
+    have hv := norm_sub_ruelleGapBoundaryPoint_le (d := d) x k
+    have habs : |ruelleTimeGap (d := d) x k| = ruelleTimeGap (d := d) x k :=
+      abs_of_pos hgap_pos
+    simpa [v, c, habs] using hv
+  have hderiv_bound :
+      ∀ t ∈ Set.Icc (0 : ℝ) 1,
+        ‖iteratedDerivWithin (m + 1) g (Set.Icc (0 : ℝ) 1) t‖ ≤
+          (A / (1 + ‖x‖) ^ P) * (ruelleTimeGap (d := d) x k) ^ (m + 1) := by
+    intro t ht
+    have hsem_bound :
+        (1 + ‖L t + c‖) ^ P *
+            ‖iteratedFDeriv ℝ (m + 1) (f : NPointDomain d n → ℂ) (L t + c)‖ ≤
+          A0 := by
+      simpa [A0, sem] using
+        (SchwartzMap.one_add_le_sup_seminorm_apply
+          (𝕜 := ℂ) (m := (P, m + 1)) (k := P) (n := m + 1)
+          le_rfl le_rfl f (L t + c))
+    have hx_le_seg : 1 + ‖x‖ ≤ 2 * (1 + ‖L t + c‖) := by
+      have ht0 : 0 ≤ t := ht.1
+      have ht1 : t ≤ 1 := ht.2
+      have hx_eq : x = L t + c + ((1 - t) • v) := by
+        simp [L, v, c, ContinuousLinearMap.smulRight_apply, sub_eq_add_neg]
+        module
+      have hnorm_diff : ‖(1 - t) • v‖ ≤ 1 := by
+        calc
+          ‖(1 - t) • v‖ = |1 - t| * ‖v‖ := by
+            simp [norm_smul, Real.norm_eq_abs]
+          _ ≤ 1 * ruelleTimeGap (d := d) x k := by
+            have habs_le : |1 - t| ≤ 1 := by
+              rw [abs_of_nonneg (by linarith)]
+              linarith
+            gcongr
+          _ ≤ 1 := by simpa using hgap_le_one
+      calc
+        1 + ‖x‖ = 1 + ‖L t + c + ((1 - t) • v)‖ := by rw [hx_eq]
+        _ ≤ 1 + (‖L t + c‖ + ‖(1 - t) • v‖) := by
+          gcongr
+          exact norm_add_le (L t + c) ((1 - t) • v)
+        _ ≤ 1 + (‖L t + c‖ + 1) := by gcongr
+        _ ≤ 2 * (1 + ‖L t + c‖) := by
+          ring_nf
+          nlinarith [norm_nonneg (L t + c)]
+    have hpow_pos : 0 < (1 + ‖x‖) ^ P := by positivity
+    have hD :
+        ‖iteratedFDeriv ℝ (m + 1) (f : NPointDomain d n → ℂ) (L t + c)‖ ≤
+          A / (1 + ‖x‖) ^ P := by
+      rw [le_div_iff₀ hpow_pos]
+      have hpow_cmp :
+          (1 + ‖x‖) ^ P ≤ (2 : ℝ) ^ P * (1 + ‖L t + c‖) ^ P := by
+        calc
+          (1 + ‖x‖) ^ P ≤ (2 * (1 + ‖L t + c‖)) ^ P := by
+            exact pow_le_pow_left₀ (by positivity) hx_le_seg P
+          _ = (2 : ℝ) ^ P * (1 + ‖L t + c‖) ^ P := by rw [mul_pow]
+      calc
+        ‖iteratedFDeriv ℝ (m + 1) (f : NPointDomain d n → ℂ) (L t + c)‖ *
+            (1 + ‖x‖) ^ P
+            ≤ ‖iteratedFDeriv ℝ (m + 1) (f : NPointDomain d n → ℂ) (L t + c)‖ *
+                ((2 : ℝ) ^ P * (1 + ‖L t + c‖) ^ P) := by
+              gcongr
+        _ = (2 : ℝ) ^ P *
+              ((1 + ‖L t + c‖) ^ P *
+                ‖iteratedFDeriv ℝ (m + 1) (f : NPointDomain d n → ℂ) (L t + c)‖) := by
+              ring
+        _ ≤ (2 : ℝ) ^ P * A0 := by gcongr
+        _ = A := by
+          calc
+            (2 : ℝ) ^ P * A0 =
+                ((2 : ℝ) ^ P * (2 : ℝ) ^ P) * sem f := by
+                  simp [A0]
+                  ring
+            _ = A := by
+              simp [A, pow_add]
+    have hL : ‖L‖ ≤ ‖v‖ := by
+      refine ContinuousLinearMap.opNorm_le_bound _ (norm_nonneg _) fun s => ?_
+      simpa [L, ContinuousLinearMap.smulRight_apply, Real.norm_eq_abs, norm_smul, mul_comm] using
+        (norm_smul s v)
+    rw [iteratedDerivWithin_eq_iteratedDeriv
+      (uniqueDiffOn_Icc (show (0 : ℝ) < 1 by norm_num))
+      ((hg_contDiff (m + 1)).contDiffAt) ht,
+      ← norm_iteratedFDeriv_eq_norm_iteratedDeriv]
+    have hcomp :
+        iteratedFDeriv ℝ (m + 1) g t =
+          (iteratedFDeriv ℝ (m + 1)
+            (fun z : NPointDomain d n => (f : NPointDomain d n → ℂ) (z + c))
+            (L t)).compContinuousLinearMap fun _ : Fin (m + 1) => L := by
+      simpa [g] using
+        L.iteratedFDeriv_comp_right
+          (f := fun z : NPointDomain d n => (f : NPointDomain d n → ℂ) (z + c))
+          (hshift_contDiff (m + 1)) (x := t) (i := m + 1) le_rfl
+    rw [hcomp, iteratedFDeriv_comp_add_right]
+    calc
+      ‖(iteratedFDeriv ℝ (m + 1) (f : NPointDomain d n → ℂ) (L t + c)).compContinuousLinearMap
+          (fun _ : Fin (m + 1) => L)‖ ≤
+          ‖iteratedFDeriv ℝ (m + 1) (f : NPointDomain d n → ℂ) (L t + c)‖ *
+            ∏ _ : Fin (m + 1), ‖L‖ := by
+              exact ContinuousMultilinearMap.norm_compContinuousLinearMap_le _ _
+      _ ≤ (A / (1 + ‖x‖) ^ P) * ∏ _ : Fin (m + 1), ‖L‖ := by gcongr
+      _ = (A / (1 + ‖x‖) ^ P) * ‖L‖ ^ (m + 1) := by simp
+      _ ≤ (A / (1 + ‖x‖) ^ P) * (ruelleTimeGap (d := d) x k) ^ (m + 1) := by
+          gcongr
+          exact hL.trans hv_norm_le_gap
+  have hrem :=
+    taylor_mean_remainder_bound (f := g) (a := (0 : ℝ)) (b := 1)
+      (C := (A / (1 + ‖x‖) ^ P) * (ruelleTimeGap (d := d) x k) ^ (m + 1))
+      (x := 1) (n := m) (by norm_num)
+      (hg_contDiff (m + 1)).contDiffOn (by simp) hderiv_bound
+  have hg_one : g 1 = f x := by
+    simp [g, L, v, c, ContinuousLinearMap.smulRight_apply, sub_eq_add_neg, add_comm,
+      add_left_comm, add_assoc]
+  have hpow_nonneg : 0 ≤ (1 + ‖x‖) ^ P := by positivity
+  calc
+    (1 + ‖x‖) ^ P * ‖f x‖ =
+        (1 + ‖x‖) ^ P * ‖g 1 - taylorWithinEval g m (Set.Icc (0 : ℝ) 1) 0 1‖ := by
+          rw [hg_one]
+          simp [hTaylor_zero]
+    _ ≤ (1 + ‖x‖) ^ P *
+          (((A / (1 + ‖x‖) ^ P) * (ruelleTimeGap (d := d) x k) ^ (m + 1)) *
+            (1 - (0 : ℝ)) ^ (m + 1) / (((Nat.factorial m : ℕ) : ℝ))) := by
+          exact mul_le_mul_of_nonneg_left (by simpa [hTaylor_zero] using hrem) hpow_nonneg
+    _ = (A / (((Nat.factorial m : ℕ) : ℝ))) *
+          (ruelleTimeGap (d := d) x k) ^ (m + 1) := by
+          have hpow_ne : (1 + ‖x‖) ^ P ≠ 0 := by positivity
+          field_simp [hpow_ne, Nat.cast_ne_zero]
+          ring
+
+private theorem inOpenForwardCone_of_pureTime_perturbation {d : ℕ} [NeZero d]
+    (t : ℝ) (ht : 0 < t) (w : Fin (d + 1) → ℝ)
+    (hw : ∀ μ, |w μ - (if μ = 0 then t else 0)| < t / (d + 2 : ℝ)) :
+    InOpenForwardCone d w := by
+  have hw0 : t * (d + 1 : ℝ) / (d + 2 : ℝ) < w 0 := by
+    have h0 := hw 0
+    simp at h0
+    have h0' := abs_lt.mp h0
+    have hdpos : (0 : ℝ) < d + 2 := by positivity
+    have htmp : t - t / (d + 2 : ℝ) < w 0 := by linarith
+    have heq : t - t / (d + 2 : ℝ) = t * (d + 1 : ℝ) / (d + 2 : ℝ) := by
+      field_simp [hdpos.ne']
+      ring
+    simpa [heq] using htmp
+  have hw0_pos : 0 < w 0 := by
+    have : 0 < t * (d + 1 : ℝ) / (d + 2 : ℝ) := by positivity
+    linarith
+  have hspatial : ∀ i : Fin d, (w i.succ) ^ 2 < (t / (d + 2 : ℝ)) ^ 2 := by
+    intro i
+    have hi := hw i.succ
+    simp only [Fin.succ_ne_zero, if_false, sub_zero] at hi
+    have hi' := abs_lt.mp hi
+    nlinarith
+  have hspatial_sum : MinkowskiSpace.spatialNormSq d w ≤
+      (d : ℝ) * (t / (d + 2 : ℝ)) ^ 2 := by
+    unfold MinkowskiSpace.spatialNormSq
+    calc
+      ∑ i : Fin d, (w i.succ) ^ 2 ≤ ∑ _i : Fin d, (t / (d + 2 : ℝ)) ^ 2 := by
+        exact Finset.sum_le_sum (fun i _ => le_of_lt (hspatial i))
+      _ = (d : ℝ) * (t / (d + 2 : ℝ)) ^ 2 := by
+        simp [Finset.sum_const]
+  refine ⟨hw0_pos, ?_⟩
+  rw [MinkowskiSpace.minkowskiNormSq_decomp]
+  have hmain : MinkowskiSpace.spatialNormSq d w < (w 0) ^ 2 := by
+    calc
+      MinkowskiSpace.spatialNormSq d w ≤ (d : ℝ) * (t / (d + 2 : ℝ)) ^ 2 :=
+        hspatial_sum
+      _ < (t * (d + 1 : ℝ) / (d + 2 : ℝ)) ^ 2 := by
+        have hdlt : (d : ℝ) < (d + 1 : ℝ) ^ 2 := by nlinarith
+        have hsqpos : 0 < (t / (d + 2 : ℝ)) ^ 2 := by positivity
+        have heq :
+            (t * (d + 1 : ℝ) / (d + 2 : ℝ)) ^ 2 =
+              ((d + 1 : ℝ) ^ 2) * (t / (d + 2 : ℝ)) ^ 2 := by
+          ring
+        rw [heq]
+        nlinarith
+      _ < (w 0) ^ 2 := by
+        have haux : 0 ≤ t * (d + 1 : ℝ) / (d + 2 : ℝ) := by positivity
+        nlinarith [hw0, hw0_pos, haux]
+  nlinarith
+
+private lemma infDist_pureTime_openForwardConeSet_compl_lower
+    (t : ℝ) (ht : 0 < t) :
+    t / (d + 2 : ℝ) ≤
+      Metric.infDist (fun μ : Fin (d + 1) => if μ = 0 then t else 0)
+        (openForwardConeSet d)ᶜ := by
+  have hcompl_nonempty : ((openForwardConeSet d)ᶜ : Set (Fin (d + 1) → ℝ)).Nonempty := by
+    exact ⟨0, fun h => by
+      have h0 := h.1
+      simp [openForwardConeSet, InOpenForwardCone] at h0⟩
+  refine (Metric.le_infDist hcompl_nonempty).2 ?_
+  intro u hu
+  by_contra hlt
+  have hdist :
+      dist (fun μ : Fin (d + 1) => if μ = 0 then t else 0) u < t / (d + 2 : ℝ) := by
+    linarith
+  have hu_cone : u ∈ openForwardConeSet d := by
+    dsimp [openForwardConeSet]
+    apply inOpenForwardCone_of_pureTime_perturbation (t := t) ht
+    intro μ
+    have hcoord :
+        |u μ - (if μ = 0 then t else 0)| ≤
+          ‖u - (fun μ : Fin (d + 1) => if μ = 0 then t else 0)‖ := by
+      rw [← Real.norm_eq_abs]
+      exact norm_le_pi_norm (u - (fun μ : Fin (d + 1) => if μ = 0 then t else 0)) μ
+    have hnorm :
+        ‖u - (fun μ : Fin (d + 1) => if μ = 0 then t else 0)‖ < t / (d + 2 : ℝ) := by
+      simpa [dist_eq_norm, norm_sub_rev] using hdist
+    exact lt_of_le_of_lt hcoord hnorm
+  exact hu hu_cone
+
+private lemma wick_imaginary_consecutiveDiff_eq_timeGap {n : ℕ} [NeZero n]
+    (x : NPointDomain d n) (k : Fin n) :
+    (fun μ : Fin (d + 1) =>
+      (wickRotatePoint (x k) μ).im -
+        (if k = 0 then 0
+         else (wickRotatePoint (x ⟨(k : ℕ) - 1, by omega⟩) μ).im)) =
+      fun μ : Fin (d + 1) => if μ = 0 then ruelleTimeGap (d := d) x k else 0 := by
+  funext μ
+  by_cases hk : k = 0
+  · subst k
+    by_cases hμ : μ = 0 <;> simp [wickRotatePoint, ruelleTimeGap, hμ]
+  · have hkNat : ¬ (k : ℕ) = 0 := fun h => hk (Fin.ext h)
+    by_cases hμ : μ = 0 <;> simp [wickRotatePoint, ruelleTimeGap, hk, hkNat, hμ]
+
+private lemma tubeBoundaryDist_wick_lower_of_timeGap_le {n : ℕ} [NeZero n]
+    (x : NPointDomain d n) (s : ℝ)
+    (hs_pos : 0 < s) (hs_le : ∀ k : Fin n, s ≤ ruelleTimeGap (d := d) x k) :
+    s / (d + 2 : ℝ) ≤ tubeBoundaryDist (d := d) (fun k => wickRotatePoint (x k)) := by
+  have hn : n ≠ 0 := NeZero.ne n
+  simp [tubeBoundaryDist, hn]
+  refine le_ciInf ?_
+  intro k
+  rw [wick_imaginary_consecutiveDiff_eq_timeGap]
+  have hgap_pos : 0 < ruelleTimeGap (d := d) x k := lt_of_lt_of_le hs_pos (hs_le k)
+  calc
+    s / (d + 2 : ℝ) ≤ ruelleTimeGap (d := d) x k / (d + 2 : ℝ) := by
+      exact div_le_div_of_nonneg_right (hs_le k) (by positivity)
+    _ ≤ Metric.infDist
+        (fun μ : Fin (d + 1) => if μ = 0 then ruelleTimeGap (d := d) x k else 0)
+        (openForwardConeSet d)ᶜ :=
+      infDist_pureTime_openForwardConeSet_compl_lower (d := d) _ hgap_pos
+
+private lemma regulator_small_timeGap_bound (M : ℕ) {s δ : ℝ}
+    (hs_pos : 0 < s) (hs_le : s ≤ 1) (hδ : s / (d + 2 : ℝ) ≤ δ) :
+    (1 + δ⁻¹) ^ M * s ^ (M + 1) ≤ (d + 3 : ℝ) ^ M := by
+  have hden_pos : (0 : ℝ) < d + 2 := by positivity
+  have hlower_pos : 0 < s / (d + 2 : ℝ) := div_pos hs_pos hden_pos
+  have hδ_pos : 0 < δ := lt_of_lt_of_le hlower_pos hδ
+  have hinv : δ⁻¹ ≤ (s / (d + 2 : ℝ))⁻¹ := by
+    simpa [one_div] using one_div_le_one_div_of_le hlower_pos hδ
+  have hmul_inv : δ⁻¹ * s ≤ (d + 2 : ℝ) := by
+    calc
+      δ⁻¹ * s ≤ (s / (d + 2 : ℝ))⁻¹ * s := by gcongr
+      _ = (d + 2 : ℝ) := by
+        field_simp [hs_pos.ne', hden_pos.ne']
+  have hterm : (1 + δ⁻¹) * s ≤ (d + 3 : ℝ) := by
+    calc
+      (1 + δ⁻¹) * s = s + δ⁻¹ * s := by ring
+      _ ≤ 1 + (d + 2 : ℝ) := by gcongr
+      _ = (d + 3 : ℝ) := by ring
+  calc
+    (1 + δ⁻¹) ^ M * s ^ (M + 1) = ((1 + δ⁻¹) * s) ^ M * s := by
+      rw [pow_succ', mul_pow]
+      ring
+    _ ≤ (d + 3 : ℝ) ^ M * 1 := by
+      gcongr
+    _ = (d + 3 : ℝ) ^ M := by ring
+
+private lemma regulator_large_timeGap_bound (M : ℕ) {δ : ℝ}
+    (hδ : (1 : ℝ) / (d + 2 : ℝ) ≤ δ) :
+    (1 + δ⁻¹) ^ M ≤ (d + 3 : ℝ) ^ M := by
+  have hden_pos : (0 : ℝ) < d + 2 := by positivity
+  have hlower_pos : 0 < (1 : ℝ) / (d + 2 : ℝ) := div_pos zero_lt_one hden_pos
+  have hδ_pos : 0 < δ := lt_of_lt_of_le hlower_pos hδ
+  have hinv : δ⁻¹ ≤ ((1 : ℝ) / (d + 2 : ℝ))⁻¹ := by
+    simpa [one_div] using one_div_le_one_div_of_le hlower_pos hδ
+  have hterm : 1 + δ⁻¹ ≤ (d + 3 : ℝ) := by
+    calc
+      1 + δ⁻¹ ≤ 1 + ((1 : ℝ) / (d + 2 : ℝ))⁻¹ := by gcongr
+      _ = (d + 3 : ℝ) := by
+        field_simp [hden_pos.ne']
+        ring
+  exact pow_le_pow_left₀ (by nlinarith [inv_nonneg.mpr hδ_pos.le]) hterm M
+
 /-! ### Helper definitions for the cluster proof -/
 
 /-- The `a`-parametrized integrand on `NPointDomain d n × NPointDomain d m`,
@@ -677,7 +1144,400 @@ noncomputable def clusterLimitIntegrand
       (fun k => wickRotatePoint (p.2 k)) *
     (f p.1) * (g p.2)
 
+private lemma spatial_norm_sq_le_sum_sq {d : ℕ} [NeZero d] (a : Fin d → ℝ) :
+    ‖a‖ ^ 2 ≤ ∑ i : Fin d, (a i) ^ 2 := by
+  have hne : (Finset.univ : Finset (Fin d)).Nonempty := Finset.univ_nonempty
+  obtain ⟨i, _hi, hsup⟩ :=
+    Finset.exists_mem_eq_sup (s := (Finset.univ : Finset (Fin d))) hne
+      (fun i => ‖a i‖₊)
+  have hnorm_eq : ‖a‖ = ‖a i‖ := by
+    rw [Pi.norm_def, hsup]
+    simp
+  calc
+    ‖a‖ ^ 2 = (a i) ^ 2 := by
+      rw [hnorm_eq, Real.norm_eq_abs, sq_abs]
+    _ ≤ ∑ j : Fin d, (a j) ^ 2 := by
+      exact Finset.single_le_sum (fun j _ => sq_nonneg (a j)) (Finset.mem_univ i)
+
+private lemma spatialOf_norm_eq_of_time_zero {d : ℕ} (a : SpacetimeDim d)
+    (ha0 : a 0 = 0) :
+    ‖(fun i : Fin d => a (Fin.succ i))‖ = ‖a‖ := by
+  simp only [Pi.norm_def]
+  congr 1
+  apply le_antisymm
+  · refine Finset.sup_le (fun i _ => ?_)
+    exact Finset.le_sup (f := fun j : Fin (d + 1) => ‖a j‖₊)
+      (Finset.mem_univ (Fin.succ i))
+  · refine Finset.sup_le (fun i _ => ?_)
+    rcases Fin.eq_zero_or_eq_succ i with hi | ⟨j, rfl⟩
+    · subst hi
+      have h_a0_zero : ‖a 0‖₊ = 0 := by
+        rw [nnnorm_eq_zero]
+        exact ha0
+      rw [h_a0_zero]
+      exact zero_le _
+    · exact Finset.le_sup (f := fun j : Fin d => ‖a (Fin.succ j)‖₊)
+        (Finset.mem_univ j)
+
+private lemma spatial_sq_sum_gt_of_norm_gt {d : ℕ} [NeZero d]
+    (a : SpacetimeDim d) {R : ℝ}
+    (hR : 0 < R) (ha0 : a 0 = 0) (ha_norm : R < ‖a‖) :
+    R ^ 2 < ∑ i : Fin d, (a (Fin.succ i)) ^ 2 := by
+  have hnorm_eq := spatialOf_norm_eq_of_time_zero (d := d) a ha0
+  have hsq_le := spatial_norm_sq_le_sum_sq (d := d)
+    (fun i : Fin d => a (Fin.succ i))
+  have hR_sq_lt : R ^ 2 < ‖(fun i : Fin d => a (Fin.succ i))‖ ^ 2 := by
+    rw [hnorm_eq]
+    exact pow_lt_pow_left₀ ha_norm hR.le (by norm_num)
+  exact lt_of_lt_of_le hR_sq_lt hsq_le
+
+private lemma tubeBoundaryDist_nonneg {d n : ℕ} [NeZero d]
+    (z : Fin n → Fin (d + 1) → ℂ) :
+    0 ≤ tubeBoundaryDist (d := d) z := by
+  rw [tubeBoundaryDist]
+  by_cases hn : n = 0
+  · simp [hn]
+  · simp only [dif_neg hn]
+    haveI : NeZero n := ⟨hn⟩
+    exact le_ciInf (f := fun k : Fin n =>
+      Metric.infDist
+        (fun μ : Fin (d + 1) =>
+          (z k μ).im -
+            (if hk : (k : ℕ) = 0 then 0
+             else (z ⟨(k : ℕ) - 1, by omega⟩ μ).im))
+        (openForwardConeSet d)ᶜ) (fun _ => Metric.infDist_nonneg)
+
+private lemma tubeBoundaryRegulator_nonneg {d n : ℕ} [NeZero d] (M : ℕ)
+    (z : Fin n → Fin (d + 1) → ℂ) :
+    0 ≤ (1 + (tubeBoundaryDist (d := d) z)⁻¹) ^ M := by
+  have hδ : 0 ≤ tubeBoundaryDist (d := d) z := tubeBoundaryDist_nonneg (d := d) z
+  exact pow_nonneg (by linarith [inv_nonneg.mpr hδ]) M
+
+private lemma one_add_add_pow_le_two_pow_mul (N : ℕ) {x y : ℝ}
+    (hx : 0 ≤ x) (hy : 0 ≤ y) :
+    (1 + x + y) ^ N ≤ 2 ^ N * (1 + x) ^ N * (1 + y) ^ N := by
+  have hbase_nonneg : 0 ≤ 1 + x + y := by positivity
+  have hbase : 1 + x + y ≤ 2 * ((1 + x) * (1 + y)) := by
+    nlinarith [mul_nonneg (by positivity : 0 ≤ 1 + x) (by positivity : 0 ≤ 1 + y),
+      hx, hy]
+  calc
+    (1 + x + y) ^ N ≤ (2 * ((1 + x) * (1 + y))) ^ N :=
+      pow_le_pow_left₀ hbase_nonneg hbase N
+    _ = 2 ^ N * (1 + x) ^ N * (1 + y) ^ N := by
+      rw [mul_pow, mul_pow]
+      ring
+
+private lemma clusterIntegrand_aestronglyMeasurable
+    (Wfn : WightmanFunctions d) {n m : ℕ}
+    (f : SchwartzNPoint d n) (g : SchwartzNPoint d m)
+    (a : SpacetimeDim d) :
+    MeasureTheory.AEStronglyMeasurable
+      (clusterIntegrand Wfn f g a)
+      (MeasureTheory.volume : MeasureTheory.Measure
+        (NPointDomain d n × NPointDomain d m)) := by
+  let v_a : NPointDomain d (n + m) :=
+    Fin.append (0 : NPointDomain d n)
+      (fun _ μ => if μ = 0 then (0 : ℝ) else a μ)
+  let e_append : NPointDomain d n × NPointDomain d m ≃ᵐ NPointDomain d (n + m) :=
+    (MeasurableEquiv.finAddProd n m (Fin (d + 1) → ℝ)).symm
+  let e_trans : NPointDomain d (n + m) ≃ᵐ NPointDomain d (n + m) :=
+    MeasurableEquiv.addLeft v_a
+  let J : NPointDomain d n × NPointDomain d m ≃ᵐ NPointDomain d (n + m) :=
+    e_append.trans e_trans
+  have hJ_mp : MeasureTheory.MeasurePreserving J
+      (MeasureTheory.volume.prod MeasureTheory.volume) MeasureTheory.volume := by
+    have h_append_mp : MeasureTheory.MeasurePreserving e_append
+        (MeasureTheory.volume.prod MeasureTheory.volume) MeasureTheory.volume :=
+      (MeasureTheory.volume_preserving_finAddProd n m (Fin (d + 1) → ℝ)).symm
+    have h_trans_mp : MeasureTheory.MeasurePreserving e_trans
+        MeasureTheory.volume MeasureTheory.volume :=
+      MeasureTheory.measurePreserving_add_left MeasureTheory.volume v_a
+    exact h_append_mp.trans h_trans_mp
+  have hJ_apply : ∀ p : NPointDomain d n × NPointDomain d m,
+      J p = v_a + Fin.append p.1 p.2 := by
+    intro p
+    change v_a + (MeasurableEquiv.finAddProd n m (Fin (d + 1) → ℝ)).symm p =
+      v_a + Fin.append p.1 p.2
+    congr 1
+    exact MeasurableEquiv.finAddProd_symm_apply n m p.1 p.2
+  have h_wick_eq : ∀ p : NPointDomain d n × NPointDomain d m,
+      (fun k => wickRotatePoint (J p k)) =
+      Fin.append (fun k => wickRotatePoint (p.1 k))
+        (fun k μ => wickRotatePoint (p.2 k) μ +
+          (if μ = 0 then (0 : ℂ) else (a μ : ℂ))) := by
+    intro p
+    rw [hJ_apply p]
+    funext k μ
+    refine Fin.addCases (fun _ => ?_) (fun _ => ?_) k
+    · simp [v_a, Fin.append_left]
+    · simp [v_a, Fin.append_right]
+      by_cases hμ : μ = 0
+      · subst hμ
+        simp [wickRotatePoint]
+      · simp [wickRotatePoint, hμ]
+        ring
+  have hK : MeasureTheory.AEStronglyMeasurable
+      (fun p : NPointDomain d n × NPointDomain d m =>
+        F_ext_on_translatedPET_total Wfn (fun k => wickRotatePoint (J p k)))
+      (MeasureTheory.volume.prod MeasureTheory.volume) := by
+    exact (bhw_euclidean_kernel_measurable (d := d) (n := n + m) Wfn).comp_measurePreserving
+      hJ_mp
+  have hf_asm : MeasureTheory.AEStronglyMeasurable
+      (fun p : NPointDomain d n × NPointDomain d m => f p.1)
+      (MeasureTheory.volume.prod MeasureTheory.volume) := by
+    exact (f.continuous.comp continuous_fst).aestronglyMeasurable
+  have hg_asm : MeasureTheory.AEStronglyMeasurable
+      (fun p : NPointDomain d n × NPointDomain d m => g p.2)
+      (MeasureTheory.volume.prod MeasureTheory.volume) := by
+    exact (g.continuous.comp continuous_snd).aestronglyMeasurable
+  rw [show (MeasureTheory.volume : MeasureTheory.Measure
+      (NPointDomain d n × NPointDomain d m)) =
+    MeasureTheory.volume.prod MeasureTheory.volume from rfl]
+  have hprod := (hK.mul hf_asm).mul hg_asm
+  refine hprod.congr ?_
+  filter_upwards with p
+  simp [clusterIntegrand, h_wick_eq p, mul_assoc]
+
 /-! ### W_analytic_cluster_integral via Ruelle + DC -/
+
+/-- **Single-block flatness ⇒ the regulated dominator is integrable.**
+
+The Ruelle bound's boundary-distance regulator `(1 + tubeBoundaryDist(wick x)⁻¹)^M`
+blows up as consecutive Euclidean times coincide (the codim-1 diagonal
+`{x_{k,0} = x_{k-1,0}}`). Earlier analysis (`docs/ruelle_bound_vacuity_concern.md`,
+`docs/cluster_ibp_rework_plan.md`) concluded the dominator is not `L¹` and that
+dominated convergence is therefore "structurally impossible" — but that overlooks
+that the test function `f` is **flat** on exactly that diagonal: `tsupport f ⊆
+OrderedPositiveTimeRegion d n`, and the latter is OPEN (strict inequalities
+`0 < x_i0 < x_j0`), so `f` vanishes to infinite order on `∂OPTR ⊇ {gap_k = 0}`.
+
+Consequently `(1 + Δ⁻¹)^M · ‖f‖` is integrable after all:
+- `tubeBoundaryDist(wick x) ≥ c · min_k gap_k` for the within-block gaps
+  `gap_k = x_{k,0} − x_{k-1,0}` (Wick rotation sends Euclidean time to imaginary
+  time; the imaginary difference vector is `(gap_k, 0, …, 0)`, whose distance to
+  `(openForwardConeSet)ᶜ` is `gap_k / √2`).
+- `(1 + Δ⁻¹)^M ≤ 2^M (1 + Σ_k gap_k⁻ᴹ)`, reducing to single-gap terms.
+- For each `k`: `f ≡ 0` on `{gap_k ≤ 0}`, so by 1-D Taylor along `gap_k` with all
+  derivatives vanishing at `0`,
+  `gap_k^{-M} ‖f(x)‖ ≤ (1/M!) · sup_{σ∈[0,gap_k]} ‖∂_{gap_k}^M f(σ, rest)‖`,
+  and `∂^M f` is Schwartz, hence the RHS is integrable (uniformly down to and
+  across the diagonal, including at infinity, by Schwartz decay in `rest`).
+
+With this dominator integrable, `W_analytic_cluster_integral_via_ruelle` closes by
+ordinary `tendsto_integral_filter_of_dominated_convergence` — no IBP, no
+distributional restatement, no GNS/Hilbert machinery. -/
+theorem block_regulator_dominator_integrable {n : ℕ}
+    (f : SchwartzNPoint d n)
+    (hf : tsupport ((f : SchwartzNPoint d n) : NPointDomain d n → ℂ) ⊆
+      OrderedPositiveTimeRegion d n)
+    (C : ℝ) (N M : ℕ) :
+    MeasureTheory.Integrable
+      (fun x : NPointDomain d n =>
+        C * (1 + ‖(fun k => wickRotatePoint (x k))‖) ^ N
+          * (1 + (tubeBoundaryDist (fun k => wickRotatePoint (x k)))⁻¹) ^ M
+          * ‖f x‖) := by
+  classical
+  haveI : MeasureTheory.Measure.IsAddHaarMeasure
+      (MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d n)) :=
+    MeasureTheory.Measure.instIsAddHaarMeasureForallVolumeOfMeasurableAddOfSigmaFinite
+  haveI : (MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d n)).HasTemperateGrowth :=
+    inferInstance
+  by_cases hn0 : n = 0
+  · subst n
+    have hbase :
+        MeasureTheory.Integrable
+          (fun x : NPointDomain d 0 => (1 + ‖x‖) ^ N * ‖f x‖) :=
+      schwartz_integrable_add_pow_mul (f := f) N
+    have hconst :
+        (fun x : NPointDomain d 0 =>
+          C * (1 + ‖(fun k => wickRotatePoint (x k))‖) ^ N
+            * (1 + (tubeBoundaryDist (fun k => wickRotatePoint (x k)))⁻¹) ^ M
+            * ‖f x‖) =
+        fun x : NPointDomain d 0 =>
+          (C * (1 + (1 : ℝ)⁻¹) ^ M) * ((1 + ‖x‖) ^ N * ‖f x‖) := by
+      funext x
+      rw [wickRotate_norm_eq]
+      simp [tubeBoundaryDist]
+      ring
+    rw [hconst]
+    exact hbase.const_mul (C * (1 + (1 : ℝ)⁻¹) ^ M)
+  · haveI : NeZero n := ⟨hn0⟩
+    let D : ℕ := Module.finrank ℝ (NPointDomain d n)
+    let P : ℕ := N + D + 2
+    let flatC : ℝ :=
+      2 ^ (P + P) *
+        ((Finset.Iic (P, M + 1)).sup
+          (schwartzSeminormFamily ℂ (NPointDomain d n) ℂ)) f /
+        (Nat.factorial M : ℝ)
+    let regC : ℝ := (d + 3 : ℝ) ^ M
+    let smallC : ℝ := |C| * flatC * regC
+    let largeC : ℝ := |C| * regC
+    have hflatC_nonneg : 0 ≤ flatC := by
+      positivity
+    have hregC_nonneg : 0 ≤ regC := by
+      positivity
+    have hsmallC_nonneg : 0 ≤ smallC := by
+      positivity
+    have hlargeC_nonneg : 0 ≤ largeC := by
+      positivity
+    have hD_lt : (D : ℝ) < (D + 2 : ℕ) := by
+      push_cast
+      linarith
+    have htail_int :
+        MeasureTheory.Integrable
+          (fun x : NPointDomain d n => (1 + ‖x‖) ^ (-(↑(D + 2) : ℝ)))
+          MeasureTheory.volume :=
+      integrable_one_add_norm hD_lt
+    have hdom_int :
+        MeasureTheory.Integrable
+          (fun x : NPointDomain d n =>
+            smallC * (1 + ‖x‖) ^ (-(↑(D + 2) : ℝ)) +
+              largeC * ((1 + ‖x‖) ^ N * ‖f x‖)) := by
+      exact (htail_int.const_mul smallC).add
+        ((schwartz_integrable_add_pow_mul (f := f) N).const_mul largeC)
+    refine hdom_int.mono' ?_ ?_
+    · have hcont_wick :
+          Continuous (fun x : NPointDomain d n => fun k => wickRotatePoint (x k)) := by
+        apply continuous_pi
+        intro k
+        apply continuous_pi
+        intro μ
+        by_cases hμ : μ = 0
+        · simp [wickRotatePoint, hμ]
+          fun_prop
+        · simp [wickRotatePoint, hμ]
+          fun_prop
+      have hcont_wick_norm :
+          Continuous (fun x : NPointDomain d n => ‖(fun k => wickRotatePoint (x k))‖) :=
+        hcont_wick.norm
+      have hcont_tube :
+          Continuous (fun x : NPointDomain d n =>
+            tubeBoundaryDist (d := d) (fun k => wickRotatePoint (x k))) := by
+        exact continuous_tubeBoundaryDist (d := d) |>.comp hcont_wick
+      refine (((continuous_const.mul
+        ((continuous_const.add hcont_wick_norm).pow N)).measurable.mul ?_).mul
+          f.continuous.norm.measurable).aestronglyMeasurable
+      exact (hcont_tube.measurable.inv.const_add 1).pow_const M
+    · refine Filter.Eventually.of_forall fun x => ?_
+      by_cases hx_optr : x ∈ OrderedPositiveTimeRegion d n
+      · obtain ⟨kmin, _hk_mem, hkmin⟩ :=
+          Finset.exists_min_image (Finset.univ : Finset (Fin n))
+            (fun k => ruelleTimeGap (d := d) x k) Finset.univ_nonempty
+        let s : ℝ := ruelleTimeGap (d := d) x kmin
+        have hs_pos : 0 < s := by
+          simpa [s] using ruelleTimeGap_pos_of_mem_orderedPositiveTimeRegion
+            (d := d) hx_optr kmin
+        have hs_le : ∀ k : Fin n, s ≤ ruelleTimeGap (d := d) x k := by
+          intro k
+          simpa [s] using hkmin k (Finset.mem_univ k)
+        let δ : ℝ := tubeBoundaryDist (d := d) (fun k => wickRotatePoint (x k))
+        have hδ_lower : s / (d + 2 : ℝ) ≤ δ := by
+          simpa [δ] using tubeBoundaryDist_wick_lower_of_timeGap_le (d := d) x s hs_pos hs_le
+        have hδ_pos : 0 < δ := by
+          have hden_pos : (0 : ℝ) < d + 2 := by positivity
+          exact lt_of_lt_of_le (div_pos hs_pos hden_pos) hδ_lower
+        have hwick : ‖(fun k => wickRotatePoint (x k))‖ = ‖x‖ :=
+          wickRotate_norm_eq (d := d) x
+        have htarget_abs :
+            ‖C * (1 + ‖(fun k => wickRotatePoint (x k))‖) ^ N
+                * (1 + (tubeBoundaryDist (fun k => wickRotatePoint (x k)))⁻¹) ^ M
+                * ‖f x‖‖ =
+              |C| * (1 + ‖x‖) ^ N * (1 + δ⁻¹) ^ M * ‖f x‖ := by
+          rw [Real.norm_eq_abs]
+          simp only [hwick, δ]
+          rw [abs_mul, abs_mul, abs_mul]
+          have hpoly_nonneg : 0 ≤ (1 + ‖x‖) ^ N := by positivity
+          have hreg_nonneg : 0 ≤ (1 + δ⁻¹) ^ M := by
+            have hbase : 0 ≤ 1 + δ⁻¹ := by
+              nlinarith [inv_nonneg.mpr hδ_pos.le]
+            exact pow_nonneg hbase M
+          rw [abs_of_nonneg hpoly_nonneg, abs_of_nonneg hreg_nonneg,
+            abs_of_nonneg (norm_nonneg (f x))]
+        by_cases hs_small : s ≤ 1
+        · have hflat :=
+            ruelle_timeGap_weighted_flatness_bound_explicit (d := d) f hf P M kmin
+              x hs_pos hs_small
+          have hflat_div :
+              (1 + ‖x‖) ^ N * ‖f x‖ ≤
+                flatC * s ^ (M + 1) / (1 + ‖x‖) ^ (D + 2) := by
+            have hden_pos : 0 < (1 + ‖x‖) ^ (D + 2) := by positivity
+            rw [le_div_iff₀ hden_pos]
+            calc
+              ((1 + ‖x‖) ^ N * ‖f x‖) * (1 + ‖x‖) ^ (D + 2)
+                  = (1 + ‖x‖) ^ P * ‖f x‖ := by
+                    simp [P]
+                    rw [pow_add]
+                    ring
+              _ ≤ flatC * s ^ (M + 1) := by
+                    simpa [flatC, s] using hflat
+          have hreg_small :
+              (1 + δ⁻¹) ^ M * s ^ (M + 1) ≤ regC := by
+            simpa [regC] using regulator_small_timeGap_bound (d := d) M hs_pos hs_small hδ_lower
+          calc
+            ‖C * (1 + ‖(fun k => wickRotatePoint (x k))‖) ^ N
+                * (1 + (tubeBoundaryDist (fun k => wickRotatePoint (x k)))⁻¹) ^ M
+                * ‖f x‖‖
+                = |C| * (1 + ‖x‖) ^ N * (1 + δ⁻¹) ^ M * ‖f x‖ :=
+                  htarget_abs
+            _ = |C| * (1 + δ⁻¹) ^ M * ((1 + ‖x‖) ^ N * ‖f x‖) := by ring
+            _ ≤ |C| * (1 + δ⁻¹) ^ M *
+                  (flatC * s ^ (M + 1) / (1 + ‖x‖) ^ (D + 2)) := by
+                    gcongr
+            _ = |C| * flatC *
+                  ((1 + δ⁻¹) ^ M * s ^ (M + 1)) /
+                  (1 + ‖x‖) ^ (D + 2) := by ring
+            _ ≤ |C| * flatC * regC / (1 + ‖x‖) ^ (D + 2) := by
+                  gcongr
+            _ = smallC * (1 + ‖x‖) ^ (-(↑(D + 2) : ℝ)) := by
+                  rw [Real.rpow_neg (by positivity), Real.rpow_natCast]
+                  field_simp
+                  ring
+            _ ≤ smallC * (1 + ‖x‖) ^ (-(↑(D + 2) : ℝ)) +
+                  largeC * ((1 + ‖x‖) ^ N * ‖f x‖) := by
+                    have hlarge_term :
+                        0 ≤ largeC * ((1 + ‖x‖) ^ N * ‖f x‖) := by positivity
+                    linarith
+        · have hs_one_le : (1 : ℝ) ≤ s := le_of_not_ge hs_small
+          have hδ_one_lower : (1 : ℝ) / (d + 2 : ℝ) ≤ δ := by
+            calc
+              (1 : ℝ) / (d + 2 : ℝ) ≤ s / (d + 2 : ℝ) := by
+                exact div_le_div_of_nonneg_right hs_one_le (by positivity)
+              _ ≤ δ := hδ_lower
+          have hreg_large : (1 + δ⁻¹) ^ M ≤ regC := by
+            simpa [regC] using regulator_large_timeGap_bound (d := d) M hδ_one_lower
+          calc
+            ‖C * (1 + ‖(fun k => wickRotatePoint (x k))‖) ^ N
+                * (1 + (tubeBoundaryDist (fun k => wickRotatePoint (x k)))⁻¹) ^ M
+                * ‖f x‖‖
+                = |C| * (1 + ‖x‖) ^ N * (1 + δ⁻¹) ^ M * ‖f x‖ :=
+                  htarget_abs
+            _ ≤ |C| * (1 + ‖x‖) ^ N * regC * ‖f x‖ := by
+                  gcongr
+            _ = largeC * ((1 + ‖x‖) ^ N * ‖f x‖) := by
+                  simp [largeC]
+                  ring
+            _ ≤ smallC * (1 + ‖x‖) ^ (-(↑(D + 2) : ℝ)) +
+                  largeC * ((1 + ‖x‖) ^ N * ‖f x‖) := by
+                    have hsmall_tail :
+                        0 ≤ smallC * (1 + ‖x‖) ^ (-(↑(D + 2) : ℝ)) := by
+                      positivity
+                    linarith
+      · have hf_zero : (f : NPointDomain d n → ℂ) x = 0 := by
+          have h_notInTsupp :
+              x ∉ tsupport ((f : SchwartzNPoint d n) : NPointDomain d n → ℂ) :=
+            fun hxts => hx_optr (hf hxts)
+          exact image_eq_zero_of_notMem_tsupport h_notInTsupp
+        have hdom_nonneg :
+            0 ≤ smallC * (1 + ‖x‖) ^ (-(↑(D + 2) : ℝ)) +
+              largeC * ((1 + ‖x‖) ^ N * ‖f x‖) := by
+          positivity
+        calc
+          ‖C * (1 + ‖(fun k => wickRotatePoint (x k))‖) ^ N
+              * (1 + (tubeBoundaryDist (fun k => wickRotatePoint (x k)))⁻¹) ^ M
+              * ‖f x‖‖ = 0 := by
+                simp [hf_zero]
+          _ ≤ smallC * (1 + ‖x‖) ^ (-(↑(D + 2) : ℝ)) +
+              largeC * ((1 + ‖x‖) ^ N * ‖f x‖) := hdom_nonneg
 
 /-- **Cluster theorem for the Wick-rotated boundary integral**.
 
@@ -988,92 +1848,340 @@ theorem W_analytic_cluster_integral_via_ruelle
         exact image_eq_zero_of_notMem_tsupport h_notInTsupp
       simp [clusterIntegrand, clusterLimitIntegrand, h_f_zero]
       exact tendsto_const_nhds
-  -- Step 4–7: dominator + dominated convergence + ε-R conversion.
-  --
-  -- BLOCKED ON RACH.bound REFACTOR (2026-05-08): the bound shape was
-  -- updated to include the Streater-Wightman boundary-distance
-  -- regulator `(1 + (tubeBoundaryDist z)⁻¹)^M` after the previous
-  -- shape was found unsatisfiable for any Wightman QFT (free-field
-  -- counterexample via Wick decomposition; see
-  -- `docs/ruelle_bound_vacuity_concern.md`).
-  --
-  -- The previous dominator `C_R · (1+‖p₁‖+‖p₂‖)^N_R · ‖f(p₁)‖ · ‖g(p₂)‖`
-  -- is no longer typed correctly: the new bound delivers the regulator
-  -- factor `(1 + (tubeBoundaryDist (wick p))⁻¹)^M_R` as well.
-  --
-  -- ### Fillability case for this `sorry`
-  --
-  -- The math is classical (Streater-Wightman §3.4 / Ruelle 1962 /
-  -- Araki-Hepp-Ruelle 1962): use the **Schwartz dual pairing**
-  -- instead of a pointwise dominator.
-  --
-  --   1. By `fl_representation_from_bv` (existing project axiom in
-  --      `OSReconstruction/SCV/VladimirovTillmann.lean`):
-  --        `W_analytic_BHW(z) = (FL Tflat)(z)`
-  --      for some tempered distribution `Tflat` on the dual cone
-  --      (where `Tflat : SchwartzMap → ℂ` is a `ContinuousLinearMap`).
-  --   2. The cluster integrand
-  --        `W_analytic_BHW(joint(wick p₁, wick p₂ + (0,a))) · f(p₁) · g(p₂)`
-  --      integrates over `(p₁, p₂)` to
-  --        `Tflat(ψ_a)`
-  --      where `ψ_a ∈ Schwartz(dual)` is constructed by Fubini-pairing
-  --      `(f ⊗ g_a)` with the Wick-rotated kernel.
-  --   3. Continuity of `Tflat` on Schwartz:
-  --        `‖Tflat ψ‖ ≤ ‖Tflat‖ · ‖ψ‖_{seminorm}`.
-  --   4. `‖ψ_a‖_{seminorm}` is uniformly bounded in `a` by translation-
-  --      invariance of Schwartz seminorms (`g_a(x) := g(x - a)`).
-  --   5. → uniform `ε`-R conclusion, no pointwise dominator needed.
-  --
-  -- ### Available Lean infrastructure
-  --
-  -- * `bv_implies_fourier_support` (axiom, VladimirovTillmann.lean:148)
-  --   — produces `Tflat` from polynomial-bounded boundary value.
-  -- * `fl_representation_from_bv` (axiom, same file:392)
-  --   — gives `W = FL extension of Tflat`.
-  -- * `fourierLaplaceExtMultiDim_vladimirov_growth` (PROVED in
-  --   PaleyWienerSchwartz.lean:3286) — the regulated growth bound.
-  -- * Mathlib has Schwartz-Fubini and Schwartz-CLM continuity in the
-  --   standard form needed for steps (2)–(4).
-  --
-  -- ### Identified gap
-  --
-  -- `bv_implies_fourier_support`'s **hypothesis** asks for the
-  -- *unregulated* polynomial growth on the tube — the same shape just
-  -- shown unsatisfiable. The companion theorem
-  -- `full_analytic_continuation_with_symmetry_growth`
-  -- (`OSToWightman.lean:2553`) is supposed to supply this growth for
-  -- OS-derived Wightman functions, but `#print axioms` shows it
-  -- depends on `sorryAx` — i.e., it is not actually proved either.
-  -- So the polynomial-bound chain has hidden vacuity.
-  --
-  -- The IBP rework therefore likely also requires either:
-  --   (a) supplying the unregulated bound on a regularized subdomain
-  --       where it actually holds, or
-  --   (b) relaxing `bv_implies_fourier_support`'s hypothesis to accept
-  --       the regulated form (which IS satisfiable). Vladimirov's
-  --       Theorem 25.1 only requires tempered BV; the unregulated
-  --       polynomial bound was over-strong.
-  --
-  -- Option (b) is the cleaner fix. The regulated bound is available
-  -- as the conditional structure `L4SpectralData` (see
-  -- `OSReconstruction/Wightman/Spectral/Ruelle/L4_UniformPolynomialBound.lean`)
-  -- and the conditional reduction `ruelle_analytic_cluster_bound_of`
-  -- there. There is intentionally NO production axiom discharging
-  -- `L4SpectralData` (a draft `wightman_l4_spectral_data_axiom` was
-  -- withdrawn 2026-05-09 per PR-#86 review: no QFT-specific production
-  -- axioms). The IBP rework therefore takes either an explicit
-  -- `L4SpectralData Wfn n m` parameter at this site, or a future
-  -- proved theorem discharging it via the SCV / FL infrastructure
-  -- (`bv_implies_fourier_support` + `fl_representation_from_bv` +
-  -- `fourierLaplaceExtMultiDim_vladimirov_growth`).
-  --
-  -- ### Estimate
-  --
-  -- 1–2 weeks if option (b) works as expected; 2–4 weeks if a
-  -- separate audit/fix of the polynomial-bound chain is needed first.
-  -- Tracked as a separate follow-up; this PR is the structure-only
-  -- refactor of `RACH.bound`.
-  sorry
+  -- Step 4: product dominator from the regulated Ruelle bound.
+  obtain ⟨C, N, M, Rruelle, hC_pos, hRruelle_pos, hRuelle_bound⟩ := hRuelle.bound
+  let 𝓛 : Filter (SpacetimeDim d) :=
+    Filter.principal {a : SpacetimeDim d | a 0 = 0} ⊓
+      Bornology.cobounded (SpacetimeDim d)
+  let G1 : NPointDomain d n → ℝ :=
+    fun x =>
+      2 ^ N * C * (1 + ‖(fun k => wickRotatePoint (x k))‖) ^ N
+        * (1 + (tubeBoundaryDist (fun k => wickRotatePoint (x k)))⁻¹) ^ M
+        * ‖f x‖
+  let G2 : NPointDomain d m → ℝ :=
+    fun y =>
+      (1 + ‖(fun k => wickRotatePoint (y k))‖) ^ N
+        * (1 + (tubeBoundaryDist (fun k => wickRotatePoint (y k)))⁻¹) ^ M
+        * ‖g y‖
+  let G : NPointDomain d n × NPointDomain d m → ℝ :=
+    fun p => G1 p.1 * G2 p.2
+  have hG1_nonneg : ∀ x : NPointDomain d n, 0 ≤ G1 x := by
+    intro x
+    dsimp [G1]
+    exact mul_nonneg
+      (mul_nonneg
+        (mul_nonneg (mul_nonneg (by positivity : 0 ≤ (2 : ℝ) ^ N) hC_pos.le)
+          (by positivity))
+        (tubeBoundaryRegulator_nonneg (d := d) M (fun k => wickRotatePoint (x k))))
+      (norm_nonneg (f x))
+  have hG2_nonneg : ∀ y : NPointDomain d m, 0 ≤ G2 y := by
+    intro y
+    dsimp [G2]
+    exact mul_nonneg
+      (mul_nonneg (by positivity)
+        (tubeBoundaryRegulator_nonneg (d := d) M (fun k => wickRotatePoint (y k))))
+      (norm_nonneg (g y))
+  have hG_nonneg : ∀ p : NPointDomain d n × NPointDomain d m, 0 ≤ G p := by
+    intro p
+    exact mul_nonneg (hG1_nonneg p.1) (hG2_nonneg p.2)
+  have hG1_int :
+      MeasureTheory.Integrable G1 MeasureTheory.volume := by
+    simpa [G1] using
+      block_regulator_dominator_integrable (d := d) f hsupp_f (2 ^ N * C) N M
+  have hG2_int :
+      MeasureTheory.Integrable G2 MeasureTheory.volume := by
+    simpa [G2] using
+      block_regulator_dominator_integrable (d := d) g hsupp_g 1 N M
+  have hG_int :
+      MeasureTheory.Integrable G
+        (MeasureTheory.volume :
+          MeasureTheory.Measure (NPointDomain d n × NPointDomain d m)) := by
+    rw [show (MeasureTheory.volume :
+        MeasureTheory.Measure (NPointDomain d n × NPointDomain d m)) =
+      MeasureTheory.volume.prod MeasureTheory.volume from rfl]
+    simpa [G] using hG1_int.mul_prod hG2_int
+  have hL_basis : 𝓛.HasBasis (fun _ : ℕ => True)
+      (fun N : ℕ => {a : SpacetimeDim d | a 0 = 0} ∩
+        {a : SpacetimeDim d | (N : ℝ) < ‖a‖}) := by
+    refine ⟨fun s => ?_⟩
+    constructor
+    · intro hs
+      rw [Filter.mem_inf_iff_superset] at hs
+      obtain ⟨S0, hS0, S2, hS2, hsubset⟩ := hs
+      have hS0_sub : {a : SpacetimeDim d | a 0 = 0} ⊆ S0 := by
+        simpa [Filter.mem_principal] using hS0
+      have hS2c_bdd : Bornology.IsBounded (S2ᶜ : Set (SpacetimeDim d)) := by
+        rw [Bornology.isBounded_def, compl_compl]
+        exact hS2
+      obtain ⟨Rb, hRb⟩ :
+          ∃ R : ℝ, S2ᶜ ⊆ Metric.closedBall (0 : SpacetimeDim d) R :=
+        hS2c_bdd.subset_closedBall (0 : SpacetimeDim d)
+      obtain ⟨Nb, hNb⟩ := exists_nat_gt Rb
+      refine ⟨Nb, trivial, ?_⟩
+      rintro a ⟨ha0, ha_norm⟩
+      simp only [Set.mem_setOf_eq] at ha_norm
+      have haS2 : a ∈ S2 := by
+        by_contra ha_not
+        have ha_ball : a ∈ Metric.closedBall (0 : SpacetimeDim d) Rb :=
+          hRb (show a ∈ S2ᶜ from ha_not)
+        simp only [Metric.mem_closedBall, dist_zero_right] at ha_ball
+        linarith
+      exact hsubset ⟨hS0_sub ha0, haS2⟩
+    · rintro ⟨Nb, _hNb, hsub⟩
+      refine Filter.mem_of_superset ?_ hsub
+      refine Filter.inter_mem ?_ ?_
+      · exact Filter.mem_inf_of_left (Filter.mem_principal_self _)
+      · refine Filter.mem_inf_of_right ?_
+        rw [Metric.cobounded_eq_cocompact, Filter.mem_cocompact]
+        refine ⟨Metric.closedBall (0 : SpacetimeDim d) (Nb : ℝ),
+          isCompact_closedBall _ _, fun a ha => ?_⟩
+        simp only [Set.mem_compl_iff, Metric.mem_closedBall, dist_zero_right] at ha
+        simp only [Set.mem_setOf_eq]
+        linarith
+  haveI : 𝓛.IsCountablyGenerated := hL_basis.isCountablyGenerated
+  have h_large_ruelle :
+      ∀ᶠ a : SpacetimeDim d in 𝓛, a 0 = 0 ∧ Rruelle < ‖a‖ := by
+    refine Filter.mem_of_superset
+      (?_ : {a : SpacetimeDim d | a 0 = 0} ∩
+          {a : SpacetimeDim d | Rruelle < ‖a‖} ∈ 𝓛)
+      (fun _ h => h)
+    refine Filter.inter_mem ?_ ?_
+    · exact Filter.mem_inf_of_left (Filter.mem_principal_self _)
+    · refine Filter.mem_inf_of_right ?_
+      rw [Metric.cobounded_eq_cocompact, Filter.mem_cocompact]
+      refine ⟨Metric.closedBall (0 : SpacetimeDim d) Rruelle,
+        isCompact_closedBall _ _, fun a ha => ?_⟩
+      simp only [Set.mem_compl_iff, Metric.mem_closedBall, dist_zero_right] at ha
+      simp only [Set.mem_setOf_eq]
+      linarith
+  have hF_meas :
+      ∀ᶠ a : SpacetimeDim d in 𝓛,
+        MeasureTheory.AEStronglyMeasurable
+          (clusterIntegrand Wfn f g a)
+          (MeasureTheory.volume :
+            MeasureTheory.Measure (NPointDomain d n × NPointDomain d m)) :=
+    Filter.Eventually.of_forall fun a =>
+      clusterIntegrand_aestronglyMeasurable (d := d) Wfn f g a
+  have h_bound_event :
+      ∀ᶠ a : SpacetimeDim d in 𝓛,
+        ∀ᵐ p : NPointDomain d n × NPointDomain d m ∂MeasureTheory.volume,
+          ‖clusterIntegrand Wfn f g a p‖ ≤ G p := by
+    filter_upwards [h_large_ruelle] with a ha_large
+    filter_upwards [ae_pairwise_distinct_jointTimeCoords (d := d) (n := n) (m := m)]
+      with p h_distinct_joint
+    have ha0 : a 0 = 0 := ha_large.1
+    have ha_spatial : (∑ i : Fin d, (a (Fin.succ i)) ^ 2) > Rruelle ^ 2 :=
+      spatial_sq_sum_gt_of_norm_gt (d := d) a hRruelle_pos ha0 ha_large.2
+    by_cases hp1 : p.1 ∈ OrderedPositiveTimeRegion d n
+    · by_cases hp2 : p.2 ∈ OrderedPositiveTimeRegion d m
+      · let z1 : Fin n → Fin (d + 1) → ℂ := fun k => wickRotatePoint (p.1 k)
+        let z2 : Fin m → Fin (d + 1) → ℂ := fun k => wickRotatePoint (p.2 k)
+        have hw1 : z1 ∈ ForwardTube d n := by
+          simpa [z1] using wick_OPTR_in_forwardTube n p.1 hp1
+        have hw2 : z2 ∈ ForwardTube d m := by
+          simpa [z2] using wick_OPTR_in_forwardTube m p.2 hp2
+        have hp1_pos : ∀ i : Fin n, p.1 i 0 > 0 := fun i => (hp1 i).1
+        have hp2_pos : ∀ i : Fin m, p.2 i 0 > 0 := fun i => (hp2 i).1
+        have hPET :
+            (Fin.append z1
+                (fun k μ => z2 k μ +
+                  (if μ = 0 then (0 : ℂ) else (a μ : ℂ)))) ∈
+              PermutedExtendedTube d (n + m) := by
+          simpa [z1, z2] using
+            joint_wick_config_in_PET n m p.1 p.2 a ha0 hp1_pos hp2_pos
+              h_distinct_joint
+        have hF_eq :
+            F_ext_on_translatedPET_total Wfn
+              (Fin.append z1
+                (fun k μ => z2 k μ +
+                  (if μ = 0 then (0 : ℂ) else (a μ : ℂ)))) =
+            (W_analytic_BHW Wfn (n + m)).val
+              (Fin.append z1
+                (fun k μ => z2 k μ +
+                  (if μ = 0 then (0 : ℂ) else (a μ : ℂ)))) := by
+          simpa [z1, z2] using
+            joint_F_ext_eq_W_analytic Wfn n m p.1 p.2 a ha0 hp1_pos hp2_pos
+              h_distinct_joint
+        have hkernel_bound :
+            ‖F_ext_on_translatedPET_total Wfn
+                (Fin.append z1
+                  (fun k μ => z2 k μ +
+                    (if μ = 0 then (0 : ℂ) else (a μ : ℂ))))‖
+              ≤ C * (1 + ‖z1‖ + ‖z2‖) ^ N
+                  * (1 + (tubeBoundaryDist z1)⁻¹) ^ M
+                  * (1 + (tubeBoundaryDist z2)⁻¹) ^ M := by
+          rw [hF_eq]
+          exact hRuelle_bound z1 z2 hw1 hw2 a ha0 ha_spatial hPET
+        have hpoly :
+            (1 + ‖z1‖ + ‖z2‖) ^ N
+              ≤ 2 ^ N * (1 + ‖z1‖) ^ N * (1 + ‖z2‖) ^ N :=
+          one_add_add_pow_le_two_pow_mul N (norm_nonneg z1) (norm_nonneg z2)
+        have hreg1_nonneg : 0 ≤ (1 + (tubeBoundaryDist z1)⁻¹) ^ M :=
+          tubeBoundaryRegulator_nonneg (d := d) M z1
+        have hreg2_nonneg : 0 ≤ (1 + (tubeBoundaryDist z2)⁻¹) ^ M :=
+          tubeBoundaryRegulator_nonneg (d := d) M z2
+        have htail_nonneg :
+            0 ≤ (1 + (tubeBoundaryDist z1)⁻¹) ^ M *
+                (1 + (tubeBoundaryDist z2)⁻¹) ^ M * ‖f p.1‖ * ‖g p.2‖ :=
+          mul_nonneg
+            (mul_nonneg (mul_nonneg hreg1_nonneg hreg2_nonneg) (norm_nonneg (f p.1)))
+            (norm_nonneg (g p.2))
+        have hpoly_tail :
+            (1 + ‖z1‖ + ‖z2‖) ^ N *
+                ((1 + (tubeBoundaryDist z1)⁻¹) ^ M *
+                  (1 + (tubeBoundaryDist z2)⁻¹) ^ M * ‖f p.1‖ * ‖g p.2‖)
+              ≤
+            (2 ^ N * (1 + ‖z1‖) ^ N * (1 + ‖z2‖) ^ N) *
+                ((1 + (tubeBoundaryDist z1)⁻¹) ^ M *
+                  (1 + (tubeBoundaryDist z2)⁻¹) ^ M * ‖f p.1‖ * ‖g p.2‖) :=
+          mul_le_mul_of_nonneg_right hpoly htail_nonneg
+        have hmain :
+            C * ((1 + ‖z1‖ + ‖z2‖) ^ N *
+                ((1 + (tubeBoundaryDist z1)⁻¹) ^ M *
+                  (1 + (tubeBoundaryDist z2)⁻¹) ^ M * ‖f p.1‖ * ‖g p.2‖))
+              ≤
+            C * ((2 ^ N * (1 + ‖z1‖) ^ N * (1 + ‖z2‖) ^ N) *
+                ((1 + (tubeBoundaryDist z1)⁻¹) ^ M *
+                  (1 + (tubeBoundaryDist z2)⁻¹) ^ M * ‖f p.1‖ * ‖g p.2‖)) :=
+          mul_le_mul_of_nonneg_left hpoly_tail hC_pos.le
+        calc
+          ‖clusterIntegrand Wfn f g a p‖
+              = ‖F_ext_on_translatedPET_total Wfn
+                    (Fin.append z1
+                      (fun k μ => z2 k μ +
+                        (if μ = 0 then (0 : ℂ) else (a μ : ℂ))))‖ *
+                  ‖f p.1‖ * ‖g p.2‖ := by
+                    simp [clusterIntegrand, z1, z2, mul_assoc]
+          _ ≤ (C * (1 + ‖z1‖ + ‖z2‖) ^ N
+                  * (1 + (tubeBoundaryDist z1)⁻¹) ^ M
+                  * (1 + (tubeBoundaryDist z2)⁻¹) ^ M) *
+                ‖f p.1‖ * ‖g p.2‖ := by
+                  exact mul_le_mul_of_nonneg_right
+                    (mul_le_mul_of_nonneg_right hkernel_bound (norm_nonneg (f p.1)))
+                    (norm_nonneg (g p.2))
+          _ = C * ((1 + ‖z1‖ + ‖z2‖) ^ N *
+                ((1 + (tubeBoundaryDist z1)⁻¹) ^ M *
+                  (1 + (tubeBoundaryDist z2)⁻¹) ^ M * ‖f p.1‖ * ‖g p.2‖)) := by
+                  ring
+          _ ≤ C * ((2 ^ N * (1 + ‖z1‖) ^ N * (1 + ‖z2‖) ^ N) *
+                ((1 + (tubeBoundaryDist z1)⁻¹) ^ M *
+                  (1 + (tubeBoundaryDist z2)⁻¹) ^ M * ‖f p.1‖ * ‖g p.2‖)) :=
+                  hmain
+          _ = G p := by
+                  simp [G, G1, G2, z1, z2]
+                  ring
+      · have h_g_zero : (g : NPointDomain d m → ℂ) p.2 = 0 := by
+          have h_notInTsupp :
+              p.2 ∉ tsupport ((g : SchwartzNPoint d m) : NPointDomain d m → ℂ) :=
+            fun hxts => hp2 (hsupp_g hxts)
+          exact image_eq_zero_of_notMem_tsupport h_notInTsupp
+        calc
+          ‖clusterIntegrand Wfn f g a p‖ = 0 := by
+            simp [clusterIntegrand, h_g_zero]
+          _ ≤ G p := hG_nonneg p
+    · have h_f_zero : (f : NPointDomain d n → ℂ) p.1 = 0 := by
+        have h_notInTsupp :
+            p.1 ∉ tsupport ((f : SchwartzNPoint d n) : NPointDomain d n → ℂ) :=
+          fun hxts => hp1 (hsupp_f hxts)
+        exact image_eq_zero_of_notMem_tsupport h_notInTsupp
+      calc
+        ‖clusterIntegrand Wfn f g a p‖ = 0 := by
+          simp [clusterIntegrand, h_f_zero]
+        _ ≤ G p := hG_nonneg p
+
+  -- Step 5: dominated convergence for the substituted integral.
+  have h_tendsto_integral_limit :
+      Filter.Tendsto
+        (fun a : SpacetimeDim d =>
+          ∫ p : NPointDomain d n × NPointDomain d m, clusterIntegrand Wfn f g a p)
+        𝓛
+        (nhds (∫ p : NPointDomain d n × NPointDomain d m,
+          clusterLimitIntegrand Wfn f g p)) := by
+    refine MeasureTheory.tendsto_integral_filter_of_dominated_convergence
+      (μ := (MeasureTheory.volume :
+        MeasureTheory.Measure (NPointDomain d n × NPointDomain d m)))
+      (l := 𝓛)
+      (F := fun a p => clusterIntegrand Wfn f g a p)
+      (f := clusterLimitIntegrand Wfn f g)
+      (bound := G) ?_ ?_ ?_ ?_
+    · exact hF_meas
+    · exact h_bound_event
+    · exact hG_int
+    · simpa [𝓛] using h_pointwise
+  have h_tendsto_integrals :
+      Filter.Tendsto
+        (fun a : SpacetimeDim d =>
+          ∫ p : NPointDomain d n × NPointDomain d m, clusterIntegrand Wfn f g a p)
+        𝓛
+        (nhds (L_n * L_m)) := by
+    simpa [h_limit_eq_product] using h_tendsto_integral_limit
+
+  -- Step 6: unfold the spatial-cobounded eventual estimate to the requested `ε-R`.
+  have h_eventually_close :
+      {a : SpacetimeDim d |
+        ‖(∫ p : NPointDomain d n × NPointDomain d m,
+            clusterIntegrand Wfn f g a p) - L_n * L_m‖ < ε} ∈ 𝓛 := by
+    have hball : Metric.ball (L_n * L_m) ε ∈ nhds (L_n * L_m) :=
+      Metric.ball_mem_nhds _ hε
+    have hpre := h_tendsto_integrals hball
+    refine Filter.mem_of_superset hpre ?_
+    intro a ha
+    simpa [Metric.mem_ball, dist_eq_norm] using ha
+  rw [Filter.mem_inf_iff_superset] at h_eventually_close
+  obtain ⟨S0, hS0, S_infty, hS_infty, hS_subset⟩ := h_eventually_close
+  have hS0_of_time_zero : {a : SpacetimeDim d | a 0 = 0} ⊆ S0 := by
+    simpa [Filter.mem_principal] using hS0
+  have hS_infty_c_bounded : Bornology.IsBounded (S_inftyᶜ : Set (SpacetimeDim d)) := by
+    rw [Bornology.isBounded_def, compl_compl]
+    exact hS_infty
+  obtain ⟨Rclose, hRclose⟩ :
+      ∃ R : ℝ, S_inftyᶜ ⊆ Metric.closedBall (0 : SpacetimeDim d) R :=
+    hS_infty_c_bounded.subset_closedBall (0 : SpacetimeDim d)
+  let B : ℝ := max Rclose 0
+  have hB_nonneg : 0 ≤ B := by
+    simp [B]
+  let Rfinal : ℝ := ((d : ℝ) + 1) * (B + 1)
+  have hRfinal_pos : 0 < Rfinal := by
+    have hd_pos : 0 < (d : ℝ) + 1 := by positivity
+    have hB_pos : 0 < B + 1 := by linarith
+    exact mul_pos hd_pos hB_pos
+  have hS_infty_of_norm_gt : ∀ a : SpacetimeDim d, B < ‖a‖ → a ∈ S_infty := by
+    intro a ha_norm
+    by_contra ha_not
+    have ha_ball : a ∈ Metric.closedBall (0 : SpacetimeDim d) Rclose :=
+      hRclose (by simpa using ha_not)
+    simp only [Metric.mem_closedBall, dist_zero_right] at ha_ball
+    have ha_le_B : ‖a‖ ≤ B := ha_ball.trans (le_max_left Rclose 0)
+    linarith
+  refine ⟨Rfinal, hRfinal_pos, ?_⟩
+  intro a ha0 ha_spatial g_a hg_a
+  have hnorm_gt_B : B < ‖a‖ := by
+    by_contra hnot
+    have hnorm_le_B : ‖a‖ ≤ B := le_of_not_gt hnot
+    have hsum_le :
+        ∑ i : Fin d, (a (Fin.succ i)) ^ 2 ≤ (d : ℝ) * B ^ 2 := by
+      calc
+        ∑ i : Fin d, (a (Fin.succ i)) ^ 2 ≤ ∑ _i : Fin d, B ^ 2 := by
+          refine Finset.sum_le_sum fun i _ => ?_
+          have habs_le_norm : |a (Fin.succ i)| ≤ ‖a‖ := by
+            simpa [Real.norm_eq_abs] using norm_le_pi_norm a (Fin.succ i)
+          have habs_le_B : |a (Fin.succ i)| ≤ B := habs_le_norm.trans hnorm_le_B
+          exact sq_le_sq.mpr (by simpa [abs_of_nonneg hB_nonneg] using habs_le_B)
+        _ = (d : ℝ) * B ^ 2 := by
+          simp
+    have hsum_bound_lt : (d : ℝ) * B ^ 2 < Rfinal ^ 2 := by
+      dsimp [Rfinal]
+      have hd0 : 0 ≤ (d : ℝ) := by positivity
+      nlinarith [sq_nonneg ((d : ℝ) * B), sq_nonneg B, sq_nonneg (B + 1)]
+    have hsum_lt : ∑ i : Fin d, (a (Fin.succ i)) ^ 2 < Rfinal ^ 2 :=
+      lt_of_le_of_lt hsum_le hsum_bound_lt
+    linarith
+  have hclose :
+      ‖(∫ p : NPointDomain d n × NPointDomain d m,
+          clusterIntegrand Wfn f g a p) - L_n * L_m‖ < ε := by
+    exact hS_subset ⟨hS0_of_time_zero ha0, hS_infty_of_norm_gt a hnorm_gt_B⟩
+  rw [h_change_of_var a ha0 g_a hg_a]
+  exact hclose
 
 /-! ### Public-facing theorems
 
