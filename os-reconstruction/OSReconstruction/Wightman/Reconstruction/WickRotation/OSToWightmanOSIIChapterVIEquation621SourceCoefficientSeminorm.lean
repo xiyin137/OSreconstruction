@@ -1,0 +1,54 @@
+/- Modified for source distribution, 2026-09-10: unused declarations/imports
+and development comments removed; retained mathematical statements unchanged. -/
+import Init
+import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIEquation621EndpointRootedSourceIntegral
+import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIEquation621RootedSourceIntegral
+import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIEquation629Majorant
+import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIEquation621RootedGeometry
+import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVStrictGeneratedRankedBoundedScalarPhysicalCharts
+import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIEquation621WeightedDensityDistributionBound
+import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIEquation621Recovery
+import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIUniformEquation621Seed
+import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVINormalizedEnvelopeBoundedRankInduction
+import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVINormalizedEnvelopeWeightedSourceEnvelope
+import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVStageWideReflectedGramRootedBounds
+import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVStrictGeneratedRankedReflectedGram
+import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIRecursiveSectorAdaptiveShiftHandoff
+
+
+
+
+
+
+
+
+
+
+
+noncomputable section
+
+open Complex Set
+open scoped Classical
+
+namespace OSReconstruction
+namespace OSIIChapterV
+
+open Section43ProductTimeApproximateIdentity
+open Section43ProductTimeApproximateIdentity.AnchoredPacketTimeShellFamilyData
+
+/-- Numerical profile for the complete printed equation-`(6.21)` family.
+The profile is selected before the physical stage, shift, and target. -/
+structure VI2Equation621TargetSeminormProfileData (d : Nat) where
+  spatialSeminorms : Nat -> Finset (Nat × Nat)
+  constant : Nat -> Real
+  constant_nonneg : forall arity, 0 <= constant arity
+
+namespace VI2Equation621TargetSeminormProfileData
+
+namespace BoundData
+
+end BoundData
+
+end VI2Equation621TargetSeminormProfileData
+end OSIIChapterV
+end OSReconstruction
