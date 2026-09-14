@@ -2,8 +2,6 @@
 and development comments removed; retained mathematical statements unchanged. -/
 import Init
 import OSReconstruction.SCV.LaplaceHolomorphic
-import HilleYosida.SemigroupGroupExtension
-import HilleYosida.BCR_General
 import OSReconstruction.Wightman.Reconstruction.SchwartzDensity
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanSemigroup
 

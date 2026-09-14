@@ -9,11 +9,6 @@ rev = "36ae6dd"
 subDir = "."
 
 [[require]]
-name = "HilleYosida"
-git = "https://github.com/mrdouglasny/hille-yosida.git"
-rev = "ed9134d"
-
-[[require]]
 name = "mathlib"
 scope = "leanprover-community"
 rev = "v4.29.0"
