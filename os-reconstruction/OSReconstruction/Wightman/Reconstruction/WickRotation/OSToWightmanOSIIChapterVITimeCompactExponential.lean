@@ -178,9 +178,9 @@ theorem continuous_compactExponentialTest
     apply continuousAt_iff_punctured_nhds.mpr
     simpa only [add_zero] using hpunctured
   have hshift : Tendsto (fun u : Real => u - t) (nhds t) (nhds 0) := by
-    simpa only [id_eq, sub_self] using
-      (continuous_id.sub continuous_const : Continuous (fun u : Real => u - t)).tendsto t
-  simpa [Function.comp_def, F, add_comm] using hcont.tendsto.comp hshift
+    convert tendsto_id.sub_const t using 1 <;> simp
+  change Tendsto F (nhds t) (nhds (F t))
+  convert hcont.tendsto.comp hshift using 1 <;> simp [Function.comp_def]
 
 /-- The weak distribution equation and the moving compact test have opposite
 derivatives. Banach-Steinhaus justifies their product rule. -/

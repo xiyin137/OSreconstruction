@@ -591,7 +591,7 @@ theorem sumSq_rotMatrix_mulVec_eq {n : ℕ}
       (∑ k : Fin (n + 1), v k ^ 2) := by
   let R : SOComplex (n + 1) := rotElement i j hij c s hcs
   have hcolfun : (fun k : Fin (n + 1) => (R.val * colMatrix v) k 0) = R.val *ᵥ v := by
-    simpa [R] using (mul_colMatrix_col0_eq_mulVec (rotMatrix i j c s) v)
+    simpa [R, rotElement] using (mul_colMatrix_col0_eq_mulVec (rotMatrix i j c s) v)
   have hsumfun :
       (∑ k : Fin (n + 1), (R.val *ᵥ v) k ^ 2) =
         (∑ k : Fin (n + 1), (R.val * colMatrix v) k 0 ^ 2) := by
@@ -599,7 +599,7 @@ theorem sumSq_rotMatrix_mulVec_eq {n : ℕ}
   calc
     (∑ k : Fin (n + 1), (rotMatrix i j c s *ᵥ v) k ^ 2)
         = (∑ k : Fin (n + 1), (R.val * colMatrix v) k 0 ^ 2) := by
-            simpa [R] using hsumfun
+            simpa [R, rotElement] using hsumfun
     _ = (∑ k : Fin (n + 1), (colMatrix v) k 0 ^ 2) := firstColSqSum_mul_left_SO R (colMatrix v)
     _ = (∑ k : Fin (n + 1), v k ^ 2) := firstColSqSum_colMatrix v
 
@@ -658,7 +658,7 @@ theorem reduceVector_count_zero {m : ℕ}
         have hval : (1 : ℕ) = 0 := by exact congrArg Fin.val h
         omega
       have h10 : v 1 = 0 := hzero 1 h10idx
-      simpa [hv0_neg_one, h10] using h0
+      simpa [rotElement, hv0_neg_one, h10] using h0
     ·
       by_cases hi : i = 0
       · subst hi
@@ -669,7 +669,7 @@ theorem reduceVector_count_zero {m : ℕ}
           have hval : (1 : ℕ) = 0 := by exact congrArg Fin.val h
           omega
         have h10 : v 1 = 0 := hzero 1 h10idx
-        simpa [h10] using h1
+        simpa [rotElement, h10] using h1
       · have hs : i.succ ≠ 1 := by
           intro his
           have hi0 : i = 0 := by
@@ -684,7 +684,7 @@ theorem reduceVector_count_zero {m : ℕ}
           rotMatrix_mulVec_other (i := 0) (j := 1) h01 (-1) 0 v i.succ
             (Fin.succ_ne_zero i) hs
         have hz : v i.succ = 0 := hzero i.succ (Fin.succ_ne_zero i)
-        simpa [hz, Fin.succ_ne_zero i] using hother
+        simpa [rotElement, hz, Fin.succ_ne_zero i] using hother
 
 /-- Full vector reduction: if `∑ vᵢ² = 1`, there is `R ∈ SO(m+2;ℂ)` joined to
 the identity with `R *ᵥ v = e₀`. -/
@@ -918,24 +918,29 @@ private def embedVal {m : ℕ} (B : Matrix (Fin m) (Fin m) ℂ) :
 
 private theorem embedVal_transpose {m : ℕ} (B : Matrix (Fin m) (Fin m) ℂ) :
     (embedVal B).transpose = embedVal B.transpose := by
-  ext a b; simp only [Matrix.transpose_apply, embedVal]
-  refine Fin.cases ?_ (fun i => ?_) a <;> refine Fin.cases ?_ (fun j => ?_) b <;> simp
+  ext a b
+  change embedVal B b a = embedVal B.transpose a b
+  refine Fin.cases ?_ (fun i => ?_) a <;> refine Fin.cases ?_ (fun j => ?_) b <;>
+    simp [embedVal]
 
 private theorem embedVal_orthogonal {m : ℕ} (B : Matrix (Fin m) (Fin m) ℂ)
     (hB : B.transpose * B = 1) :
     (embedVal B).transpose * embedVal B = 1 := by
   rw [embedVal_transpose]
   ext a b
-  simp only [Matrix.mul_apply, embedVal, Matrix.one_apply]
+  simp only [Matrix.mul_apply, Matrix.one_apply]
   refine Fin.cases ?_ (fun i => ?_) a <;> refine Fin.cases ?_ (fun j => ?_) b
-  · simp [Fin.sum_univ_succ]
-  · simp [Fin.sum_univ_succ, (Fin.succ_ne_zero j).symm]
-  · simp [Fin.sum_univ_succ]
-  · simp only [Fin.sum_univ_succ, Fin.cons_zero, Fin.cons_succ, mul_zero, zero_add]
+  · simp [Fin.sum_univ_succ, embedVal]
+  · rw [if_neg]
+    · simp [Fin.sum_univ_succ, embedVal]
+    · intro h
+      have := congrArg Fin.val h
+      simp at this
+  · simp [Fin.sum_univ_succ, embedVal]
+  · rw [Fin.sum_univ_succ]
+    simp only [embedVal, Fin.cons_zero, Fin.cons_succ, zero_mul, zero_add]
     have h := congr_fun (congr_fun hB i) j
-    simp only [Matrix.mul_apply, Matrix.transpose_apply, Matrix.one_apply] at h
-    simp_rw [Fin.succ_inj]
-    exact h
+    simpa [Matrix.mul_apply, Matrix.transpose_apply, Matrix.one_apply, Fin.succ_inj] using h
 
 private theorem embedVal_submatrix {m : ℕ} (B : Matrix (Fin m) (Fin m) ℂ) :
     (embedVal B).submatrix (Fin.succAbove 0) (Fin.succAbove 0) = B := by

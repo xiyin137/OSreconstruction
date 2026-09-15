@@ -66,9 +66,10 @@ theorem differentiableOn_complex_arctan_unitBall :
       (differentiableAt_const 1).add
         (differentiableAt_id.mul
           (differentiableAt_const I))
-    simpa only [Function.comp_apply] using
-      DifferentiableAt.comp z
-        (Complex.differentiableAt_log hplus_mem) hinner
+    change DifferentiableAt Complex
+      (Complex.log ∘ fun w : Complex => 1 + w * I) z
+    exact DifferentiableAt.comp z
+      (Complex.differentiableAt_log hplus_mem) hinner
   have hminus :
       DifferentiableAt Complex
         (fun w : Complex => Complex.log (1 - w * I)) z := by
@@ -78,9 +79,10 @@ theorem differentiableOn_complex_arctan_unitBall :
       (differentiableAt_const 1).sub
         (differentiableAt_id.mul
           (differentiableAt_const I))
-    simpa only [Function.comp_apply] using
-      DifferentiableAt.comp z
-        (Complex.differentiableAt_log hminus_mem) hinner
+    change DifferentiableAt Complex
+      (Complex.log ∘ fun w : Complex => 1 - w * I) z
+    exact DifferentiableAt.comp z
+      (Complex.differentiableAt_log hminus_mem) hinner
   have hA : DifferentiableAt Complex A z := by
     dsimp [A]
     exact
@@ -180,16 +182,18 @@ theorem differentiableOn_stripCompactificationLocalInverse
           Complex.arctan
             ((-I) * (z / (P.radius : Complex))))
         (Metric.ball (0 : Complex) P.radius) w := by
-    simpa only [Function.comp_apply] using
-      DifferentiableWithinAt.comp w harctan hinner
-        (fun _ hz => by
-          rw [Metric.mem_ball, dist_zero_right, norm_mul,
-            norm_neg, Complex.norm_I, one_mul, norm_div,
-            Complex.norm_real, Real.norm_eq_abs,
-            abs_of_pos P.radius_pos]
-          exact
-            (div_lt_one P.radius_pos).2
-              (by simpa [Metric.mem_ball, dist_zero_right] using hz))
+    change DifferentiableWithinAt Complex
+      (Complex.arctan ∘ fun z : Complex => (-I) * (z / (P.radius : Complex)))
+      (Metric.ball (0 : Complex) P.radius) w
+    exact DifferentiableWithinAt.comp w harctan hinner
+      (fun _ hz => by
+        rw [Metric.mem_ball, dist_zero_right, norm_mul,
+          norm_neg, Complex.norm_I, one_mul, norm_div,
+          Complex.norm_real, Real.norm_eq_abs,
+          abs_of_pos P.radius_pos]
+        exact
+          (div_lt_one P.radius_pos).2
+            (by simpa [Metric.mem_ball, dist_zero_right] using hz))
   change
     DifferentiableWithinAt Complex
       (fun z : Complex =>

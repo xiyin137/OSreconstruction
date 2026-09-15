@@ -142,8 +142,11 @@ theorem
     have hshift :
         x - center ∈ Function.support
           (osiiStep4ComplexBlockRadialGRealSlice q rho imag) := by
-      simpa [Function.mem_support,
-        osiiStep4CenteredComplexBlockRadialGRealSchwartz_apply] using hx
+      rw [Function.mem_support] at hx ⊢
+      intro hzero
+      apply hx
+      rw [osiiStep4CenteredComplexBlockRadialGRealSchwartz_apply]
+      exact_mod_cast hzero
     have hball :=
       osiiStep4ComplexBlockRadialGRealSlice_support_subset_closedBall
         q hrho imag hshift
@@ -227,7 +230,14 @@ private theorem reducedTestLift_tsupport_basepoint_mem_positiveSource
   have hprod :
       x ∈ tsupport (fun u : NPointDomain d (m + 1) =>
         chi (u 0) * phi (BHW.reducedDiffMapReal (m + 1) d u)) := by
-    simpa [BHW.reducedTestLift_apply] using hx
+    have hfun :
+        ((BHW.reducedTestLift m d chi phi : SchwartzNPoint d (m + 1)) :
+          NPointDomain d (m + 1) → Complex) =
+          fun u => chi (u 0) * phi (BHW.reducedDiffMapReal (m + 1) d u) := by
+      funext u
+      exact BHW.reducedTestLift_apply m d chi phi u
+    rw [← hfun]
+    exact hx
   have hheadPre :
       x ∈ tsupport (fun u : NPointDomain d (m + 1) => chi (u 0)) :=
     tsupport_mul_subset_left hprod

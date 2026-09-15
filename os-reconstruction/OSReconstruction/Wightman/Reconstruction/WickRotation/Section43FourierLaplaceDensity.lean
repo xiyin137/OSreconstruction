@@ -72,28 +72,21 @@ theorem section43OneSidedLaplaceRawDerivCandidate_integrable
         (fun t : ℝ =>
           ((-t : ℂ) ^ r *
             Complex.exp (-(t : ℂ) * (σ : ℂ))) * g.f t) := by
-    have h :
-        Continuous
-          (((fun t : ℝ => (-t : ℂ) ^ r) *
-              (fun t : ℝ =>
-                Complex.exp (-(t : ℂ) * (σ : ℂ)))) *
-            (g.f : ℝ → ℂ)) := by
-      exact (((Complex.continuous_ofReal.comp continuous_id).neg.pow r).mul
-        (Complex.continuous_exp.comp
-          ((Complex.continuous_ofReal.comp continuous_id).neg.mul
-            (continuous_const : Continuous (fun _ : ℝ => (σ : ℂ)))))).mul
-        g.f.continuous
-    simpa [Pi.mul_apply] using h
+    continuity
   have hcomp :
       HasCompactSupport
         (fun t : ℝ =>
           ((-t : ℂ) ^ r *
             Complex.exp (-(t : ℂ) * (σ : ℂ))) * g.f t) := by
-    simpa [Pi.mul_apply] using
-      (HasCompactSupport.mul_left
-        (f := fun t : ℝ =>
-          (-t : ℂ) ^ r * Complex.exp (-(t : ℂ) * (σ : ℂ)))
-        (f' := (g.f : ℝ → ℂ)) g.compact)
+    rw [HasCompactSupport]
+    exact g.compact.of_isClosed_subset
+      (isClosed_tsupport _)
+      (by
+        simpa only [Pi.mul_apply] using
+          (tsupport_mul_subset_right
+            (f := fun t : ℝ =>
+              (-t : ℂ) ^ r * Complex.exp (-(t : ℂ) * (σ : ℂ)))
+            (g := (g.f : ℝ → ℂ))))
   exact hcont.integrable_of_hasCompactSupport hcomp
 
 theorem section43OneSidedLaplaceRawDerivKernel_hasDerivAt
@@ -111,16 +104,11 @@ theorem section43OneSidedLaplaceRawDerivKernel_hasDerivAt
         (-(t : ℂ) * Complex.exp (-(t : ℂ) * (σ : ℂ))) σ := by
     have hlin :
         HasDerivAt (fun σ : ℝ => -(t : ℂ) * (σ : ℂ)) (-(t : ℂ)) σ := by
-      have hmul :
-          HasDerivAt (fun σ : ℝ => (t : ℂ) * (σ : ℂ)) (t : ℂ) σ := by
-        simpa using
-          ((hasDerivAt_const (x := σ) (c := (t : ℂ))).mul
-            (Complex.ofRealCLM.hasDerivAt (x := σ)))
-      simpa [neg_mul] using hmul.neg
+      simpa [neg_mul] using
+        (Complex.ofRealCLM.hasDerivAt (x := σ)).const_mul (-(t : ℂ))
     simpa [mul_comm, mul_left_comm, mul_assoc] using hlin.cexp
   have h := (hexp.const_mul ((-t : ℂ) ^ r)).mul_const (g.f t)
-  convert h using 1
-  ring
+  simpa only [pow_succ, mul_assoc] using h
 
 theorem Section43CompactPositiveTimeSource1D.tsupport_subset_Ici
     (g : Section43CompactPositiveTimeSource1D) :
@@ -866,7 +854,9 @@ theorem section43OneSidedLaplaceSchwartzRepresentative1D_iteratedDeriv_formula
       ContDiffAt ℝ n (fun σ : ℝ => (SCV.smoothCutoff σ : ℂ)) σ := by
     have hχ_smooth :
         ContDiff ℝ (↑(⊤ : ℕ∞)) (fun σ : ℝ => (SCV.smoothCutoff σ : ℂ)) := by
-      simpa using (Complex.ofRealCLM.contDiff.comp SCV.smoothCutoff_contDiff)
+      change ContDiff ℝ (↑(⊤ : ℕ∞))
+        (Complex.ofRealCLM ∘ SCV.smoothCutoff)
+      exact Complex.ofRealCLM.contDiff.comp SCV.smoothCutoff_contDiff
     exact (hχ_smooth.contDiffAt.of_le
       (show (n : WithTop ℕ∞) ≤ (↑(⊤ : ℕ∞) : WithTop ℕ∞) by
         exact mod_cast le_top))
@@ -888,7 +878,10 @@ theorem section43OneSidedLaplaceSchwartzRepresentative1D_iteratedDeriv_formula
           n.choose i *
             iteratedDeriv i (fun σ : ℝ => (SCV.smoothCutoff σ : ℂ)) σ *
               iteratedDeriv (n - i) (section43OneSidedLaplaceRaw g) σ := by
-    simpa only [Pi.mul_apply] using hmul
+    change iteratedDeriv n
+        ((fun σ : ℝ => (SCV.smoothCutoff σ : ℂ)) *
+          section43OneSidedLaplaceRaw g) σ = _
+    exact hmul
   rw [hmul']
   refine Finset.sum_congr rfl ?_
   intro i hi
@@ -909,7 +902,9 @@ theorem section43ImagAxisPsiKernel_iteratedDeriv_mul_source
         ContDiffAt ℝ n (fun σ : ℝ => (SCV.smoothCutoff σ : ℂ)) σ := by
       have hχ_smooth :
           ContDiff ℝ (↑(⊤ : ℕ∞)) (fun σ : ℝ => (SCV.smoothCutoff σ : ℂ)) := by
-        simpa using (Complex.ofRealCLM.contDiff.comp SCV.smoothCutoff_contDiff)
+        change ContDiff ℝ (↑(⊤ : ℕ∞))
+          (Complex.ofRealCLM ∘ SCV.smoothCutoff)
+        exact Complex.ofRealCLM.contDiff.comp SCV.smoothCutoff_contDiff
       exact (hχ_smooth.contDiffAt.of_le
         (show (n : WithTop ℕ∞) ≤ (↑(⊤ : ℕ∞) : WithTop ℕ∞) by
           exact mod_cast le_top))
@@ -960,7 +955,10 @@ theorem section43ImagAxisPsiKernel_iteratedDeriv_mul_source
               iteratedDeriv i (fun σ : ℝ => (SCV.smoothCutoff σ : ℂ)) σ *
                 iteratedDeriv (n - i)
                   (fun σ : ℝ => Complex.exp (-(t : ℂ) * (σ : ℂ))) σ := by
-      simpa only [Pi.mul_apply] using hmul
+      change iteratedDeriv n
+          ((fun σ : ℝ => (SCV.smoothCutoff σ : ℂ)) *
+            fun σ : ℝ => Complex.exp (-(t : ℂ) * (σ : ℂ))) σ = _
+      exact hmul
     rw [hmul']
     rw [Finset.sum_mul]
     refine Finset.sum_congr rfl ?_
@@ -1181,7 +1179,8 @@ theorem section43SchwartzFunctional_bound_by_probeNorm
               refine Finset.sum_le_sum ?_
               intro a ha
               let p : ↑s.attach := ⟨⟨a, ha⟩, by simp⟩
-              simpa [schwartzSeminormFamily, p] using
+              change SchwartzMap.seminorm ℝ a.1 a.2 f ≤ _
+              simpa [p] using
                 section43SchwartzSeminorm_le_probe_norm s p f
       _ = s.card *
             ‖(section43ProbeCLM s f : (↑s.attach → (ℝ →ᵇ ℂ)))‖ := by
@@ -1268,9 +1267,13 @@ private theorem section43RangeLiftLinear_bound
         LinearMap.ker T.toLinearMap) :
     ∀ y, ‖section43RangeLiftLinear T s hker y‖ ≤ (C : ℝ) * ‖y‖ := by
   intro y
-  rcases y with ⟨y, hy⟩
-  rcases hy with ⟨f, rfl⟩
-  simpa [section43RangeLiftLinear_apply] using hbound f
+  obtain ⟨f, hf⟩ := y.property
+  have hy : y =
+      ⟨section43ProbeCLM s f, LinearMap.mem_range_self _ f⟩ :=
+    Subtype.ext hf.symm
+  rw [hy]
+  rw [section43RangeLiftLinear_apply]
+  exact hbound f
 
 /-- Any continuous Schwartz functional factors through finitely many weighted
 derivative probes landing in a Banach finite product.  This is the finite

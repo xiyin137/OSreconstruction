@@ -373,7 +373,10 @@ theorem exists_rank_smul_toStrict
       have htail :=
         OSIIStrictGeneratedLogarithmicArgumentAtRank.mixedTailMemScalar
           k N (r • x) (hrank r hr0 hr1)
-      simpa [Fin.tail, Pi.smul_apply] using htail
+      change
+        OSIIStrictGeneratedLogarithmicArgumentAtRank
+          (rank + 1) .scalar k N (Fin.tail (r • x))
+      exact htail
 
 /-- The unranked strict grammar is the union of its finite analytic-rank
 strata. -/
@@ -611,7 +614,7 @@ private theorem coordinatewise_closed_aux
         · have hk1 : 1 <= k + 1 := by omega
           have hx0 := mixed_head_eq_zero hk1 hx
           simpa [x'] using congrArg abs hx0.symm
-        · simpa [x'] using hy a
+        · exact hy a
       have htail :=
         mixedTailMemScalar k N x' hx'
       simpa [x'] using htail
@@ -774,7 +777,7 @@ theorem exists_rank_strict_recursiveAngle_mixedTail_box_subset
       OSIIStrictGeneratedLogarithmicArgumentAtRank
         rank .mixed (k + 1) N (r • corner) := by
     have hreindexed := hscaledRaw.reindex hcard
-    simpa [corner, Pi.smul_apply] using hreindexed
+    exact hreindexed
   apply mixedHyperrectangle hscaledCorner
     (osiiMixedArgumentOfTail (by omega) tail)
   apply abs_osiiMixedArgumentOfTail_le (by omega)

@@ -169,11 +169,11 @@ theorem localHolomorphicFamily_pairingCLM_of_fixedWindow
     obtain ⟨sPE, CPE, hCPE, hPE⟩ :=
       schwartzPartialEval₁CLM_compactSeminormBound (m := m)
         Rcut hRcut_nonneg sL
+    have hχ_cont : Continuous (fun z : X => ‖χU z‖) := by
+      fun_prop
     obtain ⟨M, hM⟩ :=
       hs_compact.exists_bound_of_continuousOn
-        (f := fun z : X => ‖χU z‖)
-        (by simpa [sball, X] using
-          ((continuous_norm.comp χU.continuous).continuousOn))
+        (f := fun z : X => ‖χU z‖) hχ_cont.continuousOn
     let Mχ : ℝ := max M 0
     let Cpoint : ℝ := Mχ * CL * CPE
     let Cfinal : ℝ := Cpoint * (volume sball).toReal
@@ -226,7 +226,8 @@ theorem localHolomorphicFamily_pairingCLM_of_fixedWindow
       calc
         ‖A F‖ ≤
             (Cpoint * sPE.sup pMixed F) * (volume sball).toReal := by
-          simpa [A, Cpoint] using
+          rw [← Measure.real_def]
+          simpa only [A] using
             (MeasureTheory.norm_setIntegral_le_of_norm_le_const
               (μ := volume) hs_fin hpoint_bound)
         _ = Cfinal * sPE.sup pMixed F := by ring

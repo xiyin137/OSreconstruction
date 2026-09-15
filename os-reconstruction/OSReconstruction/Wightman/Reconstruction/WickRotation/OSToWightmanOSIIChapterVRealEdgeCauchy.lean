@@ -86,7 +86,7 @@ theorem iteratedFDeriv_eq_realEdge_iteratedFDeriv
         (contDiffAt_const.add contDiffAt_id :
           ContDiffAt ℂ N (fun w : Fin m → ℂ => center + w) z)
     have hcomp : ContDiffAt ℂ N shifted z := by
-      simpa [shifted] using houter.comp z hinner
+      simpa only [shifted, Function.comp_def] using houter.comp z hinner
     exact hcomp.contDiffWithinAt
   have hshifted_contDiffOn_real :
       ContDiffOn ℝ N shifted V :=

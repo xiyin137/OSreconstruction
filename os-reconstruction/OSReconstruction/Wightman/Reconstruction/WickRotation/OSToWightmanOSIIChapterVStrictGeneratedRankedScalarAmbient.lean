@@ -126,6 +126,9 @@ theorem nonempty_rankSuccessorScalarLogarithmicTargetAmbientChartData
         (D.next.stage k) z) := by
   by_cases hz0 : z = 0
   · subst z
+    rw [show (0 : Fin k -> Complex) = (fun _ => 0) by
+      funext j
+      simp]
     simpa using
       (nonempty_rankSuccessorScalarTargetAmbientChartData
         D hz)
@@ -229,7 +232,11 @@ namespace RankSuccessorScalarLogarithmicTargetIndex
 def zero (k N rank : Nat) :
     RankSuccessorScalarLogarithmicTargetIndex k N rank :=
   ⟨0, by
-    simpa using
+    rw [show (fun j => ((0 : Fin k -> Complex) j).im) =
+        (0 : Fin k -> Real) by
+      funext j
+      simp]
+    exact
       (OSIIStrictGeneratedLogarithmicArgumentAtRank.scalar_zero_mem
         (rank + 1) k N)⟩
 

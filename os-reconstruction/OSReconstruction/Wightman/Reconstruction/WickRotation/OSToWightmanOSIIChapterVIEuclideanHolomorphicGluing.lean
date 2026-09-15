@@ -199,9 +199,12 @@ theorem euclideanHolomorphicKernel_wick
     (Rstage : OSIIReducedForwardTubeTimeSliceRealizationData (A := stage) H)
     (x : NPointDomain d (k + 1)) :
     H.euclideanHolomorphicKernel (fun j => wickRotatePoint (x j)) = H.euclideanDensity x := by
-  simpa only [euclideanHolomorphicKernel, osiiAxisPairWickBlockCLE_symm_apply,
-    osiiAxisPairInverseWickBlock_wickRotatePoint] using
-      H.euclideanComplexKernel_realToComplex Hstage Rstage x
+  rw [euclideanHolomorphicKernel]
+  convert H.euclideanComplexKernel_realToComplex Hstage Rstage x using 1
+  congr 1
+  funext j ν
+  simp only [osiiAxisPairWickBlockCLE_symm_apply,
+    osiiAxisPairInverseWickBlock_wickRotatePoint, SCV.realToComplexProduct]
 
 theorem euclideanHolomorphicKernel_perm
     (H : OSIIReducedForwardTubeBoundaryData W)

@@ -133,9 +133,15 @@ noncomputable def
             (d := d) i)
       refine ⟨B, hB, p, ?_⟩
       intro scale z hz mode
+      have hcomplexify (f : SchwartzMap (Fin d → ℝ) ℝ) :
+          OSIIAxisPairSourcewiseFlatCrossData.GaussianCMMFamily.complexifyRealSchwartz f =
+            SCV.schwartzOfRealCLM f := rfl
       simpa [
         GeneratorHermiteHilbertFieldFamilyData.leftHermiteIndices,
-        leftSpatialHermiteBlock, spatialHermiteFactor, i] using
+        leftSpatialHermiteBlock, spatialHermiteFactor,
+        realSpatialHermiteFactor,
+        hcomplexify,
+        i] using
         hbound scale z hz mode
     source := fun scale mode =>
       localPositiveTimeParameterTranslate
@@ -155,12 +161,13 @@ noncomputable def
     realToComplex_mem_domain := by
       intro x hx
       apply D.initialGramPolydisc_subset_spatialLinearDomain
-      simpa [SCV.realToComplex] using hx.2
+      change SCV.realToComplex x ∈ _
+      exact hx.2
     field_realEdge := by
       intro scale mode
       simpa only [
         rootedLeftBlockAnchoredSourceCLM_source,
-        rootedLeftBlockAnchoredSourceCLM_source_translated] using
+        rootedLeftBlockAnchoredSourceCLM_source_translated] using!
         D.generatedSpatialField_realEdge
           (A.rootedLeftBlockAnchoredSourceCLM R i)
           scale (leftSpatialHermiteBlock d i mode) }
@@ -238,7 +245,7 @@ noncomputable def
         mem_of_mem_nhds (D.left i).realRegion_nhds
       simpa [
         RootedA0BlockContinuousTranslationData.leftSpatialHermiteGeneratorField]
-        using
+        using!
           (D.left i).realEdge
             (D.leftCofinalIndex i scale)
             (ReflectedA0BlockConvergenceData.leftHeadSpatialHermiteBlock
@@ -317,7 +324,7 @@ noncomputable def
         mem_of_mem_nhds (D.right i).realRegion_nhds
       simpa [
         RootedA0BlockContinuousTranslationData.rightSpatialHermiteGeneratorField]
-        using
+        using!
           (D.right i).realEdge
             (D.rightCofinalIndex i scale)
             (ReflectedA0BlockConvergenceData.rightHeadSpatialHermiteBlock

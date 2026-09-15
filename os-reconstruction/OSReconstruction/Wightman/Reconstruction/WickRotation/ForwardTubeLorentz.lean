@@ -549,11 +549,10 @@ theorem forwardConeAbs_salient (d n : ℕ) [NeZero d] :
     intro j
     have hδ_cont : Continuous (fun w : Fin n → Fin (d + 1) → ℝ =>
         w j 0 - if h : j.val = 0 then 0 else w (⟨j.val - 1, by omega⟩ : Fin n) 0) := by
-      apply Continuous.sub ((continuous_apply (0 : Fin (d + 1))).comp (continuous_apply j))
       split_ifs with h
-      · exact continuous_const
-      · exact (continuous_apply (0 : Fin (d + 1))).comp
-          (continuous_apply (⟨j.val - 1, by omega⟩ : Fin n))
+      · exact (continuous_apply_apply j 0).sub continuous_const
+      · exact (continuous_apply_apply j 0).sub
+          (continuous_apply_apply (⟨j.val - 1, by omega⟩ : Fin n) 0)
     have hprev_eq : ∀ (w : Fin n → Fin (d + 1) → ℝ) (ν : Fin (d + 1)),
         (if h : j.val = 0 then (0 : Fin (d + 1) → ℝ) else w (⟨j.val - 1, by omega⟩ : Fin n)) ν =
         (if h : j.val = 0 then 0 else w (⟨j.val - 1, by omega⟩ : Fin n) ν) := by
@@ -1238,7 +1237,8 @@ theorem ae_euclidean_points_in_translatedPET {d n : ℕ} [NeZero d] :
     ∀ᵐ (x : NPointDomain d n) ∂MeasureTheory.volume,
       (fun k => wickRotatePoint (x k)) ∈ TranslatedPET d n := by
   rw [Filter.Eventually, MeasureTheory.mem_ae_iff]
-  convert wickRotation_in_translatedPET_null (d := d) (n := n) using 1
+  simpa only [Set.compl_setOf] using
+    wickRotation_in_translatedPET_null (d := d) (n := n)
 
 -- `wickRotation_not_in_PET_null` and `ae_euclidean_points_in_permutedTube`
 -- were DELETED because the statements are FALSE for n ≥ d+2 (see W11Counterexample.lean).

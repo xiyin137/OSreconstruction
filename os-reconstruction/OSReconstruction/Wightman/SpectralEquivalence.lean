@@ -155,8 +155,8 @@ private lemma integral_normedUnitBumpSchwartzLocal :
     have hf_compact :
         HasCompactSupport (fun y : ℝ => ((b.normed MeasureTheory.volume y : ℝ) : ℂ)) :=
       b.hasCompactSupport_normed.comp_left Complex.ofReal_zero
-    simpa [normedUnitBumpSchwartzLocal, b] using
-      (HasCompactSupport.toSchwartzMap_toFun hf_compact hf_smooth x)
+    change (hf_compact.toSchwartzMap hf_smooth) x = _
+    exact HasCompactSupport.toSchwartzMap_toFun hf_compact hf_smooth x
   rw [happly, integral_complex_ofReal]
   exact congrArg (fun r : ℝ => (r : ℂ)) (b.integral_normed (μ := MeasureTheory.volume))
 
@@ -180,7 +180,8 @@ private lemma integral_normedUnitBumpSchwartzPi :
           (fun x : Fin 0 → ℝ => normedUnitBumpSchwartzPi 0 x) =
             fun _ : Fin 0 → ℝ => (1 : ℂ) := by
         funext x
-        simp [normedUnitBumpSchwartzPi]
+        rw [normedUnitBumpSchwartzPi]
+        rfl
       rw [happly]
       have hvol :
           (MeasureTheory.volume : MeasureTheory.Measure (Fin 0 → ℝ)) =
@@ -195,9 +196,9 @@ private lemma integral_normedUnitBumpSchwartzPi :
         ∫ x : Fin (k + 1) → ℝ, normedUnitBumpSchwartzPi (k + 1) x
             =
           ∫ z : ℝ × (Fin k → ℝ), normedUnitBumpSchwartzPi (k + 1) (Fin.cons z.1 z.2) := by
-              simpa using
-                (OSReconstruction.integral_finSucc_cons_eq
-                  (f := fun x : Fin (k + 1) → ℝ => normedUnitBumpSchwartzPi (k + 1) x)).symm
+              rw [MeasureTheory.volume_pi, MeasureTheory.Measure.volume_eq_prod]
+              exact (OSReconstruction.integral_finSucc_cons_eq
+                (f := fun x : Fin (k + 1) → ℝ => normedUnitBumpSchwartzPi (k + 1) x)).symm
         _ = ∫ z : ℝ × (Fin k → ℝ),
               normedUnitBumpSchwartzLocal z.1 * normedUnitBumpSchwartzPi k z.2 := by
               apply MeasureTheory.integral_congr_ae
@@ -205,10 +206,10 @@ private lemma integral_normedUnitBumpSchwartzPi :
               simp [normedUnitBumpSchwartzPi, SchwartzMap.prependField_apply]
         _ = (∫ x : ℝ, normedUnitBumpSchwartzLocal x) *
               (∫ y : Fin k → ℝ, normedUnitBumpSchwartzPi k y) := by
-              simpa using
-                (MeasureTheory.integral_prod_mul
-                  (f := fun x : ℝ => normedUnitBumpSchwartzLocal x)
-                  (g := fun y : Fin k → ℝ => normedUnitBumpSchwartzPi k y))
+              rw [MeasureTheory.volume_pi, MeasureTheory.Measure.volume_eq_prod]
+              exact MeasureTheory.integral_prod_mul
+                (f := fun x : ℝ => normedUnitBumpSchwartzLocal x)
+                (g := fun y : Fin k → ℝ => normedUnitBumpSchwartzPi k y)
         _ = 1 := by
               rw [integral_normedUnitBumpSchwartzLocal, integral_normedUnitBumpSchwartzPi k]
               ring
@@ -237,7 +238,6 @@ private noncomputable def basepointDiffCLE (d : ℕ) (n : ℕ) :
       | zero => simp [diffVarSection_zero]
       | succ j ih =>
           have hsucc := diffVarSection_succ (d := d) n (fun l ν => x l.succ ν - x l.castSucc ν) j μ
-          simp only [] at hsucc
           linarith
   right_inv := by
     intro y; ext k μ
@@ -260,8 +260,7 @@ private noncomputable def basepointDiffCLE (d : ℕ) (n : ℕ) :
       exact continuous_apply 0
     · intro i; simp only [Fin.cons_succ]
       exact continuous_pi fun μ =>
-        ((continuous_apply μ).comp (continuous_apply i.succ)).sub
-          ((continuous_apply μ).comp (continuous_apply i.castSucc))
+        (continuous_apply_apply i.succ μ).sub (continuous_apply_apply i.castSucc μ)
   continuous_invFun := by
     apply continuous_pi; intro k; apply continuous_pi; intro μ
     apply Continuous.add
@@ -381,7 +380,6 @@ private noncomputable def basepointDiffPairCLE (d : ℕ) (n : ℕ) :
           have hsucc :=
             diffVarSection_succ (d := d) n
               (fun l ν => x l.succ ν - x l.castSucc ν) j μ
-          simp only [] at hsucc
           linarith
   right_inv := by
     intro y
@@ -418,8 +416,7 @@ private noncomputable def basepointDiffPairCLE (d : ℕ) (n : ℕ) :
       intro k
       apply continuous_pi
       intro μ
-      exact ((continuous_apply μ).comp (continuous_apply k.succ)).sub
-        ((continuous_apply μ).comp (continuous_apply k.castSucc))
+      exact (continuous_apply_apply k.succ μ).sub (continuous_apply_apply k.castSucc μ)
   continuous_invFun := by
     apply continuous_pi
     intro k
@@ -1111,10 +1108,12 @@ private lemma integrateHeadBlock_flattenBasepointDiff_aux_m
               basepointAssemble d (m + 1) hm' (Fin.cons t aHead)
                 (splitFirst (d + 1 - (m + 1)) (n * (d + 1)) u) := by
         intro t aHead
-        simpa using
-          (basepointAssemble_cons (d := d) (m := m) (hm := hm')
-            (aHead := aHead)
-            (aTail := splitFirst (d + 1 - (m + 1)) (n * (d + 1)) u) t)
+        change basepointAssemble d m hmle aHead
+            (castFinCLE hdiff.symm
+              (Fin.cons t (splitFirst (d + 1 - (m + 1)) (n * (d + 1)) u))) = _
+        exact basepointAssemble_cons (d := d) (m := m) (hm := hm')
+          (aHead := aHead)
+          (aTail := splitFirst (d + 1 - (m + 1)) (n * (d + 1)) u) t
       simp_rw [happend]
       have hFubini :
           (∫ z : ℝ × (Fin m → ℝ),
@@ -1134,15 +1133,15 @@ private lemma integrateHeadBlock_flattenBasepointDiff_aux_m
               diffVarSection d n
                 ((flattenDiffCLE d n).symm
                   (splitLast (d + 1 - (m + 1)) (n * (d + 1)) u)) k μ) := by
-        simpa using
-          (OSReconstruction.integral_finSucc_cons_eq
-            (f := fun a : Fin (m + 1) → ℝ =>
-              f (fun k μ =>
-                (basepointAssemble d (m + 1) hm' a
-                  (splitFirst (d + 1 - (m + 1)) (n * (d + 1)) u)) μ +
-                diffVarSection d n
-                  ((flattenDiffCLE d n).symm
-                    (splitLast (d + 1 - (m + 1)) (n * (d + 1)) u)) k μ)))
+        rw [MeasureTheory.volume_pi]
+        exact OSReconstruction.integral_finSucc_cons_eq
+          (f := fun a : Fin (m + 1) → ℝ =>
+            f (fun k μ =>
+              (basepointAssemble d (m + 1) hm' a
+                (splitFirst (d + 1 - (m + 1)) (n * (d + 1)) u)) μ +
+              diffVarSection d n
+                ((flattenDiffCLE d n).symm
+                  (splitLast (d + 1 - (m + 1)) (n * (d + 1)) u)) k μ))
       -- Use Fubini: the integrand (as a function of z = (t, aHead)) is integrable because
       -- it equals a Schwartz function composed with an affine transformation, hence rapidly
       -- decaying in both variables. Apply `MeasureTheory.integral_prod` + `hFubini`.
@@ -1320,7 +1319,7 @@ private lemma integrateHeadBlock_flattenBasepointDiff_aux_m
               ((MeasureTheory.volume : MeasureTheory.Measure ℝ).prod
                 (MeasureTheory.volume :
                   MeasureTheory.Measure (Fin m → ℝ))) := by
-          simpa [e] using
+          simpa only [e, MeasureTheory.Measure.volume_eq_prod ℝ (Fin m → ℝ)] using
             (MeasureTheory.volume_preserving_piFinSuccAbove
               (fun _ : Fin (m + 1) => ℝ) 0)
         have hpair_int :
@@ -1332,7 +1331,10 @@ private lemma integrateHeadBlock_flattenBasepointDiff_aux_m
           have hiff :=
             hmp.symm.integrable_comp_emb e.symm.measurableEmbedding
               (g := fun a : Fin (m + 1) → ℝ => G a)
-          simpa [e, MeasurableEquiv.piFinSuccAbove_symm_apply] using hiff.2 hG_int
+          refine (hiff.2 hG_int).congr ?_
+          filter_upwards with p
+          simp [Function.comp_apply, e, MeasurableEquiv.piFinSuccAbove_symm_apply,
+            Fin.insertNthEquiv, Fin.zero_succAbove]
         -- The target measure Measure.pi equals volume on Fin m → ℝ.
         have hint0 :
             MeasureTheory.Integrable
@@ -1497,8 +1499,11 @@ private lemma integrateHeadBlock_transport_eq_diffVarReduction
       (flattenBasepointDiffSchwartz d n f) =
     flattenSchwartzNPoint (d := d) (diffVarReduction d n f) := by
   ext u
-  simpa [diffVarReduction] using
-    integrateHeadBlock_flattenBasepointDiff_aux d n f u
+  rw [flattenSchwartzNPoint_apply]
+  change integrateHeadBlock (flattenBasepointDiffSchwartz d n f) u =
+    ∫ a : Fin (d + 1) → ℝ,
+      f (fun k μ => a μ + diffVarSection d n _ k μ)
+  convert integrateHeadBlock_flattenBasepointDiff_aux d n f u using 1 <;> rfl
 
 /-- The kernel theorem isolated in the blueprint: a diagonal-translation
 invariant tempered distribution vanishes on the kernel of
@@ -1541,8 +1546,9 @@ private lemma translationInvariant_vanishesOn_diffVarReduction_kernel
     simpa [T, transportedWHeadBlockCLM, unflattenBasepointDiffSchwartz] using hW0
   calc
     W f = T F := by
-      simp [T, F, transportedWHeadBlockCLM,
-        unflatten_flattenBasepointDiffSchwartz]
+      change W f = W (unflattenBasepointDiffSchwartz d n
+        (flattenBasepointDiffSchwartz d n f))
+      rw [unflatten_flattenBasepointDiffSchwartz]
     _ = T 0 := hmap
     _ = 0 := hzeroT
 
@@ -1602,5 +1608,3 @@ private noncomputable def schwartzConstOne (d : ℕ) [NeZero d] : SchwartzNPoint
 
 @[simp] private lemma schwartzConstOne_apply (d : ℕ) [NeZero d] (x : NPointSpacetime d 0) :
     schwartzConstOne d x = 1 := rfl
-
-

@@ -259,7 +259,12 @@ noncomputable def toContinuousTranslationFieldData
     have hzero_real :
         (0 : Fin (q + 1) → ℝ) ∈ D.gram.hilbert.realRegion :=
       mem_of_mem_nhds D.gram.hilbert.realRegion_nhds
-    simpa using D.gram.hilbert.realEdge (N, χ) 0 hzero_real
+    simpa only [show
+        (0 : Fin (q + 1) → ℂ) =
+          (fun a => ((((0 : Fin (q + 1) → ℝ) a) : ℝ) : ℂ)) by
+        ext
+        simp] using
+      D.gram.hilbert.realEdge (N, χ) 0 hzero_real
   realRegion :=
     D.gram.hilbert.realRegion ∩
       {x : Fin (q + 1) → ℝ |
@@ -372,12 +377,12 @@ noncomputable def toContinuousTranslationFieldData
   field_continuous := fun _ _ => continuousOn_const
   cauchy := by
     intro χ
-    simpa [OneParticleTranslatedMixedDeltaPredecessorData.field,
-      OneParticleTranslatedMixedDeltaPredecessorData.fieldVectorCLM_apply]
-      using
-        (D.toLocallyCompactTensorPairGramRepresentationData χ
-          ).toLocallyUniformPairwiseInnerLimitData
-          |>.toLocallyUniformCauchyData
+    convert
+      (D.toLocallyCompactTensorPairGramRepresentationData χ
+        ).toLocallyUniformPairwiseInnerLimitData
+        |>.toLocallyUniformCauchyData using 1 <;>
+      funext N z <;>
+      exact D.fieldVectorCLM_apply N χ
   zero_eq := by
     intro N χ
     rw [D.fieldVectorCLM_apply]

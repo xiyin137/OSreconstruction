@@ -103,7 +103,7 @@ noncomputable def rToESection43DualConeFLPackage_of_wightmanFunctions
       fourierLaplace := ?_ }
   intro z hz
   have hzFT : z ∈ ForwardTube d N := by
-    simpa [forwardTube_eq_imPreimage] using hz
+    simpa [TubeDomainSetPi, forwardTube_eq_imPreimage] using hz
   have hzPET : z ∈ PermutedExtendedTube d N :=
     (ForwardTube_subset_ComplexExtended d N |>.trans
       (ComplexExtended_subset_Permuted d N)) hzFT
@@ -152,7 +152,8 @@ theorem rToE_section43OS24Kernel_pairing_eq_forwardTubeLiftIntegral_succRight
   let N := n + (m + 1)
   let P := rToESection43DualConeFLPackage_of_wightmanFunctions (d := d) Wfn N
   let hSupp := rToESection43WightmanSupport_of_wightmanFunctions (d := d) Wfn
-  simpa [N, P, hSupp] using
+  simpa [N, P, hSupp, rToESection43DualConeFLPackage_of_wightmanFunctions,
+    rToESection43WightmanSupport_of_wightmanFunctions] using
     section43OS24Kernel_pairing_eq_forwardTubeLiftIntegral_succRight_of_FL
       (d := d) (n := n) (m := m)
       (A := F_ext_on_translatedPET_total Wfn)
@@ -164,7 +165,11 @@ theorem rToE_section43OS24Kernel_pairing_eq_forwardTubeLiftIntegral_succRight
       (hFL := P.fourierLaplace)
       (φ := φ) (ψ := ψ) (f := f) (g := g)
       hf_compact hg_compact hφ_rep hψ_rep ht
-      (by simpa [N, P, hSupp] using hSupp.support N)
+      (by
+        change HasFourierSupportIn
+          (section43WightmanSpectralRegion d N)
+          (rToEFullFrequencyDistribution Wfn N)
+        exact hSupp.support N)
 
 /-- R→E version of the shell-change identity used in the OS route.  On the
 support of the Euclidean tensor product, the forward-tube lift is tube-valued,
@@ -345,8 +350,14 @@ private theorem rToE_hasCompactSupport_flattenSchwartzNPoint {n : ℕ}
     HasCompactSupport
       ((flattenSchwartzNPoint (d := d) f :
         SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ) : (Fin (n * (d + 1)) → ℝ) → ℂ) := by
-  simpa [flattenSchwartzNPoint] using
-    hf.comp_homeomorph ((flattenCLEquivReal n (d + 1)).symm.toHomeomorph)
+  rw [show
+    ((flattenSchwartzNPoint (d := d) f :
+      SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ) : (Fin (n * (d + 1)) → ℝ) → ℂ) =
+      (f : NPointDomain d n → ℂ) ∘ (flattenCLEquivReal n (d + 1)).symm by
+        funext u
+        rw [flattenSchwartzNPoint_apply]
+        congr 1]
+  exact hf.comp_homeomorph ((flattenCLEquivReal n (d + 1)).symm.toHomeomorph)
 
 omit [NeZero d] in
 private theorem rToE_timeShiftSchwartzNPoint_eq_unflatten_translate {n : ℕ}
@@ -528,8 +539,9 @@ theorem compactOrderedSupport_constructSchwinger_cross_eq_wightman_frequency_pai
         (fun t : ℝ =>
           f.1.osConjTensorProduct (timeShiftSchwartzNPoint (d := d) t g.1))
         (nhds 0) (nhds (f.1.osConjTensorProduct g.1)) := by
-    simpa using
-      (SchwartzNPoint.osConjTensorProduct_continuous (d := d)).tendsto (f.1, g.1) |>.comp hpair
+    exact ((SchwartzNPoint.osConjTensorProduct_continuous (d := d)).tendsto
+      (f.1, g.1) |>.comp hpair).congr'
+        (Filter.Eventually.of_forall fun _ => rfl)
   have hZ : Filter.Tendsto Z (nhdsWithin 0 (Set.Ioi 0)) (nhds zbase) := by
     have hcoe_eq :
         (fun t : ℝ =>
@@ -1283,15 +1295,33 @@ noncomputable def rToESection43SpectralPairing
           (section43FrequencyRepresentativeInv d n Φ₁) =
         section43FrequencyProjection (d := d) n
           (section43FrequencyRepresentativeInv d n Φ₂) := by
-    simpa [section43FrequencyProjection,
-      section43FrequencyRepresentativeInv_right] using hΦq
+    change section43PositiveEnergyQuotientMap (d := d) n
+        (section43FrequencyRepresentative (d := d) n
+          (section43FrequencyRepresentativeInv d n Φ₁)) =
+      section43PositiveEnergyQuotientMap (d := d) n
+        (section43FrequencyRepresentative (d := d) n
+          (section43FrequencyRepresentativeInv d n Φ₂))
+    rw [section43FrequencyRepresentativeInv_right,
+      section43FrequencyRepresentativeInv_right]
+    change (Submodule.Quotient.mk Φ₁ : Section43PositiveEnergyComponent (d := d) n) =
+      Submodule.Quotient.mk Φ₂
+    exact hΦq
   have hΨproj :
       section43FrequencyProjection (d := d) m
           (section43FrequencyRepresentativeInv d m Ψ₁) =
         section43FrequencyProjection (d := d) m
           (section43FrequencyRepresentativeInv d m Ψ₂) := by
-    simpa [section43FrequencyProjection,
-      section43FrequencyRepresentativeInv_right] using hΨq
+    change section43PositiveEnergyQuotientMap (d := d) m
+        (section43FrequencyRepresentative (d := d) m
+          (section43FrequencyRepresentativeInv d m Ψ₁)) =
+      section43PositiveEnergyQuotientMap (d := d) m
+        (section43FrequencyRepresentative (d := d) m
+          (section43FrequencyRepresentativeInv d m Ψ₂))
+    rw [section43FrequencyRepresentativeInv_right,
+      section43FrequencyRepresentativeInv_right]
+    change (Submodule.Quotient.mk Ψ₁ : Section43PositiveEnergyComponent (d := d) m) =
+      Submodule.Quotient.mk Ψ₂
+    exact hΨq
   exact
     rToE_W_conjTensorProduct_eq_of_section43FrequencyProjection_eq
       (d := d) Wfn hSupp
@@ -1397,7 +1427,7 @@ theorem continuous_rToESection43SpectralPairing
         Continuous
           (fun p : SchwartzNPoint d n × SchwartzNPoint d m =>
             (invn p.1).conjTensorProduct (invm p.2)) := by
-      simpa only [Function.comp] using htensor_comp
+      exact htensor_comp.congr fun _ => rfl
     exact (Wfn.tempered (n + m)).comp htensor
   refine (hqn.prodMap hqm).isQuotientMap.continuous_iff.2 ?_
   have hcomp :
@@ -1696,9 +1726,11 @@ theorem compactOrderedSupport_constructSchwinger_osInner_nonneg
     have hm_lt : m < F.bound + 1 := Finset.mem_range.mp hm
     have hm_le : m ≤ F.bound := Nat.lt_succ_iff.mp hm_lt
     have hf_mem : F.funcs n ∈ euclideanPositiveTimeSubmodule (d := d) n := by
-      simpa [euclideanPositiveTimeSubmodule] using hsupp n
+      change tsupport ⇑(F.funcs n) ⊆ OrderedPositiveTimeRegion d n
+      exact hsupp n
     have hg_mem : F.funcs m ∈ euclideanPositiveTimeSubmodule (d := d) m := by
-      simpa [euclideanPositiveTimeSubmodule] using hsupp m
+      change tsupport ⇑(F.funcs m) ⊆ OrderedPositiveTimeRegion d m
+      exact hsupp m
     let fn : euclideanPositiveTimeSubmodule (d := d) n := ⟨F.funcs n, hf_mem⟩
     let gm : euclideanPositiveTimeSubmodule (d := d) m := ⟨F.funcs m, hg_mem⟩
     have hzero :

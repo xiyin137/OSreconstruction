@@ -88,8 +88,10 @@ theorem continuous_osiiStep4MixedSpatialComplexRealPoint
       osiiStep4MixedSpatialRealPoint d k tau x q) :=
     (continuous_apply q).comp
       (continuous_osiiStep4MixedSpatialRealPoint d k tau)
-  simpa [osiiStep4ComplexOfRealImag] using
-    (Complex.continuous_ofReal.comp hq)
+  convert Complex.continuous_ofReal.comp hq using 1 <;>
+    funext a <;>
+    apply Complex.ext <;>
+    simp [osiiStep4ComplexOfRealImag, Complex.ofReal_def]
 
 /-- The complex real embedding of a fixed-time mixed point preserves spatial
 distance exactly. -/

@@ -66,7 +66,9 @@ theorem exists_polynomialGrowth_integral_schwartz_bound
     have hsch :
         (1 + ‖x‖) ^ (N + n) * ‖phi x‖ ≤
           2 ^ (N + n) * sem := by
-      simpa [s, sem] using
+      have hfamily : schwartzSeminormFamily ℂ (Fin m → ℝ) ℂ =
+          (fun index => SchwartzMap.seminorm ℂ index.1 index.2) := rfl
+      simpa only [s, sem, hfamily, norm_iteratedFDeriv_zero] using
         (SchwartzMap.one_add_le_sup_seminorm_apply
           (𝕜 := ℂ) (m := (N + n, 0)) (k := N + n) (n := 0)
           le_rfl le_rfl phi x)

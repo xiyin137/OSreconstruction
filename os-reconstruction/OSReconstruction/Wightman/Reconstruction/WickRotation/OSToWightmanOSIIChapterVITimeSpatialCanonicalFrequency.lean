@@ -48,11 +48,14 @@ private theorem osiiFlatProductSplitMeasurableEquiv_measurePreserving
       volume
       ((volume : Measure (Fin a -> Real)).prod
         (volume : Measure (Fin b -> Real))) := by
-    simpa using
-      (MeasureTheory.volume_measurePreserving_sumPiEquivProdPi
-        (fun _ : Fin a ⊕ Fin b => Real))
-  simpa [osiiFlatProductSplitMeasurableEquiv, e1] using
-    he2.comp (he1.symm e1)
+    have h := MeasureTheory.volume_measurePreserving_sumPiEquivProdPi
+      (fun _ : Fin a ⊕ Fin b => Real)
+    rw [Measure.volume_eq_prod] at h
+    exact h
+  refine (he2.comp (he1.symm e1)).congr
+    (osiiFlatProductSplitMeasurableEquiv a b).measurable ?_
+  filter_upwards with x
+  rfl
 
 private theorem osiiFlatProductSplitMeasurableEquiv_fst_eq_splitFirst
     (a b : Nat) (x : Fin (a + b) -> Real) :
@@ -160,6 +163,8 @@ theorem physicsFourierFlatCLM_tensorProduct_apply
         (∫ y : Fin b -> Real,
           Complex.exp (Complex.I * ∑ j,
             (y j : Complex) * (xiR j : Complex)) * G y) := by
+          rw [Measure.volume_eq_prod
+            (Fin a -> Real) (Fin b -> Real)]
           simpa [mul_assoc] using
             (MeasureTheory.integral_prod_mul
               (μ := (volume : Measure (Fin a -> Real)))

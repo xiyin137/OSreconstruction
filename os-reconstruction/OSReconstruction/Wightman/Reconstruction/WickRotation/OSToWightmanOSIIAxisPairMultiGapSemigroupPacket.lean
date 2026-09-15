@@ -407,7 +407,7 @@ theorem logBranch_differentiableOn
       Differentiable ℂ
         (fun r : Fin k → osiiAxisPairIndex d → ℂ =>
           r q.1 q.2) := by
-    simpa [eval] using eval.differentiable
+    exact eval.differentiable
   have hexp :
       DifferentiableOn ℂ
         (fun r : Fin k → osiiAxisPairIndex d → ℂ =>
@@ -436,8 +436,11 @@ theorem logBranch_real_edge
     (q : osiiAxisPairMultiGapIndex d k) :
     F.logBranch x q (osiiAxisPairSimultaneousLogRealEmbed x) =
       F.realEdge x := by
-  simpa [logBranch, osiiAxisPairSimultaneousLogRealEmbed,
-    osiiAxisPairPositiveCoefficients] using F.packet_real_edge x q
+  change
+    (F.packet x q).branch OS lgc (Complex.exp (x q.1 q.2)) =
+      F.realEdge x
+  rw [← Complex.ofReal_exp]
+  exact F.packet_real_edge x q
 
 /-- Forget the dependent packet realization and retain the exact interleaved
 flat-cross data consumed by the multi-gap MZ theorem. -/
@@ -563,7 +566,7 @@ noncomputable def ofCompensatedFrozenDependentOfOS
         Differentiable ℂ
           (fun r : Fin k → osiiAxisPairIndex d → ℂ =>
             r q.1 q.2) := by
-      simpa [eval] using eval.differentiable
+      exact eval.differentiable
     exact
       ((packet x q).branchOfOS_differentiableOn OS).comp
         (Complex.differentiable_exp.comp heval).differentiableOn

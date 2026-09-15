@@ -61,7 +61,7 @@ theorem differentiableOn_osiiStrictCoefficientLocalInverseLift
             (fun q : Fin n -> Complex => q i)
             (Metric.ball (0 : Fin n -> Complex) P.radius) r :=
         (differentiable_apply i r).differentiableWithinAt
-      simpa only [Function.comp_apply] using
+      simpa only [Function.comp_def] using
         DifferentiableWithinAt.comp r hinv happly
           (fun q hq => by
             rw [Metric.mem_ball, dist_zero_right]
@@ -201,8 +201,11 @@ theorem coefficientGerm_differentiableOn
       (fun q =>
         B.extension chi
           (osiiStrictCoefficientLocalInverseLift P q))
-      (osiiStrictCoefficientGermDomain P) r
-  simpa only [Function.comp_apply] using
+      (Metric.ball (0 : Fin n -> Complex) P.radius ∩
+        fun q =>
+          osiiAxisPairLogDomain
+            (osiiStrictCoefficientLocalInverseLift P q)) r
+  simpa only [Function.comp_def] using
     DifferentiableWithinAt.comp r hGamma
       (hlift.mono Set.inter_subset_left)
       (fun q hq => hq.2)

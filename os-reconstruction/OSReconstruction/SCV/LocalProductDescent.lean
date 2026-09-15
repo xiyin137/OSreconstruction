@@ -340,8 +340,10 @@ private theorem schwartzPartialEval₂CLM_seminorm_decay_one_bound {m : ℕ}
   have hD_nonneg : 0 ≤ D := norm_nonneg _
   have hE_nonneg : 0 ≤ E := norm_nonneg _
   have hderiv : D ≤ E := by
-    simpa [D, E, schwartzPartialEval₂CLM_apply] using
-      norm_iteratedFDeriv_partialEval_le (f := A) (y := a) (l := l) (x := b)
+    dsimp only [D, E]
+    rw [show (fun x => schwartzPartialEval₂CLM a A x) =
+        (fun x => A (x, a)) by rfl]
+    exact norm_iteratedFDeriv_partialEval_le (f := A) (y := a) (l := l) (x := b)
   have hb_norm : ‖b‖ ≤ ‖(b, a)‖ := by
     rw [Prod.norm_def]
     exact le_max_left ‖b‖ ‖a‖
@@ -474,8 +476,7 @@ theorem exists_schwartzFunctional_finsetSeminormBound
     (normSeminorm ℂ ℂ).comp L.toLinearMap
   have hq_cont : Continuous q := by
     change Continuous fun φ : SchwartzMap E ℂ => ‖L φ‖
-    simpa [q, Seminorm.comp_apply, coe_normSeminorm] using
-      continuous_norm.comp L.continuous
+    exact continuous_norm.comp L.continuous
   obtain ⟨s, C, _hC_ne, hbound⟩ :=
     Seminorm.bound_of_continuous (schwartz_withSeminorms ℂ E ℂ) q hq_cont
   refine ⟨s, (C : ℝ), C.2, fun φ => ?_⟩
@@ -710,7 +711,7 @@ lemma exists_integrable_bound_mixedBaseFDerivSchwartz {m : ℕ}
     have hmain := pow_mul_le_of_le_of_pow_mul_le (k := 0) (l := μ.integrablePower)
       (x := ‖a‖) (f := ‖G (b, a)‖) (C₁ := C₁) (C₂ := C₂)
       (norm_nonneg _) (norm_nonneg _) h1 h2
-    simpa [G, mul_assoc, mul_comm, mul_left_comm] using hmain
+    simpa only [G, pow_zero, one_mul, mul_assoc, mul_comm, mul_left_comm] using hmain
 
 /-- Differentiation under the mixed real-fiber integral. -/
 theorem hasFDerivAt_mixedRealFiberIntegralRaw {m : ℕ}
@@ -765,15 +766,19 @@ theorem hasFDerivAt_mixedRealFiberIntegralRaw {m : ℕ}
         HasFDerivAt (A : B × P → V)
           (fderiv ℝ (A : B × P → V) (b', a)) (b', a) :=
       A.differentiableAt.hasFDerivAt
-    simpa [inl] using hAderiv.comp b' hinner
-  simpa [mixedRealFiberIntegralRaw] using
-    (hasFDerivAt_integral_of_dominated_of_fderiv_le
+    have hcomp := hAderiv.comp b' hinner
+    rw [hasFDerivAt_iff_isLittleO] at hcomp ⊢
+    simpa [B, P, inl, ContinuousLinearMap.inl_apply, map_sub] using hcomp
+  have hmain :=
+    hasFDerivAt_integral_of_dominated_of_fderiv_le
       (μ := (MeasureTheory.volume : MeasureTheory.Measure P))
       (s := (Set.univ : Set B))
       (x₀ := b)
       (F := fun b' a => A (b', a))
       (F' := fun b' a => mixedBaseFDerivSchwartz A (b', a))
-      hs hA_meas hA_int hA'_meas h_bound hbound_int h_diff)
+      hs hA_meas hA_int hA'_meas h_bound hbound_int h_diff
+  rw [hasFDerivAt_iff_isLittleO] at hmain ⊢
+  simpa [B, P, mixedRealFiberIntegralRaw] using hmain
 
 /-- The Fréchet derivative of the mixed raw fiber integral is the mixed fiber
 integral of the mixed-base derivative field. -/
@@ -1020,7 +1025,8 @@ theorem exists_seminorm_bound_mixedBaseFDerivSchwartz {m : ℕ}
   refine ⟨s, (Cnn : ℝ), Cnn.2, ?_⟩
   intro A
   have h := Seminorm.le_def.mp hsup A
-  simpa [L, p, q] using h
+  change (s0.sup q) (L A) ≤ (Cnn : ℝ) * (s.sup p) A
+  exact h
 
 /-- Uniform finite-seminorm bound for every mixed-base derivative of the real
 fiber integral. -/
@@ -1092,8 +1098,11 @@ noncomputable def mixedRealFiberIntegralCLM {m : ℕ} :
     (fun A => contDiff_mixedRealFiberIntegralRaw A)
     (fun kn => by
       rcases kn with ⟨k, n⟩
-      simpa using
-        (exists_seminorm_bound_mixedRealFiberIntegralRaw_deriv (m := m) (V := ℂ) k n))
+      obtain ⟨s, C, hC, hbound⟩ :=
+        exists_seminorm_bound_mixedRealFiberIntegralRaw_deriv (m := m) (V := ℂ) k n
+      refine ⟨s, C, hC, ?_⟩
+      intro A b
+      exact hbound A b)
 
 @[simp]
 theorem mixedRealFiberIntegralCLM_apply {m : ℕ}
@@ -1577,8 +1586,6 @@ private def localDescentParamTestLeftLinearEquiv (m : ℕ) :
   map_smul' := by
     intro c x
     ext i <;> simp [realEmbedContinuousLinearMap, smul_sub]
-    change (c : ℂ) * (x.2 i : ℂ) = (c : ℂ) * (x.2 i : ℂ)
-    rfl
   left_inv := by
     intro p
     ext i <;> simp [realEmbedContinuousLinearMap, sub_eq_add_neg,

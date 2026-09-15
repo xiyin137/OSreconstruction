@@ -269,9 +269,13 @@ private theorem rToE_reflected_pairing_uniform_approximation
     simpa using
       (show Tendsto (fun _ : ℕ => g.1) atTop (𝓝 g.1) from tendsto_const_nhds).sub hv'
   have hQu : Tendsto (fun k => Q n (f - u k)) atTop (𝓝 0) := by
-    simpa only [hQzero] using (hQ n).continuousAt.tendsto.comp hdu
+    change Tendsto (Q n ∘ fun k => f - u k) atTop (𝓝 0)
+    rw [← hQzero n]
+    exact (hQ n).continuousAt.tendsto.comp hdu
   have hQv : Tendsto (fun k => Q m (g - v k)) atTop (𝓝 0) := by
-    simpa only [hQzero] using (hQ m).continuousAt.tendsto.comp hdv
+    change Tendsto (Q m ∘ fun k => g - v k) atTop (𝓝 0)
+    rw [← hQzero m]
+    exact (hQ m).continuousAt.tendsto.comp hdv
   have hA : Tendsto (fun k => 2 * Q n (f - u k) * Q m g) atTop (𝓝 0) := by
     simpa using (tendsto_const_nhds.mul hQu).mul tendsto_const_nhds
   have hB : Tendsto (fun k => 2 * Q n (u k) * Q m (g - v k)) atTop (𝓝 0) := by

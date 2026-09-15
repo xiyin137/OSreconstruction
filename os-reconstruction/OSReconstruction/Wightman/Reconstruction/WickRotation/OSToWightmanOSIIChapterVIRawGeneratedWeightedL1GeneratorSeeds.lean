@@ -115,11 +115,11 @@ def bridgeCoordinate
       · simp [Pi.single_apply]
         intro hja
         have hjlt : j.val < a.val := by
-          simpa [i, GeneratorIndex.ofGap] using hleft
+          simpa only [i, GeneratorIndex.ofGap, Nat.add_sub_cancel] using hleft
         omega
       · have hja : j = a := by
           apply Fin.ext
-          simpa [i, GeneratorIndex.ofGap] using hbridge
+          simpa only [i, GeneratorIndex.ofGap, Nat.add_sub_cancel] using hbridge
         subst j
         simp
       · have hja : j ≠ a := by

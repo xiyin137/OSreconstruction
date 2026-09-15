@@ -103,7 +103,7 @@ theorem differentiableAt_conjugateDualField
       (starRingEnd ℂ) (starRingEnd ℂ)
       _ _ _ _ _ _ _ _ _ _
       L R left z hleft'
-  simpa only [conjugateDualField, L, R, Function.comp_apply] using h
+  exact h
 
 /-- Pairing two holomorphic Hilbert fields is holomorphic when the coordinates
 of the conjugate-linear left slot are conjugated. -/
@@ -138,11 +138,7 @@ theorem differentiableOn_mixedHilbertPairing
   have hrightProd :
       DifferentiableAt ℂ (fun w : E₁ × E₂ => right w.2) z :=
     hrightAt.comp z (ContinuousLinearMap.snd ℂ E₁ E₂).differentiableAt
-  simpa only [
-    mixedHilbertPairing,
-    conjugateDualField,
-    innerSL_apply_apply
-  ] using (hdualProd.clm_apply hrightProd).differentiableWithinAt
+  exact (hdualProd.clm_apply hrightProd).differentiableWithinAt
 
 /-- The three-block Chapter V pairing: a conjugated left field, one complex
 bridge parameter acting through an operator family, and a right field. -/
@@ -239,12 +235,8 @@ theorem differentiableOn_bridgedMixedHilbertPairing
         ((T z).differentiableAt.comp w
           ((hright w hw).differentiableAt
             (hV.mem_nhds hw))).differentiableWithinAt
-    simpa only [
-      bridgedMixedHilbertPairing,
-      mixedHilbertPairing
-    ] using
-      differentiableOn_mixedHilbertPairing
-        hU hV hleft hright_shift
+    exact differentiableOn_mixedHilbertPairing
+      hU hV hleft hright_shift
 
 end OSIIChapterV
 end OSReconstruction

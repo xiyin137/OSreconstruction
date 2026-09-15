@@ -439,11 +439,11 @@ theorem osiiRecursiveAngleGenerator_midpoint_eq_diagonal
     osiiFirstRecursiveAngleGeneratorPoint,
     osiiSecondRecursiveAngleGeneratorPoint,
     osiiArgumentGeneratorPoint,
-    osiiFirstRecursiveAngleSplit,
-    osiiSecondRecursiveAngleSplit,
     osiiArgumentDiagonal,
     osiiMixedAnglePoint
   ]
+  dsimp only [osiiFirstRecursiveAngleSplit, osiiSecondRecursiveAngleSplit]
+  simp! +arith
   split_ifs with h₁ h₂ h₃ h₄ h₅ h₆ <;> try omega
   all_goals try norm_num
   next =>
@@ -452,7 +452,7 @@ theorem osiiRecursiveAngleGenerator_midpoint_eq_diagonal
       dsimp [r]
       omega
     have hA :
-        2 * (t + 1) + s - j.val - 2 * (t + 1) + 1 =
+        s + 2 * t + 2 - j.val - (2 * t + 2) + 1 =
           r + 1 := by
       dsimp [r]
       omega
@@ -460,7 +460,7 @@ theorem osiiRecursiveAngleGenerator_midpoint_eq_diagonal
       dsimp [r]
       omega
     have hC :
-        t + 1 + s - j.val - (t + 1) + 1 = r + 1 := by
+        s + t + 1 - j.val - (t + 1) + 1 = r + 1 := by
       dsimp [r]
       omega
     rw [hA, hB, hC,
@@ -469,37 +469,37 @@ theorem osiiRecursiveAngleGenerator_midpoint_eq_diagonal
     ring
   next =>
     have hA :
-        2 * (t + 1) + s - j.val - 2 * (t + 1) + 1 = 1 := by
+        s + 2 * t + 2 - j.val - (2 * t + 2) + 1 = 1 := by
       omega
     have hC :
-        t + 1 + s - j.val - (t + 1) + 1 = 1 := by
+        s + t + 1 - j.val - (t + 1) + 1 = 1 := by
       omega
     rw [hA, hC, recursiveAngle_one_succ]
     ring
   next =>
     have hB :
-        j.val - s - 2 * (t + 1) + 1 = 1 := by
+        j.val - s - (2 * t + 2) + 1 = 1 := by
       omega
     have hC :
-        j.val - (t + 1 + s) - (t + 1) + 1 = 1 := by
+        j.val - (s + t + 1) - (t + 1) + 1 = 1 := by
       omega
     rw [hB, hC, recursiveAngle_one_succ]
     ring
   next =>
-    let r := j.val - (2 * (t + 1) + s)
+    let r := j.val - (s + 2 * t + 2)
     have hr : 1 ≤ r := by
       dsimp [r]
       omega
     have hA :
-        j.val - (2 * (t + 1) + s) - 1 + 1 = r := by
+        j.val - (s + 2 * t + 2) - 1 + 1 = r := by
       dsimp [r]
       omega
     have hB :
-        j.val - s - 2 * (t + 1) + 1 = r + 1 := by
+        j.val - s - (2 * t + 2) + 1 = r + 1 := by
       dsimp [r]
       omega
     have hC :
-        j.val - (t + 1 + s) - (t + 1) + 1 = r + 1 := by
+        j.val - (s + t + 1) - (t + 1) + 1 = r + 1 := by
       dsimp [r]
       omega
     rw [hA, hB, hC,
@@ -635,8 +635,8 @@ theorem mixedAnglePoint_mem
           have hleftLarge :
               osiiMixedAnglePoint N (s + 1) (2 * (t + 1)) ∈
                 D.mixedBase (2 * (t + 1) + (s + 1)) N := by
-            simpa only [Nat.mul_add, Nat.add_assoc] using
-              ih (s + 1) (2 * t + 1)
+            rw [show 2 * (t + 1) = 2 * t + 1 + 1 by omega]
+            exact ih (s + 1) (2 * t + 1)
           have hsmall :
               osiiMixedAnglePoint N s 1 ∈
                 D.mixedBase (1 + s) N :=

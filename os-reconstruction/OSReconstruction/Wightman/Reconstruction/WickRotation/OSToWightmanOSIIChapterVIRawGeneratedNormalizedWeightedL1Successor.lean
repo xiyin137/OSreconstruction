@@ -253,8 +253,10 @@ theorem generatorPointBound_of_argumentBound
         (OS := OS)
         (((D0.depthInduction lgc depth).recursiveSectorRankInduction
           lgc (rank + 1)).pointed)).stage (q + 1)).carrier := by
-    simpa [R, StrictGeneratedScalarDepthPointedData.recursiveSectorRankInduction]
-      using hnext
+    change osiiVI2Shift (q + 1) epsilon zeta ∈
+      ((((D0.depthInduction lgc depth).recursiveSectorRankInduction
+        lgc (rank + 1)).pointed).stageLevel.stage (q + 1)).carrier
+    exact hnext
   have hnextDepth := D0.recursiveSectorRankInduction_distribution_eq_nextDepth
     lgc depth (rank + 1) (q + 1) hcanonical
   have hraw :
@@ -262,6 +264,9 @@ theorem generatorPointBound_of_argumentBound
         (depth + 1)).distribution (osiiVI2Shift (q + 1) epsilon zeta)) =
       ((R.next lgc).pointed.stageLevel.stage (q + 1)).distribution
         (osiiVI2Shift (q + 1) epsilon zeta) := by
+    change (((((D0.depthInduction lgc depth).recursiveSectorRankInduction
+      lgc (rank + 1)).pointed).stageLevel.stage (q + 1)).distribution
+        (osiiVI2Shift (q + 1) epsilon zeta)) = _ at hnextDepth
     simpa [R, D0,
       StrictGeneratedScalarDepthPointedData.recursiveSectorRankInduction,
       InitialGeneratedLogarithmicStageLevelData.toStrictGeneratedTimeContinuationLadder,
@@ -467,7 +472,12 @@ theorem nextDepthPointBound
   have hraw : OSIIRawStrictGeneratedLogarithmicArgument
       .scalar (q + 1) (depth + 1)
         (fun j => (osiiPrincipalLog zeta j).im) := by
-    simpa [osiiPrincipalLog, osiiTimeArgumentVector, Complex.log_im]
+    have hargEq : (fun j => (osiiPrincipalLog zeta j).im) =
+        osiiTimeArgumentVector zeta := by
+      funext j
+      simp [osiiPrincipalLog, osiiTimeArgumentVector, Complex.log_im]
+    rw [hargEq]
+    simpa only [osiiRawStrictGeneratedLogarithmicBase, Set.mem_setOf_eq]
       using hzeta.2
   obtain ⟨rank, ⟨S⟩⟩ := exists_rankedSectionPresentation hraw
   obtain ⟨Q⟩ := B.nonempty_nextDepthLogarithmicChart

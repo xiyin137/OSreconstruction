@@ -287,13 +287,23 @@ noncomputable def rootedReflectedGramPacketScaleSeedDataOfLift
       S depth P lgc A R H i (lift χ)
   apply hseed.congr
   intro timeScale z hz
-  simpa [rootedReflectedGramRootSmearedGlobalFamily] using
-    (rootSmearedGeneratorOpenFieldSpatialHermiteSum_eq_spatialHermiteScalarSum_of_lift
+  change _ =
+    (rootSmearedGeneratorOpenHilbertFieldScaleFamilyData
       H.toContinuousTranslationData lgc
       (rootedReflectedGramGeneratorOpenHilbertFieldScaleFamilyRealEdgeData
         S depth P A R H.toContinuousTranslationData
         ).toGeneratorOpenHilbertFieldScaleFamilyData
-      i timeScale z lift χ)
+      ).spatialHermiteScalarSum lgc
+        ((GeneratorHermiteHilbertFieldFamilyData.generatorSplitGlobalSpatialPushforwardCLM
+          (d := d) i).comp lift)
+        i timeScale z χ
+  exact
+    rootSmearedGeneratorOpenFieldSpatialHermiteSum_eq_spatialHermiteScalarSum_of_lift
+      H.toContinuousTranslationData lgc
+      (rootedReflectedGramGeneratorOpenHilbertFieldScaleFamilyRealEdgeData
+        S depth P A R H.toContinuousTranslationData
+        ).toGeneratorOpenHilbertFieldScaleFamilyData
+      i timeScale z lift χ
 
 /-- A packet-scale branch limit for an arbitrary continuous spatial lift. -/
 abbrev RootedReflectedGramPacketScaleBranchLimitDataOfLift
@@ -425,13 +435,22 @@ noncomputable def rootedReflectedGramPacketScaleSeedData
       S depth P lgc A R H i (lift χ)
   apply hseed.congr
   intro timeScale z hz
-  simpa [rootedReflectedGramRootSmearedGlobalFamily, lift] using
-    (rootSmearedGeneratorOpenFieldSpatialHermiteSum_eq_spatialHermiteScalarSum
+  change _ =
+    (rootSmearedGeneratorOpenHilbertFieldScaleFamilyData
       H.toContinuousTranslationData lgc
       (rootedReflectedGramGeneratorOpenHilbertFieldScaleFamilyRealEdgeData
         S depth P A R H.toContinuousTranslationData
         ).toGeneratorOpenHilbertFieldScaleFamilyData
-      i timeScale z χ)
+      ).spatialHermiteScalarSum lgc
+        (rootedGeneratorSplitSpatialLiftCLM i)
+        i timeScale z χ
+  exact
+    rootSmearedGeneratorOpenFieldSpatialHermiteSum_eq_spatialHermiteScalarSum
+      H.toContinuousTranslationData lgc
+      (rootedReflectedGramGeneratorOpenHilbertFieldScaleFamilyRealEdgeData
+        S depth P A R H.toContinuousTranslationData
+        ).toGeneratorOpenHilbertFieldScaleFamilyData
+      i timeScale z χ
 
 /-- A selected packet-scale holomorphic limit on the connected
 reflected-Gram global branch. -/

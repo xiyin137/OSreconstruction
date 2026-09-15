@@ -85,7 +85,11 @@ private theorem exists_timeIntegratedSpatialDistribution
     have hschwartz :
         (1 + norm t) ^ (degree + decayDegree) * norm (phi t) <=
           2 ^ (degree + decayDegree) * timeSeminorm := by
-      simpa [timeSeminorm, timeSeminorms] using
+      have hfamily :
+          schwartzSeminormFamily Complex (Fin k -> Real) Complex =
+            (fun m => SchwartzMap.seminorm Complex m.1 m.2) := rfl
+      simpa only [timeSeminorm, timeSeminorms, hfamily,
+        norm_iteratedFDeriv_zero] using
         (SchwartzMap.one_add_le_sup_seminorm_apply
           (k := degree + decayDegree) (n := 0)
           (𝕜 := Complex)
@@ -240,14 +244,22 @@ theorem exists_positiveSliceSpatialDistributionWithIntegrability
     have hnorm_le :
         norm (osiiMinkowskiTimeApproach eta t epsilon) <=
           norm (epsilon • eta) + norm t := by
+      have happroach : osiiMinkowskiTimeApproach eta t epsilon =
+          (fun i => ((epsilon • eta) i : Complex)) -
+            (fun i => ((t i : Real) : Complex) * I) := by
+        ext i
+        simp [osiiMinkowskiTimeApproach, Pi.smul_apply]
       calc
-        norm (osiiMinkowskiTimeApproach eta t epsilon) <=
+        norm (osiiMinkowskiTimeApproach eta t epsilon) =
+            norm ((fun i => ((epsilon • eta) i : Complex)) -
+              (fun i => ((t i : Real) : Complex) * I)) :=
+          congrArg norm happroach
+        _ <=
             norm (fun i => ((epsilon • eta) i : Complex)) +
               norm (fun i => ((t i : Real) : Complex) * I) := by
-          simpa [osiiMinkowskiTimeApproach, Pi.smul_apply] using
-            (norm_sub_le
-              (fun i => ((epsilon • eta) i : Complex))
-              (fun i => ((t i : Real) : Complex) * I))
+          exact norm_sub_le
+            (fun i => ((epsilon • eta) i : Complex))
+            (fun i => ((t i : Real) : Complex) * I)
         _ <= norm (epsilon • eta) + norm t := add_le_add hreal_le himag_le
     have hbase_le :
         1 + norm (osiiMinkowskiTimeApproach eta t epsilon) <=
@@ -269,8 +281,10 @@ theorem exists_positiveSliceSpatialDistributionWithIntegrability
               G.spatialSeminorms.sup
                 (schwartzSeminormFamily Complex
                   (Section43SpatialSpace d k) Complex) chi := by
+        have hsmul : (fun i => epsilon * eta i) = epsilon • eta := by
+          rfl
         simpa [L, osiiTimeBoundaryDistance, osiiMinkowskiTimeApproach,
-          Pi.smul_apply] using hgrowth
+          hsmul] using hgrowth
       _ <= G.constant *
               (((1 + norm (epsilon • eta)) * (1 + norm t)) ^
                 G.polynomialDegree) *
@@ -497,12 +511,12 @@ theorem continuous_mixedBoundaryBilinearMap
       Continuous (fun x => Phi (Function.update fs i x)) := by
     intro i fs
     fin_cases i
-    · simpa [Phi, B, Function.update] using
-        (G.continuous_mixedBoundaryBilinearMap_left (fs 1).2).comp
-          continuous_fst
-    · simpa [Phi, B, Function.update] using
-        (G.continuous_mixedBoundaryBilinearMap_right (fs 0).1).comp
-          continuous_snd
+    · change Continuous (fun x : X => B x.1 (fs 1).2)
+      exact (G.continuous_mixedBoundaryBilinearMap_left (fs 1).2).comp
+        continuous_fst
+    · change Continuous (fun x : X => B (fs 0).1 x.2)
+      exact (G.continuous_mixedBoundaryBilinearMap_right (fs 0).1).comp
+        continuous_snd
   letI : (uniformity X).IsCountablyGenerated := by
     exact IsUniformAddGroup.uniformity_countably_generated
   let hcomplete :
@@ -523,7 +537,13 @@ theorem continuous_mixedBoundaryBilinearMap
     · exact continuous_const.prodMk continuous_snd
   have hcont : Continuous (fun p => PhiCont (embed p)) :=
     PhiCont.cont.comp hembed
-  simpa [TimeTest, SpatialTest, Phi, B, embed, hPhiCont] using hcont
+  have heq : (fun p : TimeTest × SpatialTest => PhiCont (embed p)) =
+      (fun p => G.mixedBoundaryBilinearMap p.1 p.2) := by
+    funext p
+    rw [hPhiCont]
+    rfl
+  rw [← heq]
+  exact hcont
 
 end OSIIFullTimeStageVladimirovGrowthData
 

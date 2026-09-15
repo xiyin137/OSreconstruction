@@ -242,14 +242,15 @@ theorem euclideanWeylOpenRepresentative_uniform_compact_bound
             ≤ (∑ i ∈ s, p i)
                 (euclideanReflectedTranslate x ρ) := hle
         _ = q x := by
-          change
-            Seminorm.coeFnAddMonoidHom ℂ
-                (SchwartzMap (EuclideanSpace ℝ ι) ℂ)
-                (∑ i ∈ s, p i)
-                (euclideanReflectedTranslate x ρ) =
-              q x
-          simp_rw [map_sum, Finset.sum_apply]
-          rfl
+          change (FunLike.coeAddMonoidHom
+            (Seminorm ℂ (SchwartzMap (EuclideanSpace ℝ ι) ℂ))
+            (SchwartzMap (EuclideanSpace ℝ ι) ℂ) ℝ
+            (∑ i ∈ s, p i)) (euclideanReflectedTranslate x ρ) = _
+          rw [map_sum]
+          exact Finset.sum_apply (euclideanReflectedTranslate x ρ) s (fun i =>
+            FunLike.coeAddMonoidHom
+              (Seminorm ℂ (SchwartzMap (EuclideanSpace ℝ ι) ℂ))
+              (SchwartzMap (EuclideanSpace ℝ ι) ℂ) ℝ (p i))
     have hqx_nonneg : 0 ≤ q x := by
       dsimp [q]
       positivity
@@ -460,14 +461,20 @@ theorem exists_finite_schwartz_partitionOfUnity_on_compact
     (hcompact_complex i).toSchwartzMap (hsmooth i)
   refine ⟨χ, ?_, ?_, ?_⟩
   · intro i
-    simpa [χ] using hcompact_complex i
+    rw [show (χ i : E → ℂ) = fun x => ((ρ i x : ℝ) : ℂ) by
+      funext x
+      exact HasCompactSupport.toSchwartzMap_toFun (hcompact_complex i) (hsmooth i) x]
+    exact hcompact_complex i
   · intro i
     have happly : ∀ x : E, χ i x = ((ρ i x : ℝ) : ℂ) := by
       intro x
       exact HasCompactSupport.toSchwartzMap_toFun (hcompact_complex i) (hsmooth i) x
     intro x hx
     have hx' : x ∈ tsupport (fun x : E => ((ρ i x : ℝ) : ℂ)) := by
-      simpa [happly] using hx
+      rw [← show (χ i : E → ℂ) = fun x => ((ρ i x : ℝ) : ℂ) by
+        funext y
+        exact happly y]
+      exact hx
     have hxreal : x ∈ tsupport (fun x : E => ρ i x) := by
       simpa [tsupport, Function.support] using hx'
     exact hρsub i hxreal

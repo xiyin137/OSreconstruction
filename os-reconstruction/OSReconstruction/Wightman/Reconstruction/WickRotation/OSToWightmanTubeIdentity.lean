@@ -66,8 +66,8 @@ private theorem continuous_wickRotateComplexPoint :
   intro μ
   by_cases hμ : μ = 0
   · subst hμ
-    simpa [wickRotateComplexPoint] using
-      continuous_const.mul (continuous_apply 0)
+    change Continuous (fun z : Fin (d + 1) → ℂ => Complex.I * z 0)
+    exact continuous_const.mul (continuous_apply 0)
   · simpa [wickRotateComplexPoint, hμ] using
       (continuous_apply μ)
 
@@ -108,8 +108,8 @@ private theorem continuous_wickUnrotateComplexConfig :
         (-Complex.I) * z k 0) :=
       continuous_const.mul hcoord
     simpa [wickUnrotateComplexConfig, neg_mul] using hmul
-  · simpa [wickUnrotateComplexConfig, hμ] using
-      ((continuous_apply μ).comp (continuous_apply k))
+  · simp only [wickUnrotateComplexConfig, hμ, if_false]
+    fun_prop
 
 private theorem continuous_wickRotateRealConfig :
     Continuous (fun x : NPointDomain d n => fun k => wickRotatePoint (x k)) := by
@@ -121,10 +121,10 @@ private theorem continuous_wickRotateRealConfig :
   · subst hμ
     have hcoord : Continuous (fun x : NPointDomain d n => x k 0) :=
       (continuous_apply 0).comp (continuous_apply k)
-    simpa [wickRotatePoint] using
-      continuous_const.mul (Complex.continuous_ofReal.comp hcoord)
-  · simpa [wickRotatePoint, hμ] using
-      (Complex.continuous_ofReal.comp ((continuous_apply μ).comp (continuous_apply k)))
+    change Continuous (fun x : NPointDomain d n => Complex.I * (x k 0 : ℂ))
+    exact continuous_const.mul (Complex.continuous_ofReal.comp hcoord)
+  · simp only [wickRotatePoint, hμ, if_false]
+    fun_prop
 
 @[simp] theorem wickRotatePoint_add
     (x a : Fin (d + 1) → ℝ) :
@@ -244,19 +244,25 @@ theorem ae_pairwise_distinct_timeCoords :
       ∀ i j : Fin n, i ≠ j → x i 0 ≠ x j 0 := by
   have hall : ∀ᵐ (x : NPointDomain d n) ∂MeasureTheory.volume,
       ∀ p : {p : Fin n × Fin n // p.1 ≠ p.2}, x p.1.1 0 ≠ x p.1.2 0 := by
-    simpa using
+    have hall' : ∀ᵐ (x : NPointDomain d n) ∂MeasureTheory.volume,
+        ∀ p ∈ (Set.univ : Set {p : Fin n × Fin n // p.1 ≠ p.2}),
+          x p.1.1 0 ≠ x p.1.2 0 := by
+      refine
       ((Set.toFinite (Set.univ : Set {p : Fin n × Fin n // p.1 ≠ p.2})).eventually_all
         (l := MeasureTheory.ae (MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d n)))
-        (p := fun p => fun x : NPointDomain d n => x p.1.1 0 ≠ x p.1.2 0)).2
-        (fun p _ => by
-          let s : Set (NPointDomain d n) := {x | x p.1.1 0 = x p.1.2 0}
-          have hs0 : MeasureTheory.volume s = 0 := by
-            simpa [s] using measure_timeCoord_eq_zero (d := d) (n := n) p.1.1 p.1.2 p.2
-          have hsae :
-              sᶜ ∈ MeasureTheory.ae
-                (MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d n)) :=
-            MeasureTheory.compl_mem_ae_iff.mpr hs0
-          simpa [s, Set.compl_setOf] using hsae)
+        (p := fun p => fun x : NPointDomain d n => x p.1.1 0 ≠ x p.1.2 0)).2 ?_
+      intro p _
+      let s : Set (NPointDomain d n) := {x | x p.1.1 0 = x p.1.2 0}
+      have hs0 : MeasureTheory.volume s = 0 := by
+        simpa [s] using measure_timeCoord_eq_zero (d := d) (n := n) p.1.1 p.1.2 p.2
+      have hsae :
+          sᶜ ∈ MeasureTheory.ae
+            (MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d n)) :=
+        MeasureTheory.compl_mem_ae_iff.mpr hs0
+      change sᶜ ∈ MeasureTheory.ae
+        (MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d n))
+      exact hsae
+    simpa only [Set.mem_univ, forall_const] using hall'
   filter_upwards [hall] with x hx i j hij
   exact hx ⟨⟨i, j⟩, hij⟩
 
@@ -269,8 +275,13 @@ private theorem strictMono_time_of_wickRotate_mem_forwardTube
   rw [Fin.strictMono_iff_lt_succ]
   intro k
   have hk := (hx k.succ).1
-  simpa [wickRotatePoint, Complex.mul_im, Complex.I_re, Complex.I_im,
-    Complex.ofReal_re, Complex.ofReal_im, Fin.succ_ne_zero, zero_mul, one_mul, zero_add] using hk
+  norm_num [wickRotatePoint, Complex.mul_im, Complex.I_re, Complex.I_im,
+    Complex.ofReal_re, Complex.ofReal_im, Fin.succ_ne_zero] at hk
+  have hindex : (⟨k.val, by omega⟩ : Fin (m + 1)) = k.castSucc := by
+    apply Fin.ext
+    rfl
+  rw [← hindex]
+  linarith
 
 /-- Real configurations whose Wick rotation lies in the forward tube have
 strictly positive, strictly increasing Euclidean times. -/
@@ -338,9 +349,12 @@ theorem forwardTube_eq_of_eq_on_wickRealSection
     have hFT_open : IsOpen (ForwardTube d n) := by
       simpa [BHW_forwardTube_eq (d := d) (n := n)] using
         (BHW.isOpen_forwardTube (d := d) (n := n))
-    simpa [U] using hFT_open.preimage (continuous_wickRotateComplexConfig (d := d) (n := n))
+    change IsOpen (wickRotateComplexConfig ⁻¹' ForwardTube d n)
+    exact hFT_open.preimage (continuous_wickRotateComplexConfig (d := d) (n := n))
   have hU_convex : Convex ℝ U := by
     intro z hz w hw a b ha hb hab
+    change wickRotateComplexConfig z ∈ ForwardTube d n at hz
+    change wickRotateComplexConfig w ∈ ForwardTube d n at hw
     have hzFT : wickRotateComplexConfig z ∈ BHW.ForwardTube d n := by
       simpa [BHW_forwardTube_eq (d := d) (n := n)] using hz
     have hwFT : wickRotateComplexConfig w ∈ BHW.ForwardTube d n := by
@@ -378,7 +392,9 @@ theorem forwardTube_eq_of_eq_on_wickRealSection
     have hFT_open : IsOpen (ForwardTube d n) := by
       simpa [BHW_forwardTube_eq (d := d) (n := n)] using
         (BHW.isOpen_forwardTube (d := d) (n := n))
-    simpa [V] using hFT_open.preimage (continuous_wickRotateRealConfig (d := d) (n := n))
+    change IsOpen ((fun x : NPointDomain d n => fun k => wickRotatePoint (x k)) ⁻¹'
+      ForwardTube d n)
+    exact hFT_open.preimage (continuous_wickRotateRealConfig (d := d) (n := n))
   have hV_ne : V.Nonempty := euclidean_forwardTube_section_nonempty (d := d) (n := n)
   have hV_sub :
       ∀ x ∈ V, SCV.realToComplexProduct x ∈ U := by
@@ -423,7 +439,8 @@ theorem eqOn_openConnected_of_eqOn_wickRealSection
   let U' : Set (Fin n → Fin (d + 1) → ℂ) :=
     {z | wickRotateComplexConfig z ∈ U}
   have hU'_open : IsOpen U' := by
-    simpa [U'] using hU_open.preimage continuous_wickRotateComplexConfig
+    change IsOpen (wickRotateComplexConfig ⁻¹' U)
+    exact hU_open.preimage continuous_wickRotateComplexConfig
   have himage :
       wickUnrotateComplexConfig '' U = U' := by
     ext z
@@ -464,7 +481,8 @@ theorem eqOn_openConnected_of_eqOn_wickRealSection
     exact hcompF.sub hcompG
   let V : Set (NPointDomain d n) := {x | (fun k => wickRotatePoint (x k)) ∈ U}
   have hV_open : IsOpen V := by
-    simpa [V] using hU_open.preimage (continuous_wickRotateRealConfig (d := d) (n := n))
+    change IsOpen ((fun x : NPointDomain d n => fun k => wickRotatePoint (x k)) ⁻¹' U)
+    exact hU_open.preimage (continuous_wickRotateRealConfig (d := d) (n := n))
   obtain ⟨x0, hx0⟩ := hU_wick_nonempty
   have hV_ne : V.Nonempty := ⟨x0, hx0⟩
   have hV_sub : ∀ x ∈ V, SCV.realToComplexProduct x ∈ U' := by
@@ -504,7 +522,9 @@ theorem forwardTube_eq_of_distributional_wickSection_eq
     simpa [BHW_forwardTube_eq (d := d) (n := n)] using
       (BHW.isOpen_forwardTube (d := d) (n := n))
   have hV_open : IsOpen V := by
-    simpa [V] using hFT_open.preimage (continuous_wickRotateRealConfig (d := d) (n := n))
+    change IsOpen ((fun x : NPointDomain d n => fun k => wickRotatePoint (x k)) ⁻¹'
+      ForwardTube d n)
+    exact hFT_open.preimage (continuous_wickRotateRealConfig (d := d) (n := n))
   have hF_cont : ContinuousOn F (ForwardTube d n) := by
     intro z hz
     exact (hF z hz).continuousWithinAt
@@ -552,7 +572,8 @@ theorem eqOn_openConnected_of_distributional_wickSection_eq
     Set.EqOn F G U := by
   let V : Set (NPointDomain d n) := {x | (fun k => wickRotatePoint (x k)) ∈ U}
   have hV_open : IsOpen V := by
-    simpa [V] using hU_open.preimage (continuous_wickRotateRealConfig (d := d) (n := n))
+    change IsOpen ((fun x : NPointDomain d n => fun k => wickRotatePoint (x k)) ⁻¹' U)
+    exact hU_open.preimage (continuous_wickRotateRealConfig (d := d) (n := n))
   have hF_cont : ContinuousOn F U := by
     intro z hz
     exact (hF z hz).continuousWithinAt
@@ -691,4 +712,3 @@ theorem forwardTube_point_eq_of_zeroDiagonal_distributional_wickSection_eq
       Complex.ofReal_re, Complex.I_re, Complex.I_im]
   exact forwardTube_eq_of_zeroDiagonal_distributional_wickSection_eq
     (d := d) (n := n) F G hF hG hint _ hz
-

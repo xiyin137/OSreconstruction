@@ -48,15 +48,13 @@ private theorem continuous_finsetSpatialSchwartzSeminorm
           (Section43SpatialSpace d k) ℂ) s)
   change Continuous
     (fun x =>
-      Seminorm.coeFnAddMonoidHom ℂ
-        (SchwartzMap (Section43SpatialSpace d k) ℂ)
-        (∑ i ∈ s,
-          schwartzSeminormFamily ℂ
-            (Section43SpatialSpace d k) ℂ i) x)
-  simp_rw [map_sum, Finset.sum_apply]
-  exact continuous_finset_sum _ fun i _ =>
-    (schwartz_withSeminorms ℂ
-      (Section43SpatialSpace d k) ℂ).continuous_seminorm i
+      (∑ i ∈ s,
+        schwartzSeminormFamily ℂ
+          (Section43SpatialSpace d k) ℂ i) x)
+  simpa only [sum_apply] using
+    (continuous_finset_sum s fun i _ =>
+      (schwartz_withSeminorms ℂ
+        (Section43SpatialSpace d k) ℂ).continuous_seminorm i)
 
 /-- Weak holomorphy of a spatial-distribution family implies joint
 continuity of its evaluation on a moving spatial Schwartz test.
@@ -324,8 +322,14 @@ theorem continuousOn_osiiStageMovingSliceIntegrand
           (fun q : OSIITimeGapSpace k × (Fin k → ℝ) => ρ q.2)
           p :=
       ρ.continuous.continuousAt.comp continuous_snd.continuousAt
-    simpa [osiiStageMovingSliceIntegrand] using
-      (hρ.mul hpair).continuousWithinAt
+    change ContinuousWithinAt
+      (fun q : OSIITimeGapSpace k × (Fin k → ℝ) =>
+        ρ q.2 *
+          A.distribution
+            (q.1 + osiiPositiveRealTimeEmbed q.2)
+            (osiiFullSourceSpatialSlice F q.2))
+      (osiiStageMovingSliceCarrier A ρ ×ˢ Set.univ) p
+    exact (hρ.mul hpair).continuousWithinAt
   · have hnot :
         {τ : Fin k → ℝ |
           τ ∉ tsupport (ρ : (Fin k → ℝ) → ℂ)} ∈ 𝓝 p.2 :=
@@ -428,7 +432,8 @@ theorem differentiableAt_osiiStageMovingSliceIntegrand_update
           (z i) := by
       simpa [Function.comp_def] using
         houter'.comp (z i) hinner
-    simpa [osiiStageMovingSliceIntegrand] using
+    simpa [osiiStageMovingSliceIntegrand,
+      osiiShiftedStageDistribution] using
       hcomp.const_mul (ρ τ)
 
 /-- Before differentiability, the compact-cutoff moving-slice scalar chart is
@@ -453,11 +458,12 @@ theorem continuousOn_osiiStageMovingSliceScalar
     have hρτ : ρ τ = 0 := by
       exact image_eq_zero_of_notMem_tsupport hτ
     simp [osiiStageMovingSliceIntegrand, hρτ]
-  simpa [osiiStageMovingSliceScalar] using
-    continuousOn_integral_of_compact_support
+  refine (continuousOn_integral_of_compact_support
       (μ := volume) hK
       (continuousOn_osiiStageMovingSliceIntegrand A ρ F)
-      hzero
+      hzero).congr ?_
+  intro z _
+  rfl
 
 private theorem dist_osiiCoordinateUpdate_le
     (z : Fin k → ℂ) (i : Fin k) (w : ℂ) :

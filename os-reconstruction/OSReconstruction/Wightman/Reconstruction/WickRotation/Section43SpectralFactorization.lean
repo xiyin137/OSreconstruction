@@ -276,10 +276,9 @@ private theorem section43FlatProductSplitMeasurableEquiv_measurePreserving
       MeasureTheory.volume
       ((MeasureTheory.volume : MeasureTheory.Measure (Fin a → ℝ)).prod
         (MeasureTheory.volume : MeasureTheory.Measure (Fin b → ℝ))) := by
-    simpa using
-      (MeasureTheory.volume_measurePreserving_sumPiEquivProdPi
-        (fun _ : Fin a ⊕ Fin b => ℝ))
-  simpa [section43FlatProductSplitMeasurableEquiv, e1] using he2.comp (he1.symm e1)
+    exact MeasureTheory.volume_measurePreserving_sumPiEquivProdPi
+      (fun _ : Fin a ⊕ Fin b => ℝ)
+  exact he2.comp (he1.symm e1)
 
 private theorem section43FlatProductSplitMeasurableEquiv_fst_apply
     (a b : ℕ) (x : Fin (a + b) → ℝ) (i : Fin a) :
@@ -436,8 +435,7 @@ private theorem section43FullFlatProductSplitMeasurableEquiv_measurePreserving
         (fun _ : Fin ((n + r) * (d + 1)) => ℝ) (finCongr h))
   have he2 := section43FlatProductSplitMeasurableEquiv_measurePreserving
     (n * (d + 1)) (r * (d + 1))
-  simpa [section43FullFlatProductSplitMeasurableEquiv, h, e1] using
-    he2.comp (he1.symm e1)
+  exact he2.comp (he1.symm e1)
 
 private theorem section43FullFlatProductSplitMeasurableEquiv_fst_apply
     (d n r : ℕ) [NeZero d]
@@ -514,16 +512,15 @@ theorem physicsFourierFlatCLM_reindex_tensorProduct_apply
           Complex.exp (Complex.I * ∑ a, (x a : ℂ) * (ξL a : ℂ)) * F x) *
         (∫ y : Fin (r * (d + 1)) → ℝ,
           Complex.exp (Complex.I * ∑ b, (y b : ℂ) * (ξR b : ℂ)) * G y) := by
-          simpa [mul_assoc] using
-            (MeasureTheory.integral_prod_mul
-              (μ := (MeasureTheory.volume :
-                MeasureTheory.Measure (Fin (n * (d + 1)) → ℝ)))
-              (ν := (MeasureTheory.volume :
-                MeasureTheory.Measure (Fin (r * (d + 1)) → ℝ)))
-              (f := fun x : Fin (n * (d + 1)) → ℝ =>
-                Complex.exp (Complex.I * ∑ a, (x a : ℂ) * (ξL a : ℂ)) * F x)
-              (g := fun y : Fin (r * (d + 1)) → ℝ =>
-                Complex.exp (Complex.I * ∑ b, (y b : ℂ) * (ξR b : ℂ)) * G y))
+          convert MeasureTheory.integral_prod_mul
+            (μ := (MeasureTheory.volume :
+              MeasureTheory.Measure (Fin (n * (d + 1)) → ℝ)))
+            (ν := (MeasureTheory.volume :
+              MeasureTheory.Measure (Fin (r * (d + 1)) → ℝ)))
+            (f := fun x : Fin (n * (d + 1)) → ℝ =>
+              Complex.exp (Complex.I * ∑ a, (x a : ℂ) * (ξL a : ℂ)) * F x)
+            (g := fun y : Fin (r * (d + 1)) → ℝ =>
+              Complex.exp (Complex.I * ∑ b, (y b : ℂ) * (ξR b : ℂ)) * G y) using 1 <;> rfl
 
 @[simp] theorem section43LeftBorchersBlock_apply
     (d n r : ℕ) [NeZero d] (hr : 0 < r)
@@ -932,14 +929,20 @@ noncomputable def section43TailToBorchersConcatCLM
     refine Fin.addCases ?_ ?_ k
     · intro i
       let idx : Fin (n + m) := ⟨n - 1 - i.val, by omega⟩
-      simpa [section43TailToBorchersConcatFun, idx] using
-        ((continuous_apply μ).comp (continuous_apply idx) :
-          Continuous fun qt : NPointDomain d (n + m) => qt idx μ)
+      rw [show
+        (fun a => section43TailToBorchersConcatFun d n m hn a
+          (Fin.castAdd (m + 1) i) μ) = (fun qt => qt idx μ) by
+          funext qt
+          simp [section43TailToBorchersConcatFun, idx]]
+      exact (continuous_apply μ).comp (continuous_apply idx)
     · intro j
       let idx : Fin (n + m) := ⟨n - 1 + j.val, by omega⟩
-      simpa [section43TailToBorchersConcatFun, idx] using
-        ((continuous_apply μ).comp (continuous_apply idx) :
-          Continuous fun qt : NPointDomain d (n + m) => qt idx μ)
+      rw [show
+        (fun a => section43TailToBorchersConcatFun d n m hn a
+          (Fin.natAdd n j) μ) = (fun qt => qt idx μ) by
+          funext qt
+          simp [section43TailToBorchersConcatFun, idx]]
+      exact (continuous_apply μ).comp (continuous_apply idx)
 
 @[simp] theorem section43TailToBorchersConcatCLM_left_apply
     (d n m : ℕ) [NeZero d] (hn : 0 < n)

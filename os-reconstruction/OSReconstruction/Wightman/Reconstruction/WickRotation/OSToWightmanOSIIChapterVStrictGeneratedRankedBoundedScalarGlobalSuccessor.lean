@@ -262,7 +262,10 @@ theorem nonempty_logarithmicRankTargetChart
           (rank + 1) .scalar m (depth + 1) 0 :=
       OSIIStrictGeneratedLogarithmicArgumentAtRank.scalar_zero_mem
         (rank + 1) m (depth + 1)
-    exact ⟨by simpa using D.rankTargetChart 0 hzero⟩
+    refine ⟨?_⟩
+    convert D.rankTargetChart 0 hzero using 1
+    funext j
+    simp
   obtain ⟨n, hn, weight, seed, hweight, hsum, hseed,
       hcombination, hsurjective, _hregular⟩ :=
     exists_sectionRegular_fullRank_rankSuccessorSeedCombination_fin hz
@@ -416,9 +419,11 @@ noncomputable def logarithmicRankTargetAtlas
   chart_nonempty := ⟨{
     target := 0
     target_mem := by
-      simpa using
+      convert
         (OSIIStrictGeneratedLogarithmicArgumentAtRank.scalar_zero_mem
-          (rank + 1) m (depth + 1)) }⟩
+          (rank + 1) m (depth + 1)) using 1
+      funext j
+      rfl }⟩
   chartData q :=
     (D.retainedLogarithmicRankTargetChart
       q.target q.target_mem).repointZero

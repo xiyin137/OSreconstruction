@@ -248,7 +248,11 @@ theorem exists_holomorphic_realEdge_extension
     have hinv :=
       hweight.inv
         (fun z _hz => SCV.logCoshDamping_ne_zero G.rate z)
-    simpa [div_eq_mul_inv] using hGammaD.mul hinv
+    change
+      DifferentiableOn ℂ
+        (GammaD * (SCV.logCoshDamping G.rate)⁻¹)
+        (osiiAxisPairLogDomain (d := d))
+    exact hGammaD.mul hinv
   · intro x
     change
       GammaD (osiiAxisPairLogRealEmbed x) /

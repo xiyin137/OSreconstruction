@@ -196,7 +196,7 @@ theorem hasFDerivAt_iteratedFDeriv_partialEval₂
       exact
         (f.smooth (l + 1)).differentiable_iteratedFDeriv
           (by exact_mod_cast Nat.lt_succ_self l) (x, y) |>.hasFDerivAt
-    simpa [H] using hfull.comp y (hasFDerivAt_prodMk_right x y)
+    convert hfull.comp y (hasFDerivAt_prodMk_right x y) using 1 <;> rfl
   have hEq :
       (fun y' => iteratedFDeriv ℝ l (fun x' => f (x', y')) x) = A ∘ H := by
     funext y'
@@ -283,6 +283,7 @@ theorem continuous_partialEval₂
   obtain ⟨C, hC⟩ := f.decay' 0 (l + 1)
   have hC_nonneg : 0 ≤ C := by
     have hC0 : ‖iteratedFDeriv ℝ (l + 1) (⇑f) (0, y₀)‖ ≤ C := by
+      rw [show (⇑f : E₁ × E₂ → F) = f.toFun by rfl]
       simpa using hC (0, y₀)
     exact le_trans (norm_nonneg _) hC0
   let A : ℝ := (max R 1) ^ k * C
@@ -378,6 +379,7 @@ theorem continuous_partialEval₂
               ≤ ‖iteratedFDeriv ℝ (l + 1) (⇑f) (x, z)‖ := by
                   simpa [g] using norm_fderiv_iteratedFDeriv_partialEval₂_le f l x z
             _ ≤ C := by
+                  rw [show (⇑f : E₁ × E₂ → F) = f.toFun by rfl]
                   simpa using hC (x, z)
         simpa [g] using
           (Convex.norm_image_sub_le_of_norm_fderiv_le

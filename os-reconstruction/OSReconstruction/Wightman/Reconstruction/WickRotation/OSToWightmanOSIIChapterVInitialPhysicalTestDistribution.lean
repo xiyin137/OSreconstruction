@@ -118,8 +118,8 @@ theorem continuous_initialPhysicalCompactSmoothToSchwartzLinearMap
           iteratedFDeriv ℝ n
               (initialPhysicalCompactSmoothToSchwartzLinearMap
                 (d := d) (k := k) K φ) x = 0 := by
-        simpa [initialPhysicalCompactSmoothToSchwartzLinearMap] using
-          (φ.iteratedFDeriv_zero_on_compl (i := n) hx)
+        change iteratedFDeriv ℝ n (φ : NPointDomain d k → ℂ) x = 0
+        exact φ.iteratedFDeriv_zero_on_compl (i := n) hx
       rw [hzero, norm_zero, mul_zero]
       positivity
 
@@ -183,7 +183,8 @@ theorem initialPhysicalTestToSchwartzCLM_tsupport_subset
           NPointDomain d k → ℂ) ⊆
       U := by
   rw [initialPhysicalTestToSchwartzCLM_apply]
-  simpa using φ.tsupport_subset
+  change tsupport (φ : NPointDomain d k → ℂ) ⊆ U
+  exact φ.tsupport_subset
 
 /-- The full open chamber of strictly positive consecutive Euclidean times. -/
 def initialReducedStrictPositiveGapOpen (d k : ℕ) [NeZero d] :
@@ -222,8 +223,8 @@ theorem reducedTestLift_vanishes_of_tsupport_initialReducedStrictPositiveGapRegi
         0 <
           BHW.reducedDiffMapReal (k + 1) d x
             ⟨i.val, by omega⟩ 0 := by
-      simpa [section43QTimeCLM_apply,
-        BHW.reducedDiffMapRealCLM] using hi
+      change 0 < BHW.reducedDiffMapReal (k + 1) d x i 0 at hi
+      exact hi
     change 0 < x i.succ 0 - x i.castSucc 0 at hi'
     exact hi'
   have htime : StrictMono (fun i : Fin (k + 1) => x i 0) := by

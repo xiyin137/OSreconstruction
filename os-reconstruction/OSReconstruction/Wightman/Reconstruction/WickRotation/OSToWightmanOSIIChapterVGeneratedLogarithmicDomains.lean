@@ -317,7 +317,7 @@ private theorem coordinatewise_closed_aux
         · have hk1 : 1 ≤ k + 1 := by omega
           have hx0 := mixed_head_eq_zero hk1 hx
           simpa [x'] using congrArg abs hx0.symm
-        · simpa [x'] using hy a
+        · simpa [x', Fin.tail_def] using hy a
       have htail :=
         OSIIGeneratedLogarithmicArgument.mixedTailMemScalar
           k N x' hx'
@@ -408,7 +408,9 @@ theorem scalar_zero_mem
   have htail :=
     OSIIGeneratedLogarithmicArgument.mixedTailMemScalar
       n N (0 : Fin (n + 1) → ℝ) hmixed
-  simpa using htail
+  convert htail using 1
+  funext i
+  simp [Fin.tail_def]
 
 end OSIIGeneratedLogarithmicArgument
 

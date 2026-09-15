@@ -96,12 +96,11 @@ theorem osiiEuclideanOrderComplexTubeMap_time_im
   rw [osiiEuclideanOrderComplexTubeMap_apply]
   change (I * BHW.reducedDiffMap (k + 1) d (osiiComplexEuclideanOrderCLM i z) j 0).im = _
   rw [BHW.reducedDiffMap_eq_successive_differences]
-  have h := osiiComplexEuclideanOrderCLM_re i z
-  have ha := congrFun (congrFun h j.succ) 0
-  have hb := congrFun (congrFun h j.castSucc) 0
-  change _ = (osiiEuclideanOrderAction i (fun a mu => (z a mu).re)) j.succ 0 -
-    (osiiEuclideanOrderAction i (fun a mu => (z a mu).re)) j.castSucc 0
-  simpa using congrArg₂ (fun a b : Real => a - b) ha hb
+  simp only [Complex.mul_im, Complex.I_re, Complex.I_im, zero_mul, one_mul, zero_add]
+  rw [BHW.reducedDiffMapReal_apply]
+  exact congrArg₂ (fun a b : Real => a - b)
+    (congrFun (congrFun (osiiComplexEuclideanOrderCLM_re i z) ⟨j.val + 1, by omega⟩) 0)
+    (congrFun (congrFun (osiiComplexEuclideanOrderCLM_re i z) ⟨j.val, by omega⟩) 0)
 
 def osiiEuclideanOrderComplexRegion (i : OSIIEuclideanOrderIndex d k) :
     Set (Fin (k + 1) -> Fin (d + 1) -> Complex) :=
@@ -127,7 +126,7 @@ theorem osiiEuclideanOrderComplexRegion_realToComplex_iff
   rw [osiiEuclideanOrderComplexTubeMap_realToComplex]
   constructor
   · intro hx j
-    simpa [wickRotatePoint] using (hx j).1
+    simpa [wickRotatePoint, section43QTime, nPointTimeSpatialCLE] using (hx j).1
   · exact fun hx => osiiReducedWickRotateConfig_mem_productForwardTube_of_strictPositive _ hx
 
 theorem osiiEuclideanOrderComplexRegion_realPart_mem
@@ -187,8 +186,16 @@ theorem osiiEuclideanComplexDomain_realToComplex_iff (x : NPointDomain d (k + 1)
       x ∉ CoincidenceLocus d (k + 1) := by
   rw [osiiEuclideanComplexDomain, Set.mem_iUnion]
   simp_rw [osiiEuclideanOrderComplexRegion_realToComplex_iff]
-  simpa only [Set.mem_iUnion] using
-    (Set.ext_iff.mp (iUnion_osiiEuclideanOrderRegion (d := d) (k := k)) x)
+  constructor
+  · intro hx
+    have hm : x ∈ ⋃ i : OSIIEuclideanOrderIndex d k, osiiEuclideanOrderRegion i :=
+      Set.mem_iUnion.mpr hx
+    rw [iUnion_osiiEuclideanOrderRegion] at hm
+    exact hm
+  · intro hx
+    have hm : x ∈ (CoincidenceLocus d (k + 1))ᶜ := hx
+    rw [← iUnion_osiiEuclideanOrderRegion] at hm
+    exact Set.mem_iUnion.mp hm
 
 theorem osiiEuclideanComplexDomain_perm_iff
     (sigma : Equiv.Perm (Fin (k + 1))) (z : Fin (k + 1) -> Fin (d + 1) -> Complex) :

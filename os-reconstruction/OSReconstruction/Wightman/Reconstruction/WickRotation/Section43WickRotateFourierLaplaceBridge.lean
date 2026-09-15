@@ -214,8 +214,9 @@ theorem section43EuclideanSpaceMeasurableEquiv_measurePreserving
       (section43EuclideanSpaceMeasurableEquiv ι)
       (volume : Measure (EuclideanSpace ℝ ι))
       (volume : Measure (ι → ℝ)) := by
-  simpa [section43EuclideanSpaceMeasurableEquiv, EuclideanSpace.equiv] using
-    (PiLp.volume_preserving_ofLp ι)
+  unfold section43EuclideanSpaceMeasurableEquiv
+  change MeasurePreserving (EuclideanSpace.equiv (ι := ι) (𝕜 := ℝ)) volume volume
+  exact EuclideanSpace.volume_preserving_symm_measurableEquiv_toLp ι
 
 /-- The measurable time/spatial split with the spatial block in the
 `EuclideanSpace` surface used by `partialFourierSpatial_fun`. -/

@@ -307,8 +307,22 @@ theorem exists_rootedRepresentedGeneratorStageOfOS_of_currentData_on
           simpa [rootedGeneratorDiagonalApproximationFamilyOfOS] using
             rootedGeneratorTwoScaleApproximationFamilyOfOS_domain_convex H)
         W (GeneratorIndex.ofGap (0 : Fin k))
-        (by simpa [E] using hrep)
-        (by simpa [E] using hbounded)
+        (by
+          simpa [E,
+            E₂,
+            GeneratorSpatialTwoScaleApproximationFamily.CommonPositiveRealEdgeData.selectedEdge,
+            GeneratorSpatialTwoScaleApproximationFamily.CommonPositiveRealEdgeData.ofCommonDistributionalTrace,
+            GeneratorSpatialTwoScaleApproximationFamily.CommonPositiveRealEdgeData.toDiagonal,
+            GeneratorSpatialApproximationFamily.CommonPositiveRealEdgeData.ofApproximationTendsto]
+            using hrep)
+        (by
+          simpa [E,
+            E₂,
+            GeneratorSpatialTwoScaleApproximationFamily.CommonPositiveRealEdgeData.selectedEdge,
+            GeneratorSpatialTwoScaleApproximationFamily.CommonPositiveRealEdgeData.ofCommonDistributionalTrace,
+            GeneratorSpatialTwoScaleApproximationFamily.CommonPositiveRealEdgeData.toDiagonal,
+            GeneratorSpatialApproximationFamily.CommonPositiveRealEdgeData.ofApproximationTendsto]
+            using hbounded)
   refine ⟨E, P, ?_, ?_⟩
   · change U ⊆ Q
     exact hUV.trans hVQ

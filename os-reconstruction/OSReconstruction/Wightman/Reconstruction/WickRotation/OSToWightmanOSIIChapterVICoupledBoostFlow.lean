@@ -88,16 +88,20 @@ private theorem hasDerivAt_planarBoost (a : Fin d)
   refine Fin.cases ?_ (fun b => ?_) mu
   · simp only [osiiPlanarBoostCLE_time, boostTangent, Fin.cons_zero,
       Fin.cons_succ, ite_true]
-    simpa only [add_comm] using
-      ((Real.hasDerivAt_cosh t).mul_const (x 0)).add
-        ((Real.hasDerivAt_sinh t).mul_const (x a.succ))
+    convert (((Real.hasDerivAt_cosh t).mul_const (x 0)).add
+      ((Real.hasDerivAt_sinh t).mul_const (x a.succ))) using 1
+    · funext y
+      rfl
+    · ring
   · by_cases hba : b = a
     · subst b
       simp only [osiiPlanarBoostCLE_axis, boostTangent, Fin.cons_zero,
         Fin.cons_succ, ite_true]
-      simpa only [add_comm] using
-        ((Real.hasDerivAt_sinh t).mul_const (x 0)).add
-          ((Real.hasDerivAt_cosh t).mul_const (x a.succ))
+      convert (((Real.hasDerivAt_sinh t).mul_const (x 0)).add
+        ((Real.hasDerivAt_cosh t).mul_const (x a.succ))) using 1
+      · funext y
+        rfl
+      · ring
     · simp only [osiiPlanarBoostCLE_other a b hba, boostTangent,
         Fin.cons_succ, hba, ite_false]
       exact hasDerivAt_const t _
@@ -166,8 +170,14 @@ theorem contDiff_osiiCoupledBoostCLE (a : Fin d) :
       LorentzLieGroup.planarBoost, Matrix.add_apply, Matrix.smul_apply,
       Matrix.one_apply, Matrix.single_apply, smul_eq_mul]
     fun_prop
-  simpa only [osiiCoupledBoostCLE_apply] using
-    (nPointTimeSpatialCLE (d := d) k).contDiff.comp h
+  rw [show (fun p : Real × Section43TimeSpatialSpace d k =>
+      osiiCoupledBoostCLE d k a p.1 p.2) =
+      (nPointTimeSpatialCLE (d := d) k) ∘ (fun p => fun j : Fin k =>
+        osiiPlanarBoostCLE d a p.1
+          ((nPointTimeSpatialCLE (d := d) k).symm p.2 j)) by
+    funext p
+    rfl]
+  exact (nPointTimeSpatialCLE (d := d) k).contDiff.comp h
 
 omit [NeZero d] in
 @[simp] theorem osiiSpatialAxisCLM_coordinate (a b : Fin d)
@@ -196,7 +206,21 @@ theorem hasDerivAt_osiiCoupledBoostCLE (a : Fin d)
   have h := (nPointTimeSpatialCLE (d := d) k).toContinuousLinearMap.hasFDerivAt.comp_hasDerivAt t
     (hasDerivAt_pi.mpr (fun j : Fin k => hasDerivAt_planarBoost a
       ((nPointTimeSpatialCLE (d := d) k).symm p j) t))
-  simpa only [osiiCoupledBoostCLE_apply, boostTangent_timeSpatial] using h
+  rw [show osiiCoupledBoostCLE d k a t (osiiCoupledBoostGenerator d k a p) =
+      nPointTimeSpatialCLE (d := d) k (fun j =>
+        osiiPlanarBoostCLE d a t
+          (boostTangent a ((nPointTimeSpatialCLE (d := d) k).symm p j))) by
+    rw [osiiCoupledBoostCLE_apply]
+    congr 1
+    funext j
+    exact congrArg (osiiPlanarBoostCLE d a t) (boostTangent_timeSpatial a p j)]
+  rw [show (fun u => osiiCoupledBoostCLE d k a u p) =
+      (nPointTimeSpatialCLE (d := d) k) ∘ (fun u => fun j : Fin k =>
+        osiiPlanarBoostCLE d a u
+          ((nPointTimeSpatialCLE (d := d) k).symm p j)) by
+    funext u
+    rfl]
+  exact h
 
 /-- A genuine boost Ward identity integrates to finite invariance on all
 coupled Schwartz tests. No support or physical-tube premise is needed. -/
@@ -208,9 +232,12 @@ theorem osiiCoupledBoost_pairing_eq (a : Fin d)
       (osiiCoupledBoostCLE d k a t) Phi) = T Phi := by
   apply OSIIChapterVI.linearFlow_pairing_eq T (osiiCoupledBoostGenerator d k a) hWard
     (osiiCoupledBoostCLE d k a) (contDiff_osiiCoupledBoostCLE a)
-  · simpa only [osiiCoupledBoostCLE_symm] using
-      (contDiff_osiiCoupledBoostCLE (k := k) a).continuous.comp
-        (continuous_fst.neg.prodMk continuous_snd)
+  · have hc := (contDiff_osiiCoupledBoostCLE (k := k) a).continuous.comp
+      (continuous_fst.neg.prodMk continuous_snd)
+    convert hc using 1
+    funext p
+    rw [osiiCoupledBoostCLE_symm]
+    rfl
   · intro p
     rw [osiiCoupledBoostCLE_zero]
     rfl

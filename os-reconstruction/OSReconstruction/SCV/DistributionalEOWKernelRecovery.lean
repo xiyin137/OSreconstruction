@@ -336,7 +336,7 @@ theorem continuousOn_realMollifyLocal_of_translate_margin
   let f : ComplexChartSpace m → (Fin m → ℝ) → ℂ :=
     fun z t => H (z + realEmbed t) * ψ t
   have hk : IsCompact k := by
-    simpa [k] using hψ_compact
+    simpa only [k, HasCompactSupport] using hψ_compact
   have hf : ContinuousOn f.uncurry (Ucore ×ˢ univ) := by
     intro p hp
     rcases hp with ⟨hpU, -⟩
@@ -361,7 +361,10 @@ theorem continuousOn_realMollifyLocal_of_translate_margin
           ContinuousAt
             (fun q : ComplexChartSpace m × (Fin m → ℝ) => ψ q.2) p :=
         ContinuousAt.comp ψ.continuous.continuousAt continuous_snd.continuousAt
-      simpa [f] using (hleft.mul hright).continuousWithinAt
+      change ContinuousWithinAt
+        (fun q : ComplexChartSpace m × (Fin m → ℝ) =>
+          H (q.1 + realEmbed q.2) * ψ q.2) (Ucore ×ˢ univ) p
+      exact (hleft.mul hright).continuousWithinAt
     · have hψ_zero :
           (ψ : (Fin m → ℝ) → ℂ) =ᶠ[nhds p.2] fun _ => 0 := by
         have ht' : p.2 ∉ tsupport (ψ : (Fin m → ℝ) → ℂ) := by
@@ -505,7 +508,10 @@ theorem realConvolutionTest_pairing_eq_mollifier_pairing
               (fun q : ComplexChartSpace m × (Fin m → ℝ) => ψ q.2) p :=
           ContinuousAt.comp ψ.continuous.continuousAt
             continuous_snd.continuousAt
-        simpa [J] using hH_comp.mul (hφ_comp.mul hψ_comp)
+        change ContinuousAt
+          (fun q : ComplexChartSpace m × (Fin m → ℝ) =>
+            H q.1 * (φ (q.1 - realEmbed q.2) * ψ q.2)) p
+        exact hH_comp.mul (hφ_comp.mul hψ_comp)
       · have hφ_zero :
             (φ : ComplexChartSpace m → ℂ)
               =ᶠ[nhds (p.1 - realEmbed p.2)] fun _ => 0 := by
@@ -613,7 +619,10 @@ theorem realConvolutionTest_pairing_eq_mollifier_pairing
               (fun q : ComplexChartSpace m × (Fin m → ℝ) => ψ q.2) p :=
           ContinuousAt.comp ψ.continuous.continuousAt
             continuous_snd.continuousAt
-        simpa [M] using hH_comp.mul (hφ_comp.mul hψ_comp)
+        change ContinuousAt
+          (fun q : ComplexChartSpace m × (Fin m → ℝ) =>
+            H (q.1 + realEmbed q.2) * (φ q.1 * ψ q.2)) p
+        exact hH_comp.mul (hφ_comp.mul hψ_comp)
       · have hψ_zero :
             (ψ : (Fin m → ℝ) → ℂ) =ᶠ[nhds p.2] fun _ => 0 := by
           rwa [notMem_tsupport_iff_eventuallyEq] at ht

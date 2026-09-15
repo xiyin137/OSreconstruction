@@ -220,7 +220,9 @@ theorem exists_packetFamily_logBranch_scale_bound_at_gap
         (osiiAxisPairMultiGapUpdate
           (osiiAxisPairSimultaneousLogRealEmbed x) (i, a) w)) <=
         (D.spectatorPackage x i).flatTubeBranchCoordinateChartBound OS a := by
-    simpa [OSIIAxisPairMultiGapSemigroupPacketFamily.logBranch,
+    simpa [OSIIStep4MultiGapSelectedCommonSlopeData.packetFamily,
+      OSIIAxisPairMultiGapSemigroupPacketFamily.logBranch,
+      OSIIAxisPairGapRotatedSourcePacket.branch,
       OSIIAxisPairSemigroupPacketFamily.toDirectionalBranchFamily,
       OSIIAxisPairSemigroupPacketFamily.logBranch,
       osiiAxisPairMultiGapUpdate] using hlocal

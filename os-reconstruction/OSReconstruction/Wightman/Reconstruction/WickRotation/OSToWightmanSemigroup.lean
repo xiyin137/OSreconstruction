@@ -179,8 +179,10 @@ private theorem translateNPointDomain_hasTemperateGrowth (a : SpacetimeDim d) {n
   have hconst : Function.HasTemperateGrowth (fun _ : NPointDomain d n => c) :=
     Function.HasTemperateGrowth.const c
   have hid : Function.HasTemperateGrowth (fun x : NPointDomain d n => x) := by
-    simpa using (ContinuousLinearMap.id ℝ (NPointDomain d n)).hasTemperateGrowth
-  simpa [translateNPointDomain, c, sub_eq_add_neg, Pi.add_apply] using hid.add hconst
+    change Function.HasTemperateGrowth (id : NPointDomain d n → NPointDomain d n)
+    exact (ContinuousLinearMap.id ℝ (NPointDomain d n)).hasTemperateGrowth
+  change Function.HasTemperateGrowth ((fun x : NPointDomain d n => x) + fun _ => c)
+  exact hid.add hconst
 
 abbrev translateSchwartzNPoint (a : SpacetimeDim d) {n : ℕ} :
     SchwartzNPoint d n →L[ℂ] SchwartzNPoint d n :=
@@ -229,7 +231,8 @@ private theorem seminorm_timeShiftSchwartzNPoint_le (k l : ℕ) (t : ℝ) {n : �
           (fun z : NPointDomain d n => f (fun i => z i - timeShiftVec d t)) x =
         iteratedFDeriv ℝ l f.toFun (x + a) := by
     rw [hfun]
-    simpa using (iteratedFDeriv_comp_add_right (f := f.toFun) l a x)
+    change iteratedFDeriv ℝ l (fun z => f.toFun (z + a)) x = _
+    exact iteratedFDeriv_comp_add_right (f := f.toFun) l a x
   have hnorm_x : ‖x‖ ≤ ‖x + a‖ + ‖a‖ := by
     calc
       ‖x‖ = ‖(x + a) - a‖ := by
@@ -238,6 +241,7 @@ private theorem seminorm_timeShiftSchwartzNPoint_le (k l : ℕ) (t : ℝ) {n : �
         simp [a]
       _ ≤ ‖x + a‖ + ‖a‖ := norm_sub_le _ _
   have hC0 : ‖iteratedFDeriv ℝ l f.toFun (x + a)‖ ≤ SchwartzMap.seminorm ℝ 0 l f := by
+    change ‖iteratedFDeriv ℝ l (⇑f) (x + a)‖ ≤ _
     simpa only [pow_zero, one_mul] using SchwartzMap.le_seminorm ℝ 0 l f (x + a)
   calc
     ‖x‖ ^ k *
@@ -906,7 +910,13 @@ def fieldActionTimeShiftPositiveTimeBorchers
         intro n
         cases n with
         | zero =>
-            simp [Reconstruction.fieldOperatorAction_funcs_zero]
+            rw [Reconstruction.fieldOperatorAction_funcs_zero]
+            have hzero :
+                (⇑(0 : SchwartzNPoint d 0) : NPointDomain d 0 → ℂ) = 0 := by
+              funext x
+              rfl
+            rw [hzero, tsupport_zero]
+            exact Set.empty_subset _
         | succ n =>
             simpa [Reconstruction.fieldOperatorAction_funcs_succ, timeShiftBorchers_funcs] using
               prependField_timeShift_tsupport_subset_orderedPositiveTimeRegion_of_head_barrier
@@ -950,8 +960,9 @@ theorem continuousOn_os_pairing_term_timeShift_nonneg_of_isCompactSupport
   have hbase :
       Continuous (fun t : Set.Ici (0 : ℝ) =>
         f.osConjTensorProduct (timeShiftSchwartzNPoint (d := d) t.1 g)) := by
-    simpa [SchwartzNPoint.osConjTensorProduct] using
-      (SchwartzMap.tensorProduct_continuous_right f.osConj).comp hshift
+    change Continuous (fun t : Set.Ici (0 : ℝ) =>
+      SchwartzMap.tensorProduct f.osConj (timeShiftSchwartzNPoint (d := d) t.1 g))
+    exact (SchwartzMap.tensorProduct_continuous_right f.osConj).comp hshift
   have hterm_cont : Continuous hterm := by
     exact hbase.subtype_mk (fun t =>
       VanishesToInfiniteOrderOnCoincidence_osConjTensorProduct_of_tsupport_subset_orderedPositiveTimeRegion
@@ -1850,13 +1861,13 @@ theorem continuousOn_osiiOriginalOSHilbertComplex
     (OS : OsterwalderSchraderAxioms d) :
     ContinuousOn (osiiOriginalOSHilbertComplex OS)
       {z : Complex | 0 < z.re} := by
-  simpa [osiiOriginalOSHilbertComplex] using
-    (ContinuousLinearMap.spectralSemigroupComplex_continuousOn
+  unfold osiiOriginalOSHilbertComplex
+  exact ContinuousLinearMap.spectralSemigroupComplex_continuousOn
       (A := osTimeShiftHilbertOfOS (d := d) OS 1 one_pos)
       (hA := osTimeShiftHilbertOfOS_isSelfAdjoint (d := d) OS 1 one_pos)
       (hA_nonneg := osTimeShiftHilbertOfOS_nonneg (d := d) OS 1 one_pos)
       (hspec := spectrum_osTimeShiftHilbertOfOS_subset_Icc
-        (d := d) OS 1 one_pos))
+        (d := d) OS 1 one_pos)
 
 theorem continuousOn_osiiOriginalOSHilbertComplex_apply
     (OS : OsterwalderSchraderAxioms d) (y : OSHilbertSpace OS) :
@@ -1973,12 +1984,12 @@ private theorem differentiableOn_osTimeShiftHilbertHolomorphicValueOffdiag
     (x y : OSHilbertSpace OS) :
     DifferentiableOn ℂ (osTimeShiftHilbertHolomorphicValueOffdiag (d := d) OS lgc x y)
       {z : ℂ | 0 < z.re} := by
-  simpa [osTimeShiftHilbertHolomorphicValueOffdiag] using
-    (ContinuousLinearMap.differentiableOn_selfAdjointSpectralLaplaceOffdiag
+  unfold osTimeShiftHilbertHolomorphicValueOffdiag
+  exact ContinuousLinearMap.differentiableOn_selfAdjointSpectralLaplaceOffdiag
       (A := osTimeShiftHilbert (d := d) OS lgc 1 one_pos)
       (hA := osTimeShiftHilbert_isSelfAdjoint (d := d) OS lgc 1 one_pos)
       (hspec := spectrum_osTimeShiftHilbert_subset_Icc (d := d) OS lgc 1 one_pos)
-      (x := x) (y := y))
+      (x := x) (y := y)
 
 /-- Raw OS pairing version of the one-variable holomorphic extension for Euclidean time shift. -/
 def OSInnerProductTimeShiftHolomorphicValue
@@ -2012,11 +2023,11 @@ private theorem differentiableOn_OSInnerProductTimeShiftHolomorphicValue
     (F G : PositiveTimeBorchersSequence d) :
     DifferentiableOn ℂ (OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc F G)
       {z : ℂ | 0 < z.re} := by
-  simpa [OSInnerProductTimeShiftHolomorphicValue] using
-    differentiableOn_osTimeShiftHilbertHolomorphicValueOffdiag
-      (d := d) OS lgc
-      (((show OSPreHilbertSpace OS from (⟦F⟧)) : OSHilbertSpace OS))
-      (((show OSPreHilbertSpace OS from (⟦G⟧)) : OSHilbertSpace OS))
+  unfold OSInnerProductTimeShiftHolomorphicValue
+  exact differentiableOn_osTimeShiftHilbertHolomorphicValueOffdiag
+    (d := d) OS lgc
+    (((show OSPreHilbertSpace OS from (⟦F⟧)) : OSHilbertSpace OS))
+    (((show OSPreHilbertSpace OS from (⟦G⟧)) : OSHilbertSpace OS))
 
 /-- The semigroup matrix element is holomorphic on the right half-plane. This
 is the one-variable OS input used when Wick-rotating into the two-point flat

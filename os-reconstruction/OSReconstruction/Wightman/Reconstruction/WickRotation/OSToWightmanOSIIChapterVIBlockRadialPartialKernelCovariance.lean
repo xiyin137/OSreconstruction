@@ -149,13 +149,11 @@ noncomputable def osiiStep4RealOrthogonalMeasurableEquiv {q : Nat}
             rw [Matrix.mulVec_mulVec, hR']
             simp }
       measurable_toFun := by
-        simpa [Matrix.toLin'_apply] using
-          (LinearMap.continuous_of_finiteDimensional
-            (Matrix.toLin' R)).measurable
+        show Measurable (fun x : Fin q -> Real => R.mulVec x)
+        fun_prop
       measurable_invFun := by
-        simpa [Matrix.toLin'_apply] using
-          (LinearMap.continuous_of_finiteDimensional
-            (Matrix.toLin' R.transpose)).measurable }
+        show Measurable (fun x : Fin q -> Real => R.transpose.mulVec x)
+        fun_prop }
 
 theorem osiiStep4RealOrthogonalMeasurableEquiv_measurePreserving {q : Nat}
     (R : Matrix (Fin q) (Fin q) Real)

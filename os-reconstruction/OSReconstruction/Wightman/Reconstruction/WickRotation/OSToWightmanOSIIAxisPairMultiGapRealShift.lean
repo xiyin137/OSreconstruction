@@ -154,9 +154,8 @@ def realShift
         apply continuous_pi
         intro a
         exact
-          ((continuous_apply a).comp
-            ((continuous_apply i).comp continuous_fst)).sub
-              continuous_const
+          ((continuous_apply_apply i a).comp continuous_fst).sub
+            continuous_const
       · exact continuous_snd.sub continuous_const
     have hmaps :
         Set.MapsTo pull

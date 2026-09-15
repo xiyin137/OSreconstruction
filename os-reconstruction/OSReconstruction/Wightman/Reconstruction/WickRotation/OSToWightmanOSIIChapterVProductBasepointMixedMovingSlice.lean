@@ -58,7 +58,7 @@ theorem continuous_osiiMixedHeadTailDelta (k : ℕ) :
     refine Fin.cases ?_ ?_ i
     · simpa using hhead₁
     · intro j
-      simpa using (continuous_apply j).comp htail₁
+      fun_prop
   have hhead₂ :
       Continuous
         (fun p : (ℝ × ℝ) × (Fin (k + k) → ℝ) => p.1.2) :=
@@ -78,7 +78,7 @@ theorem continuous_osiiMixedHeadTailDelta (k : ℕ) :
     refine Fin.cases ?_ ?_ i
     · simpa using hhead₂
     · intro j
-      simpa using (continuous_apply j).comp htail₂
+      fun_prop
   exact
     (Fin.continuous_append (k + 1) (k + 1)).comp
       (hleft.prodMk hright)
@@ -193,9 +193,11 @@ theorem continuousOn_osiiReflectedMixedProductBasepointKernel
     · have hz : θ₂ heads.2 = 0 :=
         image_eq_zero_of_notMem_tsupport hright
       simp [f, hz]
-  simpa [osiiReflectedMixedProductBasepointKernel, f] using
-    (continuousOn_integral_of_compact_support
-      (μ := (volume : Measure (ℝ × ℝ))) hK hf hfs)
+  change ContinuousOn (fun p => ∫ heads : ℝ × ℝ, f p heads)
+    (reflectedMovingSliceCarrier A ρ ×ˢ
+      (Set.univ : Set (Fin (k + k) → ℝ)))
+  exact continuousOn_integral_of_compact_support
+    (μ := (volume : Measure (ℝ × ℝ))) hK hf hfs
 
 /-- Joint continuity after inserting the Cauchy-reflected parameter and a
 fixed internal-gap center. -/

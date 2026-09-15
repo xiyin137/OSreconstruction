@@ -92,11 +92,19 @@ noncomputable def next
         exact
           (D.sourceStrictGeneratedCarrier_subset arity).trans
             (by
-              simpa [nextPointed, successor] using
+              simpa [nextPointed, successor,
+                CanonicalGeneratorPointedConvexAtlasStageLevelData.scalarRankSuccessorPhysicalPointedNext,
+                CanonicalGeneratorPointedConvexAtlasStageLevelData.toStrictGeneratedScalarRankStageLevelSuccessorData,
+                StrictGeneratedScalarRankSuccessorSeedPointedStageLevelData.physicalSuccessorPointedStageLevel,
+                StrictGeneratedScalarRankSuccessorSeedPointedStageLevelData.toStrictGeneratedScalarRankStageLevelSuccessorData] using
                 successor.carrier_subset arity)
       targetRankCarrier_subset := by
         intro arity
-        simpa [nextPointed, successor] using
+        simpa [nextPointed, successor,
+          CanonicalGeneratorPointedConvexAtlasStageLevelData.scalarRankSuccessorPhysicalPointedNext,
+          CanonicalGeneratorPointedConvexAtlasStageLevelData.toStrictGeneratedScalarRankStageLevelSuccessorData,
+          StrictGeneratedScalarRankSuccessorSeedPointedStageLevelData.physicalSuccessorPointedStageLevel,
+          StrictGeneratedScalarRankSuccessorSeedPointedStageLevelData.toStrictGeneratedScalarRankStageLevelSuccessorData] using
           successor.scalarRankSuccessorCarrier_subset arity
     }
 
@@ -109,7 +117,11 @@ theorem carrier_subset_next
       ((D.next lgc).pointed.stageLevel.stage arity).carrier := by
   let P := D.sourceReflectedGramRankData
   let Q := D.targetDepthScalarRankData
-  simpa [next, P, Q] using
+  simpa [next, P, Q,
+    CanonicalGeneratorPointedConvexAtlasStageLevelData.scalarRankSuccessorPhysicalPointedNext,
+    CanonicalGeneratorPointedConvexAtlasStageLevelData.toStrictGeneratedScalarRankStageLevelSuccessorData,
+    StrictGeneratedScalarRankSuccessorSeedPointedStageLevelData.physicalSuccessorPointedStageLevel,
+    StrictGeneratedScalarRankSuccessorSeedPointedStageLevelData.toStrictGeneratedScalarRankStageLevelSuccessorData] using
     (D.pointed.toStrictGeneratedScalarRankStageLevelSuccessorData
       depth rank P Q lgc).carrier_subset arity
 
@@ -125,7 +137,11 @@ theorem next_extends
       (D.pointed.stageLevel.stage arity).carrier := by
   let P := D.sourceReflectedGramRankData
   let Q := D.targetDepthScalarRankData
-  simpa [next, P, Q] using
+  simpa [next, P, Q,
+    CanonicalGeneratorPointedConvexAtlasStageLevelData.scalarRankSuccessorPhysicalPointedNext,
+    CanonicalGeneratorPointedConvexAtlasStageLevelData.toStrictGeneratedScalarRankStageLevelSuccessorData,
+    StrictGeneratedScalarRankSuccessorSeedPointedStageLevelData.physicalSuccessorPointedStageLevel,
+    StrictGeneratedScalarRankSuccessorSeedPointedStageLevelData.toStrictGeneratedScalarRankStageLevelSuccessorData] using
     (D.pointed.toStrictGeneratedScalarRankStageLevelSuccessorData
       depth rank P Q lgc).extendsOld arity
 
@@ -157,7 +173,11 @@ theorem next_extends_rootedInsertion
     (A.physicalSuccessorStage_extends_seedStage arity hseed).trans
       (I.vacuumTailProjectionRankStageLevel_extends V arity hz)
   simpa [S, P, Q, I, V, A, next,
-    CanonicalGeneratorPointedConvexAtlasStageLevelData.scalarRankSuccessorPhysicalPointedNext]
+    CanonicalGeneratorPointedConvexAtlasStageLevelData.scalarRankSuccessorPhysicalPointedNext,
+    StrictGeneratedScalarRankSuccessorSeedPointedStageLevelData.physicalSuccessorPointedStageLevel,
+    StrictGeneratedScalarRankSuccessorSeedPointedStageLevelData.physicalSuccessorStageLevel,
+    CanonicalGeneratorPointedConvexAtlasStageLevelData.rootedInsertionRankNext,
+    CanonicalGeneratorPointedConvexAtlasStageLevelData.rootedInsertionRankStageLevel]
     using hphysical
 
 /-- The ranked successor preserves the chosen hubs exactly. -/
@@ -189,11 +209,19 @@ noncomputable def nextOfOS
         exact
           (D.sourceStrictGeneratedCarrier_subset arity).trans
             (by
-              simpa [nextPointed, successor] using
+              simpa [nextPointed, successor,
+                CanonicalGeneratorPointedConvexAtlasStageLevelData.scalarRankSuccessorPhysicalPointedNextOfOS,
+                CanonicalGeneratorPointedConvexAtlasStageLevelData.toStrictGeneratedScalarRankStageLevelSuccessorDataOfOS,
+                StrictGeneratedScalarRankSuccessorSeedPointedStageLevelData.physicalSuccessorPointedStageLevel,
+                StrictGeneratedScalarRankSuccessorSeedPointedStageLevelData.toStrictGeneratedScalarRankStageLevelSuccessorData] using
                 successor.carrier_subset arity)
       targetRankCarrier_subset := by
         intro arity
-        simpa [nextPointed, successor] using
+        simpa [nextPointed, successor,
+          CanonicalGeneratorPointedConvexAtlasStageLevelData.scalarRankSuccessorPhysicalPointedNextOfOS,
+          CanonicalGeneratorPointedConvexAtlasStageLevelData.toStrictGeneratedScalarRankStageLevelSuccessorDataOfOS,
+          StrictGeneratedScalarRankSuccessorSeedPointedStageLevelData.physicalSuccessorPointedStageLevel,
+          StrictGeneratedScalarRankSuccessorSeedPointedStageLevelData.toStrictGeneratedScalarRankStageLevelSuccessorData] using
           successor.scalarRankSuccessorCarrier_subset arity
     }
 
@@ -205,7 +233,11 @@ theorem carrier_subset_nextOfOS
       (D.nextOfOS.pointed.stageLevel.stage arity).carrier := by
   let P := D.sourceReflectedGramRankData
   let Q := D.targetDepthScalarRankData
-  simpa [nextOfOS, P, Q] using
+  simpa [nextOfOS, P, Q,
+    CanonicalGeneratorPointedConvexAtlasStageLevelData.scalarRankSuccessorPhysicalPointedNextOfOS,
+    CanonicalGeneratorPointedConvexAtlasStageLevelData.toStrictGeneratedScalarRankStageLevelSuccessorDataOfOS,
+    StrictGeneratedScalarRankSuccessorSeedPointedStageLevelData.physicalSuccessorPointedStageLevel,
+    StrictGeneratedScalarRankSuccessorSeedPointedStageLevelData.toStrictGeneratedScalarRankStageLevelSuccessorData] using
     (D.pointed.toStrictGeneratedScalarRankStageLevelSuccessorDataOfOS
       depth rank P Q).carrier_subset arity
 
@@ -219,7 +251,11 @@ theorem nextOfOS_extends
       (D.pointed.stageLevel.stage arity).carrier := by
   let P := D.sourceReflectedGramRankData
   let Q := D.targetDepthScalarRankData
-  simpa [nextOfOS, P, Q] using
+  simpa [nextOfOS, P, Q,
+    CanonicalGeneratorPointedConvexAtlasStageLevelData.scalarRankSuccessorPhysicalPointedNextOfOS,
+    CanonicalGeneratorPointedConvexAtlasStageLevelData.toStrictGeneratedScalarRankStageLevelSuccessorDataOfOS,
+    StrictGeneratedScalarRankSuccessorSeedPointedStageLevelData.physicalSuccessorPointedStageLevel,
+    StrictGeneratedScalarRankSuccessorSeedPointedStageLevelData.toStrictGeneratedScalarRankStageLevelSuccessorData] using
     (D.pointed.toStrictGeneratedScalarRankStageLevelSuccessorDataOfOS
       depth rank P Q).extendsOld arity
 
@@ -706,7 +742,7 @@ theorem scalarRankUnionStageLevel_extends
         ).stage arity).distribution
       (D.stageLevel.stage arity).distribution
       (D.stageLevel.stage arity).carrier := by
-  simpa [scalarRankUnionStageLevel] using
+  simpa [scalarRankUnionStageLevel, scalarRankInductionZero] using
     D.scalarRankUnionStage_extends_rank
       depth sourceStrictGeneratedCarrier_subset lgc 0 arity
 
@@ -724,7 +760,7 @@ theorem oldCarrier_subset_scalarRankUnionStageLevel
       ((D.scalarRankUnionStageLevel
         depth sourceStrictGeneratedCarrier_subset lgc
         ).stage arity).carrier := by
-  simpa [scalarRankUnionStageLevel] using
+  simpa [scalarRankUnionStageLevel, scalarRankInductionZero] using
     D.scalarRankStageCarrier_subset_union
       depth sourceStrictGeneratedCarrier_subset lgc 0 arity
 
@@ -1236,7 +1272,9 @@ theorem scalarRankUnionStageOfOS_starConvex
         ).stage (q + 1)).carrier := by
   apply starConvex_iUnion
   intro rank
-  simpa [D.scalarRankInductionOfOS_hub
+  simpa [scalarRankUnionStageLevelOfOS, scalarRankUnionStageOfOS,
+    scalarRankLocalTimeStageFamilyOfOS,
+    D.scalarRankInductionOfOS_hub
     depth sourceStrictGeneratedCarrier_subset rank] using
     ((D.scalarRankInductionOfOS
       depth sourceStrictGeneratedCarrier_subset rank

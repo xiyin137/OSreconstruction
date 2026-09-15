@@ -68,9 +68,10 @@ lemma integrable_schwartz_fubini_pointwise {m : ℕ}
     (C := C) (N := N) hC ?_ f
   · have hev :
         Continuous fun ψ : SchwartzMap (Fin m → ℝ) ℂ => ψ ξ := by
-      simpa using
-        (((BoundedContinuousFunction.evalCLM ℂ ξ).comp
-          (SchwartzMap.toBoundedContinuousFunctionCLM ℂ (Fin m → ℝ) ℂ)).continuous)
+      change Continuous ⇑((BoundedContinuousFunction.evalCLM ℂ ξ).comp
+        (SchwartzMap.toBoundedContinuousFunctionCLM ℂ (Fin m → ℝ) ℂ))
+      exact ((BoundedContinuousFunction.evalCLM ℂ ξ).comp
+        (SchwartzMap.toBoundedContinuousFunctionCLM ℂ (Fin m → ℝ) ℂ)).continuous
     exact (hev.comp hg_cont).aestronglyMeasurable
   · intro x
     exact (SchwartzMap.norm_le_seminorm ℝ (g x) ξ).trans (hCbound x)
@@ -311,7 +312,9 @@ lemma integrable_schwartz_fubini_finset_sum_seminorm_weight_complex {m : ℕ}
       ∀ x, SchwartzMap.seminorm ℝ k n (g x) ≤ C * (1 + ‖x‖) ^ N) :
     Integrable fun x =>
       (∑ i ∈ s, SchwartzMap.seminorm ℂ i.1 i.2 (g x)) * ‖f x‖ := by
-  simpa using
+  change Integrable fun x =>
+    (∑ i ∈ s, SchwartzMap.seminorm ℝ i.1 i.2 (g x)) * ‖f x‖
+  exact
     integrable_schwartz_fubini_finset_sum_seminorm_weight
       s g f hg_cont hg_bound
 
@@ -899,10 +902,11 @@ lemma finitePartitionApproximant_iteratedFDeriv_eq_integral {m : ℕ} {ι : Type
                 (((volume (A i)).toReal : ℂ) • ψ i) ζ) ξ =
             ((volume (A i)).toReal : ℂ) •
               iteratedFDeriv ℝ n (fun ζ : Fin m → ℝ => ψ i ζ) ξ := by
-          simpa [SchwartzMap.smul_apply] using
-            (iteratedFDeriv_const_smul_apply (𝕜 := ℝ)
-              (a := ((volume (A i)).toReal : ℂ))
-              ((ψ i).contDiffAt n (x := ξ)))
+          change iteratedFDeriv ℝ n
+              (((volume (A i)).toReal : ℂ) • ⇑(ψ i)) ξ = _
+          exact iteratedFDeriv_const_smul_apply (𝕜 := ℝ)
+            (a := ((volume (A i)).toReal : ℂ))
+            ((ψ i).contDiffAt n (x := ξ))
         exact hsmul.trans
           ((RCLike.real_smul_eq_coe_smul (K := ℂ)
             (volume (A i)).toReal
@@ -957,9 +961,9 @@ lemma boundedKernel_iteratedFDeriv_eq {m : ℕ}
     iteratedFDeriv ℝ n
         (fun ζ : Fin m → ℝ => boundedKernel g f x ζ) ξ =
       f x • iteratedFDeriv ℝ n (fun ζ : Fin m → ℝ => g x ζ) ξ := by
-  simpa [boundedKernel, SchwartzMap.smul_apply] using
-    (iteratedFDeriv_const_smul_apply (𝕜 := ℝ)
-      (a := f x) ((g x).contDiffAt n (x := ξ)))
+  change iteratedFDeriv ℝ n (f x • ⇑(g x)) ξ = _
+  exact iteratedFDeriv_const_smul_apply (𝕜 := ℝ)
+    (a := f x) ((g x).contDiffAt n (x := ξ))
 
 lemma clm_finitePartitionKernel_error_norm_le {m : ℕ} {ι : Type*}
     [Fintype ι] [DecidableEq ι]
@@ -1146,19 +1150,19 @@ lemma continuous_schwartz_iteratedFDeriv_eval {m : ℕ}
       map_add' := by
         intro ψ φ
         ext v
-        simpa [SchwartzMap.add_apply] using
-          congrArg (fun L =>
-            (L : ContinuousMultilinearMap ℝ (fun _ : Fin n => Fin m → ℝ) ℂ) v)
-            (iteratedFDeriv_add_apply
-              (ψ.contDiffAt n) (φ.contDiffAt n) (x := ξ))
+        change (iteratedFDeriv ℝ n (⇑ψ + ⇑φ) ξ) v = _
+        exact congrArg (fun L =>
+          (L : ContinuousMultilinearMap ℝ (fun _ : Fin n => Fin m → ℝ) ℂ) v)
+          (iteratedFDeriv_add_apply
+            (ψ.contDiffAt n) (φ.contDiffAt n) (x := ξ))
       map_smul' := by
         intro c ψ
         ext v
-        simpa [SchwartzMap.smul_apply] using
-          congrArg (fun L =>
-            (L : ContinuousMultilinearMap ℝ (fun _ : Fin n => Fin m → ℝ) ℂ) v)
-            (iteratedFDeriv_const_smul_apply
-              (a := c) (ψ.contDiffAt n) (x := ξ)) }
+        change (iteratedFDeriv ℝ n ((c : ℂ) • ⇑ψ) ξ) v = _
+        exact congrArg (fun L =>
+          (L : ContinuousMultilinearMap ℝ (fun _ : Fin n => Fin m → ℝ) ℂ) v)
+          (iteratedFDeriv_const_smul_apply
+            (a := c) (ψ.contDiffAt n) (x := ξ)) }
   have hA_cont : Continuous A := by
     refine WithSeminorms.continuous_normedSpace_rng
       (F := ContinuousMultilinearMap ℝ (fun _ : Fin n => Fin m → ℝ) ℂ)
@@ -1302,8 +1306,15 @@ lemma boundedParamIntegralDeriv_hasFDerivAt {m : ℕ}
           K g f hg_cont hg_bound (n + 1) ξ).integrable.aestronglyMeasurable
       exact curryL.continuous.comp_aestronglyMeasurable hkernel
     · exact Filter.Eventually.of_forall fun x η _ => by
-        simpa [F', bound, curryL] using
-          norm_boundedParamIntegralDeriv_kernel_le g f (n + 1) x η
+        change ‖curryL (f x • iteratedFDeriv ℝ (n + 1)
+          (fun ζ : Fin m → ℝ => g x ζ) η)‖ ≤ bound x
+        rw [show ‖curryL (f x • iteratedFDeriv ℝ (n + 1)
+          (fun ζ : Fin m → ℝ => g x ζ) η)‖ =
+            ‖f x • iteratedFDeriv ℝ (n + 1)
+              (fun ζ : Fin m → ℝ => g x ζ) η‖ by
+          exact (continuousMultilinearCurryLeftEquiv ℝ
+            (fun _ : Fin (n + 1) => Fin m → ℝ) ℂ).toLinearIsometry.norm_map _]
+        exact norm_boundedParamIntegralDeriv_kernel_le g f (n + 1) x η
     · exact
         (integrable_schwartz_fubini_seminorm_weight
           g f hg_cont hg_bound 0 (n + 1)).restrict
@@ -1318,9 +1329,15 @@ lemma boundedParamIntegralDeriv_hasFDerivAt {m : ℕ}
               η :=
           ((g x).smooth (n + 1)).differentiable_iteratedFDeriv
             (by exact_mod_cast Nat.lt_succ_self n) η |>.hasFDerivAt
-        simpa [F, F', curryL, fderiv_iteratedFDeriv, Function.comp_def] using
-          hbase.const_smul (f x)
-  simpa [boundedParamIntegralDeriv, F, F', curryL] using hF
+        convert hbase.const_smul (f x) using 1
+        · ext η'
+          rfl
+        · simp only [F', curryL, fderiv_iteratedFDeriv, Function.comp_def]
+          ext v tail
+          rfl
+  change HasFDerivAt (fun η => ∫ x, F η x ∂volume.restrict K)
+    (∫ x, F' ξ x ∂volume.restrict K) ξ
+  exact hF
 
 lemma boundedParamIntegralDeriv_hasFDerivAt_curry {m : ℕ}
     (K : Set (Fin m → ℝ))
@@ -1612,13 +1629,13 @@ lemma finitePartition_error_iteratedFDeriv_eq_integral {m : ℕ} {ι : Type*}
   have hsub_left :
       iteratedFDeriv ℝ n
           (fun ζ : Fin m → ℝ => (Φ - ΦK) ζ) ξ =
-        iteratedFDeriv ℝ n (fun ζ : Fin m → ℝ => Φ ζ) ξ -
+          iteratedFDeriv ℝ n (fun ζ : Fin m → ℝ => Φ ζ) ξ -
           iteratedFDeriv ℝ n (fun ζ : Fin m → ℝ => ΦK ζ) ξ := by
-    simpa [SchwartzMap.sub_apply, Pi.sub_apply] using
-      (iteratedFDeriv_sub_apply (𝕜 := ℝ) (i := n)
-        (f := fun ζ : Fin m → ℝ => Φ ζ)
-        (g := fun ζ : Fin m → ℝ => ΦK ζ)
-        (Φ.contDiffAt n (x := ξ)) (ΦK.contDiffAt n (x := ξ)))
+    change iteratedFDeriv ℝ n (⇑Φ - ⇑ΦK) ξ = _
+    exact iteratedFDeriv_sub_apply (𝕜 := ℝ) (i := n)
+      (f := fun ζ : Fin m → ℝ => Φ ζ)
+      (g := fun ζ : Fin m → ℝ => ΦK ζ)
+      (Φ.contDiffAt n (x := ξ)) (ΦK.contDiffAt n (x := ξ))
   calc
     iteratedFDeriv ℝ n
         (fun ζ : Fin m → ℝ =>
@@ -1655,7 +1672,9 @@ lemma finitePartition_error_iteratedFDeriv_eq_integral {m : ℕ} {ι : Type*}
               (g := fun ζ : Fin m → ℝ => boundedKernel g f x ζ)
               ((finitePartitionKernel A ψ x).contDiffAt n (x := ξ))
               ((boundedKernel g f x).contDiffAt n (x := ξ))
-          simpa [SchwartzMap.sub_apply, Pi.sub_apply] using hsub_point.symm
+          change _ = iteratedFDeriv ℝ n
+            (⇑(finitePartitionKernel A ψ x) - ⇑(boundedKernel g f x)) ξ
+          exact hsub_point.symm
 
 lemma finitePartition_error_schwartzSeminorm_lt_of_uniform {m : ℕ} {ι : Type*}
     [Fintype ι] [DecidableEq ι]
@@ -2603,9 +2622,10 @@ theorem schwartz_clm_fubini_exchange_aux {m : ℕ}
   · intro ξ
     have hev :
         Continuous fun ψ : SchwartzMap (Fin m → ℝ) ℂ => ψ ξ := by
-      simpa using
-        (((BoundedContinuousFunction.evalCLM ℂ ξ).comp
-          (SchwartzMap.toBoundedContinuousFunctionCLM ℂ (Fin m → ℝ) ℂ)).continuous)
+      change Continuous ⇑((BoundedContinuousFunction.evalCLM ℂ ξ).comp
+        (SchwartzMap.toBoundedContinuousFunctionCLM ℂ (Fin m → ℝ) ℂ))
+      exact ((BoundedContinuousFunction.evalCLM ℂ ξ).comp
+        (SchwartzMap.toBoundedContinuousFunctionCLM ℂ (Fin m → ℝ) ℂ)).continuous
     have hleft :
         Filter.Tendsto (fun R : ℕ => ΦR R ξ) Filter.atTop (nhds (Φ ξ)) :=
       hev.continuousAt.tendsto.comp hΦ_lim

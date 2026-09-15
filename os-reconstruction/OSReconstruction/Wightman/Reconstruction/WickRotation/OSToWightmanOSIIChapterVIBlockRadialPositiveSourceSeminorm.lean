@@ -134,25 +134,25 @@ theorem exists_reducedTestLift_finsetSeminorm_product_bound
             Finset.mem_range.mpr (Nat.lt_succ_of_le hsub_lMax)⟩
       have hHeadPi_le :
           SchwartzMap.seminorm Real j.1 i one <= H := by
-        simpa only [H] using
+        simpa only [H, SchwartzMap.schwartzSeminormFamily_apply] using
           (Seminorm.le_finset_sup_apply
             (p := schwartzSeminormFamily Real
               (Fin 1 -> SpacetimeDim d) Complex) hHeadPi)
       have hHeadZero_le :
           SchwartzMap.seminorm Real 0 i one <= H := by
-        simpa only [H] using
+        simpa only [H, SchwartzMap.schwartzSeminormFamily_apply] using
           (Seminorm.le_finset_sup_apply
             (p := schwartzSeminormFamily Real
               (Fin 1 -> SpacetimeDim d) Complex) hHeadZero)
       have hTailZero_le :
           SchwartzMap.seminorm Real 0 (j.2 - i) phi <= T := by
-        simpa only [T] using
+        simpa only [T, SchwartzMap.schwartzSeminormFamily_apply] using
           (Seminorm.le_finset_sup_apply
             (p := schwartzSeminormFamily Real
               (NPointDomain d k) Complex) hTailZero)
       have hTailP_le :
           SchwartzMap.seminorm Real j.1 (j.2 - i) phi <= T := by
-        simpa only [T] using
+        simpa only [T, SchwartzMap.schwartzSeminormFamily_apply] using
           (Seminorm.le_finset_sup_apply
             (p := schwartzSeminormFamily Real
               (NPointDomain d k) Complex) hTailP)

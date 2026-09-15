@@ -74,7 +74,11 @@ theorem realPermOnReducedDiff_adjacent_eq_self_of_gap_zero
     ext mu
     apply sub_eq_zero.mp
     have h := congrFun (congrFun (BHW.reducedDiffMap_section (k + 1) d z) j) mu
-    simpa [BHW.reducedDiffMap_eq_successive_differences, z, s, hy] using h
+    rw [BHW.reducedDiffMap_eq_successive_differences] at h
+    have hsucc : (⟨j.val + 1, by omega⟩ : Fin (k + 1)) = j.succ := Fin.ext rfl
+    have hcast : (⟨j.val, by omega⟩ : Fin (k + 1)) = j.castSucc := Fin.ext rfl
+    rw [hsucc, hcast] at h
+    simpa [z, s, hy] using h
   have hswap : (fun a => s (Equiv.swap j.castSucc j.succ a)) = s := by
     ext a mu
     by_cases ha : a = j.castSucc
@@ -108,11 +112,22 @@ theorem euclideanHolomorphicKernel_reducedPerm
       (BHW.permOnReducedDiff (n := k + 1) (d := d) sigma z)) =
       H.euclideanHolomorphicKernel (BHW.reducedDiffSection (k + 1) d z) := by
   rw [BHW.permOnReducedDiff_apply, BHW.reducedDiffSection_reducedDiffMap_eq_sub_basepoint]
-  simpa only [sub_eq_add_neg] using
-    (H.euclideanHolomorphicKernel_translate Hstage Rstage
-      (fun a => BHW.reducedDiffSection (k + 1) d z (sigma a))
-      (-BHW.reducedDiffSection (k + 1) d z (sigma 0))).trans
-        (H.euclideanHolomorphicKernel_perm Hstage Rstage sigma (BHW.reducedDiffSection (k + 1) d z))
+  calc
+    H.euclideanHolomorphicKernel (fun a mu =>
+        BHW.reducedDiffSection (k + 1) d z (sigma a) mu -
+          BHW.reducedDiffSection (k + 1) d z (sigma 0) mu) =
+        H.euclideanHolomorphicKernel (fun a =>
+          BHW.reducedDiffSection (k + 1) d z (sigma a) +
+            (-BHW.reducedDiffSection (k + 1) d z (sigma 0))) := by
+              congr 1
+    _ = H.euclideanHolomorphicKernel (fun a =>
+          BHW.reducedDiffSection (k + 1) d z (sigma a)) :=
+      H.euclideanHolomorphicKernel_translate Hstage Rstage
+        (fun a => BHW.reducedDiffSection (k + 1) d z (sigma a))
+        (-BHW.reducedDiffSection (k + 1) d z (sigma 0))
+    _ = H.euclideanHolomorphicKernel (BHW.reducedDiffSection (k + 1) d z) :=
+      H.euclideanHolomorphicKernel_perm Hstage Rstage sigma
+        (BHW.reducedDiffSection (k + 1) d z)
 
 theorem euclideanHolomorphicKernel_shifted_reducedPerm
     (H : OSIIReducedForwardTubeBoundaryData W)

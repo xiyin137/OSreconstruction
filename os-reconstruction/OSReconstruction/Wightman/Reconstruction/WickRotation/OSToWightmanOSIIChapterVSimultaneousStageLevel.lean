@@ -357,7 +357,8 @@ noncomputable def toOrderedSourcePredecessorData
         I.translatedPositiveTimeSpatialSource
           τ hτ p.2 (p.1 + D.tailStart))
   sourceEdge_stage := by
-    simpa using D.sourceEdge_stage
+    change D.sourceEdge.stage = L.reflectedPairStage
+    exact D.sourceEdge_stage
 
 end TranslatedMixedDeltaCanonicalCutoffPredecessorData
 

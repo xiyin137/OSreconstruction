@@ -61,7 +61,7 @@ theorem integrable_semigroupBridgeRootOperatorIntegrandOfOS
     D.semigroupBridgeRootWeight i timeScale
   let S : Set ℝ := tsupport (weight : ℝ → ℂ)
   have hS_compact : IsCompact S := by
-    simpa [S, weight, semigroupBridgeRootWeight] using
+    simpa [S, weight, semigroupBridgeRootWeight] using!
       (A.rootedBridgeHead R i
         (timeScale + D.commonTailStart i)).compact
   have hS_positive : S ⊆ Set.Ioi 0 :=
@@ -114,7 +114,7 @@ theorem integrable_semigroupBridgeRootOperatorIntegrandOfOS
         image_eq_zero_of_notMem_tsupport (by simpa [S] using ht)
       simp [Set.indicator_of_notMem ht, hzero]
   rw [hindicator_eq] at hindicator
-  simpa [semigroupBridgeRootOperatorIntegrandOfOS, weight] using hindicator
+  simpa [semigroupBridgeRootOperatorIntegrandOfOS, weight] using! hindicator
 
 /-- The synchronized middle root integrated against the original-OS complex
 contraction semigroup. -/
@@ -1349,7 +1349,7 @@ theorem differentiableOn_rootSmearedSpatialHermiteGeneratorFiniteShellOfOS
   · intro mode
     simpa [D,
       RootedA0BlockContinuousTranslationData.leftSpatialHermiteGeneratorField]
-      using
+      using!
         (H.left i).field_holomorphic
           (D.leftCofinalIndex i timeScale)
           (ReflectedA0BlockConvergenceData.leftHeadSpatialHermiteBlock
@@ -1357,7 +1357,7 @@ theorem differentiableOn_rootSmearedSpatialHermiteGeneratorFiniteShellOfOS
   · intro mode
     simpa [D,
       RootedA0BlockContinuousTranslationData.rightSpatialHermiteGeneratorField]
-      using
+      using!
         (H.right i).field_holomorphic
           (D.rightCofinalIndex i timeScale)
           (ReflectedA0BlockConvergenceData.rightHeadSpatialHermiteBlock
@@ -1386,7 +1386,7 @@ theorem differentiableOn_rootSmearedSpatialHermiteGeneratorSumOfOS
   · intro mode
     simpa [D,
       RootedA0BlockContinuousTranslationData.leftSpatialHermiteGeneratorField]
-      using
+      using!
         (H.left i).field_holomorphic
           (D.leftCofinalIndex i timeScale)
           (ReflectedA0BlockConvergenceData.leftHeadSpatialHermiteBlock
@@ -1394,7 +1394,7 @@ theorem differentiableOn_rootSmearedSpatialHermiteGeneratorSumOfOS
   · intro mode
     simpa [D,
       RootedA0BlockContinuousTranslationData.rightSpatialHermiteGeneratorField]
-      using
+      using!
         (H.right i).field_holomorphic
           (D.rightCofinalIndex i timeScale)
           (ReflectedA0BlockConvergenceData.rightHeadSpatialHermiteBlock

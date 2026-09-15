@@ -82,8 +82,11 @@ private theorem section43TimeSpatialBumpTruncation_tendsto
   have htransport :=
     ((section43TimeSpatialFlatSchwartzCLE d k).symm.continuous.tendsto
       (section43TimeSpatialFlatSchwartzCLE d k F)).comp hflat
-  simpa only [section43TimeSpatialBumpTruncation,
-    (section43TimeSpatialFlatSchwartzCLE d k).symm_apply_apply] using
+  change Tendsto
+    ((section43TimeSpatialFlatSchwartzCLE d k).symm ∘ fun N : Nat =>
+      bumpTruncationRadius (section43TimeSpatialFlatSchwartzCLE d k F) N)
+    atTop (nhds F)
+  simpa only [(section43TimeSpatialFlatSchwartzCLE d k).symm_apply_apply] using
     htransport
 
 /-- Each transported radial truncation has compact topological support. -/
@@ -106,9 +109,8 @@ private theorem section43TimeSpatialBumpTruncation_hasCompactSupport
   have hcomp : HasCompactSupport
       (fun p : Section43TimeSpatialSpace d k => f (e p)) :=
     hf.comp_homeomorph e.toHomeomorph
-  simpa [section43TimeSpatialBumpTruncation, f, e,
-    section43TimeSpatialFlatSchwartzCLE,
-    SchwartzMap.compCLMOfContinuousLinearEquiv_apply] using hcomp
+  change HasCompactSupport (fun p : Section43TimeSpatialSpace d k => f (e p))
+  exact hcomp
 
 /-- Radial truncation does not enlarge topological support after transport to
 the Section 4.3 product block. -/
@@ -139,12 +141,12 @@ private theorem section43TimeSpatialBumpTruncation_tsupport_subset
               Section43TimeSpatialSpace d k -> Complex) =
         e.toHomeomorph ⁻¹'
           tsupport (Fcut : (Fin (k + k * d) -> Real) -> Complex) := by
-    simpa [section43TimeSpatialBumpTruncation, Fcut, e,
-      section43TimeSpatialFlatSchwartzCLE,
-      SchwartzMap.compCLMOfContinuousLinearEquiv_apply] using
-      (tsupport_comp_eq_preimage
-        (g := (Fcut : (Fin (k + k * d) -> Real) -> Complex))
-        e.toHomeomorph)
+    change tsupport (fun p : Section43TimeSpatialSpace d k => Fcut (e p)) =
+      e.toHomeomorph ⁻¹'
+        tsupport (Fcut : (Fin (k + k * d) -> Real) -> Complex)
+    exact tsupport_comp_eq_preimage
+      (g := (Fcut : (Fin (k + k * d) -> Real) -> Complex))
+      e.toHomeomorph
   have hflat_tsupport :
       tsupport (Fflat : (Fin (k + k * d) -> Real) -> Complex) =
         e.symm.toHomeomorph ⁻¹'
@@ -343,8 +345,9 @@ theorem section43TimeComplementTensorClosure_annihilated
           Set (SchwartzMap (Section43TimeSpatialSpace d k) Complex)) ⊆
         {H : SchwartzMap (Section43TimeSpatialSpace d k) Complex | W H = 0} :=
     hclosed.closure_subset_iff.mpr hspan
-  exact hclosure (by
-    simpa [section43TimeComplementTensorSubmodule, T] using hF)
+  apply hclosure
+  change F ∈ (Submodule.span Complex T).topologicalClosure
+  exact hF
 
 namespace OSIIFullTimeStageVladimirovGrowthData
 

@@ -106,8 +106,8 @@ private lemma continuous_etaContractFixed
         (((continuous_const.sub continuous_id).pow 2).mul continuous_const)
     simpa [etaContractFixed] using harg.sqrt
   · intro i
-    simpa [etaContractFixed] using
-      (continuous_const.sub continuous_id).mul continuous_const
+    change Continuous (fun t : ℝ => (1 - t) * η i.succ)
+    exact (continuous_const.sub continuous_id).mul continuous_const
 
 private lemma joinedIn_parallelSlice_to_canonical
     (c : ℂ) (hcim : 0 < c.im)
@@ -421,7 +421,8 @@ private theorem quadricConeSet_im_with_value_isPreconnected_of_im_pos
       have hetaPath_cont : Continuous etaPath := by
         apply continuous_pi
         intro μ
-        simpa [etaPath, Pi.smul_apply, smul_eq_mul] using hscale_cont.mul continuous_const
+        change Continuous (fun t => scale t * η μ)
+        exact hscale_cont.mul continuous_const
       have hxiPath_cont : Continuous xiPath := by
         apply continuous_pi
         intro μ
@@ -430,12 +431,14 @@ private theorem quadricConeSet_im_with_value_isPreconnected_of_im_pos
         have hterm1 :
             Continuous (fun t : Set.Icc (0 : ℝ) 1 =>
               ((K / qLine t) • etaPath t) μ) := by
-          simpa [Pi.smul_apply, smul_eq_mul] using
-            hKdiv_cont.mul ((continuous_apply μ).comp hetaPath_cont)
+          change Continuous (fun t => K / qLine t * etaPath t μ)
+          exact hKdiv_cont.mul ((continuous_apply μ).comp hetaPath_cont)
         have hterm2 :
             Continuous (fun t : Set.Icc (0 : ℝ) 1 => (lam t • ζ) μ) := by
-          simpa [Pi.smul_apply, smul_eq_mul] using hlam_cont.mul continuous_const
-        simpa [xiPath] using hterm1.add hterm2
+          change Continuous (fun t => lam t * ζ μ)
+          exact hlam_cont.mul continuous_const
+        change Continuous (fun t => K / qLine t * etaPath t μ + lam t * ζ μ)
+        exact hterm1.add hterm2
       have huPath_cont : Continuous uPath := by
         apply continuous_pi
         intro μ
@@ -638,7 +641,8 @@ private theorem quadricConeSet_im_with_value_isPreconnected_of_im_pos
             u (parallelPoint (m := m) c η1) := by
         refine ⟨pA, ?_⟩
         intro t
-        simpa using huPath_mem t
+        change uPath t ∈ quadricConeSet_im_with_value (m := m) (-(c ^ 2))
+        exact huPath_mem t
       have hcone1 : InOpenForwardCone (m + 1) η1 := by
         simpa [η1] using hcone_etaPath t1
       have hnorm1 : MinkowskiSpace.minkowskiNormSq (m + 1) η1 = -c.im ^ 2 := by
@@ -668,8 +672,8 @@ theorem quadricConeSet_wScalarE0_isPreconnected_of_c_im_pos
         Continuous (fun u : Fin (m + 2) → ℂ => fun μ => u μ / c) := by
       apply continuous_pi
       intro μ
-      simpa [div_eq_mul_inv] using
-        (continuous_apply μ).mul continuous_const
+      change Continuous (fun u : Fin (m + 2) → ℂ => u μ * c⁻¹)
+      exact (continuous_apply μ).mul continuous_const
     exact hpre_im.image _ hcont.continuousOn
   simpa [quadricConeSet_wScalarE0_eq_scale_to_im_with_value (m := m) c hc] using hpre_img
 

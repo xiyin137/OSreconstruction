@@ -42,12 +42,18 @@ theorem integral_finCons_eq
         (volume : Measure (Fin (k + 1) → ℝ))
         ((volume : Measure ℝ).prod
           (volume : Measure (Fin k → ℝ))) := by
+    rw [← Measure.volume_eq_prod]
     simpa [e] using
       (MeasureTheory.volume_preserving_piFinSuccAbove
         (fun _ : Fin (k + 1) => ℝ) 0)
-  simpa [e, MeasurableEquiv.piFinSuccAbove_symm_apply] using
-    (hmp.symm.integral_comp'
-      (f := e.symm) (g := F))
+  have he :
+      (fun p : ℝ × (Fin k → ℝ) => Fin.cons p.1 p.2) =
+        fun p => e.symm p := by
+    funext p
+    simp [e, MeasurableEquiv.piFinSuccAbove_symm_apply,
+      Fin.insertNthEquiv, Fin.insertNth_zero]
+  simp_rw [congrFun he]
+  exact hmp.symm.integral_comp' F
 
 private def section43TimeAsOnePointME (n : ℕ) :
     (Fin n → ℝ) ≃ᵐ (Fin n → Fin 1 → ℝ) :=
@@ -65,11 +71,17 @@ private theorem section43TimeAsOnePointME_measurePreserving (n : ℕ) :
           (volume : Measure ℝ)
           (volume : Measure (Fin 1 → ℝ)) := by
     intro i
-    simpa using
-      (MeasureTheory.volume_preserving_funUnique (Fin 1) ℝ).symm
-  simpa [section43TimeAsOnePointME, section43TimeAsOnePointCLE,
-    ContinuousLinearEquiv.piCongrRight] using
-      (MeasureTheory.volume_preserving_pi hcoord)
+    have heq :
+        (fun x : ℝ => fun _ : Fin 1 => x) =
+          (MeasurableEquiv.funUnique (Fin 1) ℝ).symm := by
+      funext x j
+      simp
+    rw [heq]
+    exact (MeasureTheory.volume_preserving_funUnique (Fin 1) ℝ).symm
+  change MeasurePreserving (fun x i j => x i)
+    (volume : Measure (Fin n → ℝ))
+    (volume : Measure (Fin n → Fin 1 → ℝ))
+  exact MeasureTheory.volume_preserving_pi hcoord
 
 private def section43ScalarDiffME (n : ℕ) :
     (Fin n → ℝ) ≃ᵐ (Fin n → ℝ) :=
@@ -97,8 +109,10 @@ theorem section43ScalarDiffME_measurePreserving (n : ℕ) :
         (BHW.realDiffCoordCLE_symm_measurePreserving n 0)
     simpa using MeasurePreserving.symm eDiff.symm hDiffSymm
   have hcomp := hTime.trans (hDiff.trans hTime.symm)
-  simpa [section43ScalarDiffME, section43ScalarDiffCLE, eTime, eDiff] using
-    hcomp
+  convert hcomp using 1 <;> ext x i <;>
+    simp [section43ScalarDiffME, section43ScalarDiffCLE,
+      section43TimeAsOnePointME, eTime, eDiff,
+      BHW.realDiffCoordCLE_apply]
 
 /-- Appending two finite real coordinate blocks preserves Lebesgue measure. -/
 private theorem finAppendCLE_measurePreserving (n m : ℕ) :
@@ -178,8 +192,9 @@ private theorem axisPairBlockwiseTimeDiffME_measurePreserving
         (volume : Measure (Fin (n + m) → ℝ))
         (volume : Measure (Fin (n + m) → ℝ)) :=
     hAppend.comp hprodSplit
-  simpa [axisPairBlockwiseTimeDiffME,
-    osiiAxisPairBlockwiseTimeDiffCLE, section43ScalarDiffME] using hcomp
+  convert hcomp using 1 <;> ext x i <;>
+    simp [axisPairBlockwiseTimeDiffME,
+      osiiAxisPairBlockwiseTimeDiffCLE, section43ScalarDiffME]
 
 private def reflectReverseLeftTimeME (n m : ℕ) :
     (Fin (n + m) → ℝ) ≃ᵐ (Fin (n + m) → ℝ) :=
@@ -205,8 +220,8 @@ private theorem reflectReverseLeftBlock_measurePreserving (n : ℕ) :
       let x' : (a : Fin n) → (fun _ : Fin n => ℝ) (e a) := x
       funext i
       simpa [e] using
-        (Equiv.piCongrLeft_apply_apply
-          (P := fun _ : Fin n => ℝ) (e := e) x' (Fin.rev i))
+        (MeasurableEquiv.piCongrLeft_apply_apply
+          (β := fun _ : Fin n => ℝ) e x' (Fin.rev i))
     rw [← heq]
     exact MeasureTheory.volume_measurePreserving_piCongrLeft
       (fun _ : Fin n => ℝ) e
@@ -261,9 +276,18 @@ private theorem reflectReverseLeftTimeME_measurePreserving
         (volume : Measure (Fin (n + m) → ℝ))
         (volume : Measure (Fin (n + m) → ℝ)) :=
     hAppend.comp hprodSplit
-  simpa [reflectReverseLeftTimeME,
-    osiiAxisPairReflectReverseLeftTimeCLE,
-    LinearEquiv.funCongrLeft_apply, LinearMap.funLeft_apply] using hcomp
+  have heq :
+      (reflectReverseLeftTimeME n m :
+        (Fin (n + m) → ℝ) → (Fin (n + m) → ℝ)) =
+        fun x =>
+          SCV.finAppendCLE n m
+            ((fun i => -((SCV.finAppendCLE n m).symm x).1 (Fin.rev i)),
+              ((SCV.finAppendCLE n m).symm x).2) := by
+    funext x
+    apply congrArg (SCV.finAppendCLE n m)
+    congr 1
+  rw [heq]
+  exact hcomp
 
 private def axisPairBlockGlobalTimeME (n m : ℕ) :
     (Fin (n + m) → ℝ) ≃ᵐ (Fin (n + m) → ℝ) :=
@@ -284,11 +308,12 @@ theorem axisPairBlockGlobalTimeME_measurePreserving
   have hGlobal :=
     section43ScalarDiffME_measurePreserving (n + m)
   have hcomp := hBlock.trans (hReflect.trans hGlobal)
-  simpa [axisPairBlockGlobalTimeME,
-    osiiAxisPairBlockGlobalTimeCLE,
-    axisPairBlockwiseTimeDiffME,
-    reflectReverseLeftTimeME,
-    section43ScalarDiffME] using hcomp
+  convert hcomp using 1 <;> ext x i <;>
+    simp [axisPairBlockGlobalTimeME,
+      osiiAxisPairBlockGlobalTimeCLE,
+      axisPairBlockwiseTimeDiffME,
+      reflectReverseLeftTimeME,
+      section43ScalarDiffME]
 
 /-- Every affine block-global time chart has the same unit Jacobian as its
 linear part. -/
@@ -309,9 +334,12 @@ theorem axisPairBlockGlobalTimeAffine_measurePreserving
     MeasureTheory.measurePreserving_add_right
       (volume : Measure (Fin (n + m) → ℝ))
       (osiiAxisPairGlobalTimeDiffShift n m s t)
-  simpa [axisPairBlockGlobalTimeME,
-    osiiAxisPairBlockGlobalTimeAffine, Function.comp_def] using
-      htranslate.comp hlinear
+  change MeasurePreserving
+    (fun x => osiiAxisPairBlockGlobalTimeCLE n m x +
+      osiiAxisPairGlobalTimeDiffShift n m s t)
+    (volume : Measure (Fin (n + m) → ℝ))
+    (volume : Measure (Fin (n + m) → ℝ))
+  exact htranslate.comp hlinear
 
 /-- Integral change of variables through the affine block-global time chart. -/
 theorem integral_comp_axisPairBlockGlobalTimeAffine
@@ -330,8 +358,8 @@ theorem integral_comp_axisPairBlockGlobalTimeAffine
       MeasurePreserving eAffine
         (volume : Measure (Fin (n + m) → ℝ))
         (volume : Measure (Fin (n + m) → ℝ)) := by
-    simpa [eAffine, eLinear, osiiAxisPairBlockGlobalTimeAffine] using
-      axisPairBlockGlobalTimeAffine_measurePreserving n m s t
+    convert axisPairBlockGlobalTimeAffine_measurePreserving n m s t using 1 <;>
+      ext x i <;> rfl
   simpa [eAffine, eLinear, osiiAxisPairBlockGlobalTimeAffine] using
     hAffine.integral_comp' F
 

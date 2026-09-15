@@ -98,7 +98,8 @@ theorem norm_distribution_le_weightedL1_mul_of_lowerBounds
       simpa using hleftCoefficient.mul hrightCoefficient
     have hsqrt : Tendsto (fun N => Real.sqrt (cLeft N * cRight N))
         atTop (nhds 1) := by
-      simpa using (Real.continuous_sqrt.tendsto 1).comp hproduct
+      simpa [Function.comp_def] using
+        (Real.continuous_sqrt.tendsto 1).comp hproduct
     simpa [coefficient] using tendsto_const_nhds.mul hsqrt
   have hbound : forall N x,
       ‖targetProbe.smoothedStageValue

@@ -521,7 +521,11 @@ private theorem ae_pairwise_distinct_timeCoords {d n : ℕ} :
               sᶜ ∈ MeasureTheory.ae
                 (MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d n)) :=
             MeasureTheory.compl_mem_ae_iff.mpr hs0
-          simpa [s, Set.compl_setOf] using hsae)
+          change {x : NPointDomain d n | x p.1.1 0 ≠ x p.1.2 0} ∈
+            MeasureTheory.ae (MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d n))
+          change sᶜ ∈ MeasureTheory.ae
+            (MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d n))
+          exact hsae)
   filter_upwards [hall] with x hx i j hij
   exact hx ⟨⟨i, j⟩, hij⟩
 
@@ -739,9 +743,11 @@ theorem hasForwardTubeGrowth_of_wightman {d : ℕ} [NeZero d]
       rw [Fin.strictMono_iff_lt_succ]
       intro k
       have hk := (hx_ft k.succ).1
-      simpa [wickRotatePoint, Complex.mul_im, Complex.I_re, Complex.I_im,
+      have hk' := hk
+      simp [wickRotatePoint, Complex.mul_im, Complex.I_re, Complex.I_im,
         Complex.ofReal_re, Complex.ofReal_im, Fin.succ_ne_zero, zero_mul, one_mul, zero_add]
-        using hk
+        at hk'
+      exact_mod_cast hk'
     have hx_ne : x i ≠ x j := by
       intro hEqx
       apply hij
@@ -853,9 +859,11 @@ theorem hasForwardTubeGrowth_of_wightman {d : ℕ} [NeZero d]
     rw [Fin.strictMono_iff_lt_succ]
     intro k
     have hk := (hx_ft k.succ).1
-    simpa [wickRotatePoint, Complex.mul_im, Complex.I_re, Complex.I_im,
+    have hk' := hk
+    simp [wickRotatePoint, Complex.mul_im, Complex.I_re, Complex.I_im,
       Complex.ofReal_re, Complex.ofReal_im, Fin.succ_ne_zero, zero_mul, one_mul, zero_add]
-      using hk
+      at hk'
+    exact_mod_cast hk'
   have hcoin_nonempty : (CoincidenceLocus d n).Nonempty := by
     refine ⟨0, ?_⟩
     exact ⟨(⟨0, by omega⟩ : Fin n), (⟨1, hn⟩ : Fin n), h01, rfl⟩
@@ -1853,6 +1861,6 @@ theorem constructedSchwinger_tempered_zeroDiagonal (Wfn : WightmanFunctions d) (
     have : (fun f : ZeroDiagonalSchwartz d n =>
           ∫ x : NPointDomain d n, K x * (f.1 : NPointDomain d n → ℂ) x) =
         (fun f : SchwartzNPoint d n => ∫ x, K x * f x) ∘ Subtype.val := by
-      funext f; simp
+      rfl
     rw [this]
     exact hcont_full.comp continuous_subtype_val

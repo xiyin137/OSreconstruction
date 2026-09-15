@@ -431,7 +431,7 @@ theorem SchwartzMap.exists_schwartzCLM_finsetSeminormBound_between
   refine ⟨s, (Cnn : ℝ), Cnn.2, ?_⟩
   intro ψ
   have h := Seminorm.le_def.mp hsup ψ
-  simpa [pE, pF] using h
+  simpa [pE, pF, NNReal.smul_def] using h
 
 /-- The real embedding as a continuous real-linear map. -/
 private def realEmbedCLM {m : ℕ} : (Fin m → ℝ) →L[ℝ] ComplexChartSpace m :=
@@ -739,15 +739,17 @@ theorem hasFDerivAt_complexRealFiberIntegralRaw {m : ℕ}
         HasFDerivAt (F : (ComplexChartSpace m × (Fin m → ℝ)) → V)
           (fderiv ℝ (F : (ComplexChartSpace m × (Fin m → ℝ)) → V) (z', t)) (z', t) :=
       F.differentiableAt.hasFDerivAt
-    simpa [inl] using hFderiv.comp z' hinner
-  simpa [complexRealFiberIntegralRaw] using
-    (hasFDerivAt_integral_of_dominated_of_fderiv_le
+    rw [baseFDerivSchwartz_apply]
+    exact hFderiv.comp z' hinner
+  change HasFDerivAt (fun z' : ComplexChartSpace m => ∫ t : Fin m → ℝ, F (z', t))
+    (∫ t : Fin m → ℝ, baseFDerivSchwartz F (z, t)) z
+  exact hasFDerivAt_integral_of_dominated_of_fderiv_le
       (μ := (MeasureTheory.volume : MeasureTheory.Measure (Fin m → ℝ)))
       (s := (Set.univ : Set (ComplexChartSpace m)))
       (x₀ := z)
       (F := fun z' t => F (z', t))
       (F' := fun z' t => baseFDerivSchwartz F (z', t))
-      hs hF_meas hF_int hF'_meas h_bound hbound_int h_diff)
+      hs hF_meas hF_int hF'_meas h_bound hbound_int h_diff
 
 /-- The Fréchet derivative of the raw fiber integral is the fiber integral of
 the base-derivative field. -/

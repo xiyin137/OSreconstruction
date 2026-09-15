@@ -104,7 +104,8 @@ theorem extendF_perm_eq_near_real_jost_anchor
           eR.toHomeomorph ⁻¹' tsupport (ψ : (Fin (n * (d + 1)) → ℝ) → ℂ) :=
         tsupport_comp_eq_preimage (g := (ψ : (Fin (n * (d + 1)) → ℝ) → ℂ)) eR.toHomeomorph
       have hx' := hs (show eR x ∈ tsupport (ψ : (Fin (n * (d + 1)) → ℝ) → ℂ) from by
-        simpa only [heq] using hx)
+        rw [heq] at hx
+        exact hx)
       have hemb : SCV.realEmbed (eR x) - SCV.realEmbed c = SCV.realEmbed (eR x - c) := by
         ext i
         simp [SCV.realEmbed]
@@ -117,7 +118,9 @@ theorem extendF_perm_eq_near_real_jost_anchor
         realEmbed (fun k => x (σ k)) ∈ ExtendedTube d n := by
       intro x hx
       have h := (hRV (hfs x hx)).1
-      simpa [P, hembed, permAct, realEmbed] using h
+      have h' : permAct σ (realEmbed x) ∈ ExtendedTube d n := by
+        simpa [P, hembed] using h
+      exact h'
     have hpair := extendF_perm_pairing_eq_boundary_of_jost_support F hF_holo hF_real_inv
       W hF_bv_dist hF_local_dist σ f hf hfJ hfET
     have hGpair : (∫ x, G₀ (SCV.realEmbed x) * ψ x) = W n f := by
@@ -189,9 +192,7 @@ theorem extendF_perm_eq_on_forward_lorentz_slice
   have hφ0 : φ 0 = realEmbed a := by simp [φ]
   have hφ1 : φ 1 = z := by simp [φ]
   have hφ : Differentiable ℂ φ := by
-    intro w
-    exact ((differentiableAt_const 1).sub differentiableAt_id).smul
-      (differentiableAt_const _) |>.add (differentiableAt_id.smul (differentiableAt_const _))
+    fun_prop
   have hφseg : ∀ t : ℝ, 0 < t → t ≤ 1 →
       φ (t : ℂ) ∈ ForwardTube d n ∧
       complexLorentzAction L (permAct σ (φ (t : ℂ))) ∈ ForwardTube d n := by
@@ -245,6 +246,7 @@ theorem extendF_perm_eq_on_forward_lorentz_slice
   have hnear : ∀ᶠ t : ℝ in nhdsWithin 0 (Ioi 0), φ (t : ℂ) ∈ interior U := by
     have hc := hφ.continuous.comp Complex.continuous_ofReal
     have ht : Tendsto (fun t : ℝ => φ (t : ℂ)) (nhds 0) (nhds (realEmbed a)) := by
+      change Tendsto (φ ∘ Complex.ofReal) (nhds 0) (nhds (realEmbed a))
       simpa [hφ0] using (hc.continuousAt (x := 0)).tendsto
     exact (ht.eventually (interior_mem_nhds.mpr hU)).filter_mono nhdsWithin_le_nhds
   have hpos : ∀ᶠ t : ℝ in nhdsWithin 0 (Ioi 0), 0 < t := self_mem_nhdsWithin

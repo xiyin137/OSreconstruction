@@ -135,9 +135,6 @@ theorem generatorLeftBlockProbe_eq_positiveTargetTest
   | succ n =>
       rw [P.generatorLeftBlock_section43Probe_eq_spatialProduct]
       simp [absoluteProductTargetLeftSpatialTest, positiveBlockSpatialTest]
-      symm
-      apply cast_eq_iff_heq.mpr
-      rfl
 
 /-- The coherent right block probe is literally the arbitrary right test used
 by the rooted product target row. -/
@@ -157,9 +154,6 @@ theorem generatorRightBlockProbe_eq_positiveTargetTest
   | succ m =>
       rw [P.generatorRightBlock_section43Probe_eq_spatialProduct]
       simp [absoluteProductTargetRightSpatialTest, positiveBlockSpatialTest]
-      symm
-      apply cast_eq_iff_heq.mpr
-      rfl
 
 end RootedA0BlockContinuousTranslationData
 end AnchoredPacketTimeShellFamilyData

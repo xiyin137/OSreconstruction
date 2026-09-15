@@ -1039,7 +1039,8 @@ noncomputable def
       osiiPositiveRealTimeEmbed C.anchor +
           osiiPositiveRealTimeEmbed (-C.anchor) ∈
         centered.domain
-    simpa [← osiiPositiveRealTimeEmbed_add] using centered.zero_mem
+    convert centered.zero_mem using 1 <;>
+      ext j <;> simp [osiiPositiveRealTimeEmbed]
   have hhub_carrier :
       osiiPositiveRealTimeEmbed hub ∈ carrier := by
     change
@@ -1047,13 +1048,15 @@ noncomputable def
           osiiPositiveRealTimeEmbed (-C.anchor) ∈
         centered.domain
     rw [hembed_neg]
-    simpa [hcenteredHub, sub_eq_add_neg] using centered.hub_mem
+    rw [← sub_eq_add_neg, ← hcenteredHub]
+    exact centered.hub_mem
   have htarget_carrier : z ∈ carrier := by
     change
       z + osiiPositiveRealTimeEmbed (-C.anchor) ∈
         centered.domain
     rw [hembed_neg]
-    simpa [hcenteredTarget, sub_eq_add_neg] using centered.target_mem
+    rw [← sub_eq_add_neg, ← hcenteredTarget]
+    exact centered.target_mem
   let M := Classical.choice
     (nonempty_stageMatchedCommonTranslatedPositiveHeadSpatialSourceCurrentData
       (A := A) (Hcanonical (q + 1)))

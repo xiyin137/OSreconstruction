@@ -109,11 +109,14 @@ theorem span_strictGeneratedScalarRankSuccessorSeedBase_eq_top
   rw [hsingle_x]
   apply Submodule.smul_mem
   apply Submodule.subset_span
-  simpa using
-    (strictGeneratedScalarRankSuccessorSeed_piSingle
+  change
+    OSIIStrictGeneratedScalarRankSuccessorSeed
+      rank k (N + 1) (Pi.single i 1)
+  simpa only [one_smul] using
+    strictGeneratedScalarRankSuccessorSeed_piSingle
       rank k N i 1 (by
         rw [abs_one]
-        nlinarith [Real.pi_gt_three]))
+        nlinarith [Real.pi_gt_three])
 
 /-- Every ranked scalar stratum is coordinatewise solid. -/
 theorem strictGeneratedScalarBaseAtRank_isCoordinatewiseSolid

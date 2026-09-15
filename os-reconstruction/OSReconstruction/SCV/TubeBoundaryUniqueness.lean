@@ -42,7 +42,7 @@ theorem eqOn_tube_of_compact_boundary_values {m : ℕ}
         shift + realEmbed x ∈ TubeDomain C := by
       intro x _
       change (fun i => (shift i + (x i : ℂ)).im) ∈ C
-      simpa [shift] using hcone ε hε η hη
+      exact Set.mem_of_eq_of_mem (by ext i; simp [shift]) (hcone ε hε η hη)
     have hIF := integrable_realMollifyLocal_integrand_of_translate_margin
       F φ (TubeDomain C) shift (tubeDomain_isOpen hC) hF hφ hm
     have hIG := integrable_realMollifyLocal_integrand_of_translate_margin

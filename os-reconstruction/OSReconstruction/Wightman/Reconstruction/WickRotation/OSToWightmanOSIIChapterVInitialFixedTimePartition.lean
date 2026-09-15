@@ -116,7 +116,10 @@ theorem weight_hasTemperateGrowth
     (D : InitialBaseTimePartitionData (d := d) φ)
     (a : D.index) :
     Function.HasTemperateGrowth (D.weight a) := by
-  simpa [weight] using
+  change Function.HasTemperateGrowth
+    ((D.cutoff a : InitialBaseTimeSpace d k → ℂ) ∘
+      initialBaseTimeProjectionCLM d k)
+  exact
     (D.cutoff a).hasTemperateGrowth.comp
       (initialBaseTimeProjectionCLM d k).hasTemperateGrowth
 

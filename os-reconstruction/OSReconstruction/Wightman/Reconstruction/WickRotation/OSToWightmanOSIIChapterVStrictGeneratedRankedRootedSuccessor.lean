@@ -995,14 +995,16 @@ theorem nonempty_twoTargetHubAdaptedAtlasFamilyDataAtRank
             simp [B]]
         simpa [G, D,
           pairTargetHubAdaptedReflectedGramAtlasAtRank,
-          selectedPairTargetHubAdaptedAtlasAtRank] using
+          selectedPairTargetHubAdaptedAtlasAtRank,
+          PairTargetHubAdaptedUniversalCompactCarrierAnchoredAtlasData.first] using
           D.first.centeredHub_target_segment_subset_openZeroConvexKernel
       · rw [show
           B.forCarrier q₁ K₁ hK₁_compact hK₁_positive = G by
             simp [B]]
         simpa [G, D,
           pairTargetHubAdaptedReflectedGramAtlasAtRank,
-          selectedPairTargetHubAdaptedAtlasAtRank] using
+          selectedPairTargetHubAdaptedAtlasAtRank,
+          PairTargetHubAdaptedUniversalCompactCarrierAnchoredAtlasData.second] using
           D.second.centeredHub_target_segment_subset_openZeroConvexKernel
     · let B₁ :=
         P.targetHubAdaptedAtCarrierAtRank P.toAtlasFamily
@@ -1206,7 +1208,8 @@ theorem nonempty_twoRankSuccessorTargetHubAdaptedAtlasFamilyDataAtRank
                 simp [B]]
           simpa [G, D,
             pairRankSuccessorTargetHubAdaptedReflectedGramAtlasAtRank,
-            selectedPairRankSuccessorTargetHubAdaptedAtlasAtRank] using
+            selectedPairRankSuccessorTargetHubAdaptedAtlasAtRank,
+            PairTargetHubAdaptedUniversalCompactCarrierAnchoredAtlasData.first] using
             D.current.first.centeredHub_target_segment_subset_openZeroConvexKernel
         second_segment := by
           rw [show
@@ -1214,7 +1217,8 @@ theorem nonempty_twoRankSuccessorTargetHubAdaptedAtlasFamilyDataAtRank
                 simp [B]]
           simpa [G, D,
             pairRankSuccessorTargetHubAdaptedReflectedGramAtlasAtRank,
-            selectedPairRankSuccessorTargetHubAdaptedAtlasAtRank] using
+            selectedPairRankSuccessorTargetHubAdaptedAtlasAtRank,
+            PairTargetHubAdaptedUniversalCompactCarrierAnchoredAtlasData.second] using
             D.current.second.centeredHub_target_segment_subset_openZeroConvexKernel }
       exact ⟨{
         current := current
@@ -1440,7 +1444,7 @@ theorem rootedLeftBlockTarget_mem_mixedTailArgumentCarrier_of_ranked_generator
         osiiTimeArgumentCarrier
           ({osiiMixedArgumentTail left} :
             Set (Fin (q + 1) -> Real)) := by
-    simpa [i, zleft] using
+    simpa [i, zleft, rootedLeftBlockTarget] using
       star_generatorChronological_split_left_mem_argumentCarrier
         i left theta right hz
   refine ⟨hzleft_exact.1, ?_⟩
@@ -1464,7 +1468,7 @@ theorem rootedLeftBlockTarget_mem_mixedTailArgumentCarrier_of_ranked_generator
       (fun v : Fin (q + 1) -> Real =>
         @Fin.cons (q + 1) (fun _ => Real) 0 v) harg
   rw [hconsarg, hcons]
-  simpa [i] using hleft
+  simpa [i, osiiStrictGeneratedMixedLogarithmicBaseAtRank] using hleft
 
 /-- The right block target of one ranked generator chart remains in the
 corresponding mixed-tail rank. -/
@@ -1498,7 +1502,7 @@ theorem rootedRightBlockTarget_mem_mixedTailArgumentCarrier_of_ranked_generator
         osiiTimeArgumentCarrier
           ({osiiMixedArgumentTail right} :
             Set (Fin (q + 1) -> Real)) := by
-    simpa [i, zright] using
+    simpa [i, zright, rootedRightBlockTarget] using
       generatorChronological_split_right_mem_argumentCarrier
         i left theta right hz
   refine ⟨hzright_exact.1, ?_⟩
@@ -1522,7 +1526,7 @@ theorem rootedRightBlockTarget_mem_mixedTailArgumentCarrier_of_ranked_generator
       (fun v : Fin (q + 1) -> Real =>
         @Fin.cons (q + 1) (fun _ => Real) 0 v) harg
   rw [hconsarg, hcons]
-  simpa [i] using hright
+  simpa [i, osiiStrictGeneratedMixedLogarithmicBaseAtRank] using hright
 
 variable {k : Nat} [NeZero k]
 variable
@@ -2885,8 +2889,12 @@ theorem nonempty_rootedTargetHubPointedDirectExtensionData_of_rootedDataAtRank
       ((CanonicalGeneratorStageLevelProvider.stage
         (OS := OS) S k).recenter C.anchor)
       (by
-        simpa [X.predecessor_orbit] using
-          X.predecessorEdge.stageEdge)
+        change
+          ((CanonicalGeneratorStageLevelProvider.stage
+            (OS := OS) S k).recenter C.anchor).HasPositiveRealEdge
+              X.edge.orbit X.edge.realRegion
+        rw [← X.predecessor_orbit]
+        exact X.predecessorEdge.stageEdge)
       (atlas.recenter C.anchor)
       seedChart
       (by
@@ -3027,11 +3035,14 @@ theorem nonempty_rootedTargetHubPointedDirectExtensionData_of_rootedDataAtRank
           hcore_domain hw
         have hdomain :=
           F.radialChronologicalDomain_subset i hradial
-        simpa [fieldData, F, Q',
+        change
+          generatorChronologicalParameterComplexCLE i
+              (w - osiiPositiveRealTimeEmbed C.anchor) ∈
+            unsmearedFieldData.domain i
+        simpa [unsmearedFieldData, F, Q',
           AnchorLocalRootedReflectedGramRadialProducerPackage.radialData,
-          AnchorLocalRootedReflectedGramRadialProducerPackage.withStageWideReflectedGram,
-          rootedReflectedGramRootSmearedGlobalFamily,
-          rootSmearedGeneratorOpenHilbertFieldScaleFamilyData] using hdomain
+          AnchorLocalRootedReflectedGramRadialProducerPackage.withStageWideReflectedGram]
+          using hdomain
       approximation_bridge_positive := by
         intro w hw
         have hradial :

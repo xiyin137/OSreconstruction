@@ -137,7 +137,7 @@ private lemma clm_iteratedFDeriv_norm_le (L : (Fin m → ℝ) →L[ℝ] ℂ) (ξ
   · rw [pow_one, show (0 + 1 : ℕ) = 0 + 1 from rfl, iteratedFDeriv_succ_eq_comp_right]
     conv_lhs => rw [show (fun x => fderiv ℝ (↑L) x) = fun _ => (L : (Fin m → ℝ) →L[ℝ] ℂ)
       from funext (fun _ => ContinuousLinearMap.fderiv L)]
-    simp
+    rw [Function.comp_apply, LinearIsometryEquiv.norm_map, norm_iteratedFDeriv_zero]
   · have : iteratedFDeriv ℝ (i + 2) (L : (Fin m → ℝ) → ℂ) ξ = 0 := by
       rw [show i + 2 = (i + 1) + 1 from by omega, iteratedFDeriv_succ_eq_comp_right]
       conv_lhs => rw [show (fun x => fderiv ℝ (↑L) x) = fun _ => (L : (Fin m → ℝ) →L[ℝ] ℂ)

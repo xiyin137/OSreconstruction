@@ -70,6 +70,6 @@ theorem exists_schwartzCLM_finsetRealSeminormBound_between
       (schwartz_withSeminorms Real E Complex) q hq_cont
   refine ⟨s, (C : Real), C.2, ?_⟩
   intro phi
-  simpa [q] using hbound phi
+  simpa [q, NNReal.smul_def] using hbound phi
 
 end OSReconstruction

@@ -49,13 +49,14 @@ theorem commonTimeShellDistributionOfOS_fixedTest_differentiableOn
   let C :=
     osiiNarrowTimeStageChart P.slope
       (lt_trans zero_lt_one P.slope_gt_one) η hηsum
-  simpa only [
-    commonTimeShellDistributionOfOS,
-    InitialBaseTimePartitionData.FixedTimePacketData.timeShellDistributionOfOS_apply
-  ] using
-    DifferentiableOn.fun_sum
-      (u := (Finset.univ : Finset A.partition.index))
-      (fun a _ha => by
+  have hsum :
+      DifferentiableOn ℂ
+        (fun ζ : OSIITimeGapSpace k =>
+          ∑ a : A.partition.index,
+            (P.pieceTimeShellDistributionOfOS OS η hηsum a ζ χ) φ)
+        (osiiNarrowTimeCarrier (k := k) η) := by
+    exact DifferentiableOn.fun_sum
+      (u := (Finset.univ : Finset A.partition.index)) (fun a _ha => by
         have hdiff :
             DifferentiableOn ℂ
               (fun ζ =>
@@ -72,6 +73,12 @@ theorem commonTimeShellDistributionOfOS_fixedTest_differentiableOn
         exact hdiff.congr fun ζ _hζ =>
           P.pieceTimeShellDistributionOfOS_apply
             OS η hηsum a ζ χ φ)
+  exact hsum.congr fun ζ _hζ => by
+    change (P.timeShellDistributionOfOS OS η hηsum ζ χ) φ =
+      ∑ a : A.partition.index,
+        (P.pieceTimeShellDistributionOfOS OS η hηsum a ζ χ) φ
+    exact InitialBaseTimePartitionData.FixedTimePacketData.timeShellDistributionOfOS_apply
+      P OS η hηsum ζ χ φ
 
 /-- Translation covariance of the common time-shell distribution for an
 arbitrary carrier-supported test. -/

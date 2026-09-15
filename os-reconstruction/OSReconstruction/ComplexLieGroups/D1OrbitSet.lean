@@ -397,7 +397,7 @@ private theorem d1_exists_rapidityElement (Λ : ComplexLorentzGroup 1) :
   rcases d1_exists_rapidity Λ with ⟨θ, hθ⟩
   refine ⟨θ, ?_⟩
   apply ComplexLorentzGroup.ext
-  simpa [rapidityElement] using hθ
+  simpa [rapidityElement, rapidityMatrix] using hθ
 
 private theorem rapidityMatrix_add_two_pi_I_int (θ : ℂ) (m : ℤ) :
     rapidityMatrix (θ + (m : ℂ) * (2 * Real.pi) * Complex.I) = rapidityMatrix θ := by
@@ -687,10 +687,18 @@ private theorem continuous_rapidityElement_pureImag (b : ℝ) :
   apply continuous_pi
   intro j
   fin_cases i <;> fin_cases j
-  · simpa [rapidityElement, rapidityMatrix] using Complex.continuous_cosh.comp harg_cont
-  · simpa [rapidityElement, rapidityMatrix] using Complex.continuous_sinh.comp harg_cont
-  · simpa [rapidityElement, rapidityMatrix] using Complex.continuous_sinh.comp harg_cont
-  · simpa [rapidityElement, rapidityMatrix] using Complex.continuous_cosh.comp harg_cont
+  · change Continuous (Complex.cosh ∘
+      fun t : unitInterval => (((b * (t : ℝ) : ℝ) : ℂ) * Complex.I))
+    exact Complex.continuous_cosh.comp harg_cont
+  · change Continuous (Complex.sinh ∘
+      fun t : unitInterval => (((b * (t : ℝ) : ℝ) : ℂ) * Complex.I))
+    exact Complex.continuous_sinh.comp harg_cont
+  · change Continuous (Complex.sinh ∘
+      fun t : unitInterval => (((b * (t : ℝ) : ℝ) : ℂ) * Complex.I))
+    exact Complex.continuous_sinh.comp harg_cont
+  · change Continuous (Complex.cosh ∘
+      fun t : unitInterval => (((b * (t : ℝ) : ℝ) : ℂ) * Complex.I))
+    exact Complex.continuous_cosh.comp harg_cont
 
 private theorem continuous_rapidityElement_realImag (a b : ℝ) :
     Continuous (fun t : unitInterval =>
@@ -708,10 +716,18 @@ private theorem continuous_rapidityElement_realImag (a b : ℝ) :
   apply continuous_pi
   intro j
   fin_cases i <;> fin_cases j
-  · simpa [rapidityElement, rapidityMatrix] using Complex.continuous_cosh.comp harg_cont
-  · simpa [rapidityElement, rapidityMatrix] using Complex.continuous_sinh.comp harg_cont
-  · simpa [rapidityElement, rapidityMatrix] using Complex.continuous_sinh.comp harg_cont
-  · simpa [rapidityElement, rapidityMatrix] using Complex.continuous_cosh.comp harg_cont
+  · change Continuous (Complex.cosh ∘
+      fun t : unitInterval => (((a * (t : ℝ) : ℝ) : ℂ) + (b : ℂ) * Complex.I))
+    exact Complex.continuous_cosh.comp harg_cont
+  · change Continuous (Complex.sinh ∘
+      fun t : unitInterval => (((a * (t : ℝ) : ℝ) : ℂ) + (b : ℂ) * Complex.I))
+    exact Complex.continuous_sinh.comp harg_cont
+  · change Continuous (Complex.sinh ∘
+      fun t : unitInterval => (((a * (t : ℝ) : ℝ) : ℂ) + (b : ℂ) * Complex.I))
+    exact Complex.continuous_sinh.comp harg_cont
+  · change Continuous (Complex.cosh ∘
+      fun t : unitInterval => (((a * (t : ℝ) : ℝ) : ℂ) + (b : ℂ) * Complex.I))
+    exact Complex.continuous_cosh.comp harg_cont
 
 private theorem joinedIn_orbitSet_one_rapidityImag [NeZero n]
     (w : Fin n → Fin (1 + 1) → ℂ) (hw : w ∈ ForwardTube 1 n)

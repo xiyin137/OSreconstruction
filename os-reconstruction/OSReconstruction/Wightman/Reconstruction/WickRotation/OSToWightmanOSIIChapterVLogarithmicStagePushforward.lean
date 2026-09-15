@@ -38,7 +38,7 @@ theorem osiiPrincipalLog_differentiableOn_rightHalfPlane
       Differentiable Complex
         (fun w : OSIITimeGapSpace k => w i) :=
     differentiable_apply i
-  simpa [osiiPrincipalLog] using
+  simpa [osiiPrincipalLog, Function.comp_def] using
     (Complex.differentiableAt_log
       (Complex.mem_slitPlane_iff.mpr (Or.inl (hz i)))
     ).comp_differentiableWithinAt z
@@ -74,11 +74,13 @@ noncomputable def principalLogPushforwardStage
     fun z => L.distribution (osiiPrincipalLog z)
   weaklyHolomorphic := by
     intro chi
-    simpa [Function.comp_def] using
-      (L.weaklyHolomorphic chi).comp
-        ((osiiPrincipalLog_differentiableOn_rightHalfPlane k).mono
-          Set.inter_subset_left)
-        (fun _z hz => hz.2)
+    change DifferentiableOn Complex
+      (fun z : OSIITimeGapSpace k => L.distribution (osiiPrincipalLog z) chi)
+      (osiiTimeRightHalfPlane k ∩ fun z => osiiPrincipalLog z ∈ L.carrier)
+    exact (L.weaklyHolomorphic chi).comp
+      ((osiiPrincipalLog_differentiableOn_rightHalfPlane k).mono
+        Set.inter_subset_left)
+      (fun _z hz => hz.2)
 
 @[simp] theorem principalLogPushforwardStage_carrier
     {d k : Nat}

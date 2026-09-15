@@ -484,7 +484,15 @@ theorem tendsto_compactApproxPositiveTimeBorchers_component
     ((unflattenSchwartzNPoint (d := d)).continuous.tendsto
       (flattenSchwartzNPoint (d := d)
         (((F : BorchersSequence d).funcs n : SchwartzNPoint d n)))).comp hflat
-  simpa [Function.comp, unflatten_flattenSchwartzNPoint_local] using hunflat
+  change Filter.Tendsto
+    ((unflattenSchwartzNPoint (d := d)) ∘ fun N =>
+      OSReconstruction.bumpTruncationRadius
+        (flattenSchwartzNPoint (d := d)
+          (((F : BorchersSequence d).funcs n : SchwartzNPoint d n))) N)
+    Filter.atTop
+    (nhds (((F : BorchersSequence d).funcs n : SchwartzNPoint d n)))
+  rw [unflatten_flattenSchwartzNPoint_local] at hunflat
+  exact hunflat
 
 /-- Lower-layer positive-time OS Hilbert vector.  This duplicates the direct
 completion representative under a name available before

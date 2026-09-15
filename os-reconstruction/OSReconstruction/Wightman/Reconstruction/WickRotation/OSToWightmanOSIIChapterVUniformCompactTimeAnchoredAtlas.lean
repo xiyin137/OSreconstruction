@@ -373,8 +373,11 @@ theorem anchoredAtlasRealRegion_mem_nhds
   apply (G.anchoredAtlasRealRegion_open stage germ).mem_nhds
   constructor
   · exact mem_of_mem_nhds G.hilbert.realRegion_nhds
-  · simpa [SCV.realToComplex] using
-      (SCV.center_mem_polydisc fun _ => G.gramRadius_pos)
+  · change
+      (0 : Fin (q + 1) → ℂ) ∈
+        SCV.Polydisc
+          (0 : Fin (q + 1) → ℂ) (fun _ => G.gramRadius)
+    exact SCV.center_mem_polydisc fun _ => G.gramRadius_pos
 
 theorem anchoredAtlasField_realEdge
     (stage : OSIITimeContinuationStage d

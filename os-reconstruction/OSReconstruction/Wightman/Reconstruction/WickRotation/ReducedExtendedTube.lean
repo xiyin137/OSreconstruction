@@ -79,15 +79,14 @@ theorem mem_reducedExtendedTubeN_iff (η : ReducedNPointConfig d m) :
     · change diffCoordEquiv m d w ∈ ProductForwardCone d m
       rwa [forwardTube_eq_diffCoord_preimage] at hw
     · rw [hzw, diffCoordEquiv_action]
-      rfl
   · rintro ⟨L, ξ, hξ, rfl⟩
     refine ⟨complexLorentzAction L ((diffCoordEquiv m d).symm ξ), ?_, ?_⟩
     · apply mem_iUnion.mpr
       refine ⟨L, (diffCoordEquiv m d).symm ξ, ?_, rfl⟩
       rw [forwardTube_eq_diffCoord_preimage]
-      simpa using hξ
+      simpa [ReducedForwardTubeN, ReducedForwardTube, ReducedForwardCone,
+        Nat.add_sub_cancel_right] using hξ
     · simp only [diffCoordEquiv_action, ContinuousLinearEquiv.apply_symm_apply]
-      rfl
 
 theorem reducedExtendedTubeN_eq_image :
     reducedExtendedTubeN d m =
@@ -118,7 +117,13 @@ theorem ReducedForwardTubePreInput.extend_holomorphic
     (complex_lorentz_invariance m F.cumulative F.cumulative_holomorphic
       F.cumulative_real_invariant)).comp (diffCoordEquiv m d).symm.differentiableOn
   rintro η ⟨z, hz, rfl⟩
-  simpa using hz
+  have hzcore : z ∈ BHWCore.ExtendedTube d m := by
+    obtain ⟨L, w, hw, rfl⟩ := mem_iUnion.mp hz
+    apply mem_iUnion.mpr
+    refine ⟨L, w, hw, ?_⟩
+    ext k μ
+    rfl
+  simpa using hzcore
 
 theorem ReducedForwardTubePreInput.extend_eq
     (F : ReducedForwardTubePreInput d m)
@@ -126,7 +131,8 @@ theorem ReducedForwardTubePreInput.extend_eq
     F.extend η = F.toFun η := by
   have hmem : (diffCoordEquiv m d).symm η ∈ ForwardTube d m := by
     rw [forwardTube_eq_diffCoord_preimage]
-    simpa using hη
+    simpa [ReducedForwardTubeN, ReducedForwardTube, ReducedForwardCone,
+      Nat.add_sub_cancel_right] using hη
   have h := extendF_eq_on_forwardTube m F.cumulative F.cumulative_holomorphic
     F.cumulative_real_invariant _ hmem
   simpa [extend, cumulative] using h
@@ -166,7 +172,9 @@ theorem ReducedForwardTubePreInput.pullback_complex_lorentz_invariant
   rw [reducedDiffMap_action]
   apply F.complex_lorentz_invariant L
     _ ((mem_forwardTube_iff_basepoint_and_reducedDiff z).mp hz).2
-  simpa only [reducedDiffMap_action] using
+  rw [← reducedDiffMap_action]
+  simpa [ReducedForwardTubeN, ReducedForwardTube, ReducedForwardCone,
+    Nat.add_sub_cancel_right] using
     ((mem_forwardTube_iff_basepoint_and_reducedDiff _).mp hLz).2
 
 /-- The absolute unpermuted extension factors through successive differences. -/

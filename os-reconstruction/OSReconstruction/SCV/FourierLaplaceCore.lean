@@ -269,6 +269,7 @@ theorem psiZ_schwartz_decay (z : ℂ) (hz : 0 < z.im) :
         have hexp_deriv : HasDerivAt (fun ξ : ℝ => Complex.exp ((ξ : ℂ) * (I * z)))
             ((I * z) * Complex.exp ((ξ : ℂ) * (I * z))) ξ := by
           refine (?_ : HasDerivAt (fun y : ℂ => Complex.exp (y * (I * z))) _ (ξ : ℂ)).comp_ofReal
+          change HasDerivAt (Complex.exp ∘ fun y : ℂ => y * (I * z)) _ (ξ : ℂ)
           simpa [mul_comm] using
             (Complex.hasDerivAt_exp ((ξ : ℂ) * (I * z))).comp (ξ : ℂ)
               (hasDerivAt_mul_const (I * z))
@@ -338,6 +339,7 @@ theorem iteratedDeriv_cexp_const_mul_real (n : ℕ) (c : ℂ) :
       have hexp_deriv : HasDerivAt (fun ξ : ℝ => Complex.exp (c * ξ))
           (c * Complex.exp (c * ξ)) ξ := by
         refine (?_ : HasDerivAt (fun y : ℂ => Complex.exp (c * y)) _ (ξ : ℂ)).comp_ofReal
+        change HasDerivAt (Complex.exp ∘ fun y : ℂ => c * y) _ (ξ : ℂ)
         simpa [mul_comm] using
           (Complex.hasDerivAt_exp (c * (ξ : ℂ))).comp (ξ : ℂ) (hasDerivAt_const_mul c)
       rw [(hexp_deriv.const_mul _).deriv]
@@ -369,6 +371,7 @@ private theorem iteratedDeriv_expTaylorLinearRemainderQuot_one
     simpa using (hasDerivAt_const_mul c : HasDerivAt (fun y : ℂ => c * y) c (ξ : ℂ))
   have hExp : HasDerivAt (fun ξ : ℝ => Complex.exp (c * ξ))
       (c * Complex.exp (c * ξ)) ξ := by
+    change HasDerivAt (Complex.exp ∘ fun ξ : ℝ => c * ξ) _ ξ
     simpa [c, mul_assoc, mul_left_comm, mul_comm] using
       (Complex.hasDerivAt_exp (c * (ξ : ℂ))).comp ξ hlin
   have hfull : HasDerivAt (fun ξ : ℝ => (Complex.exp (c * ξ) - 1 - c * ξ) / h)
@@ -400,6 +403,7 @@ private theorem iteratedDeriv_expTaylorLinearRemainderQuot_succ_succ
       simpa using (hasDerivAt_const_mul c : HasDerivAt (fun y : ℂ => c * y) c (x : ℂ))
     have hExp : HasDerivAt (fun ξ : ℝ => Complex.exp (c * ξ))
         (c * Complex.exp (c * x)) x := by
+      change HasDerivAt (Complex.exp ∘ fun ξ : ℝ => c * ξ) _ x
       simpa [mul_assoc, mul_left_comm, mul_comm] using
         (Complex.hasDerivAt_exp (c * (x : ℂ))).comp x hlin
     simpa using (hExp.sub_const (1 : ℂ)).deriv
@@ -444,8 +448,8 @@ private theorem expTaylorLinearRemainderQuot_contDiff (h : ℂ) :
     ContDiff ℝ (↑(⊤ : ℕ∞)) (expTaylorLinearRemainderQuot h) := by
   let c : ℂ := I * h
   have hexp : ContDiff ℝ (↑(⊤ : ℕ∞)) (fun ξ : ℝ => Complex.exp ((ξ : ℂ) * c)) := by
-    simpa using
-      (Complex.contDiff_exp.comp (Complex.ofRealCLM.contDiff.mul contDiff_const))
+    change ContDiff ℝ (↑(⊤ : ℕ∞)) (Complex.exp ∘ fun ξ : ℝ => (ξ : ℂ) * c)
+    exact Complex.contDiff_exp.comp (Complex.ofRealCLM.contDiff.mul contDiff_const)
   have hlin : ContDiff ℝ (↑(⊤ : ℕ∞)) (fun ξ : ℝ => (ξ : ℂ) * c) := by
     simpa using (Complex.ofRealCLM.contDiff.mul contDiff_const)
   unfold expTaylorLinearRemainderQuot
@@ -698,8 +702,8 @@ theorem psiZ_expTaylorLinearRemainderQuot_decay
             ∑ i ∈ Finset.range (n + 1),
               n.choose i * iteratedDeriv i e ξ * iteratedDeriv (n - i) r ξ := by
         have he_contDiff : ContDiff ℝ (↑(⊤ : ℕ∞)) e := by
-          simpa [e] using
-            (Complex.contDiff_exp.comp (contDiff_const.mul Complex.ofRealCLM.contDiff))
+          change ContDiff ℝ (↑(⊤ : ℕ∞)) (Complex.exp ∘ fun t : ℝ => I * z * t)
+          exact Complex.contDiff_exp.comp (contDiff_const.mul Complex.ofRealCLM.contDiff)
         have he_at : ContDiffAt ℝ n e ξ :=
           he_contDiff.contDiffAt.of_le
             (show (n : WithTop ℕ∞) ≤ (↑(⊤ : ℕ∞) : WithTop ℕ∞) by
@@ -708,7 +712,8 @@ theorem psiZ_expTaylorLinearRemainderQuot_decay
           (expTaylorLinearRemainderQuot_contDiff h).contDiffAt.of_le
             (show (n : WithTop ℕ∞) ≤ (↑(⊤ : ℕ∞) : WithTop ℕ∞) by
               exact mod_cast le_top)
-        simpa [e, r] using iteratedDeriv_mul (x := ξ) he_at hr_at
+        change iteratedDeriv n (e * r) ξ = _
+        exact iteratedDeriv_mul (x := ξ) he_at hr_at
       have htail_term :
           ∀ i ∈ Finset.range (n + 1),
             |ξ| ^ k *
@@ -812,7 +817,8 @@ theorem psiZ_expTaylorLinearRemainderQuot_decay
           (expTaylorLinearRemainderQuot_contDiff h).contDiffAt.of_le
             (show (n : WithTop ℕ∞) ≤ (↑(⊤ : ℕ∞) : WithTop ℕ∞) by
               exact mod_cast le_top)
-        simpa [f] using iteratedDeriv_mul (x := ξ) hpsi_at hr_at
+        change iteratedDeriv n ((psiZ z) * expTaylorLinearRemainderQuot h) ξ = _
+        exact iteratedDeriv_mul (x := ξ) hpsi_at hr_at
       calc
         |ξ| ^ k * ‖iteratedDeriv n f ξ‖
             ≤ ‖iteratedDeriv n f ξ‖ := by
@@ -901,7 +907,9 @@ theorem schwartzPsiZExpTaylorLinearRemainderQuot_seminorm_le
     (schwartzPsiZExpTaylorLinearRemainderQuot z hz h hh_im hh1)
     (mul_nonneg hC_nonneg (norm_nonneg h)) ?_
   intro ξ
-  simpa [schwartzPsiZExpTaylorLinearRemainderQuot] using hC h hh_im hh1 ξ
+  change |ξ| ^ k * ‖iteratedDeriv n
+    (fun t => psiZ z t * expTaylorLinearRemainderQuot h t) ξ‖ ≤ C * ‖h‖
+  exact hC h hh_im hh1 ξ
 
 /-- ψ_z as a SchwartzMap for Im(z) > 0. -/
 noncomputable def schwartzPsiZ (z : ℂ) (hz : 0 < z.im) : SchwartzMap ℝ ℂ :=
@@ -921,7 +929,8 @@ theorem schwartzPsiZ_seminorm_horizontal_bound
   classical
   let χ : ℝ → ℂ := fun ξ => smoothCutoff ξ
   have hχ_contDiff : ContDiff ℝ (↑(⊤ : ℕ∞)) χ := by
-    simpa [χ] using (Complex.ofRealCLM.contDiff.comp smoothCutoff_contDiff)
+    change ContDiff ℝ (↑(⊤ : ℕ∞)) (Complex.ofRealCLM ∘ smoothCutoff)
+    exact Complex.ofRealCLM.contDiff.comp smoothCutoff_contDiff
   have hB :
       ∀ i : ℕ, ∃ B : ℝ, 0 ≤ B ∧
         ∀ ξ ∈ Set.Icc (-1 : ℝ) 1, ‖iteratedDeriv i χ ξ‖ ≤ B := by
@@ -1047,8 +1056,8 @@ theorem schwartzPsiZ_seminorm_horizontal_bound
         exact pow_le_one₀ (abs_nonneg ξ) hξ_abs_le
       let e : ℝ → ℂ := fun t => Complex.exp (I * z * t)
       have he_contDiff : ContDiff ℝ (↑(⊤ : ℕ∞)) e := by
-        simpa [e] using
-          (Complex.contDiff_exp.comp (contDiff_const.mul Complex.ofRealCLM.contDiff))
+        change ContDiff ℝ (↑(⊤ : ℕ∞)) (Complex.exp ∘ fun t : ℝ => I * z * t)
+        exact Complex.contDiff_exp.comp (contDiff_const.mul Complex.ofRealCLM.contDiff)
       have hψε : psiZ z = χ * e := by
         funext t
         rfl

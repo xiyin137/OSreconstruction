@@ -89,7 +89,7 @@ theorem tendstoUniformlyOn_integral_shrinking_schwartz_approx_identity
           ψ i y * (F p (x0 p + y) - F p (x0 p))) := by
     have hmain := hF_int i p hp
     have hsub := hmain.sub hconst_int
-    simpa only [Pi.sub_apply, mul_sub] using hsub
+    exact hsub.congr (Filter.Eventually.of_forall (fun y => by simp [mul_sub]))
   have hrewrite :
       (∫ y : Fin m → ℝ, ψ i y * F p (x0 p + y)) - F p (x0 p) =
         ∫ y : Fin m → ℝ,
@@ -526,7 +526,7 @@ theorem tendsto_integral_tensorPair_shrinking_schwartz_approx_identities
             ψ pq y * F (x0 + y)) := by
       simpa only [ψ] using hF_int pq
     have hsub := hmain.sub hconst_int
-    simpa only [Pi.sub_apply, mul_sub] using hsub
+    exact hsub.congr (Filter.Eventually.of_forall (fun y => by simp [mul_sub]))
   have hrewrite :
       (∫ y : Fin (m + m) → ℝ, ψ pq y * F (x0 + y)) - F x0 =
         ∫ y : Fin (m + m) → ℝ,

@@ -105,7 +105,8 @@ private theorem poincareActNPoint_hasTemperateGrowth (g : PoincareGroup d) (n : 
   have hC : Function.HasTemperateGrowth
       (fun _ : NPointDomain d n => (fun _ : Fin n => g.translation)) :=
     Function.HasTemperateGrowth.const _
-  convert hL.add hC using 1
+  convert hL.add hC using 1 <;>
+    ext x i <;> simp [poincareActNPointDomain, PoincareGroup.act_def]
 
 /-- The inverse Lorentz matrix recovers the original vector (n-point version). -/
 private theorem lorentz_inv_mulVec' (g : PoincareGroup d) (x : SpacetimeDim d) :
@@ -160,8 +161,8 @@ private theorem affineCompNPoint_decay (g : PoincareGroup d) {n : ℕ}
     ∃ C, ∀ (x : NPointDomain d n),
       ‖x‖ ^ k * ‖iteratedFDeriv ℝ m
         (fun x => f (poincareActNPointDomain g x)) x‖ ≤ C := by
-  convert (SchwartzMap.compCLM ℂ (poincareActNPoint_hasTemperateGrowth g n)
-    (poincareActNPoint_upperBound g n) f).decay' k m using 2
+  exact (SchwartzMap.compCLM ℂ (poincareActNPoint_hasTemperateGrowth g n)
+    (poincareActNPoint_upperBound g n) f).decay' k m
 
 /-- The Poincaré action on n-point Schwartz functions:
     (g · f)(x₁,...,xₙ) = f(g⁻¹·x₁,...,g⁻¹·xₙ) -/

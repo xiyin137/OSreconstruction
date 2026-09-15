@@ -146,7 +146,10 @@ theorem exists_compact_schwartz_cutoff_eq_one_on_compact_subset_open_seminorm_le
     simp [f, hχx]
   · intro x hx
     have hxf : x ∈ tsupport f := by
-      simpa [χS, hχS_apply] using hx
+      have hχS_fun : (χS : (Fin m → ℝ) → ℂ) = f :=
+        funext hχS_apply
+      rw [hχS_fun] at hx
+      exact hx
     have hsupport : Function.support f = Function.support χ := by
       ext y
       simp [Function.mem_support, f]
@@ -175,10 +178,10 @@ theorem reducedTimeCutoffWeight_hasTemperateGrowth
     (η : SchwartzMap (Fin m → ℝ) ℂ) :
     Function.HasTemperateGrowth
       (reducedTimeCutoffWeight (d := d) η) := by
-  simpa [reducedTimeCutoffWeight, reducedTimeProjectionCLM,
-    section43QTimeCLM_apply, BHW.reducedDiffMapRealCLM] using
-    η.hasTemperateGrowth.comp
-      (reducedTimeProjectionCLM d m).hasTemperateGrowth
+  change Function.HasTemperateGrowth
+    ((η : (Fin m → ℝ) → ℂ) ∘ reducedTimeProjectionCLM d m)
+  exact η.hasTemperateGrowth.comp
+    (reducedTimeProjectionCLM d m).hasTemperateGrowth
 
 /-- Multiplication by a cutoff in consecutive time differences commutes
 exactly with basepoint fiber reduction. -/
@@ -501,13 +504,18 @@ theorem reducedTimeCutoffWeight_tsupport_disjoint
       (BHW.reducedDiffMapRealCLM (m + 1) d)
   refine Set.disjoint_left.2 ?_
   intro x hx hcoin
+  have hweight :
+      reducedTimeCutoffWeight (d := d) η =
+        (η : (Fin m → ℝ) → ℂ) ∘ L := by
+    funext y
+    change η (section43QTime (d := d) (n := m)
+      (BHW.reducedDiffMapReal (m + 1) d y)) = η (L y)
+    congr 1
   have hL_support :
       L x ∈ tsupport (η : (Fin m → ℝ) → ℂ) := by
-    exact
-      tsupport_comp_subset_preimage
-        (η : (Fin m → ℝ) → ℂ) L.continuous
-        (by simpa [reducedTimeCutoffWeight, L,
-          section43QTimeCLM_apply, BHW.reducedDiffMapRealCLM] using hx)
+    rw [hweight] at hx
+    exact tsupport_comp_subset_preimage
+      (η : (Fin m → ℝ) → ℂ) L.continuous hx
   have hgap : ∀ i : Fin m, 0 < x i.succ 0 - x i.castSucc 0 := by
     intro i
     have hi := hη hL_support i
@@ -516,7 +524,8 @@ theorem reducedTimeCutoffWeight_tsupport_disjoint
           BHW.reducedDiffMapReal (m + 1) d x
             ⟨i.val, by omega⟩ 0 := by
       simpa [L, section43QTimeCLM_apply,
-        BHW.reducedDiffMapRealCLM] using hi
+        BHW.reducedDiffMapRealCLM, section43QTime,
+        nPointTimeSpatialCLE] using hi
     change 0 < x i.succ 0 - x i.castSucc 0 at hi'
     exact hi'
   have htime : StrictMono (fun i : Fin (m + 1) => x i 0) := by

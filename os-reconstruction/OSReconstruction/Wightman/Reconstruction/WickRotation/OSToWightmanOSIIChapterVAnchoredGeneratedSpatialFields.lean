@@ -66,8 +66,7 @@ theorem positiveHeadSpatialSourceCarrier_compact
     refine Fin.cases ?_ ?_ i
     · exact continuous_fst
     · intro j
-      simpa using
-        (continuous_apply j).comp continuous_snd
+      fun_prop
   exact
     (normalizedPositiveTimeBasepointCutoff.compact.isCompact.prod
       A.carrierData.carrier_compact).image hcons
@@ -292,10 +291,12 @@ theorem spatialLinearDomain_open
     apply continuous_pi
     intro j
     refine Fin.addCases (fun i => ?_) (fun i => ?_) j
-    · simpa [reflectedCauchyCenter] using
-        (continuous_star.comp
-          (continuous_apply i :
-            Continuous (fun z : Fin (q + 1) → ℂ => z i)))
+    · rw [show (fun z : Fin (q + 1) → ℂ =>
+          reflectedCauchyCenter z (Fin.castAdd (q + 1) i)) =
+          (fun z => star (z i)) by
+            funext z
+            exact reflectedCauchyCenter_left z i]
+      fun_prop
     · convert
         (continuous_apply i :
           Continuous (fun z : Fin (q + 1) → ℂ => z i)) using 1
@@ -342,7 +343,9 @@ theorem initialGramPolydisc_subset_spatialLinearDomain
         (fun a => D.gram.hilbert.field a 0) :=
     { gram := P, anchored := A₀ }
   have hzP : z ∈ P.domain := by
-    simpa [P] using hz
+    change z ∈ SCV.Polydisc
+      (0 : Fin (q + 1) → ℂ) (fun _ => D.gram.gramRadius)
+    exact hz
   refine ⟨?_, ?_, ?_⟩
   · exact Set.mem_iUnion.mpr ⟨C, hzP⟩
   · exact A₀.anchorPair_subset_scalarDomain z hzP

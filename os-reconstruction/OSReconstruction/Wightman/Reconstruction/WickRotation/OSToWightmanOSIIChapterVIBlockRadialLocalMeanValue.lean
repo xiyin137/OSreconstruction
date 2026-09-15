@@ -153,7 +153,7 @@ theorem
   obtain ⟨G, hG⟩ := FK.exists_restrict_eq hK_closed
   have hG_eq (w : Fin (k * q) → ℂ) (hw : w ∈ K) : G w = F w := by
     have h := DFunLike.congr_fun hG ⟨w, hw⟩
-    simpa [FK] using h
+    exact h
   have hV_K : V ⊆ K := by
     intro w hw i
     exact (hw i).le

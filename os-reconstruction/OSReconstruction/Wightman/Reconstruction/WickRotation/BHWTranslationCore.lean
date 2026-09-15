@@ -89,8 +89,8 @@ theorem W_analytic_translation_on_forwardTube {d n : ℕ} [NeZero d]
     have hF₁_holo : DifferentiableOn ℂ F₁ (ForwardTube d n) := by
       intro z hz
       have hz_shift : shiftW z ∈ ForwardTube d n := by
-        simpa [shiftW] using
-        forwardTube_add_real_shift z a hz
+        change (fun k μ => z k μ + (a μ : ℂ)) ∈ ForwardTube d n
+        exact forwardTube_add_real_shift z a hz
       have hshift_diff : Differentiable ℂ shiftW := by
         have hconst_shift :
             Differentiable ℂ
@@ -106,7 +106,8 @@ theorem W_analytic_translation_on_forwardTube {d n : ℕ} [NeZero d]
       exact (hW_holo _ hz_shift).comp z hshift_diff.differentiableAt.differentiableWithinAt
         (by
           intro y hy
-          simpa [shiftW] using (forwardTube_add_real_shift y a hy))
+          change (fun k μ => y k μ + (a μ : ℂ)) ∈ ForwardTube d n
+          exact forwardTube_add_real_shift y a hy)
     have h_agree : ∀ (f : SchwartzNPoint d n) (η : Fin n → Fin (d + 1) → ℝ),
         InForwardCone d n η →
         Filter.Tendsto
@@ -184,6 +185,7 @@ theorem W_analytic_translation_on_forwardTube {d n : ℕ} [NeZero d]
       have hW_eq_fg : Wfn.W n f = Wfn.W n g :=
         Wfn.translation_invariant n (-a) f g (by
           intro x
+          change g x = f (fun i => x i + -a)
           simpa [sub_eq_add_neg] using hg_shift x)
       have hdiff : Filter.Tendsto
           (fun ε : ℝ =>
@@ -300,7 +302,15 @@ theorem W_analytic_translation_on_forwardTube {d n : ℕ} [NeZero d]
             W_analytic hW_holo
             hW_growth
             f η hη ε hε
-        simpa [sub_mul] using hInt_F₁f.sub hInt_Wf)
+        convert hInt_F₁f.sub hInt_Wf using 1
+        · rfl
+        · funext x
+          change
+            (F₁ (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) -
+                W_analytic (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I)) * f x =
+              F₁ (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * f x -
+                W_analytic (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * f x
+          ring)
       h_agree
     exact huniq w hw
 
@@ -318,13 +328,17 @@ theorem W_analytic_translation_on_forwardTube {d n : ℕ} [NeZero d]
       apply continuous_pi
       intro μ
       exact continuous_const.add (continuous_apply μ)
-    simpa [D] using (hFT_open.preimage hshift_cont)
+    change IsOpen ((fun s : Fin (d + 1) → ℂ =>
+      (fun k μ => z k μ + s μ)) ⁻¹' ForwardTube d n)
+    exact hFT_open.preimage hshift_cont
   have hD_convex : Convex ℝ D := by
     intro s hs t ht a b ha hb hab
     have hsFT : (fun k μ => z k μ + s μ) ∈ BHW.ForwardTube d n := by
-      simpa [BHW_forwardTube_eq (d := d) (n := n)] using hs
+      change (fun k μ => z k μ + s μ) ∈ ForwardTube d n at hs
+      simpa only [BHW_forwardTube_eq (d := d) (n := n)] using hs
     have htFT : (fun k μ => z k μ + t μ) ∈ BHW.ForwardTube d n := by
-      simpa [BHW_forwardTube_eq (d := d) (n := n)] using ht
+      change (fun k μ => z k μ + t μ) ∈ ForwardTube d n at ht
+      simpa only [BHW_forwardTube_eq (d := d) (n := n)] using ht
     have hconv : a • (fun k μ => z k μ + s μ) + b • (fun k μ => z k μ + t μ) ∈ ForwardTube d n := by
       have hconv' := BHW.forwardTube_convex hsFT htFT ha hb hab
       simpa [BHW_forwardTube_eq (d := d) (n := n)] using hconv'
@@ -399,9 +413,8 @@ theorem W_analytic_translation_on_forwardTube {d n : ℕ} [NeZero d]
   have hzero_on_D := SCV.identity_theorem_totally_real (m := d + 1)
       hD_open hD_conn hhfun_holo
       (V := Set.univ) isOpen_univ Set.univ_nonempty
-      (by intro x hx; simpa [SCV.realToComplex] using hV_sub x hx)
-      (by intro x hx; simpa [SCV.realToComplex] using hhfun_zero_real x hx)
+      (by intro x hx; unfold SCV.realToComplex; exact hV_sub x hx)
+      (by intro x hx; unfold SCV.realToComplex; exact hhfun_zero_real x hx)
   have hcD : c ∈ D := by simpa [D] using hzc
   have hc_zero : hfun c = 0 := hzero_on_D c hcD
   exact sub_eq_zero.mp (by simpa [hfun] using hc_zero)
-

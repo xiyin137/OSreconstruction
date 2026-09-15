@@ -234,8 +234,9 @@ theorem section43NPointTimeCutoffWeight_hasTemperateGrowth
     (η : SchwartzMap (Fin n → ℝ) ℂ) :
     Function.HasTemperateGrowth
       (section43NPointTimeCutoffWeight d n η) := by
-  simpa [section43NPointTimeCutoffWeight, section43QTimeCLM_apply] using
-    η.hasTemperateGrowth.comp (section43QTimeCLM d n).hasTemperateGrowth
+  change Function.HasTemperateGrowth
+    ((η : (Fin n → ℝ) → ℂ) ∘ section43QTimeCLM d n)
+  exact η.hasTemperateGrowth.comp (section43QTimeCLM d n).hasTemperateGrowth
 
 /-- Multiply an arbitrary difference-coordinate Schwartz test by a
 strict-positive time cutoff, then pull it back to ordered Euclidean
@@ -297,7 +298,7 @@ theorem section43OrderedPullbackFullCutoffCLM_tsupport_subset_orderedPositive
         section43DiffCoordRealCLE d n y ∈
           tsupport
             ((η : (Fin n → ℝ) → ℂ) ∘ section43QTimeCLM d n) := by
-      simpa [section43NPointTimeCutoffWeight, section43QTimeCLM_apply] using hweight
+      exact hweight
     have hpre :=
       (tsupport_comp_subset_preimage
         (η : (Fin n → ℝ) → ℂ)

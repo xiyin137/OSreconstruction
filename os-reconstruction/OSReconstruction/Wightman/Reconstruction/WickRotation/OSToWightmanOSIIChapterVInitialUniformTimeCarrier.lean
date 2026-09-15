@@ -76,10 +76,7 @@ theorem isCompact_levelPiecePureTimeCarrierSet
     apply continuous_pi
     intro μ
     refine Fin.cases ?_ (fun _ => ?_) μ
-    · simpa using
-        (continuous_apply 0).comp
-          ((continuous_apply i).comp
-            (initialBaseTimeConfigurationCLM d k).continuous)
+    · fun_prop
     · simpa using (continuous_const :
         Continuous (fun _ : InitialBaseTimeSpace d k => (0 : ℝ)))
 

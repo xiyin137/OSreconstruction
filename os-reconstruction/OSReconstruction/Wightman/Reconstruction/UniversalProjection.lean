@@ -332,8 +332,8 @@ theorem exists_universal_projection_constant (n : ℕ) :
       simpa using
         (Finset.prod_pos (s := (Finset.univ : Finset P)) (fun p hp => hpos p))
     have hsup_ge : (∏ p : P, momentProjection d t (U p)) ≤ G U := by
-      simpa [G] using
-        (Finset.le_sup' (s := cand) (f := fun t => ∏ p : P, momentProjection d t (U p)) ht)
+      exact (Finset.le_sup'
+        (fun t U => ∏ p : P, momentProjection d t (U p)) ht) U
     dsimp [G]
     exact lt_of_lt_of_le hprod_pos hsup_ge
   obtain ⟨Umin, hUminK, hUmin_min⟩ := hK_compact.exists_isMinOn hK_nonempty hG_cont.continuousOn
@@ -352,8 +352,8 @@ theorem exists_universal_projection_constant (n : ℕ) :
   have hGU_eq : G U = ∏ p : P, momentProjection d t (U p) := by
     apply le_antisymm
     · simpa [G] using ((Finset.sup'_le_iff hcand_ne (fun b => ∏ p : P, momentProjection d b (U p))).2 hmax)
-    · simpa [G] using
-        (Finset.le_sup' (s := cand) (f := fun t => ∏ p : P, momentProjection d t (U p)) ht)
+    · exact (Finset.le_sup'
+        (fun t U => ∏ p : P, momentProjection d t (U p)) ht) U
   refine ⟨t, ht, ?_⟩
   intro p
   have hupper :
@@ -407,7 +407,8 @@ theorem exists_orthogonal_matrix_with_first_row
     ext i j
     calc
       (M * M.transpose) i j = ∑ x : Fin (d + 1), (b i).ofLp x * (b j).ofLp x := by
-        simp [M, Matrix.mul_apply]
+        rw [Matrix.mul_apply]
+        rfl
       _ = inner ℝ (b i) (b j) := by
         rw [PiLp.inner_apply]
         congr 1; ext x; simp [inner, mul_comm]
@@ -468,7 +469,13 @@ theorem exists_orthogonal_matrix_with_first_row
           omega⟩ := by
         rw [Fin.ne_iff_vne]
         norm_num
-      simp [R, D, Matrix.diagonal_mul, s, h01, M, vE, hb0]
+      rw [show R = D * M from rfl, show D = Matrix.diagonal s from rfl,
+        Matrix.diagonal_mul]
+      have hs0 : s 0 = 1 := by simp [s, h01]
+      rw [hs0, one_mul]
+      have hb0j := congrArg
+        (fun z : EuclideanSpace ℝ (Fin (d + 1)) => z.ofLp j) hb0
+      simpa [M, vE] using hb0j
 
 
 

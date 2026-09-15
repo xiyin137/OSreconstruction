@@ -965,8 +965,23 @@ theorem osiiStep4CenteredPartialConvolutionKernelComplexSchwartz_iteratedFDeriv_
     have h :=
       (osiiStep4ComplexBlockPartialConvolutionKernel_contDiff
         (q + 1) hrho v v').comp hargument
-    simpa [f, P, c, v, v',
-      osiiProductionRealBlockProjection_apply] using h
+    have hfi :
+        f i =
+          (fun z =>
+            (osiiStep4ComplexBlockPartialConvolutionKernel (q + 1) rho
+              (osiiStep4ComplexOfRealImag z v) v' : Complex)) ∘
+            (fun w => P w - c) := by
+      funext w
+      simp only [f, Function.comp_apply]
+      have hreal :
+          (fun mu =>
+            w (finProdFinEquiv (i, mu)) -
+              center (finProdFinEquiv (i, mu))) = P w - c := by
+        funext mu
+        rw [Pi.sub_apply, osiiProductionRealBlockProjection_apply]
+      rw [hreal]
+    rw [hfi]
+    exact h
   have hfactor (i : Fin k) (j : Nat) :
       ‖iteratedFDeriv Real j (f i) x‖ ≤
         A * B ^ j * (j.factorial : Real) ^ 2 *
@@ -1130,8 +1145,7 @@ theorem osiiStep4CenteredPartialConvolutionKernelComplexSchwartz_Iic_gevrey_boun
     dsimp [b]
     linarith [norm_nonneg center]
   apply Seminorm.finset_sup_apply_le
-  · dsimp [A, B, a, b]
-    positivity
+  · positivity
   intro j hj
   have horders : j.1 ≤ p ∧ j.2 ≤ l := Finset.mem_Iic.mp hj
   have hfactorial : (j.2.factorial : Real) ≤ l.factorial := by
@@ -1267,4 +1281,3 @@ theorem osiiStep4CenteredPartialConvolutionKernelFullSource_Iic_gevrey_bound
           (1 + ‖center‖) ^ p := hflat
 
 end OSReconstruction
-

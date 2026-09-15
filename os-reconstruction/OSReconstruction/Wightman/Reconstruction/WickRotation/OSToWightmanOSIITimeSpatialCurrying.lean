@@ -382,8 +382,10 @@ theorem continuousOn_osiiMovingSpatialSlicePairing
             (Section43SpatialSpace d k) ℂ) s)
     change Continuous
       (fun x =>
-        Seminorm.coeFnAddMonoidHom ℂ
+        FunLike.coeAddMonoidHom
+          (Seminorm ℂ (SchwartzMap (Section43SpatialSpace d k) ℂ))
           (SchwartzMap (Section43SpatialSpace d k) ℂ)
+          ℝ
           (∑ i ∈ s,
             schwartzSeminormFamily ℂ
               (Section43SpatialSpace d k) ℂ i) x)
@@ -923,8 +925,10 @@ theorem existsUnique_osiiSpatialDistribution_of_compactSupport_tendsto_of_pointw
           Seminorm.finset_sup_le_sum pFamily s)
     change Continuous
       (fun x =>
-        Seminorm.coeFnAddMonoidHom ℝ
+        FunLike.coeAddMonoidHom
+          (Seminorm ℝ (SchwartzMap (Section43SpatialSpace d k) ℂ))
           (SchwartzMap (Section43SpatialSpace d k) ℂ)
+          ℝ
           (∑ i ∈ s, pFamily i) x)
     simp_rw [map_sum, Finset.sum_apply]
     exact continuous_finset_sum _ fun i _ =>
@@ -967,10 +971,12 @@ theorem existsUnique_osiiSpatialDistribution_of_compactSupport_tendsto_of_pointw
     refine ⟨N, fun m hm n hn => ?_⟩
     have hm_bound :
         ‖T m (χ - ψ)‖ ≤ (C : ℝ) * p (χ - ψ) := by
-      simpa [p, pFamily, smul_eq_mul] using hbound m (χ - ψ)
+      simpa [p, pFamily, smul_apply, NNReal.smul_def, smul_eq_mul] using
+        hbound m (χ - ψ)
     have hn_bound :
         ‖T n (χ - ψ)‖ ≤ (C : ℝ) * p (χ - ψ) := by
-      simpa [p, pFamily, smul_eq_mul] using hbound n (χ - ψ)
+      simpa [p, pFamily, smul_apply, NNReal.smul_def, smul_eq_mul] using
+        hbound n (χ - ψ)
     have hsmall :
         (C : ℝ) * p (χ - ψ) < ε / 4 := by
       have := hψnear

@@ -40,6 +40,12 @@ theorem exists_seminorm_translateSchwartz_sub_le_linear {m : ℕ}
   let hxFun : ℝ →
       ContinuousMultilinearMap ℝ (fun _ : Fin n => Fin m → ℝ) ℂ :=
     fun s => ‖x‖ ^ k • H (x + s • (t • v))
+  letI : AddCommGroup ((Fin m → ℝ) [×n]→L[ℝ] ℂ) :=
+    ContinuousMultilinearMap.normedAddCommGroup'.toAddCommGroup
+  letI : Module ℝ ((Fin m → ℝ) [×n]→L[ℝ] ℂ) :=
+    ContinuousMultilinearMap.normedSpace'.toModule
+  letI : TopologicalSpace ((Fin m → ℝ) [×n]→L[ℝ] ℂ) :=
+    PseudoMetricSpace.toUniformSpace.toTopologicalSpace
   have hH_diff : Differentiable ℝ H := by
     simpa [H] using
       (g.smooth (n + 1)).differentiable_iteratedFDeriv (by
@@ -59,7 +65,14 @@ theorem exists_seminorm_translateSchwartz_sub_le_linear {m : ℕ}
         HasDerivAt (fun r : ℝ => H (x + r • (t • v)))
           ((fderiv ℝ H (x + s • (t • v))) (t • v)) s := by
       exact (hH_diff (x + s • (t • v))).hasFDerivAt.comp_hasDerivAt s hgamma
-    simpa [hxFun] using hcomp.const_smul (‖x‖ ^ k)
+    change @HasDerivAt ℝ _ ((Fin m → ℝ) [×n]→L[ℝ] ℂ)
+      ContinuousMultilinearMap.normedAddCommGroup'.toAddCommGroup
+      ContinuousMultilinearMap.normedSpace'.toModule
+      PseudoMetricSpace.toUniformSpace.toTopologicalSpace _
+      hxFun (‖x‖ ^ k • (fderiv ℝ H (x + s • (t • v)) (t • v))) s
+    convert hcomp.const_smul (‖x‖ ^ k) using 1
+    funext r
+    rfl
   have hxFun_bound :
       ∀ s ∈ Set.Ico (0 : ℝ) 1,
         ‖‖x‖ ^ k • (fderiv ℝ H (x + s • (t • v)) (t • v))‖ ≤ C * |t| := by
@@ -90,7 +103,8 @@ theorem exists_seminorm_translateSchwartz_sub_le_linear {m : ℕ}
       have htrans :
           iteratedFDeriv ℝ (n + 1) (⇑(translateSchwartz (s • (t • v)) g)) x =
             iteratedFDeriv ℝ (n + 1) (g : (Fin m → ℝ) → ℂ) (x + s • (t • v)) := by
-        simpa [translateSchwartz] using
+        change iteratedFDeriv ℝ (n + 1) (fun z => g (z + s • (t • v))) x = _
+        exact
           (iteratedFDeriv_comp_add_right (f := (g : (Fin m → ℝ) → ℂ)) (n + 1)
             (s • (t • v)) x)
       simpa [htrans] using hseminorm0
@@ -138,7 +152,8 @@ theorem exists_seminorm_translateSchwartz_sub_le_linear {m : ℕ}
     have htrans :
         iteratedFDeriv ℝ n (⇑(translateSchwartz (t • v) g)) x =
           H (x + t • v) := by
-      simpa [H, translateSchwartz] using
+      change iteratedFDeriv ℝ n (fun z => g (z + t • v)) x = _
+      simpa [H] using
         (iteratedFDeriv_comp_add_right (f := (g : (Fin m → ℝ) → ℂ)) n (t • v) x)
     simp [H, htrans, sub_eq_add_neg]
   have hxFun_diff :
@@ -251,6 +266,12 @@ theorem exists_seminorm_diffQuotient_translateSchwartz_sub_lineDeriv_le {m : ℕ
   let ψ : ℝ →
       ContinuousMultilinearMap ℝ (fun _ : Fin n => Fin m → ℝ) ℂ :=
     fun s => ‖x‖ ^ k • (t⁻¹ • H (x + s • (t • v)) - t⁻¹ • H x) - ‖x‖ ^ k • (s • K x)
+  letI : AddCommGroup ((Fin m → ℝ) [×n]→L[ℝ] ℂ) :=
+    ContinuousMultilinearMap.normedAddCommGroup'.toAddCommGroup
+  letI : Module ℝ ((Fin m → ℝ) [×n]→L[ℝ] ℂ) :=
+    ContinuousMultilinearMap.normedSpace'.toModule
+  letI : TopologicalSpace ((Fin m → ℝ) [×n]→L[ℝ] ℂ) :=
+    PseudoMetricSpace.toUniformSpace.toTopologicalSpace
   have hH_diff : Differentiable ℝ H := by
     simpa [H] using
       (f.smooth (n + 1)).differentiable_iteratedFDeriv (by
@@ -297,7 +318,19 @@ theorem exists_seminorm_diffQuotient_translateSchwartz_sub_lineDeriv_le {m : ℕ
           (fun r : ℝ =>
             ‖x‖ ^ k • (t⁻¹ • H (x + r • (t • v)) - t⁻¹ • H x) - ‖x‖ ^ k • (r • K x))
           (‖x‖ ^ k • (t⁻¹ • ((fderiv ℝ H (x + s • (t • v))) (t • v))) - ‖x‖ ^ k • K x) s := by
-      convert (hmain0.const_smul (‖x‖ ^ k)).sub (hlin.const_smul (‖x‖ ^ k)) using 1
+      change @HasDerivAt ℝ _ ((Fin m → ℝ) [×n]→L[ℝ] ℂ)
+        ContinuousMultilinearMap.normedAddCommGroup'.toAddCommGroup
+        ContinuousMultilinearMap.normedSpace'.toModule
+        PseudoMetricSpace.toUniformSpace.toTopologicalSpace _
+        (fun r : ℝ =>
+          ‖x‖ ^ k • (t⁻¹ • H (x + r • (t • v)) - t⁻¹ • H x) -
+            ‖x‖ ^ k • (r • K x))
+        (‖x‖ ^ k • (t⁻¹ • ((fderiv ℝ H (x + s • (t • v))) (t • v))) -
+          ‖x‖ ^ k • K x) s
+      convert (hmain0.const_smul (‖x‖ ^ k)).sub
+        (hlin.const_smul (‖x‖ ^ k)) using 1
+      funext r
+      rfl
     have hsub :
         HasDerivAt
           (fun r : ℝ =>
@@ -331,7 +364,8 @@ theorem exists_seminorm_diffQuotient_translateSchwartz_sub_lineDeriv_le {m : ℕ
       have hshift :
           iteratedFDeriv ℝ n (⇑(translateSchwartz ((s * t) • v) g)) x =
             K (x + s • (t • v)) := by
-        simpa [K, translateSchwartz, smul_smul, mul_comm, mul_left_comm, mul_assoc] using
+        change iteratedFDeriv ℝ n (fun z => g (z + (s * t) • v)) x = _
+        simpa [K, smul_smul, mul_comm, mul_left_comm, mul_assoc] using
           (iteratedFDeriv_comp_add_right (f := (g : (Fin m → ℝ) → ℂ)) n ((s * t) • v) x)
       rw [show (⇑(translateSchwartz ((s * t) • v) g - g) : (Fin m → ℝ) → ℂ) =
             (⇑(translateSchwartz ((s * t) • v) g)) + fun z => -(⇑g z) by
@@ -378,7 +412,8 @@ theorem exists_seminorm_diffQuotient_translateSchwartz_sub_lineDeriv_le {m : ℕ
           H (x + t • v) - H x := by
       have hshift :
           iteratedFDeriv ℝ n (⇑(translateSchwartz (t • v) f)) x = H (x + t • v) := by
-        simpa [H, translateSchwartz] using
+        change iteratedFDeriv ℝ n (fun z => f (z + t • v)) x = _
+        simpa [H] using
           (iteratedFDeriv_comp_add_right (f := (f : (Fin m → ℝ) → ℂ)) n (t • v) x)
       rw [show (⇑(translateSchwartz (t • v) f - f) : (Fin m → ℝ) → ℂ) =
             (⇑(translateSchwartz (t • v) f)) + fun z => -(⇑f z) by
@@ -397,7 +432,9 @@ theorem exists_seminorm_diffQuotient_translateSchwartz_sub_lineDeriv_le {m : ℕ
     have hsc :
         iteratedFDeriv ℝ n (⇑(t⁻¹ • (translateSchwartz (t • v) f - f))) x =
           t⁻¹ • iteratedFDeriv ℝ n (⇑(translateSchwartz (t • v) f - f)) x := by
-      simpa [Pi.smul_apply] using
+      change iteratedFDeriv ℝ n (fun z => t⁻¹ •
+        ((translateSchwartz (t • v) f - f) z)) x = _
+      simpa only using
         (iteratedFDeriv_const_smul_apply'
           (𝕜 := ℝ) (a := t⁻¹)
           (f := (⇑(translateSchwartz (t • v) f - f) : (Fin m → ℝ) → ℂ))
@@ -405,7 +442,8 @@ theorem exists_seminorm_diffQuotient_translateSchwartz_sub_lineDeriv_le {m : ℕ
           ((translateSchwartz (t • v) f - f).smooth n).contDiffAt)
     have hneg :
         iteratedFDeriv ℝ n (fun z => -((g : (Fin m → ℝ) → ℂ) z)) x = - K x := by
-      simpa [K] using
+      change iteratedFDeriv ℝ n (-(g : (Fin m → ℝ) → ℂ)) x = _
+      simpa only [K] using
         (iteratedFDeriv_neg_apply (𝕜 := ℝ) (i := n) (f := (g : (Fin m → ℝ) → ℂ)) (x := x))
     rw [hsc, hneg, hshift_sub]
     simp [sub_eq_add_neg, add_left_comm, add_comm]

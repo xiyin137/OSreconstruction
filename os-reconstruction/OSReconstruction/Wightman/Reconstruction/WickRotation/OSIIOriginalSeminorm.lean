@@ -191,8 +191,9 @@ theorem squareSeminorm_le_osiiOriginalSeminorm {m : Nat} (r : Nat)
   have hM := multilinear_norm_le_coordinate_bound
     (w • iteratedFDeriv Real j.2 f x) (osiiOriginalSeminorm r f) hQ
     (fun c => by
-      simpa only [ContinuousMultilinearMap.smul_apply, norm_smul,
-        Real.norm_of_nonneg hw] using osiiCoordinateJetValue_le r f x j.2 hjb c)
+      simpa only [w, osiiCoordinateJetValue, smul_apply, norm_smul,
+        Real.norm_of_nonneg hw] using
+        (osiiCoordinateJetValue_le r f x j.2 hjb c))
   rw [norm_smul, Real.norm_of_nonneg hw] at hM
   have hweight : ‖x‖ ^ j.1 <= w :=
     (pow_le_pow_left₀ (norm_nonneg _) (norm_le_osiiCoordinateWeight x) j.1).trans

@@ -103,8 +103,15 @@ theorem osiiEquation66OSBuiltGlobalPhysicalDensity_represents_movingSlice
         simpa [flattenSchwartzNPoint_apply] using h
       have htime := hF.2 hpre
       apply D.compactCarrier_subset
-      simpa [osiiEquation66FlatTime, section43QTime,
-        nPointTimeSpatialCLE, flattenCLEquivReal_apply] using htime
+      have hflatTime :
+          section43QTime (d := d) (n := k)
+              ((flattenCLEquivReal k (d + 1)).symm y) =
+            osiiEquation66FlatTime (d := d) y := by
+        funext i
+        simp [osiiEquation66FlatTime, section43QTime,
+          nPointTimeSpatialCLE, flattenCLEquivReal_apply]
+      rw [← hflatTime]
+      exact htime
   calc
     osiiStageMovingSliceDistribution stage C.cutoff C.cutoff_compact 0 F =
         OSIIChapterV.canonicalReducedTimeCutoffSchwingerCLM

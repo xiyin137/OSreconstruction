@@ -259,25 +259,25 @@ theorem iteratedFDeriv_apply_translateSchwartzConfiguration_zero
     iteratedFDeriv ℝ N Fflat 0
         (fun i => eCLM (u i)) =
       T (LineDeriv.iteratedLineDerivOp u f)
-  rw [show
-      iteratedFDeriv ℝ N Fflat 0
-          (fun i => eCLM (u i)) =
-        Tflat
-          (LineDeriv.iteratedLineDerivOp
-            (fun i => eCLM (u i)) (flattenSource f)) by
-      simpa [Fflat, Tflat, SCV.translateSchwartz] using
-        SCV.iteratedFDeriv_apply_translateSchwartz
-          Tflat (flattenSource f) 0 (fun i => eCLM (u i))]
+  rw [SCV.iteratedFDeriv_apply_translateSchwartz]
   simp only [Tflat, ContinuousLinearMap.comp_apply]
   apply congrArg T
-  change
+  calc
     unflattenSource
-        (LineDeriv.iteratedLineDerivOp
-          (fun i => flattenCLEquivReal n (d + 1) (u i))
-          (flattenSource f)) =
-      LineDeriv.iteratedLineDerivOp u f
-  rw [← flattenSource_iteratedLineDeriv,
-    unflattenSource_flattenSource]
+        (SCV.translateSchwartz 0
+          (LineDeriv.iteratedLineDerivOp
+            (fun i => flattenCLEquivReal n (d + 1) (u i))
+            (flattenSource f))) =
+        unflattenSource
+          (LineDeriv.iteratedLineDerivOp
+            (fun i => flattenCLEquivReal n (d + 1) (u i))
+            (flattenSource f)) := by
+      apply congrArg unflattenSource
+      ext x
+      simp
+    _ = LineDeriv.iteratedLineDerivOp u f := by
+      rw [← flattenSource_iteratedLineDeriv,
+        unflattenSource_flattenSource]
 
 /-- Mixed derivatives after a real-linear parameterization of configuration
 displacements are obtained by applying that parameter map to every derivative
@@ -321,10 +321,15 @@ theorem tsupport_translateSchwartzConfiguration_eq_preimage
           NPointDomain d n → ℂ) =
       (Homeomorph.addRight a) ⁻¹'
         tsupport (f : NPointDomain d n → ℂ) := by
-  simpa [translateSchwartzConfiguration] using
-    (tsupport_comp_eq_preimage
-      (g := (f : NPointDomain d n → ℂ))
-      (Homeomorph.addRight a))
+  change
+    tsupport
+        ((f : NPointDomain d n → ℂ) ∘
+          (Homeomorph.addRight a : NPointDomain d n → NPointDomain d n)) =
+      (Homeomorph.addRight a) ⁻¹'
+        tsupport (f : NPointDomain d n → ℂ)
+  exact tsupport_comp_eq_preimage
+    (g := (f : NPointDomain d n → ℂ))
+    (Homeomorph.addRight a)
 
 /-- The configuration direction attached to one chronological gap.
 

@@ -148,8 +148,9 @@ theorem tsupport_section43TimeSchwartzTransport
           (Fin m → ℝ) → ℂ) =
       section43TimeTupleTransport h ''
         tsupport (φ : (Fin n → ℝ) → ℂ) := by
-  subst m
-  simp [section43TimeSchwartzTransport, section43TimeTupleTransport]
+  cases h
+  change tsupport (φ : (Fin n → ℝ) → ℂ) = id '' tsupport (φ : (Fin n → ℝ) → ℂ)
+  exact (Set.image_id _).symm
 
 /-- Reindexing an ordered time/spatial tensor by an equality of arities is
 the ordered tensor of the transported factors. -/
@@ -349,17 +350,6 @@ theorem diffVarReduction_orderedPullback_timeSpatialTensor
         (SCV.sliceIntegral φ)
         (section43SpatialHeadMarginal χ) := by
   ext ξ
-  let e :=
-    MeasurableEquiv.piFinSuccAbove
-      (fun _ : Fin (d + 1) => ℝ) 0
-  have hmp :
-      MeasurePreserving e
-        (volume : Measure (SpacetimeDim d))
-        ((volume : Measure ℝ).prod
-          (volume : Measure (Fin d → ℝ))) := by
-    simpa [e] using
-      (volume_preserving_piFinSuccAbove
-        (fun _ : Fin (d + 1) => ℝ) 0)
   change
     (∫ a : SpacetimeDim d,
       section43OrderedPullbackTimeSpatialTensorCLM d (k + 1) χ φ
@@ -376,10 +366,9 @@ theorem diffVarReduction_orderedPullback_timeSpatialTensor
               diffVarSection d k ξ i μ)
           ∂((volume : Measure ℝ).prod
             (volume : Measure (Fin d → ℝ))) := by
-        simpa [e, MeasurableEquiv.piFinSuccAbove_symm_apply] using
-          (hmp.symm.integral_comp'
-            (f := e.symm)
-            (g := fun a : SpacetimeDim d =>
+        simpa [MeasureTheory.volume_pi] using
+          (integral_finSucc_cons_eq
+            (f := fun a : SpacetimeDim d =>
               section43OrderedPullbackTimeSpatialTensorCLM
                 d (k + 1) χ φ
                 (fun i μ => a μ + diffVarSection d k ξ i μ))).symm

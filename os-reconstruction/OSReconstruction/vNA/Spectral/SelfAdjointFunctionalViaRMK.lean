@@ -328,10 +328,12 @@ theorem inner_nnrpow_eq_laplace_selfAdjointSpectralMeasureDiagonalReal
         (Real.continuous_rpow_const (show 0 ≤ (t : ℝ) by exact_mod_cast ht.le))
     have hae_nonneg : ∀ᵐ s ∂(selfAdjointSpectralMeasureDiagonalReal A hA x), 0 ≤ s := by
       rw [ae_iff]
-      simpa [Set.compl_setOf, not_le] using hsupp_nonneg
+      rw [show {a : ℝ | ¬0 ≤ a} = Set.Iio 0 by ext a; simp]
+      exact hsupp_nonneg
     have hae_le_one : ∀ᵐ s ∂(selfAdjointSpectralMeasureDiagonalReal A hA x), s ≤ 1 := by
       rw [ae_iff]
-      simpa [Set.compl_setOf, not_le] using hsupp_le_one
+      rw [show {a : ℝ | ¬a ≤ 1} = Set.Ioi 1 by ext a; simp]
+      exact hsupp_le_one
     refine Integrable.mono' (integrable_const (1 : ℝ)) hmeas ?_
     filter_upwards [hae_nonneg, hae_le_one] with s hs_nonneg hs_le_one
     rw [Real.norm_of_nonneg (Real.rpow_nonneg hs_nonneg _)]
@@ -384,15 +386,19 @@ theorem differentiableOn_selfAdjointSpectralLaplaceDiagonal
     DifferentiableOn ℂ (selfAdjointSpectralLaplaceDiagonal A hA x) {z : ℂ | 0 < z.re} := by
   haveI : IsFiniteMeasure (selfAdjointSpectralMeasureDiagonalReal A hA x) := by
     infer_instance
-  simpa [selfAdjointSpectralLaplaceDiagonal] using
-    (SCV.laplaceTransform_differentiableOn_rightHalfPlane_of_nonnegSupport
+  change DifferentiableOn ℂ
+    (fun z => ∫ u, Complex.exp (-(z * (u : ℂ))) ∂
+      BochnerLaplaceBridge.laplaceMeasurePos
+        (selfAdjointSpectralMeasureDiagonalReal A hA x)) {z : ℂ | 0 < z.re}
+  simpa only [neg_mul] using
+    SCV.laplaceTransform_differentiableOn_rightHalfPlane_of_nonnegSupport
       (μ := BochnerLaplaceBridge.laplaceMeasurePos
         (selfAdjointSpectralMeasureDiagonalReal A hA x))
       (hsupp := BochnerLaplaceBridge.laplaceMeasurePos_nonnegSupport
         (μ := selfAdjointSpectralMeasureDiagonalReal A hA x)
         (hsupp_le_one :=
           selfAdjointSpectralMeasureDiagonalReal_Ioi_eq_zero_of_spectrum_subset_Icc
-            (A := A) (hA := hA) (x := x) hspec)))
+            (A := A) (hA := hA) (x := x) hspec))
 
 /-- The polarized scalar Laplace transform is holomorphic on the right half-plane once the
 operator spectrum lies in `[0,1]`. -/
@@ -408,14 +414,16 @@ theorem differentiableOn_selfAdjointSpectralLaplaceOffdiag
     (A := A) (hA := hA) (hspec := hspec) (x := x + Complex.I • y)
   have hi2 := differentiableOn_selfAdjointSpectralLaplaceDiagonal
     (A := A) (hA := hA) (hspec := hspec) (x := x - Complex.I • y)
-  convert
-    (DifferentiableOn.const_mul
-      ((hxy.add (DifferentiableOn.const_mul hmxy (-1 : ℂ))).add
-        ((DifferentiableOn.const_mul hi1 (-Complex.I)).add
-          (DifferentiableOn.const_mul hi2 Complex.I)))
-      (1 / 4 : ℂ)) using 1
-  ext z
-  simp [selfAdjointSpectralLaplaceOffdiag, sub_eq_add_neg, add_assoc, add_left_comm, add_comm]
+  change DifferentiableOn ℂ
+    (fun z => (1 / 4 : ℂ) *
+      (selfAdjointSpectralLaplaceDiagonal A hA (x + y) z -
+        selfAdjointSpectralLaplaceDiagonal A hA (x - y) z -
+        Complex.I * selfAdjointSpectralLaplaceDiagonal A hA (x + Complex.I • y) z +
+        Complex.I * selfAdjointSpectralLaplaceDiagonal A hA (x - Complex.I • y) z))
+      {z : ℂ | 0 < z.re}
+  set_option backward.isDefEq.respectTransparency false in
+    exact (((hxy.sub hmxy).sub (hi1.const_mul Complex.I)).add
+      (hi2.const_mul Complex.I)).const_mul (1 / 4 : ℂ)
 
 /-- At positive real points, the diagonal complex Laplace extension agrees with the
 diagonal matrix element of the semigroup powers. -/

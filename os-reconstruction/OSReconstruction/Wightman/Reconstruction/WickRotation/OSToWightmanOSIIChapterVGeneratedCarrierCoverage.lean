@@ -271,7 +271,7 @@ theorem reflectedMixedDiagonal_generated
       (by omega :
         2 * (m + 1) - 1 = m + (m + 1))
       hdiag
-  simpa [reflectedMixedDiagonal] using hreindexed
+  exact hreindexed
 
 /-- Scalar realization of the generated base places the reflected Cauchy
 endpoint of every generated mixed point in the moving-slice carrier. -/

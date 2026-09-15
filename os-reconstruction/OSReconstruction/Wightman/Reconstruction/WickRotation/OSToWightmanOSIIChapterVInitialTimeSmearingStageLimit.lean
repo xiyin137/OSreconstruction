@@ -174,8 +174,12 @@ theorem nonempty_distributional_of_scaleUniform
                   hedge
               have happ_mul :=
                 congrArg (fun w : ℂ => w * φ τ) happ
+              change
+                (F.stage N).distribution
+                    (osiiPositiveRealTimeEmbed τ) χ * φ τ = _
               simpa [W, J,
                 SchwartzTimeApproximateIdentity.tail,
+                Section43ProductTimeApproximateIdentity.toSchwartzTimeApproximateIdentity,
                 osiiTranslatedTimeSmearedSpatialDistribution_apply]
                 using happ_mul
             · have hφτ : φ τ = 0 := by

@@ -112,9 +112,13 @@ theorem integral_reindexSchwartzFin (h : a = b)
     simpa [e] using
       (MeasureTheory.volume_measurePreserving_piCongrLeft
         (fun _ : Fin a => ℝ) (finCongr h).symm)
-  simpa [reindexSchwartzFin, castFinCLE, e, MeasurableEquiv.piCongrLeft,
-    ContinuousLinearEquiv.piCongrLeft] using
-    (he.integral_comp' (f := e) (g := fun y : Fin a → ℝ => F y))
+  have hfun :
+      (fun x : Fin b → ℝ => reindexSchwartzFin h F x) =
+        fun x => F (e x) := by
+    funext x
+    rfl
+  rw [hfun]
+  exact he.integral_comp' (g := fun y : Fin a → ℝ => F y)
 
 /-- Slice integration commutes with subtraction on Schwartz functions. -/
 theorem sliceIntegral_sub {n : ℕ}
@@ -242,8 +246,14 @@ theorem reindexSchwartzFin_tsupport_subset_closedBall
     tsupport ((reindexSchwartzFin h F : SchwartzMap (Fin b → ℝ) ℂ) :
         (Fin b → ℝ) → ℂ) ⊆
       Metric.closedBall (0 : Fin b → ℝ) R := by
-  subst h
-  simpa [reindexSchwartzFin] using hF
+  subst b
+  have hfun :
+      ((reindexSchwartzFin rfl F : SchwartzMap (Fin a → ℝ) ℂ) :
+          (Fin a → ℝ) → ℂ) = F := by
+    funext x
+    rfl
+  rw [hfun]
+  exact hF
 
 /-- A slice integral vanishes outside any closed ball containing the support of
 the original Schwartz function. -/

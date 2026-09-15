@@ -106,10 +106,12 @@ theorem continuousOn_anchoredAtlasField_joint
     apply continuous_pi
     intro j
     refine Fin.addCases (fun i => ?_) (fun i => ?_) j
-    · simpa [reflectedCauchyCenter] using
-        (continuous_star.comp
+    · convert
+        (Complex.continuous_conj.comp
           (continuous_apply i :
-            Continuous (fun z : Fin (q + 1) → ℂ => z i)))
+            Continuous (fun z : Fin (q + 1) → ℂ => z i))) using 1
+      funext z
+      simpa only [Function.comp_apply] using reflectedCauchyCenter_left z i
     · convert
         (continuous_apply i :
           Continuous (fun z : Fin (q + 1) → ℂ => z i)) using 1
@@ -157,9 +159,15 @@ theorem continuousOn_anchoredAtlasField_joint
         D.sourceStage.stage D.sourceStage.germ.η
         (R (y.2 - p.2)) (reflectedCauchyCenter y.1)).re
   have hQ_at : ContinuousAt Q p := by
-    have hcomp := hscalar_at.comp hinput.continuousAt
-    exact Complex.continuous_re.continuousAt.comp (by
-      simpa only [Q, input, Function.comp_apply] using hcomp)
+    have hcomp :
+        ContinuousAt
+          (fun y =>
+            reflectedMovingSliceScalar
+              D.sourceStage.stage D.sourceStage.germ.η
+              (R (y.2 - p.2)) (reflectedCauchyCenter y.1))
+          p :=
+      hscalar_at.comp hinput.continuousAt
+    exact Complex.continuous_re.continuousAt.comp hcomp
   have hnorm_sq
       (y : (Fin (q + 1) → ℂ) ×
         UniformCompactTimeSource d ((q + 1) + 1) K)

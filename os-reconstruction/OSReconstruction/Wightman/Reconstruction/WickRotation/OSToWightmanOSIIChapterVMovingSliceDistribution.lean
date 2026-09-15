@@ -127,25 +127,7 @@ private theorem continuous_finsetFullSchwartzSeminorm
         (s.sup
           (schwartzSeminormFamily Real
             (NPointDomain d k) Complex)) F) := by
-  let p : Seminorm Real (SchwartzNPoint d k) :=
-    s.sup
-      (schwartzSeminormFamily Real
-        (NPointDomain d k) Complex)
-  refine Seminorm.continuous_of_le ?_
-    (show p ≤ ∑ i ∈ s,
-        schwartzSeminormFamily Real
-          (NPointDomain d k) Complex i by
-      simpa [p] using Seminorm.finset_sup_le_sum
-        (schwartzSeminormFamily Real
-          (NPointDomain d k) Complex) s)
-  change Continuous
-    (fun F =>
-      Seminorm.coeFnAddMonoidHom Real (SchwartzNPoint d k)
-        (∑ i ∈ s,
-          schwartzSeminormFamily Real
-            (NPointDomain d k) Complex i) F)
-  simp_rw [map_sum, Finset.sum_apply]
-  exact continuous_finset_sum _ fun i _ =>
+  exact Seminorm.continuous_finsetSup fun i _ =>
     (schwartz_withSeminorms Real
       (NPointDomain d k) Complex).continuous_seminorm i
 
@@ -186,7 +168,11 @@ private theorem
   · exact_mod_cast (show 0 < C from pos_iff_ne_zero.mpr hC)
   · intro z hz F
     have h := hbound ⟨z, hz⟩ F
-    simpa [D, Seminorm.smul_apply] using h
+    change ‖D z F‖ ≤ (C : Real) •
+      (s.sup
+        (schwartzSeminormFamily Real
+          (NPointDomain d k) Complex)) F
+    exact h
 
 /-- Evaluation of the moving-slice distribution is jointly continuous in
 the complex parameter and complete Schwartz source. -/

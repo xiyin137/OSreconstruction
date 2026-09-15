@@ -77,7 +77,7 @@ theorem tendsto_inner_field_add_to_centerValue
   have hcofinal : Tendsto (fun N : Nat => (N + tail, N + tail))
       atTop atTop :=
     tendsto_atTop_diagonal.comp (tendsto_add_atTop_nat tail)
-  simpa only [G, Function.comp_apply] using hpair.comp hcofinal
+  convert hpair.comp hcofinal using 1 <;> rfl
 
 /-- The one-particle moving-kernel center is the represented stage evaluated
 at the physical reflected anchor and the exact mixed spatial marginal. -/

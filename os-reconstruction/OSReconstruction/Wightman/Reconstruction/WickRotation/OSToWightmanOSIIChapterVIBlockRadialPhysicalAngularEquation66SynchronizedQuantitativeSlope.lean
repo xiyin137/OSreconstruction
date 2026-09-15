@@ -429,7 +429,7 @@ theorem osiiStep4PositiveLiftedCenteredPartialKernelCommonCarrier_norm_le
     norm ((BHW.realDiffCoordCLE (k + 1) d).symm
         (BHW.prependBasepointReal d k p.1 p2)) <=
       norm L * norm (BHW.prependBasepointReal d k p.1 p2) := by
-        simpa only [L] using hop
+        simpa only [L, ContinuousLinearEquiv.coe_coe] using hop
     _ <= norm L *
         (osiiStep4PositiveTimeBasepointCutoffNormBound d +
           norm center + rho) :=

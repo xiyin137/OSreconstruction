@@ -279,7 +279,7 @@ private theorem isClosed_range_val :
           (continuous_apply μ).comp (continuous_apply α)
         have hentryν : Continuous (fun M : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ => M α ν) :=
           (continuous_apply ν).comp (continuous_apply α)
-        simpa [mul_assoc] using (continuous_const.mul (hentryμ.mul hentryν))
+        exact (continuous_const.mul hentryμ).mul hentryν
       exact (isClosed_singleton
           (x := if μ = ν then (minkowskiSignature d μ : ℂ) else 0)).preimage hcont
     have hmetric_eq : metricSet = ⋂ μ : Fin (d + 1), ⋂ ν : Fin (d + 1), S μ ν := by
@@ -316,14 +316,17 @@ private theorem isClosedEmbedding_val :
   exact Topology.IsClosedEmbedding.mk ⟨hind, hinj⟩ isClosed_range_val
 
 instance instSigmaCompactSpace : SigmaCompactSpace (ComplexLorentzGroup d) := by
-  letI : SecondCountableTopology (Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ) := by
-    simpa [Matrix] using
-      (inferInstance : SecondCountableTopology
-        (Fin (d + 1) → Fin (d + 1) → ℂ))
-  letI : LocallyCompactSpace (Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ) := by
-    simpa [Matrix] using
-      (inferInstance : LocallyCompactSpace
-        (Fin (d + 1) → Fin (d + 1) → ℂ))
+  let h : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ ≃ₜ
+      (Fin (d + 1) → Fin (d + 1) → ℂ) :=
+    { Matrix.of.symm with
+      continuous_toFun := continuous_pi fun i => continuous_pi fun j =>
+        continuous_apply_apply i j
+      continuous_invFun := continuous_matrix fun i j =>
+        (continuous_apply j).comp (continuous_apply i) }
+  letI : SecondCountableTopology (Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ) :=
+    h.secondCountableTopology
+  letI : LocallyCompactSpace (Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ) :=
+    h.isOpenEmbedding.locallyCompactSpace
   exact (isClosedEmbedding_val (d := d)).sigmaCompactSpace
 
 
@@ -417,7 +420,7 @@ def ofEuclidean (R : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ)
         Matrix.diagonal (fun i : Fin (d + 1) =>
           if i = (0 : Fin (d + 1)) then -I else (1 : ℂ))) = 1 by
       convert h using 2
-      ext μ ν
+      congr 1 with μ ν
       simp [Matrix.diagonal_mul, Matrix.mul_diagonal,
         RingHom.mapMatrix_apply, Matrix.map_apply]
     rw [Matrix.det_mul, Matrix.det_mul, Matrix.det_diagonal, Matrix.det_diagonal]

@@ -89,6 +89,7 @@ theorem rootedLeftArbitrarySpatialField_eq_reflectedGram
       (T.leftCofinalIndex i scale) chi hsource z (by
         simpa [D, i] using hz)
   simpa [D, i, T,
+    RootedA0BlockHolomorphicTranslationData.toContinuousTranslationData,
     RootedA0BlockContinuousTranslationData.leftArbitrarySpatialGeneratorField]
     using heq
 
@@ -150,6 +151,7 @@ theorem rootedRightArbitrarySpatialField_eq_reflectedGram
       (T.rightCofinalIndex i scale) chi hsource z (by
         simpa [D, i] using hz)
   simpa [D, i, T,
+    RootedA0BlockHolomorphicTranslationData.toContinuousTranslationData,
     RootedA0BlockContinuousTranslationData.rightArbitrarySpatialGeneratorField]
     using heq
 

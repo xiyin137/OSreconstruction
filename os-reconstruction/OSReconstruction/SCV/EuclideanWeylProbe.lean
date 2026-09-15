@@ -306,9 +306,8 @@ theorem euclideanSchwartzFunctional_bound
   let q : Seminorm ℂ (SchwartzMap (EuclideanSpace ℝ ι) ℂ) :=
     (normSeminorm ℂ ℂ).comp T.toLinearMap
   have hq_cont : Continuous q := by
-    change Continuous (fun φ : SchwartzMap (EuclideanSpace ℝ ι) ℂ => ‖T φ‖)
-    simpa [q, Seminorm.comp_apply, coe_normSeminorm] using
-      continuous_norm.comp T.continuous
+    change Continuous (norm ∘ T)
+    exact continuous_norm.comp T.continuous
   obtain ⟨s, C, hC, hbound⟩ := Seminorm.bound_of_continuous
     (schwartz_withSeminorms ℂ (EuclideanSpace ℝ ι) ℂ) q hq_cont
   refine ⟨s, C, hC, ?_⟩
@@ -394,8 +393,10 @@ theorem euclideanSchwartzFunctional_bound_by_probeNorm
         refine Finset.sum_le_sum ?_
         intro a ha
         let p : ↑s.attach := ⟨⟨a, ha⟩, by simp⟩
-        simpa [schwartzSeminormFamily, p] using
-          euclideanSchwartzSeminorm_le_probeNorm s p f
+        change SchwartzMap.seminorm ℝ a.1 a.2 f ≤
+          (Fintype.card (Fin a.2 → ι) : ℝ) *
+            ‖(euclideanProbeCLM s f : EuclideanProbeSpace (ι := ι) s)‖
+        simpa [p] using euclideanSchwartzSeminorm_le_probeNorm s p f
       _ = D * ‖(euclideanProbeCLM s f : EuclideanProbeSpace (ι := ι) s)‖ := by
         dsimp [D]
         rw [Finset.sum_mul]
@@ -466,7 +467,12 @@ private theorem euclideanRangeLiftLinear_bound
   intro y
   rcases y with ⟨y, hy⟩
   rcases hy with ⟨f, rfl⟩
-  simpa [euclideanRangeLiftLinear_apply] using hbound f
+  change ‖euclideanRangeLiftLinear T s hker
+      ⟨euclideanProbeCLM s f,
+        LinearMap.mem_range_self (euclideanProbeCLM (ι := ι) s).toLinearMap f⟩‖ ≤
+    C * ‖(euclideanProbeCLM s f : EuclideanProbeSpace (ι := ι) s)‖
+  rw [euclideanRangeLiftLinear_apply]
+  exact hbound f
 
 /-- Any continuous Euclidean Schwartz functional factors through finitely many
 weighted coordinate-derivative probes landing in a Banach product of bounded

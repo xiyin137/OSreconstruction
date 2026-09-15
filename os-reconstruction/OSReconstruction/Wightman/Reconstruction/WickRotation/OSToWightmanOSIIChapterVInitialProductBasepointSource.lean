@@ -125,11 +125,20 @@ noncomputable def section43PrependCompactPositiveTimeSource
   f := SCV.prependField g.f ψ
   positive := by
     intro τ hτ i
+    have hfun :
+        ((SCV.prependField g.f ψ :
+          SchwartzMap (Fin (k + 1) → ℝ) ℂ) :
+            (Fin (k + 1) → ℝ) → ℂ) =
+          fun u : Fin (k + 1) → ℝ =>
+            g.f (u 0) * ψ (fun j : Fin k => u j.succ) := by
+      funext u
+      exact SchwartzMap.prependField_apply g.f ψ u
     have hprod :
         τ ∈ tsupport
           (fun u : Fin (k + 1) → ℝ =>
             g.f (u 0) * ψ (fun j : Fin k => u j.succ)) := by
-      simpa [SCV.prependField_apply] using hτ
+      rw [← hfun]
+      exact hτ
     refine Fin.cases ?_ ?_ i
     · apply g.positive
       exact tsupport_precomp_subset_local
@@ -196,11 +205,20 @@ theorem section43PrependCompactPositiveTimeSource_tsupport_subset_carrier
         (Fin.cons p.1 p.2 : Fin (k + 1) → ℝ)) ''
         (tsupport (g.f : ℝ → ℂ) ×ˢ K) := by
   intro τ hτ
+  have hfun :
+      ((SCV.prependField g.f ψ :
+        SchwartzMap (Fin (k + 1) → ℝ) ℂ) :
+          (Fin (k + 1) → ℝ) → ℂ) =
+        fun u : Fin (k + 1) → ℝ =>
+          g.f (u 0) * ψ (fun j : Fin k => u j.succ) := by
+    funext u
+    exact SchwartzMap.prependField_apply g.f ψ u
   have hprod :
       τ ∈ tsupport
         (fun u : Fin (k + 1) → ℝ =>
           g.f (u 0) * ψ (fun j : Fin k => u j.succ)) := by
-    simpa [SCV.prependField_apply] using hτ
+    rw [← hfun]
+    exact hτ
   have hhead : τ 0 ∈ tsupport (g.f : ℝ → ℂ) :=
     tsupport_precomp_subset_local
       (f := (g.f : ℝ → ℂ))

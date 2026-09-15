@@ -116,7 +116,7 @@ theorem osiiStrictCoefficientCompactifiedDirectionalInput_mem_flatWindow
         |(input j).im| < rho := by
     apply P.stripCompactification_mem_rectangle
     by_cases h : a = (j, false)
-    · simpa [h] using hr
+    · simpa [osiiAxisPairCoordinateLogStrip, h] using hr
     · simp [h]
       positivity
   constructor

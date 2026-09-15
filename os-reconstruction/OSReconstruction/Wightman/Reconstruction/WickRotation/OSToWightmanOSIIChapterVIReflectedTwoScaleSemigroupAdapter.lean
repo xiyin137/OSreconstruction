@@ -313,19 +313,35 @@ theorem osNonnegativeTimeShiftHilbert_single_eq
     funext i mu
     simp [timeShiftVec]
   · have htpos : 0 < t := lt_of_le_of_ne ht (Ne.symm hzero)
+    let ft : euclideanPositiveTimeSubmodule (d := d) n :=
+      ⟨timeShiftSchwartzNPoint (d := d) t f,
+        osiiEuclideanTranslation_preserves_orderedPositive
+          (timeShiftVec d t) (by simpa [timeShiftVec] using ht) f hf⟩
+    have hft := ft.2
+    change tsupport (ft.1 : NPointDomain d n → Complex) ⊆
+      OrderedPositiveTimeRegion d n at hft
     simp only [osNonnegativeTimeShiftHilbert, dif_neg hzero]
-    rw [osiiPositiveTimeSingleVectorCLM_apply, osTimeShiftHilbert_coe]
+    let x₀ : OSPreHilbertSpace OS :=
+      ⟦PositiveTimeBorchersSequence.single n f hf⟧
+    rw [osiiPositiveTimeSingleVectorCLM_apply]
+    change osTimeShiftHilbert (d := d) OS lgc t htpos
+      (x₀ : OSHilbertSpace OS) = osiiPositiveTimeSingleVectorCLM OS n ft
+    rw [osTimeShiftHilbert_coe]
+    rw [osiiPositiveTimeSingleVectorCLM_apply]
     apply congrArg (fun x : OSPreHilbertSpace OS => (x : OSHilbertSpace OS))
     apply OSPreHilbertSpace.mk_eq_of_funcs_eq
     intro k
+    change
+      (timeShiftPositiveTimeBorchers t htpos
+        (PositiveTimeBorchersSequence.single n f hf)).toBorchersSequence.funcs k =
+      (PositiveTimeBorchersSequence.single n ft.1 hft).toBorchersSequence.funcs k
     by_cases hk : k = n
     · subst k
-      simp [osTimeShiftLinear, osTimeShift,
-        PositiveTimeBorchersSequence.single_toBorchersSequence,
-        BorchersSequence.single]
-    · simp [osTimeShiftLinear, osTimeShift,
-        PositiveTimeBorchersSequence.single_toBorchersSequence,
-        BorchersSequence.single, hk]
+      rw [PositiveTimeBorchersSequence.single_toBorchersSequence]
+      simp [BorchersSequence.single]
+      rfl
+    · rw [PositiveTimeBorchersSequence.single_toBorchersSequence]
+      simp [BorchersSequence.single, hk]
 
 /-- Near the real origin, the source vector centered at `center` is the
 nonnegative OS time shift of the canonical-anchor source vector evaluated at
@@ -647,7 +663,8 @@ theorem anchoredAtlasField_nonnegativeTimeShift_recenter_eq_of_small
       (A.gram.anchoredAtlasRealRegion_mem_nhds
         A.sourceStage.stage A.sourceStage.germ)
   have hzeroV : (0 : Fin (k + 1) -> Real) ∈ V := by
-    refine ⟨⟨⟨hzeroW, by simpa using hzeroU⟩, hzeroRealRegion⟩, ?_⟩
+    refine ⟨⟨⟨hzeroW, by change (0 : Fin (k + 1) → Complex) ∈ U; exact hzeroU⟩,
+      hzeroRealRegion⟩, ?_⟩
     simpa [u, realRegion] using huReal
   have hVsub : forall x, x ∈ V ->
       (fun i => (x i : Complex)) ∈ U := fun _ hx => hx.1.1.2
@@ -976,7 +993,8 @@ theorem anchoredAtlasField_internalRecenter_eq_of_small
       (A.gram.anchoredAtlasRealRegion_mem_nhds
         A.sourceStage.stage A.sourceStage.germ)
   have hzeroV : (0 : Fin (k + 1) -> Real) ∈ V := by
-    refine ⟨⟨⟨hzeroW, by simpa using hzeroU⟩, hzeroRealRegion⟩, ?_⟩
+    refine ⟨⟨⟨hzeroW, by change (0 : Fin (k + 1) → Complex) ∈ U; exact hzeroU⟩,
+      hzeroRealRegion⟩, ?_⟩
     simpa [u, realRegion] using huReal
   have hVsub : forall x, x ∈ V ->
       (fun i => (x i : Complex)) ∈ U := fun _ hx => hx.1.1.2
@@ -1186,7 +1204,8 @@ theorem anchoredAtlasField_internalRecenter_eq_of_chain
               fieldAt ⟨m, Nat.lt_succ_of_le (Nat.le_of_lt hm_lt)⟩ := by
                 simpa [j] using hstep j
           _ = fieldAt 0 := ih (Nat.le_of_lt hm_lt)
-  simpa [fieldAt] using hprefix length le_rfl
+  change fieldAt (Fin.last length) = fieldAt 0
+  exact hprefix length le_rfl
 
 /-- The affine parameter of one waypoint in a positive finite subdivision. -/
 def packetRecenteringSubdivisionParameter

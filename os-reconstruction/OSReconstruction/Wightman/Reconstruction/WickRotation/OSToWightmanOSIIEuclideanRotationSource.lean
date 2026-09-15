@@ -162,14 +162,10 @@ theorem osiiContinuousTimeReflectionN :
   intro μ
   by_cases hμ : μ = 0
   · subst hμ
-    simpa [timeReflectionN, timeReflection] using
-      ((((continuous_apply 0 : Continuous fun y : SpacetimeDim d => y 0).comp
-          (continuous_apply i : Continuous fun x : NPointDomain d n => x i))).neg :
-        Continuous fun x : NPointDomain d n => -x i 0)
-  · simpa [timeReflectionN, timeReflection, hμ] using
-      ((continuous_apply μ : Continuous fun y : SpacetimeDim d => y μ).comp
-        (continuous_apply i : Continuous fun x : NPointDomain d n => x i) :
-        Continuous fun x : NPointDomain d n => x i μ)
+    simp only [timeReflectionN, timeReflection, ↓reduceIte]
+    fun_prop
+  · simp only [timeReflectionN, timeReflection, hμ, ↓reduceIte]
+    fun_prop
 
 /- Time reflection sends ordered negative support to ordered positive
 support. -/
@@ -268,10 +264,9 @@ theorem tsupport_osiiEuclideanUnrotateSchwartz
         NPointDomain d n → ℂ) =
       {x | (fun i => R.mulVec (x i)) ∈
         tsupport ((φ : SchwartzNPoint d n) : NPointDomain d n → ℂ)} := by
-  simpa [osiiEuclideanUnrotateSchwartz,
-    osiiEuclideanRotateNPointCLE, osiiEuclideanRotationInvCLE] using
-    tsupport_osiiEuclideanRotateSchwartz
-      R.transpose (mul_eq_one_comm.mpr hR) φ
+  rw [osiiEuclideanUnrotateSchwartz,
+    tsupport_osiiEuclideanRotateSchwartz]
+  rfl
 
 omit [NeZero d] in
 /- An ordinary ordered positive-time source becomes an `R`-oriented source
@@ -440,12 +435,20 @@ theorem osiiEuclideanTranslation_preserves_orderedPositive
         (((translateSchwartzNPoint (d := d) a φ : SchwartzNPoint d n) :
           NPointDomain d n → ℂ)) ⊆
       OrderedPositiveTimeRegion d n := by
-  simpa [osiiEuclideanRotationOrderedPositiveTimeRegion] using
+  have hφ' :
+      tsupport ((φ : SchwartzNPoint d n) : NPointDomain d n → ℂ) ⊆
+        osiiEuclideanRotationOrderedPositiveTimeRegion
+          (d := d) (n := n)
+          (1 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ) := by
+    intro x hx
+    simpa [osiiEuclideanRotationOrderedPositiveTimeRegion] using hφ hx
+  intro x hx
+  have h :=
     osiiEuclideanTranslation_preserves_orientedPositive
       (d := d) (n := n)
       (1 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ)
-      a (by simpa using ha) φ
-      (by simpa [osiiEuclideanRotationOrderedPositiveTimeRegion] using hφ)
+      a (by simpa using ha) φ hφ' hx
+  simpa [osiiEuclideanRotationOrderedPositiveTimeRegion] using h
 
 /-- The concentrated positive-time Borchers vector obtained from a source in
 an `R`-oriented ordered cone. -/

@@ -64,19 +64,25 @@ private noncomputable def osiiPositiveTimeSingleVectorLinear
   map_add' f g := by
     let Ff := PositiveTimeBorchersSequence.single n f.1 f.2
     let Fg := PositiveTimeBorchersSequence.single n g.1 g.2
+    let Ffg := PositiveTimeBorchersSequence.single n (f + g).1 (f + g).2
+    have hFf : (Ff : BorchersSequence d) = BorchersSequence.single n f.1 := by
+      exact PositiveTimeBorchersSequence.single_toBorchersSequence n f.1 f.2
+    have hFg : (Fg : BorchersSequence d) = BorchersSequence.single n g.1 := by
+      exact PositiveTimeBorchersSequence.single_toBorchersSequence n g.1 g.2
+    have hFfg : (Ffg : BorchersSequence d) = BorchersSequence.single n (f + g).1 := by
+      exact PositiveTimeBorchersSequence.single_toBorchersSequence n (f + g).1 (f + g).2
     have hpre :
-        (⟦PositiveTimeBorchersSequence.single n (f + g).1 (f + g).2⟧ :
-            OSPreHilbertSpace OS) =
+        (⟦Ffg⟧ : OSPreHilbertSpace OS) =
           (OSPreHilbertSpace.instAdd OS).add
             (⟦Ff⟧ : OSPreHilbertSpace OS)
             (⟦Fg⟧ : OSPreHilbertSpace OS) := by
       apply OSPreHilbertSpace.mk_eq_of_funcs_eq
       intro m
+      rw [hFfg, PositiveTimeBorchersSequence.add_toBorchersSequence, hFf, hFg]
       by_cases hm : m = n
       · subst hm
-        simp [Ff, Fg, BorchersSequence.add_funcs]
-      · simp [PositiveTimeBorchersSequence.single_toBorchersSequence,
-          BorchersSequence.add_funcs, Ff, Fg, hm]
+        simp [BorchersSequence.add_funcs]
+      · simp [BorchersSequence.add_funcs, BorchersSequence.single_funcs_ne hm]
     have hcoe :=
       congrArg (fun x : OSPreHilbertSpace OS => ((x : OSHilbertSpace OS))) hpre
     exact hcoe.trans
@@ -84,18 +90,22 @@ private noncomputable def osiiPositiveTimeSingleVectorLinear
         (⟦Fg⟧ : OSPreHilbertSpace OS))
   map_smul' c f := by
     let Ff := PositiveTimeBorchersSequence.single n f.1 f.2
+    let Fcf := PositiveTimeBorchersSequence.single n (c • f).1 (c • f).2
+    have hFf : (Ff : BorchersSequence d) = BorchersSequence.single n f.1 := by
+      exact PositiveTimeBorchersSequence.single_toBorchersSequence n f.1 f.2
+    have hFcf : (Fcf : BorchersSequence d) = BorchersSequence.single n (c • f).1 := by
+      exact PositiveTimeBorchersSequence.single_toBorchersSequence n (c • f).1 (c • f).2
     have hpre :
-        (⟦PositiveTimeBorchersSequence.single n (c • f).1 (c • f).2⟧ :
-            OSPreHilbertSpace OS) =
+        (⟦Fcf⟧ : OSPreHilbertSpace OS) =
           (OSPreHilbertSpace.instSMul OS).smul c
             (⟦Ff⟧ : OSPreHilbertSpace OS) := by
       apply OSPreHilbertSpace.mk_eq_of_funcs_eq
       intro m
+      rw [hFcf, PositiveTimeBorchersSequence.smul_toBorchersSequence, hFf]
       by_cases hm : m = n
       · subst hm
-        simp [Ff, BorchersSequence.smul_funcs]
-      · simp [PositiveTimeBorchersSequence.single_toBorchersSequence,
-          BorchersSequence.smul_funcs, Ff, hm]
+        simp [BorchersSequence.smul_funcs]
+      · simp [BorchersSequence.smul_funcs, BorchersSequence.single_funcs_ne hm]
     have hcoe :=
       congrArg (fun x : OSPreHilbertSpace OS => ((x : OSHilbertSpace OS))) hpre
     exact hcoe.trans
@@ -118,15 +128,16 @@ private theorem osiiPositiveTimeSingleVectorLinear_norm_sq
       (inner_self_eq_norm_sq (𝕜 := ℂ)
         (osiiPositiveTimeSingleVectorLinear OS n f))
   rw [← hnorm]
-  change
-    RCLike.re
-      (@inner ℂ (OSHilbertSpace OS) _
-        (((show OSPreHilbertSpace OS from (⟦F⟧)) : OSHilbertSpace OS))
-        (((show OSPreHilbertSpace OS from (⟦F⟧)) : OSHilbertSpace OS))) =
-      _
-  rw [UniformSpace.Completion.inner_coe, OSPreHilbertSpace.inner_eq]
-  exact congrArg Complex.re
-    (OSInnerProduct_single_single (d := d) OS.S OS.E0_linear n n f.1 f.1)
+  let qF : OSPreHilbertSpace OS := Quotient.mk (osBorchersSetoid OS) F
+  have hinner :
+      @inner ℂ (OSHilbertSpace OS) _ (qF : OSHilbertSpace OS) (qF : OSHilbertSpace OS) =
+        OS.S (n + n)
+          (ZeroDiagonalSchwartz.ofClassical (f.1.osConjTensorProduct f.1)) := by
+    rw [@UniformSpace.Completion.inner_coe ℂ (OSPreHilbertSpace OS) _
+      (OSPreHilbertSpace.instNormedAddCommGroup OS).toSeminormedAddCommGroup
+      (OSPreHilbertSpace.instInnerProductSpace OS), OSPreHilbertSpace.inner_eq]
+    exact OSInnerProduct_single_single (d := d) OS.S OS.E0_linear n n f.1 f.1
+  exact congrArg Complex.re hinner
 
 private theorem continuous_osiiPositiveTimeSingleVectorLinear
     (OS : OsterwalderSchraderAxioms d) (n : ℕ) :
@@ -181,19 +192,39 @@ private theorem continuous_osiiPositiveTimeSingleVectorLinear
               (⟨(u j - f).1.osConjTensorProduct (u j - f).1,
                 hzero (u j - f)⟩ : ZeroDiagonalSchwartz d (n + n)))
           Filter.atTop (nhds 0) := by
-      convert hscalar_cont.continuousAt.tendsto.comp hdiff using 1
-      · have hz :
-            (⟨((0 : euclideanPositiveTimeSubmodule (d := d) n).1
-                : SchwartzNPoint d n).osConjTensorProduct
-                  ((0 : euclideanPositiveTimeSubmodule (d := d) n).1 :
-                    SchwartzNPoint d n),
-              hzero 0⟩ : ZeroDiagonalSchwartz d (n + n)) = 0 := by
-            apply Subtype.ext
-            simp
+      have hz :
+          (⟨((0 : euclideanPositiveTimeSubmodule (d := d) n).1
+              : SchwartzNPoint d n).osConjTensorProduct
+                ((0 : euclideanPositiveTimeSubmodule (d := d) n).1 :
+                  SchwartzNPoint d n),
+            hzero 0⟩ : ZeroDiagonalSchwartz d (n + n)) = 0 := by
+        apply Subtype.ext
+        simp
+      have hscalar_zero :
+          OS.S (n + n)
+              (⟨((0 : euclideanPositiveTimeSubmodule (d := d) n).1
+                  : SchwartzNPoint d n).osConjTensorProduct
+                    ((0 : euclideanPositiveTimeSubmodule (d := d) n).1 :
+                      SchwartzNPoint d n),
+                hzero 0⟩ : ZeroDiagonalSchwartz d (n + n)) = 0 := by
         rw [hz]
-        exact congrArg nhds (OS.E0_linear (n + n)).map_zero.symm
-    simpa only [Function.comp_apply, Complex.zero_re] using
-      (Complex.continuous_re.tendsto 0).comp hcomplex
+        exact (OS.E0_linear (n + n)).map_zero
+      have ht := hscalar_cont.continuousAt.tendsto.comp hdiff
+      rw [hscalar_zero] at ht
+      change Filter.Tendsto
+        ((fun g : euclideanPositiveTimeSubmodule (d := d) n =>
+          OS.S (n + n)
+            (⟨g.1.osConjTensorProduct g.1, hzero g⟩ :
+              ZeroDiagonalSchwartz d (n + n))) ∘ fun j => u j - f)
+        Filter.atTop (nhds 0)
+      exact ht
+    change Filter.Tendsto
+      (Complex.re ∘ fun j =>
+        OS.S (n + n)
+          (⟨(u j - f).1.osConjTensorProduct (u j - f).1,
+            hzero (u j - f)⟩ : ZeroDiagonalSchwartz d (n + n)))
+      Filter.atTop (nhds 0)
+    exact (Complex.continuous_re.tendsto 0).comp hcomplex
   have hnorm_eq :
       ∀ g : euclideanPositiveTimeSubmodule (d := d) n,
         ‖osiiPositiveTimeSingleVectorLinear OS n g‖ =
@@ -260,12 +291,14 @@ theorem osiiPositiveTimeSingleVectorCLM_inner_eq_schwinger
           (f.1.osConjTensorProduct g.1)) := by
   let F := PositiveTimeBorchersSequence.single n f.1 f.2
   let G := PositiveTimeBorchersSequence.single m g.1 g.2
+  let qF : OSPreHilbertSpace OS := Quotient.mk (osBorchersSetoid OS) F
+  let qG : OSPreHilbertSpace OS := Quotient.mk (osBorchersSetoid OS) G
   change
     @inner ℂ (OSHilbertSpace OS) _
-        (((show OSPreHilbertSpace OS from (⟦F⟧)) : OSHilbertSpace OS))
-        (((show OSPreHilbertSpace OS from (⟦G⟧)) : OSHilbertSpace OS)) =
-      _
-  rw [UniformSpace.Completion.inner_coe, OSPreHilbertSpace.inner_eq]
+        (qF : OSHilbertSpace OS) (qG : OSHilbertSpace OS) = _
+  rw [@UniformSpace.Completion.inner_coe ℂ (OSPreHilbertSpace OS) _
+    (OSPreHilbertSpace.instNormedAddCommGroup OS).toSeminormedAddCommGroup
+    (OSPreHilbertSpace.instInnerProductSpace OS), OSPreHilbertSpace.inner_eq]
   exact OSInnerProduct_single_single (d := d) OS.S OS.E0_linear
     n m f.1 g.1
 

@@ -46,10 +46,10 @@ theorem rToE_forwardTube_fourierLaplace (Wfn : WightmanFunctions d) (N : Nat)
   apply fourierLaplace_representation_of_supported_boundary_pi
     (ForwardConeAbs d N) (forwardConeAbs_nonempty d N)
     hC_open hC_conv hC_cone hC_salient (Wfn.spectrum_condition N).choose
-    (by simpa [forwardTube_eq_imPreimage] using hF.1) ?_
+    (by simpa [TubeDomainSetPi, forwardTube_eq_imPreimage] using hF.1) ?_
     (rToEWightmanCLM Wfn N) ?_ (rToEFullFrequencyDistribution Wfn N)
     (rToEFullFrequencyDistribution_dualSupport Wfn N) ?_ z
-    (by simpa [forwardTube_eq_imPreimage] using hz)
+    (by simpa [TubeDomainSetPi, forwardTube_eq_imPreimage] using hz)
   · intro y hy f
     simpa only [Complex.ofReal_one, one_mul] using
       forward_tube_bv_integrable_of_compact (Wfn.spectrum_condition N).choose
@@ -107,7 +107,7 @@ theorem rToE_forwardTube_vladimirov_growth (Wfn : WightmanFunctions d) (N : Nat)
   intro z hz
   rw [rToE_forwardTube_fourierLaplace Wfn N hC_open hC_conv hC_cone hC_salient z hz]
   have h := hbound (e z) (flattenCLEquiv_mem_tubeDomain_image
-    (by simpa [forwardTube_eq_imPreimage] using hz))
+    (by simpa [TubeDomainSetPi, forwardTube_eq_imPreimage] using hz))
   rw [hnorm, flattenCLEquiv_im, hcompl, Metric.infDist_image heR] at h
   exact h
 

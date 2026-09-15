@@ -83,7 +83,8 @@ omit [NeZero d] in
 @[simp] theorem diffVarSection_zero (n : ℕ)
     (ξ : NPointSpacetime d n) (μ : Fin (d + 1)) :
     diffVarSection d n ξ 0 μ = 0 := by
-  simp [diffVarSection]
+  change (∑ j : Fin 0, ξ ⟨j.val, by omega⟩ μ) = 0
+  exact Finset.sum_eq_zero fun j _ => Fin.elim0 j
 
 omit [NeZero d] in
 @[simp] theorem diffVarSection_succ (n : ℕ)
@@ -172,7 +173,8 @@ private theorem diffVarReduction_contDiff (n : ℕ)
           ‖a‖ = ‖(T a ξ) 0‖ := by
             congr 1
             ext μ
-            simp [T, S, diffVarSection]
+            change a μ = a μ + diffVarSection d n ξ 0 μ
+            rw [diffVarSection_zero, add_zero]
           _ ≤ ‖T a ξ‖ := norm_le_pi_norm _ 0
       have hmono : 1 + ‖a‖ ≤ 1 + ‖T a ξ‖ := by
         simpa [add_comm, add_left_comm, add_assoc] using add_le_add_left hT_norm 1
@@ -224,7 +226,8 @@ private theorem diffVarReduction_contDiff (n : ℕ)
           ‖a‖ = ‖(T a ξ') 0‖ := by
             congr 1
             ext μ
-            simp [T, S, diffVarSection]
+            change a μ = a μ + diffVarSection d n ξ' 0 μ
+            rw [diffVarSection_zero, add_zero]
           _ ≤ ‖T a ξ'‖ := norm_le_pi_norm _ 0
       have hmono : 1 + ‖a‖ ≤ 1 + ‖T a ξ'‖ := by
         simpa [add_comm, add_left_comm, add_assoc] using add_le_add_left hT_norm 1
@@ -275,7 +278,8 @@ private theorem diffVarReduction_contDiff (n : ℕ)
         Filter.univ_mem hF_meas hF_int hF'_meas hbound hbound_int hdiff
     have hLint : ∫ a : A, L (g' (T a ξ)) = L (∫ a : A, g' (T a ξ)) := by
       exact ContinuousLinearMap.integral_comp_comm L (hintegrable (Z →L[ℝ] V) g' ξ)
-    simpa [hLint] using hmain
+    rw [hLint] at hmain
+    exact hmain
   have hnat :
       ∀ (m : ℕ) (V : Type) [NormedAddCommGroup V] [NormedSpace ℝ V] [CompleteSpace V]
         (g : SchwartzMap Z V), ContDiff ℝ m (fun ξ : X => ∫ a : A, g (T a ξ)) := by
@@ -295,7 +299,7 @@ private theorem diffVarReduction_contDiff (n : ℕ)
         refine ⟨fun ξ => L (∫ a : A, g' (T a ξ)), ?_, ?_⟩
         · exact L.contDiff.comp (ihm (Z →L[ℝ] V) g')
         · intro ξ
-          simpa [L] using (hderiv V g ξ)
+          exact hderiv V g ξ
   rw [contDiff_infty]
   intro m
   simpa [A, X, Z, S, T] using (hnat m ℂ f)
@@ -337,7 +341,8 @@ private theorem diffVarReduction_decay (n : ℕ)
           ‖a‖ = ‖(T a ξ) 0‖ := by
             congr 1
             ext μ
-            simp [T, S, diffVarSection]
+            change a μ = a μ + diffVarSection d n ξ 0 μ
+            rw [diffVarSection_zero, add_zero]
           _ ≤ ‖T a ξ‖ := norm_le_pi_norm _ 0
       have hmono : 1 + ‖a‖ ≤ 1 + ‖T a ξ‖ := by
         simpa [add_comm, add_left_comm, add_assoc] using add_le_add_left hT_norm 1
@@ -389,7 +394,8 @@ private theorem diffVarReduction_decay (n : ℕ)
           ‖a‖ = ‖(T a ξ') 0‖ := by
             congr 1
             ext μ
-            simp [T, S, diffVarSection]
+            change a μ = a μ + diffVarSection d n ξ' 0 μ
+            rw [diffVarSection_zero, add_zero]
           _ ≤ ‖T a ξ'‖ := norm_le_pi_norm _ 0
       have hmono : 1 + ‖a‖ ≤ 1 + ‖T a ξ'‖ := by
         simpa [add_comm, add_left_comm, add_assoc] using add_le_add_left hT_norm 1
@@ -441,7 +447,8 @@ private theorem diffVarReduction_decay (n : ℕ)
         Filter.univ_mem hF_meas hF_int hF'_meas hbound hbound_int hdiff
     have hLint : ∫ a : A, L (g' (T a ξ)) = L (∫ a : A, g' (T a ξ)) := by
       exact ContinuousLinearMap.integral_comp_comm L (hintegrable (Z →L[ℝ] V) g' ξ)
-    simpa [hLint] using hmain
+    rw [hLint] at hmain
+    exact hmain
   have hnat :
       ∀ (m : ℕ) (V : Type) [NormedAddCommGroup V] [NormedSpace ℝ V] [CompleteSpace V]
         (g : SchwartzMap Z V), ContDiff ℝ m (fun ξ : X => ∫ a : A, g (T a ξ)) := by
@@ -461,7 +468,7 @@ private theorem diffVarReduction_decay (n : ℕ)
         refine ⟨fun ξ => L (∫ a : A, g' (T a ξ)), ?_, ?_⟩
         · exact L.contDiff.comp (ihm (Z →L[ℝ] V) g')
         · intro ξ
-          simpa [L] using (hderiv V g ξ)
+          exact hderiv V g ξ
   have hcontDiff :
       ∀ (V : Type) [NormedAddCommGroup V] [NormedSpace ℝ V] [CompleteSpace V]
         (g : SchwartzMap Z V), ContDiff ℝ (⊤ : ℕ∞) (fun ξ : X => ∫ a : A, g (T a ξ)) := by
@@ -506,7 +513,8 @@ private theorem diffVarReduction_decay (n : ℕ)
           ‖a‖ = ‖(T a ξ) 0‖ := by
             congr 1
             ext μ
-            simp [T, S, diffVarSection]
+            change a μ = a μ + diffVarSection d n ξ 0 μ
+            rw [diffVarSection_zero, add_zero]
           _ ≤ ‖T a ξ‖ := norm_le_pi_norm _ 0
       have hξ_coord :
           ∀ i : Fin n, ‖ξ i‖ ≤ 2 * ‖T a ξ‖ := by
@@ -650,7 +658,7 @@ private theorem diffVarReduction_decay (n : ℕ)
             fderiv ℝ (fun ξ : X => ∫ a : A, g (T a ξ)) =
               fun ξ => L (∫ a : A, g' (T a ξ)) := by
           funext ξ'
-          simpa [L, ContinuousLinearMap.compL_apply] using (hderiv V g ξ').fderiv
+          exact (hderiv V g ξ').fderiv
         calc
           ‖ξ‖ ^ k * ‖iteratedFDeriv ℝ (m + 1) (fun ξ' : X => ∫ a : A, g (T a ξ')) ξ‖
               = ‖ξ‖ ^ k * ‖iteratedFDeriv ℝ m
@@ -852,7 +860,8 @@ private theorem diffVarReduction_cont (n : ℕ) :
               Filter.univ_mem hF_meas hF_int hF'_meas hbound hbound_int hdiff
           have hLint : ∫ a : A0, L (g' (T a ξ)) = L (∫ a : A0, g' (T a ξ)) := by
             exact ContinuousLinearMap.integral_comp_comm L (hintegrable (Z →L[ℝ] V) g' ξ)
-          simpa [hLint] using hmain
+          rw [hLint] at hmain
+          exact hmain
         have hnat :
             ∀ (m : ℕ) (V : Type) [NormedAddCommGroup V] [NormedSpace ℝ V]
               [CompleteSpace V] (g : SchwartzMap Z V),
@@ -873,7 +882,7 @@ private theorem diffVarReduction_cont (n : ℕ) :
               refine ⟨fun ξ => L (∫ a : A0, g' (T a ξ)), ?_, ?_⟩
               · exact L.contDiff.comp (ihm (Z →L[ℝ] V) g')
               · intro ξ
-                simpa [L] using (hderiv V g ξ)
+                exact hderiv V g ξ
         have hbound :
             ∀ (k m : ℕ) (V : Type) [NormedAddCommGroup V] [NormedSpace ℝ V]
               [CompleteSpace V],
@@ -1048,10 +1057,10 @@ private theorem diffVarReduction_cont (n : ℕ) :
                   fderiv ℝ (fun ξ : X => ∫ a : A0, g (T a ξ)) =
                     fun ξ => L (∫ a : A0, g' (T a ξ)) := by
                 funext ξ'
-                simpa [L, ContinuousLinearMap.compL_apply] using (hderiv V g ξ').fderiv
+                exact (hderiv V g ξ').fderiv
               have hqg :
                   q g ≤ (Cq : ℝ) * (s'.sup (schwartzSeminormFamily ℝ Z V)) g := by
-                simpa [q] using hq_bound g
+                simpa [q, NNReal.smul_def, smul_eq_mul] using hq_bound g
               calc
                 ‖ξ‖ ^ k *
                     ‖iteratedFDeriv ℝ (m + 1)

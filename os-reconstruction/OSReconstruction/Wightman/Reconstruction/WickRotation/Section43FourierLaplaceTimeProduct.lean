@@ -87,12 +87,11 @@ theorem section43TimePositiveCutoff_hasTemperateGrowth
   have hfactor : ∀ i : Fin n, Function.HasTemperateGrowth (factor i) := by
     intro i
     have hcoord : Function.HasTemperateGrowth (fun τ : Fin n → ℝ => τ i) := by
-      simpa using
-        ((ContinuousLinearMap.proj (R := ℝ) (ι := Fin n)
-          (φ := fun _ => ℝ) i).hasTemperateGrowth :
-          Function.HasTemperateGrowth (fun τ : Fin n → ℝ =>
-            (ContinuousLinearMap.proj (R := ℝ) (ι := Fin n)
-              (φ := fun _ => ℝ) i) τ))
+      change Function.HasTemperateGrowth
+        (ContinuousLinearMap.proj (R := ℝ) (ι := Fin n)
+          (φ := fun _ => ℝ) i)
+      exact (ContinuousLinearMap.proj (R := ℝ) (ι := Fin n)
+        (φ := fun _ => ℝ) i).hasTemperateGrowth
     simpa [factor, Function.comp_def] using
       SCV.smoothCutoff_complex_hasTemperateGrowth.comp hcoord
   have hprod : Function.HasTemperateGrowth
@@ -107,7 +106,10 @@ theorem section43TimePositiveCutoff_hasTemperateGrowth
       have ha : Function.HasTemperateGrowth (factor a) := hfactor a
       have hs : Function.HasTemperateGrowth
           (fun τ : Fin n → ℝ => ∏ i ∈ s, factor i τ) := ih
-      simpa [P, Finset.prod_insert has] using ha.mul hs
+      simp only [P, Finset.prod_insert has]
+      change Function.HasTemperateGrowth
+        (factor a * fun τ : Fin n → ℝ => ∏ i ∈ s, factor i τ)
+      exact ha.mul hs
   simpa [factor] using hprod
 
 /-- Every derivative of the finite-time product cutoff vanishes outside the
@@ -349,7 +351,10 @@ theorem section43_timeProductTensor_span_dense (n : ℕ) :
     rwa [(Submodule.dense_iff_topologicalClosure_eq_top).mp hM0_dense] at hclosure
   have hxpre : toB x ∈ preM := htop_le_pre trivial
   change toA (toB x) ∈ M.topologicalClosure at hxpre
-  simpa [toA, toB] using hxpre
+  have hback : toA (toB x) = x := by
+    ext y
+    rfl
+  rwa [hback] at hxpre
 
 /-- If a one-variable set of Schwartz functions is dense, then finite sums of
 time product tensors with all factors in that set are dense in finite-time
@@ -460,11 +465,11 @@ instance (n : ℕ) : Zero (Section43CompactStrictPositiveTimeSource n) where
     { f := 0
       positive := by
         intro t ht
-        simp at ht
+        exfalso
+        simpa only [FunLike.coe_zero, tsupport_zero, Set.mem_empty_iff_false] using ht
       compact := by
-        simpa using
-          (HasCompactSupport.zero :
-            HasCompactSupport (0 : (Fin n → ℝ) → ℂ)) }
+        change HasCompactSupport (0 : (Fin n → ℝ) → ℂ)
+        exact HasCompactSupport.zero }
 
 instance (n : ℕ) : Add (Section43CompactStrictPositiveTimeSource n) where
   add g h :=
@@ -475,8 +480,11 @@ instance (n : ℕ) : Add (Section43CompactStrictPositiveTimeSource n) where
           (h.f : (Fin n → ℝ) → ℂ) ht
         exact ht'.elim (fun hg => g.positive hg) (fun hh => h.positive hh)
       compact := by
-        simpa using HasCompactSupport.add g.compact h.compact }
+        change HasCompactSupport
+          ((g.f : (Fin n → ℝ) → ℂ) + (h.f : (Fin n → ℝ) → ℂ))
+        exact HasCompactSupport.add g.compact h.compact }
 
+set_option maxHeartbeats 800000 in
 instance (n : ℕ) : SMul ℕ (Section43CompactStrictPositiveTimeSource n) where
   smul m g :=
     { f := (m : ℂ) • g.f
@@ -486,11 +494,15 @@ instance (n : ℕ) : SMul ℕ (Section43CompactStrictPositiveTimeSource n) where
             (fun _ : Fin n → ℝ => (m : ℂ))
             (g.f : (Fin n → ℝ) → ℂ)).trans g.positive
       compact := by
-        simpa using
-          (HasCompactSupport.smul_left
+        change HasCompactSupport
+          ((fun _ : Fin n → ℝ => (m : ℂ)) *
+            (g.f : (Fin n → ℝ) → ℂ))
+        exact
+          HasCompactSupport.smul_left
             (f := fun _ : Fin n → ℝ => (m : ℂ))
-            (f' := (g.f : (Fin n → ℝ) → ℂ)) g.compact) }
+            (f' := (g.f : (Fin n → ℝ) → ℂ)) g.compact }
 
+set_option maxHeartbeats 800000 in
 instance (n : ℕ) : AddCommMonoid (Section43CompactStrictPositiveTimeSource n) :=
   Function.Injective.addCommMonoid
     (fun g : Section43CompactStrictPositiveTimeSource n => g.f)
@@ -501,6 +513,7 @@ instance (n : ℕ) : AddCommMonoid (Section43CompactStrictPositiveTimeSource n) 
       change (m : ℂ) • g.f = m • g.f
       rw [Nat.cast_smul_eq_nsmul ℂ])
 
+set_option maxHeartbeats 800000 in
 instance (n : ℕ) : SMul ℂ (Section43CompactStrictPositiveTimeSource n) where
   smul c g :=
     { f := c • g.f
@@ -510,10 +523,12 @@ instance (n : ℕ) : SMul ℂ (Section43CompactStrictPositiveTimeSource n) where
             (fun _ : Fin n → ℝ => c)
             (g.f : (Fin n → ℝ) → ℂ)).trans g.positive
       compact := by
-        simpa using
-          (HasCompactSupport.smul_left
+        change HasCompactSupport
+          ((fun _ : Fin n → ℝ => c) * (g.f : (Fin n → ℝ) → ℂ))
+        exact
+          HasCompactSupport.smul_left
             (f := fun _ : Fin n → ℝ => c)
-            (f' := (g.f : (Fin n → ℝ) → ℂ)) g.compact) }
+            (f' := (g.f : (Fin n → ℝ) → ℂ)) g.compact }
 
 private def fAddMonoidHom (n : ℕ) :
     Section43CompactStrictPositiveTimeSource n →+
@@ -522,6 +537,7 @@ private def fAddMonoidHom (n : ℕ) :
   map_zero' := rfl
   map_add' := by intro g h; rfl
 
+set_option maxHeartbeats 800000 in
 instance (n : ℕ) : Module ℂ (Section43CompactStrictPositiveTimeSource n) :=
   Function.Injective.module ℂ (fAddMonoidHom n)
     (by
@@ -997,23 +1013,21 @@ theorem continuous_section43IteratedLaplaceRaw_integrand_iteratedFDeriv
           (fun p : (Fin n → ℝ) × (Fin n → ℝ) => (p.2 i : ℂ)) := by
         have hreal : ContDiff ℝ (⊤ : ℕ∞)
             (fun p : (Fin n → ℝ) × (Fin n → ℝ) => p.2 i) := by
-          simpa using
-            (((ContinuousLinearMap.proj (R := ℝ) (ι := Fin n)
-              (φ := fun _ => ℝ) i).contDiff :
-                ContDiff ℝ (⊤ : ℕ∞) (fun τ : Fin n → ℝ =>
-                  (ContinuousLinearMap.proj (R := ℝ) (ι := Fin n)
-                    (φ := fun _ => ℝ) i) τ)).comp contDiff_snd)
+          change ContDiff ℝ (⊤ : ℕ∞)
+            ((ContinuousLinearMap.proj (R := ℝ) (ι := Fin n)
+              (φ := fun _ => ℝ) i) ∘ Prod.snd)
+          exact (ContinuousLinearMap.proj (R := ℝ) (ι := Fin n)
+            (φ := fun _ => ℝ) i).contDiff.comp contDiff_snd
         exact Complex.ofRealCLM.contDiff.comp hreal
       have hσcoord : ContDiff ℝ (⊤ : ℕ∞)
           (fun p : (Fin n → ℝ) × (Fin n → ℝ) => (p.1 i : ℂ)) := by
         have hreal : ContDiff ℝ (⊤ : ℕ∞)
             (fun p : (Fin n → ℝ) × (Fin n → ℝ) => p.1 i) := by
-          simpa using
-            (((ContinuousLinearMap.proj (R := ℝ) (ι := Fin n)
-              (φ := fun _ => ℝ) i).contDiff :
-                ContDiff ℝ (⊤ : ℕ∞) (fun σ : Fin n → ℝ =>
-                  (ContinuousLinearMap.proj (R := ℝ) (ι := Fin n)
-                    (φ := fun _ => ℝ) i) σ)).comp contDiff_fst)
+          change ContDiff ℝ (⊤ : ℕ∞)
+            ((ContinuousLinearMap.proj (R := ℝ) (ι := Fin n)
+              (φ := fun _ => ℝ) i) ∘ Prod.fst)
+          exact (ContinuousLinearMap.proj (R := ℝ) (ι := Fin n)
+            (φ := fun _ => ℝ) i).contDiff.comp contDiff_fst
         exact Complex.ofRealCLM.contDiff.comp hreal
       exact hτcoord.mul hσcoord
     have hg : ContDiff ℝ (⊤ : ℕ∞)
@@ -1094,7 +1108,8 @@ theorem norm_section43IteratedLaplaceRaw_integrand_iteratedFDeriv_le
   let f : (Fin n → ℝ) → ℂ := fun x => Complex.exp (L x)
   have hf_cont : ContDiffAt ℝ (r : ℕ) f σ := by
     have hf : ContDiff ℝ (⊤ : ℕ∞) f := by
-      simpa [f] using (Complex.contDiff_exp.comp L.contDiff)
+      change ContDiff ℝ (⊤ : ℕ∞) (Complex.exp ∘ L)
+      exact Complex.contDiff_exp.comp L.contDiff
     exact hf.contDiffAt.of_le (by exact mod_cast le_top)
   have hfun :
       (fun σ' : Fin n → ℝ =>
@@ -1287,6 +1302,8 @@ theorem integrable_section43IteratedLaplaceRaw_integrand_iteratedFDeriv_of_compa
         (e.symm : ℂ →L[ℝ]
           ContinuousMultilinearMap ℝ (fun _ : Fin 0 => Fin n → ℝ) ℂ).integrable_comp hbase
       convert hcomp using 1
+      ext τ
+      rfl
   | succ r =>
       rcases
         section43IteratedLaplaceRaw_integrand_iteratedFDeriv_curryLeft_local_bound_of_compact
@@ -1318,12 +1335,11 @@ theorem contDiff_section43IteratedLaplaceRaw_integrand_sigma
         ContDiff ℝ (⊤ : ℕ∞) (fun σ : Fin n → ℝ => (σ i : ℂ)) := by
       have hreal :
           ContDiff ℝ (⊤ : ℕ∞) (fun σ : Fin n → ℝ => σ i) := by
-        simpa using
-          ((ContinuousLinearMap.proj (R := ℝ) (ι := Fin n)
-            (φ := fun _ => ℝ) i).contDiff :
-            ContDiff ℝ (⊤ : ℕ∞) (fun σ : Fin n → ℝ =>
-              (ContinuousLinearMap.proj (R := ℝ) (ι := Fin n)
-                (φ := fun _ => ℝ) i) σ))
+        change ContDiff ℝ (⊤ : ℕ∞)
+          (ContinuousLinearMap.proj (R := ℝ) (ι := Fin n)
+            (φ := fun _ => ℝ) i)
+        exact (ContinuousLinearMap.proj (R := ℝ) (ι := Fin n)
+          (φ := fun _ => ℝ) i).contDiff
       exact Complex.ofRealCLM.contDiff.comp hreal
     exact contDiff_const.mul hcoord
   exact (Complex.contDiff_exp.comp harg).mul contDiff_const

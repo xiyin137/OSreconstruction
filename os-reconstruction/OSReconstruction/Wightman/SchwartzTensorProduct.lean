@@ -89,7 +89,8 @@ theorem SchwartzMap.seminorm_conj_le (k n : ℕ) (f : 𝓢(E, ℂ)) :
   have hnorm :
       ‖iteratedFDeriv ℝ n (fun y => Complex.conjLIE (f y)) x‖ =
         ‖iteratedFDeriv ℝ n f x‖ := by
-    simpa using (Complex.conjLIE.norm_iteratedFDeriv_comp_left (𝕜 := ℝ) f x n)
+    change ‖iteratedFDeriv ℝ n (Complex.conjLIE ∘ f) x‖ = _
+    exact Complex.conjLIE.norm_iteratedFDeriv_comp_left (𝕜 := ℝ) f x n
   rw [heq, hnorm]
   exact SchwartzMap.le_seminorm ℝ k n f x
 
@@ -648,7 +649,11 @@ theorem SchwartzMap.tensorProduct_seminorm_le {m k : ℕ} (p l : ℕ)
     2 ^ p * ∑ i ∈ Finset.range (l + 1), ↑(l.choose i) *
       (SchwartzMap.seminorm ℝ p i f * SchwartzMap.seminorm ℝ 0 (l - i) g +
        SchwartzMap.seminorm ℝ 0 i f * SchwartzMap.seminorm ℝ p (l - i) g) := by
-  simpa using seminorm_tensorProduct_le p l f g
+  change SchwartzMap.seminorm ℂ p l (f.tensorProduct g) ≤
+    2 ^ p * ∑ i ∈ Finset.range (l + 1), ↑(l.choose i) *
+      (SchwartzMap.seminorm ℂ p i f * SchwartzMap.seminorm ℂ 0 (l - i) g +
+       SchwartzMap.seminorm ℂ 0 i f * SchwartzMap.seminorm ℂ p (l - i) g)
+  exact seminorm_tensorProduct_le p l f g
 
 /-- The tensor product is jointly continuous as a bilinear map on Schwartz spaces.
     Uses sequential continuity (Schwartz space is first countable, hence sequential)

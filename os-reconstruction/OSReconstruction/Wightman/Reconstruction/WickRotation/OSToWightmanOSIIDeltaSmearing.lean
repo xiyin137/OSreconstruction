@@ -56,8 +56,8 @@ theorem translate_positiveOrthant_schwartz_mem
     have hx_gt : x0 i < x i := by
       simpa [Pi.add_apply, sub_eq_add_neg] using hpre
     exact lt_trans (hx0 i) hx_gt
-  · simpa [SCV.translateSchwartz_apply, Function.comp_def] using
-      hφ_compact.comp_homeomorph (Homeomorph.addRight (-x0))
+  · change HasCompactSupport (fun x => φ (x + (-x0)))
+    exact hφ_compact.comp_homeomorph (Homeomorph.addRight (-x0))
 
 /-- A normalized, pointwise nonnegative real-valued Schwartz test has
 `L¹`-norm one. -/
@@ -119,8 +119,8 @@ theorem eventually_translate_shrinking_schwartz_supportsInOpen_and_mapsTo
         Metric.isClosed_closedBall
   constructor
   · constructor
-    · simpa [SCV.translateSchwartz_apply, Function.comp_def] using
-        (hφ_compact n).comp_homeomorph (Homeomorph.addRight (-x0))
+    · change HasCompactSupport (fun x => φ n (x + (-x0)))
+      exact (hφ_compact n).comp_homeomorph (Homeomorph.addRight (-x0))
     · intro x hx
       have hx_pre :
           x + (-x0) ∈ tsupport (φ n : (Fin m → ℝ) → ℂ) := by

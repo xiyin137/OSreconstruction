@@ -144,7 +144,7 @@ private theorem exists_bounded_center_shift_of_compact_cross_order
       have hcB : |c| ≤ 2 * B + 1 := by
         calc
           |c| ≤ |-t xmax| + |(-1 : ℝ)| := by
-            simpa [c] using abs_add_le (-t xmax) (-1 : ℝ)
+            simpa [c] using abs_sub (-t xmax) (1 : ℝ)
           _ = |t xmax| + 1 := by simp
           _ ≤ B + 1 := by
             gcongr
@@ -158,7 +158,7 @@ private theorem exists_bounded_center_shift_of_compact_cross_order
         intro B' hB' hleft_bound' _hright_bound'
         calc
           |c| ≤ |-t xmax| + |(-1 : ℝ)| := by
-            simpa [c] using abs_add_le (-t xmax) (-1 : ℝ)
+            simpa [c] using abs_sub (-t xmax) (1 : ℝ)
           _ = |t xmax| + 1 := by simp
           _ ≤ B' + 1 := by
             gcongr

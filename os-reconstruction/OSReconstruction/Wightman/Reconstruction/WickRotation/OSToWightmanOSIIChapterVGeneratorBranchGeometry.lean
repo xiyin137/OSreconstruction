@@ -110,9 +110,10 @@ theorem continuous_nativeBridgePoint
     {r : ℕ}
     (i : GeneratorIndex r) :
     Continuous i.nativeBridgePoint := by
-  simpa [nativeBridgePoint] using
-    (ContinuousLinearMap.single
-      ℂ (fun _ : Fin r => ℂ) i.bridgeGlobalIndex).continuous
+  change Continuous ⇑(ContinuousLinearMap.single
+    ℂ (fun _ : Fin r => ℂ) i.bridgeGlobalIndex)
+  exact (ContinuousLinearMap.single
+    ℂ (fun _ : Fin r => ℂ) i.bridgeGlobalIndex).continuous
 
 end GeneratorIndex
 
@@ -125,6 +126,7 @@ theorem left_zero_mem_domain
     (E : GeneratorOpenHilbertFieldScaleFamilyRealEdgeData OS k)
     (i : GeneratorIndex k) :
     (0 : Fin (i.n - 1) → ℂ) ∈ E.leftDomain i := by
+  change (fun _ => (0 : ℂ)) ∈ E.leftDomain i
   simpa [SCV.realToComplex] using
     E.leftRealToComplex_mem_domain i 0
       (mem_of_mem_nhds (E.leftRealRegion_mem_nhds i))
@@ -133,6 +135,7 @@ theorem right_zero_mem_domain
     (E : GeneratorOpenHilbertFieldScaleFamilyRealEdgeData OS k)
     (i : GeneratorIndex k) :
     (0 : Fin (i.m - 1) → ℂ) ∈ E.rightDomain i := by
+  change (fun _ => (0 : ℂ)) ∈ E.rightDomain i
   simpa [SCV.realToComplex] using
     E.rightRealToComplex_mem_domain i 0
       (mem_of_mem_nhds (E.rightRealRegion_mem_nhds i))

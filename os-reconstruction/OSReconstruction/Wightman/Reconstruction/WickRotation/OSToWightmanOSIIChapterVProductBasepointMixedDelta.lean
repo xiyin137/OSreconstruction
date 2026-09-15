@@ -158,11 +158,7 @@ private theorem pairHeadsTailsMeasurableEquiv_measurePreserving
           Measure ((ℝ × (Fin k → ℝ)) × (ℝ × (Fin k → ℝ))))
         (volume :
           Measure (ℝ × ((Fin k → ℝ) × (ℝ × (Fin k → ℝ))))) := by
-    simpa using
-      (measurePreserving_prodAssoc
-        (volume : Measure ℝ)
-        (volume : Measure (Fin k → ℝ))
-        (volume : Measure (ℝ × (Fin k → ℝ))))
+    exact MeasureTheory.volume_preserving_prodAssoc
   have hAssoc₂ :
       MeasurePreserving
         (MeasurableEquiv.prodAssoc :
@@ -172,21 +168,15 @@ private theorem pairHeadsTailsMeasurableEquiv_measurePreserving
           Measure ((Fin k → ℝ) × (ℝ × (Fin k → ℝ))))
         (volume :
           Measure (((Fin k → ℝ) × ℝ) × (Fin k → ℝ))) := by
-    simpa using
-      (measurePreserving_prodAssoc
-        (volume : Measure (Fin k → ℝ))
-        (volume : Measure ℝ)
-        (volume : Measure (Fin k → ℝ))).symm
+    exact MeasureTheory.volume_preserving_prodAssoc.symm
   have hSwap :
       MeasurePreserving
         (MeasurableEquiv.prodComm :
           (Fin k → ℝ) × ℝ ≃ᵐ ℝ × (Fin k → ℝ))
         (volume : Measure ((Fin k → ℝ) × ℝ))
         (volume : Measure (ℝ × (Fin k → ℝ))) := by
-    simpa using
-      (Measure.measurePreserving_swap
-        (μ := (volume : Measure (Fin k → ℝ)))
-        (ν := (volume : Measure ℝ)))
+    rw [Measure.volume_eq_prod, Measure.volume_eq_prod]
+    exact Measure.measurePreserving_swap
   have hSwapProd :
       MeasurePreserving
         (MeasurableEquiv.prodCongr
@@ -197,9 +187,9 @@ private theorem pairHeadsTailsMeasurableEquiv_measurePreserving
           Measure (((Fin k → ℝ) × ℝ) × (Fin k → ℝ)))
         (volume :
           Measure ((ℝ × (Fin k → ℝ)) × (Fin k → ℝ))) := by
-    simpa using
-      (MeasurePreserving.prod hSwap
-        (MeasurePreserving.id (volume : Measure (Fin k → ℝ))))
+    rw [Measure.volume_eq_prod, Measure.volume_eq_prod]
+    exact MeasurePreserving.prod hSwap
+      (MeasurePreserving.id (volume : Measure (Fin k → ℝ)))
   have hAssoc₃ :
       MeasurePreserving
         (MeasurableEquiv.prodAssoc :
@@ -209,11 +199,7 @@ private theorem pairHeadsTailsMeasurableEquiv_measurePreserving
           Measure ((ℝ × (Fin k → ℝ)) × (Fin k → ℝ)))
         (volume :
           Measure (ℝ × ((Fin k → ℝ) × (Fin k → ℝ)))) := by
-    simpa using
-      (measurePreserving_prodAssoc
-        (volume : Measure ℝ)
-        (volume : Measure (Fin k → ℝ))
-        (volume : Measure (Fin k → ℝ)))
+    exact MeasureTheory.volume_preserving_prodAssoc
   have hInner :
       MeasurePreserving
         ((MeasurableEquiv.prodAssoc
@@ -249,9 +235,9 @@ private theorem pairHeadsTailsMeasurableEquiv_measurePreserving
           Measure (ℝ × ((Fin k → ℝ) × (ℝ × (Fin k → ℝ)))))
         (volume :
           Measure (ℝ × (ℝ × ((Fin k → ℝ) × (Fin k → ℝ))))) := by
-    simpa using
-      (MeasurePreserving.prod
-        (MeasurePreserving.id (volume : Measure ℝ)) hInner)
+    rw [Measure.volume_eq_prod, Measure.volume_eq_prod]
+    exact MeasurePreserving.prod
+      (MeasurePreserving.id (volume : Measure ℝ)) hInner
   have hAssoc₄ :
       MeasurePreserving
         (MeasurableEquiv.prodAssoc :
@@ -261,11 +247,7 @@ private theorem pairHeadsTailsMeasurableEquiv_measurePreserving
           Measure (ℝ × (ℝ × ((Fin k → ℝ) × (Fin k → ℝ)))))
         (volume :
           Measure ((ℝ × ℝ) × ((Fin k → ℝ) × (Fin k → ℝ)))) := by
-    simpa using
-      (measurePreserving_prodAssoc
-        (volume : Measure ℝ)
-        (volume : Measure ℝ)
-        (volume : Measure ((Fin k → ℝ) × (Fin k → ℝ)))).symm
+    exact MeasureTheory.volume_preserving_prodAssoc.symm
   simpa [pairHeadsTailsMeasurableEquiv] using
     hAssoc₁.trans (hProd.trans hAssoc₄)
 
@@ -291,7 +273,8 @@ private theorem osiiMixedHeadTailMeasurableEquiv_measurePreserving
           Measure ((Fin (k + 1) → ℝ) × (Fin (k + 1) → ℝ)))
         (volume :
           Measure ((ℝ × (Fin k → ℝ)) × (ℝ × (Fin k → ℝ)))) := by
-    simpa using MeasurePreserving.prod hHead hHead
+    rw [Measure.volume_eq_prod, Measure.volume_eq_prod]
+    exact MeasurePreserving.prod hHead hHead
   have hTail :=
     (MeasureTheory.volume_preserving_finAddProd k k ℝ).symm
   have hTailAppend :
@@ -303,9 +286,9 @@ private theorem osiiMixedHeadTailMeasurableEquiv_measurePreserving
           Measure ((ℝ × ℝ) × ((Fin k → ℝ) × (Fin k → ℝ))))
         (volume :
           Measure ((ℝ × ℝ) × (Fin (k + k) → ℝ))) := by
-    simpa using
-      MeasurePreserving.prod
-        (MeasurePreserving.id (volume : Measure (ℝ × ℝ))) hTail
+    rw [Measure.volume_eq_prod, Measure.volume_eq_prod]
+    exact MeasurePreserving.prod
+      (MeasurePreserving.id (volume : Measure (ℝ × ℝ))) hTail
   simpa [osiiMixedHeadTailMeasurableEquiv] using
     hSplit.trans
       (hHeads.trans

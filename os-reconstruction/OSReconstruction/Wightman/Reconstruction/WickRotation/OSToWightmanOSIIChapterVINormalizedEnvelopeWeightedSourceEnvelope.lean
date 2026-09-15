@@ -224,10 +224,12 @@ private theorem continuous_reflectedCauchyCenter'
   apply continuous_pi
   intro j
   refine Fin.addCases (fun i => ?_) (fun i => ?_) j
-  · simpa [reflectedCauchyCenter] using
+  · convert
       (continuous_star.comp
         (continuous_apply i :
-          Continuous (fun z : Fin (q + 1) -> Complex => z i)))
+          Continuous (fun z : Fin (q + 1) -> Complex => z i))) using 1
+    funext z
+    exact reflectedCauchyCenter_left z i
   · convert
       (continuous_apply i :
         Continuous (fun z : Fin (q + 1) -> Complex => z i)) using 1

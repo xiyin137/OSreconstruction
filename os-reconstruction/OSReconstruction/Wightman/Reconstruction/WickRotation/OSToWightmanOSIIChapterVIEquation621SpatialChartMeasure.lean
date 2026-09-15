@@ -137,10 +137,10 @@ theorem axisPairBlockGlobalSpatialScalarCLE_zeroHead_tail
             (axisPairBlockGlobalSpatialScalarZeroHead x) (Fin.rev a).succ =
           x (Fin.castAdd m (Fin.rev a)) := by
       change axisPairBlockGlobalSpatialScalarZeroHead x
-        (Fin.castAdd m (Fin.rev a).succ) = _
-      simpa using
-        (axisPairBlockGlobalSpatialScalarZeroHead_succ x
-          (Fin.castAdd m (Fin.rev a)))
+        ⟨(Fin.rev a).val + 1, by omega⟩ = _
+      simpa only [Fin.val_castAdd] using
+        axisPairBlockGlobalSpatialScalarZeroHead_succ x
+          (Fin.castAdd m (Fin.rev a))
     rw [hvalue] at hdiff
     linarith
   · intro q
@@ -282,9 +282,14 @@ theorem axisPairBlockGlobalSpatialScalarCLE_zeroHeadOfPositive_tail
         (fun a : Fin (n - 1) => -x (Fin.castAdd m (Fin.rev a)))
         (fun b : Fin m => x (Fin.natAdd (n - 1) b)) j := by
   obtain ⟨r, rfl⟩ := Nat.exists_eq_succ_of_ne_zero (by omega : n ≠ 0)
-  simpa [axisPairBlockGlobalSpatialScalarZeroHeadOfPositive,
-    axisPairBlockGlobalSpatialScalarZeroHead] using
-    (axisPairBlockGlobalSpatialScalarCLE_zeroHead_tail x j)
+  have hzero :
+      axisPairBlockGlobalSpatialScalarZeroHeadOfPositive (r + 1) m x =
+        axisPairBlockGlobalSpatialScalarZeroHead x := by
+    funext c
+    simp [axisPairBlockGlobalSpatialScalarZeroHeadOfPositive,
+      axisPairBlockGlobalSpatialScalarZeroHead]
+  rw [hzero]
+  exact axisPairBlockGlobalSpatialScalarCLE_zeroHead_tail x j
 
 /-- Negate precisely the left block of a scalar tuple. -/
 noncomputable def axisPairNegateLeftScalarCLE
@@ -355,13 +360,19 @@ theorem axisPairNegateLeftScalarCLE_measurePreserving
         (volume : Measure Real) (volume : Measure Real) := by
     intro c
     split_ifs
-    · simpa using
-        MeasureTheory.Measure.measurePreserving_neg
-          (volume : Measure Real)
+    · change MeasurePreserving (fun x : Real => -x)
+        (volume : Measure Real) (volume : Measure Real)
+      exact MeasureTheory.Measure.measurePreserving_neg
+        (volume : Measure Real)
     · exact MeasurePreserving.id (volume : Measure Real)
-  simpa [axisPairNegateLeftScalarCLE,
-    ContinuousLinearEquiv.piCongrRight] using
-      (MeasureTheory.volume_preserving_pi hcoord)
+  change MeasurePreserving (fun a i =>
+      (if i.val < n then
+        ContinuousLinearEquiv.neg Real
+      else
+        ContinuousLinearEquiv.refl Real Real) (a i))
+    (volume : Measure (Fin (n + m) -> Real))
+    (volume : Measure (Fin (n + m) -> Real))
+  exact MeasureTheory.volume_preserving_pi hcoord
 
 /-- The scalar spatial block-global chart preserves Lebesgue measure. -/
 theorem axisPairBlockGlobalSpatialScalarCLE_measurePreserving
@@ -376,12 +387,18 @@ theorem axisPairBlockGlobalSpatialScalarCLE_measurePreserving
         ).toHomeomorph.toMeasurableEquiv
       (volume : Measure (Fin (n + m) -> Real))
       (volume : Measure (Fin (n + m) -> Real)) := by
-    simpa using axisPairBlockGlobalTimeME_measurePreserving n m
+    change MeasurePreserving (fun x => osiiAxisPairBlockGlobalTimeCLE n m x)
+      (volume : Measure (Fin (n + m) -> Real))
+      (volume : Measure (Fin (n + m) -> Real))
+    exact axisPairBlockGlobalTimeME_measurePreserving n m
   have hdiff : MeasurePreserving
       (section43ScalarDiffCLE (n + m)).toHomeomorph.toMeasurableEquiv
       (volume : Measure (Fin (n + m) -> Real))
       (volume : Measure (Fin (n + m) -> Real)) := by
-    simpa using section43ScalarDiffME_measurePreserving (n + m)
+    change MeasurePreserving (fun x => section43ScalarDiffCLE (n + m) x)
+      (volume : Measure (Fin (n + m) -> Real))
+      (volume : Measure (Fin (n + m) -> Real))
+    exact section43ScalarDiffME_measurePreserving (n + m)
   have hconjugate :=
     hdiff.symm.trans
       ((axisPairNegateLeftScalarCLE_measurePreserving n m).trans hdiff)
@@ -592,9 +609,16 @@ theorem axisPairBlockGlobalSpatialCLE_measurePreserving
   have hscalar : MeasurePreserving scalarME
       (volume : Measure (Fin d -> Fin (n + m) -> Real))
       (volume : Measure (Fin d -> Fin (n + m) -> Real)) := by
-    simpa [scalarME, scalarCLE, ContinuousLinearEquiv.piCongrRight] using
-      (volume_preserving_pi fun _ =>
-        axisPairBlockGlobalSpatialScalarCLE_measurePreserving n m)
+    have hpi := volume_preserving_pi fun _ : Fin d =>
+      axisPairBlockGlobalSpatialScalarCLE_measurePreserving n m
+    have hfun : (scalarME :
+        (Fin d -> Fin (n + m) -> Real) ->
+          (Fin d -> Fin (n + m) -> Real)) =
+        fun a i => axisPairBlockGlobalSpatialScalarCLE n m (a i) := by
+      funext a i c
+      rfl
+    rw [hfun]
+    exact hpi
   have hcomp : MeasurePreserving
       (coord.trans (scalarME.trans coord.symm))
       (volume : Measure (Section43SpatialSpace d (n + m)))
@@ -634,9 +658,20 @@ theorem axisPairBlockGlobalSpatialFlatCLE_apply
   have h := axisPairBlockGlobalSpatialCLE_coordinate d n m
     ((section43SpatialFlatCLE d (n + m)).symm x)
     (finProdFinEquiv.symm j).2
-  have hj := finProdFinEquiv.apply_symm_apply j
-  simpa [section43SpatialCoordinateFibersME_apply,
-    section43SpatialFlatCLE_symm_apply, hj] using
+  have hfiber :
+      section43SpatialCoordinateFibersME d (n + m)
+          ((section43SpatialFlatCLE d (n + m)).symm x)
+          (finProdFinEquiv.symm j).2 =
+        fun c => x (finProdFinEquiv
+          (c, (finProdFinEquiv.symm j).2)) := by
+    funext c
+    rw [section43SpatialCoordinateFibersME_apply,
+      section43SpatialParticleCLE_apply]
+    exact section43SpatialFlatCLE_symm_apply d (n + m) x
+      (c, (finProdFinEquiv.symm j).2)
+  rw [hfiber] at h
+  simpa only [section43SpatialCoordinateFibersME_apply,
+    section43SpatialParticleCLE_apply, Prod.eta] using
     congrFun h (finProdFinEquiv.symm j).1
 
 /-- The flat-coordinate spatial chart also preserves Lebesgue measure. -/
@@ -703,6 +738,18 @@ theorem generatorSplitToAbsoluteSpatialCLE_measurePreserving
       (volume : Measure (Section43SpatialSpace d (k + 1))) :=
     hsource.trans (hcast.trans htarget.symm)
   convert hcomp using 1
+  funext eta
+  apply targetCoord.injective
+  funext mu c
+  change section43SpatialParticleCLE d (k + 1)
+      (generatorSplitToAbsoluteSpatialCLE i eta) c mu =
+    targetCoord (targetCoord.symm (castME (sourceCoord eta))) mu c
+  rw [generatorSplitToAbsoluteSpatialCLE_apply,
+    targetCoord.apply_symm_apply]
+  change section43SpatialParticleCLE d (i.n + i.m) eta
+      (Fin.cast i.absoluteCard_eq c) mu =
+    castME (sourceCoord eta) mu c
+  rfl
 
 /-- The generator chart on the common `k + 1` particle space preserves
 Euclidean volume. -/

@@ -124,7 +124,15 @@ theorem cauchyCoeffPolydisc_eq_localRightSource_normalized
         (fun x =>
           Tg (translateSchwartzConfiguration
             (sourceParameterDisplacementCLM directions x) f)) := by
-    simpa [realAffineSlice, Tg] using hreal
+    rw [show
+      (fun x : Fin (k + 1) → ℝ => realAffineSlice scalar 0 x) =
+        (fun x => scalar (fun i => (x i : ℂ))) by
+      funext x
+      unfold realAffineSlice
+      congr 1
+      funext i
+      simp]
+    simpa [Tg] using hreal
   rw [cauchyCoeffPolydisc_eq_realEdge_iteratedFDeriv
     hTowerC hTowerPi hR hU hRU hscalar hreal' β]
   rw [iteratedFDeriv_apply_translateSchwartzConfiguration_clm_zero]
@@ -270,7 +278,7 @@ theorem inner_holomorphicField_eq_localRightScalar_of_norm_lt
             (osiiPositiveTimeSingleVectorCLM OS n g)) (Ψ z))) :=
       (innerSL ℂ
         (osiiPositiveTimeSingleVectorCLM OS n g)).continuous.continuousAt
-    simpa only [innerSL_apply_apply] using hc.comp hΨz
+    exact hc.comp hΨz
   have hpartial :
       (fun N =>
         @inner ℂ (OSHilbertSpace OS) _

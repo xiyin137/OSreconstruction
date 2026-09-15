@@ -43,11 +43,15 @@ private theorem continuous_generatorChronologicalParameter_bridge
   · change Continuous
       (fun ξ : Fin k → ℝ =>
         if j.val < i.bridgeGlobalIndex.val then -ξ j else ξ j)
-    simpa only [hj, if_pos] using (continuous_apply j).neg
+    simp only [if_pos hj]
+    change Continuous (-fun ξ : Fin k → ℝ => ξ j)
+    exact (continuous_apply j).neg
   · change Continuous
       (fun ξ : Fin k → ℝ =>
         if j.val < i.bridgeGlobalIndex.val then -ξ j else ξ j)
-    simpa only [hj, if_neg] using (continuous_apply j)
+    simp only [if_neg hj]
+    change Continuous (fun ξ : Fin k → ℝ => ξ j)
+    exact continuous_apply j
 
 set_option maxRecDepth 4000 in
 /-- At a fixed affine parameter, one canonical reduced functional represents

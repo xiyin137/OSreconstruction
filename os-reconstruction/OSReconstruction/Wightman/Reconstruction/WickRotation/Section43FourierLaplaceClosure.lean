@@ -61,7 +61,14 @@ theorem borchersConj_continuous_closure {n : ℕ} :
         rcases q with ⟨k, l⟩
         refine ⟨{(k, l)}, 1, ?_⟩
         intro f
-        simpa [Finset.sup_singleton] using SchwartzMap.seminorm_conj_le k l f)
+        calc
+          _ = (SchwartzMap.seminorm ℝ k l) (conjL f) := rfl
+          _ = (SchwartzMap.seminorm ℝ k l) f.conj := rfl
+          _ ≤ (SchwartzMap.seminorm ℝ k l) f :=
+            SchwartzMap.seminorm_conj_le k l f
+          _ = _ := by
+            simp only [one_smul, Finset.sup_singleton,
+              SchwartzMap.schwartzSeminormFamily_apply])
   show Continuous (fun f => (revCLM f).conj)
   exact hconj_cont.comp revCLM.continuous |>.congr (fun f => by
     show (revCLM f).conj = f.borchersConj
@@ -194,7 +201,10 @@ noncomputable def section43FiniteSource_to_positiveTimeBorchersSequence
     intro n
     by_cases h : n ≤ B
     · simpa [h] using (src ⟨n, Nat.lt_succ_of_le h⟩).ordered
-    · simp [h]
+    · simp only [h, ↓reduceDIte]
+      change tsupport (fun _ : NPointDomain d n => (0 : ℂ)) ⊆
+        OrderedPositiveTimeRegion d n
+      simp
 
 /-- Compactness of each padded component of
 `section43FiniteSource_to_positiveTimeBorchersSequence`. -/
@@ -210,8 +220,9 @@ theorem section43FiniteSource_to_positiveTimeBorchersSequence_compact
   by_cases h : n ≤ B
   · simpa [section43FiniteSource_to_positiveTimeBorchersSequence, h] using
       (src ⟨n, Nat.lt_succ_of_le h⟩).compact
-  · simpa [section43FiniteSource_to_positiveTimeBorchersSequence, h] using
-      (HasCompactSupport.zero : HasCompactSupport (0 : NPointDomain d n → ℂ))
+  · simp only [section43FiniteSource_to_positiveTimeBorchersSequence, h, ↓reduceDIte]
+    change HasCompactSupport (fun _ : NPointDomain d n => (0 : ℂ))
+    exact HasCompactSupport.zero
 
 /-- The source-decorated transform-component carrier associated to a finite
 compact ordered source tuple, padded by zero above the finite bound. -/
@@ -248,11 +259,18 @@ noncomputable def section43FiniteSource_to_BvtTransformComponentSequence
     · have hzero_ord :
           tsupport ((0 : SchwartzNPoint d n) : NPointDomain d n → ℂ) ⊆
             OrderedPositiveTimeRegion d n := by
+        change tsupport (fun _ : NPointDomain d n => (0 : ℂ)) ⊆
+          OrderedPositiveTimeRegion d n
         simp
       have hzero_compact :
           HasCompactSupport ((0 : SchwartzNPoint d n) : NPointDomain d n → ℂ) :=
         HasCompactSupport.zero
-      simp [section43FiniteSource_to_positiveTimeBorchersSequence, h,
-        section43FourierLaplaceTransformComponent_zero]
+      simp only [section43FiniteSource_to_positiveTimeBorchersSequence, h,
+        ↓reduceDIte]
+      change section43FrequencyProjection (d := d) n (0 : SchwartzNPoint d n) =
+        section43FourierLaplaceTransformComponent d n
+          (0 : SchwartzNPoint d n) hzero_ord hzero_compact
+      rw [section43FourierLaplaceTransformComponent_zero]
+      exact map_zero (section43FrequencyProjection (d := d) n)
 
 end OSReconstruction

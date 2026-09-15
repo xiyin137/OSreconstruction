@@ -42,7 +42,7 @@ noncomputable def W_analytic_BHW_reduced_of_input
       holomorphic := by
         simpa [ReducedPermutedExtendedTubeN] using h.choose_spec.1
       agrees_on_reducedForwardTube := by
-        simpa [ReducedForwardTubeN] using h.choose_spec.2.1
+        exact h.choose_spec.2.1
       lorentz_invariant := h.choose_spec.2.2.1
       perm_invariant := h.choose_spec.2.2.2.1 }
 

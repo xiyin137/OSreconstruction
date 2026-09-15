@@ -71,13 +71,15 @@ theorem exists_complexChart_schwartz_cutoff_eq_one_on_closedBall
     hf_compact.toSchwartzMap hf_smooth
   have hχ_apply : ∀ z, χ z = f z :=
     HasCompactSupport.toSchwartzMap_toFun hf_compact hf_smooth
+  have hχ_fun : (χ : ComplexChartSpace m → ℂ) = f :=
+    funext hχ_apply
   refine ⟨χ, ?_, ?_⟩
   · intro z hz
     rw [hχ_apply z]
     simp [f, b.one_of_mem_closedBall hz]
   · intro z hz
     have hzf : z ∈ tsupport f := by
-      simpa [χ, hχ_apply] using hz
+      rwa [hχ_fun] at hz
     have hzb : z ∈ tsupport b := by
       simpa [tsupport, f, Function.support] using hzf
     rw [b.tsupport_eq] at hzb
@@ -100,7 +102,8 @@ theorem continuous_mul_of_continuousOn_supportsInOpen
   by_cases hzU : z ∈ U
   · have hGz : ContinuousAt G z :=
       hG.continuousAt (hU_open.mem_nhds hzU)
-    simpa [f] using hGz.mul φ.continuous.continuousAt
+    change ContinuousAt (G * (φ : ComplexChartSpace m → ℂ)) z
+    exact hGz.mul φ.continuous.continuousAt
   · have hz_tsupport : z ∉ tsupport (φ : ComplexChartSpace m → ℂ) := by
       intro hzφ
       exact hzU (hφ.2 hzφ)
@@ -216,8 +219,8 @@ theorem dbarSchwartzCLM_tsupport_subset
   have hI :
       tsupport ((Complex.I • dim : SchwartzMap X ℂ) : X → ℂ) ⊆
         tsupport (dim : X → ℂ) := by
-    simpa using
-      tsupport_smul_subset_right (fun _ : X => Complex.I) (dim : X → ℂ)
+    change tsupport (fun x => Complex.I * dim x) ⊆ tsupport (dim : X → ℂ)
+    exact tsupport_smul_subset_right (fun _ : X => Complex.I) (dim : X → ℂ)
   have hright :
       tsupport
           (((1 / 2 : ℂ) • (Complex.I • dim) : SchwartzMap X ℂ) :
@@ -236,9 +239,10 @@ theorem dbarSchwartzCLM_tsupport_subset
           tsupport
             (((1 / 2 : ℂ) • (Complex.I • dim) : SchwartzMap X ℂ) :
               X → ℂ) := by
-    simpa using
-      tsupport_add (((1 / 2 : ℂ) • dre : SchwartzMap X ℂ) : X → ℂ)
-        (((1 / 2 : ℂ) • (Complex.I • dim) : SchwartzMap X ℂ) : X → ℂ)
+    change tsupport (fun x => (1 / 2 : ℂ) * dre x +
+      (1 / 2 : ℂ) * (Complex.I * dim x)) ⊆ _
+    exact tsupport_add (fun x => (1 / 2 : ℂ) * dre x)
+      (fun x => (1 / 2 : ℂ) * (Complex.I * dim x))
   intro x hx
   have hx' :
       x ∈
@@ -291,6 +295,7 @@ theorem SupportsInOpen.complexTranslateSchwartz_of_image_subset
       hφ.1.image (continuous_id.sub continuous_const)
     refine IsCompact.of_isClosed_subset hK (isClosed_tsupport _) ?_
     intro y hy
+    change y ∈ tsupport (fun x => φ (x + realEmbed a)) at hy
     have hy' :
         y ∈ tsupport ((φ : ComplexChartSpace m → ℂ) ∘
           fun y : ComplexChartSpace m => y + realEmbed a) := by
@@ -299,6 +304,7 @@ theorem SupportsInOpen.complexTranslateSchwartz_of_image_subset
     ext i
     simp
   · intro y hy
+    change y ∈ tsupport (fun x => φ (x + realEmbed a)) at hy
     have hy' :
         y ∈ tsupport ((φ : ComplexChartSpace m → ℂ) ∘
           fun y : ComplexChartSpace m => y + realEmbed a) := by

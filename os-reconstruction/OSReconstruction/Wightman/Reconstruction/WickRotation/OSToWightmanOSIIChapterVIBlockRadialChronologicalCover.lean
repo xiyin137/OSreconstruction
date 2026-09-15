@@ -158,7 +158,7 @@ private theorem reducedTestLift_tsupport_basepoint_mem_commonCarrier
   have hprod :
       x ∈ tsupport (fun u : NPointDomain d (m + 1) =>
         chi (u 0) * phi (BHW.reducedDiffMapReal (m + 1) d u)) := by
-    simpa [BHW.reducedTestLift_apply] using hx
+    exact hx
   have hheadPre :
       x ∈ tsupport (fun u : NPointDomain d (m + 1) => chi (u 0)) :=
     tsupport_mul_subset_left hprod

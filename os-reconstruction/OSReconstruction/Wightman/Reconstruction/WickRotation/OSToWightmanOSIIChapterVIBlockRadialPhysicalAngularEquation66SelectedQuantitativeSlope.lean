@@ -86,16 +86,25 @@ theorem osiiStep4RadialEndpointCommonCarrier_margin
   have hstrict : StrictMono (fun i : Fin (k + 1) => X i 0) := by
     intro i j hij
     exact hordered i j hij
+  have hXzero : X 0 0 = p.1 0 := by
+    dsimp only [X]
+    have h := congrFun (congrFun
+      ((BHW.realDiffCoordCLE (k + 1) d).apply_symm_apply
+        (BHW.prependBasepointReal d k p.1 p.2)) 0) 0
+    rw [BHW.realDiffCoordCLE_apply] at h
+    have hzero : (0 : Fin (k + 1)).val = 0 := rfl
+    rw [dif_pos hzero] at h
+    simpa only [BHW.prependBasepointReal_zero] using h
   constructor
   · intro i
     change rho / 8 <= X i 0
     by_cases hi : i = 0
     · subst i
-      simpa [X] using hbase
+      simpa only [hXzero] using hbase
     · have h0i : (0 : Fin (k + 1)) < i := Fin.pos_iff_ne_zero.mpr hi
       have hmono := (hstrict h0i).le
       have hbaseX : rho / 8 <= X 0 0 := by
-        simpa [X] using hbase
+        simpa only [hXzero] using hbase
       exact hbaseX.trans hmono
   · intro i j hij
     let q : Fin k := ⟨i.val, by omega⟩
@@ -193,7 +202,9 @@ theorem osiiStep4RadialEndpointCommonCarrier_norm_le
     norm ((BHW.realDiffCoordCLE (k + 1) d).symm
           (BHW.prependBasepointReal d k p.1 p2)) <=
         norm L * norm (BHW.prependBasepointReal d k p.1 p2) := by
-      simpa only [L] using hop
+      change norm (L (BHW.prependBasepointReal d k p.1 p2)) <=
+        norm L * norm (BHW.prependBasepointReal d k p.1 p2)
+      exact hop
     _ <= norm L * (norm endpointCenter + norm center + 2 * rho) :=
       mul_le_mul_of_nonneg_left hinput hL
     _ = norm (BHW.realDiffCoordCLE (k + 1) d).symm.toContinuousLinearMap *

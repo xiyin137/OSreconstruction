@@ -110,8 +110,15 @@ theorem initialSpatialFactorTruncation_tendsto
   have htransport :=
     ((section43SpatialFlatSchwartzCLE d k).symm.continuous.tendsto
       (section43SpatialFlatSchwartzCLE d k χ)).comp hflat
-  simpa only [initialSpatialFactorTruncationCLM_apply,
-    (section43SpatialFlatSchwartzCLE d k).symm_apply_apply] using
+  rw [show
+    (fun N : ℕ => initialSpatialFactorTruncationCLM d k N χ) =
+      (section43SpatialFlatSchwartzCLE d k).symm ∘
+        (fun N => bumpTruncationRadius
+          (section43SpatialFlatSchwartzCLE d k χ) N) by
+      funext N
+      rw [initialSpatialFactorTruncationCLM_apply]
+      rfl]
+  simpa only [(section43SpatialFlatSchwartzCLE d k).symm_apply_apply] using
     htransport
 
 /-- A compactly supported reduced spatial test is eventually fixed exactly
@@ -128,9 +135,11 @@ theorem eventually_initialSpatialFactorTruncation_eq
         ((section43SpatialFlatSchwartzCLE d k χ :
           SchwartzMap (Fin (k * d) → ℝ) ℂ) :
             (Fin (k * d) → ℝ) → ℂ) := by
-    simpa [section43SpatialFlatSchwartzCLE_apply] using
-      hχ.comp_homeomorph
-        (section43SpatialFlatCLE d k).symm.toHomeomorph
+    change HasCompactSupport
+      ((χ : Section43SpatialSpace d k → ℂ) ∘
+        ⇑(section43SpatialFlatCLE d k).symm.toHomeomorph)
+    exact hχ.comp_homeomorph
+      (section43SpatialFlatCLE d k).symm.toHomeomorph
   filter_upwards [
     eventually_bumpTruncationRadius_eq_of_hasCompactSupport
       (section43SpatialFlatSchwartzCLE d k χ) hflat] with N hN

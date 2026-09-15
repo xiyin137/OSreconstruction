@@ -298,18 +298,17 @@ theorem exists_weighted_iteratedFDeriv_euclideanTranslate_sub_le_linear
     intro s
     have hpath :
         HasDerivAt (fun r : ℝ => z - r • t) (-t) s := by
-      let L : ℝ →L[ℝ] EuclideanSpace ℝ ι :=
-        ContinuousLinearMap.smulRight (1 : ℝ →L[ℝ] ℝ) t
       have hL : HasDerivAt (fun r : ℝ => r • t) t s := by
-        simpa [L, ContinuousLinearMap.smulRight_apply, one_smul] using
-          L.hasDerivAt
+        simpa only [id_eq, one_smul] using (hasDerivAt_id s).smul_const t
       have hneg : HasDerivAt (fun r : ℝ => -(r • t)) (-t) s := hL.neg
       simpa [sub_eq_add_neg] using hneg.const_add z
     have hcomp :
         HasDerivAt (fun r : ℝ => D (z - r • t))
           ((fderiv ℝ D (z - s • t)) (-t)) s :=
       (hD_diff (z - s • t)).hasFDerivAt.comp_hasDerivAt s hpath
-    simpa [γ] using hcomp.const_smul (‖z‖ ^ k)
+    change HasDerivAt (fun r => ‖z‖ ^ k • D (z - r • t))
+      (‖z‖ ^ k • (fderiv ℝ D (z - s • t)) (-t)) s
+    exact hcomp.fun_const_smul (‖z‖ ^ k)
   have hγ_bound :
       ∀ s ∈ Set.Ico (0 : ℝ) 1,
         ‖‖z‖ ^ k • (fderiv ℝ D (z - s • t) (-t))‖ ≤ C * ‖t‖ := by

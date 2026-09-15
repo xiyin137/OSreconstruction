@@ -62,9 +62,17 @@ private theorem uniform_conjTensor_approximation
   have hgdiff : Tendsto (fun K => g - gK K) atTop (𝓝 0) := by
     simpa using (show Tendsto (fun _ : Nat => g) atTop (𝓝 g) from tendsto_const_nhds).sub hgK
   have hQfdiff : Tendsto (fun K => Q n (f - fK K)) atTop (𝓝 0) := by
-    simpa only [hQzero] using (hQ n).continuousAt.tendsto.comp hfdiff
+    have heq : (Q n ∘ fun K => f - fK K) =ᶠ[atTop]
+        (fun K => Q n (f - fK K)) :=
+      Filter.Eventually.of_forall fun _ => rfl
+    simpa only [hQzero] using
+      ((hQ n).continuousAt.tendsto.comp hfdiff).congr' heq
   have hQgdiff : Tendsto (fun K => Q m (g - gK K)) atTop (𝓝 0) := by
-    simpa only [hQzero] using (hQ m).continuousAt.tendsto.comp hgdiff
+    have heq : (Q m ∘ fun K => g - gK K) =ᶠ[atTop]
+        (fun K => Q m (g - gK K)) :=
+      Filter.Eventually.of_forall fun _ => rfl
+    simpa only [hQzero] using
+      ((hQ m).continuousAt.tendsto.comp hgdiff).congr' heq
   have hA : Tendsto (fun K => 2 * Q n (f - fK K) * Q m g) atTop (𝓝 0) := by
     simpa using (tendsto_const_nhds.mul hQfdiff).mul tendsto_const_nhds
   have hB : Tendsto (fun K => 2 * Q n (fK K) * Q m (g - gK K)) atTop (𝓝 0) := by

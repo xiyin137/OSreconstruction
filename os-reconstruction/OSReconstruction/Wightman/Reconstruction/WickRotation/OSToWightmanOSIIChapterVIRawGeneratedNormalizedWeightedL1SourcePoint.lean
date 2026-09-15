@@ -250,10 +250,14 @@ noncomputable def rawStrictGeneratedVI2NormalizedWeightedL1DepthZeroBoundData
           mul_le_mul_of_nonneg_right hmajorant hL1
     rw [((D.toStrictGeneratedTimeContinuationLadder lgc arity).stage 0
       ).vi2Equation621TotalNormalizedStage_eq_of_pos harity]
-    simpa [E, current,
+    simpa only [E, current,
       InitialGeneratedLogarithmicStageLevelData.toStrictGeneratedTimeContinuationLadder,
       StrictGeneratedScalarDepthPointedData.toTimeContinuationLadder,
-      timeContinuationLadderOfAngleSectorCover] using hbound
+      timeContinuationLadderOfAngleSectorCover,
+      StrictGeneratedScalarDepthPointedData.depthInduction_zero,
+      StrictGeneratedScalarDepthPointedData.recursiveSectorRankInduction,
+      CanonicalGeneratorPointedConvexAtlasStageLevelData.scalarRankInduction_zero,
+      CanonicalGeneratorPointedConvexAtlasStageLevelData.scalarRankInductionZero] using hbound
 
 end OSIIChapterV
 end OSReconstruction

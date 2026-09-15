@@ -1140,7 +1140,7 @@ theorem physicsFourierFlatCLM_lineDeriv_eq_pairingMultiplier {m : ℕ}
       (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ e) (∂_{v} φ) =
         ∂_{e.symm v} ((SchwartzMap.compCLMOfContinuousLinearEquiv ℂ e) φ) := by
     symm
-    simpa [e] using
+    simpa only [e.apply_symm_apply] using
       (SchwartzMap.lineDerivOp_compCLMOfContinuousLinearEquiv (𝕜 := ℂ)
         (m := e.symm v) (g := e) (f := φ))
   have hpair :

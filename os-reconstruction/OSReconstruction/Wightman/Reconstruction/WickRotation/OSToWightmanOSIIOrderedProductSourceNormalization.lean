@@ -197,9 +197,10 @@ theorem normalizedFactor_compact
   change HasCompactSupport
     ((SCV.translateSchwartz (-timeShiftVec d A) (P.rotatedFactors i) :
       SchwartzSpacetime d) : SpacetimeDim d → ℂ)
-  simpa [SCV.translateSchwartz_apply, Function.comp_def] using
-    (P.rotatedFactor_compact i).comp_homeomorph
-      (Homeomorph.addRight (-timeShiftVec d A))
+  change HasCompactSupport
+    (fun x => P.rotatedFactors i (x + (-timeShiftVec d A)))
+  exact (P.rotatedFactor_compact i).comp_homeomorph
+    (Homeomorph.addRight (-timeShiftVec d A))
 
 /-- A common time shift preserves the strict chronological order carried by
 the rotated factor supports. -/

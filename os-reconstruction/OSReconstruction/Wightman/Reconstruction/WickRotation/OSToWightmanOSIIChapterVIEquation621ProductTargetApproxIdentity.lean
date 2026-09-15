@@ -81,10 +81,11 @@ theorem equation621TargetHeadTailCastCLE_measurePreserving
         ).toHomeomorph.toMeasurableEquiv
       (volume : Measure (Fin ((k + 1) * d) -> Real))
       (volume : Measure (Fin (d + k * d) -> Real)) := by
-  simpa [equation621TargetHeadTailCastCLE] using
+  convert
     (volume_measurePreserving_piCongrLeft
       (fun _ : Fin (d + k * d) => Real)
-      (finCongr (equation621TargetHeadTailArity d k)))
+      (finCongr (equation621TargetHeadTailArity d k))) using 1 <;>
+    ext x j <;> rfl
 
 /-- The split-global chart expressed as one spatial head plus the reduced
 target tail. -/

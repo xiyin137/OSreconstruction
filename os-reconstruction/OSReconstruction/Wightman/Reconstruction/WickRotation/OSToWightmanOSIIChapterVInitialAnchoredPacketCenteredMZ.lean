@@ -723,6 +723,7 @@ noncomputable def anchoredPacketCenteredCoshGrowthData
                       P.slope
                       (osiiAxisPairMultiGapSub shift x)))) at hx
       simpa [Q, base, shift, packet,
+        OSIIChronologicalSourcewisePacketData.toSourcewiseCoshGrowthData,
         OSIIChronologicalSourcewisePacketData.flatCross,
         OSIIChronologicalSourcewisePacketData.packetFamily,
         OSIIAxisPairMultiGapSemigroupPacketFamily.toFlatCrossData] using hx

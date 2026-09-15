@@ -165,7 +165,8 @@ noncomputable def
             rw [A.positiveProductBasepointSource_coe,
               A.positiveProductBasepointSource_coe]
             simpa [tail, θ, ξ, timeTest,
-              SchwartzTimeApproximateIdentity.tail] using
+              SchwartzTimeApproximateIdentity.tail,
+              Section43ProductTimeApproximateIdentity.toSchwartzTimeApproximateIdentity] using
               (reflectedMovingSliceScalar_productBasepoint_translatedApproximateIdentities
                 stage germ.η θ θ tail tail anchor anchor χ χ
                 normalizedPositiveTimeBasepointCutoff.compact

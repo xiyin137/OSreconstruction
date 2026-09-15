@@ -802,7 +802,7 @@ theorem inner_eq_mixedScalar_of_realEdge_compactTime_of_norm_lt
     · simpa [E, ReflectedCauchyPolydiscData.atIncrement] using hreal
   apply H.inner_eq_mixedScalar_of_compatibility_of_hasSum
     OS f a b zL zR hzL hzR D hincrement C
-  simpa using
+  exact
     SCV.hasSum_cauchyPowerSeriesPolydisc_diag_of_differentiableOn
       D.radius_pos hRw hU hRwU hscalar hnorm
 

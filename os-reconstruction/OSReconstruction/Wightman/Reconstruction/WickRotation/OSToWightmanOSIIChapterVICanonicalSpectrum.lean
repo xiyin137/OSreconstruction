@@ -111,9 +111,7 @@ def toStrictGeneratedForwardTubeBoundaryDataOfOSII
     (lgc : OSLinearGrowthCondition d OS) (k : Nat) :
     (initial.toStrictGeneratedForwardTubeBoundaryDataOfOSII lgc k).kernel =
       (initial.toStrictGeneratedForwardTubeBoundarySpectralDataOfOSII lgc k).toSpectralData.kernel := by
-  dsimp only [toStrictGeneratedForwardTubeBoundaryDataOfOSII]
-  rw [OSIIReducedForwardTubeBoundaryData.congrBoundary_kernel]
-  rfl
+  exact OSIIReducedForwardTubeBoundaryData.congrBoundary_kernel _ _
 
 end OSIIChapterV.InitialGeneratedLogarithmicStageLevelData
 end OSReconstruction

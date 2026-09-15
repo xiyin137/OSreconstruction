@@ -123,8 +123,10 @@ theorem wickRotatedBoundaryPairing_translation_invariant (Wfn : WightmanFunction
   have hK_ae : ∀ᵐ (x : NPointDomain d n) ∂MeasureTheory.volume,
       K x = K (x + a') := by
     filter_upwards [hP_ae, hP_shift_ae] with x hx hx_shift
-    exact F_ext_translation_invariant_translated Wfn n a x hx (by
-      simpa [P] using hx_shift)
+    apply F_ext_translation_invariant_translated Wfn n a x hx
+    convert hx_shift using 1
+    ext k μ
+    rfl
   symm
   calc ∫ x : NPointDomain d n, K x * (f : NPointDomain d n → ℂ) (x + a')
       = ∫ x : NPointDomain d n, K (x + a') * (f : NPointDomain d n → ℂ) (x + a') := by
@@ -263,6 +265,9 @@ private theorem measurePreserving_timeReflectionN :
   have hmp : MeasureTheory.MeasurePreserving (⇑e)
       MeasureTheory.volume MeasureTheory.volume :=
     MeasureTheory.volume_preserving_pi (fun (_ : Fin n) => hmp_factor)
+  change MeasureTheory.MeasurePreserving
+    (fun x : NPointDomain d n => fun i => R.mulVec (x i))
+    MeasureTheory.volume MeasureTheory.volume at hmp
   simpa [hTR] using hmp
 
 omit [NeZero d] in
@@ -270,9 +275,12 @@ private theorem measurePreserving_revPerm :
     MeasureTheory.MeasurePreserving
       (fun x : NPointDomain d n => fun i => x (Fin.rev i))
       MeasureTheory.volume MeasureTheory.volume := by
-  simpa [Fin.revPerm] using
-    (MeasureTheory.volume_measurePreserving_piCongrLeft
-      (fun _ : Fin n => Fin (d + 1) → ℝ) Fin.revPerm).symm
+  have h := (MeasureTheory.volume_measurePreserving_piCongrLeft
+    (fun _ : Fin n => Fin (d + 1) → ℝ) Fin.revPerm).symm
+  change MeasureTheory.MeasurePreserving
+    (fun x : NPointDomain d n => fun i => x (Fin.rev i))
+    MeasureTheory.volume MeasureTheory.volume at h
+  exact h
 
 /-- Reflected-reversed Euclidean configurations also lie in `TranslatedPET`
     a.e. This is the corrected W11 surface compatible with the basepoint issue. -/
@@ -290,10 +298,11 @@ theorem ae_reflected_reversed_euclidean_points_in_translatedPET {d n : ℕ} [NeZ
   let s : Set (NPointDomain d n) :=
     {x | (fun k => wickRotatePoint (x k)) ∉ TranslatedPET d n}
   have hs_null : MeasureTheory.volume s = 0 := by
-    simpa [s] using
-      (MeasureTheory.mem_ae_iff.mp
-        (ae_euclidean_points_in_translatedPET (d := d) (n := n)))
-  simpa [T, s, timeReflectionN] using hT.preimage_null hs_null
+    have h := MeasureTheory.mem_ae_iff.mp
+      (ae_euclidean_points_in_translatedPET (d := d) (n := n))
+    simpa only [s, Set.compl_setOf, not_not] using h
+  change MeasureTheory.volume (T ⁻¹' s) = 0
+  exact hT.preimage_null hs_null
 
 /-- Original and reflected-reversed Euclidean configurations lie in
 `TranslatedPET` simultaneously a.e. -/
@@ -774,7 +783,8 @@ private theorem lightConeMinus_real_mul_sin_of_real_output
         Real.exp (-a) * Real.cos b * (lightConeMinus ξ).im -
           Real.exp (-a) * Real.sin b * (lightConeMinus ξ).re := by
     have hIm0 := congrArg Complex.im hminus_eq
-    simpa [θ, Complex.mul_im, Complex.exp_re, Complex.exp_im] using hIm0
+    convert hIm0 using 1 <;>
+      simp [θ, Complex.mul_im, Complex.exp_re, Complex.exp_im] <;> ring
   have hRe :
       (lightConeMinus y).re =
         Real.exp (-a) * Real.cos b * (lightConeMinus ξ).re +
@@ -1048,12 +1058,16 @@ private theorem differentiableOn_hermitianReverse_partner {d n : ℕ} [NeZero d]
     hPET_open.preimage ρ.continuous
   intro z hz
   have hz' : star z ∈ ρ ⁻¹' PermutedExtendedTube d n := by
-    simpa [Set.preimage, hermitianReverse, hρ_apply] using hz
+    change ρ (star z) ∈ PermutedExtendedTube d n
+    rw [hρ_apply]
+    exact hz
   have hdiffAt : DifferentiableAt ℂ (F ∘ ρ) (star z) :=
     (hFρ (star z) hz').differentiableAt (hρ_open.mem_nhds hz')
   have hstarstar : DifferentiableAt ℂ (star ∘ (F ∘ ρ) ∘ star) z := by
     simpa [Function.comp] using hdiffAt.star_star
-  simpa [Function.comp, hermitianReverse, hρ_apply] using hstarstar.differentiableWithinAt
+  change DifferentiableWithinAt ℂ (star ∘ (F ∘ ρ) ∘ star)
+    {z | star z ∈ ρ ⁻¹' PermutedExtendedTube d n} z
+  exact hstarstar.differentiableWithinAt
 
 private theorem measure_timeEq_zero {d n : ℕ} (i j : Fin n) (hij : i ≠ j) :
     MeasureTheory.volume {x : NPointDomain d n | x i 0 = x j 0} = 0 := by
@@ -1103,7 +1117,8 @@ private theorem ae_pairwise_distinct_timeCoords {d n : ℕ} :
               sᶜ ∈ MeasureTheory.ae
                 (MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d n)) :=
             MeasureTheory.compl_mem_ae_iff.mpr hs0
-          simpa [s, Set.compl_setOf] using hsae)
+          change ∀ᵐ x : NPointDomain d n, x p.1.1 0 ≠ x p.1.2 0 at hsae
+          exact hsae)
   filter_upwards [hall] with x hx i j hij
   exact hx ⟨⟨i, j⟩, hij⟩
 
@@ -1128,7 +1143,7 @@ private theorem euclidean_distinct_in_BHW_permutedForwardTube {d n : ℕ} [NeZer
   have hfwd : (fun k => wickRotatePoint (xs (π k))) ∈ ForwardTube d n :=
     euclidean_ordered_in_forwardTube (fun k => xs (π k)) hord hpos'
   refine ⟨π, ?_⟩
-  simpa [BHW_permutedForwardTube_eq (d := d) (n := n) π] using hfwd
+  simpa [BHW_permutedForwardTube_eq (d := d) (n := n) π, PermutedForwardTube] using hfwd
 
 private theorem euclidean_distinct_twisted_reverse_in_BHW_permutedForwardTube {d n : ℕ}
     [NeZero d] (xs : NPointDomain d n)
@@ -1184,7 +1199,11 @@ private theorem isOpen_hermitianRealOverlap {d n : ℕ} [NeZero d] :
   have h2 : IsOpen
       {x : NPointDomain d n | BHW.realEmbed (fun k => x (Fin.rev k)) ∈ BHW.ExtendedTube d n} :=
     BHW.isOpen_extendedTube.preimage (continuous_realEmbed_rev (d := d) (n := n))
-  simpa [hermitianRealOverlap] using h1.inter h2
+  change IsOpen
+    ({x : NPointDomain d n | BHW.realEmbed x ∈ BHW.ExtendedTube d n} ∩
+      {x : NPointDomain d n |
+        BHW.realEmbed (fun k => x (Fin.rev k)) ∈ BHW.ExtendedTube d n})
+  exact h1.inter h2
 
 private theorem mem_hermitianRealOverlap_rev {d n : ℕ} [NeZero d]
     {x : NPointDomain d n} (hx : x ∈ hermitianRealOverlap (d := d) (n := n)) :
@@ -1578,25 +1597,35 @@ private theorem bhw_real_hermitian_on_edge
     let eσ : NPointDomain d n ≃L[ℝ] NPointDomain d n :=
       (LinearEquiv.funCongrLeft ℝ (SpacetimeDim d) σ).toContinuousLinearEquiv
     let φHC : SchwartzNPoint d n := φ.borchersConj
+    have hφRev_fun :
+        ((φ.reverse : SchwartzNPoint d n) : NPointDomain d n → ℂ) =
+          (φ : NPointDomain d n → ℂ) ∘ eσ := by
+      funext x
+      change φ (fun i => x (Fin.rev i)) = φ (eσ x)
+      congr 1
     have hφRev_compact :
         HasCompactSupport ((φ.reverse : SchwartzNPoint d n) : NPointDomain d n → ℂ) := by
-      simpa [σ, eσ, SchwartzMap.reverse,
-        SchwartzMap.compCLMOfContinuousLinearEquiv_apply] using
-        hφ_compact.comp_homeomorph eσ.toHomeomorph
+      rw [hφRev_fun]
+      exact hφ_compact.comp_homeomorph eσ.toHomeomorph
     have hφHC_support :
         Function.support (φHC : NPointDomain d n → ℂ) =
           Function.support ((φ.reverse : SchwartzNPoint d n) : NPointDomain d n → ℂ) := by
       ext x
       simp [φHC, Function.mem_support]
     have hφHC_compact : HasCompactSupport (φHC : NPointDomain d n → ℂ) := by
-      simpa [φHC, SchwartzMap.borchersConj, SchwartzMap.conj]
-        using hφRev_compact.comp_left (g := starRingEnd ℂ) (map_zero _)
+      have hφHC_fun : (φHC : NPointDomain d n → ℂ) =
+          (starRingEnd ℂ) ∘ ((φ.reverse : SchwartzNPoint d n) : NPointDomain d n → ℂ) := by
+        funext x
+        change starRingEnd ℂ (φ (fun i => x (Fin.rev i))) =
+          starRingEnd ℂ (φ (fun i => x (Fin.rev i)))
+        rfl
+      rw [hφHC_fun]
+      exact hφRev_compact.comp_left (g := starRingEnd ℂ) (map_zero _)
     have hφRev_tsupport :
         tsupport ((φ.reverse : SchwartzNPoint d n) : NPointDomain d n → ℂ) =
           eσ.toHomeomorph ⁻¹' tsupport (φ : NPointDomain d n → ℂ) := by
-      simpa [σ, eσ, SchwartzMap.reverse,
-        SchwartzMap.compCLMOfContinuousLinearEquiv_apply] using
-        (tsupport_comp_eq_preimage (g := (φ : NPointDomain d n → ℂ)) eσ.toHomeomorph)
+      rw [hφRev_fun]
+      exact tsupport_comp_eq_preimage (g := (φ : NPointDomain d n → ℂ)) eσ.toHomeomorph
     have hφHC_tsupport :
         tsupport (φHC : NPointDomain d n → ℂ) =
           tsupport ((φ.reverse : SchwartzNPoint d n) : NPointDomain d n → ℂ) := by
@@ -1611,7 +1640,11 @@ private theorem bhw_real_hermitian_on_edge
           BHW.realEmbed x ∈ BHW.ExtendedTube d n := by
       intro x hx
       have hxrev : (fun k => x (Fin.rev k)) ∈ tsupport (φ : NPointDomain d n → ℂ) := by
-        simpa [hφHC_tsupport, hφRev_tsupport, σ, eσ] using hx
+        rw [hφHC_tsupport, hφRev_tsupport] at hx
+        change eσ x ∈ tsupport (φ : NPointDomain d n → ℂ) at hx
+        convert hx using 1
+        ext k μ
+        simp [eσ, σ, LinearEquiv.funCongrLeft_apply, LinearMap.funLeft_apply, Fin.revPerm]
       have hxrevV : (fun k => x (Fin.rev k)) ∈ V := hφ_tsupport hxrev
       have hxV : x ∈ V := by
         simpa [V, Fin.rev_rev] using
@@ -1692,7 +1725,9 @@ private theorem hermitianRealOverlap_nonempty_of_two_le
     (hermitianRealOverlap (d := d) (n := n)).Nonempty := by
   rcases JostWitnessGeneralSigma.jostWitness_exists (d := d) (n := n) hd Fin.revPerm with
     ⟨x, _, hxET, hrevET⟩
-  exact ⟨x, hxET, by simpa [BHW.realEmbed] using hrevET⟩
+  refine ⟨x, hxET, ?_⟩
+  change BHWCore.ExtendedTube d n (BHW.realEmbed (fun k => x (Fin.rev k)))
+  exact hrevET
 
 /-- Unfold the constructed Wick-rotated Schwinger family inside the OS inner
 product, under positive-time support hypotheses that put every OS tensor product
@@ -1899,8 +1934,12 @@ private theorem wightman_reverse_invariant_on_jost_support (Wfn : WightmanFuncti
     (n : ℕ) (f : SchwartzNPoint d n)
     (hf : ∀ x : NPointDomain d n, f x ≠ 0 → x ∈ BHW.JostSet d n) :
     Wfn.W n f.reverse = Wfn.W n f := by
-  simpa [SchwartzMap.reverse, permuteSchwartz]
-    using wightman_perm_invariant_on_jost_support (d := d) Wfn n f hf Fin.revPerm
+  have hrev : f.reverse = permuteSchwartz Fin.revPerm f := by
+    ext x
+    change f (fun i => x (Fin.rev i)) = f (fun i => x (Fin.revPerm i))
+    rfl
+  rw [hrev]
+  exact wightman_perm_invariant_on_jost_support (d := d) Wfn n f hf Fin.revPerm
 
 /-- On the forward Jost set, `extendF` takes real values.
 
@@ -1995,8 +2034,13 @@ private theorem extendF_real_on_forwardJostSet
     -- Pairing for conj(φ):
     let φ_conj : SchwartzNPoint d n := φ.conj
     have hφ_conj_compact : HasCompactSupport (φ_conj : NPointDomain d n → ℂ) := by
-      simpa [φ_conj, SchwartzMap.conj]
-        using hφ_compact.comp_left (g := starRingEnd ℂ) (map_zero _)
+      have hφ_conj_fun : (φ_conj : NPointDomain d n → ℂ) =
+          (starRingEnd ℂ) ∘ (φ : NPointDomain d n → ℂ) := by
+        funext x
+        change starRingEnd ℂ (φ x) = starRingEnd ℂ (φ x)
+        rfl
+      rw [hφ_conj_fun]
+      exact hφ_compact.comp_left (g := starRingEnd ℂ) (map_zero _)
     have hφ_conj_ET :
         ∀ x ∈ tsupport (φ_conj : NPointDomain d n → ℂ),
           BHW.realEmbed x ∈ BHW.ExtendedTube d n := by
@@ -2511,7 +2555,7 @@ theorem bhw_euclidean_reality_ae (Wfn : WightmanFunctions d) (n : ℕ) :
           refine ⟨x0, ?_⟩
           constructor
           · exact BHW.forwardTube_subset_extendedTube hx0FT
-          · simpa [BHW.realEmbed] using BHW.forwardTube_subset_extendedTube hx0FT
+          · convert BHW.forwardTube_subset_extendedTube hx0FT using 1
         · have hn1 : n = 1 := by omega
           subst hn1
           rcases BHW.forwardJostSet_nonempty (d := 1) (n := 1) (by omega) (by omega) with

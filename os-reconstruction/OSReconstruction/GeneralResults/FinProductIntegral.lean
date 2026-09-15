@@ -69,16 +69,17 @@ theorem integral_fin_add_split (n m : ℕ) (f : (Fin (n + m) → α) → E)
   have hcomp : ∫ p : (Fin n → α) × (Fin m → α), f (e.symm p) = ∫ z, f z := by
     simpa [e] using hpres.symm.integral_comp' f
   have hf' : Integrable (fun p : (Fin n → α) × (Fin m → α) => f (e.symm p)) volume := by
-    simpa [Function.comp, e] using hpres.symm.integrable_comp_of_integrable hf
+    change Integrable (f ∘ e.symm) volume
+    exact hpres.symm.integrable_comp_of_integrable hf
   calc
     ∫ z, f z = ∫ p : (Fin n → α) × (Fin m → α), f (e.symm p) := by
       simpa using hcomp.symm
     _ = ∫ x : Fin n → α, ∫ y : Fin m → α, f (e.symm (x, y)) := by
-      simpa [e] using
-        (integral_prod
-          (μ := (volume : Measure (Fin n → α)))
-          (ν := (volume : Measure (Fin m → α)))
-          (f := fun p : (Fin n → α) × (Fin m → α) => f (e.symm p)) hf')
+      rw [Measure.volume_eq_prod]
+      exact integral_prod
+        (μ := (volume : Measure (Fin n → α)))
+        (ν := (volume : Measure (Fin m → α)))
+        (f := fun p : (Fin n → α) × (Fin m → α) => f (e.symm p)) hf'
 
 /-- **Bridge: the `finAddProd` inverse equals `Fin.append` componentwise.**
 

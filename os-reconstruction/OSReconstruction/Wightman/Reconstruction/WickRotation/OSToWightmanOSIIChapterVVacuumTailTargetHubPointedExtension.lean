@@ -117,12 +117,9 @@ theorem vacuumTailAbsoluteBranch_agreesOnPredecessor_of_pointedAtlas
         ∀ τ ∈ realSeed,
           SCV.realToComplex τ ∈ seedDomain := by
       intro τ hτ
-      simpa [seedDomain, SCV.realToComplex,
-        osiiPositiveRealTimeEmbed] using
-        (show
-          osiiPositiveRealTimeEmbed τ ∈
-            domain ∩ atlas.domain seedChart from
-          ⟨hτ.1.2, hτ.2⟩)
+      rw [show SCV.realToComplex τ =
+        osiiPositiveRealTimeEmbed τ by rfl]
+      exact ⟨hτ.1.2, hτ.2⟩
     have hF_zero :
         ∀ τ ∈ realSeed,
           F (SCV.realToComplex τ) = 0 := by

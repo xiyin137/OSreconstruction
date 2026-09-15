@@ -108,8 +108,9 @@ theorem agreesOnCore_of_radialPointedAtlas
         ∀ τ ∈ E.realRegion,
           SCV.realToComplex τ ∈ seedDomain := by
       intro τ hτ
-      simpa [seedDomain, SCV.realToComplex,
-        osiiPositiveRealTimeEmbed] using
+      rw [show SCV.realToComplex τ =
+        osiiPositiveRealTimeEmbed τ by rfl]
+      exact
         (show osiiPositiveRealTimeEmbed τ ∈
             B.domain i ∩ atlas.domain seedChart from
           ⟨(B.distribution_commonPositiveRealEdge E i τ hτ).1,

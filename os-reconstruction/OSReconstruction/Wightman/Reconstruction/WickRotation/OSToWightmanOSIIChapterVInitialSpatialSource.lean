@@ -121,7 +121,8 @@ theorem reducedTimeProjection_mem_tsupport_of_mem_initialReducedSpatialFullSourc
   have htime :=
     tsupport_section43NPointTimeSpatialTensor_subset_time_preimage
       d k φ χ hdiff
-  simpa [reducedTimeProjectionCLM_apply] using htime
+  simpa [reducedTimeProjectionCLM_apply,
+    BHW.reducedDiffMapRealCLM] using htime
 
 /-- Strict-positive support of the reduced-time factor forces strict ordering
 of all absolute Euclidean times on the canonical source support, hence the
@@ -152,7 +153,8 @@ theorem initialReducedSpatialFullSource_vanishes_of_tsupport_strictPositive
     have htime :=
       tsupport_section43NPointTimeSpatialTensor_subset_time_preimage
         d k φ χ hdiff
-    simpa [reducedTimeProjectionCLM_apply] using htime
+    simpa [reducedTimeProjectionCLM_apply,
+      BHW.reducedDiffMapRealCLM] using htime
   have hgap : ∀ i : Fin k, 0 < y i.succ 0 - y i.castSucc 0 := by
     intro i
     have hi := hφ_positive htime_support i
@@ -346,12 +348,20 @@ theorem chronologicalTranslatedCarrier_eq_translate_base
         (fun i => -osiiAxisPairChronologicalPointTranslation T x i)
         (SchwartzMap.productTensor F.factors) := by
   symm
-  simpa [OSIIChronologicalCompactFactors.chronologicalTranslatedCarrier,
-    osiiAxisPairChronologicalTranslatedFactors] using
-    (translateSchwartzConfiguration_productTensor
+  rw [OSIIChronologicalCompactFactors.chronologicalTranslatedCarrier]
+  change
+    translateSchwartzConfiguration
+        (fun i => -osiiAxisPairChronologicalPointTranslation T x i)
+        (SchwartzMap.productTensor F.factors) =
+      SchwartzMap.productTensor
+        (fun j => SCV.translateSchwartz
+          (-osiiAxisPairChronologicalPointTranslation T x j)
+          (F.factors j))
+  exact
+    translateSchwartzConfiguration_productTensor
       (d := d)
       (fun i => -osiiAxisPairChronologicalPointTranslation T x i)
-      F.factors)
+      F.factors
 
 /-- If multiplication by the untranslated product carrier fixes a full
 source, then translating carrier and source together makes packet

@@ -260,8 +260,16 @@ theorem osiiStep4MultiGapTargetCoeff_mem_equation66_narrowSector
     rw [him, abs_div, abs_of_pos
       (show 0 < 2 * (d : Real) * T by positivity)]
     dsimp [xi, osiiStep4MultiGapRealBlock]
-    convert div_lt_div_of_pos_right hsmall'
-      (show 0 < 2 * (d : Real) * T by positivity) using 1 <;> ring
+    calc
+      |y (finProdFinEquiv (i, (0 : Fin (d + 1))))| /
+            (2 * (d : Real) * T) <
+          (eta * center (finProdFinEquiv (i, (0 : Fin (d + 1)))) / 8) /
+            (2 * (d : Real) * T) :=
+        div_lt_div_of_pos_right hsmall'
+          (show 0 < 2 * (d : Real) * T by positivity)
+      _ = eta *
+          (center (finProdFinEquiv (i, (0 : Fin (d + 1)))) /
+            (4 * (d : Real) * T)) / 4 := by ring
   · intro j
     have hsmall := hcoordSmall i (Fin.succ j)
     have him :
@@ -271,8 +279,15 @@ theorem osiiStep4MultiGapTargetCoeff_mem_equation66_narrowSector
         osiiStep4MultiGapRealBlock, osiiStep4ComplexOfRealImag]
     rw [him]
     dsimp [xi, osiiStep4MultiGapRealBlock]
-    convert div_lt_div_of_pos_right hsmall
-      (show (0 : Real) < 2 by norm_num) using 1 <;> ring
+    calc
+      |y (finProdFinEquiv (i, Fin.succ j))| / 2 <
+          (eta *
+            (center (finProdFinEquiv (i, (0 : Fin (d + 1)))) /
+              (4 * (d : Real) * T)) / 2) / 2 :=
+        div_lt_div_of_pos_right hsmall (show (0 : Real) < 2 by norm_num)
+      _ = eta *
+          (center (finProdFinEquiv (i, (0 : Fin (d + 1)))) /
+            (4 * (d : Real) * T)) / 4 := by ring
 
 /-- The complete multi-gap target uses at most one fixed eighth-plane of
 argument, uniformly in the center, radial displacement, and common slope. -/

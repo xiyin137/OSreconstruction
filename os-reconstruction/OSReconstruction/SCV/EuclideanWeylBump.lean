@@ -51,7 +51,7 @@ theorem euclideanWeylRawBumpReal_contDiff
     intro x
     simp
   have hcomp := hs.comp_contDiff hg hmaps
-  simpa [euclideanWeylRawBumpReal, base, Function.uncurry] using hcomp
+  exact hcomp
 
 theorem euclideanWeylRawBumpReal_nonneg
     {ι : Type*} [Fintype ι]

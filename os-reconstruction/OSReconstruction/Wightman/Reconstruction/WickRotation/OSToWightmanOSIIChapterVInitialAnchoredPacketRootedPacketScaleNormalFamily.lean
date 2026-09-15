@@ -214,11 +214,9 @@ theorem
         (H.left i).domain_open (H.right i).domain_open
   have hU_convex : Convex ℝ U := by
     apply convex_generatorSemigroupDomain i
-    · simpa [conjugateFieldDomain] using
-        (H.left i).domain_convex.linear_preimage
-          (starL' ℝ :
-            (Fin (i.n - 1) → ℂ) ≃L[ℝ]
-              (Fin (i.n - 1) → ℂ)).toLinearMap
+    · intro x hx y hy a b ha hb hab
+      change star (a • x + b • y) ∈ (H.left i).domain
+      simpa using (H.left i).domain_convex hx hy ha hb hab
     · exact (H.right i).domain_convex
   have hU_ne : U.Nonempty := by
     obtain ⟨ξ, hξ⟩ := hV_ne

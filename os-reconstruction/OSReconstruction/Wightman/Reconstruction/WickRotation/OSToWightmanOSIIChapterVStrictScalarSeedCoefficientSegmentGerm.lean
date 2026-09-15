@@ -29,24 +29,23 @@ theorem hasDerivAt_complex_arctan_zero :
       HasDerivAt
         (fun z : Complex => 1 + z * I)
         I 0 := by
-    convert
-      (hasDerivAt_const (x := (0 : Complex)) (c := (1 : Complex))).add
-        ((hasDerivAt_id' (0 : Complex)).mul_const I) using 1;
-      simp
+    simpa only [one_mul] using!
+      ((hasDerivAt_id' (0 : Complex)).mul_const I).const_add 1
   have hden :
       HasDerivAt
         (fun z : Complex => 1 - z * I)
         (-I) 0 := by
-    convert
-      (hasDerivAt_const (x := (0 : Complex)) (c := (1 : Complex))).sub
-        ((hasDerivAt_id' (0 : Complex)).mul_const I) using 1;
-      simp
+    simpa only [one_mul] using!
+      HasDerivAt.const_sub 1
+        ((hasDerivAt_id' (0 : Complex)).mul_const I)
   have hquot :
       HasDerivAt
         (fun z : Complex =>
           (1 + z * I) / (1 - z * I))
         (2 * I) 0 := by
-    convert hnum.div hden (by simp) using 1; ring
+    simpa only [Pi.div_apply, zero_mul, add_zero, sub_zero, div_one,
+      mul_one, one_mul, mul_neg, sub_neg_eq_add, one_pow, two_mul] using!
+      hnum.div hden (by simp)
   have hlog :
       HasDerivAt
         (fun z : Complex =>
@@ -59,11 +58,10 @@ theorem hasDerivAt_complex_arctan_zero :
           (by
             simpa only [norm_zero] using
               (zero_lt_one : (0 : Real) < 1))
-    have hcomp := HasDerivAt.comp_of_eq
-      (x := (0 : Complex)) (y := (1 : Complex))
-      (hh₂ := Complex.hasDerivAt_log hone)
-      (hh := hquot) (hy := by simp)
-    simpa only [Function.comp_apply, inv_one, one_mul] using hcomp
+    simpa only [zero_mul, add_zero, sub_zero, div_one] using!
+      hquot.clog
+        (by
+          simpa only [zero_mul, add_zero, sub_zero, div_one] using hone)
   change
     HasDerivAt
       (fun z : Complex =>

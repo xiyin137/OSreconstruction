@@ -329,25 +329,25 @@ theorem finsetSup_tensorProduct_le
           Finset.mem_range.mpr (Nat.lt_succ_of_le hsub_lMax)⟩
     have hfP_le :
         SchwartzMap.seminorm Real j.1 i f <= H := by
-      simpa only [H] using
+      simpa only [H, SchwartzMap.schwartzSeminormFamily_apply] using
         (Seminorm.le_finset_sup_apply
           (p := schwartzSeminormFamily Real
             (Fin n -> E) Complex) hfP)
     have hf0_le :
         SchwartzMap.seminorm Real 0 i f <= H := by
-      simpa only [H] using
+      simpa only [H, SchwartzMap.schwartzSeminormFamily_apply] using
         (Seminorm.le_finset_sup_apply
           (p := schwartzSeminormFamily Real
             (Fin n -> E) Complex) hf0)
     have hg0_le :
         SchwartzMap.seminorm Real 0 (j.2 - i) g <= T := by
-      simpa only [T] using
+      simpa only [T, SchwartzMap.schwartzSeminormFamily_apply] using
         (Seminorm.le_finset_sup_apply
           (p := schwartzSeminormFamily Real
             (Fin m -> E) Complex) hg0)
     have hgP_le :
         SchwartzMap.seminorm Real j.1 (j.2 - i) g <= T := by
-      simpa only [T] using
+      simpa only [T, SchwartzMap.schwartzSeminormFamily_apply] using
         (Seminorm.le_finset_sup_apply
           (p := schwartzSeminormFamily Real
             (Fin m -> E) Complex) hgP)

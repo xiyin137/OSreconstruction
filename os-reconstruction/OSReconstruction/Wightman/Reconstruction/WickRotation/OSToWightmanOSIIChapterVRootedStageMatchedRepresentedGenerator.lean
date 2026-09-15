@@ -91,7 +91,10 @@ structure StageMatchedRootedRepresentedGeneratorData
     ((rootedGeneratorDiagonalApproximationFamily H lgc
         ).toGeneratorFamilyOfConvex edge
           (by
-            simpa [rootedGeneratorDiagonalApproximationFamily] using
+            simpa [rootedGeneratorDiagonalApproximationFamily,
+              rootedGeneratorDiagonalApproximationFamilyOfOS,
+              rootedGeneratorTwoScaleApproximationFamily,
+              GeneratorSpatialTwoScaleApproximationFamily.diagonal] using
               rootedGeneratorTwoScaleApproximationFamily_domain_convex
                 H lgc)
       ).toTimeContinuationStage.PositiveRealEdgeData
@@ -186,7 +189,10 @@ noncomputable def toAbsoluteStageExtensionDataOfConvexAtlas
     ((rootedGeneratorDiagonalApproximationFamily H lgc
       ).uncenter_domain_convex anchor
         (by
-          simpa [rootedGeneratorDiagonalApproximationFamily] using
+          simpa [rootedGeneratorDiagonalApproximationFamily,
+            rootedGeneratorDiagonalApproximationFamilyOfOS,
+            rootedGeneratorTwoScaleApproximationFamily,
+            GeneratorSpatialTwoScaleApproximationFamily.diagonal] using
             rootedGeneratorTwoScaleApproximationFamily_domain_convex H lgc))
 
 /-- The fixed-coordinate predecessor charts and translated rooted generator
@@ -211,19 +217,27 @@ noncomputable def toAbsoluteSuccessorConvexAtlas
       (atlas.restrictRealRegion
         (P.absoluteEdge_subset edge_subset_atlas))
       (by
-        simpa [C, toAbsoluteStageExtensionDataOfConvexAtlas,
-          absoluteApproximationFamily,
-          rootedGeneratorDiagonalApproximationFamily] using
+        change
+          ∀ i, Convex ℝ
+            (((rootedGeneratorDiagonalApproximationFamily H lgc
+              ).uncenter anchor).domain i)
+        exact
           (rootedGeneratorDiagonalApproximationFamily H lgc
             ).uncenter_domain_convex anchor
               (by
-                simpa [rootedGeneratorDiagonalApproximationFamily] using
+                simpa [rootedGeneratorDiagonalApproximationFamily,
+                  rootedGeneratorDiagonalApproximationFamilyOfOS,
+                  rootedGeneratorTwoScaleApproximationFamily,
+                  GeneratorSpatialTwoScaleApproximationFamily.diagonal] using
                   rootedGeneratorTwoScaleApproximationFamily_domain_convex
                     H lgc))
       (by
         intro i τ hτ
-        simpa [C, toAbsoluteStageExtensionDataOfConvexAtlas,
-          absoluteApproximationFamily] using
+        change
+          osiiPositiveRealTimeEmbed τ ∈
+            ((rootedGeneratorDiagonalApproximationFamily H lgc
+              ).uncenter anchor).domain i
+        exact
           (P.absoluteEdge.scalarLimit_realEdge i τ hτ).1)
 
 end StageMatchedRootedRepresentedGeneratorData
@@ -331,8 +345,11 @@ noncomputable def toAbsoluteSuccessorConvexAtlas
       (atlas.restrictRealRegion
         (P.absoluteEdge_subset edge_subset_atlas))
       (by
-        simpa [C, toAbsoluteStageExtensionDataOfConvexAtlas,
-          absoluteApproximationFamily] using
+        change
+          ∀ i, Convex ℝ
+            (((rootedGeneratorDiagonalApproximationFamilyOfOS H
+              ).uncenter anchor).domain i)
+        exact
           (rootedGeneratorDiagonalApproximationFamilyOfOS H
             ).uncenter_domain_convex anchor
               (by
@@ -340,8 +357,11 @@ noncomputable def toAbsoluteSuccessorConvexAtlas
                   rootedGeneratorTwoScaleApproximationFamilyOfOS_domain_convex H))
       (by
         intro i τ hτ
-        simpa [C, toAbsoluteStageExtensionDataOfConvexAtlas,
-          absoluteApproximationFamily] using
+        change
+          osiiPositiveRealTimeEmbed τ ∈
+            ((rootedGeneratorDiagonalApproximationFamilyOfOS H
+              ).uncenter anchor).domain i
+        exact
           (P.absoluteEdge.scalarLimit_realEdge i τ hτ).1)
 
 end StageMatchedRootedRepresentedGeneratorDataOfOS

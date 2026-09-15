@@ -63,6 +63,8 @@ theorem polyGrowth_temperedDistribution {m : ℕ}
     have hsch :
         (1 + ‖x‖) ^ (N + n) * ‖φ x‖ ≤
           2 ^ (N + n) * (s.sup (schwartzSeminormFamily ℂ (Fin m → ℝ) ℂ)) φ := by
+      change (1 + ‖x‖) ^ (N + n) * ‖φ x‖ ≤
+        2 ^ (N + n) * (s.sup (fun q => SchwartzMap.seminorm ℂ q.1 q.2)) φ
       simpa [s] using
         (SchwartzMap.one_add_le_sup_seminorm_apply
           (𝕜 := ℂ) (m := (N + n, 0)) (k := N + n) (n := 0)
@@ -203,7 +205,9 @@ theorem tubeSlice_temperedDistribution
       fun i => (x i : ℂ) + ((ε • η) i : ℝ) * I) := by
     fun_prop
   have hFε_cont : Continuous Fε := by
-    simpa [Fε] using hF_cont.comp_continuous hslice_cont hmem
+    change Continuous (F ∘ fun x : Fin m → ℝ =>
+      fun i => (x i : ℂ) + ((ε • η) i : ℝ) * I)
+    exact hF_cont.comp_continuous hslice_cont hmem
   let Cε : ℝ :=
     C_bd * (1 + ‖ε • η‖) ^ N *
       (1 + (Metric.infDist (ε • η) Cᶜ)⁻¹) ^ M
@@ -241,6 +245,11 @@ theorem tubeSlice_temperedDistribution
       exact pow_le_pow_left₀ (by positivity) hbase_le N
     have hdist_nonneg : 0 ≤ (Metric.infDist (ε • η) Cᶜ)⁻¹ :=
       inv_nonneg.mpr Metric.infDist_nonneg
+    have him :
+        (fun i => ((x i : ℂ) + ((ε • η) i : ℝ) * I).im) = ε • η := by
+      ext i
+      simp [Pi.smul_apply, smul_eq_mul]
+    rw [him] at hgrowth
     calc
       ‖Fε x‖
           ≤ C_bd * (1 + ‖(fun i => (x i : ℂ) + ((ε • η) i : ℝ) * I)‖) ^ N *
@@ -319,7 +328,10 @@ theorem hasDerivAt_tubeSlice_ray
     · have hslice_cont : Continuous (slice τ) := by
         fun_prop
       have hcont : Continuous (Fparam τ) := by
-        simpa [Fparam, slice, hτ] using hF_cont.comp_continuous hslice_cont (hslice_mem hτ)
+        rw [show Fparam τ = F ∘ slice τ by
+          funext x
+          simp [Fparam, hτ]]
+        exact hF_cont.comp_continuous hslice_cont (hslice_mem hτ)
       exact hcont.aestronglyMeasurable
     · simpa [Fparam, hτ] using (continuous_const : Continuous fun _ : Fin m → ℝ => (0 : ℂ)).aestronglyMeasurable
   let Kτ : ℝ := (3 * τ₀ / 2) * ‖η‖
@@ -414,7 +426,8 @@ theorem hasDerivAt_tubeSlice_ray
           HasDerivAt (fun w : ℂ => F (sliceC w)) ((fderiv ℂ F (slice τ x)) vη)
             (τ : ℂ) := by
         have hc := hF_at'.hasFDerivAt.comp_hasDerivAt (τ : ℂ) hsliceC_deriv
-        simpa [Function.comp, hsliceC_tau] using hc
+        change HasDerivAt (F ∘ sliceC) ((fderiv ℂ F (slice τ x)) vη) (τ : ℂ)
+        simpa [hsliceC_tau] using hc
       simpa [sliceC, slice] using hcomplex.comp_ofReal
     have hderiv :
         HasDerivAt (fun s => Fparam s x) ((fderiv ℂ F (slice τ x)) vη) τ :=
@@ -524,9 +537,10 @@ theorem hasDerivAt_tubeSlice_ray
               gcongr
               simpa using (norm_le_pi_norm η i)
         have hnorm_le : ‖sliceC w‖ ≤ ‖x‖ + ‖w‖ * ‖η‖ := by
-          simpa [sliceC] using
-            (norm_add_le (fun i => (x i : ℂ)) (fun i => (w * (η i : ℂ) * I : ℂ)))
-              |>.trans (add_le_add hreal_le himag_le)
+          change ‖(fun i => (x i : ℂ)) + (fun i => (w * (η i : ℂ) * I : ℂ))‖ ≤
+            ‖x‖ + ‖w‖ * ‖η‖
+          exact (norm_add_le (fun i => (x i : ℂ)) (fun i => (w * (η i : ℂ) * I : ℂ)))
+            |>.trans (add_le_add hreal_le himag_le)
         calc
           ‖sliceC w‖ ≤ ‖x‖ + ‖w‖ * ‖η‖ := hnorm_le
           _ ≤ ‖x‖ + Kc := by
@@ -547,9 +561,12 @@ theorem hasDerivAt_tubeSlice_ray
               gcongr
               simpa using (norm_le_pi_norm η i)
         have hnorm_le : ‖sliceC (τ : ℂ)‖ ≤ ‖x‖ + ‖(τ : ℂ)‖ * ‖η‖ := by
-          simpa [sliceC] using
-            (norm_add_le (fun i => (x i : ℂ)) (fun i => (((τ : ℂ) * (η i : ℂ) * I : ℂ))))
-              |>.trans (add_le_add hreal_le himag_le)
+          change ‖(fun i => (x i : ℂ)) +
+              (fun i => (((τ : ℂ) * (η i : ℂ) * I : ℂ)))‖ ≤
+            ‖x‖ + ‖(τ : ℂ)‖ * ‖η‖
+          exact (norm_add_le (fun i => (x i : ℂ))
+              (fun i => (((τ : ℂ) * (η i : ℂ) * I : ℂ))))
+            |>.trans (add_le_add hreal_le himag_le)
         calc
           ‖sliceC (τ : ℂ)‖ ≤ ‖x‖ + ‖(τ : ℂ)‖ * ‖η‖ := hnorm_le
           _ ≤ ‖x‖ + Kc := by
@@ -616,7 +633,8 @@ theorem hasDerivAt_tubeSlice_ray
           simpa [hsliceC_tau] using
             (hF_hol _ (hslice_mem hτ x)).differentiableAt
               ((SCV.tubeDomain_isOpen hC_open).mem_nhds (hslice_mem hτ x))
-        simpa [g, sliceC, Fparam', hτ, hsliceC_tau] using
+        change HasDerivAt (F ∘ sliceC) (Fparam' τ x) (τ : ℂ)
+        simpa [Fparam', hτ, hsliceC_tau] using
           hF_at.hasFDerivAt.comp_hasDerivAt (τ : ℂ) (hsliceC_hasDerivAt (τ : ℂ))
       have hderiv_eq : deriv g (τ : ℂ) = Fparam' τ x := hg_deriv.deriv
       calc
@@ -696,7 +714,8 @@ theorem hasDerivAt_tubeSlice_ray
       have hcomplex :
           HasDerivAt (fun w : ℂ => F (sliceC w)) (G' x) (0 : ℂ) := by
         have hc := hF_at.hasFDerivAt.comp_hasDerivAt (0 : ℂ) hsliceC_deriv
-        simpa [Function.comp, G', hsliceC_zero, uη] using hc
+        change HasDerivAt (F ∘ sliceC) (G' x) (0 : ℂ)
+        simpa [G', hsliceC_zero, uη] using hc
       have hreal := hcomplex.comp_ofReal
       have hfun :
           (fun y : ℝ => F (sliceC (y : ℂ))) = fun t : ℝ => G (x + t • η) := by
@@ -710,6 +729,8 @@ theorem hasDerivAt_tubeSlice_ray
       have hφdiff : DifferentiableAt ℝ φ x := φ.differentiableAt
       rcases hφdiff with ⟨f', hf'⟩
       have hderiv_eq : f' = fderiv ℝ (fun y : Fin m → ℝ => φ y) x := hf'.fderiv.symm
+      change HasDerivAt (fun t : ℝ => φ (x + t • η))
+        (directionalDerivSchwartz η φ x) 0
       simpa [directionalDerivSchwartz, SchwartzMap.lineDerivOp_apply_eq_fderiv] using
         (hf'.hasLineDerivAt η).congr_deriv (by simpa using congrArg (fun L => L η) hderiv_eq)
     have hG_meas : AEStronglyMeasurable G volume := by

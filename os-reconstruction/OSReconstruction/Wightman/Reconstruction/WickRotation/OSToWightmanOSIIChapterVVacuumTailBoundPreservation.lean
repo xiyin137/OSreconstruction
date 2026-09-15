@@ -44,15 +44,12 @@ theorem osiiChapterVVacuumVector_norm
       rcases hx with ⟨i, j, hij, _⟩
       omega
     rw [ZeroDiagonalSchwartz.coe_ofClassical_of_vanishes _ hzero]
-    have hvac :=
-      reindex_osiiChapterVVacuumUnit_osConjTensorProduct
-        (d := d) (osiiChapterVVacuumUnit d)
-    have hpoint := congrArg
-      (fun f : SchwartzNPoint d 0 => f 0) hvac
     change
-      ((osiiChapterVVacuumUnit d).osConjTensorProduct
-        (osiiChapterVVacuumUnit d)) 0 = 1
-    convert hpoint using 1
+      (starRingEnd ℂ)
+          (osiiChapterVVacuumUnit d
+            (timeReflectionN d (splitFirst 0 0 0))) *
+        osiiChapterVVacuumUnit d (splitLast 0 0 0) = 1
+    simp
   have hsq' : ‖osiiChapterVVacuumVector OS‖ ^ 2 = 1 := by
     change ‖osiiChapterVVacuumVector OS‖ ^ 2 = _ at hsq
     rw [hvalue] at hsq

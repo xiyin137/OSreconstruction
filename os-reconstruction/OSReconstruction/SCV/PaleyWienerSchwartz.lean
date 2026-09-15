@@ -826,7 +826,6 @@ private theorem multiDimPsiZDynamic_pointwise_vladimirov
                   (n.choose i : ℝ) * ‖iteratedFDeriv ℝ i f ξ‖ *
                     ‖iteratedFDeriv ℝ (n - i) g ξ‖ := by
               gcongr
-              exact hLeib
         _ ≤ ‖ξ‖ ^ k * (LeibConst * ‖g ξ‖ * (1 + ‖z‖) ^ (2 * n)) := by
               gcongr
         _ = LeibConst * (1 + ‖z‖) ^ (2 * n) * (‖ξ‖ ^ k * ‖g ξ‖) := by ring
@@ -1223,9 +1222,12 @@ private lemma multiDimPsiZCoordDeriv_apply
     multiDimPsiZCoordDeriv hC_open hC_conv hC_cone hC_salient z hz j ξ =
       (I * (ξ j : ℂ)) * multiDimPsiZ C hC_open hC_conv hC_cone hC_salient z hz ξ := by
   have hcoord : (fun η : Fin m → ℝ => (η j : ℂ)).HasTemperateGrowth := by
-    simpa using
+    change Function.HasTemperateGrowth
       (Complex.ofRealCLM.comp
-        (ContinuousLinearMap.proj (R := ℝ) (ι := Fin m) (φ := fun _ => ℝ) j)).hasTemperateGrowth
+        (ContinuousLinearMap.proj (R := ℝ) (ι := Fin m) (φ := fun _ => ℝ) j))
+    exact (Complex.ofRealCLM.comp
+      (ContinuousLinearMap.proj (R := ℝ) (ι := Fin m)
+        (φ := fun _ => ℝ) j)).hasTemperateGrowth
   have htemp : (fun η : Fin m → ℝ => I * (η j : ℂ)).HasTemperateGrowth := by
     exact (Function.HasTemperateGrowth.const I).mul hcoord
   simpa [multiDimPsiZCoordDeriv, smul_eq_mul] using
@@ -1371,8 +1373,7 @@ private theorem iteratedDeriv_expTaylorLinearRemainderQuotPW_one
     simpa using (hasDerivAt_const_mul c : HasDerivAt (fun y : ℂ => c * y) c (ξ : ℂ))
   have hExp : HasDerivAt (fun ξ : ℝ => Complex.exp (c * ξ))
       (c * Complex.exp (c * ξ)) ξ := by
-    simpa [c, mul_assoc, mul_left_comm, mul_comm] using
-      (Complex.hasDerivAt_exp (c * (ξ : ℂ))).comp ξ hlin
+    simpa only [mul_comm] using hlin.cexp
   have hfull : HasDerivAt (fun ξ : ℝ => (Complex.exp (c * ξ) - 1 - c * ξ) / h)
       ((c * Complex.exp (c * ξ) - c) / h) ξ := by
     exact ((hExp.sub_const 1).sub hlin).div_const h
@@ -1433,8 +1434,8 @@ private theorem expTaylorLinearRemainderQuotPW_contDiff (h : ℂ) :
     ContDiff ℝ (↑(⊤ : ℕ∞)) (expTaylorLinearRemainderQuotPW h) := by
   let c : ℂ := I * h
   have hexp : ContDiff ℝ (↑(⊤ : ℕ∞)) (fun ξ : ℝ => Complex.exp ((ξ : ℂ) * c)) := by
-    simpa using
-      (Complex.contDiff_exp.comp (Complex.ofRealCLM.contDiff.mul contDiff_const))
+    convert Complex.contDiff_exp.comp
+      (Complex.ofRealCLM.contDiff.mul contDiff_const) using 1 <;> rfl
   have hlin : ContDiff ℝ (↑(⊤ : ℕ∞)) (fun ξ : ℝ => (ξ : ℂ) * c) := by
     simpa using (Complex.ofRealCLM.contDiff.mul contDiff_const)
   unfold expTaylorLinearRemainderQuotPW
@@ -1894,8 +1895,9 @@ theorem multiDimPsiZ_differenceQuotient_seminorm_bound
         (cexp (I * h * (x j : ℂ)) - 1 - I * h * (x j : ℂ)) / h) := by
     let p : (Fin m → ℝ) →L[ℝ] ℝ :=
       ContinuousLinearMap.proj (R := ℝ) (ι := Fin m) (φ := fun _ => ℝ) j
-    simpa [p, expTaylorLinearRemainderQuotPW] using
-      (expTaylorLinearRemainderQuotPW_contDiff h).comp p.contDiff
+    change ContDiff ℝ ∞
+      (expTaylorLinearRemainderQuotPW h ∘ fun x : Fin m → ℝ => x j)
+    exact (expTaylorLinearRemainderQuotPW_contDiff h).comp p.contDiff
   have hG_bound :
       ∀ i ≤ n, ∀ ξ : Fin m → ℝ,
         ‖iteratedFDeriv ℝ i
@@ -2800,8 +2802,8 @@ private lemma dualConeCutoff_hasTemperateGrowthComplex
     {m : ℕ} {C : Set (Fin m → ℝ)} :
     (fun ξ : Fin m → ℝ => ((dualConeCutoff C).val ξ : ℂ)).HasTemperateGrowth := by
   refine ⟨?_, fun n => ?_⟩
-  · simpa [dualConeCutoff] using
-      (Complex.ofRealCLM.contDiff.comp (dualConeCutoff C).smooth)
+  · change ContDiff ℝ ∞ (Complex.ofRealCLM ∘ (dualConeCutoff C).val)
+    exact Complex.ofRealCLM.contDiff.comp (dualConeCutoff C).smooth
   · obtain ⟨Cn, hCn⟩ := (dualConeCutoff C).deriv_bound n
     refine ⟨0, Cn, fun ξ => ?_⟩
     have h_eq :

@@ -291,12 +291,22 @@ theorem reflectedMovingSliceScalar_zero_eq_schwinger
         translateSchwartzConfiguration
           (reflectedReducedAbsoluteDisplacement (d := d) (k := 0) u)
           (mixedReflectedChronologicalSource
-            (f ab.1).1 (f ab.2).1)
+            (I.translatedPositiveTimeSpatialSource
+              τ hτ ab.1.2 (ab.1.1 + D.tailStart)).1
+            (I.translatedPositiveTimeSpatialSource
+              τ hτ ab.2.2 (ab.2.1 + D.tailStart)).1)
       have hψ :
           VanishesToInfiniteOrderOnCoincidence ψ := by
         exact
           translate_mixedReflectedChronologicalSource_vanishes_of_raw
             u (f ab.1).1 (f ab.2).1 (hraw ab)
+      have hψ_eq :
+          ψ =
+            translateSchwartzConfiguration
+              (reflectedReducedAbsoluteDisplacement (d := d) (k := 0) u)
+              (mixedReflectedChronologicalSource
+                (f ab.1).1 (f ab.2).1) := by
+        rfl
       calc
         canonicalReducedTimeCutoffSchwingerCLM
             OS D.stageCutoff D.stageCutoff_support
@@ -317,7 +327,8 @@ theorem reflectedMovingSliceScalar_zero_eq_schwinger
                   D.stageCutoff ψ (by simpa [ψ] using hone ab))
         _ = g ab u := by
           rw [← ZeroDiagonalSchwartz.ofClassical_of_vanishes ψ hψ]
-          simpa [ψ, g] using
+          rw [hψ_eq]
+          simpa [g] using
             mixedReflectedChronologicalSource_schwinger_eq_raw
               OS u (f ab.1).1 (f ab.2).1 (hraw ab)
     exact
@@ -334,7 +345,7 @@ theorem reflectedMovingSliceScalar_zero_eq_schwinger
         g
         hstageEdge
   have hzero := (mem_of_mem_nhds hedge) (a, b)
-  dsimp [F, f, g, realAffineSlice] at hzero
+  dsimp only [F, g, realAffineSlice] at hzero
   have htranslate_zero
       (φ : SchwartzNPoint d 2) :
       translateSchwartzConfiguration (0 : NPointDomain d 2) φ = φ := by

@@ -521,13 +521,11 @@ theorem bargmann_hall_wightman_theorem [NeZero d] (n : ℕ)
           (fun z : Fin n → Fin (d + 1) → ℂ =>
             complexLorentzAction (Λ₀⁻¹ : ComplexLorentzGroup d) z) :=
         BHWCore.differentiable_complexLorentzAction_snd Λ₀⁻¹
-      have hPerm : Differentiable ℂ
-          (fun z : Fin n → Fin (d + 1) → ℂ =>
-            fun k => z (π₀ k)) := by
-        apply differentiable_pi.mpr
-        intro k
-        exact differentiable_apply (π₀ k)
-      simpa [ψ, hψ_def] using hPerm.comp hAction
+      apply differentiable_pi.mpr
+      intro k
+      convert (differentiable_apply (π₀ k)).comp hAction using 1
+      funext z
+      rfl
     have hψz₀ : ψ z₀ = fun k => w₀ (π₀ k) := by
       simp only [ψ, hz₀_eq]
       rw [← complexLorentzAction_mul, inv_mul_cancel, complexLorentzAction_one]

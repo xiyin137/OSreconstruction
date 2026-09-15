@@ -192,7 +192,8 @@ def blockMultiIndexEquiv (k p q : ℕ) :
     · exact Fin.append_right _ _ _
   right_inv α := by
     apply Subtype.ext
-    exact Fin.addCases_castAdd_natAdd α.1
+    funext i
+    exact Fin.addCases_castAdd_natAdd α.1 i
 
 /-- The scalar Cauchy expansion collected by reflected-left degree `p` and
 right degree `q`. -/
@@ -216,12 +217,16 @@ theorem scalarGram_eq_sum_antidiagonalTuple
   calc
     (∑ α : Finset.Nat.antidiagonalTuple k p,
         ∑ β : Finset.Nat.antidiagonalTuple k q,
-          D.multiIndexTerm
-            ((blockMultiIndexEquiv k p q) (α, β)).1) =
+            D.multiIndexTerm
+              ((blockMultiIndexEquiv k p q) (α, β)).1) =
         ∑ α ∈ Finset.Nat.antidiagonalTuple k p,
           ∑ β : Finset.Nat.antidiagonalTuple k q,
             D.multiIndexTerm (Fin.append α β) := by
-      simpa only [blockMultiIndexEquiv] using
+      change
+        (∑ α : Finset.Nat.antidiagonalTuple k p,
+          ∑ β : Finset.Nat.antidiagonalTuple k q,
+            D.multiIndexTerm (Fin.append α β)) = _
+      exact
         Finset.sum_coe_sort (Finset.Nat.antidiagonalTuple k p)
           (fun α =>
             ∑ β : Finset.Nat.antidiagonalTuple k q,
@@ -300,9 +305,14 @@ theorem hasSum_multiIndexTerm_of_cauchyPowerSeries
           ∑ α ∈
               Finset.Nat.antidiagonalTuple ((q + 1) + (q + 1)) p,
             D.multiIndexTerm α := by
-        simpa only [multiIndexTerm, smul_eq_mul] using
-          SCV.cauchyPowerSeriesPolydisc_apply_diag
-            D.scalar D.center (fun _ => D.radius) D.increment p
+        change
+          SCV.cauchyPowerSeriesPolydisc D.scalar D.center
+              (fun _ => D.radius) p (fun _ => D.increment) =
+            ∑ α ∈ Finset.Nat.antidiagonalTuple ((q + 1).add q + 1) p,
+              D.multiIndexTerm α
+        convert SCV.cauchyPowerSeriesPolydisc_apply_diag
+            D.scalar D.center (fun _ => D.radius) D.increment p using 1 <;>
+          rfl
       _ = ∑ α :
               Finset.Nat.antidiagonalTuple ((q + 1) + (q + 1)) p,
             D.multiIndexTerm α.1 :=
@@ -343,8 +353,11 @@ theorem hasSum_scalarGram
     {q : ℕ} (D : ReflectedCauchyCoefficientData (q + 1)) {value : ℂ}
     (hseries : HasSum D.multiIndexTerm value) :
     HasSum (fun pq : ℕ × ℕ => D.scalarGram pq.1 pq.2) value := by
-  simpa only [scalarGram, gradedTsum] using
-    hseries.tsum_fiberwise (blockDegree (q + 1))
+  rw [show (fun pq : ℕ × ℕ => D.scalarGram pq.1 pq.2) =
+      (fun pq => gradedTsum (blockDegree (q + 1)) D.multiIndexTerm pq) by
+    funext pq
+    rfl]
+  exact hseries.tsum_fiberwise (blockDegree (q + 1))
 
 /-- Square partial sums of the reflected bidegree expansion converge to the
 same value as the full absolutely convergent scalar Gram series. -/

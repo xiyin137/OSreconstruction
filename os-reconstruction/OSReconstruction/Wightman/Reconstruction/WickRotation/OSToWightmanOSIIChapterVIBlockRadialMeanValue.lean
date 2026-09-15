@@ -51,19 +51,19 @@ theorem osiiStep4ComplexBlockPhaseRotation_measurePreserving
     MeasurePreserving (osiiStep4ComplexBlockPhaseRotation q a)
       (volume : Measure (Fin q → ℂ))
       (volume : Measure (Fin q → ℂ)) := by
-  simpa [osiiStep4ComplexBlockPhaseRotation,
-    osiiStep4ComplexBlockPhaseRotationMeasurableEquiv, rotation_apply] using
-    (volume_preserving_pi
-      (fun _ : Fin q => (rotation a).measurePreserving))
+  change MeasurePreserving
+    (fun z : Fin q → ℂ => fun i => (a : ℂ) * z i) volume volume
+  exact volume_preserving_pi
+    (fun _ : Fin q => (rotation a).measurePreserving)
 
 theorem osiiStep4ComplexBlockRadialG_phaseRotation
     (q : ℕ) (rho : ℝ) (a : Circle) (z : Fin q → ℂ) :
     osiiStep4ComplexBlockRadialG q rho
         (osiiStep4ComplexBlockPhaseRotation q a z) =
       osiiStep4ComplexBlockRadialG q rho z := by
-  simpa [osiiStep4ComplexBlockPhaseRotation, Pi.smul_apply] using
-    osiiStep4ComplexBlockRadialG_smul_of_norm_one
-      q rho (a : ℂ) (Circle.norm_coe a) z
+  change osiiStep4ComplexBlockRadialG q rho ((a : ℂ) • z) = _
+  exact osiiStep4ComplexBlockRadialG_smul_of_norm_one
+    q rho (a : ℂ) (Circle.norm_coe a) z
 
 theorem osiiStep4ComplexBlockRadialG_weighted_phaseRotation
     (q : ℕ) {rho : ℝ} (_hrho : 0 < rho)
@@ -223,7 +223,10 @@ theorem osiiStep4ComplexBlockRadialG_weighted_meanValue_of_differentiableOn
     (μ := (volume : Measure ℝ).restrict (Set.Ioc 0 (2 * Real.pi)))
     (ν := (volume : Measure (Fin q → ℂ)))
     (f := fun theta z => Q (theta, z)) (by
-      simpa [Function.uncurry] using hQint)
+      convert hQint using 1
+      ext p
+      rcases p with ⟨theta, z⟩
+      rfl)
   have hmeasure :
       (volume : Measure ℝ).real (Set.Ioc 0 (2 * Real.pi)) =
         2 * Real.pi := by
@@ -233,7 +236,6 @@ theorem osiiStep4ComplexBlockRadialG_weighted_meanValue_of_differentiableOn
       (2 * Real.pi : ℝ) • I =
           ∫ _theta in Set.Ioc (0 : ℝ) (2 * Real.pi), I := by
         rw [setIntegral_const, hmeasure]
-        rfl
       _ = ∫ theta in Set.Ioc (0 : ℝ) (2 * Real.pi),
           ∫ z : Fin q → ℂ, Q (theta, z) := by
         apply setIntegral_congr_fun measurableSet_Ioc
@@ -361,9 +363,9 @@ theorem osiiStep4_nestedBlockRadialG_weighted_meanValue_zero_of_differentiableOn
           (volume : Measure (Fin (n + 1) → Fin q → ℂ))
           ((volume : Measure (Fin q → ℂ)).prod
             (volume : Measure (Fin n → Fin q → ℂ))) := by
-        simpa [e] using
-          (volume_preserving_piFinSuccAbove
-            (fun _ : Fin (n + 1) => Fin q → ℂ) 0)
+        rw [← Measure.volume_eq_prod]
+        exact volume_preserving_piFinSuccAbove
+          (fun _ : Fin (n + 1) => Fin q → ℂ) 0
       have he_symm (p : (Fin q → ℂ) × (Fin n → Fin q → ℂ)) :
           e.symm p = Fin.cons p.1 p.2 := by
         simp [e, MeasurableEquiv.piFinSuccAbove_symm_apply]
@@ -404,12 +406,7 @@ theorem osiiStep4_nestedBlockRadialG_weighted_meanValue_zero_of_differentiableOn
           let Ublock : Set (Fin q → ℂ) := {w | Fin.cons w y ∈ U}
           have hcons_cont : Continuous (fun w : Fin q → ℂ =>
               (Fin.cons w y : Fin (n + 1) → Fin q → ℂ)) := by
-            apply continuous_pi
-            intro i
-            refine Fin.cases ?_ (fun j => ?_) i
-            · simpa using (continuous_id : Continuous (fun w : Fin q → ℂ => w))
-            · simpa using
-                (continuous_const : Continuous (fun _w : Fin q → ℂ => y j))
+            fun_prop
           have hf_cont : Continuous f := hF_cont.comp hcons_cont
           have hcons_diff : Differentiable ℂ
               (fun w : Fin q → ℂ =>
@@ -497,6 +494,14 @@ theorem osiiStep4_nestedBlockRadialG_weighted_meanValue_zero_of_differentiableOn
             ((∏ i : Fin (n + 1),
               osiiStep4ComplexBlockRadialG q rho (z i) : ℝ) : ℂ) * F z) =
             ∫ p : (Fin q → ℂ) × (Fin n → Fin q → ℂ), P p := by
+          change
+            (∫ z : Fin (n + 1) → Fin q → ℂ,
+              ((∏ i : Fin (n + 1),
+                osiiStep4ComplexBlockRadialG q rho (z i) : ℝ) : ℂ) * F z
+                ∂(volume : Measure (Fin (n + 1) → Fin q → ℂ))) =
+              ∫ p : (Fin q → ℂ) × (Fin n → Fin q → ℂ), P p
+                ∂((volume : Measure (Fin q → ℂ)).prod
+                  (volume : Measure (Fin n → Fin q → ℂ)))
           have hchange := he.symm.integral_comp'
             (f := e.symm)
             (fun z : Fin (n + 1) → Fin q → ℂ =>

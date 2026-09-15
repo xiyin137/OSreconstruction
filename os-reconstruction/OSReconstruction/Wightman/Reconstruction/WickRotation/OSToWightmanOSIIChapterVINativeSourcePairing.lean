@@ -98,7 +98,10 @@ theorem strictGeneratedFullFrequency_fourierLaplace
         (flattenCLEquiv (k + 1) (d + 1) z) := by
   let H := initial.toStrictGeneratedForwardTubeBoundaryDataOfOSII lgc k
   change H.wickPairKernel z = _
-  rw [H.wickPairKernel_eqOn_forwardTube (by simpa [forwardTube_eq_imPreimage] using hz)]
+  have hz' : z ∈ ForwardTube d (k + 1) := by
+    rw [forwardTube_eq_imPreimage]
+    exact (show (fun k μ => (z k μ).im) ∈ ForwardConeAbs d (k + 1) from hz)
+  rw [H.wickPairKernel_eqOn_forwardTube hz']
   rw [show H.kernel =
       (initial.toStrictGeneratedForwardTubeBoundarySpectralDataOfOSII lgc k).toSpectralData.kernel from
     initial.toStrictGeneratedForwardTubeBoundaryDataOfOSII_kernel lgc k]

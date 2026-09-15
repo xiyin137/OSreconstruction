@@ -109,7 +109,8 @@ def euclideanPositiveTimeTest1D : Submodule ℂ (SchwartzMap ℝ ℂ) where
   carrier := {f | tsupport (f : ℝ → ℂ) ⊆ Set.Ici (0 : ℝ)}
   zero_mem' := by
     intro x hx
-    simp at hx
+    change x ∈ closure (Function.support (0 : ℝ → ℂ)) at hx
+    simpa [Function.support] using hx
   add_mem' := by
     intro f g hf hg x hx
     have hx' := tsupport_add (f : ℝ → ℂ) (g : ℝ → ℂ) hx
@@ -216,7 +217,7 @@ noncomputable def fourierPairingDescendsToSection43PositiveEnergy1D
     section43PositiveEnergyVanishingSubmodule1D.liftQ raw.toLinearMap hker
   refine ContinuousLinearMap.mk descended ?_
   refine section43PositiveEnergyVanishingSubmodule1D.isOpenQuotientMap_mkQ.isQuotientMap.continuous_iff.2 ?_
-  simpa [descended, raw, Function.comp] using raw.continuous
+  simpa [descended, Function.comp_def] using raw.continuous
 
 @[simp] theorem fourierPairingDescendsToSection43PositiveEnergy1D_apply
     (T : SchwartzMap ℝ ℂ →L[ℂ] ℂ)

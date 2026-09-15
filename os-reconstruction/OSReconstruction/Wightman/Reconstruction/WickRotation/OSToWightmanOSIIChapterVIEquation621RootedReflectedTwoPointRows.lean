@@ -96,8 +96,10 @@ theorem rootedAbsoluteProductReflectedScalarSum_eq_twoPointCandidate_on_radial
     · exact (generatorChronologicalParameterComplexCLE i).differentiable.differentiableOn
     · intro w hw
       have hdomain := E.radialChronologicalDomain_subset i hw
-      simpa [B, E, rootedReflectedGramRootSmearedGlobalFamily,
-        rootSmearedGeneratorOpenHilbertFieldScaleFamilyData] using hdomain
+      change generatorChronologicalParameterComplexCLE i w ∈
+        (rootedReflectedGramGeneratorOpenHilbertFieldScaleFamilyRealEdgeData
+          S depth P A R H.toContinuousTranslationData).domain i
+      exact hdomain
   have hlocal : forall w, w ∈ U ->
       generatorChronologicalParameterComplexCLE i w ∈
         generatorSemigroupDomain i (H.left i).domain (H.right i).domain := by

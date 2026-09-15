@@ -357,8 +357,11 @@ theorem commonPacket_pieceTimeShellDistributionOfOS_fixedTest_compact_bound
     have hlocalized :=
       (L.continuous.tendsto
         (initialReducedSpatialFullSourceCLM (d := d) ψ χ)).comp hsource
-    simpa [fN, L, InitialBaseTimePartitionData.timePieceFullSourceCLM,
-      initialReducedSpatialFactorCompactSourceCLM_apply] using hlocalized
+    change Tendsto
+      (L ∘ fun N =>
+        initialReducedSpatialFactorCompactSourceCLM (d := d) ψ N χ)
+      atTop (nhds (L (initialReducedSpatialFullSourceCLM (d := d) ψ χ)))
+    exact hlocalized
   have hfN : Bornology.IsVonNBounded ℝ (Set.range fN) := by
     letI : ContinuousSMul ℝ (SchwartzNPoint d (k + 1)) :=
       SchwartzMap.instContinuousSMul
@@ -368,8 +371,11 @@ theorem commonPacket_pieceTimeShellDistributionOfOS_fixedTest_compact_bound
       a OS η hηsum K hK_compact hK_subset fN hfN
   refine ⟨C, ?_⟩
   intro level ζ hζ
+  unfold InitialBaseTimePartitionData.FixedTimePacketData.pieceTimeShellDistributionOfOS
   simpa [
-    InitialBaseTimePartitionData.FixedTimePacketData.pieceTimeShellDistributionOfOS_apply,
+    InitialBaseTimePartitionData.FixedTimePacketData.levelTimePieceFullSourceCLM,
+    initialSpatialFactorTruncationCLM_apply,
+    osiiNarrowTimeStageChart,
     fN] using hC 0 level ζ hζ
 
 /-- The complete common time-shell distribution is pointwise bounded on every

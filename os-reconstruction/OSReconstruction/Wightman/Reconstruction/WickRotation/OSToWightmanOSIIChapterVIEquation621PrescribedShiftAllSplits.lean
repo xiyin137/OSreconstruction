@@ -110,6 +110,7 @@ theorem emptyTail_mem_rawStrictGeneratedMixed
     exact Fin.elim0 j
   · have hzero := OSIIRawStrictGeneratedLogarithmicArgument.mixed_zero
       1 sourceDepth (by omega)
+    change OSIIRawStrictGeneratedLogarithmicArgument .mixed 1 sourceDepth _
     convert hzero using 1
     funext j
     have hj : j = 0 := Fin.eq_zero j
@@ -307,9 +308,10 @@ noncomputable def current_reflectedPrescribedShiftLeftEndpointRows
             (Q.packet.rootedRightBlockAnchor i)
             (Q.packet.rootedRightBlockAnchor_positive i) chi scale := by
       intro scale chi
-      simpa [DRight, i, equation621LeftEndpointGeneratorIndex,
-        rootedRightNontrivialReflectedGramSpatialSourceData] using
-        Q.packet.rootedRightBlockAnchoredSourceCLM_source_translated Q.roots i scale chi
+      change UniformCompactTimeSource.source
+        ((Q.packet.rootedRightBlockAnchoredSourceCLM Q.roots i scale) chi) = _
+      exact Q.packet.rootedRightBlockAnchoredSourceCLM_source_translated
+        Q.roots i scale chi
     have hz : equation621TargetRightParameter i v ∈
         openZeroConvexKernel DRight.reflectedGram.atlas.spatialLinearDomain :=
       hradial.2.2
@@ -323,8 +325,9 @@ noncomputable def current_reflectedPrescribedShiftLeftEndpointRows
     have hpoint : reflectedSelfPairMarginalSpatialPoint d (qRight + 1)
         (generatorRightBlockSpatialPoint d i (equation621SplitTargetSpatialPoint i x)) =
           (i.equation621TargetAdaptedSpatialSplitData d).rightPoint x := by
-      simpa [i] using generatorRightBlockSpatialPoint_reflectedSelfPair
-        (d := d) i (equation621SplitTargetSpatialPoint i x)
+      apply eq_of_heq
+      exact heq_of_eq (generatorRightBlockSpatialPoint_reflectedSelfPair
+        (d := d) i (equation621SplitTargetSpatialPoint i x))
     rw [hpoint] at hrow
     have htest : block.toEquation621SpatialApproxIdentity.section43Probe
         (generatorRightBlockSpatialPoint d i (equation621SplitTargetSpatialPoint i x)) N =
@@ -353,14 +356,21 @@ noncomputable def current_reflectedPrescribedShiftLeftEndpointRows
       funext j
       exact Fin.elim0 j
     rw [htarget]
-    simpa only [rootedReflectedGlobalLeftEndpointArbitraryCandidate,
+    simp only [rootedReflectedGlobalLeftEndpointArbitraryCandidate,
       rootedReflectedGlobalLeftEndpointRootSmearedRightArbitraryField,
-      hleftZero] using
-      H.norm_generatorSemigroupCandidate_middleRoot_shift_le lgc i scale
-        (H.leftArbitrarySpatialGeneratorField i scale (leftTest x N))
+      leftField, rightField, diagonal, hleftZero]
+    change ‖generatorSemigroupCandidate OS lgc i
+      (H.leftArbitrarySpatialGeneratorField i scale (leftTest x N))
+      (fun z => (H.semigroupBridgeRootOperator lgc i scale)
         (rootedReflectedGlobalLeftEndpointRightArbitraryField
-          D.adapted Q.packet Q.roots H qRight hindex scale (rightTest x N))
-        hepsilon v hbridge
+          D.adapted Q.packet Q.roots H qRight hindex scale (rightTest x N) z))
+      (generatorChronologicalParameterComplexCLE i v)‖ <= _
+    simpa only [hleftZero] using
+      H.norm_generatorSemigroupCandidate_middleRoot_shift_le lgc i scale
+      (H.leftArbitrarySpatialGeneratorField i scale (leftTest x N))
+      (rootedReflectedGlobalLeftEndpointRightArbitraryField
+        D.adapted Q.packet Q.roots H qRight hindex scale (rightTest x N))
+      hepsilon v hbridge
 
 set_option maxHeartbeats 3000000 in
 /-- Right-endpoint companion, with the same actual predecessor and shift. -/
@@ -479,9 +489,10 @@ noncomputable def current_reflectedPrescribedShiftRightEndpointRows
             (Q.packet.rootedLeftBlockAnchor i)
             (Q.packet.rootedLeftBlockAnchor_positive i) chi scale := by
       intro scale chi
-      simpa [DLeft, i, equation621RightEndpointGeneratorIndex,
-        rootedLeftNontrivialReflectedGramSpatialSourceData] using
-        Q.packet.rootedLeftBlockAnchoredSourceCLM_source_translated Q.roots i scale chi
+      change UniformCompactTimeSource.source
+        ((Q.packet.rootedLeftBlockAnchoredSourceCLM Q.roots i scale) chi) = _
+      exact Q.packet.rootedLeftBlockAnchoredSourceCLM_source_translated
+        Q.roots i scale chi
     have hz : equation621TargetLeftParameter i v ∈
         openZeroConvexKernel DLeft.reflectedGram.atlas.spatialLinearDomain :=
       hradial.2.1
@@ -495,8 +506,9 @@ noncomputable def current_reflectedPrescribedShiftRightEndpointRows
     have hpoint : reflectedSelfPairMarginalSpatialPoint d (qLeft + 1)
         (generatorLeftBlockSpatialPoint d i (equation621SplitTargetSpatialPoint i x)) =
           (i.equation621TargetAdaptedSpatialSplitData d).leftPoint x := by
-      simpa [i] using generatorLeftBlockSpatialPoint_reflectedSelfPair
-        (d := d) i (equation621SplitTargetSpatialPoint i x)
+      apply eq_of_heq
+      exact heq_of_eq (generatorLeftBlockSpatialPoint_reflectedSelfPair
+        (d := d) i (equation621SplitTargetSpatialPoint i x))
     rw [hpoint] at hrow
     have htest : block.toEquation621SpatialApproxIdentity.section43Probe
         (generatorLeftBlockSpatialPoint d i (equation621SplitTargetSpatialPoint i x)) N =
@@ -547,14 +559,21 @@ noncomputable def current_reflectedPrescribedShiftRightEndpointRows
       funext j
       exact Fin.elim0 j
     rw [htarget]
-    simpa only [rootedReflectedGlobalRightEndpointArbitraryCandidate,
+    simp only [rootedReflectedGlobalRightEndpointArbitraryCandidate,
       RootedA0BlockContinuousTranslationData.rootSmearedRightArbitrarySpatialGeneratorField,
-      hrightZero] using
+      leftField, rightField, diagonal, hrightZero]
+    change ‖generatorSemigroupCandidate OS lgc i
+      (rootedReflectedGlobalRightEndpointLeftArbitraryField
+        D.adapted Q.packet Q.roots H qLeft hindex scale (leftTest x N))
+      (fun z => (H.semigroupBridgeRootOperator lgc i scale)
+        (H.rightArbitrarySpatialGeneratorField i scale (rightTest x N) z))
+      (generatorChronologicalParameterComplexCLE i v)‖ <= _
+    simpa only [hrightZero] using
       H.norm_generatorSemigroupCandidate_middleRoot_shift_le lgc i scale
-        (rootedReflectedGlobalRightEndpointLeftArbitraryField
-          D.adapted Q.packet Q.roots H qLeft hindex scale (leftTest x N))
-        (H.rightArbitrarySpatialGeneratorField i scale (rightTest x N))
-        hepsilon v hbridge
+      (rootedReflectedGlobalRightEndpointLeftArbitraryField
+        D.adapted Q.packet Q.roots H qLeft hindex scale (leftTest x N))
+      (H.rightArbitrarySpatialGeneratorField i scale (rightTest x N))
+      hepsilon v hbridge
 
 set_option maxHeartbeats 3000000 in
 /-- The actual left-endpoint source rows give the next-depth normalized
@@ -609,13 +628,20 @@ theorem norm_current_leftEndpoint_le_of_rawPredecessor_prescribedShift
   let v := w - osiiPositiveRealTimeEmbed C0.anchor
   let leftBase := reflectedCauchyShiftedStagePoint
     (reflectedChronologicalGapMap 0
-      (Q.packet.rootedLeftBlockAnchor i, Q.packet.rootedLeftBlockAnchor i))
+      (Q.packet.rootedLeftBlockAnchor
+        (equation621LeftEndpointGeneratorIndex qRight hindex),
+       Q.packet.rootedLeftBlockAnchor
+        (equation621LeftEndpointGeneratorIndex qRight hindex)))
     (osiiVI2Unshift 0 epsilon 0)
   let rightBase := reflectedCauchyShiftedStagePoint
     (reflectedChronologicalGapMap (qRight + 1)
-      (Q.packet.rootedRightBlockAnchor i, Q.packet.rootedRightBlockAnchor i))
+      (Q.packet.rootedRightBlockAnchor
+        (equation621LeftEndpointGeneratorIndex qRight hindex),
+       Q.packet.rootedRightBlockAnchor
+        (equation621LeftEndpointGeneratorIndex qRight hindex)))
     (osiiVI2Unshift (qRight + 1) epsilon
-      (equation621TargetRightParameter i v))
+      (equation621TargetRightParameter
+        (equation621LeftEndpointGeneratorIndex qRight hindex) v))
   have hleftPoint : leftBase ∈ osiiTimeArgumentCarrier
       (osiiRawStrictGeneratedLogarithmicBase 1 sourceDepth) :=
     reflectedCauchyShiftedStagePoint_mem_rawStrictGeneratedCarrier_all
@@ -644,12 +670,38 @@ theorem norm_current_leftEndpoint_le_of_rawPredecessor_prescribedShift
   have hleftZero : equation621TargetLeftParameter i v = 0 := by
     funext j
     exact Fin.elim0 j
+  have hleftTargetZero : rootedLeftBlockTarget
+      (equation621LeftEndpointGeneratorIndex qRight hindex)
+      (w - osiiPositiveRealTimeEmbed C0.anchor) = 0 := by
+    funext j
+    exact Fin.elim0 j
+  have hempty : (![] : Fin 0 -> Complex) = 0 := by
+    funext j
+    exact Fin.elim0 j
+  have hn : i.n - 1 = 0 := by
+    change 1 - 1 = 0
+    omega
+  have hm : i.m - 1 = qRight + 1 := by
+    change qRight + 2 - 1 = qRight + 1
+    omega
+  dsimp only [i] at *
   have hsplit : OSIIEquation621TimeAverageSplitCondition
       (osiiVI2Shift 1 epsilon leftBase)
       (osiiVI2Shift ((qRight + 1) + ((qRight + 1) + 1)) epsilon rightBase) w := by
-    simpa only [hleftZero] using
-      equation621DampedTargetTimePoints_timeAverageSplitCondition
-        Q.packet i w hepsilon.le hcentered hbridge'
+    convert equation621DampedTargetTimePoints_timeAverageSplitCondition
+      Q.packet (equation621LeftEndpointGeneratorIndex qRight hindex) w
+        hepsilon.le hcentered hbridge' using 1 <;>
+      simp [v, leftBase, rightBase, equation621DampedReflectedStagePoint,
+        equation621LeftEndpointGeneratorIndex, hn, hm, hleftZero]
+    all_goals first
+      | (change 1 = (1 - 1) + (1 - 1 + 1); omega)
+      | (change qRight + 1 + (qRight + 1 + 1) =
+          (k - (1 - 1) - 1) + (k - (1 - 1) - 1 + 1); omega)
+      | omega
+      | (apply congrArg (osiiVI2Shift 1 epsilon)
+         apply congrArg (reflectedCauchyShiftedStagePoint _)
+         funext j
+         exact Fin.elim0 j)
   apply norm_distribution_le_of_rawPredecessor_prescribedShiftRows
     (targetProbe := spatialApprox.equation621SplitTargetSpatialApproxIdentity i)
     (leftProbe := (spatialApprox.generatorLeftBlockProductApproxIdentity i
@@ -658,10 +710,18 @@ theorem norm_current_leftEndpoint_le_of_rawPredecessor_prescribedShift
       ).reflectedSelfPairMarginalSpatialApproxIdentity)
     (split := i.equation621TargetAdaptedSpatialSplitData d)
     B hepsilon hleftPoint hrightPoint _ hsplit (by omega) chi
-  simpa [P, leftBase, rightBase, equation621DampedReflectedStagePoint,
-    InitialGeneratedLogarithmicStageLevelData.toStrictGeneratedTimeContinuationLadder,
-    StrictGeneratedScalarDepthPointedData.toTimeContinuationLadder,
-    timeContinuationLadderOfAngleSectorCover] using rows
+  have hstage (arity : Nat) :
+      CanonicalGeneratorStageLevelProvider.stage (OS := OS)
+        (initial.toStrictGeneratedScalarDepthZeroPointedData.depthInduction
+          lgc sourceDepth).pointed arity =
+        (initial.toStrictGeneratedScalarDepthZeroPointedData.depthInduction
+          lgc sourceDepth).pointed.stageLevel.stage arity := rfl
+  convert rows using 1 <;>
+    simp [P, i, v, leftBase, rightBase, equation621DampedReflectedStagePoint,
+      InitialGeneratedLogarithmicStageLevelData.toStrictGeneratedTimeContinuationLadder,
+      StrictGeneratedScalarDepthPointedData.toTimeContinuationLadder,
+      timeContinuationLadderOfAngleSectorCover, hstage] <;>
+    try { apply propext; constructor <;> intro h <;> exact h }
 
 set_option maxHeartbeats 3000000 in
 /-- The right-endpoint estimate preserves the same raw predecessor
@@ -716,12 +776,19 @@ theorem norm_current_rightEndpoint_le_of_rawPredecessor_prescribedShift
   let v := w - osiiPositiveRealTimeEmbed C0.anchor
   let leftBase := reflectedCauchyShiftedStagePoint
     (reflectedChronologicalGapMap (qLeft + 1)
-      (Q.packet.rootedLeftBlockAnchor i, Q.packet.rootedLeftBlockAnchor i))
+      (Q.packet.rootedLeftBlockAnchor
+        (equation621RightEndpointGeneratorIndex qLeft hindex),
+       Q.packet.rootedLeftBlockAnchor
+        (equation621RightEndpointGeneratorIndex qLeft hindex)))
     (osiiVI2Unshift (qLeft + 1) epsilon
-      (equation621TargetLeftParameter i v))
+      (equation621TargetLeftParameter
+        (equation621RightEndpointGeneratorIndex qLeft hindex) v))
   let rightBase := reflectedCauchyShiftedStagePoint
     (reflectedChronologicalGapMap 0
-      (Q.packet.rootedRightBlockAnchor i, Q.packet.rootedRightBlockAnchor i))
+      (Q.packet.rootedRightBlockAnchor
+        (equation621RightEndpointGeneratorIndex qLeft hindex),
+       Q.packet.rootedRightBlockAnchor
+        (equation621RightEndpointGeneratorIndex qLeft hindex)))
     (osiiVI2Unshift 0 epsilon 0)
   have hleftPoint : leftBase ∈ osiiTimeArgumentCarrier
       (osiiRawStrictGeneratedLogarithmicBase
@@ -751,12 +818,40 @@ theorem norm_current_rightEndpoint_le_of_rawPredecessor_prescribedShift
   have hrightZero : equation621TargetRightParameter i v = 0 := by
     funext j
     exact Fin.elim0 j
+  have hrightTargetZero : rootedRightBlockTarget
+      (equation621RightEndpointGeneratorIndex qLeft hindex)
+      (w - osiiPositiveRealTimeEmbed C0.anchor) = 0 := by
+    funext j
+    exact Fin.elim0 j
+  have hempty : (![] : Fin 0 -> Complex) = 0 := by
+    funext j
+    exact Fin.elim0 j
+  have hn : i.n - 1 = qLeft + 1 := by
+    change qLeft + 2 - 1 = qLeft + 1
+    omega
+  have hm : i.m - 1 = 0 := by
+    change 1 - 1 = 0
+    omega
+  dsimp only [i] at *
   have hsplit : OSIIEquation621TimeAverageSplitCondition
       (osiiVI2Shift ((qLeft + 1) + ((qLeft + 1) + 1)) epsilon leftBase)
       (osiiVI2Shift 1 epsilon rightBase) w := by
-    simpa only [hrightZero] using
-      equation621DampedTargetTimePoints_timeAverageSplitCondition
-        Q.packet i w hepsilon.le hcentered hbridge'
+    convert equation621DampedTargetTimePoints_timeAverageSplitCondition
+      Q.packet (equation621RightEndpointGeneratorIndex qLeft hindex) w
+        hepsilon.le hcentered hbridge' using 1 <;>
+      simp [v, leftBase, rightBase, equation621DampedReflectedStagePoint,
+        equation621RightEndpointGeneratorIndex, hn, hm, hrightZero]
+    all_goals first
+      | (change 1 = (1 - 1) + (1 - 1 + 1); omega)
+      | (change qLeft + 1 + (qLeft + 1 + 1) =
+          (qLeft + 2 - 1) + (qLeft + 2 - 1 + 1); omega)
+      | (change 1 = (k - (qLeft + 2 - 1) - 1) +
+          (k - (qLeft + 2 - 1) - 1 + 1); omega)
+      | omega
+      | (apply congrArg (osiiVI2Shift 1 epsilon)
+         apply congrArg (reflectedCauchyShiftedStagePoint _)
+         funext j
+         exact Fin.elim0 j)
   apply norm_distribution_le_of_rawPredecessor_prescribedShiftRows
     (targetProbe := spatialApprox.equation621SplitTargetSpatialApproxIdentity i)
     (leftProbe := (spatialApprox.generatorLeftBlockProductApproxIdentity i
@@ -765,10 +860,18 @@ theorem norm_current_rightEndpoint_le_of_rawPredecessor_prescribedShift
       ).reflectedSelfPairMarginalSpatialApproxIdentity)
     (split := i.equation621TargetAdaptedSpatialSplitData d)
     B hepsilon hleftPoint hrightPoint _ hsplit (by omega) chi
-  simpa [P, leftBase, rightBase, equation621DampedReflectedStagePoint,
-    InitialGeneratedLogarithmicStageLevelData.toStrictGeneratedTimeContinuationLadder,
-    StrictGeneratedScalarDepthPointedData.toTimeContinuationLadder,
-    timeContinuationLadderOfAngleSectorCover] using rows
+  have hstage (arity : Nat) :
+      CanonicalGeneratorStageLevelProvider.stage (OS := OS)
+        (initial.toStrictGeneratedScalarDepthZeroPointedData.depthInduction
+          lgc sourceDepth).pointed arity =
+        (initial.toStrictGeneratedScalarDepthZeroPointedData.depthInduction
+          lgc sourceDepth).pointed.stageLevel.stage arity := rfl
+  convert rows using 1 <;>
+    simp [P, i, v, leftBase, rightBase, equation621DampedReflectedStagePoint,
+      InitialGeneratedLogarithmicStageLevelData.toStrictGeneratedTimeContinuationLadder,
+      StrictGeneratedScalarDepthPointedData.toTimeContinuationLadder,
+      timeContinuationLadderOfAngleSectorCover, hstage] <;>
+    try { apply propext; constructor <;> intro h <;> exact h }
 
 set_option maxHeartbeats 3000000 in
 /-- At the one-gap corner both lower rows are actual one-particle sources. -/
@@ -926,13 +1029,19 @@ noncomputable def current_reflectedPrescribedShiftTwoPointRows
       funext j
       exact Fin.elim0 j
     rw [htarget]
-    simpa only [RootedA0BlockContinuousTranslationData.rootSmearedArbitrarySpatialGeneratorCandidate,
+    simp only [RootedA0BlockContinuousTranslationData.rootSmearedArbitrarySpatialGeneratorCandidate,
       RootedA0BlockContinuousTranslationData.rootSmearedRightArbitrarySpatialGeneratorField,
-      hleftZero, hrightZero] using
+      leftField, rightField, diagonal, hleftZero, hrightZero]
+    change ‖generatorSemigroupCandidate OS lgc i
+      (H.leftArbitrarySpatialGeneratorField i scale (leftTest x N))
+      (fun z => (H.semigroupBridgeRootOperator lgc i scale)
+        (H.rightArbitrarySpatialGeneratorField i scale (rightTest x N) z))
+      (generatorChronologicalParameterComplexCLE i v)‖ <= _
+    simpa only [hleftZero, hrightZero] using
       H.norm_generatorSemigroupCandidate_middleRoot_shift_le lgc i scale
-        (H.leftArbitrarySpatialGeneratorField i scale (leftTest x N))
-        (H.rightArbitrarySpatialGeneratorField i scale (rightTest x N))
-        hepsilon v hbridge
+      (H.leftArbitrarySpatialGeneratorField i scale (leftTest x N))
+      (H.rightArbitrarySpatialGeneratorField i scale (rightTest x N))
+      hepsilon v hbridge
 
 set_option maxHeartbeats 3000000 in
 /-- The one-gap generator needs only the two actual positive-real
@@ -980,11 +1089,17 @@ theorem norm_current_twoPoint_le_of_rawPredecessor_prescribedShift
   let v := w - osiiPositiveRealTimeEmbed C0.anchor
   let leftBase := reflectedCauchyShiftedStagePoint
     (reflectedChronologicalGapMap 0
-      (Q.packet.rootedLeftBlockAnchor i, Q.packet.rootedLeftBlockAnchor i))
+      (Q.packet.rootedLeftBlockAnchor
+        (⟨1, 1, le_rfl, le_rfl, hindex⟩ : GeneratorIndex k),
+       Q.packet.rootedLeftBlockAnchor
+        (⟨1, 1, le_rfl, le_rfl, hindex⟩ : GeneratorIndex k)))
     (osiiVI2Unshift 0 epsilon 0)
   let rightBase := reflectedCauchyShiftedStagePoint
     (reflectedChronologicalGapMap 0
-      (Q.packet.rootedRightBlockAnchor i, Q.packet.rootedRightBlockAnchor i))
+      (Q.packet.rootedRightBlockAnchor
+        (⟨1, 1, le_rfl, le_rfl, hindex⟩ : GeneratorIndex k),
+       Q.packet.rootedRightBlockAnchor
+        (⟨1, 1, le_rfl, le_rfl, hindex⟩ : GeneratorIndex k)))
     (osiiVI2Unshift 0 epsilon 0)
   have hleftPoint : leftBase ∈ osiiTimeArgumentCarrier
       (osiiRawStrictGeneratedLogarithmicBase 1 sourceDepth) :=
@@ -1015,11 +1130,41 @@ theorem norm_current_twoPoint_le_of_rawPredecessor_prescribedShift
   have hrightZero : equation621TargetRightParameter i v = 0 := by
     funext j
     exact Fin.elim0 j
+  have hleftTargetZero : rootedLeftBlockTarget
+      (⟨1, 1, le_rfl, le_rfl, hindex⟩ : GeneratorIndex k)
+      (w - osiiPositiveRealTimeEmbed C0.anchor) = 0 := by
+    funext j
+    exact Fin.elim0 j
+  have hrightTargetZero : rootedRightBlockTarget
+      (⟨1, 1, le_rfl, le_rfl, hindex⟩ : GeneratorIndex k)
+      (w - osiiPositiveRealTimeEmbed C0.anchor) = 0 := by
+    funext j
+    exact Fin.elim0 j
+  have hempty : (![] : Fin 0 -> Complex) = 0 := by
+    funext j
+    exact Fin.elim0 j
+  have hn : i.n - 1 = 0 := by
+    change 1 - 1 = 0
+    omega
+  have hm : i.m - 1 = 0 := by
+    change 1 - 1 = 0
+    omega
+  dsimp only [i] at *
   have hsplit : OSIIEquation621TimeAverageSplitCondition
       (osiiVI2Shift 1 epsilon leftBase) (osiiVI2Shift 1 epsilon rightBase) w := by
-    simpa only [hleftZero, hrightZero] using
-      equation621DampedTargetTimePoints_timeAverageSplitCondition
-        Q.packet i w hepsilon.le hcentered hbridge'
+    convert equation621DampedTargetTimePoints_timeAverageSplitCondition
+      Q.packet (⟨1, 1, le_rfl, le_rfl, hindex⟩ : GeneratorIndex k) w
+        hepsilon.le hcentered hbridge' using 1 <;>
+      simp [v, leftBase, rightBase, equation621DampedReflectedStagePoint,
+        hn, hm, hleftZero, hrightZero]
+    all_goals first
+      | (change 1 = (1 - 1) + (1 - 1 + 1); omega)
+      | (change 1 = (k - (1 - 1) - 1) + (k - (1 - 1) - 1 + 1); omega)
+      | omega
+      | (apply congrArg (osiiVI2Shift 1 epsilon)
+         apply congrArg (reflectedCauchyShiftedStagePoint _)
+         funext j
+         exact Fin.elim0 j)
   apply norm_distribution_le_of_rawPredecessor_prescribedShiftRows
     (targetProbe := spatialApprox.equation621SplitTargetSpatialApproxIdentity i)
     (leftProbe := (spatialApprox.generatorLeftBlockProductApproxIdentity i
@@ -1028,10 +1173,15 @@ theorem norm_current_twoPoint_le_of_rawPredecessor_prescribedShift
       ).reflectedSelfPairMarginalSpatialApproxIdentity)
     (split := i.equation621TargetAdaptedSpatialSplitData d)
     B hepsilon hleftPoint hrightPoint _ hsplit (by omega) chi
-  simpa [previous, leftBase, rightBase, equation621DampedReflectedStagePoint,
-    InitialGeneratedLogarithmicStageLevelData.toStrictGeneratedTimeContinuationLadder,
-    StrictGeneratedScalarDepthPointedData.toTimeContinuationLadder,
-    timeContinuationLadderOfAngleSectorCover] using rows
+  have hstage (arity : Nat) :
+      CanonicalGeneratorStageLevelProvider.stage (OS := OS) previous.pointed arity =
+        previous.pointed.stageLevel.stage arity := rfl
+  convert rows using 1 <;>
+    simp [previous, i, v, leftBase, rightBase, equation621DampedReflectedStagePoint,
+      InitialGeneratedLogarithmicStageLevelData.toStrictGeneratedTimeContinuationLadder,
+      StrictGeneratedScalarDepthPointedData.toTimeContinuationLadder,
+      timeContinuationLadderOfAngleSectorCover, hstage] <;>
+    try { apply propext; constructor <;> intro h <;> exact h }
 
 set_option maxHeartbeats 3000000 in
 /-- Every genuine rooted generator split satisfies the prescribed-shift

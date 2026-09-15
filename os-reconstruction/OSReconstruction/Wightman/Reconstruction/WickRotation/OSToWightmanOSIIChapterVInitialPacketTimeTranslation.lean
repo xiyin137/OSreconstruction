@@ -186,15 +186,16 @@ theorem narrowDistributionOfOS_translate_timeTest
       ∀ τ ∈ section43TimeStrictPositiveRegion k,
         SCV.realToComplex τ ∈ U := by
     intro τ hτ
-    simpa [U, SCV.realToComplex, osiiPositiveRealTimeEmbed] using
-      osiiPositiveRealTimeEmbed_mem_osiiNarrowTimeCarrier
-        η hη τ hτ
+    change osiiPositiveRealTimeEmbed τ ∈ U
+    exact osiiPositiveRealTimeEmbed_mem_osiiNarrowTimeCarrier
+      η hη τ hτ
   have hF_zero :
       ∀ τ ∈ section43TimeStrictPositiveRegion k,
         F (SCV.realToComplex τ) = 0 := by
     intro τ hτ
     have h := hreal τ hτ
-    simpa [F, shift, SCV.realToComplex, osiiPositiveRealTimeEmbed] using
+    change F (osiiPositiveRealTimeEmbed τ) = 0
+    simpa [F, shift, osiiPositiveRealTimeEmbed] using
       sub_eq_zero.mpr h
   intro ζ hζ
   have hz :

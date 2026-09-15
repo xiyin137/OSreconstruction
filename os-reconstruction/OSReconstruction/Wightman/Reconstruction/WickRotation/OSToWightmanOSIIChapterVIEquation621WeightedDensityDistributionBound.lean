@@ -124,7 +124,13 @@ theorem exists_osiiSpatialPolynomialWeightedL1_schwartz_bound
     have hsch :
         (1 + ‖x‖) ^ (p + n) * ‖phi x‖ <=
           2 ^ (p + n) * sem := by
-      simpa [s, sem] using
+      change (1 + ‖x‖) ^ (p + n) * ‖phi x‖ <=
+        2 ^ (p + n) *
+          (Finset.Iic (p + n, 0)).sup
+            (fun i : Nat × Nat =>
+              SchwartzMap.seminorm (E := Fin m -> Real) (F := Complex)
+                Complex i.1 i.2) phi
+      simpa using
         (SchwartzMap.one_add_le_sup_seminorm_apply
           (𝕜 := Complex) (m := (p + n, 0)) (k := p + n) (n := 0)
           le_rfl le_rfl phi x)
@@ -161,17 +167,28 @@ theorem continuous_osiiSpatialPolynomialWeightedL1Seminorm
   let q : Seminorm Complex (SchwartzMap (Fin m -> Real) Complex) :=
     s.sup (schwartzSeminormFamily Complex (Fin m -> Real) Complex)
   have hq : Continuous q := by
-    refine Seminorm.continuous_of_le ?_
-      (Seminorm.finset_sup_le_sum
-        (schwartzSeminormFamily Complex (Fin m -> Real) Complex) s)
-    change Continuous (fun phi =>
-      Seminorm.coeFnAddMonoidHom Complex _
-        (∑ i ∈ s,
-          schwartzSeminormFamily Complex (Fin m -> Real) Complex i) phi)
-    simp_rw [map_sum, Finset.sum_apply]
-    exact continuous_finset_sum _ fun i _ =>
-      (schwartz_withSeminorms Complex
-        (Fin m -> Real) Complex).continuous_seminorm i
+    dsimp [q]
+    have hq_all : ∀ t : Finset (Nat × Nat), Continuous
+        ((t.sup (schwartzSeminormFamily Complex
+          (Fin m -> Real) Complex) :
+            Seminorm Complex (SchwartzMap (Fin m -> Real) Complex)) :
+          SchwartzMap (Fin m -> Real) Complex -> Real) := by
+      intro t
+      induction t using Finset.induction_on with
+      | empty =>
+          change Continuous (fun _ :
+            SchwartzMap (Fin m -> Real) Complex => (0 : Real))
+          fun_prop
+      | insert i t hi ih =>
+          rw [Finset.sup_insert]
+          change Continuous (fun phi : SchwartzMap (Fin m -> Real) Complex =>
+            max ((schwartzSeminormFamily Complex
+              (Fin m -> Real) Complex i) phi)
+              ((t.sup (schwartzSeminormFamily Complex
+                (Fin m -> Real) Complex)) phi))
+          exact ((schwartz_withSeminorms Complex
+            (Fin m -> Real) Complex).continuous_seminorm i).max ih
+    exact hq_all s
   let K' : NNReal := ⟨K, hK.le⟩
   have hKq : Continuous (K' • q) := by
     change Continuous (fun phi => K * q phi)
@@ -179,7 +196,10 @@ theorem continuous_osiiSpatialPolynomialWeightedL1Seminorm
   refine Seminorm.continuous_of_le hKq ?_
   apply Seminorm.le_def.mpr
   intro phi
-  simpa [q, K'] using hbound phi
+  change osiiSpatialPolynomialWeightedL1 p phi <=
+    K * (s.sup
+      (schwartzSeminormFamily Complex (Fin m -> Real) Complex)) phi
+  exact hbound phi
 
 /-- Native Section-4.3 form of the weighted-`L1` seminorm estimate. -/
 structure OSIIEquation621WeightedL1Section43BoundData
@@ -455,7 +475,10 @@ theorem tendsto_radiusPolynomialCoefficient_one
     Tendsto (fun N => (1 + |Q.radius N|) ^ p) atTop (nhds 1) := by
   have hcontinuous : Continuous (fun r : Real => (1 + |r|) ^ p) := by
     fun_prop
-  simpa using hcontinuous.continuousAt.tendsto.comp Q.radius_tendsto
+  change Tendsto (((fun r : Real => (1 + |r|) ^ p) ∘ Q.radius))
+    atTop (nhds 1)
+  convert hcontinuous.continuousAt.tendsto.comp Q.radius_tendsto using 1 <;>
+    norm_num
 
 /-- Section-4.3 form of the sharp radius-dependent probe estimate. -/
 theorem weightedL1_section43Probe_le_radius

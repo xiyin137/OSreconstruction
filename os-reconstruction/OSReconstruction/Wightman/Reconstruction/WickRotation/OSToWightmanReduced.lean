@@ -59,11 +59,13 @@ theorem permOnReducedDiff_ofReal_im_zero
     have hreal :
         x ⟨j.val + 1, by omega⟩ μ - x ⟨j.val, by omega⟩ μ =
           ξ j μ := by
-      simpa [x, BHW.reducedDiffMapReal_apply] using
+      have h :=
         congrFun
           (congrFun
             (BHW.reducedDiffMapReal_realDiffCoordCLE_symm_prependBasepointReal
               (d := d) (m := m) (0 : SpacetimeDim d) ξ) j) μ
+      rw [BHW.reducedDiffMapReal_apply] at h
+      exact h
     exact_mod_cast hreal
   have hperm :
       BHW.permOnReducedDiff (d := d) (n := m + 1) σ
@@ -250,7 +252,8 @@ theorem reducedPairDiffCLM_adjacent_eq_proj
       (congrFun
         (BHW.reducedDiffMapReal_realDiffCoordCLE_symm_prependBasepointReal
           d m (0 : SpacetimeDim d) ξ) ⟨i.val, by omega⟩) μ
-  simpa [BHW.reducedDiffMapReal_apply] using hred
+  rw [BHW.reducedDiffMapReal_apply] at hred
+  exact hred
 
 omit [NeZero d] in
 /-- For adjacent pairs, the selected spacelike reduced edge is the preimage of
@@ -297,10 +300,13 @@ theorem continuous_replaceReducedCoord
   intro μ
   by_cases hrq : r = q
   · subst hrq
-    simpa [replaceReducedCoord] using
-      ((continuous_apply μ).comp continuous_snd)
-  · simpa [replaceReducedCoord, hrq] using
-      ((continuous_apply μ).comp ((continuous_apply r).comp continuous_fst))
+    apply ((continuous_apply μ).comp continuous_snd).congr
+    intro p
+    simp [replaceReducedCoord]
+  · apply
+      ((continuous_apply μ).comp ((continuous_apply r).comp continuous_fst)).congr
+    intro p
+    simp [replaceReducedCoord, hrq]
 
 /-- The selected reduced spacelike edge is open. -/
 theorem isOpen_reducedSpacelikeSwapEdge
@@ -390,7 +396,8 @@ theorem reducedDiffMapReal_mem_reducedSpacelikeSwapEdge_of_areSpacelikeSeparated
       reducedSpacelikeSwapEdge (d := d) m i j := by
   have hbase :
       MinkowskiSpace.IsSpacelike d (fun μ => x i μ - x j μ) := by
-    simpa [MinkowskiSpace.AreSpacelikeSeparated, Pi.sub_apply] using hsp
+    change MinkowskiSpace.IsSpacelike d (x i - x j)
+    exact hsp
   have hneg :
       MinkowskiSpace.IsSpacelike d (fun μ => x j μ - x i μ) := by
     have h := (minkowski_isSpacelike_neg_iff (d := d)

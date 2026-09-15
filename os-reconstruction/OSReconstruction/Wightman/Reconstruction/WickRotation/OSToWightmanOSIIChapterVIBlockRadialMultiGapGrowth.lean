@@ -700,13 +700,15 @@ theorem exists_explicitFrozenPacket_cosh_bound
   have hE : 1 <= E := by
     simpa [E, G] using one_le_multiGapGaugeExp x
   have hconfigL : 1 + norm aL <= K * E := by
-    simpa [aL, K, E, G,
-      osiiStep4MultiGapLeftSpectatorConfiguration] using
+    change 1 + norm (fun j => -osiiAxisPairChronologicalPointTranslation D.T
+      (osiiStep4MultiGapLeftSpectatorLogCoordinates d k x q.1) j) <= K * E
+    simpa [K, E, G] using
       one_add_norm_multiGapLeftSpectatorConfiguration_le_cosh
         d k D.T x q.1
   have hconfigR : 1 + norm aR <= K * E := by
-    simpa [aR, K, E, G,
-      osiiStep4MultiGapRightSpectatorConfiguration] using
+    change 1 + norm (fun j => -osiiAxisPairChronologicalPointTranslation D.T
+      (osiiStep4MultiGapRightSpectatorLogCoordinates d k x q.1) j) <= K * E
+    simpa [K, E, G] using
       one_add_norm_multiGapRightSpectatorConfiguration_le_cosh
         d k D.T x q.1
   have hpowL : (1 + norm aL) ^ NL <= K ^ NL * E ^ NL := by

@@ -94,9 +94,10 @@ theorem spatialSmearing_eq_rotatedTubeScalar
       (phi : SchwartzMap (Fin k -> Real) Complex) :
       Integrable (fun t => F
         (fun j => (t j : Complex) + (y j : Complex) * I) * phi t) := by
-    simpa only [F, sub_mul, Complex.ofReal_one, one_mul] using
-      (hHint y hy 1 zero_lt_one phi).sub
-        (B.rotatedTubeScalar_slice_integrable chi y hy 1 zero_lt_one phi)
+    exact ((hHint y hy 1 zero_lt_one phi).sub
+      (B.rotatedTubeScalar_slice_integrable chi y hy 1 zero_lt_one phi)).congr
+        (Filter.Eventually.of_forall (fun t => by
+          simp only [F, sub_mul, Pi.sub_apply, Complex.ofReal_one, one_mul]))
   have hFbv (phi : SchwartzMap (Fin k -> Real) Complex)
       (eta : Fin k -> Real) (heta : eta ∈ osiiTimePositiveCone k) :
       Tendsto (fun epsilon : Real => ∫ t : Fin k -> Real,
@@ -131,8 +132,14 @@ def toForwardTubeTimeSliceRealizationData
     intro eta heta epsilon hepsilon t chi
     rw [← H.spatialSmearing_eq_pureTimeSpatialPairing chi eta t epsilon,
       B.spatialSmearing_eq_rotatedTubeScalar H chi _ (by
-        change (fun j => _) ∈ osiiTimePositiveCone k
-        simpa using osiiTimePositiveCone_isCone k eta heta epsilon hepsilon),
+        change (fun j => ((t j : Complex) +
+          (epsilon : Complex) * (eta j : Complex) * I).im) ∈
+            osiiTimePositiveCone k
+        rw [show (fun j => ((t j : Complex) +
+            (epsilon : Complex) * (eta j : Complex) * I).im) = epsilon • eta by
+          funext j
+          simp [Pi.smul_apply, smul_eq_mul]]
+        exact osiiTimePositiveCone_isCone k eta heta epsilon hepsilon),
       OSIITimeContinuationStage.rotatedTubeScalar, rotate_timeSlice]
 
 end OSIIFullTimeStageTemperedBoundaryData

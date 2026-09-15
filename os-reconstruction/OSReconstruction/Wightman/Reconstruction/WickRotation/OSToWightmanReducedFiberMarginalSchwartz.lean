@@ -106,10 +106,19 @@ theorem reducedFiberMarginal_absPerm_eq
               (d := d) m x₀ ξ)
             (σ 0))
           μ
-      simpa [y, c, Pi.add_apply] using h
+      change y (σ 0) μ = x₀ μ + c μ
+      exact h
     have hz_base : z 0 = x₀ + c := by
       ext μ
-      simp [z]
+      have h :=
+        congrFun
+          (congrFun
+            (realDiffCoordCLE_symm_prependBasepointReal_eq_diffVarSection
+              (d := d) m (x₀ + c) η)
+            0)
+          μ
+      change z 0 μ = (x₀ + c) μ + diffVarSection d m η 0 μ at h
+      simpa only [diffVarSection_zero, add_zero] using h
     have hz_red :
         BHW.reducedDiffMapReal (m + 1) d z = η := by
       simpa [z] using
@@ -136,7 +145,9 @@ theorem reducedFiberMarginal_absPerm_eq
         rw [hk_succ]
         change y (σ j.succ) μ - y (σ j.castSucc) μ =
           z j.succ μ - z j.castSucc μ
-        simpa [BHW.reducedDiffMapReal_apply] using hleft.trans hright.symm
+        change y (σ j.succ) μ - y (σ j.castSucc) μ = η j μ at hleft
+        change z j.succ μ - z j.castSucc μ = η j μ at hright
+        exact hleft.trans hright.symm
     change f (fun k => y (σ k)) = f z
     rw [hperm_eq_z]
   change
@@ -220,7 +231,8 @@ theorem hasCompactSupport_prependField_spacetime
       refine Fin.cases ?_ ?_ j
       · exact continuous_fst
       · intro i
-        simpa using (continuous_apply i).comp continuous_snd
+        exact continuous_pi fun μ =>
+          (continuous_apply μ).comp ((continuous_apply i).comp continuous_snd)
     simpa [K] using (hχ.isCompact.prod hφ.isCompact).image hcont
   refine HasCompactSupport.of_support_subset_isCompact hKcompact ?_
   intro x hx

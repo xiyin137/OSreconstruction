@@ -392,14 +392,16 @@ theorem rootSmearedArbitrarySpatialGeneratorCandidate_eq_hermiteSum_of_split
       SCV.realToComplex xi ∈ generatorSemigroupDomain i
         (H.left i).domain (H.right i).domain := by
     intro xi hxi
+    change SCV.realToComplex xi ∈ generatorSemigroupDomain i
+      (D.left i).domain (D.right i).domain
+    rw [show SCV.realToComplex xi = osiiPositiveRealTimeEmbed xi by rfl]
     have hprops := hball hxi.1
-    simpa [SCV.realToComplex, osiiPositiveRealTimeEmbed] using
-      (positiveRealTimeEmbed_mem_generatorSemigroupDomain
-        i xi hxi.2
-        ((D.left i).realRegion_to_domain
-          (i.leftRealCoordinates xi) hprops.2.1)
-        ((D.right i).realRegion_to_domain
-          (i.rightRealCoordinates xi) hprops.2.2.1))
+    exact positiveRealTimeEmbed_mem_generatorSemigroupDomain
+      i xi hxi.2
+      ((D.left i).realRegion_to_domain
+        (i.leftRealCoordinates xi) hprops.2.1)
+      ((D.right i).realRegion_to_domain
+        (i.rightRealCoordinates xi) hprops.2.2.1)
   have hreal : forall xi, xi ∈ V ->
       D.rootSmearedArbitrarySpatialGeneratorCandidate
           lgc i timeScale leftTest rightTest (SCV.realToComplex xi) =
@@ -408,9 +410,9 @@ theorem rootSmearedArbitrarySpatialGeneratorCandidate_eq_hermiteSum_of_split
           (GeneratorHermiteHilbertFieldFamilyData.generatorSplitGlobalSpatialPullbackCLM
             (d := d) i targetFull) := by
     intro xi hxi
+    rw [show SCV.realToComplex xi = osiiPositiveRealTimeEmbed xi by rfl]
     have hprops := hball hxi.1
-    simpa [SCV.realToComplex, osiiPositiveRealTimeEmbed] using
-      hprops.2.2.2 hxi.2
+    exact hprops.2.2.2 hxi.2
   exact
     rootSmearedArbitrarySpatialGeneratorCandidate_eq_hermiteSum_of_realEdge
       H lgc i timeScale leftTest rightTest
@@ -441,6 +443,8 @@ theorem rootSmearedSpatialHermiteGeneratorSum_sub
   have hK_compact : IsCompact K := isCompact_singleton
   have hK_domain : K ⊆ generatorSemigroupDomain i
       (D.left i).domain (D.right i).domain := by
+    change z ∈ generatorSemigroupDomain i
+      (D.left i).domain (D.right i).domain at hz
     simpa [K] using hz
   have hF :=
     (D.tendstoUniformlyOn_rootSmearedSpatialHermiteGeneratorFiniteShell_on_compact

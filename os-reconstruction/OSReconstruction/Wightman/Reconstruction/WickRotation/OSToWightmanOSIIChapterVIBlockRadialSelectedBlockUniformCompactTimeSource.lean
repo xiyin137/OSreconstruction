@@ -135,7 +135,8 @@ theorem osiiStep4SelectedBlockLeftPositiveTimeSource_tsupport_subset_commonCarri
   simpa [osiiStep4SelectedBlockLeftPositiveTimeSource,
     osiiStep4RadialEndpointPositiveTimeSource,
     osiiStep4RadialEndpointSourceFamily,
-    osiiStep4SelectedBlockLeftEndpointSourceParameter] using
+    osiiStep4SelectedBlockLeftEndpointSourceParameter,
+    osiiStep4SelectedBlockLeftCommonCarrier] using
     osiiStep4RadialEndpointSourceFamily_tsupport_subset_commonCarrier
       d n hrho
       (osiiStep4SelectedBlockLeftEndpointCenter d n m center)
@@ -157,7 +158,8 @@ theorem osiiStep4SelectedBlockRightPositiveTimeSource_tsupport_subset_commonCarr
   simpa [osiiStep4SelectedBlockRightPositiveTimeSource,
     osiiStep4RadialEndpointPositiveTimeSource,
     osiiStep4RadialEndpointSourceFamily,
-    osiiStep4SelectedBlockRightEndpointSourceParameter] using
+    osiiStep4SelectedBlockRightEndpointSourceParameter,
+    osiiStep4SelectedBlockRightCommonCarrier] using
     osiiStep4RadialEndpointSourceFamily_tsupport_subset_commonCarrier
       d m hrho
       (osiiStep4SelectedBlockRightEndpointCenter d n m center)

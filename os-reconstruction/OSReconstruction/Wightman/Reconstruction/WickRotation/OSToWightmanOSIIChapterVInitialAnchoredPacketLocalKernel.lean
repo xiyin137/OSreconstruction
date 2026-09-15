@@ -322,7 +322,11 @@ theorem LocalKernelWindowData.localRecenteredDistributionOfOS_partialEval_contin
               nlinarith [W.sigma_pos]))
     have hrestrict :=
       continuousOn_iff_continuous_restrict.mp hcontOn
-    simpa [T, B] using hrestrict
+    change Continuous
+      (B.restrict fun z =>
+        localRecenteredDistributionOfOS
+          R OS η hηsum χ w0 level z ψ)
+    exact hrestrict
   let f : B → SchwartzMap (Fin k → ℝ) ℂ :=
     fun z => SCV.schwartzPartialEval₁CLM z.1 F
   have hf : Continuous f := by
@@ -336,12 +340,15 @@ theorem LocalKernelWindowData.localRecenteredDistributionOfOS_partialEval_contin
     fun_prop
   have hdiag :
       Continuous (fun z : B => T z (f z)) := by
-    simpa using hjoint.comp hdiagMap
+    change Continuous
+      ((fun p : B × B => T p.1 (f p.2)) ∘ fun z : B => (z, z))
+    exact hjoint.comp hdiagMap
   have hcut :
       Continuous (fun z : B => χU z.1) :=
     χU.continuous.comp continuous_subtype_val
   rw [continuousOn_iff_continuous_restrict]
-  simpa [T, f, B] using hcut.mul hdiag
+  change Continuous (fun z : B => χU z.1 * T z (f z))
+  exact hcut.mul hdiag
 
 /-- One chart cutoff constructs the pairing kernels at every spatial level,
 and the whole level family shares a single mixed Schwartz-seminorm bound. -/

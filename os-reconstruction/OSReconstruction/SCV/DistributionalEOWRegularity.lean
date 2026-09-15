@@ -66,8 +66,9 @@ theorem dzSchwartzCLM_tsupport_subset
   have hI :
       tsupport ((idim : SchwartzMap X ℂ) : X → ℂ) ⊆
         tsupport (dim : X → ℂ) := by
-    simpa using
-      tsupport_smul_subset_right (fun _ : X => Complex.I) (dim : X → ℂ)
+    rw [show ((idim : SchwartzMap X ℂ) : X → ℂ) =
+        fun x => Complex.I * dim x by rfl]
+    exact tsupport_smul_subset_right (fun _ : X => Complex.I) (dim : X → ℂ)
   have hnI :
       tsupport ((nidim : SchwartzMap X ℂ) : X → ℂ) ⊆
         tsupport (dim : X → ℂ) := by
@@ -93,9 +94,12 @@ theorem dzSchwartzCLM_tsupport_subset
           tsupport
             (((1 / 2 : ℂ) • nidim : SchwartzMap X ℂ) :
               X → ℂ) := by
-    simpa using
-      tsupport_add (((1 / 2 : ℂ) • dre : SchwartzMap X ℂ) : X → ℂ)
-        (((1 / 2 : ℂ) • nidim : SchwartzMap X ℂ) : X → ℂ)
+    rw [show
+      ((((1 / 2 : ℂ) • dre +
+        (1 / 2 : ℂ) • nidim) : SchwartzMap X ℂ) : X → ℂ) =
+        fun x => ((1 / 2 : ℂ) • dre) x + ((1 / 2 : ℂ) • nidim) x by rfl]
+    exact tsupport_add (((1 / 2 : ℂ) • dre : SchwartzMap X ℂ) : X → ℂ)
+      (((1 / 2 : ℂ) • nidim : SchwartzMap X ℂ) : X → ℂ)
   intro x hx
   have hx' :
       x ∈
@@ -508,9 +512,14 @@ theorem supportsInOpen_transport_to_euclidean {m : ℕ}
             ComplexChartSpace m → ℂ) =
           e.toHomeomorph ⁻¹'
             tsupport (φ : EuclideanSpace ℝ (Fin (m * 2)) → ℂ) := by
-      simpa [e, complexChartEuclideanSchwartzCLE_symm_apply] using
-        (tsupport_comp_eq_preimage
-          (g := (φ : EuclideanSpace ℝ (Fin (m * 2)) → ℂ)) e.toHomeomorph)
+      rw [show
+        (((complexChartEuclideanSchwartzCLE m).symm φ :
+            SchwartzMap (ComplexChartSpace m) ℂ) : ComplexChartSpace m → ℂ) =
+          (φ : EuclideanSpace ℝ (Fin (m * 2)) → ℂ) ∘ e by
+        funext z
+        simp [e, complexChartEuclideanSchwartzCLE_symm_apply]]
+      exact tsupport_comp_eq_preimage
+        (g := (φ : EuclideanSpace ℝ (Fin (m * 2)) → ℂ)) e.toHomeomorph
     intro z hz
     have hez :
         e z ∈ tsupport
@@ -542,9 +551,15 @@ theorem supportsInOpen_transport_from_euclidean {m : ℕ}
             EuclideanSpace ℝ (Fin (m * 2)) → ℂ) =
           e.toHomeomorph.symm ⁻¹'
             tsupport (φ : ComplexChartSpace m → ℂ) := by
-      simpa [e, complexChartEuclideanSchwartzCLE_apply] using
-        (tsupport_comp_eq_preimage
-          (g := (φ : ComplexChartSpace m → ℂ)) e.toHomeomorph.symm)
+      rw [show
+        ((complexChartEuclideanSchwartzCLE m φ :
+            SchwartzMap (EuclideanSpace ℝ (Fin (m * 2))) ℂ) :
+              EuclideanSpace ℝ (Fin (m * 2)) → ℂ) =
+          (φ : ComplexChartSpace m → ℂ) ∘ e.symm by
+        funext x
+        simp [e, complexChartEuclideanSchwartzCLE_apply]]
+      exact tsupport_comp_eq_preimage
+        (g := (φ : ComplexChartSpace m → ℂ)) e.toHomeomorph.symm
     intro x hx
     have hex :
         e.symm x ∈ tsupport (φ : ComplexChartSpace m → ℂ) := by
@@ -651,7 +666,9 @@ theorem complexChartEuclideanCLE_volumePreserving (m : ℕ) :
     MeasurePreserving (complexChartEuclideanCLE m) := by
   have hmp : MeasurePreserving (complexChartEuclideanMeasurableEquiv m) :=
     (complexChartRealFlattenMeasurableEquiv_measurePreserving m).trans
-      (by simpa using (PiLp.volume_preserving_toLp (Fin (m * 2))))
+      (by
+        change MeasurePreserving (@WithLp.toLp 2 (Fin (m * 2) → ℝ))
+        exact PiLp.volume_preserving_toLp (Fin (m * 2)))
   exact hmp.congr (complexChartEuclideanCLE m).continuous.measurable (by
     filter_upwards with z
     exact complexChartEuclideanMeasurableEquiv_apply m z)

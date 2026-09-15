@@ -328,10 +328,16 @@ theorem selectedBlockChronologicalSource_translate_right_diffVarReduction
         BHW.reducedDiffMapReal ((n + 1) + (m + 1)) d
             (fun k mu =>
               a mu + diffVarSection d (n + 1 + m) xi k mu) = xi := by
-      simpa only [Nat.add_assoc] using
-        OSIIChapterV.reducedDiffMapReal_diffVarSection a xi
+      ext i mu
+      rw [BHW.reducedDiffMapReal_apply]
+      let j : Fin (n + 1 + m) := ⟨i.val, by omega⟩
+      change
+        (a mu + diffVarSection d (n + 1 + m) xi j.succ mu) -
+            (a mu + diffVarSection d (n + 1 + m) xi j.castSucc mu) =
+          xi j mu
+      rw [diffVarSection_succ]
+      ring
     rw [hbase]
-    rfl
   have hright : forall a : SpacetimeDim d,
       osiiStep4SelectedBlockChronologicalRightConfig d n m
           (osiiStep4ShiftChronologicalRight d n m
@@ -451,6 +457,8 @@ theorem chronologicalOSSource_compactPositiveSupport
       rw [BHW.reducedDiffMapReal_apply]
       exact sub_pos.mpr ((hL j.castSucc).2 j.succ (by simp))
     rw [osiiStep4SelectedBlockChronologicalLeft_reducedDiff] at hgapL
+    rw [osiiStep4EuclideanParityMatrix_mulVec_zero] at hgapL
+    rw [BHW.reducedDiffMapReal_apply] at hgapL ⊢
     simpa [hindex] using hgapL
   · by_cases hbridge : i.val = n
     · have hi : i = osiiStep4SelectedBlockIndex n m := by
@@ -466,7 +474,8 @@ theorem chronologicalOSSource_compactPositiveSupport
             (osiiStep4SelectedBlockIndex n m) 0 := by
         rw [← hsum]
         exact add_pos (hL 0).1 (hR 0).1
-      simpa only [Nat.add_assoc] using hpos
+      rw [BHW.reducedDiffMapReal_apply] at hpos ⊢
+      exact hpos
     · have hright : n + 1 <= i.val := by omega
       let j : Fin m := ⟨i.val - (n + 1), by omega⟩
       have hindex : osiiStep4AfterBlockIndex n m j = i := by
@@ -479,6 +488,7 @@ theorem chronologicalOSSource_compactPositiveSupport
         rw [BHW.reducedDiffMapReal_apply]
         exact sub_pos.mpr ((hR j.castSucc).2 j.succ (by simp))
       rw [osiiStep4SelectedBlockChronologicalRight_reducedDiff] at hgapR
+      rw [BHW.reducedDiffMapReal_apply] at hgapR ⊢
       simpa [hindex] using hgapR
 
 theorem hasCompactSupport_translateSchwartzNPoint
@@ -490,9 +500,18 @@ theorem hasCompactSupport_translateSchwartzNPoint
       (translateSchwartzNPoint (d := d) v f : NPointDomain d k -> Complex) := by
   change HasCompactSupport
     (fun x : NPointDomain d k => f (fun i => x i - v))
-  simpa [Pi.add_apply, sub_eq_add_neg] using
-    hf.comp_homeomorph
-      (Homeomorph.addRight (fun _ : Fin k => -v))
+  have hcompact := hf.comp_homeomorph
+    (Homeomorph.addRight (fun _ : Fin k => -v))
+  change HasCompactSupport
+    (fun x : NPointDomain d k => f (x + fun _ : Fin k => -v)) at hcompact
+  have hfun :
+      (fun x : NPointDomain d k => f (x + fun _ : Fin k => -v)) =
+        fun x => f (fun i => x i - v) := by
+    funext x
+    apply congrArg f
+    funext i
+    simp [sub_eq_add_neg]
+  rwa [hfun] at hcompact
 
 theorem selectedBlockTranslatedRight_schwinger_eq_positiveLifted
     (d n m : Nat) [NeZero d]
@@ -599,14 +618,19 @@ theorem selectedBlockTranslatedRight_schwinger_eq_positiveLifted
         d n m hrho center y y' hcenter v
     have htargetRed := OSIIChapterV.diffVarReduction_reducedTestLift
       (osiiStep4PositiveTimeBasepointCutoff d) phi
-    simpa [chron, target, phi, fL, fR, fR0] using
+    simpa [chron, target, phi, fL, fR, fR0,
+      osiiStep4PositiveLiftedCenteredPartialConvolutionKernelFullSource] using
       hchronRed.trans htargetRed.symm
   have hReducedSchwinger :
       OS.S ((n + 1) + (m + 1)) chronZ =
         OS.S ((n + 1) + (m + 1)) targetZ := by
     have h := OSIIChapterV.schwinger_eq_of_diffVarReduction_eq
       OS chron target hchronSupport htargetSupport hchron targetZ.2 hred
-    simpa only [Nat.add_assoc] using h
+    change OS.S (n + 1 + m + 1) ⟨chron, hchron⟩ =
+      OS.S (n + 1 + m + 1) ⟨target, targetZ.2⟩ at h
+    change OS.S (n + 1 + m + 1) ⟨chron, hchron⟩ =
+      OS.S (n + 1 + m + 1) ⟨target, targetZ.2⟩
+    exact h
   calc
     OS.S ((n + 1) + (m + 1))
         (ZeroDiagonalSchwartz.ofClassical

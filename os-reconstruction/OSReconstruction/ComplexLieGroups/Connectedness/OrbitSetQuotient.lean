@@ -36,9 +36,14 @@ private instance orbitSubtypeContinuousSMul {n : ℕ} (w : Fin n → Fin (d + 1)
   continuous_smul := by
     refine Continuous.subtype_mk
       (by
-        simpa using
-          (continuous_fst.smul (continuous_subtype_val.comp continuous_snd) :
-            Continuous (fun p : ComplexLorentzGroup d × orbitSubtype (d := d) w => p.1 • p.2.1)))
+        change Continuous
+          (fun p : ComplexLorentzGroup d × orbitSubtype (d := d) w => p.1 • p.2.1)
+        rw [show (fun p : ComplexLorentzGroup d × orbitSubtype (d := d) w => p.1 • p.2.1) =
+            (fun p : ComplexLorentzGroup d × orbitSubtype (d := d) w => p.1) •
+              (fun p : ComplexLorentzGroup d × orbitSubtype (d := d) w => p.2.1) by
+          funext p
+          rfl]
+        exact continuous_fst.smul (continuous_subtype_val.comp continuous_snd))
       (by
         intro p
         rcases p.2.2 with ⟨g, hg⟩
@@ -69,8 +74,15 @@ private theorem orbitSubtypeMap_isQuotient {n : ℕ}
         (X := orbitSubtype (d := d) w)
         (x := (⟨w, by exact MulAction.mem_orbit_self w⟩ : orbitSubtype (d := d) w)))
   have hcont : Continuous (orbitSubtypeMap (d := d) w) := by
-    simpa [orbitSubtypeMap] using
-      ((continuous_id : Continuous (fun g : ComplexLorentzGroup d => g)).smul continuous_const)
+    change Continuous (fun g : ComplexLorentzGroup d =>
+      g • (⟨w, by exact MulAction.mem_orbit_self w⟩ : orbitSubtype (d := d) w))
+    rw [show (fun g : ComplexLorentzGroup d =>
+        g • (⟨w, by exact MulAction.mem_orbit_self w⟩ : orbitSubtype (d := d) w)) =
+        (fun g : ComplexLorentzGroup d => g) •
+          (fun _ => (⟨w, by exact MulAction.mem_orbit_self w⟩ : orbitSubtype (d := d) w)) by
+      funext g
+      rfl]
+    exact (continuous_id : Continuous (fun g : ComplexLorentzGroup d => g)).smul continuous_const
   have hsurj : Function.Surjective (orbitSubtypeMap (d := d) w) := by
     intro y
     rcases y with ⟨y, hy⟩
@@ -91,8 +103,9 @@ private theorem orbitSetToTubeSubtype_isQuotient {n : ℕ}
     orbitSubtypeMap_isQuotient (d := d) (n := n) w
   have hs : IsOpen (orbitTubeSubtype (d := d) (n := n) w) :=
     orbitTubeSubtype_isOpen (d := d) (n := n) w
-  simpa [orbitSetToTubeSubtype, orbitSet, orbitTubeSubtype, orbitSubtypeMap] using
-    hq.restrictPreimage_isOpen hs
+  have hqr := hq.restrictPreimage_isOpen hs
+  change Topology.IsQuotientMap (orbitSetToTubeSubtype (d := d) (n := n) w) at hqr
+  exact hqr
 
 private theorem orbitImage_eq_ft_inter_orbitRange {n : ℕ}
     (w : Fin n → Fin (d + 1) → ℂ) :
@@ -109,11 +122,13 @@ private theorem orbitImage_eq_ft_inter_orbitRange {n : ℕ}
   · rintro ⟨hzFT, ⟨y, rfl⟩⟩
     rcases y.2 with ⟨Λ, hΛ⟩
     have hmap : orbitMap w Λ = y.1 := by
-      simpa [orbitMap] using hΛ
+      change complexLorentzAction Λ w = y.1 at hΛ
+      exact hΛ
     have hΛFT : orbitMap w Λ ∈ ForwardTube d n := by
       simpa [hmap] using hzFT
     refine ⟨Λ, ?_, hmap⟩
-    simpa [orbitSet] using hΛFT
+    change complexLorentzAction Λ w ∈ ForwardTube d n
+    exact hΛFT
 
 /-- Baire-orbit reduction: if the orbit subtype through `w` is Baire, then the
 restricted orbit map `orbitSet w → orbitMap w '' orbitSet w` is a quotient map. -/
@@ -157,8 +172,9 @@ theorem orbitSet_restricted_orbitMap_isQuotient_of_baireOrbit {n : ℕ}
       orbitSetToTubeSubtype (d := d) (n := n) w := by
     funext Λ
     apply Subtype.ext
-    simpa [q, orbitSetToTubeSubtype, orbitSubtypeMap, orbitMap] using
-      (hHomeo_coe (orbitSetToTubeSubtype (d := d) (n := n) w Λ))
+    have hcoe := (hHomeo_coe (orbitSetToTubeSubtype (d := d) (n := n) w Λ)).symm
+    change complexLorentzAction (Λ : ComplexLorentzGroup d) w = _ at hcoe
+    simpa [q, orbitSetToTubeSubtype, orbitSubtypeMap, orbitMap] using hcoe
   have hq_comp : Topology.IsQuotientMap
       ((hHomeo : orbitTubeSubtype (d := d) (n := n) w → orbitMap w '' orbitSet w) ∘
         orbitSetToTubeSubtype (d := d) (n := n) w) :=

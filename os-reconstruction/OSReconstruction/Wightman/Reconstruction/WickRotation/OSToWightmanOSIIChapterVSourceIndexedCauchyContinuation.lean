@@ -570,7 +570,9 @@ theorem successorField_eventuallyEq
       H ι k scalar P)
     (a : ι) :
     D.successorField a =ᶠ[𝓝 D.center] P.field a := by
-  simpa only [successorField,
+  change (fun z => D.sourceIncrementField a (z - D.center)) =ᶠ[𝓝 D.center]
+    P.field a
+  simpa only [
     ComplexCenteredHilbertCauchyContinuationData.absoluteField,
     diagonalContinuationData] using
       (D.diagonalContinuationData a)

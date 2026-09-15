@@ -289,7 +289,9 @@ private theorem combined_integral_eq_laplace
   have hsupp_nonneg : μ_real (Set.Iio 0) = 0 :=
     selfAdjointSpectralMeasureDiagonalReal_Iio_eq_zero_of_spectrum_subset_Icc A hA v hspec
   have hae_nonneg : ∀ᵐ s ∂μ_real, 0 ≤ s := by
-    rw [ae_iff]; simpa [Set.compl_setOf, not_le] using hsupp_nonneg
+    rw [ae_iff]
+    rw [show {s : ℝ | ¬0 ≤ s} = Set.Iio 0 by ext; simp]
+    exact hsupp_nonneg
   have step2 : ∫ s, h s ∂μ_real =
       ∫ s, (if 0 < s then Complex.exp (z * ↑(Real.log s)) else 0) ∂μ_real := by
     apply integral_congr_ae
@@ -468,17 +470,15 @@ private theorem continuous_specSemiFRe_uncurry
       have hsnd :
           ContinuousAt (fun q : {z : ℂ // 0 < z.re} × spectrum ℝ A => q.2.1) p :=
         (continuous_subtype_val.comp continuous_snd).continuousAt
-      have hsndSubtype :
-          ContinuousAt (fun q : {z : ℂ // 0 < z.re} × spectrum ℝ A => q.2) p :=
-        continuous_snd.continuousAt
       have hlog' : ContinuousAt (fun s : ℝ => Real.log s) p.2.1 :=
         Real.continuousAt_log hs_pos.ne'
-      have hlogSubtype :
-          ContinuousAt (fun s : spectrum ℝ A => Real.log s.1) p.2 := by
-        simpa using hlog'.comp continuous_subtype_val.continuousAt
       have hlog :
           ContinuousAt (fun q : {z : ℂ // 0 < z.re} × spectrum ℝ A => Real.log q.2.1) p :=
-        by simpa using hlogSubtype.comp hsndSubtype
+        by
+          change ContinuousAt ((fun s : ℝ => Real.log s) ∘
+            (fun q : {z : ℂ // 0 < z.re} × spectrum ℝ A => q.2.1)) p
+          exact hlog'.comp
+            (f := fun q : {z : ℂ // 0 < z.re} × spectrum ℝ A => q.2.1) hsnd
       exact (Real.continuous_exp.continuousAt.comp (hre.mul hlog)).mul
         (Real.continuous_cos.continuousAt.comp (him.mul hlog))
     exact hcont.congr <| by
@@ -553,17 +553,15 @@ private theorem continuous_specSemiFIm_uncurry
       have hsnd :
           ContinuousAt (fun q : {z : ℂ // 0 < z.re} × spectrum ℝ A => q.2.1) p :=
         (continuous_subtype_val.comp continuous_snd).continuousAt
-      have hsndSubtype :
-          ContinuousAt (fun q : {z : ℂ // 0 < z.re} × spectrum ℝ A => q.2) p :=
-        continuous_snd.continuousAt
       have hlog' : ContinuousAt (fun s : ℝ => Real.log s) p.2.1 :=
         Real.continuousAt_log hs_pos.ne'
-      have hlogSubtype :
-          ContinuousAt (fun s : spectrum ℝ A => Real.log s.1) p.2 := by
-        simpa using hlog'.comp continuous_subtype_val.continuousAt
       have hlog :
           ContinuousAt (fun q : {z : ℂ // 0 < z.re} × spectrum ℝ A => Real.log q.2.1) p :=
-        by simpa using hlogSubtype.comp hsndSubtype
+        by
+          change ContinuousAt ((fun s : ℝ => Real.log s) ∘
+            (fun q : {z : ℂ // 0 < z.re} × spectrum ℝ A => q.2.1)) p
+          exact hlog'.comp
+            (f := fun q : {z : ℂ // 0 < z.re} × spectrum ℝ A => q.2.1) hsnd
       exact (Real.continuous_exp.continuousAt.comp (hre.mul hlog)).mul
         (Real.continuous_sin.continuousAt.comp (him.mul hlog))
     exact hcont.congr <| by
@@ -594,10 +592,14 @@ theorem spectralSemigroupComplex_continuousOn
         simpa [Set.restrict_def] using (continuousOn_iff_continuous_restrict.mp hcont)⟩
   have hReC : Continuous fReCM := by
     refine ContinuousMap.continuous_of_continuous_uncurry fReCM ?_
-    simpa [fReCM, Function.uncurry] using continuous_specSemiFRe_uncurry (A := A) hspec
+    change Continuous (fun p : {z : ℂ // 0 < z.re} × spectrum ℝ A =>
+      specSemiFRe p.1.1 p.2.1)
+    exact continuous_specSemiFRe_uncurry (A := A) hspec
   have hImC : Continuous fImCM := by
     refine ContinuousMap.continuous_of_continuous_uncurry fImCM ?_
-    simpa [fImCM, Function.uncurry] using continuous_specSemiFIm_uncurry (A := A) hspec
+    change Continuous (fun p : {z : ℂ // 0 < z.re} × spectrum ℝ A =>
+      specSemiFIm p.1.1 p.2.1)
+    exact continuous_specSemiFIm_uncurry (A := A) hspec
   have hfReSection :
       ∀ z : HP, ContinuousOn (fun s : ℝ => specSemiFRe z.1 s) (spectrum ℝ A) := by
     intro z
@@ -627,7 +629,7 @@ theorem spectralSemigroupComplex_continuousOn
   rw [continuousOn_iff_continuous_restrict]
   unfold Set.restrict
   unfold spectralSemigroupComplex
-  simpa using hReOp.add (continuous_const.smul hImOp)
+  exact hReOp.add (hImOp.fun_const_smul Complex.I)
 
 /-- `z ↦ T(z)(y)` is continuous on `{z | Re(z) > 0}` for each fixed `y`.
 

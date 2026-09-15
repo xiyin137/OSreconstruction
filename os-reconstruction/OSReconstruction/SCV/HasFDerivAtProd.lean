@@ -57,7 +57,10 @@ theorem hasFDerivAt_of_partialFDerivsAt
     simpa [sub_eq_add_neg, add_assoc, add_left_comm, add_comm] using
       (hasFDerivAt_iff_isLittleO_nhds_zero.1 hF)
   have hB_to_snd : B =o[𝓝 0] fun h : E × F => h.2 := by
-    simpa [B] using hB0.comp_tendsto (ContinuousLinearMap.snd ℝ E F).continuous.continuousAt.tendsto
+    change
+      ((fun k : F => f (p.1, p.2 + k) - f p - φF p k) ∘ (fun h : E × F => h.2)) =o[𝓝 0]
+        ((fun k : F => k) ∘ (fun h : E × F => h.2))
+    exact hB0.comp_tendsto (ContinuousLinearMap.snd ℝ E F).continuous.continuousAt.tendsto
   have hB : B =o[𝓝 0] fun h : E × F => h := by
     exact hB_to_snd.trans_isBigO Asymptotics.isBigO_snd_prod'
   have hA : A =o[𝓝 0] fun h : E × F => h := by

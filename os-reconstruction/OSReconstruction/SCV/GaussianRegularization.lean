@@ -136,7 +136,7 @@ theorem integral_gaussianCoordinateSplit
   have hpair_int :
       Integrable (fun p : ℝ × (Fin (Fintype.card ι - 1) → ℝ) =>
         F (e.symm p)) := by
-    simpa [e] using hmp.symm.integrable_comp_of_integrable hF
+    exact hmp.symm.integrable_comp_of_integrable hF
   calc
     ∫ u : EuclideanSpace ℝ ι, F u =
         ∫ p : ℝ × (Fin (Fintype.card ι - 1) → ℝ),
@@ -503,9 +503,14 @@ theorem differentiable_gaussianRegularization_of_bounded
           fderiv ℂ
             (fun w : ι → ℂ => gaussianKernel c w p.2)
             p.1) := by
-    simpa [gaussianKernel] using
-      hkernel_fderiv_cont.comp
-        ((hrealEmbed_cont.comp continuous_snd).prodMk continuous_fst)
+    have hcomp := hkernel_fderiv_cont.comp
+      ((hrealEmbed_cont.comp continuous_snd).prodMk continuous_fst)
+    change Continuous
+      (fun p : (ι → ℂ) × EuclideanSpace ℝ ι =>
+        fderiv ℂ
+          (fun w => gaussianComplexKernel c w (gaussianRealEmbed p.2))
+          p.1) at hcomp
+    exact hcomp
   have hF_meas :
       ∀ᶠ w in nhds z, AEStronglyMeasurable (F w) volume := by
     refine Filter.Eventually.of_forall ?_
@@ -590,7 +595,7 @@ theorem differentiable_gaussianRegularization_of_bounded
     hasFDerivAt_integral_of_dominated_of_fderiv_le
       (Metric.ball_mem_nhds z (by positivity : (0 : ℝ) < 1 / 2))
       hF_meas hF_int hF'_meas h_bound hbound_int h_diff
-  simpa [gaussianRegularization, F] using hderiv.differentiableAt
+  exact hderiv.differentiableAt
 
 /-- One-variable Gaussian weight used in finite contour shifts. -/
 def gaussianContourWeight (b z u : ℂ) : ℂ :=
@@ -680,7 +685,10 @@ theorem gaussianContour_horizontal_shift
       (gaussianContourIntegrand b z g)
       (-T : ℂ) (T + y * I : ℂ)
       (by
-        simpa using hg.mul hkernel.differentiableOn)
+        unfold gaussianContourIntegrand
+        exact (hg.mul hkernel.differentiableOn).mono (by
+          intro u hu
+          simpa using hu))
   have hboundary' :
       (∫ x : ℝ in -T..T,
           gaussianContourIntegrand b z g x) -
@@ -770,8 +778,10 @@ theorem tendsto_integral_gaussianContourIntegrand_vertical_edge_atTop
           Real.exp (-c * ((x - edge T) ^ 2 - y ^ 2)))
         atTop (nhds 0) := by
     apply Real.tendsto_exp_atBot.comp
-    simpa only [Function.comp_apply, neg_mul] using
-      (tendsto_neg_atTop_atBot.comp hscale)
+    have hneg := tendsto_neg_atTop_atBot.comp hscale
+    convert hneg using 1
+    funext T
+    simp only [Function.comp_apply, neg_mul]
   have hupper :
       Tendsto
         (fun T : ℝ =>
@@ -1518,8 +1528,8 @@ theorem tendsto_setIntegral_norm_gaussianKernel_real_compl_ball
       apply Real.tendsto_exp_atBot.comp
       have hbc : Tendsto (fun c : ℝ => b * c) atTop atTop :=
         (tendsto_const_mul_atTop_of_pos hb).mpr tendsto_id
-      simpa only [Function.comp_apply] using
-        (tendsto_neg_atTop_atBot.comp hbc)
+      change Tendsto ((fun r : ℝ => -r) ∘ fun c : ℝ => b * c) atTop atBot
+      exact tendsto_neg_atTop_atBot.comp hbc
     simpa [upper, neg_mul] using hexp.const_mul (2 ^ p)
   refine
     tendsto_of_tendsto_of_tendsto_of_le_of_le'

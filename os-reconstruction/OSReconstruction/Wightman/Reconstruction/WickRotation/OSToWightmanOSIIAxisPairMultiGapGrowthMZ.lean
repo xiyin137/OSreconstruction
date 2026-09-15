@@ -253,7 +253,7 @@ theorem norm_toMZFamily_mul_logCoshDamping_le_chartConstant
         X.family.realEdge x
     rw [osiiAxisPairMultiGapUnflatten_realEmbed]
     rw [P.toMZFamily.realEdge_eq]
-    simpa [X,
+    simpa [toMZFamily, X,
       OSIIAxisPairMultiGapFlatCrossData.toFlattenedFlatCrossData] using
       (P.flatCross_realEdge fs
         (osiiAxisPairMultiGapUnflatten x)).symm

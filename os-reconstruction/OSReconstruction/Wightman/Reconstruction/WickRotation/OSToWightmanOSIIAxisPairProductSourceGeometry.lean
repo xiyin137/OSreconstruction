@@ -600,8 +600,9 @@ theorem osiiAxisPairGlobalTimeCutoff_tsupport_subset_strictPositive
           (Fin (n + m) → ℝ) → ℂ)
         hshift
     apply hpre
-    simpa [osiiAxisPairGlobalTimeCutoff, a, e, product,
-      SCV.translateSchwartz_apply] using hx
+    change x ∈ tsupport (fun y : Fin (n + m) → ℝ =>
+      (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ e.symm product) (y + (-a))) at hx
+    exact hx
   let δ := e.symm (x + (-a))
   have hδ_product :
       δ ∈ tsupport (product : (Fin (n + m) → ℝ) → ℂ) := by

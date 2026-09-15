@@ -37,14 +37,9 @@ theorem continuous_osiiReducedWickRotateConfig :
   intro mu
   by_cases hmu : mu = 0
   · subst mu
-    have hcoord :
-        Continuous (fun q : NPointDomain d k => q j 0) :=
-      (continuous_apply 0).comp (continuous_apply j)
-    simpa [wickRotatePoint] using
-      continuous_const.mul (Complex.continuous_ofReal.comp hcoord)
-  · simpa [wickRotatePoint, hmu] using
-      (Complex.continuous_ofReal.comp
-        ((continuous_apply mu).comp (continuous_apply j)))
+    continuity
+  · simp only [wickRotatePoint, hmu, ↓reduceIte]
+    continuity
 
 /-- Positive Euclidean reduced times send the literal Wick slice into the
 reduced forward tube.  This is the domain-local fact needed whenever a

@@ -71,7 +71,7 @@ theorem complex_lorentz_invariance_from_euclidean_distributional (n : ℕ) [NeZe
       have hcont_F : Continuous (fun R : RestrictedLorentzGroup d =>
           F (complexLorentzAction (ComplexLorentzGroup.ofReal R) z)) := by
         simpa using hcont_F_on
-      simpa [S] using isClosed_singleton.preimage hcont_F
+      exact isClosed_singleton.preimage hcont_F
     have hS_open : IsOpen S := by
       rw [isOpen_iff_forall_mem_open]
       intro Λ₀ hΛ₀
@@ -127,7 +127,7 @@ theorem complex_lorentz_invariance_from_euclidean_distributional (n : ℕ) [NeZe
       pathConnectedSpace_iff_univ.mpr (RestrictedLorentzGroup.isPathConnected (d := d))
     have hS_univ : S = Set.univ := IsClopen.eq_univ ⟨hS_closed, hS_open⟩ ⟨1, h1S⟩
     have hΛS : Λ ∈ S := by simp [hS_univ]
-    simpa [S, complexLorentzAction, ComplexLorentzGroup.ofReal] using hΛS
+    exact hΛS
   exact complex_lorentz_invariance n F hF_holo hF_real_inv
 
 end Task5Bridge

@@ -87,12 +87,14 @@ theorem kernel_compactSubsetGrowth (P : OSIIReducedForwardTubeSpectralData d k)
   have heKC : e '' K ⊆ osiiReducedForwardFlatCone d k := by
     rintro p ⟨y, hy, rfl⟩
     have h := hKC hy
+    have heq : BHW.unflattenCfgReal k d (e y) = y := by
+      ext j mu
+      change y (finProdFinEquiv.symm (finProdFinEquiv (j, mu))).1
+        (finProdFinEquiv.symm (finProdFinEquiv (j, mu))).2 = y j mu
+      simp
     change BHW.ProductForwardConeReal d k (BHW.unflattenCfgReal k d (e y))
-    convert h using 1
-    ext j mu
-    change y (finProdFinEquiv.symm (finProdFinEquiv (j, mu))).1
-      (finProdFinEquiv.symm (finProdFinEquiv (j, mu))).2 = y j mu
-    simp
+    rw [heq]
+    exact h
   obtain ⟨C, N, hC, hbound⟩ := P.flatKernel_compactSubsetGrowth (e '' K)
     (hK.image e.continuous) heKC
   refine ⟨C, N, hC, ?_⟩
@@ -124,12 +126,14 @@ theorem kernel_boundaryValue (P : OSIIReducedForwardTubeSpectralData d k)
       (nhdsWithin 0 (Ioi 0)) (nhds (P.reducedBoundaryDistribution f)) := by
   let e := flattenCLEquivReal k (d + 1)
   have he : e eta ∈ osiiReducedForwardFlatCone d k := by
+    have heq : BHW.unflattenCfgReal k d (e eta) = eta := by
+      ext j mu
+      change eta (finProdFinEquiv.symm (finProdFinEquiv (j, mu))).1
+        (finProdFinEquiv.symm (finProdFinEquiv (j, mu))).2 = eta j mu
+      simp
     change BHW.ProductForwardConeReal d k (BHW.unflattenCfgReal k d (e eta))
-    convert heta using 1
-    ext j mu
-    change eta (finProdFinEquiv.symm (finProdFinEquiv (j, mu))).1
-      (finProdFinEquiv.symm (finProdFinEquiv (j, mu))).2 = eta j mu
-    simp
+    rw [heq]
+    exact heta
   have h := P.flatKernel_boundaryValue (e eta) he (_root_.flattenSchwartzNPoint (d := d) f)
   have hfun : (fun epsilon : Real => ∫ x : NPointDomain d k,
       P.kernel (fun j mu => (x j mu : Complex) +

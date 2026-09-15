@@ -175,7 +175,8 @@ theorem extendF_perm_pairing_eq_boundary_of_jost_support [NeZero d] {n : ℕ}
         e.toHomeomorph ⁻¹' tsupport (f : NPointDomain d n → ℂ) :=
       tsupport_comp_eq_preimage (g := (f : NPointDomain d n → ℂ)) e.toHomeomorph
     have hxs : (fun k => x (s⁻¹ k)) ∈ tsupport (f : NPointDomain d n → ℂ) := by
-      simpa [heq, e] using hx
+      rw [heq] at hx
+      exact hx
     simpa using hf_permET _ hxs
   obtain ⟨η, hη_abs⟩ := forwardConeAbs_nonempty d n
   have hη := (inForwardCone_iff_mem_forwardConeAbs η).2 hη_abs

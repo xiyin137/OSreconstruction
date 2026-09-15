@@ -62,7 +62,7 @@ theorem zeroSlice_lineDerivOp_tailInsert {n : ℕ}
         refine continuous_pi ?_
         intro j
         refine Fin.cases ?_ ?_ j
-        · simpa using (continuous_id : Continuous fun x : ℝ => x)
+        · fun_prop
         · intro i
           simpa using (continuous_const : Continuous fun _ : ℝ => y i)
       have hcont :
@@ -110,7 +110,7 @@ theorem fderiv_iicZeroSlice_comp_tail_tailInsert_eq {n : ℕ}
       refine continuous_pi ?_
       intro j
       refine Fin.cases ?_ ?_ j
-      · simpa using (continuous_id : Continuous fun t : ℝ => t)
+      · fun_prop
       · intro i
         simpa using (continuous_const : Continuous fun _ : ℝ => Fin.tail x i)
     have hcont :
@@ -154,7 +154,7 @@ theorem fderiv_intervalPiece_tailInsert_eq {n : ℕ}
             simp [ContinuousLinearMap.smulRight_apply, hv0]
     _ = (∫ t in (0 : ℝ)..(x 0), φ t) w := by
           rw [ContinuousLinearMap.comp_apply]
-          simpa [tailCLM_apply] using congrArg (fun u => (∫ t in (0 : ℝ)..(x 0), φ t) u) htail
+          exact congrArg (fun u => (∫ t in (0 : ℝ)..(x 0), φ t) u) htail
     _ = intervalPiece dF x := by
           rw [ContinuousLinearMap.intervalIntegral_apply]
           · simp [intervalPiece, dF, v, φ, SchwartzMap.lineDerivOp_apply_eq_fderiv,
@@ -165,7 +165,7 @@ theorem fderiv_intervalPiece_tailInsert_eq {n : ℕ}
               refine continuous_pi ?_
               intro j
               refine Fin.cases ?_ ?_ j
-              · simpa using (continuous_id : Continuous fun t : ℝ => t)
+              · fun_prop
               · intro i
                 simpa using (continuous_const : Continuous fun _ : ℝ => Fin.tail x i)
             have hcont : Continuous φ := by
@@ -187,6 +187,8 @@ theorem fderiv_iicZeroSlice_comp_tail_apply {n : ℕ}
       fderiv ℝ (fun z : Fin (n + 1) → ℝ => iicZeroSlice F (Fin.tail z)) x y =
         fderiv ℝ (fun z : Fin (n + 1) → ℝ => iicZeroSlice F (Fin.tail z)) x
           (tailInsertCLM n (tailCLM n y)) := by
+    change (fderiv ℝ (iicZeroSlice F ∘ Fin.tail) x) y =
+      (fderiv ℝ (iicZeroSlice F ∘ Fin.tail) x) (tailInsertCLM n (tailCLM n y))
     simpa [Function.comp, ContinuousLinearMap.comp_apply, tailCLM_apply] using
       congrArg
         (fun L : (Fin (n + 1) → ℝ) →L[ℝ] ℂ => L y = L (tailInsertCLM n (tailCLM n y)))
@@ -250,6 +252,16 @@ theorem fderiv_headFiberAntiderivRaw_apply {n : ℕ}
                         (fderiv ℝ (F : (Fin (n + 1) → ℝ) → ℂ)
                           (Fin.cons t (Fin.tail x))).comp (tailInsertCLM n))
                         (Fin.tail y)) := by
+              change (fderiv ℝ ((intervalPiece F) + (iicZeroSlice F ∘ Fin.tail)) x) y =
+                (y 0 : ℝ) • F x +
+                  (((∫ t in (0 : ℝ)..(x 0),
+                      (fderiv ℝ (F : (Fin (n + 1) → ℝ) → ℂ)
+                        (Fin.cons t (Fin.tail x))).comp (tailInsertCLM n))
+                      (fun i => y i.succ)) +
+                    (∫ t in Set.Iic (0 : ℝ),
+                      (fderiv ℝ (F : (Fin (n + 1) → ℝ) → ℂ)
+                        (Fin.cons t (Fin.tail x))).comp (tailInsertCLM n))
+                      (fun i => y i.succ))
               simpa [Function.comp, add_assoc] using
                 congrArg (fun L : (Fin (n + 1) → ℝ) →L[ℝ] ℂ => L y) hsum.fderiv
             have htail_eval :
@@ -270,6 +282,11 @@ theorem fderiv_headFiberAntiderivRaw_apply {n : ℕ}
                     intervalPiece dF x := by
                 have hraw := fderiv_intervalPiece_tailInsert_eq F x (tailCLM n y)
                 rw [(hasFDerivAt_intervalPiece F x).fderiv] at hraw
+                change
+                  (∫ t in (0 : ℝ)..(x 0),
+                    (fderiv ℝ (F : (Fin (n + 1) → ℝ) → ℂ)
+                      (Fin.cons t (Fin.tail x))).comp (tailInsertCLM n))
+                    (fun i => y i.succ) = intervalPiece dF x
                 simpa [dF, ContinuousLinearMap.smulRight_apply,
                   ContinuousLinearMap.comp_apply, tailCLM_apply, tailInsertCLM_apply] using hraw
               have hiic :
@@ -339,6 +356,10 @@ theorem exists_norm_pow_mul_headFiberAntiderivRaw_le {n : ℕ}
     let z : Fin (n + 1) → ℝ := zfun t
     have hseminorm :
         (1 + ‖z‖) ^ (k + 2) * ‖F z‖ ≤ M := by
+      change (1 + ‖z‖) ^ (k + 2) * ‖F z‖ ≤
+        (2 : ℝ) ^ (k + 2) *
+          ((Finset.Iic (k + 2, 0)).sup
+            (fun m => SchwartzMap.seminorm ℝ m.1 m.2)) F
       simpa [M, S, z] using
         (SchwartzMap.one_add_le_sup_seminorm_apply
           (𝕜 := ℝ) (m := (k + 2, 0)) (k := k + 2) (n := 0)
@@ -360,7 +381,8 @@ theorem exists_norm_pow_mul_headFiberAntiderivRaw_le {n : ℕ}
               rw [← pow_add]
         _ ≤ M := hseminorm
     have hhead : ‖t‖ ≤ ‖z‖ := by
-      simpa [z] using (norm_le_pi_norm z 0)
+      change ‖z 0‖ ≤ ‖z‖
+      exact norm_le_pi_norm z 0
     have hsq : 1 + t ^ 2 ≤ (1 + ‖z‖) ^ (2 : ℕ) := by
       calc
         1 + t ^ 2 = 1 + ‖t‖ ^ 2 := by
@@ -391,7 +413,9 @@ theorem exists_norm_pow_mul_headFiberAntiderivRaw_le {n : ℕ}
       simpa [y, zfun] using (integrable_sliceSection F y).norm.integrableOn
     have hleft_int :
         IntegrableOn (fun t : ℝ => ‖v‖ ^ k * ‖F (zfun t)‖) (Set.Ioi (v 0)) volume := by
-      simpa [mul_comm, mul_left_comm, mul_assoc] using hnorm_int.const_mul (‖v‖ ^ k)
+      change Integrable (fun t : ℝ => ‖v‖ ^ k * ‖F (zfun t)‖)
+        (volume.restrict (Set.Ioi (v 0)))
+      exact hnorm_int.const_mul (‖v‖ ^ k)
     have hright_int :
         IntegrableOn (fun t : ℝ => M * (1 + t ^ 2)⁻¹) (Set.Ioi (v 0)) volume := by
       exact hmajor_integrable.integrableOn
@@ -451,7 +475,9 @@ theorem exists_norm_pow_mul_headFiberAntiderivRaw_le {n : ℕ}
       simpa [y, zfun] using (integrable_sliceSection F y).norm.integrableOn
     have hleft_int :
         IntegrableOn (fun t : ℝ => ‖v‖ ^ k * ‖F (zfun t)‖) (Set.Iic (v 0)) volume := by
-      simpa [mul_comm, mul_left_comm, mul_assoc] using hnorm_int.const_mul (‖v‖ ^ k)
+      change Integrable (fun t : ℝ => ‖v‖ ^ k * ‖F (zfun t)‖)
+        (volume.restrict (Set.Iic (v 0)))
+      exact hnorm_int.const_mul (‖v‖ ^ k)
     have hright_int :
         IntegrableOn (fun t : ℝ => M * (1 + t ^ 2)⁻¹) (Set.Iic (v 0)) volume := by
       exact hmajor_integrable.integrableOn
@@ -595,7 +621,6 @@ theorem fderiv_headFiberAntiderivRaw_eq_sum {n : ℕ}
     (fun i : Fin n => (h i.succ) • headFiberAntiderivRaw (∂_{(tailInsertCLM n
       (Pi.single i (1 : ℝ)) : Fin (n + 1) → ℝ)} F) x)
     from Finset.sum_congr rfl (fun i _ => headFiberAntiderivRaw_smul _ _ _)]
-  rfl
 
 /-- Full Schwartz decay for the raw head-fiber antiderivative under the
 zero-slice condition. -/

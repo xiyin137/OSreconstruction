@@ -63,8 +63,9 @@ theorem osiiProductionRealRadialProfile_contDiff
             (EuclideanSpace Real (Fin m))).toFun 2
             ((PiLp.continuousLinearEquiv 2 Real
               (fun _ : Fin m => Real)).symm w)) v := by
-    simpa only [Function.comp_apply, Function.uncurry_apply_pair] using
-      hbase.comp v hpair
+    convert hbase.comp v hpair using 1
+    funext w
+    rfl
   exact Complex.ofRealCLM.contDiff.contDiffAt.comp v hreal
 
 theorem osiiProductionRealRadialSlice_eq_profile_sub

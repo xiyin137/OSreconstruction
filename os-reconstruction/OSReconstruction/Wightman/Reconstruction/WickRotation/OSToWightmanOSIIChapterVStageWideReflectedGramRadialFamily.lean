@@ -71,6 +71,9 @@ theorem
       i w hw_bridge
     · intro t ht
       apply E.radialLeftDomain_subset i
+      change
+        star (t • (i.splitCoordinatesCLM w).2.1) ∈
+          openZeroConvexKernel (E.leftDomain i)
       simpa using
         real_smul_mem_openZeroConvexKernel hw.2.1 ht.1 ht.2
     · intro t ht
@@ -81,7 +84,9 @@ theorem
       JoinedIn (E.domain i)
         (i.nativeBridgePoint (C.center i.bridgeGlobalIndex))
         (osiiPositiveRealTimeEmbed C.center) := by
-    simpa [E, C, rootedReflectedGramRootSmearedGlobalFamilyOfOS] using
+    simpa [E, C, rootedReflectedGramRootSmearedGlobalFamilyOfOS,
+      rootSmearedGeneratorOpenHilbertFieldScaleFamilyDataOfOS,
+      GeneratorOpenHilbertFieldScaleFamilyData.domain] using
       rootedReflectedGramSeedOfOS_joinedIn_nativeBridgePoint
         S depth P A R H i
   have hcenterPositive :
@@ -107,12 +112,16 @@ theorem
   change
     w ∈ rootedReflectedGramPacketScaleBranchOfOS
       S depth P A R H i
+  have hmem := JoinedIn.target_mem_connectedComponentIn hjoin
+  rw [← show SCV.realToComplex C.center =
+    osiiPositiveRealTimeEmbed C.center by rfl] at hmem
   simpa [
     rootedReflectedGramPacketScaleBranchOfOS,
     rootedReflectedGramPacketScaleGermDataOfOS,
     GeneratorPacketScaleGermData.branch,
-    C, E, rootedReflectedGramRootSmearedGlobalFamilyOfOS] using
-      JoinedIn.target_mem_connectedComponentIn hjoin
+    C, E, rootedReflectedGramRootSmearedGlobalFamilyOfOS,
+    rootSmearedGeneratorOpenHilbertFieldScaleFamilyDataOfOS,
+    GeneratorOpenHilbertFieldScaleFamilyData.domain] using hmem
 
 /-- The radial chronological domain of the reflected-Gram field family lies
 in the packet-scale branch selected by the common rooted germ. -/
@@ -154,6 +163,9 @@ theorem
       i w hw_bridge
     · intro t ht
       apply E.radialLeftDomain_subset i
+      change
+        star (t • (i.splitCoordinatesCLM w).2.1) ∈
+          openZeroConvexKernel (E.leftDomain i)
       simpa using
         real_smul_mem_openZeroConvexKernel hw.2.1 ht.1 ht.2
     · intro t ht
@@ -164,7 +176,10 @@ theorem
       JoinedIn (E.domain i)
         (i.nativeBridgePoint (C.center i.bridgeGlobalIndex))
         (osiiPositiveRealTimeEmbed C.center) := by
-    simpa [E, C, rootedReflectedGramRootSmearedGlobalFamily] using
+    simpa [E, C, rootedReflectedGramRootSmearedGlobalFamily,
+      rootedReflectedGramRootSmearedGlobalFamilyOfOS,
+      rootSmearedGeneratorOpenHilbertFieldScaleFamilyDataOfOS,
+      GeneratorOpenHilbertFieldScaleFamilyData.domain] using
       rootedReflectedGramSeed_joinedIn_nativeBridgePoint
         S depth P lgc A R H i
   have hcenterPositive :
@@ -190,12 +205,17 @@ theorem
   change
     w ∈ rootedReflectedGramPacketScaleBranch
       S depth P lgc A R H i
+  have hmem := JoinedIn.target_mem_connectedComponentIn hjoin
+  rw [← show SCV.realToComplex C.center =
+    osiiPositiveRealTimeEmbed C.center by rfl] at hmem
   simpa [
     rootedReflectedGramPacketScaleBranch,
     rootedReflectedGramPacketScaleGermData,
     GeneratorPacketScaleGermData.branch,
-    C, E, rootedReflectedGramRootSmearedGlobalFamily] using
-      JoinedIn.target_mem_connectedComponentIn hjoin
+    C, E, rootedReflectedGramRootSmearedGlobalFamily,
+    rootedReflectedGramRootSmearedGlobalFamilyOfOS,
+    rootSmearedGeneratorOpenHilbertFieldScaleFamilyDataOfOS,
+    GeneratorOpenHilbertFieldScaleFamilyData.domain] using hmem
 
 /-- The genuine original-OS reflected-Gram two-scale family restricted to
 the radial chronological domains used for source-compatible gluing. -/

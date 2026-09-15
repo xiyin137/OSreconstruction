@@ -342,7 +342,8 @@ theorem productForwardCone_convex (n d : ℕ) :
       a • (fun μ => (ξ₁ k μ).im) + b • (fun μ => (ξ₂ k μ).im) := by
     ext μ
     simp [Pi.smul_apply, smul_eq_mul]
-  simpa [hcoord] using hconv
+  rw [hcoord]
+  exact hconv
 
 /-- The real product forward cone is convex. -/
 theorem productForwardConeReal_convex (n d : ℕ) :
@@ -380,9 +381,9 @@ private theorem continuous_unflattenCfgReal (n d : ℕ) :
 /-- The flattened real product forward cone is open. -/
 theorem isOpen_flatProductForwardConeReal (n d : ℕ) [NeZero d] :
     IsOpen (FlatProductForwardConeReal d n) := by
-  simpa [FlatProductForwardConeReal] using
-    (isOpen_productForwardConeReal (n := n) (d := d)).preimage
-      (continuous_unflattenCfgReal n d)
+  change IsOpen (unflattenCfgReal n d ⁻¹' ProductForwardConeReal d n)
+  exact (isOpen_productForwardConeReal (n := n) (d := d)).preimage
+    (continuous_unflattenCfgReal n d)
 
 /-- Positive real scaling preserves the flattened real product forward cone. -/
 theorem flatProductForwardConeReal_smul_pos (n d : ℕ) (t : ℝ) (ht : 0 < t)

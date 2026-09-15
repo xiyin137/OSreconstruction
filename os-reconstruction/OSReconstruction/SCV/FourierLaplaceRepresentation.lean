@@ -94,7 +94,8 @@ theorem fourierLaplace_representation_of_supported_boundary {m : Nat}
   · intro z hz
     exact sub_eq_zero.mp (hzero z hz)
   · intro y hy f
-    simpa only [sub_mul] using (hF_int y hy f).sub (hG_int y hy f)
+    convert (hF_int y hy f).sub (hG_int y hy f) using 1 <;>
+      ext x <;> simp [G, sub_mul]
   · intro f eta heta
     have hlim := (hF_bv eta heta f).sub (hG_bv eta heta f)
     simp only [sub_self] at hlim

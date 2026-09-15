@@ -267,12 +267,12 @@ theorem tendsto_translateSchwartz_nhds_of_isCompactSupport
           H (x, t) - H (x, t₀) := by
       have htrans_t :
           iteratedFDeriv ℝ n (⇑(translateSchwartz t ψ)) x = H (x, t) := by
-        simpa [H, translateSchwartz] using
-          (iteratedFDeriv_comp_add_right (f := ⇑ψ) n t x)
+        change iteratedFDeriv ℝ n (fun x => ψ (x + t)) x = H (x, t)
+        simpa [H] using (iteratedFDeriv_comp_add_right (f := ⇑ψ) n t x)
       have htrans_t₀ :
           iteratedFDeriv ℝ n (⇑(translateSchwartz t₀ ψ)) x = H (x, t₀) := by
-        simpa [H, translateSchwartz] using
-          (iteratedFDeriv_comp_add_right (f := ⇑ψ) n t₀ x)
+        change iteratedFDeriv ℝ n (fun x => ψ (x + t₀)) x = H (x, t₀)
+        simpa [H] using (iteratedFDeriv_comp_add_right (f := ⇑ψ) n t₀ x)
       rw [iteratedFDeriv_sub_schwartz, htrans_t, htrans_t₀]
     rw [hEq]
     have hhalf : M * (ε / (2 * M)) = ε / 2 := by
@@ -306,12 +306,12 @@ theorem tendsto_translateSchwartz_nhds_of_isCompactSupport
       rw [iteratedFDeriv_sub_schwartz]
       rw [show iteratedFDeriv ℝ n (⇑(translateSchwartz t ψ)) x =
             iteratedFDeriv ℝ n (⇑ψ) (x + t) by
-              simpa [translateSchwartz] using
-                (iteratedFDeriv_comp_add_right (f := ⇑ψ) n t x)]
+              change iteratedFDeriv ℝ n (fun x => ψ (x + t)) x = _
+              exact iteratedFDeriv_comp_add_right (f := ⇑ψ) n t x]
       rw [show iteratedFDeriv ℝ n (⇑(translateSchwartz t₀ ψ)) x =
             iteratedFDeriv ℝ n (⇑ψ) (x + t₀) by
-              simpa [translateSchwartz] using
-                (iteratedFDeriv_comp_add_right (f := ⇑ψ) n t₀ x)]
+              change iteratedFDeriv ℝ n (fun x => ψ (x + t₀)) x = _
+              exact iteratedFDeriv_comp_add_right (f := ⇑ψ) n t₀ x]
       simp [hzero_t, hzero_t₀]
     rw [hEq]
     have : (0 : ℝ) ≤ ε / 2 := by positivity
@@ -579,7 +579,8 @@ theorem differentiableOn_realMollify_tubeDomain
         exact (continuous_const.add hrealEmbed_cont).continuousAt
       exact ContinuousAt.comp_of_eq hderiv_at hadd_t rfl
     have hF'cont : Continuous fun t : Fin m → ℝ => F' z t := by
-      simpa [F'] using ψ.continuous.smul hfderiv_shift
+      change Continuous (⇑ψ • fun t : Fin m → ℝ => fderiv ℂ g (z + realEmbed t))
+      exact ψ.continuous.smul hfderiv_shift
     exact hF'cont.aestronglyMeasurable
   have h_bound : ∀ᵐ t ∂volume, ∀ w ∈ s, ‖F' w t‖ ≤ bound t := by
     refine Filter.Eventually.of_forall ?_
@@ -633,7 +634,9 @@ theorem differentiableOn_realMollify_tubeDomain
     have hcomp :
         HasFDerivAt (fun u : Fin m → ℂ => g (u + realEmbed t))
           (fderiv ℂ g (w + realEmbed t)) w := by
-      simpa using hderiv_g.comp w htrans
+      change HasFDerivAt (g ∘ fun u : Fin m → ℂ => u + realEmbed t)
+        (fderiv ℂ g (w + realEmbed t)) w
+      exact hderiv_g.comp w htrans
     simpa [F, F'] using hcomp.mul_const (ψ t)
   have hderiv :
       HasFDerivAt
@@ -740,7 +743,8 @@ theorem eq_zero_on_open_of_compactSupport_schwartz_integral_zero
   have hχS_apply : ∀ y, χS y = (χ y : ℂ) :=
     HasCompactSupport.toSchwartzMap_toFun hχC_compact hχC_smooth
   have hχ_temp : (fun y => (χ y : ℂ)).HasTemperateGrowth := by
-    simpa [χS, hχS_apply] using χS.hasTemperateGrowth
+    change (χS : E → ℂ).HasTemperateGrowth
+    exact χS.hasTemperateGrowth
   have hprod_zero :
       ∀ φ : SchwartzMap E ℂ,
         HasCompactSupport (φ : E → ℂ) →
@@ -787,7 +791,9 @@ theorem eq_zero_on_open_of_compactSupport_schwartz_integral_zero
         hρ_compact.comp_left Complex.ofReal_zero
       let ρS : SchwartzMap E ℂ := hρC_compact.toSchwartzMap hρC_smooth
       have hρS_compact : HasCompactSupport (ρS : E → ℂ) :=
-        by simpa [ρS] using hρC_compact
+        by
+          change HasCompactSupport (fun y => (ρ y : ℂ))
+          exact hρC_compact
       have hzero := hprod_zero ρS hρS_compact
       have hρS_apply : ∀ y, ρS y = (ρ y : ℂ) :=
         HasCompactSupport.toSchwartzMap_toFun hρC_compact hρC_smooth
@@ -895,7 +901,8 @@ theorem eqOn_open_of_compactSupport_schwartz_integral_eq_of_continuousOn
   have hχS_apply : ∀ y, χS y = (χ y : ℂ) :=
     HasCompactSupport.toSchwartzMap_toFun hχC_compact hχC_smooth
   have hχ_temp : (fun y => (χ y : ℂ)).HasTemperateGrowth := by
-    simpa [χS, hχS_apply] using χS.hasTemperateGrowth
+    change (χS : E → ℂ).HasTemperateGrowth
+    exact χS.hasTemperateGrowth
   let gχ : E → ℂ := fun y => if y ∈ U then (χ y : ℂ) * g y else 0
   let hχf : E → ℂ := fun y => if y ∈ U then (χ y : ℂ) * h y else 0
   have hgχ_cont : Continuous gχ := by
@@ -1127,13 +1134,17 @@ theorem distributional_uniqueness_tube_of_zero_bv
   have hφ_tendsto : Tendsto (fun n => (φ n).rOut) atTop (𝓝 0) := by
     have hplus : Tendsto (fun n : ℕ => ((n + 1 : ℕ) : ℝ)) atTop atTop := by
       exact tendsto_natCast_atTop_atTop.comp (tendsto_add_atTop_nat 1)
-    simpa [φ] using
-      tendsto_inv_atTop_zero.comp hplus
+    have hplus' : Tendsto (fun n : ℕ => (n : ℝ) + 1) atTop atTop := by
+      simpa using hplus
+    dsimp [φ]
+    change Tendsto ((fun r : ℝ => r⁻¹) ∘ fun n : ℕ => (n : ℝ) + 1) atTop (𝓝 0)
+    exact tendsto_inv_atTop_zero.comp hplus'
   let ψ : ℕ → SchwartzMap (Fin m → ℝ) ℂ := fun n =>
     let ψR : (Fin m → ℝ) → ℂ := fun x => (((φ n).normed volume x : ℝ) : ℂ)
     let hψR_smooth : ContDiff ℝ ((⊤ : ENat) : WithTop ENat) ψR := by
-      simpa [ψR] using
-        (Complex.ofRealCLM.contDiff.comp ((φ n).contDiff_normed (μ := volume)))
+      change ContDiff ℝ ((⊤ : ENat) : WithTop ENat)
+        (Complex.ofRealCLM ∘ (φ n).normed volume)
+      exact Complex.ofRealCLM.contDiff.comp ((φ n).contDiff_normed (μ := volume))
     let hψR_compact : HasCompactSupport ψR := by
       exact ((φ n).hasCompactSupport_normed (μ := volume)).comp_left Complex.ofReal_zero
     hψR_compact.toSchwartzMap hψR_smooth
@@ -1143,7 +1154,12 @@ theorem distributional_uniqueness_tube_of_zero_bv
   have hψ_compact :
       ∀ n, HasCompactSupport ((ψ n : (Fin m → ℝ) → ℂ)) := by
     intro n
-    simpa [ψ] using (((φ n).hasCompactSupport_normed (μ := volume)).comp_left Complex.ofReal_zero)
+    rw [show (ψ n : (Fin m → ℝ) → ℂ) =
+        fun x => (((φ n).normed volume x : ℝ) : ℂ) by
+      funext x
+      exact hψ_apply n x]
+    change HasCompactSupport (Complex.ofReal ∘ (φ n).normed volume)
+    exact ((φ n).hasCompactSupport_normed (μ := volume)).comp_left Complex.ofReal_zero
   have hmoll_zero :
       ∀ n, ∫ t : Fin m → ℝ, G (z + realEmbed t) * ψ n t = 0 := by
     intro n
@@ -1171,8 +1187,10 @@ theorem distributional_uniqueness_tube_of_zero_bv
             (fun i => (x i : ℂ) + ε * (y₀ i : ℂ) * Complex.I) ∈ TubeDomain C := by
           change
             (fun i => ((x i : ℂ) + ε * (y₀ i : ℂ) * Complex.I).im) ∈ C
-          simpa [Complex.add_im, Complex.mul_im, Complex.ofReal_im, Complex.ofReal_re,
-            mul_assoc, mul_comm, mul_left_comm] using hεy
+          rw [show (fun i => ((x i : ℂ) + ε * (y₀ i : ℂ) * Complex.I).im) = ε • y₀ by
+            funext i
+            simp [Pi.smul_apply, smul_eq_mul]]
+          exact hεy
         have hcontG : ContinuousAt G (fun i => (x i : ℂ) + ε * (y₀ i : ℂ) * Complex.I) :=
           (hG_diff.continuousOn
             (fun i => (x i : ℂ) + ε * (y₀ i : ℂ) * Complex.I) hxTube).continuousAt
@@ -1243,8 +1261,8 @@ theorem distributional_uniqueness_tube_of_zero_bv
         have him_maps : MapsTo imMap EOW.UpperHalfPlane (Set.Ioi 0) := by
           intro w hw
           simpa [imMap, EOW.UpperHalfPlane] using hw
-        simpa [l, imMap] using
-          him_cont.continuousAt.continuousWithinAt.tendsto_nhdsWithin him_maps
+        change Tendsto imMap l (nhdsWithin ((a : ℂ).im) (Set.Ioi 0))
+        exact him_cont.continuousAt.continuousWithinAt.tendsto_nhdsWithin him_maps
       have hre :
           Tendsto (fun w : ℂ => - (x₀ + (w.re) • y₀)) l (nhds (- (x₀ + a • y₀))) := by
         have hcont :

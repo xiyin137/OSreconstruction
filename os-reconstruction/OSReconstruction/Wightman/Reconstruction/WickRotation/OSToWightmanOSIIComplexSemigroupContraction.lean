@@ -112,6 +112,7 @@ private theorem originalOSHilbertComplex_ofReal_add
       ContinuousLinearMap.comp from rfl,
     Real.toNNReal_of_nonneg hs.le,
     Real.toNNReal_of_nonneg ht.le,
+    Real.toNNReal_add hs.le ht.le,
     Real.toNNReal_of_nonneg (add_nonneg hs.le ht.le)] using
       (CFC.nnrpow_add
         (a := osTimeShiftHilbertOfOS (d := d) OS 1 one_pos)

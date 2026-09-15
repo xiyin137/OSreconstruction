@@ -241,7 +241,8 @@ theorem descendAlongSafeSection_eq_of_translation_invariant
   haveI : NeZero (m + 1) := ⟨Nat.succ_ne_zero m⟩
   have hz_split := (mem_forwardTube_iff_basepoint_and_reducedDiff (n := m + 1) (d := d) z).1 hz
   have hred : reducedDiffMap (m + 1) d z ∈ ReducedForwardTubeN d m := by
-    simpa [ReducedForwardTubeN] using hz_split.2
+    change reducedDiffMap (m + 1) d z ∈ ReducedForwardCone d (m + 1)
+    exact hz_split.2
   have hsafe : safeSection d m (reducedDiffMap (m + 1) d z) ∈ ForwardTube d (m + 1) :=
     safeSection_mem_forwardTube (d := d) m _ hred
   let c : Fin (d + 1) → ℂ := fun μ => z 0 μ - Complex.I * safeBasepointVec d μ
@@ -430,13 +431,16 @@ noncomputable def descendAbsoluteForwardTubeInput
             (fun μ => (z₂ 0 μ).im) =
               fun μ => ∑ ν, Λ.val μ ν * safeBasepointVec d ν := by
           ext μ
+          have hΛval : (wightmanToLorentzGroup Λ).val.val = Λ.val :=
+            lorentzGroupEquiv_symm_val Λ.toFull
           calc
             (z₂ 0 μ).im
-                = ∑ ν, Λ.val μ ν * (safeSection d m η 0 ν).im := by
-                    simpa [z₂, Λc, complexLorentzAction, complexLorentzVectorAction,
-                      wightmanToLorentzGroup, lorentzGroupEquiv_symm_val] using
+                = ∑ ν, (wightmanToLorentzGroup Λ).val.val μ ν *
+                    (safeSection d m η 0 ν).im := by
+                    simpa [z₂, Λc, complexLorentzAction, complexLorentzVectorAction] using
                       ofReal_im_action (wightmanToLorentzGroup Λ)
                         (fun ν => safeSection d m η 0 ν) μ
+            _ = ∑ ν, Λ.val μ ν * (safeSection d m η 0 ν).im := by rw [hΛval]
             _ = ∑ ν, Λ.val μ ν * safeBasepointVec d ν := by
                   have hzero : ∀ ν : Fin (d + 1),
                       ((reducedDiffSection (m + 1) d η 0 ν).im) = 0 := by
@@ -493,8 +497,17 @@ noncomputable def descendAbsoluteForwardTubeInput
             rw [hc]
             exact hAbs.translation_invariant z₂ c hz₂ (hc ▸ hz₁)
       _ = hAbs.toFun (safeSection d m η) := by
-            simpa [z₂, Λc, complexLorentzAction] using
-              hAbs.real_lorentz_invariant Λ (safeSection d m η) hzsafe
+            have hΛval : (wightmanToLorentzGroup Λ).val.val = Λ.val :=
+              lorentzGroupEquiv_symm_val Λ.toFull
+            have hz₂_eq : z₂ = fun k μ =>
+                ∑ ν, (Λ.val μ ν : ℂ) * safeSection d m η k ν := by
+              ext k μ
+              change ∑ ν, ((wightmanToLorentzGroup Λ).val.val μ ν : ℂ) *
+                  safeSection d m η k ν =
+                ∑ ν, (Λ.val μ ν : ℂ) * safeSection d m η k ν
+              rw [hΛval]
+            rw [hz₂_eq]
+            exact hAbs.real_lorentz_invariant Λ (safeSection d m η) hzsafe
       _ = descendAlongSafeSection d m hAbs.toFun η := rfl
 
 /-- The descended reduced preinput agrees with the absolute witness on the
@@ -714,19 +727,27 @@ def absoluteApproachOfReduced (d m : ℕ)
         (realDiffCoordCLE (m + 1) d).symm (prependBasepointReal d m x₀ ξ)
           ⟨j.val, by omega⟩ μ =
       ξ j μ := by
-    simpa [reducedDiffMapReal_apply] using
-      congrFun
-        (congrFun
-          (reducedDiffMapReal_realDiffCoordCLE_symm_prependBasepointReal
-            (d := d) (m := m) x₀ ξ) j) μ
+    have h := congrFun
+      (congrFun
+        (reducedDiffMapReal_realDiffCoordCLE_symm_prependBasepointReal
+          (d := d) (m := m) x₀ ξ) j) μ
+    change
+      (realDiffCoordCLE (m + 1) d).symm (prependBasepointReal d m x₀ ξ)
+          ⟨j.val + 1, by omega⟩ μ -
+        (realDiffCoordCLE (m + 1) d).symm (prependBasepointReal d m x₀ ξ)
+          ⟨j.val, by omega⟩ μ = ξ j μ at h
+    exact h
   have hη :
       absoluteDirectionOfReduced d m η ⟨j.val + 1, by omega⟩ μ -
         absoluteDirectionOfReduced d m η ⟨j.val, by omega⟩ μ =
       η j μ := by
-    simpa [reducedDiffMapReal_apply] using
-      congrFun
-        (congrFun
-          (reducedDiffMapReal_absoluteDirectionOfReduced (d := d) (m := m) η) j) μ
+    have h := congrFun
+      (congrFun
+        (reducedDiffMapReal_absoluteDirectionOfReduced (d := d) (m := m) η) j) μ
+    change
+      absoluteDirectionOfReduced d m η ⟨j.val + 1, by omega⟩ μ -
+        absoluteDirectionOfReduced d m η ⟨j.val, by omega⟩ μ = η j μ at h
+    exact h
   have hξ' :
       (((realDiffCoordCLE (m + 1) d).symm (prependBasepointReal d m x₀ ξ)
         ⟨j.val + 1, by omega⟩ μ : ℂ) -
@@ -771,9 +792,13 @@ theorem absoluteApproachOfReduced_mem_forwardTube
     intro j
     have hj : InOpenForwardCone d (ε • η j) :=
       inOpenForwardCone_smul_pos (hη j) hε
-    simpa [ReducedForwardTube, ReducedForwardCone, ProductForwardCone, Pi.smul_apply,
-      Complex.mul_re, Complex.mul_im,
-      Complex.I_re, Complex.I_im] using hj
+    have him :
+        (fun μ => ((fun j μ => (ξ j μ : ℂ) + ε * (η j μ : ℂ) * Complex.I) j μ).im) =
+          ε • η j := by
+      ext μ
+      simp [Pi.smul_apply]
+    rw [him]
+    exact hj
 
 theorem route1ReducedPreInputFromSpectrumCondition_factorization_absoluteApproach
     [NeZero d] (Wfn : WightmanFunctions d) (m : ℕ)
@@ -952,8 +977,7 @@ theorem integral_realDiffCoord_change_variables
   let eCLE := (realDiffCoordCLE (m + 1) d).symm.toHomeomorph.toMeasurableEquiv
   have h_mp_cle : MeasureTheory.MeasurePreserving eCLE
       MeasureTheory.volume MeasureTheory.volume := by
-    have := realDiffCoordCLE_symm_measurePreserving (m + 1) d
-    convert this using 1
+    simpa [eCLE] using realDiffCoordCLE_symm_measurePreserving (m + 1) d
   set H := fun y => G (eCLE y) with hH_def
   have h1 : ∫ x, G x = ∫ y, H y :=
     (h_mp_cle.integral_comp' (g := G)).symm
@@ -963,30 +987,33 @@ theorem integral_realDiffCoord_change_variables
   have h_mp_split : MeasureTheory.MeasurePreserving eSplit
       MeasureTheory.volume
       (MeasureTheory.volume.prod MeasureTheory.volume) := by
-    simpa [eSplit] using MeasureTheory.volume_preserving_piFinSuccAbove
+    simpa [eSplit, MeasureTheory.Measure.volume_eq_prod] using
+      MeasureTheory.volume_preserving_piFinSuccAbove
       (fun _ : Fin (m + 1) => Fin (d + 1) → ℝ) 0
   -- Step 3: Integrability on the product space
   have hH_int : MeasureTheory.Integrable H := by
     exact (h_mp_cle.integrable_comp_emb eCLE.measurableEmbedding (g := G)).mpr hG
   have hH_pair_int : MeasureTheory.Integrable
-      (fun p : SpacetimeDim d × NPointDomain d m => H (Fin.cons p.1 p.2))
+      (fun p : (Fin (d + 1) → ℝ) × (Fin m → Fin (d + 1) → ℝ) =>
+        H (eSplit.symm p))
       (MeasureTheory.volume.prod MeasureTheory.volume) := by
     have hiff := h_mp_split.symm.integrable_comp_emb
       eSplit.symm.measurableEmbedding (g := H)
-    simpa [eSplit, MeasurableEquiv.piFinSuccAbove_symm_apply] using hiff.2 hH_int
+    exact hiff.2 hH_int
   -- Step 4: Fubini + algebraic identity
   rw [h1]
   calc ∫ y, H y
-      = ∫ p : SpacetimeDim d × NPointDomain d m, H (Fin.cons p.1 p.2) := by
+      = ∫ p : (Fin (d + 1) → ℝ) × (Fin m → Fin (d + 1) → ℝ),
+          H (eSplit.symm p) := by
         symm
-        simpa [eSplit, MeasurableEquiv.piFinSuccAbove_symm_apply] using
-          h_mp_split.symm.integral_comp' (g := H)
-    _ = ∫ ξ : NPointDomain d m, ∫ x₀ : SpacetimeDim d, H (Fin.cons x₀ ξ) :=
+        exact h_mp_split.symm.integral_comp' (g := H)
+    _ = ∫ ξ : NPointDomain d m, ∫ x₀ : SpacetimeDim d,
+          H (eSplit.symm (x₀, ξ)) :=
         MeasureTheory.integral_prod_symm _ hH_pair_int
     _ = ∫ ξ, ∫ x₀, G ((realDiffCoordCLE (m + 1) d).symm
           (prependBasepointReal d m x₀ ξ)) := by
-        simp_rw [hH_def, prependBasepointReal_eq_finCons]
-        rfl
+        simp [hH_def, eCLE, eSplit, MeasurableEquiv.piFinSuccAbove_symm_apply,
+          Fin.consEquiv, prependBasepointReal_eq_finCons]
 
 /-- At fixed positive imaginary height, the reduced smeared boundary integral
 agrees with the absolute spectrum witness after changing variables to full
@@ -1072,9 +1099,12 @@ theorem route1ReducedBoundaryValuesFromSpectrumCondition
             reducedTestLift m d χ f x)
         (nhdsWithin 0 (Set.Ioi 0))
         (nhds (route1ReducedWightmanFamily Wfn χ m f)) := by
-    simpa [ηAbs, route1ReducedWightmanFamily_apply, reducedWightman_apply] using
-      (spectrumConditionAbsoluteInput (d := d) Wfn m).boundary_values
-        (reducedTestLift m d χ f) ηAbs hηAbs
+    have htarget : route1ReducedWightmanFamily Wfn χ m f =
+        Wfn.W (m + 1) (reducedTestLift m d χ.toSchwartz f) := by
+      rfl
+    rw [htarget]
+    exact (spectrumConditionAbsoluteInput (d := d) Wfn m).boundary_values
+      (reducedTestLift m d χ.toSchwartz f) ηAbs hηAbs
   have hEq :
       (fun ε : ℝ =>
         ∫ x : NPointDomain d m,

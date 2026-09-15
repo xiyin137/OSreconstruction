@@ -94,6 +94,12 @@ theorem osiiEquation66SpatialZeroTargetGapTranslation
       (osiiStep4MixedSpatialRealPoint d k tau base) i)
     (0 : Fin (d + 1) -> Real)
   have happ := congrFun hsum mu
+  have hzeroCoeff :
+      (fun nu : Fin (d + 1) =>
+        (((0 : Fin (d + 1) -> Real) nu : Real) : Complex)) = 0 := by
+    funext nu
+    simp
+  rw [hzeroCoeff] at happ
   have hzero :
       osiiStep4ComplexOfRealImag 0
           (osiiStep4MultiGapRealBlock (d + 1) k
@@ -218,7 +224,7 @@ theorem continuousOn_osiiEquation66OSBuiltSpatialFullDensity
       (fun x : Fin (k * (d + 1)) -> Real =>
         osiiStep4ComplexOfRealImag x 0) := by
     exact continuous_pi fun q => by
-      simpa [osiiStep4ComplexOfRealImag] using
+      simpa [osiiStep4ComplexOfRealImag, Function.comp_def] using
         (Complex.continuous_ofReal.comp (continuous_apply q))
   exact
     (osiiEquation66OSBuiltSpatialLocalWeylData

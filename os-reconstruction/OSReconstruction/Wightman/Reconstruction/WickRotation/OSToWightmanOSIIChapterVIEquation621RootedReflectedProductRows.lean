@@ -127,9 +127,11 @@ theorem rootedReflectedGlobalProductArbitraryCandidate_holomorphic
   dsimp only
   let i := equation621NontrivialGeneratorIndex qLeft qRight hindex
   let DLeft := rootedLeftNontrivialReflectedGramSpatialSourceData
-    S depth P A R i (q := qLeft) rfl
+    S depth P A R (equation621NontrivialGeneratorIndex qLeft qRight hindex)
+      (q := qLeft) rfl
   let DRight := rootedRightNontrivialReflectedGramSpatialSourceData
-    S depth P A R i (q := qRight) rfl
+    S depth P A R (equation621NontrivialGeneratorIndex qLeft qRight hindex)
+      (q := qRight) rfl
   let E := rootedReflectedGramGeneratorOpenHilbertFieldScaleFamilyRealEdgeData
     S depth P A R H.toContinuousTranslationData
   have hleft : DifferentiableOn Complex
@@ -141,8 +143,9 @@ theorem rootedReflectedGlobalProductArbitraryCandidate_holomorphic
       leftTest).mono
     intro z hz
     have hz' := E.radialLeftDomain_subset i hz
-    simpa [E, DLeft, i,
+    simpa [E, DLeft, equation621NontrivialGeneratorIndex,
       rootedReflectedGramGeneratorOpenHilbertFieldScaleFamilyRealEdgeData,
+      GeneratorOpenHilbertFieldScaleFamilyRealEdgeData.ofBlocks,
       rootedReflectedGramLeftGeneratorOpenFieldScaleBlockRealEdgeData,
       rootedLeftNontrivialReflectedGramOpenFieldScaleBlockRealEdgeData,
       ReflectedGramSpatialSourceData.toOpenFieldScaleBlockRealEdgeData,
@@ -156,8 +159,9 @@ theorem rootedReflectedGlobalProductArbitraryCandidate_holomorphic
       rightTest).mono
     intro z hz
     have hz' := E.radialRightDomain_subset i hz
-    simpa [E, DRight, i,
+    simpa [E, DRight, equation621NontrivialGeneratorIndex,
       rootedReflectedGramGeneratorOpenHilbertFieldScaleFamilyRealEdgeData,
+      GeneratorOpenHilbertFieldScaleFamilyRealEdgeData.ofBlocks,
       rootedReflectedGramRightGeneratorOpenFieldScaleBlockRealEdgeData,
       rootedRightNontrivialReflectedGramOpenFieldScaleBlockRealEdgeData,
       ReflectedGramSpatialSourceData.toOpenFieldScaleBlockRealEdgeData,
@@ -169,7 +173,9 @@ theorem rootedReflectedGlobalProductArbitraryCandidate_holomorphic
     exact (differentiableOn_const
       (c := H.toContinuousTranslationData.semigroupBridgeRootOperator
         lgc i scale)).clm_apply hrightRaw
-  simpa [rootedReflectedGlobalProductArbitraryCandidate, i, E] using
+  simpa [rootedReflectedGlobalProductArbitraryCandidate, i, E,
+    equation621NontrivialGeneratorIndex,
+    GeneratorOpenHilbertFieldScaleFamilyRealEdgeData.radialNativeDomain] using
     differentiableOn_generatorSemigroupCandidate OS lgc i
       (E.radialLeftDomain_open i) (E.radialRightDomain_open i)
       hleft hright
@@ -201,18 +207,23 @@ theorem rootedReflectedGlobalProductArbitraryCandidate_eq_local_on_commonRadial
   have hkernels :=
     equation621CommonRadialCarrier_targetParameters_mem_commonKernels
       P A R H i z hz
+  dsimp only [i] at hkernels
+  have hkleft := hkernels.1
+  change equation621TargetLeftParameter i z ∈ openZeroConvexKernel
+    ((rootedLeftNontrivialReflectedGramSpatialSourceData S depth P A R i
+      (q := qLeft) rfl).reflectedGram.atlas.spatialLinearDomain ∩
+      (H.left i).domain) at hkleft
+  have hkright := hkernels.2
+  change equation621TargetRightParameter i z ∈ openZeroConvexKernel
+    ((rootedRightNontrivialReflectedGramSpatialSourceData S depth P A R i
+      (q := qRight) rfl).reflectedGram.atlas.spatialLinearDomain ∩
+      (H.right i).domain) at hkright
   have hleft := rootedLeftArbitrarySpatialField_eq_reflectedGram
     P A R H qLeft (qRight + 2) (by omega) (by omega) hindex
-    scale leftTest (equation621TargetLeftParameter i z) (by
-      simpa [i, equation621NontrivialGeneratorIndex] using hkernels.1)
+    scale leftTest (equation621TargetLeftParameter i z) hkleft
   have hright := rootedRightArbitrarySpatialField_eq_reflectedGram
     P A R H (qLeft + 2) qRight (by omega) (by omega) hindex
-    scale rightTest (equation621TargetRightParameter i z) (by
-      simpa [i, equation621NontrivialGeneratorIndex] using hkernels.2)
-  rw [rootedReflectedGlobalProductArbitraryCandidate,
-    RootedA0BlockContinuousTranslationData.rootSmearedArbitrarySpatialGeneratorCandidate,
-    generatorSemigroupCandidate_apply,
-    generatorSemigroupCandidate_apply]
+    scale rightTest (equation621TargetRightParameter i z) hkright
   change @inner Complex (OSHilbertSpace OS) _
       (rootedReflectedGlobalProductLeftArbitraryField P A R H.toContinuousTranslationData
         qLeft qRight hindex scale leftTest
@@ -229,16 +240,14 @@ theorem rootedReflectedGlobalProductArbitraryCandidate_eq_local_on_commonRadial
           (equation621TargetLeftParameter i z) =
         H.toContinuousTranslationData.leftArbitrarySpatialGeneratorField
           i scale leftTest (equation621TargetLeftParameter i z) by
-        simpa [i, rootedReflectedGlobalProductLeftArbitraryField,
-          equation621NontrivialGeneratorIndex] using hleft,
+        exact hleft,
     show
       rootedReflectedGlobalProductRightArbitraryField P A R H.toContinuousTranslationData
           qLeft qRight hindex scale rightTest
           (equation621TargetRightParameter i z) =
         H.toContinuousTranslationData.rightArbitrarySpatialGeneratorField
           i scale rightTest (equation621TargetRightParameter i z) by
-        simpa [i, rootedReflectedGlobalProductRightArbitraryField,
-          equation621NontrivialGeneratorIndex] using hright]
+        exact hright]
   rfl
 
 noncomputable def rootedAbsoluteProductReflectedLift
@@ -313,7 +322,8 @@ theorem rootedAbsoluteProductReflectedScalarSum_eq_localCandidate_on_realSeed
       equation621CommonRadialRealSeed_mem_carrier P A R H i tau htau
   have hnative : generatorChronologicalParameterComplexCLE i
       (osiiPositiveRealTimeEmbed tau) ∈
-        generatorSemigroupDomain i (H.left i).domain (H.right i).domain := by
+        generatorSemigroupDomain i (H.toContinuousTranslationData.left i).domain
+          (H.toContinuousTranslationData.right i).domain := by
     have hfull := F.radialChronologicalDomain_subset i htauCommon.2
     simpa [F] using hfull
   have hbridge :
@@ -443,10 +453,18 @@ theorem rootedAbsoluteProductReflectedScalarSum_eq_candidate_on_realSeed
       (RootedA0BlockContinuousTranslationData.absoluteProductTargetRightSpatialTest
         spatialApprox i x N)
       (osiiPositiveRealTimeEmbed tau) htauCommon
-  exact hlocal.trans (by
-    simpa [i, equation621NontrivialGeneratorIndex,
-      RootedA0BlockContinuousTranslationData.positiveBlockSpatialTest] using
-      hcandidate.symm)
+  apply hlocal.trans
+  calc
+    _ = H.toContinuousTranslationData.rootSmearedArbitrarySpatialGeneratorCandidate
+        lgc i scale
+        (RootedA0BlockContinuousTranslationData.absoluteProductTargetLeftSpatialTest
+          spatialApprox i x N)
+        (RootedA0BlockContinuousTranslationData.absoluteProductTargetRightSpatialTest
+          spatialApprox i x N)
+        (generatorChronologicalParameterComplexCLE i
+          (osiiPositiveRealTimeEmbed tau)) := by
+      congr 2
+    _ = _ := by simpa only [i] using hcandidate.symm
 
 theorem rootedAbsoluteProductReflectedScalarSum_eq_candidate_on_radial
     (P : StageWideReflectedGramAtlasFamilyData (OS := OS) S depth)
@@ -520,8 +538,10 @@ theorem rootedAbsoluteProductReflectedScalarSum_eq_candidate_on_radial
     · exact (generatorChronologicalParameterComplexCLE i).differentiable.differentiableOn
     · intro w hw
       have hdomain := E.radialChronologicalDomain_subset i hw
-      simpa [B, E, rootedReflectedGramRootSmearedGlobalFamily,
-        rootSmearedGeneratorOpenHilbertFieldScaleFamilyData] using hdomain
+      change generatorChronologicalParameterComplexCLE i w ∈
+        (rootedReflectedGramGeneratorOpenHilbertFieldScaleFamilyRealEdgeData
+          S depth P A R H.toContinuousTranslationData).domain i
+      exact hdomain
   have hg : DifferentiableOn Complex g U := by
     apply DifferentiableOn.comp
       (rootedReflectedGlobalProductArbitraryCandidate_holomorphic
@@ -635,8 +655,6 @@ theorem norm_rootedReflectedGlobalProductArbitraryCandidate_le_sqrt_shifted_diag
         z i.bridgeGlobalIndex := generatorChronological_split_fst i z
   have hremaining : 0 < (z i.bridgeGlobalIndex - (epsilon : Complex)).re := by
     simpa using sub_pos.mpr hbridge
-  rw [rootedReflectedGlobalProductArbitraryCandidate,
-    generatorSemigroupCandidate_apply]
   change ‖@inner Complex (OSHilbertSpace OS) _ left
       (osiiOriginalOSHilbertComplex OS
         ((generatorChronologicalParameterComplexCLE i z) i.bridgeGlobalIndex)
@@ -677,9 +695,11 @@ theorem norm_rootedReflectedGlobalProductArbitraryCandidate_le_sqrt_diagonals
   let E := rootedReflectedGramGeneratorOpenHilbertFieldScaleFamilyRealEdgeData
     S depth P A R H
   let DLeft := rootedLeftNontrivialReflectedGramSpatialSourceData
-    S depth P A R i (q := qLeft) rfl
+    S depth P A R (equation621NontrivialGeneratorIndex qLeft qRight hindex)
+      (q := qLeft) rfl
   let DRight := rootedRightNontrivialReflectedGramSpatialSourceData
-    S depth P A R i (q := qRight) rfl
+    S depth P A R (equation621NontrivialGeneratorIndex qLeft qRight hindex)
+      (q := qRight) rfl
   have hznative : generatorChronologicalParameterComplexCLE i z ∈
       E.radialNativeDomain i := hz
   have hzLeft : equation621TargetLeftParameter i z ∈
@@ -701,23 +721,25 @@ theorem norm_rootedReflectedGlobalProductArbitraryCandidate_le_sqrt_diagonals
           scale leftTest (equation621TargetLeftParameter i z)‖ ^ 2 <=
         ‖rootedReflectedGlobalProductLeftDiagonal P A R H qLeft qRight hindex
           scale leftTest (equation621TargetLeftParameter i z)‖ := by
-    simpa [rootedReflectedGlobalProductLeftArbitraryField,
-      rootedReflectedGlobalProductLeftDiagonal, i, DLeft,
-      UniversalCompactCarrierAnchoredAtlasData.spatialFieldCLM_apply] using
-      DLeft.norm_spatialFieldCLM_sq_le_norm_diagonalScalar
-        (scale + H.commonTailStart i) leftTest
-        (equation621TargetLeftParameter i z) hzLeft
+    convert DLeft.norm_spatialFieldCLM_sq_le_norm_diagonalScalar
+      (scale + H.commonTailStart i) leftTest
+      (equation621TargetLeftParameter i z) hzLeft using 1 <;>
+      simp [rootedReflectedGlobalProductLeftArbitraryField,
+        rootedReflectedGlobalProductLeftDiagonal, i, DLeft,
+        equation621NontrivialGeneratorIndex,
+        UniversalCompactCarrierAnchoredAtlasData.spatialFieldCLM_apply] <;> congr
   have hrightRaw :
       ‖rootedReflectedGlobalProductRightArbitraryField P A R H qLeft qRight hindex
           scale rightTest (equation621TargetRightParameter i z)‖ ^ 2 <=
         ‖rootedReflectedGlobalProductRightDiagonal P A R H qLeft qRight hindex
           scale rightTest (equation621TargetRightParameter i z)‖ := by
-    simpa [rootedReflectedGlobalProductRightArbitraryField,
-      rootedReflectedGlobalProductRightDiagonal, i, DRight,
-      UniversalCompactCarrierAnchoredAtlasData.spatialFieldCLM_apply] using
-      DRight.norm_spatialFieldCLM_sq_le_norm_diagonalScalar
-        (scale + H.commonTailStart i) rightTest
-        (equation621TargetRightParameter i z) hzRight
+    convert DRight.norm_spatialFieldCLM_sq_le_norm_diagonalScalar
+      (scale + H.commonTailStart i) rightTest
+      (equation621TargetRightParameter i z) hzRight using 1 <;>
+      simp [rootedReflectedGlobalProductRightArbitraryField,
+        rootedReflectedGlobalProductRightDiagonal, i, DRight,
+        equation621NontrivialGeneratorIndex,
+        UniversalCompactCarrierAnchoredAtlasData.spatialFieldCLM_apply] <;> congr
   have hcontract :
       ‖rootedReflectedGlobalProductRootSmearedRightArbitraryField P A R H lgc
           qLeft qRight hindex scale rightTest
@@ -756,8 +778,8 @@ theorem norm_rootedReflectedGlobalProductArbitraryCandidate_le_sqrt_diagonals
     ‖rootedReflectedGlobalProductRightDiagonal P A R H qLeft qRight hindex
       scale rightTest (equation621TargetRightParameter i z)‖
     (norm_nonneg _) (norm_nonneg _)
-  · simpa [i, equation621TargetLeftParameter] using hleft
-  · simpa [i, equation621TargetRightParameter] using hright
+  · exact hleft
+  · exact hright
 
 /-- The reflected packet target row converges to the selected honest
 extension for every generator split, including the two one-particle endpoint

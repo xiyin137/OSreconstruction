@@ -112,7 +112,9 @@ theorem coupledTimeSlice_boost_tensor_compact
       (kappa : SchwartzMap (Section43SpatialSpace d k) Complex) :
       J (section43TimeSpatialTensor d k psi kappa) =
         ∫ x, A.distribution (z x) kappa * psi x := by
-    simpa only [one_smul] using osiiCoupledTimeSlice_tensor A y 1 psi kappa
+    simpa only [J, z, one_smul, osiiFullTimeBoundaryPairing,
+      coupledTimeSliceCLM_apply] using
+      osiiCoupledTimeSlice_tensor A y 1 psi kappa
   have hJx (j : Fin k) :
       J (section43TimeSpatialTensor d k
         (∂_{(Pi.single j (1 : Real) : Fin k -> Real)} phi)
@@ -166,8 +168,14 @@ theorem coupledTimeSlice_boost_tensor
       section43TimeSpatialTensor d k psi chi) := by
     have h := (nPointTimeSpatialSchwartzCLE (d := d) (n := k)).continuous.comp
       (section43TimeSpatialTensorCLM d k chi).continuous
-    simpa only [section43TimeSpatialTensorCLM_apply, section43NPointTimeSpatialTensor,
-      ContinuousLinearEquiv.apply_symm_apply] using h
+    rw [show (fun psi : SchwartzMap (Fin k -> Real) Complex =>
+        section43TimeSpatialTensor d k psi chi) =
+        (nPointTimeSpatialSchwartzCLE (d := d) (n := k)) ∘
+          (section43TimeSpatialTensorCLM d k chi) by
+      funext psi
+      simp only [Function.comp_apply, section43TimeSpatialTensorCLM_apply,
+        section43NPointTimeSpatialTensor, ContinuousLinearEquiv.apply_symm_apply]]
+    exact h
   refine (SchwartzMap.dense_hasCompactSupport (m := k)).induction
     (fun psi hpsi => G.coupledTimeSlice_boost_tensor_compact H a y hy psi chi hpsi)
     (isClosed_eq

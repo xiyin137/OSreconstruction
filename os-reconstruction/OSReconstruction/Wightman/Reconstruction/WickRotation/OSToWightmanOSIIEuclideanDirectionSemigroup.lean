@@ -177,8 +177,20 @@ theorem osiiAxisPairRotatedSemigroupBranchOfOS_ofReal_eq_schwinger
   have hedge :=
     osiiOriginalOSPositiveTimeSemigroupPairing_ofReal_eq_schwinger
       OS n m (u * osiiAxisPairRadius T) hut fR gR
-  simpa [osiiAxisPairRotatedSemigroupBranchOfOS, fR, gR,
-    htranslate, mul_comm] using hedge
+  change
+    osiiOriginalOSPositiveTimeSemigroupPairingRightCLM OS n m
+        ((osiiAxisPairRadius T : ℂ) * (u : ℂ)) fR gR = _
+  rw [show
+      (osiiAxisPairRadius T : ℂ) * (u : ℂ) =
+        ((u * osiiAxisPairRadius T : ℝ) : ℂ) by
+      norm_num [mul_comm]]
+  rw [hedge]
+  change
+    OS.S (n + m) (ZeroDiagonalSchwartz.ofClassical
+      ((osiiEuclideanRotateSchwartz R hR f).osConjTensorProduct
+        (timeShiftSchwartzNPoint (d := d) (u * osiiAxisPairRadius T)
+          (osiiEuclideanRotateSchwartz R hR g)))) = _
+  rw [← htranslate]
 
 /-- Holomorphic semigroup branch for one genuine axis-pair coefficient.
 
