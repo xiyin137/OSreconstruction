@@ -1,5 +1,13 @@
 # OSReconstruction
 
+> **The verified proof package is [`os-reconstruction/`](os-reconstruction/)**
+> (PR #93, merged 2026-09-14): a self-contained source distribution, pinned to
+> Lean 4.29.0, with a Lean contract guard, no `sorry`, and no project axioms.
+> The tree at the repository root is the development history the package was
+> extracted from, frozen at commit `135ed13`; the axiom inventory below
+> describes that tree, not the package. Start from
+> [`os-reconstruction/README.md`](os-reconstruction/README.md).
+
 A Lean 4 formalization of the **Osterwalder-Schrader reconstruction theorem** and supporting infrastructure in **von Neumann algebra theory**, built on [Mathlib](https://github.com/leanprover-community/mathlib4).
 
 ## Current Axiom Inventory

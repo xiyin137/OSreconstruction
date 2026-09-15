@@ -44,3 +44,38 @@ Separating the specification and pruning unused source declarations do not
 make further mathematical corrections. The canonical Lean statements in
 `OSReconstruction/Specification.lean` are authoritative; this document is a
 guide to the differences, not a replacement for those statements.
+
+## Inhabitants of the corrected input
+
+The change in item 1 is not only a relaxation on paper. The older normalized
+condition forces its Schwartz order to zero and so cannot express the intended
+positive-order estimates; it is inhabited by the trivial field, but violated by
+the massive free field. The corrected condition is inhabited by the massive
+free field and by the Wick square of the massive Proca field, both formalized
+against this package's records in `math-commons/yang-mills` (see the README,
+"Inhabitants").
+
+## Retained declarations
+
+Of the 3812 declarations that the package shares by module path and name with
+the comparison point, 3789 have identical statements. The 23 that differ are:
+
+- seven uses of the locality predicate, renamed to
+  `IsAdjacentLocallyCommutativeWeak` (`toWightmanFunctions`,
+  `bargmann_hall_wightman`, and five lemmas in
+  `ComplexLieGroups/Connectedness/BHWPermutation/PermutationFlow.lean`);
+- `os_to_wightman`, which now returns `WightmanFunctions`;
+- two lemmas whose analytic-growth hypothesis changed from the global tube
+  bound to the compact-height bound of item 2
+  (`W_analytic_lorentz_on_tube_of_restrictedCovariance`,
+  `W_analytic_lorentz_bv_agree_of_restrictedCovariance`);
+- nine lemmas in `WickRotation/OSToWightmanSemigroup.lean` and one in
+  `ComplexLieGroups/SOConnected.lean` that dropped a growth hypothesis, were
+  restated in the corrected seminorm, or lost a `private` modifier;
+- three declarations that differ only in the spelling of a proof term inside a
+  type (a cast in `WickRotation/OSToWightmanBoundaryValueLimits.lean`, and
+  namespace-local names in `Wightman/Groups/Lorentz.lean`).
+
+The per-file note "retained mathematical statements unchanged" is accurate
+for the declarations outside this list.
+
