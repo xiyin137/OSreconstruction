@@ -48,10 +48,12 @@ guide to the differences, not a replacement for those statements.
 ## Inhabitants of the corrected input
 
 The change in item 1 is not only a relaxation on paper. The older normalized
-condition has no inhabitant, since its order is forced to zero; the corrected
-condition is inhabited by the massive free field and by the Wick square of the
-massive Proca field, both formalized against this package's records in
-`math-commons/yang-mills` (see the README, "Inhabitants").
+condition forces its Schwartz order to zero and so cannot express the intended
+positive-order estimates; it is inhabited by the trivial field, but violated by
+the massive free field. The corrected condition is inhabited by the massive
+free field and by the Wick square of the massive Proca field, both formalized
+against this package's records in `math-commons/yang-mills` (see the README,
+"Inhabitants").
 
 ## Retained declarations
 
