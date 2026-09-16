@@ -7,6 +7,13 @@ distributions act on full Schwartz space.
 
 ## Statements
 
+- [HTML mathematical specification](docs/COMPARATOR_NOTE.html): the comparator's
+  precise definitions, quantified axioms, growth conditions, reverse constructor,
+  and three theorem statements, with mathematical-physics commentary and linked
+  symbol definitions.
+- [Comparator definitions](verification/comparator/Definitions.lean): a single
+  Mathlib-only audit file with the mathematical definitions and reconstruction
+  propositions; [verification guide](verification/comparator/README.md).
 - [Specification](OSReconstruction/Specification.lean): OS axioms, growth
   conditions, Wick pairing, and the forward/reverse target propositions.
 - [Wightman definitions](OSReconstruction/Specification/Wightman.lean): the
@@ -60,15 +67,27 @@ bash verification/check.sh full
 
 The verification scripts require Bash and Ruby, in addition to Lean/Lake.
 They work in an extracted source archive without Git history. `quick` checks
-the source import closure and direct admission/axiom census; `contracts`
-builds the main interface and runs the Lean guard; `full` performs both checks
-and builds the entire default target.
+the source import closure, admission/axiom census and Comparator source boundary;
+`contracts` also builds the main interface, Challenge and Solution and runs the
+Lean guard; `full` additionally builds the entire default target.
 
 The guard checks the exact target propositions and every loaded project
 declaration, including private and generated declarations. It rejects
 admissions and project-specific axioms, and permits only the standard
 foundations `propext`, `Classical.choice`, and `Quot.sound` in transitive axiom
 dependencies. This is not a claim that Lean uses no foundational axioms.
+
+The separate standard Lean Comparator check compares the trusted Challenge
+with the implemented Solution and replays the proof with the same three-axiom
+whitelist:
+
+```sh
+bash verification/check.sh comparator                 # Linux sandbox
+bash verification/check.sh comparator --development   # Explicitly unsandboxed
+```
+
+See the [Comparator guide](verification/comparator/README.md) for pinned tool
+setup, supported sandbox requirements, and the precise checks performed.
 
 ## Source Distribution
 

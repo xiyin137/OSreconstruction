@@ -15,3 +15,11 @@ rev = "v4.33.0-rc1"
 
 [[lean_lib]]
 name = "OSReconstruction"
+
+# Separate entry points for the trusted statement and its implementation proof.
+# They are deliberately excluded from defaultTargets: Challenge contains the
+# comparator's theorem placeholders and must never enter the production library.
+[[lean_lib]]
+name = "ComparatorAudit"
+srcDir = "verification/comparator"
+roots = ["Definitions", "Challenge", "Solution", "WightmanBridge", "OSBridge", "ReverseBridge"]
