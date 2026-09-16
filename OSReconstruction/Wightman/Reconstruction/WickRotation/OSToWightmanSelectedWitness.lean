@@ -642,7 +642,7 @@ theorem bvt_F_extendF_petBranchIndependence_of_selectedAdjacentEdgeData
 /-- Selected adjacent OS edge data gives the BHW forward-tube permutation
 invariance conclusion, once the PET sector-fiber geometry is supplied.  This
 is the non-circular selected-witness replacement for the old BHW use of
-`IsLocallyCommutativeWeak`. -/
+`IsAdjacentLocallyCommutativeWeak`. -/
 theorem bvt_F_permutation_invariance_of_selectedAdjacentEdgeData
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS)

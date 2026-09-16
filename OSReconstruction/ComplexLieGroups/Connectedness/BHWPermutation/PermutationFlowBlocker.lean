@@ -103,7 +103,7 @@ theorem blocker_iterated_eow_hExtPerm_d1_nontrivial
           F (fun k μ => (x k μ : ℂ) + ε * (η k μ : ℂ) * Complex.I) * f x)
         (nhdsWithin 0 (Set.Ioi 0))
         (nhds (W n f)))
-    (hF_local_dist : IsLocallyCommutativeWeak 1 W)
+    (hF_local_dist : IsAdjacentLocallyCommutativeWeak 1 W)
     (σ : Equiv.Perm (Fin n))
     (_hσ : σ ≠ 1)
     (_hn : ¬ n ≤ 1) :
