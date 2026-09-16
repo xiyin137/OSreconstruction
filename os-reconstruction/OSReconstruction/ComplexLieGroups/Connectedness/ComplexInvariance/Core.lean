@@ -255,8 +255,8 @@ private theorem exp_nhd_of_one (ε : ℝ) (hε : 0 < ε) :
   -- Step 1: IFT for exp at 0.
   have hexp_strict : HasStrictFDerivAt mexp
       ((ContinuousLinearEquiv.refl ℂ E : E →L[ℂ] E)) (0 : E) := by
-    show HasStrictFDerivAt NormedSpace.exp _ _
-    convert hasStrictFDerivAt_exp_zero (𝕂 := ℂ) (𝔸 := E) using 1
+    change HasStrictFDerivAt NormedSpace.exp (1 : E →L[ℂ] E) 0
+    exact hasStrictFDerivAt_exp_zero
   -- Get partial homeomorphism: exp is injective on source S, with 0 ∈ S.
   set Φ := hexp_strict.toOpenPartialHomeomorph mexp
   have h0_mem : (0 : E) ∈ Φ.source := hexp_strict.mem_toOpenPartialHomeomorph_source
@@ -330,8 +330,9 @@ private theorem exp_nhd_of_one (ε : ℝ) (hε : 0 < ε) :
       rwa [ComplexLorentzGroup.mul_val] at this
     have hexp_rinv : mexp X * mexp (-X) = 1 := by
       show NormedSpace.exp X * NormedSpace.exp (-X) = 1
-      rw [← NormedSpace.exp_add_of_commute (Commute.neg_right (Commute.refl X))]
-      simp [NormedSpace.exp_zero]
+      rw [Matrix.exp_neg]
+      apply Matrix.mul_nonsing_inv
+      exact (Matrix.isUnit_iff_isUnit_det _).mp (Matrix.isUnit_exp X)
     calc (Λ⁻¹).val
         = (Λ⁻¹).val * (mexp X * mexp (-X)) := by rw [hexp_rinv, mul_one]
       _ = (Λ⁻¹).val * mexp X * mexp (-X) := by rw [mul_assoc]
@@ -807,11 +808,14 @@ lemma ofReal_mul_eq (R₁ R₂ : RestrictedLorentzGroup d) :
 
 lemma continuous_ofReal :
     Continuous (ComplexLorentzGroup.ofReal : RestrictedLorentzGroup d → ComplexLorentzGroup d) := by
-  apply continuous_induced_rng.mpr
+  apply (continuous_induced_rng (f := ComplexLorentzGroup.val)).mpr
   show Continuous (fun R : RestrictedLorentzGroup d => (ComplexLorentzGroup.ofReal R).val)
+  have hfull : Continuous (fun R : FullLorentzGroup d => R.val) := continuous_subtype_val
+  have hrestricted : Continuous (fun R : RestrictedLorentzGroup d => R.val) :=
+    continuous_subtype_val
   exact continuous_pi fun i => continuous_pi fun j =>
     Complex.continuous_ofReal.comp ((continuous_apply j).comp ((continuous_apply i).comp
-      (continuous_subtype_val.comp continuous_subtype_val)))
+      (hfull.comp hrestricted)))
 
 /-- Real Lorentz transformations preserve the forward tube.
     Since R is real, Im(R·v) = R·Im(v), and R preserves V₊. -/
@@ -835,7 +839,9 @@ private theorem orbitSet_onePoint_isPreconnected (w : Fin 1 → Fin (d + 1) → 
     have hw_core : w ∈ BHWCore.ForwardTube 1 1 := by
       simpa [ForwardTube] using hw
     have hpre_core := orbitSet_isPreconnected_d1 (n := 1) w hw_core
-    simpa [complexLorentzAction, BHWCore.complexLorentzAction, ForwardTube] using hpre_core
+    change IsPreconnected {Λ : ComplexLorentzGroup 1 |
+      BHWCore.complexLorentzAction Λ w ∈ BHWCore.ForwardTube 1 1}
+    exact hpre_core
   · -- Remaining geometric blocker for `d > 1`.
     by_cases h0 : d = 0
     · subst h0

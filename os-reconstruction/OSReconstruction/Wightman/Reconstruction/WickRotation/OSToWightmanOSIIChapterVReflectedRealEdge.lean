@@ -336,8 +336,10 @@ noncomputable def osConjTensorProductLeftRCLM
             (d := d) f h g
         map_smul' := by
           intro t f
-          simpa only [RCLike.real_smul_eq_coe_smul (K := ℂ),
-            Complex.conj_ofReal] using
+          change
+            (((t : ℂ) • f).osConjTensorProduct g) =
+              (t : ℂ) • f.osConjTensorProduct g
+          simpa only [Complex.conj_ofReal] using
             (SchwartzNPoint.osConjTensorProduct_smul_left
               (d := d) (t : ℂ) f g) }
     cont := by
@@ -870,7 +872,7 @@ theorem cauchyCoeffPolydisc_eq_localReflectedProduct_normalized
       _
   have hcauchy :=
     SCV.cauchyCoeffPolydisc_eq_inv_multiFactorial_smul_iteratedFDeriv
-      hR hU hRU hscalar γ
+      (m := (k + 1) + k) hR hU hRU hscalar γ
   have hcenter : center ∈ U :=
     hRU (SCV.center_mem_closedPolydisc (fun _ => hR.le))
   have hderiv :=
@@ -878,16 +880,8 @@ theorem cauchyCoeffPolydisc_eq_localReflectedProduct_normalized
       hTowerC hTowerPi hU hcenter hscalar hreal
       (fun j (i : Fin ((k + 1) + (k + 1))) =>
         if i = SCV.multiIndexEnumeration γ j then 1 else 0)
+  refine Eq.trans hcauchy ?_
   calc
-    SCV.cauchyCoeffPolydisc scalar center (fun _ => R) γ =
-        (((((∏ i,
-          (γ i).factorial : ℕ) : ℂ))⁻¹)) •
-          iteratedFDeriv ℂ
-            (∑ i, γ i)
-            scalar center
-            (fun j i =>
-              if i = SCV.multiIndexEnumeration γ j then 1 else 0) := by
-      simpa only using hcauchy
     _ = (((((∏ i,
           (γ i).factorial : ℕ) : ℂ))⁻¹)) •
         iteratedFDeriv ℝ

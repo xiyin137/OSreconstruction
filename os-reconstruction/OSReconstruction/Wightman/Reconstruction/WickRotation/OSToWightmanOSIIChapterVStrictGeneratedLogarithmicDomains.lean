@@ -231,7 +231,8 @@ theorem smul_toStrict
       have htail :=
         OSIIStrictGeneratedLogarithmicArgument.mixedTailMemScalar
           k N (r • x) ih
-      simpa [Fin.tail, Pi.smul_apply] using htail
+      rw [show Fin.tail (r • x) = r • Fin.tail x by ext i; rfl] at htail
+      exact htail
 
 /-- Every strict generated scalar base contains its origin. -/
 theorem scalar_zero_mem
@@ -329,7 +330,8 @@ theorem strict_recursiveAngle_box_subset
       funext i
       change r * (x i / r) = x i
       field_simp [hr_pos.ne']
-    simpa [hscale] using hstrict
+    change OSIIStrictGeneratedLogarithmicArgument .scalar k N x
+    simpa only [hscale] using hstrict
 
 /-- Every recursive-angle physical sector lies in the time-argument carrier
 of the corresponding strict generated scalar base. -/

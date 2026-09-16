@@ -59,12 +59,17 @@ theorem rToE_reflected_timeShift_finite_approximation (Wfn : WightmanFunctions d
     (isCompact_Icc : IsCompact (Icc (0 : ℝ≥0) ⟨T, hT⟩)).elim_finite_subcover U hU hcover
   refine ⟨insert ⟨T, hT⟩ K, fun s => ?_⟩
   by_cases hs : s.1 ≤ T
-  · have hsK := hK ⟨zero_le s, hs⟩
+  · have hsK := hK ⟨s.2, hs⟩
     simp only [mem_iUnion] at hsK
     obtain ⟨t, htK, ht⟩ := hsK
     refine ⟨t, Finset.mem_insert_of_mem htK, ?_⟩
-    simpa only [U, mem_setOf_eq, D, rToEReflectedPairing_apply,
-      u, osiiOriginalOSNonnegativeTimeShiftSource, Submodule.coe_sub] using ht
+    change ‖rToEReflectedPairing Wfn
+      (osiiOriginalOSNonnegativeTimeShiftSource f s -
+        osiiOriginalOSNonnegativeTimeShiftSource f t)
+      (osiiOriginalOSNonnegativeTimeShiftSource f s -
+        osiiOriginalOSNonnegativeTimeShiftSource f t)‖ < ε at ht
+    rw [rToEReflectedPairing_apply] at ht
+    exact ht
   · exact ⟨⟨T, hT⟩, Finset.mem_insert_self _ _, htail s T (le_of_not_ge hs) le_rfl⟩
 
 private def spatialTranslate {n : ℕ} (a : Fin d → ℝ)
@@ -136,14 +141,22 @@ private theorem timeSpacePair_uniform_approximation (Wfn : WightmanFunctions d) 
   let H := rToEReflectedPairing Wfn fs' (spatialTranslate a dg)
   have hL : ‖L‖ ^ 2 ≤
       ‖rToEReflectedPairing Wfn df df‖ * ‖rToEReflectedPairing Wfn g g‖ := by
-    simpa only [L, rToEReflectedPairing_apply, spatialTranslate, gt,
-      osiiOriginalOSNonnegativeTimeShiftSource, osiiOriginalOSTimeShiftSchwartzNPoint_zero] using
-      rToE_reflected_timeSpaceShift_pairing_bound Wfn df g 0 t (by norm_num) t.2 a
+    have hbound := rToE_reflected_timeSpaceShift_pairing_bound Wfn df g 0 t
+      (by norm_num) t.2 a
+    rw [osiiOriginalOSTimeShiftSchwartzNPoint_zero] at hbound
+    dsimp only [L]
+    rw [rToEReflectedPairing_apply]
+    set_option backward.isDefEq.respectTransparency false in
+      simpa only [spatialTranslate, gt, osiiOriginalOSNonnegativeTimeShiftSource] using hbound
   have hH : ‖H‖ ^ 2 ≤
       ‖rToEReflectedPairing Wfn f f‖ * ‖rToEReflectedPairing Wfn dg dg‖ := by
-    simpa only [H, rToEReflectedPairing_apply, spatialTranslate, fs',
-      osiiOriginalOSNonnegativeTimeShiftSource, osiiOriginalOSTimeShiftSchwartzNPoint_zero] using
-      rToE_reflected_timeSpaceShift_pairing_bound Wfn f dg s' 0 s'.2 (by norm_num) a
+    have hbound := rToE_reflected_timeSpaceShift_pairing_bound Wfn f dg s' 0 s'.2
+      (by norm_num) a
+    rw [osiiOriginalOSTimeShiftSchwartzNPoint_zero] at hbound
+    dsimp only [H]
+    rw [rToEReflectedPairing_apply]
+    set_option backward.isDefEq.respectTransparency false in
+      simpa only [spatialTranslate, fs', osiiOriginalOSNonnegativeTimeShiftSource] using hbound
   have hsmall (x b : ℝ) (hx0 : 0 ≤ x) (hx : x < δ) (hb : b ≤ C) :
       x * b < (ε / 2) ^ 2 := by
     calc
@@ -210,16 +223,16 @@ theorem rToE_reflected_cluster_uniform_time (Wfn : WightmanFunctions d) {n m : �
           osiiOriginalOSNonnegativeTimeShiftSource f s')
         (osiiOriginalOSNonnegativeTimeShiftSource f ss -
           osiiOriginalOSNonnegativeTimeShiftSource f s')‖ < δ := by
-    simpa only [rToEReflectedPairing_apply, osiiOriginalOSNonnegativeTimeShiftSource,
-      Submodule.coe_sub] using hs'
+    rw [rToEReflectedPairing_apply]
+    exact hs'
   have hgt :
       ‖rToEReflectedPairing Wfn
         (osiiOriginalOSNonnegativeTimeShiftSource g tt -
           osiiOriginalOSNonnegativeTimeShiftSource g t')
         (osiiOriginalOSNonnegativeTimeShiftSource g tt -
           osiiOriginalOSNonnegativeTimeShiftSource g t')‖ < δ := by
-    simpa only [rToEReflectedPairing_apply, osiiOriginalOSNonnegativeTimeShiftSource,
-      Submodule.coe_sub] using ht'
+    rw [rToEReflectedPairing_apply]
+    exact ht'
   have hnear := happ ss s' tt t' hfs hgt a
   have hp : (s', t') ∈ K ×ˢ L := Finset.mem_product.mpr ⟨hs'K, ht'L⟩
   have hrM : r (s', t') ≤ (M : ℝ) :=

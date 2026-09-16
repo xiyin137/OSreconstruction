@@ -69,9 +69,12 @@ theorem generatorChronologicalParameter_measurePreserving
         volume volume :=
     MeasureTheory.volume_preserving_pi fun j => by
       by_cases hj : j < i.toGap
-      · simpa [hj] using
+      · rw [if_pos hj]
+        convert
           (MeasureTheory.Measure.measurePreserving_neg
-            (volume : Measure ℝ))
+            (volume : Measure ℝ)) using 1
+        funext x
+        simp
       · simpa [hj] using
           (MeasurePreserving.id (volume : Measure ℝ))
   convert hpi using 1
@@ -305,9 +308,13 @@ theorem eventually_translatedSource_translate_tsupport_subset_strictPositive
   have hzero_mem : (0 : Fin n → ℝ) ∈ U := by
     intro j
     simpa using hτ j
+  have hU_nhds : U ∈ 𝓝 (v x₀) := by
+    rw [hv_zero]
+    exact hU_open.mem_nhds hzero_mem
   filter_upwards
-    [hv_cont.eventually (by simpa [hv_zero] using hU_open.mem_nhds hzero_mem)]
+    [hv_cont.eventually hU_nhds]
       with x hx
+  change ∀ j, v x j < τ j at hx
   intro N
   exact
     translatedSource_translate_tsupport_subset_strictPositive
@@ -540,7 +547,7 @@ theorem eventually_rootedTranslatedTimeProfilesPositive_uniform_scale
           (continuous_const :
             Continuous
               (fun _ : Fin (i.n - 1) → ℝ => (0 : ℝ)))
-      · simpa using (continuous_apply a).neg
+      · exact continuous_neg.comp (continuous_apply a)
     have hleft : Continuous i.leftRealCoordinates := by
       unfold GeneratorIndex.leftRealCoordinates
       fun_prop
@@ -597,7 +604,7 @@ theorem eventually_rootedTranslatedTimeProfilesPositive_uniform_scale
           (continuous_const :
             Continuous
               (fun _ : Fin (i.m - 1) → ℝ => (0 : ℝ)))
-      · simpa using (continuous_apply b).neg
+      · exact continuous_neg.comp (continuous_apply b)
     have hright : Continuous i.rightRealCoordinates := by
       unfold GeneratorIndex.rightRealCoordinates
       fun_prop

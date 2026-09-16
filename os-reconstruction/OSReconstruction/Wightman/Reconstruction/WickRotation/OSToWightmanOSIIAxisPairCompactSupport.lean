@@ -99,18 +99,36 @@ private theorem timeShiftHilbert_single_eq
         ⟨timeShiftSchwartzNPoint (d := d) t f,
           timeShiftSchwartzNPoint_preserves_ordered_positive_tsupport
             (d := d) t ht f hf⟩ := by
-  rw [osiiPositiveTimeSingleVectorCLM_apply, osTimeShiftHilbertOfOS_coe]
+  let ft : euclideanPositiveTimeSubmodule (d := d) n :=
+    ⟨timeShiftSchwartzNPoint (d := d) t f,
+      timeShiftSchwartzNPoint_preserves_ordered_positive_tsupport
+        (d := d) t ht f hf⟩
+  change osTimeShiftHilbertOfOS (d := d) OS t ht
+      (osiiPositiveTimeSingleVectorCLM OS n ⟨f, hf⟩) =
+    osiiPositiveTimeSingleVectorCLM OS n ft
+  let x₀ : OSPreHilbertSpace OS :=
+    ⟦PositiveTimeBorchersSequence.single n f hf⟧
+  rw [osiiPositiveTimeSingleVectorCLM_apply]
+  change osTimeShiftHilbertOfOS (d := d) OS t ht
+      (x₀ : OSHilbertSpace OS) = _
+  rw [osTimeShiftHilbertOfOS_coe]
+  change ((osTimeShiftLinear OS t ht x₀ : OSPreHilbertSpace OS) :
+      OSHilbertSpace OS) =
+    (((show OSPreHilbertSpace OS from
+      ⟦PositiveTimeBorchersSequence.single n
+        (timeShiftSchwartzNPoint (d := d) t f)
+        (timeShiftSchwartzNPoint_preserves_ordered_positive_tsupport
+          (d := d) t ht f hf)⟧) : OSHilbertSpace OS))
   apply congrArg (fun x : OSPreHilbertSpace OS => (x : OSHilbertSpace OS))
   apply OSPreHilbertSpace.mk_eq_of_funcs_eq
   intro k
   by_cases hk : k = n
   · subst k
-    simp [osTimeShiftLinear, osTimeShift,
-      PositiveTimeBorchersSequence.single_toBorchersSequence,
-      BorchersSequence.single]
+    rw [PositiveTimeBorchersSequence.single_toBorchersSequence]
+    simp [osTimeShiftLinear, osTimeShift, BorchersSequence.single, ft]
   · simp [osTimeShiftLinear, osTimeShift,
       PositiveTimeBorchersSequence.single_toBorchersSequence,
-      BorchersSequence.single, hk]
+      BorchersSequence.single, hk, ft]
 
 private theorem norm_osSpatialTranslateHilbert_eq
     (OS : OsterwalderSchraderAxioms d)

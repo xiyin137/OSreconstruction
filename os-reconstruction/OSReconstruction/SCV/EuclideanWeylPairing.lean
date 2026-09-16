@@ -79,8 +79,7 @@ theorem lineDerivOp_euclideanConvolutionTest_right
     ((innerSL ℝ).flip v).hasTemperateGrowth
   simp [SchwartzMap.pairing_apply_apply,
     SchwartzMap.smulLeftCLM_apply_apply hinner]
-  exact RCLike.real_smul_eq_coe_mul (K := ℂ) (inner ℝ ξ v)
-    ((𝓕 φ) ξ * (𝓕 ρ) ξ)
+  ring
 
 /-- Iterated directional derivatives in the output variable commute with
 Euclidean Schwartz convolution in the right argument. -/
@@ -128,7 +127,7 @@ theorem lineDerivOp_euclideanConvolutionTest_left
       (fun x : EuclideanSpace ℝ ι => inner ℝ x v).HasTemperateGrowth :=
     ((innerSL ℝ).flip v).hasTemperateGrowth
   simp [SchwartzMap.pairing_apply_apply,
-    SchwartzMap.smulLeftCLM_apply_apply hinner]
+    SchwartzMap.smulLeftCLM_apply_apply hinner, mul_assoc]
 
 /-- Iterated directional derivatives in the output variable commute with
 Euclidean Schwartz convolution in the left argument. -/
@@ -161,7 +160,9 @@ theorem continuous_euclideanReflectedTranslate_of_isCompactSupport
   intro x0
   have htranslate :=
     tendsto_euclideanTranslateSchwartz_nhds_of_isCompactSupport ρ hρ_compact (-x0)
-  simpa [euclideanReflectedTranslate] using htranslate.comp (continuous_neg.tendsto x0)
+  change Tendsto (fun x => (euclideanTranslateSchwartzCLM (-x)) ρ)
+    (𝓝 x0) (𝓝 ((euclideanTranslateSchwartzCLM (-x0)) ρ))
+  simpa [Function.comp_def] using htranslate.comp (continuous_neg.tendsto x0)
 
 /-- The finite Banach probe integrand used to turn the scalar pairing identity
 into an ordinary Bochner-integral statement. -/

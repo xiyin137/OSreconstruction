@@ -195,8 +195,20 @@ theorem continuousAt_osiiReflectedMixedMovingKernel
                   (osiiMixedBlockGlobalReducedTime k p.2))
               (osiiMixedSpatialHeadMarginal χ₁ χ₂))
         (w, δ)
-    simpa only [reflectedReducedTimeDisplacementCLM_apply] using
+    have hproduct :
+        ContinuousAt
+          (fun p :
+            (Fin (k + k) → ℂ) ×
+              (Fin ((k + 1) + (k + 1)) → ℝ) =>
+            ρ (osiiMixedBlockGlobalReducedTime k p.2) *
+              A.distribution
+                (-(reflectedReducedTimeDisplacementCLM k p.1) +
+                  osiiPositiveRealTimeEmbed
+                    (osiiMixedBlockGlobalReducedTime k p.2))
+                (osiiMixedSpatialHeadMarginal χ₁ χ₂))
+          (w, δ) :=
       hcutoff.mul hdistribution
+    simpa only [reflectedReducedTimeDisplacementCLM_apply] using hproduct
   · have hnot :
         {σ : Fin (k + (k + 1)) → ℝ |
           σ ∉ tsupport
@@ -247,7 +259,8 @@ theorem continuous_reflectedCauchyIncrement_map
   apply continuous_pi
   intro j
   refine Fin.addCases (fun i => ?_) (fun i => ?_) j
-  · simpa only [reflectedCauchyIncrement, Fin.addCases_left] using
+  · simpa only [reflectedCauchyIncrement, Fin.addCases_left,
+      Function.comp_apply, starRingEnd_apply] using!
       (continuous_star.comp
         (continuous_apply i :
           Continuous (fun z : Fin k → ℂ => z i)))

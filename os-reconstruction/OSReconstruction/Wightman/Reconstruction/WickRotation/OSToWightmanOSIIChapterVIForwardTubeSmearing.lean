@@ -67,9 +67,9 @@ theorem osiiForwardTubeTimeSpatialPoint_continuous :
   apply continuous_pi
   intro mu
   refine Fin.cases ?_ (fun a => ?_) mu
-  · simpa using (continuous_apply j).comp
-      (continuous_fst : Continuous (fun p : (Fin k -> Complex) ×
-        Section43SpatialSpace d k => p.1))
+  · change Continuous (fun p : (Fin k -> Complex) ×
+      Section43SpatialSpace d k => p.1 j)
+    fun_prop
   · simp only [osiiForwardTubeTimeSpatialPoint_space]
     fun_prop
 

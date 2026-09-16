@@ -113,7 +113,12 @@ theorem section43OSBorchersPhaseIntegral_factorizes_succRight
   have heR :
       MeasurePreserving eR
         (volume : Measure (NPointDomain d (n + (m + 1)))) μP := by
-    simpa [eR, θe, μP] using hprod_reflect.comp he
+    change MeasurePreserving
+      ((MeasurableEquiv.prodCongr θe
+        (MeasurableEquiv.refl (NPointDomain d (m + 1)))) ∘ e)
+      (volume : Measure (NPointDomain d (n + (m + 1)))) μP
+    convert hprod_reflect.comp he using 1
+    rfl
   have hF_factor :
       ∀ y : NPointDomain d (n + (m + 1)), F y = H (eR y) := by
     intro y
@@ -122,11 +127,18 @@ theorem section43OSBorchersPhaseIntegral_factorizes_succRight
       calc
         e.symm (yL, xR) = e.symm (e y) := by rw [hsplit_y]
         _ = y := e.symm_apply_apply y
+    have heR_y : eR y = (timeReflectionN d yL, xR) := by
+      change
+        (MeasurableEquiv.prodCongr θe
+          (MeasurableEquiv.refl (NPointDomain d (m + 1)))) (e y) = _
+      rw [hsplit_y]
+      rfl
     have hpoint :=
       section43OSBorchersPhase_splitIntegrand_factorized_succRight
         (d := d) (n := n) (m := m) (f := f.1) (g := g.1)
         (t := t) ξ (timeReflectionN d yL) xR
-    simpa [F, H, leftFactor, rightFactor, Lphase, Rphase, tail, eR, θe, e,
+    rw [heR_y]
+    simpa [F, H, leftFactor, rightFactor, Lphase, Rphase, tail, e,
       hsplit_y, hy, section43TimeReflectionN_involutive] using hpoint
   have hsplit :
       (∫ y : NPointDomain d (n + (m + 1)), F y) =

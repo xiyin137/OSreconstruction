@@ -333,16 +333,19 @@ theorem continuous_schwartzNPoint_timeReflect {n : ℕ} :
         intro μ
         by_cases hμ : μ = 0
         · subst hμ
-          simpa [timeReflectionN, timeReflection] using
-            ((((continuous_apply 0 :
+          change Continuous fun a : NPointDomain d n => -(a i 0)
+          exact
+            ((continuous_apply 0 :
                 Continuous fun y : SpacetimeDim d => y 0).comp
               (continuous_apply i :
-                Continuous fun x : NPointDomain d n => x i))).neg)
-        · simpa [timeReflectionN, timeReflection, hμ] using
-            ((continuous_apply μ :
+                Continuous fun x : NPointDomain d n => x i)).fun_neg
+        · have hcont :=
+            (continuous_apply μ :
                 Continuous fun y : SpacetimeDim d => y μ).comp
               (continuous_apply i :
-                Continuous fun x : NPointDomain d n => x i))
+                Continuous fun x : NPointDomain d n => x i)
+          exact hcont.congr
+            (fun a => by simp [timeReflectionN, timeReflection, hμ])
       continuous_invFun := by
         apply continuous_pi
         intro i
@@ -350,16 +353,19 @@ theorem continuous_schwartzNPoint_timeReflect {n : ℕ} :
         intro μ
         by_cases hμ : μ = 0
         · subst hμ
-          simpa [timeReflectionN, timeReflection] using
-            ((((continuous_apply 0 :
+          change Continuous fun a : NPointDomain d n => -(a i 0)
+          exact
+            ((continuous_apply 0 :
                 Continuous fun y : SpacetimeDim d => y 0).comp
               (continuous_apply i :
-                Continuous fun x : NPointDomain d n => x i))).neg)
-        · simpa [timeReflectionN, timeReflection, hμ] using
-            ((continuous_apply μ :
+                Continuous fun x : NPointDomain d n => x i)).fun_neg
+        · have hcont :=
+            (continuous_apply μ :
                 Continuous fun y : SpacetimeDim d => y μ).comp
               (continuous_apply i :
-                Continuous fun x : NPointDomain d n => x i)) }
+                Continuous fun x : NPointDomain d n => x i)
+          exact hcont.congr
+            (fun a => by simp [timeReflectionN, timeReflection, hμ]) }
   let θS : SchwartzNPoint d n →L[ℂ] SchwartzNPoint d n :=
     SchwartzMap.compCLMOfContinuousLinearEquiv ℂ θ
   exact θS.continuous.congr (fun f => by
@@ -543,7 +549,11 @@ theorem OSIIChronologicalCompactFactors.continuousOn_compensatedMovingPacket_bra
               (osiiChronologicalGapRightArity q.1)
               (rightPositive p.1)))
         (Set.univ ×ˢ {w : ℂ | |w.im| < Real.pi / 2}) := by
-    simpa [Φ] using
+    change ContinuousOn
+      ((fun p : ℂ × OSHilbertSpace OS =>
+          osiiOriginalOSHilbertComplex OS p.1 p.2) ∘ Φ)
+      (Set.univ ×ˢ {w : ℂ | |w.im| < Real.pi / 2})
+    exact
       (continuousOn_osiiOriginalOSHilbertComplex_jointly
         OS).comp hΦ.continuousOn hΦ_maps
   have hleftVector :

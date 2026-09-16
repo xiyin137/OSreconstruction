@@ -44,16 +44,14 @@ theorem continuous_reflectedChronologicalGapMap
   apply continuous_pi
   intro i
   by_cases hleft : i.val < k
-  · simpa [reflectedChronologicalGapMap, hleft] using
-      (continuous_apply (⟨k - i.val, by omega⟩ : Fin (k + 1))).comp
-        continuous_fst
+  · simp only [reflectedChronologicalGapMap, hleft, ↓reduceDIte]
+    fun_prop
   · by_cases hbridge : i.val = k
-    · simpa [reflectedChronologicalGapMap, hleft, hbridge] using
-        ((continuous_apply (0 : Fin (k + 1))).comp continuous_fst).add
-          ((continuous_apply (0 : Fin (k + 1))).comp continuous_snd)
-    · simpa [reflectedChronologicalGapMap, hleft, hbridge] using
-        (continuous_apply
-          (⟨i.val - k, by omega⟩ : Fin (k + 1))).comp continuous_snd
+    · simp only [reflectedChronologicalGapMap, hbridge, Nat.lt_irrefl,
+        ↓reduceDIte]
+      fun_prop
+    · simp only [reflectedChronologicalGapMap, hleft, hbridge, ↓reduceDIte]
+      fun_prop
 
 /-- Undo the chronological reindexing while retaining the arity-normalized
 configuration type at the public boundary. -/
@@ -240,7 +238,10 @@ theorem mixedReflectedChronologicalRawConfig_mem_tsupport
     rw [← hts]
     simpa [mixedReflectedChronologicalSource, reindexSchwartz, σ, e,
       SchwartzMap.compCLMOfContinuousLinearEquiv_apply] using hx
-  simpa [reflectedChronologicalRawConfig, σ, e] using hx'
+  have heq : reflectedChronologicalRawConfig x = e x := by
+    ext i
+    rfl
+  rwa [heq]
 
 /-- The compact reduced-time carrier canonically induced by reflecting and
 chronologically ordering two source-time carriers. -/

@@ -40,7 +40,8 @@ theorem norm_le_infDist_pow_of_flat_on_closed
   have hshift_contDiff :
       ∀ r : ℕ, ContDiff ℝ r (fun z : E => f (z + y)) :=
     fun r => by
-      simpa using (hf_smooth.of_le (by exact_mod_cast le_top)).comp
+      change ContDiff ℝ r (f ∘ fun z : E => z + y)
+      exact (hf_smooth.of_le (by exact_mod_cast le_top)).comp
         (contDiff_id.add contDiff_const)
   have hg_contDiff : ∀ r : ℕ, ContDiff ℝ r g := fun r => by
     simpa [g] using

@@ -198,21 +198,19 @@ theorem
   let e :=
     MeasurableEquiv.piFinSuccAbove
       (fun _ : Fin (k + 1) => ℝ) 0
-  have hmp :
-      MeasurePreserving e
-        (volume : Measure (Fin (k + 1) → ℝ))
-        ((volume : Measure ℝ).prod
-          (volume : Measure (Fin k → ℝ))) := by
+  have hmp : MeasurePreserving e := by
     simpa [e] using
       (volume_preserving_piFinSuccAbove
         (fun _ : Fin (k + 1) => ℝ) 0)
   have hpair_int :
-      Integrable
+      @Integrable ℂ _ _ (ℝ × (Fin k → ℝ)) Prod.instMeasurableSpace
         (fun p : ℝ × (Fin k → ℝ) =>
           φ (Fin.cons p.1 p.2) * H p.2)
         ((volume : Measure ℝ).prod
           (volume : Measure (Fin k → ℝ))) := by
-    simpa [G, e, MeasurableEquiv.piFinSuccAbove_symm_apply] using
+    simpa [G, e, MeasurableEquiv.piFinSuccAbove_symm_apply,
+      Function.comp_def, Fin.consEquiv,
+      Measure.volume_eq_prod] using
       hmp.symm.integrable_comp_of_integrable hG_int
   rw [
     osiiStageMovingSliceScalar_diffVarReduction_orderedPullback_timeSpatialTensor_eq_iteratedIntegral]
@@ -242,10 +240,10 @@ theorem
                 (H τ)
                 (fun a₀ : ℝ => φ (Fin.cons a₀ τ))).symm
     _ =
-      ∫ p : ℝ × (Fin k → ℝ),
-        φ (Fin.cons p.1 p.2) * H p.2
-          ∂((volume : Measure ℝ).prod
-            (volume : Measure (Fin k → ℝ))) := by
+      @integral (ℝ × (Fin k → ℝ)) ℂ _ _ Prod.instMeasurableSpace
+        ((volume : Measure ℝ).prod
+          (volume : Measure (Fin k → ℝ)))
+        (fun p => φ (Fin.cons p.1 p.2) * H p.2) := by
               simpa using
                 (integral_prod_symm
                   (fun p : ℝ × (Fin k → ℝ) =>

@@ -201,8 +201,8 @@ private theorem coordinate_hasTemperateGrowth
     ContinuousLinearMap.proj i
   let πμ : SpacetimeDim d →L[ℝ] ℝ :=
     ContinuousLinearMap.proj μ
-  simpa [πi, πμ] using
-    (πμ.hasTemperateGrowth.comp πi.hasTemperateGrowth)
+  change (⇑πμ ∘ ⇑πi).HasTemperateGrowth
+  exact πμ.hasTemperateGrowth.comp πi.hasTemperateGrowth
 
 private theorem pairCollisionSq_hasTemperateGrowth
     {d : ℕ} {k : ℕ} (i j : Fin k) :
@@ -216,7 +216,9 @@ private theorem pairCollisionSq_hasTemperateGrowth
         (fun x : NPointDomain d k => x i μ - x j μ).HasTemperateGrowth :=
       (coordinate_hasTemperateGrowth (d := d) i μ).sub
         (coordinate_hasTemperateGrowth (d := d) j μ)
-    simpa using hdiff.mul hdiff
+    change ((fun x : NPointDomain d k => x i μ - x j μ) *
+      (fun x : NPointDomain d k => x i μ - x j μ)).HasTemperateGrowth
+    exact hdiff.mul hdiff
   simpa [pairCollisionSq] using
     Function.HasTemperateGrowth.sum (s := (Finset.univ : Finset (Fin (d + 1)))) hterm
 
@@ -231,9 +233,10 @@ private theorem pairCollisionFarFactor_hasTemperateGrowth
   have harg :
       (fun x : NPointDomain d k =>
         (r * r)⁻¹ * pairCollisionSq (d := d) k i j x - 2).HasTemperateGrowth := by
-    simpa [sub_eq_add_neg] using
-      ((Function.HasTemperateGrowth.const ((r * r)⁻¹)).mul hsq).add
-        (Function.HasTemperateGrowth.const (-2 : ℝ))
+    change (((fun _ : NPointDomain d k => (r * r)⁻¹) *
+      pairCollisionSq (d := d) k i j) + (fun _ => (-2 : ℝ))).HasTemperateGrowth
+    exact ((Function.HasTemperateGrowth.const ((r * r)⁻¹)).mul hsq).add
+      (Function.HasTemperateGrowth.const (-2 : ℝ))
   change Function.HasTemperateGrowth
     (fun x : NPointDomain d k =>
       (SCV.smoothCutoff ((r * r)⁻¹ * pairCollisionSq (d := d) k i j x - 2) : ℂ))
@@ -256,7 +259,12 @@ private theorem hasTemperateGrowth_finset_prod_complex
     have hfa : (f a).HasTemperateGrowth := hf a (by simp)
     have hfs : (fun x : E => s.prod (fun i => f i x)).HasTemperateGrowth :=
       ih (fun i hi => hf i (by simp [has, hi]))
-    simpa [Finset.prod_insert has, Pi.mul_apply] using hfa.mul hfs
+    rw [show (fun x : E => ∏ i ∈ insert a s, f i x) =
+        fun x : E => f a x * ∏ i ∈ s, f i x by
+      funext x
+      rw [Finset.prod_insert has]]
+    change (f a * fun x : E => s.prod (fun i => f i x)).HasTemperateGrowth
+    exact hfa.mul hfs
 
 private def collisionFarCutoff {d k : ℕ} (r : ℝ) : NPointDomain d k → ℂ :=
   fun x =>
@@ -267,11 +275,13 @@ private theorem collisionFarCutoff_hasTemperateGrowth
     {d k : ℕ} (r : ℝ) :
     (collisionFarCutoff (d := d) (k := k) r).HasTemperateGrowth := by
   classical
-  simpa [collisionFarCutoff] using
-    hasTemperateGrowth_finset_prod_complex
-      (s := (Finset.univ : Finset (collisionPairIndex k)))
-      (f := fun p x => pairCollisionFarFactor (d := d) r p.1.1 p.1.2 x)
-      (fun p _hp => pairCollisionFarFactor_hasTemperateGrowth (d := d) r p.1.1 p.1.2)
+  change (fun x : NPointDomain d k =>
+    (Finset.univ : Finset (collisionPairIndex k)).prod
+      (fun p => pairCollisionFarFactor (d := d) r p.1.1 p.1.2 x)).HasTemperateGrowth
+  exact hasTemperateGrowth_finset_prod_complex
+    (s := (Finset.univ : Finset (collisionPairIndex k)))
+    (f := fun p x => pairCollisionFarFactor (d := d) r p.1.1 p.1.2 x)
+    (fun p _hp => pairCollisionFarFactor_hasTemperateGrowth (d := d) r p.1.1 p.1.2)
 
 private def collisionFarPart
     {d : ℕ} [NeZero d] {k : ℕ} (r : ℝ)
@@ -363,8 +373,8 @@ private theorem dense_hasCompactSupport_zeroDiagonal
         (show HasCompactSupport ((bumpTruncationRadiusNPoint (d := d) F.1 n :
             SchwartzNPoint d k) : NPointDomain d k → ℂ) from by
           rw [bumpTruncationRadiusNPoint_eq_unflatten (d := d)]
-          simpa [OSReconstruction.unflattenSchwartzNPoint_apply] using
-            hflat_compact.comp_homeomorph (flattenCLEquivReal k (d + 1)).toHomeomorph)
+          convert hflat_compact.comp_homeomorph
+            (flattenCLEquivReal k (d + 1)).toHomeomorph using 1 <;> rfl)
     simpa [u] using hv_compact
   have hu_tendsto :
       Filter.Tendsto u Filter.atTop (nhds F) := by
@@ -385,8 +395,12 @@ private theorem dense_hasCompactSupport_zeroDiagonal
         funext n
         simpa [v] using bumpTruncationRadiusNPoint_eq_unflatten (d := d) F.1 n
       rw [hrew]
-      simpa [Function.comp, unflatten_flattenSchwartzNPoint_local (d := d) F.1] using
-        hunflat
+      change Filter.Tendsto
+        ((⇑(OSReconstruction.unflattenSchwartzNPoint (d := d))) ∘
+          fun n => OSReconstruction.bumpTruncationRadius
+            (OSReconstruction.flattenSchwartzNPoint (d := d) F.1) n)
+        Filter.atTop (nhds F.1)
+      simpa [unflatten_flattenSchwartzNPoint_local (d := d) F.1] using hunflat
     simpa [u] using hv_tendsto
   exact isClosed_closure.mem_of_tendsto hu_tendsto
     (Filter.Eventually.of_forall fun n => subset_closure (hu_mem n))
@@ -496,9 +510,10 @@ private theorem proofideas_exists_iteratedFDeriv_spacetimeUnitBallBumpRadius_bou
               SpacetimeDim d → ℂ)) x =
         (((iteratedFDeriv ℝ n ((ψ : SchwartzSpacetime d) : SpacetimeDim d → ℂ) (e x))
           ).compContinuousLinearMap (fun _ : Fin n => e)) := by
-    dsimp [proofideas_spacetimeUnitBallBumpRadius, ψ]
-    simpa using
-      e.iteratedFDeriv_comp_right
+    change iteratedFDeriv ℝ n
+        (((OSReconstruction.unitBallBumpSchwartzPi (d + 1) : SchwartzSpacetime d) :
+          SpacetimeDim d → ℂ) ∘ e) x = _
+    exact e.iteratedFDeriv_comp_right
         (f := ((OSReconstruction.unitBallBumpSchwartzPi (d + 1) : SchwartzSpacetime d) :
           SpacetimeDim d → ℂ))
         ((OSReconstruction.unitBallBumpSchwartzPi (d + 1) : SchwartzSpacetime d).smooth n)
@@ -543,8 +558,10 @@ private theorem proofideas_exists_iteratedFDeriv_pairSmallCutoff_bound
           ((proofideas_spacetimeUnitBallBumpRadius (d := d) δ hδ : SchwartzSpacetime d) :
             SpacetimeDim d → ℂ) (proofideas_pairDiffCLM (d := d) i j x)).compContinuousLinearMap
             (fun _ : Fin n => proofideas_pairDiffCLM (d := d) i j) := by
-    simpa using
-      (proofideas_pairDiffCLM (d := d) i j).iteratedFDeriv_comp_right
+    change iteratedFDeriv ℝ n
+        (((proofideas_spacetimeUnitBallBumpRadius (d := d) δ hδ : SchwartzSpacetime d) :
+          SpacetimeDim d → ℂ) ∘ proofideas_pairDiffCLM (d := d) i j) x = _
+    exact (proofideas_pairDiffCLM (d := d) i j).iteratedFDeriv_comp_right
         (f := ((proofideas_spacetimeUnitBallBumpRadius (d := d) δ hδ : SchwartzSpacetime d) :
           SpacetimeDim d → ℂ))
         ((proofideas_spacetimeUnitBallBumpRadius (d := d) δ hδ : SchwartzSpacetime d).smooth n)
@@ -852,7 +869,8 @@ private theorem proofideas_exists_iteratedLineDeriv_pair_flat_bound
   have hshift_contDiff :
       ∀ r : ℕ, ContDiff ℝ r (fun z : NPointDomain d k => (F : NPointDomain d k → ℂ) (z + c)) :=
     fun r => by
-      simpa using (hF_contDiff r).comp (contDiff_id.add contDiff_const)
+      change ContDiff ℝ r ((F : NPointDomain d k → ℂ) ∘ fun z => z + c)
+      exact (hF_contDiff r).comp (contDiff_id.add contDiff_const)
   have hg_contDiff : ∀ r : ℕ, ContDiff ℝ r g := fun r => by
     simpa [g] using (ContDiff.comp_continuousLinearMap (g := L) (hf := hshift_contDiff r))
   have hc_coin : c ∈ CoincidenceLocus d k := by
@@ -1102,7 +1120,8 @@ private theorem proofideas_pairSmallCutoff_seminorm_le_linear
   have hη_smooth : ContDiff ℝ (↑(⊤ : ℕ∞) : WithTop ℕ∞) ηδ := by
     fun_prop
   have hF_smooth : ContDiff ℝ (↑(⊤ : ℕ∞) : WithTop ℕ∞) (F.1 : NPointDomain d k → ℂ) := by
-    simpa using (F.1 : SchwartzNPoint d k).smooth'
+    change ContDiff ℝ (↑(⊤ : ℕ∞) : WithTop ℕ∞) (F.1 : SchwartzNPoint d k).toFun
+    exact (F.1 : SchwartzNPoint d k).smooth'
   have hη_temp : ηδ.HasTemperateGrowth := by
     fun_prop
   have hfun :
@@ -2372,7 +2391,10 @@ private theorem integral_comp_rightBlockTailShift {n m : ℕ}
   have hmp : MeasureTheory.MeasurePreserving
       (Ψ : NPointDomain d (n + m) → NPointDomain d (n + m))
       MeasureTheory.volume MeasureTheory.volume := by
-    simpa [Ψ] using rightBlockTailShift_measurePreserving (d := d) (n := n) (m := m) hm t
+    change MeasureTheory.MeasurePreserving
+      (tailTimeShiftConfig (d := d) ⟨n, Nat.lt_add_of_pos_right hm⟩ t)
+      MeasureTheory.volume MeasureTheory.volume
+    exact rightBlockTailShift_measurePreserving (d := d) (n := n) (m := m) hm t
   exact hmp.integral_comp' (f := Ψ) e
 
 /-- On Wick-rotated Euclidean configurations, the complex ξ-shift in the time

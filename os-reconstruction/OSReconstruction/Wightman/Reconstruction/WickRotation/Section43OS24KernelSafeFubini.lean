@@ -12,15 +12,17 @@ namespace OSReconstruction
 private theorem isOpen_TubeDomainSetPi_forwardConeAbs
     (d N : ℕ) [NeZero d] :
     IsOpen (TubeDomainSetPi (ForwardConeAbs d N)) := by
-  simpa [TubeDomainSetPi] using
-    (forwardConeAbs_isOpen d N).preimage
-      (by
-        apply continuous_pi
-        intro k
-        apply continuous_pi
-        intro μ
-        exact Complex.continuous_im.comp
-          ((continuous_apply μ).comp (continuous_apply k)))
+  change IsOpen
+    ((fun z : Fin N → Fin (d + 1) → ℂ => fun k μ => (z k μ).im) ⁻¹'
+      ForwardConeAbs d N)
+  exact (forwardConeAbs_isOpen d N).preimage
+    (by
+      apply continuous_pi
+      intro k
+      apply continuous_pi
+      intro μ
+      exact Complex.continuous_im.comp
+        ((continuous_apply μ).comp (continuous_apply k)))
 
 /-- Urysohn cutoff for the support-localized forward-tube Fubini packet.
 
@@ -191,8 +193,6 @@ theorem continuous_section43OSForwardTubeSafeLift_succRight
   intro μ
   have hρC : Continuous fun y => ((ρ y : ℝ) : ℂ) :=
     Complex.continuous_ofReal.comp hρ_cont
-  have h1ρC : Continuous fun y => (((1 - ρ y : ℝ) : ℂ)) :=
-    Complex.continuous_ofReal.comp (continuous_const.sub hρ_cont)
   have hcoord_lift :
       Continuous fun y =>
         section43OSForwardTubeLift_succRight d t y k μ :=
@@ -201,8 +201,12 @@ theorem continuous_section43OSForwardTubeSafeLift_succRight
       Continuous fun _ : NPointDomain d (n + (m + 1)) =>
         section43OSForwardTubeBasePoint d (n + (m + 1)) k μ :=
     continuous_const
-  simpa [section43OSForwardTubeSafeLift_succRight] using
-    (hρC.mul hcoord_lift).add (h1ρC.mul hcoord_base)
+  change Continuous fun y =>
+    (ρ y : ℂ) * section43OSForwardTubeLift_succRight d t y k μ +
+      ((1 - ρ y : ℝ) : ℂ) *
+        section43OSForwardTubeBasePoint d (n + (m + 1)) k μ
+  exact (hρC.mul hcoord_lift).add
+    ((Complex.continuous_ofReal.comp (continuous_const.sub hρ_cont)).mul hcoord_base)
 
 /-- Safe Paley-Wiener Schwartz family associated to the support-localized
 forward-tube lift. -/
@@ -267,29 +271,33 @@ theorem continuous_section43OSForwardTubeSafePsiZFamily_succRight
       (section43OSForwardTubeSafePsiZFamily_succRight
         (d := d) (n := n) (m := m)
         hCflat_open hCflat_conv hCflat_cone hCflat_salient (t := t) ρ) := by
-  let N := n + (m + 1)
-  let Cflat : Set (Fin (N * (d + 1)) → ℝ) :=
-    (flattenCLEquivReal N (d + 1)) '' ForwardConeAbs d N
-  let zMap : (Fin (N * (d + 1)) → ℝ) → Fin (N * (d + 1)) → ℂ :=
+  let Cflat : Set (Fin ((n + (m + 1)) * (d + 1)) → ℝ) :=
+    (flattenCLEquivReal (n + (m + 1)) (d + 1)) ''
+      ForwardConeAbs d (n + (m + 1))
+  let zMap :
+      (Fin ((n + (m + 1)) * (d + 1)) → ℝ) →
+        Fin ((n + (m + 1)) * (d + 1)) → ℂ :=
     fun yflat =>
-      flattenCLEquiv N (d + 1)
+      flattenCLEquiv (n + (m + 1)) (d + 1)
         (section43OSForwardTubeSafeLift_succRight d t ρ
-          ((flattenCLEquivReal N (d + 1)).symm yflat))
+          ((flattenCLEquivReal (n + (m + 1)) (d + 1)).symm yflat))
   have hz_cont : Continuous zMap := by
-    exact (flattenCLEquiv N (d + 1)).continuous.comp
+    exact (flattenCLEquiv (n + (m + 1)) (d + 1)).continuous.comp
       ((continuous_section43OSForwardTubeSafeLift_succRight
         (d := d) (n := n) (m := m) (t := t) ρ hρ_cont).comp
-        (flattenCLEquivReal N (d + 1)).symm.continuous)
+        (flattenCLEquivReal (n + (m + 1)) (d + 1)).symm.continuous)
   have hz_mem : ∀ yflat, zMap yflat ∈ SCV.TubeDomain Cflat := by
     intro yflat
     dsimp [zMap, Cflat]
-    exact flattenCLEquiv_mem_tubeDomain_image (n := N) (r := d)
+    exact flattenCLEquiv_mem_tubeDomain_image (n := n + (m + 1)) (r := d)
       (section43OSForwardTubeSafeLift_mem_forwardTube_succRight
         (d := d) (n := n) (m := m) (t := t) ρ hρ_range hρ_support
-        ((flattenCLEquivReal N (d + 1)).symm yflat))
-  simpa [section43OSForwardTubeSafePsiZFamily_succRight, Cflat, zMap, N] using
-    continuous_multiDimPsiZExt_comp_of_mem_tube
-      Cflat hCflat_open hCflat_conv hCflat_cone hCflat_salient zMap hz_cont hz_mem
+        ((flattenCLEquivReal (n + (m + 1)) (d + 1)).symm yflat))
+  change Continuous fun yflat =>
+    multiDimPsiZExt Cflat hCflat_open hCflat_conv hCflat_cone hCflat_salient
+      (zMap yflat)
+  exact continuous_multiDimPsiZExt_comp_of_mem_tube
+    Cflat hCflat_open hCflat_conv hCflat_cone hCflat_salient zMap hz_cont hz_mem
 
 /-- Polynomial seminorm bound for the support-localized safe forward-tube
 Paley-Wiener family.  Since the safe lift is constant off a compact support and

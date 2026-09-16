@@ -44,14 +44,20 @@ theorem osiiFlatEuclideanHolomorphicDomain_of_mixedSpacelike
     (BHW.unflattenCfg k d (fun a => (x a : Complex) + (y a : Complex) * I))
   apply osiiEuclideanHolomorphicDomain_of_mixedSpacelike j
   · rw [hdiff]
-    simpa [BHW.unflattenCfg, BHW.unflattenCfgReal] using hx
+    convert hx using 1
+    ext mu
+    simp [BHW.unflattenCfg, BHW.unflattenCfgReal]
   · intro mu
     rw [hdiff]
     simpa [BHW.unflattenCfg, BHW.unflattenCfgReal] using congrFun hy mu
   · intro l hl
     rw [hdiff]
-    simpa [BHW.unflattenCfg, BHW.unflattenCfgReal] using
-      (inOpenForwardCone_iff _).mp (hother l hl)
+    rw [show (fun mu => (BHW.unflattenCfg k d
+      (fun a => (x a : Complex) + (y a : Complex) * I) l mu).im) =
+        BHW.unflattenCfgReal k d y l by
+      funext mu
+      simp [BHW.unflattenCfg, BHW.unflattenCfgReal]]
+    exact (inOpenForwardCone_iff _).mp (hother l hl)
 
 namespace OSIIReducedForwardTubeBoundaryData
 

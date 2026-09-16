@@ -146,8 +146,9 @@ noncomputable def toPhysicalAngularContinuationData
         (D.carrier ×ˢ Set.univ) := by
       intro p hp
       exact ⟨hLcarrier hp.2, Set.mem_univ _⟩
-    simpa only [inner, source] using
-      D.continuousOn_joint.comp hinner.continuousOn hmaps
+    change ContinuousOn
+      ((fun p => (D.distribution p.1) p.2) ∘ inner) (Set.univ ×ˢ L)
+    exact D.continuousOn_joint.comp hinner.continuousOn hmaps
   extendsFirst := by
     intro z w hw
     let F := osiiStep4CoherentTargetSource d k hrho center z
@@ -191,8 +192,9 @@ theorem exists_uniform_schwartzBound_on_compact
           (D.carrier ×ˢ Set.univ) := by
         intro w hw
         exact ⟨hK_carrier hw, Set.mem_univ _⟩
-      simpa only [embed] using
-        D.continuousOn_joint.comp hembed.continuousOn hmaps
+      change ContinuousOn
+        ((fun p => (D.distribution p.1) p.2) ∘ embed) K
+      exact D.continuousOn_joint.comp hembed.continuousOn hmaps
     obtain ⟨C, hC⟩ :=
       hK_compact.exists_bound_of_continuousOn hcontinuous
     exact ⟨C, fun w => hC w.1 w.2⟩

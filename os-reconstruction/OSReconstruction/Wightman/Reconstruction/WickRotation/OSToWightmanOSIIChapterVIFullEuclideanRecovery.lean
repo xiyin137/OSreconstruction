@@ -92,9 +92,9 @@ theorem euclideanDensity_zeroGap_reproducesZeroDiagonal
       (fun phi => VanishesToInfiniteOrderOnCoincidence.one (onePointToFin1CLM d phi))
   have hInt (phi : SchwartzSpacetime d) :
       (∫ x : NPointDomain d 1, onePointToFin1CLM d phi x) = ∫ y : SpacetimeDim d, phi y := by
-    simpa [onePointToFin1CLM_apply, ContinuousLinearEquiv.coe_funUnique] using
-      MeasurePreserving.integral_comp'
-        (volume_preserving_funUnique (Fin 1) (SpacetimeDim d)) (fun y => phi y)
+    change (∫ x : Fin 1 → SpacetimeDim d, phi (x 0)) = ∫ y : SpacetimeDim d, phi y
+    exact MeasurePreserving.integral_comp'
+      (volume_preserving_funUnique (Fin 1) (SpacetimeDim d)) (fun y => phi y)
   have hRight : Continuous (fun phi : SchwartzSpacetime d =>
       H.kernel 0 * ∫ x : NPointDomain d 1, onePointToFin1CLM d phi x) := by
     simp_rw [hInt]
@@ -113,6 +113,7 @@ theorem euclideanDensity_zeroGap_reproducesZeroDiagonal
       congrArg H.kernel (Subsingleton.elim _ _)
     have h' : OS.S 1 (J psi) = ∫ x : NPointDomain d 1,
         H.kernel 0 * onePointToFin1CLM d psi x := by
+      change OS.S 1 (J psi) = ∫ x : NPointDomain d 1, H.kernel 0 * (J psi).1 x
       simpa only [hzero] using h.symm
     exact h'.trans (MeasureTheory.integral_const_mul (H.kernel 0)
       (fun x : NPointDomain d 1 => onePointToFin1CLM d psi x))

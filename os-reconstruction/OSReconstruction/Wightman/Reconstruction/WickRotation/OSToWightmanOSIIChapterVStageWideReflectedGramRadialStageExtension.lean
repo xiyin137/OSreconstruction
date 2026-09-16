@@ -122,8 +122,12 @@ noncomputable def toStageExtensionDataOfConvexAtlas
       ((CanonicalGeneratorStageLevelProvider.stage
         (OS := OS) S k).recenter anchor)
       (by
-        simpa [X.predecessor_orbit] using
-          X.predecessorEdge.stageEdge)
+        change
+          ((CanonicalGeneratorStageLevelProvider.stage
+            (OS := OS) S k).recenter anchor).HasPositiveRealEdge
+              X.edge.orbit X.edge.realRegion
+        rw [← X.predecessor_orbit]
+        exact X.predecessorEdge.stageEdge)
       recenteredAtlas X.edge_radial
 
 @[simp]
@@ -235,8 +239,12 @@ noncomputable def toStageExtensionDataOfConvexAtlas
       ((CanonicalGeneratorStageLevelProvider.stage
         (OS := OS) S k).recenter anchor)
       (by
-        simpa [X.predecessor_orbit] using
-          X.predecessorEdge.stageEdge)
+        change
+          ((CanonicalGeneratorStageLevelProvider.stage
+            (OS := OS) S k).recenter anchor).HasPositiveRealEdge
+              X.edge.orbit X.edge.realRegion
+        rw [← X.predecessor_orbit]
+        exact X.predecessorEdge.stageEdge)
       recenteredAtlas X.edge_radial
 
 @[simp]

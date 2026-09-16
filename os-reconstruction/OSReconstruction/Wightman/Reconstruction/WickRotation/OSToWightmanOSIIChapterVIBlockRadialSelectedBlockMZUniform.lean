@@ -256,7 +256,7 @@ theorem finsetSup_osiiEuclideanRotateSchwartz_le
     (mul_nonneg (osiiRotationFinsetSeminormFactor_nonneg d t) hQ)
   intro j hj
   have hsource : SchwartzMap.seminorm Real j.1 j.2 f <= Q := by
-    simpa only [Q] using
+    simpa only [Q, schwartzSeminormFamily, Prod.fst, Prod.snd] using
       (Seminorm.le_finset_sup_apply
         (p := schwartzSeminormFamily Real
           (NPointDomain d r) Complex) hj)
@@ -296,7 +296,7 @@ theorem finsetSup_timeReflect_rotate_timeReflect_le
     (mul_nonneg (osiiRotationFinsetSeminormFactor_nonneg d t) hQ)
   intro j hj
   have hsource : SchwartzMap.seminorm Real j.1 j.2 f <= Q := by
-    simpa only [Q] using
+    simpa only [Q, schwartzSeminormFamily, Prod.fst, Prod.snd] using
       (Seminorm.le_finset_sup_apply
         (p := schwartzSeminormFamily Real
           (NPointDomain d r) Complex) hj)

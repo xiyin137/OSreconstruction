@@ -137,7 +137,11 @@ theorem osiiStep4PositiveTimeBasepointCutoff_time_pos
         OSIIChapterV.normalizedPositiveTimeBasepointCutoff.f (u 0) *
           (OSIIChapterV.normalizedSpatialBasepointCutoff d).toSchwartz
             (fun j => u j.succ)) := by
-    simpa [osiiStep4PositiveTimeBasepointCutoff, SCV.prependField_apply] using hx
+    change x ∈ tsupport (fun u : SpacetimeDim d =>
+      OSIIChapterV.normalizedPositiveTimeBasepointCutoff.f (u 0) *
+        (OSIIChapterV.normalizedSpatialBasepointCutoff d).toSchwartz
+          (fun j => u j.succ)) at hx
+    exact hx
   have hheadPre :
       x ∈ tsupport (fun u : SpacetimeDim d =>
         OSIIChapterV.normalizedPositiveTimeBasepointCutoff.f (u 0)) :=
@@ -158,12 +162,17 @@ theorem osiiStep4PositiveTimeBasepointCutoff_hasCompactSupport
     HasCompactSupport
       ((osiiStep4PositiveTimeBasepointCutoff d).toSchwartz :
         SpacetimeDim d → Complex) := by
-  simpa [osiiStep4PositiveTimeBasepointCutoff] using
+  have hcompact :=
     hasCompactSupport_prependField
       OSIIChapterV.normalizedPositiveTimeBasepointCutoff.f
       (OSIIChapterV.normalizedSpatialBasepointCutoff d).toSchwartz
       OSIIChapterV.normalizedPositiveTimeBasepointCutoff.compact
       (normalizedSpatialBasepointCutoff_hasCompactSupport d)
+  change HasCompactSupport (fun u : SpacetimeDim d =>
+    OSIIChapterV.normalizedPositiveTimeBasepointCutoff.f (u 0) *
+      (OSIIChapterV.normalizedSpatialBasepointCutoff d).toSchwartz
+        (fun j => u j.succ))
+  exact hcompact
 
 /-- The centered reduced block kernel lifted with the positive-time normalized
 basepoint cutoff. -/
@@ -207,7 +216,9 @@ private theorem reducedTestLift_tsupport_basepoint_mem_realEdge
   have hprod :
       x ∈ tsupport (fun u : NPointDomain d (m + 1) =>
         chi (u 0) * phi (BHW.reducedDiffMapReal (m + 1) d u)) := by
-    simpa [BHW.reducedTestLift_apply] using hx
+    change x ∈ tsupport (fun u : NPointDomain d (m + 1) =>
+      chi (u 0) * phi (BHW.reducedDiffMapReal (m + 1) d u)) at hx
+    exact hx
   have hheadPre :
       x ∈ tsupport (fun u : NPointDomain d (m + 1) => chi (u 0)) :=
     tsupport_mul_subset_left hprod
@@ -288,10 +299,9 @@ theorem
   refine ⟨K, hphiCompact.image (section43QTimeCLM d k).continuous, ?_, ?_⟩
   · intro tau htau i
     rcases htau with ⟨xi, hxi, rfl⟩
-    simpa [section43TimeStrictPositiveRegion, section43QTimeCLM_apply,
-      section43QTime] using
-        osiiStep4CenteredPartialConvolutionKernelFullSource_reduced_time_pos
-          d k hrho center y y' hcenter xi hxi i
+    change 0 < xi i 0
+    exact osiiStep4CenteredPartialConvolutionKernelFullSource_reduced_time_pos
+      d k hrho center y y' hcenter xi hxi i
   · intro x hx
     have hred :
         BHW.reducedDiffMapReal (k + 1) d x ∈

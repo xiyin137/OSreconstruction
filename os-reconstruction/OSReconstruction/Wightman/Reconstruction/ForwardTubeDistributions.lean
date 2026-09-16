@@ -135,7 +135,10 @@ theorem forwardConeAbs_isOpen (d n : ℕ) [NeZero d] :
     exact (continuous_apply μ).comp (continuous_apply k)
   · simp [diff_k, hk]
     exact ((continuous_apply μ).comp (continuous_apply k)).sub
-      ((continuous_apply μ).comp (continuous_apply (⟨(k : ℕ) - 1, by omega⟩ : Fin n)))
+      ((continuous_apply μ).comp
+        (show Continuous (fun y : Fin n → Fin (d + 1) → ℝ =>
+          y (⟨(k : ℕ) - 1, by omega⟩ : Fin n)) from
+          continuous_apply (⟨(k : ℕ) - 1, by omega⟩ : Fin n)))
 
 /-- The forward cone is convex. -/
 -- The open forward light cone is convex.

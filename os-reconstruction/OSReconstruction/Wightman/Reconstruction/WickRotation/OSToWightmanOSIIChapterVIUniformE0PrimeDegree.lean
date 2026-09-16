@@ -214,7 +214,7 @@ theorem finsetSup_Iic_osiiEuclideanRotateSchwartz_le
   have hq : q ≤ L := (Finset.mem_Iic.mp hpq).2
   have hdegree : p + q ≤ 2 * L := by omega
   have hsource : SchwartzMap.seminorm Real p q f ≤ Q := by
-    simpa only [Q] using
+    simpa only [Q, SchwartzMap.schwartzSeminormFamily_apply] using
       (Seminorm.le_finset_sup_apply
         (p := schwartzSeminormFamily Real
           (NPointDomain d r) Complex) hpq)
@@ -254,7 +254,7 @@ theorem finsetSup_Iic_timeReflect_rotate_timeReflect_le
   have hq : q ≤ L := (Finset.mem_Iic.mp hpq).2
   have hdegree : p + q ≤ 2 * L := by omega
   have hsource : SchwartzMap.seminorm Real p q f ≤ Q := by
-    simpa only [Q] using
+    simpa only [Q, SchwartzMap.schwartzSeminormFamily_apply] using
       (Seminorm.le_finset_sup_apply
         (p := schwartzSeminormFamily Real
           (NPointDomain d r) Complex) hpq)
@@ -829,7 +829,6 @@ theorem exists_selectedBlockAxisPairHilbertNormSq_fixedArityMajorant
         _ ≤ sourceBase ^ r * R ^ (growth * r) *
             X ^ (r * degree) * Y ^ L * Y ^ L := by
               gcongr
-              · exact hX
               · simpa [Y] using add_le_add_left hendpointNorm 1
               · simpa [Y] using add_le_add_left htailNorm 1
         _ = sourceBase ^ r * R ^ (growth * r) *
@@ -903,8 +902,6 @@ theorem exists_selectedBlockAxisPairHilbertNormSq_fixedArityMajorant
           X ^ (2 * K * degree) *
           Y ^ (8 * K * lgc.sobolev_index) := by
             gcongr
-            · exact hX
-            · exact hY
   have hchart := selectedBlockAxisPairHilbertNormSq_arityLinearMajorant_le
     d n m OS lgc hrho center y y' hcenter P a
   change

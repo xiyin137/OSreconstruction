@@ -87,7 +87,8 @@ theorem tsupport_prependField_subset_tail_preimage
   intro hzero
   apply hq
   have hzero' : tail (fun i : Fin m => q i.succ) = 0 := by
-    simpa only using hzero
+    change tail (Fin.tail q) = 0
+    exact hzero
   simp [SCV.prependField_apply, hzero']
 
 /-- A common compact carrier for all full ordered difference-time coordinates
@@ -164,7 +165,13 @@ theorem reducedConfigurationDisplacement_chronologicalSourceParameter
                 chronologicalTimeSourceDirection (d := d) r) u))
           (i.succ, ν) =
         0
-    simpa using hcoord
+    have hzero :
+        section43QSpatial (d := d) (n := m + 1)
+            (section43DiffCoordRealCLE d (m + 1)
+              (0 : NPointDomain d (m + 1))) (i.succ, ν) = 0 := by
+      rw [map_zero]
+      simp [section43QSpatial]
+    simpa only [zero_add] using hcoord.trans hzero
 
 /-- After basepoint reduction, chronological full-source translation is
 exactly translation of the reduced time factor by `-u`; the reduced spatial

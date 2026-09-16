@@ -98,8 +98,8 @@ theorem rawStrict_mixedAnglePoint_smul_mem
               OSIIRawStrictGeneratedLogarithmicArgument .mixed
                 (2 * (t + 1) + (s + 1)) N
                 (r • osiiMixedAnglePoint N (s + 1) (2 * (t + 1))) := by
-            simpa only [Nat.mul_add, Nat.add_assoc] using
-              ih (s + 1) (2 * t + 1)
+            rw [show 2 * (t + 1) = (2 * t + 1) + 1 by omega]
+            exact ih (s + 1) (2 * t + 1)
           have hsmall :
               OSIIRawStrictGeneratedLogarithmicArgument .mixed
                 (1 + s) N
@@ -118,11 +118,15 @@ theorem rawStrict_mixedAnglePoint_smul_mem
                 hleftLarge hsmall
                 (raw_strict_bridge_smul_lt hr0 hr1)
             convert hgen using 1
-            simpa [osiiFirstRecursiveAngleGeneratorPoint] using
-              (raw_argumentGeneratorPoint_smul
+            change r • osiiFirstRecursiveAngleGeneratorPoint N s t =
+              osiiArgumentGeneratorPoint
+                (osiiFirstRecursiveAngleSplit s t)
+                (r • osiiMixedAnglePoint N (s + 1) (2 * (t + 1)))
+                (r * (Real.pi / 2)) (r • osiiMixedAnglePoint N s 1)
+            convert (raw_argumentGeneratorPoint_smul
                 (osiiFirstRecursiveAngleSplit s t) r
                 (osiiMixedAnglePoint N (s + 1) (2 * (t + 1)))
-                (Real.pi / 2) (osiiMixedAnglePoint N s 1)).symm
+                (Real.pi / 2) (osiiMixedAnglePoint N s 1)).symm using 1 <;> rfl
           have hsecond :
               OSIIRawStrictGeneratedLogarithmicArgument .scalar
                 (2 * ((t + 1) + (s + 1)) - 1) (N + 1)
@@ -139,11 +143,15 @@ theorem rawStrict_mixedAnglePoint_smul_mem
                 (r • osiiMixedAnglePoint N (s + 1) (2 * (t + 1)))
                 hsmall hleftLarge htheta
             convert hgen using 1
-            simpa [osiiSecondRecursiveAngleGeneratorPoint] using
-              (raw_argumentGeneratorPoint_smul
+            change r • osiiSecondRecursiveAngleGeneratorPoint N s t =
+              osiiArgumentGeneratorPoint
+                (osiiSecondRecursiveAngleSplit s t)
+                (r • osiiMixedAnglePoint N s 1) (r * (-(Real.pi / 2)))
+                (r • osiiMixedAnglePoint N (s + 1) (2 * (t + 1)))
+            convert (raw_argumentGeneratorPoint_smul
                 (osiiSecondRecursiveAngleSplit s t) r
                 (osiiMixedAnglePoint N s 1) (-(Real.pi / 2))
-                (osiiMixedAnglePoint N (s + 1) (2 * (t + 1)))).symm
+                (osiiMixedAnglePoint N (s + 1) (2 * (t + 1)))).symm using 1 <;> rfl
           have hmid :=
             OSIIRawStrictGeneratedLogarithmicArgument.scalarConvex
               hfirst hsecond (1 / 2 : Real) (1 / 2 : Real)
@@ -204,7 +212,9 @@ theorem rawStrict_recursiveAngle_mixedBox_subset
     have hzero :=
       rawStrict_mixedAnglePoint_smul_mem N 0 0
         (r := 0) (by norm_num) (by norm_num)
-    simpa [osiiMixedAnglePoint] using hzero
+    change OSIIRawStrictGeneratedLogarithmicArgument .mixed 1 N
+      (0 : Fin 1 -> Real)
+    simpa only [Nat.zero_add, Nat.add_zero, zero_smul] using hzero
   · have hfin : (Finset.univ : Finset (Fin k)).Nonempty := by
       rw [Finset.univ_nonempty_iff]
       exact Fin.pos_iff_nonempty.mp (Nat.pos_of_ne_zero hk)

@@ -116,7 +116,7 @@ theorem equation66_centeredFlatReducedSource_support
   have hxne : psi (x - c) != 0 := by
     simpa [Function.mem_support, c, equation66_centeredFlatReducedSourceCLM,
       flattenSchwartzNPoint_apply, unflattenSchwartzNPoint_apply,
-      SCV.translateSchwartz_apply] using hx
+      SCV.translateSchwartz_apply, sub_eq_add_neg] using hx
   have hxt : x - c ∈ tsupport
       (psi : FlatSource (d := d) (k := k) -> Complex) :=
     subset_closure (by simpa [Function.mem_support] using hxne)
@@ -266,8 +266,9 @@ theorem equation66_exists_centeredFlatPairingKernel
         (fun z : Fin (k * (d + 1)) -> Complex =>
           D.equation66_centeredFlatPairingCLM z
             (SCV.schwartzPartialEval₁CLM z F)) B := by
-      simpa [inner, equation66_centeredFlatPairingCLM, logMap] using
-        D.continuousOn_joint.comp hinner hmaps
+      change ContinuousOn
+        ((fun p => (D.distribution p.1) p.2) ∘ inner) B
+      exact D.continuousOn_joint.comp hinner hmaps
     exact (chi.continuous.continuousOn.mul hpair)
   obtain ⟨K, hKholo, hKrep, _hKeval⟩ :=
     SCV.localHolomorphicFamily_pairingCLM_of_fixedWindow
@@ -597,7 +598,12 @@ theorem equation66_exists_holomorphic_density_representsOnSupport
   have hp' : D.imaginarySliceFamily y phi =
       ∫ t : FlatSource (d := d) (k := k),
         H (zi + SCV.realEmbed t) * psi t := by
-    simpa [equation66_centeredFlatPairing, hcentered, zi] using hp
+    have htarget :
+        osiiStep4MultiGapComplexTargetLog d k Z.uniform.T center zi =
+          osiiStep4MultiGapTargetLog d k Z.uniform.T center y := by
+      rfl
+    simpa [equation66_centeredFlatPairing, complexTargetPairing,
+      imaginarySliceFamily, hcentered, htarget, zi] using hp
   rw [hp']
   let g : FlatSource (d := d) (k := k) -> Complex := fun x =>
     F (osiiStep4ComplexOfRealImag x y) * flat x

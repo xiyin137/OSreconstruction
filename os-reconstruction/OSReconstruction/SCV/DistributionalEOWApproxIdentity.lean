@@ -343,18 +343,18 @@ theorem fderiv_shearedTensor_base_apply
           (fderiv ℝ (θ : ComplexChartSpace m → ℂ) (z - realEmbed t))
           (z - realEmbed t) :=
       θ.differentiableAt.hasFDerivAt
-    simpa [hL_apply] using hθ.comp (z, t) L.hasFDerivAt
+    exact hθ.comp (z, t) L.hasFDerivAt
   have hB_deriv :
       HasFDerivAt B ((fderiv ℝ ψ t).comp sndCLM) (z, t) := by
     have hψ :
         HasFDerivAt (ψ : (Fin m → ℝ) → ℂ)
           (fderiv ℝ (ψ : (Fin m → ℝ) → ℂ) t) t :=
       ψ.differentiableAt.hasFDerivAt
-    simpa [B, sndCLM] using hψ.comp (z, t) sndCLM.hasFDerivAt
+    exact hψ.comp (z, t) sndCLM.hasFDerivAt
   have hAB : HasFDerivAt (fun p => A p * B p)
       (A (z, t) • ((fderiv ℝ ψ t).comp sndCLM) +
         B (z, t) • ((fderiv ℝ θ (z - realEmbed t)).comp L)) (z, t) := by
-    simpa [smul_eq_mul] using hA_deriv.mul hB_deriv
+    exact hA_deriv.mul hB_deriv
   have hfun : (fun p : ComplexChartSpace m × (Fin m → ℝ) =>
       θ (p.1 - realEmbed p.2) * ψ p.2) = fun p => A p * B p := by
     funext p
@@ -604,15 +604,14 @@ theorem exists_weighted_iteratedFDeriv_realTranslate_sub_le_linear
       let L : ℝ →L[ℝ] ComplexChartSpace m :=
         ContinuousLinearMap.smulRight (1 : ℝ →L[ℝ] ℝ) a
       have hL : HasDerivAt (fun r : ℝ => r • a) a s := by
-        simpa [L, ContinuousLinearMap.smulRight_apply, one_smul] using
-          L.hasDerivAt
+        simpa using (hasDerivAt_id s).smul_const a
       have hneg : HasDerivAt (fun r : ℝ => -(r • a)) (-a) s := hL.neg
       simpa [sub_eq_add_neg] using hneg.const_add z
     have hcomp :
         HasDerivAt (fun r : ℝ => D (z - r • a))
           ((fderiv ℝ D (z - s • a)) (-a)) s :=
       (hD_diff (z - s • a)).hasFDerivAt.comp_hasDerivAt s hpath
-    simpa [γ] using hcomp.const_smul (‖z‖ ^ k)
+    exact hcomp.const_smul (‖z‖ ^ k)
   have hγ_bound :
       ∀ s ∈ Set.Ico (0 : ℝ) 1,
         ‖‖z‖ ^ k • (fderiv ℝ D (z - s • a) (-a))‖ ≤ C * ‖t‖ := by

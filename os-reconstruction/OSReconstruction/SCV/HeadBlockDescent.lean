@@ -132,8 +132,7 @@ theorem integral_normedUnitBumpSchwartz :
     have hf_compact :
         HasCompactSupport (fun y : ℝ => ((b.normed MeasureTheory.volume y : ℝ) : ℂ)) :=
       b.hasCompactSupport_normed.comp_left Complex.ofReal_zero
-    simpa [normedUnitBumpSchwartz, b] using
-      (HasCompactSupport.toSchwartzMap_toFun hf_compact hf_smooth x)
+    rfl
   rw [happly, integral_complex_ofReal]
   exact congrArg (fun r : ℝ => (r : ℂ)) (b.integral_normed (μ := MeasureTheory.volume))
 

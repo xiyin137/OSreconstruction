@@ -42,9 +42,8 @@ theorem vacuumTailLimitStage_hasPositiveRealEdge
       (D.vacuumTailRealRegion C) := by
   intro u hu
   constructor
-  · simpa [vacuumTailLimitStage, osiiPositiveRealTimeEmbed,
-      SCV.realToComplex] using
-      D.initialGramPolydisc_subset_spatialLinearDomain hu.1.1.2
+  · change SCV.realToComplex u ∈ D.spatialLinearDomain
+    exact D.initialGramPolydisc_subset_spatialLinearDomain hu.1.1.2
   · rfl
 
 end PositiveHeadUniversalAnchoredAtlasData

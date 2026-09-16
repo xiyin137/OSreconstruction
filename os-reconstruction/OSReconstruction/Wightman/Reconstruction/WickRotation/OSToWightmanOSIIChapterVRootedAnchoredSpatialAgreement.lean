@@ -101,13 +101,12 @@ noncomputable def rootedLocalLeftOpenFieldScaleBlockRealEdgeData
         D.leftSpatialHermiteGeneratorField i scale mode
       field_holomorphic := by
         intro scale mode
-        simpa [D,
-          RootedA0BlockContinuousTranslationData.leftSpatialHermiteGeneratorField]
-          using
-            (H.left i).field_holomorphic
-              (D.leftCofinalIndex i scale)
-              (ReflectedA0BlockConvergenceData.leftHeadSpatialHermiteBlock
-                (d := d) i mode)
+        unfold RootedA0BlockContinuousTranslationData.leftSpatialHermiteGeneratorField
+        exact
+          (H.left i).field_holomorphic
+            (D.leftCofinalIndex i scale)
+            (ReflectedA0BlockConvergenceData.leftHeadSpatialHermiteBlock
+              (d := d) i mode)
       field_polyBounded_on_compact := by
         intro K hK_compact hK_domain
         exact
@@ -127,7 +126,7 @@ noncomputable def rootedLocalLeftOpenFieldScaleBlockRealEdgeData
       field_realEdge := by
         intro scale mode x hx
         simpa [
-          D,
+          i, D,
           RootedA0BlockContinuousTranslationData.leftSpatialHermiteGeneratorField]
           using
             (D.left i).realEdge
@@ -159,13 +158,12 @@ noncomputable def rootedLocalRightOpenFieldScaleBlockRealEdgeData
         D.rightSpatialHermiteGeneratorField i scale mode
       field_holomorphic := by
         intro scale mode
-        simpa [D,
-          RootedA0BlockContinuousTranslationData.rightSpatialHermiteGeneratorField]
-          using
-            (H.right i).field_holomorphic
-              (D.rightCofinalIndex i scale)
-              (ReflectedA0BlockConvergenceData.rightHeadSpatialHermiteBlock
-                (d := d) i mode)
+        unfold RootedA0BlockContinuousTranslationData.rightSpatialHermiteGeneratorField
+        exact
+          (H.right i).field_holomorphic
+            (D.rightCofinalIndex i scale)
+            (ReflectedA0BlockConvergenceData.rightHeadSpatialHermiteBlock
+              (d := d) i mode)
       field_polyBounded_on_compact := by
         intro K hK_compact hK_domain
         exact
@@ -185,7 +183,7 @@ noncomputable def rootedLocalRightOpenFieldScaleBlockRealEdgeData
       field_realEdge := by
         intro scale mode x hx
         simpa [
-          D,
+          i, D,
           RootedA0BlockContinuousTranslationData.rightSpatialHermiteGeneratorField]
           using
             (D.right i).realEdge

@@ -113,7 +113,11 @@ private theorem canonicalUnshift_boundaryFactor_le
     (div_pos hpositive (by norm_num : (0 : Real) < 2)) hboundary
   have hinv' : (osiiTimeBoundaryDistance k w)⁻¹ <=
       2 * (osiiTimeBoundaryDistance k z)⁻¹ := by
-    simpa only [one_div, inv_div, inv_inv] using hinv
+    calc
+      (osiiTimeBoundaryDistance k w)⁻¹ =
+          1 / osiiTimeBoundaryDistance k w := by rw [one_div]
+      _ <= 1 / (osiiTimeBoundaryDistance k z / 2) := hinv
+      _ = 2 * (osiiTimeBoundaryDistance k z)⁻¹ := by field_simp
   change 1 + (osiiTimeBoundaryDistance k w)⁻¹ <= _
   linarith
 

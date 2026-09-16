@@ -73,13 +73,17 @@ theorem strictGeneratedFullBoundary_lorentzCovariant
     (initial.strictGeneratedWickKernel_boundaryValue lgc n) ?_ L (LorentzGroup.zero_zero_ge_one L)
   intro L _ x epsilon hepsilon
   exact initial.strictGeneratedWickKernel_lorentz lgc n L _
-    (by simpa only [forwardTube_eq_imPreimage] using
+    (by simpa only [forwardTube_eq_imPreimage, TubeDomainSetPi] using
       (show (fun j mu => (x j mu : Complex) +
           (epsilon : Complex) * (canonicalForwardConeDirection (d := d) n j mu : Complex) * I) ∈
           TubeDomainSetPi (ForwardConeAbs d n) from by
-        simpa [TubeDomainSetPi, Pi.smul_apply] using
-          forwardConeAbs_smul d n epsilon hepsilon
-            (canonicalForwardConeDirection (d := d) n) (canonicalForwardConeDirection_mem n)))
+        change (fun j mu => ((x j mu : Complex) +
+          (epsilon : Complex) * (canonicalForwardConeDirection (d := d) n j mu : Complex) * I).im) ∈
+          ForwardConeAbs d n
+        convert forwardConeAbs_smul d n epsilon hepsilon
+          (canonicalForwardConeDirection (d := d) n) (canonicalForwardConeDirection_mem n) using 1
+        ext j mu
+        simp [Pi.smul_apply]))
 
 end OSIIChapterV.InitialGeneratedLogarithmicStageLevelData
 end OSReconstruction

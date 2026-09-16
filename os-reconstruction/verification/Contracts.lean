@@ -69,11 +69,13 @@ run_cmd do
           throwError "Admission in loaded package: {name}"
   logInfo m!"PASS: all {localDeclarations} loaded project declarations are admission-free and contain no project axioms"
   let allowed := #[``propext, ``Classical.choice, ``Quot.sound]
-  let auditAll : CollectAxioms.M Unit := do
-    for name in localNames do
-      CollectAxioms.collect name
-  let (_, audit) := (auditAll.run env).run {}
-  let unexpected := audit.axioms.filter fun ax => !allowed.contains ax
+  -- `Lean.collectAxioms` is the public entry point of `Lean.Util.CollectAxioms`
+  -- (the monad `CollectAxioms.M` and `collect` are module-private since Lean 4.30).
+  let mut unexpected : Array Name := #[]
+  for name in localNames do
+    for ax in (← Lean.collectAxioms name) do
+      unless allowed.contains ax || unexpected.contains ax do
+        unexpected := unexpected.push ax
   unless unexpected.isEmpty do
     throwError "Nonstandard transitive axioms in the package: {unexpected}"
   logInfo m!"PASS: every loaded project declaration transitively uses only standard axioms"

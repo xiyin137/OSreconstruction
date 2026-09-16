@@ -518,9 +518,10 @@ theorem osiiSchwinger_ofClassical_eq_of_reindex_finCongr
       OS.S m (ZeroDiagonalSchwartz.ofClassical g) := by
   subst m
   have hfg' : f = g := by
-    simpa using hfg
-  subst g
-  rfl
+    ext x
+    simpa only [reindexSchwartz_apply, finCongr_apply, Fin.cast_eq_self] using
+      congrArg (fun F : SchwartzNPoint d n => F x) hfg
+  exact congrArg (fun u => OS.S n (ZeroDiagonalSchwartz.ofClassical u)) hfg'
 
 /-- Every uncut chronological split has the same Schwinger value: the value
 of the full factorwise-translated product tensor. -/

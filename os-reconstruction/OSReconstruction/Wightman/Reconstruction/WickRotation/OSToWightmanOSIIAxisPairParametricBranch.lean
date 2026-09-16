@@ -404,9 +404,13 @@ theorem continuous_realEdge
         (fun x : osiiAxisPairIndex d → ℝ =>
           X.family.flatTubeBranch
             (Function.update (osiiAxisPairLogRealEmbed x) a (x a : ℂ))) := by
-    rw [← continuousOn_univ]
-    simpa [diagonal] using
-      (X.chart_continuous a).comp hdiagonal.continuousOn hmaps
+    change Continuous
+      ((fun p : (osiiAxisPairIndex d → ℝ) × ℂ =>
+          X.family.flatTubeBranch
+            (Function.update (osiiAxisPairLogRealEmbed p.1) a p.2)) ∘
+        diagonal)
+    exact continuousOn_univ.mp
+      ((X.chart_continuous a).comp hdiagonal.continuousOn hmaps)
   refine hcont.congr ?_
   intro x
   have hupdate :
@@ -568,8 +572,9 @@ def toSemigroupPacketFamily
       (OSIIAxisPairRotatedSourcePacket.commonRealSource
         T (osiiAxisPairPositiveCoefficients x) Q.left Q.right))
   packet_logBranch_congr_of_eq_off_selected := fun a hxy => by
-    simpa [matchingLogBranch] using
-      Q.matchingLogBranch_congr_of_eq_off_selected hT OS lgc a hxy
+    change Q.matchingLogBranch hT OS lgc _ a =
+      Q.matchingLogBranch hT OS lgc _ a
+    exact Q.matchingLogBranch_congr_of_eq_off_selected hT OS lgc a hxy
   packet_real_edge := fun x a => by
     simpa [matchingLogBranch, osiiAxisPairLogRealEmbed,
       osiiAxisPairPositiveCoefficients] using

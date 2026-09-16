@@ -220,19 +220,24 @@ theorem flatten_conjTensorProduct_eq_reindex_tensor
           (n + m) * (d + 1))
         (((flattenSchwartzNPoint (d := d) φ.borchersConj).tensorProduct
           (flattenSchwartzNPoint (d := d) ψ))) := by
-  let h₁ : (n + m) * (d + 1) =
-      n * (d + 1) + m * (d + 1) := by ring
-  let h₂ : n * (d + 1) + m * (d + 1) =
-      (n + m) * (d + 1) := by ring
-  have h₂eq : h₂ = h₁.symm := by
-    subst h₁
-    rfl
-  have hflat :=
-    reindex_flattenSchwartzNPoint_conjTensorProduct_eq_tensorProduct
-      (d := d) (n := n) (m := m) φ ψ
-  have hflat' := congrArg (reindexSchwartzFin h₂) hflat
-  rw [h₂eq] at hflat'
-  simpa [reindexSchwartzFin_symm_comp_self] using hflat'
+  ext x
+  rw [flattenSchwartzNPoint_apply, reindexSchwartzFin_apply,
+    SchwartzMap.tensorProduct_apply, flattenSchwartzNPoint_apply,
+    flattenSchwartzNPoint_apply, SchwartzMap.borchersConj_apply,
+    SchwartzMap.conjTensorProduct_apply]
+  apply congrArg₂ (· * ·)
+  · apply congrArg (starRingEnd ℂ)
+    apply congrArg φ
+    funext i j
+    apply congrArg x
+    apply Fin.ext
+    simp [finProdFinEquiv]
+  · apply congrArg ψ
+    funext i j
+    apply congrArg x
+    apply Fin.ext
+    simp [finProdFinEquiv]
+    ring
 
 /-- Zero-height Fourier normal form for the actual flattened conjugate tensor
 product on the Wightman spectral region. -/
@@ -322,8 +327,11 @@ theorem tendsto_Tflat_section43OS24Kernel_succRight_to_flatBase
           (nhdsWithin 0 (Set.Ioi 0))
           (nhds K0) := by
       simpa [K0] using hK0_tendsto
-    simpa [Function.comp] using
-      (Tflat.continuous.tendsto K0).comp hK0_tendsto'
+    change Filter.Tendsto
+      (Tflat ∘ fun t : ℝ => if ht : 0 < t then
+        section43OS24KernelWitness_succRight d n m φ ψ t ht else K0)
+      (nhdsWithin 0 (Set.Ioi 0)) (nhds (Tflat K0))
+    exact (Tflat.continuous.tendsto K0).comp hK0_tendsto'
   have hcut_base : Tflat K0 = Tflat Kbase := by
     exact hasFourierSupportIn_eqOn hTflat_supp
       (fun ξ hξ =>

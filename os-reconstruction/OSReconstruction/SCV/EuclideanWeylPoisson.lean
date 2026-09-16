@@ -315,7 +315,7 @@ theorem deriv_radialPrimitiveDeriv
     simp [p, hr_pos.ne']
   have hpinv : HasDerivAt (fun x : ℝ => (p x)⁻¹)
       (-p' / (p r) ^ 2) r := by
-    simpa using hp.inv hp_ne
+    exact hp.inv hp_ne
   have hpinvC : HasDerivAt (fun x : ℝ => (((p x)⁻¹ : ℝ) : ℂ))
       (((-p' / (p r) ^ 2 : ℝ) : ℂ)) r := by
     exact Complex.ofRealCLM.hasFDerivAt.comp_hasDerivAt r hpinv
@@ -324,7 +324,7 @@ theorem deriv_radialPrimitiveDeriv
       (fun x : ℝ => (((p x)⁻¹ : ℝ) : ℂ) * radialMass N F x)
       (((-p' / (p r) ^ 2 : ℝ) : ℂ) * radialMass N F r +
         (((p r)⁻¹ : ℝ) : ℂ) * (((r ^ (N - 1) : ℝ) : ℂ) * F r)) r := by
-    simpa [p] using hpinvC.mul hmass
+    exact hpinvC.mul hmass
   have hlocal : radialPrimitiveDeriv N F =ᶠ[𝓝 r]
       fun x : ℝ => (((p x)⁻¹ : ℝ) : ℂ) * radialMass N F x := by
     filter_upwards [Ioi_mem_nhds hr_pos] with x hx
@@ -421,7 +421,10 @@ theorem hasDerivAt_radialPrimitiveProfile_of_pos
       (fun u : ℝ => ∫ t in u..R, radialPrimitiveDeriv N F t)
       (-(radialPrimitiveDeriv N F r)) r := by
     exact intervalIntegral.integral_hasDerivAt_left hprim_int hB_meas hB_cont
-  simpa [radialPrimitiveProfile] using hbase.neg
+  change HasDerivAt
+    (-fun u : ℝ => ∫ t in u..R, radialPrimitiveDeriv N F t)
+    (radialPrimitiveDeriv N F r) r
+  simpa only [neg_neg] using hbase.neg
 
 theorem deriv_radialPrimitiveProfile_of_pos
     {N : ℕ} {F : ℝ → ℂ} {R r : ℝ}
@@ -837,10 +840,11 @@ theorem hasFDerivAt_norm_off_origin
     ext v
     simp
     field_simp [(norm_pos_iff.mpr hx).ne']
-  convert hsqrt using 1
-  · ext y
+  have hfun : (fun y : EuclideanSpace ℝ ι => √(‖y‖ ^ 2)) = fun y => ‖y‖ := by
+    funext y
     rw [Real.sqrt_sq (norm_nonneg y)]
-  · exact hcoeff.symm
+  rw [hfun, hcoeff] at hsqrt
+  exact hsqrt
 
 /-- The coordinate derivative of `y_i / ‖y‖` in the same basis direction. -/
 theorem fderiv_coord_div_norm_basisFun
@@ -939,14 +943,7 @@ theorem fderiv_radial_comp_basisFun_off_origin
     deriv a ‖x‖ * (((x i / ‖x‖ : ℝ) : ℂ))
   rw [hcomp.fderiv]
   simp [div_eq_mul_inv]
-  calc
-    ‖x‖⁻¹ • x i • deriv a ‖x‖ =
-        deriv a ‖x‖ * ↑(x i) * ↑(‖x‖⁻¹) :=
-          real_smul_smul_complex_mul (r := ‖x‖⁻¹) (s := x i) (z := deriv a ‖x‖)
-    _ = deriv a ‖x‖ * ↑(x i) * (↑‖x‖)⁻¹ := by
-          norm_num
-    _ = deriv a ‖x‖ * (↑(x i) * (↑‖x‖)⁻¹) := by
-          ring
+  ring
 
 /-- First coordinate derivative of `deriv a ∘ ‖·‖`.  This is the `a'' * ρ'`
 term used in the off-origin radial Hessian calculation. -/
@@ -965,15 +962,7 @@ theorem fderiv_deriv_radial_comp_basisFun_off_origin
     deriv (deriv a) ‖x‖ * (((x i / ‖x‖ : ℝ) : ℂ))
   rw [hcomp.fderiv]
   simp [div_eq_mul_inv]
-  calc
-    ‖x‖⁻¹ • x i • deriv (deriv a) ‖x‖ =
-        deriv (deriv a) ‖x‖ * ↑(x i) * ↑(‖x‖⁻¹) :=
-          real_smul_smul_complex_mul
-            (r := ‖x‖⁻¹) (s := x i) (z := deriv (deriv a) ‖x‖)
-    _ = deriv (deriv a) ‖x‖ * ↑(x i) * (↑‖x‖)⁻¹ := by
-          norm_num
-    _ = deriv (deriv a) ‖x‖ * (↑(x i) * (↑‖x‖)⁻¹) := by
-          ring
+  ring
 
 /-- Product-rule form of the off-origin radial chain rule after the first
 coordinate derivative has been rewritten as `a'(‖y‖) * y_i / ‖y‖`. -/
@@ -1426,8 +1415,16 @@ theorem exists_schwartz_radialPrimitiveProfile_norm_with_support
     tsupport_radialPrimitiveProfile_norm_subset (ι := ι) (N := N)
       hF_smooth.continuous hRpos.le hF_support hMass_R
   refine ⟨hcompact.toSchwartzMap hsmooth, ?_, ?_, ?_⟩
-  · simpa [HasCompactSupport.toSchwartzMap] using hcompact
-  · simpa [HasCompactSupport.toSchwartzMap] using htsupport
+  · have hfun : (hcompact.toSchwartzMap hsmooth : EuclideanSpace ℝ ι → ℂ) = f := by
+      funext x
+      exact HasCompactSupport.toSchwartzMap_toFun hcompact hsmooth x
+    rw [hfun]
+    exact hcompact
+  · have hfun : (hcompact.toSchwartzMap hsmooth : EuclideanSpace ℝ ι → ℂ) = f := by
+      funext x
+      exact HasCompactSupport.toSchwartzMap_toFun hcompact hsmooth x
+    rw [hfun]
+    exact htsupport
   · intro x
     exact HasCompactSupport.toSchwartzMap_toFun hcompact hsmooth x
 

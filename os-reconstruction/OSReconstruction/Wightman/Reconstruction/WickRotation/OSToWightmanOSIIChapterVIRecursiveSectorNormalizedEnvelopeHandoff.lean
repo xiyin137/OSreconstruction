@@ -225,9 +225,14 @@ theorem
             (r • (0 : Fin 1 -> Real)) (r * theta) (r • right) =
           r • osiiArgumentGeneratorPoint i
             (0 : Fin 1 -> Real) theta right := by
+      dsimp [i]
+      rw [osiiArgumentGeneratorPoint_firstBridge,
+        osiiArgumentGeneratorPoint_firstBridge]
       funext j
-      simp only [osiiArgumentGeneratorPoint, Pi.smul_apply]
-      split_ifs <;> simp
+      refine Fin.cases ?_ (fun a => ?_) j
+      · rfl
+      · change r * right a.succ = r * right a.succ
+        rfl
     let chart : RootedStrictGeneratedTargetHubChartAtRank
         (q + 1) depth rank :=
       { generator := i
@@ -239,7 +244,7 @@ theorem
           rw [abs_mul, abs_of_pos hr_pos]
           exact
             (mul_le_mul_of_nonneg_right hr_lt.le
-              (abs_nonneg theta)).trans_lt (by simpa using htheta)
+              (abs_nonneg theta)).trans_lt (by simpa [theta] using htheta)
         right := r • right
         right_rank :=
           strictGeneratedAtRank_smul_of_abs_le_one hright r hr_abs
@@ -250,7 +255,7 @@ theorem
             osiiTimeArgumentVector z =
                 r • osiiArgumentGeneratorPoint i
                   (0 : Fin 1 -> Real) theta right := by
-              simpa [i] using htarget
+              simpa [i, theta, right] using htarget
             _ = osiiArgumentGeneratorPoint i
                 (r • (0 : Fin 1 -> Real)) (r * theta) (r • right) :=
               hcontracted.symm }
@@ -277,8 +282,13 @@ theorem
         target_argument_eq := by
           simpa [chart, i, theta, right, hr_eq] using htarget }
     refine ⟨⟨radial, rfl, ?_, ?_⟩, ?_⟩
-    · simpa [RecursiveAngleRadialGeneratorChartAtRank.firstBridgeExpandedRight,
-          radial, chart, i, theta, right] using htail
+    · have hfirst : radial.firstBridgeExpandedRight (by rfl) = right := by
+        funext j
+        simp only [RecursiveAngleRadialGeneratorChartAtRank.firstBridgeExpandedRight]
+        dsimp [radial]
+        congr 1
+      rw [hfirst]
+      simpa [right] using htail
     · intro j
       simp [RecursiveAngleRadialGeneratorChartAtRank.firstBridgeExpandedRight,
         radial, chart, i, theta, right,

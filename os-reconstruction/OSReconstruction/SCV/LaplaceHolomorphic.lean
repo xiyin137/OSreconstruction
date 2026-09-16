@@ -82,10 +82,9 @@ theorem laplaceTransform_differentiableOn_rightHalfPlane_of_nonnegSupport
         (μ[fun t ↦ t * Complex.exp ((-z) * (t : ℂ))]) (-z) :=
     ProbabilityTheory.hasDerivAt_complexMGF (X := id) (μ := μ) hz'
   have hcomp :
-      HasDerivAt (fun w : ℂ => ProbabilityTheory.complexMGF id μ (-w))
-        (μ[fun t ↦ t * Complex.exp ((-z) * (t : ℂ))] * (-1)) z := by
-    simpa using hbase.comp z (hasDerivAt_neg z)
+      DifferentiableAt ℂ (fun w : ℂ => ProbabilityTheory.complexMGF id μ (-w)) z := by
+    exact hbase.differentiableAt.comp z (hasDerivAt_neg z).differentiableAt
   simpa [ProbabilityTheory.complexMGF, mul_assoc]
-    using hcomp.differentiableAt.differentiableWithinAt
+    using hcomp.differentiableWithinAt
 
 end SCV

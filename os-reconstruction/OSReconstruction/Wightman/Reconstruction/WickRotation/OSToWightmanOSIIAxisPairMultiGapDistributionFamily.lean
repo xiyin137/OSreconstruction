@@ -400,7 +400,7 @@ theorem differentiableOn_pairing
         (osiiAxisPairMultiGapLogDomain d k) V by
           intro z hz
           simpa [V, L] using hz)
-  simpa [Function.comp_apply, V, L] using hcomp
+  exact hcomp.congr (fun z _ => by simp [L])
 
 end SchwartzDistributionFamily
 

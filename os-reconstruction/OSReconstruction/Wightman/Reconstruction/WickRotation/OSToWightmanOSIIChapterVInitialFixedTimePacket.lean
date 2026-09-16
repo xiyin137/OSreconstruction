@@ -86,15 +86,14 @@ theorem narrowDistributionOfOS_eqOn_sameLevel
       ∀ τ ∈ section43TimeStrictPositiveRegion k,
         SCV.realToComplex τ ∈ U := by
     intro τ hτ
-    simpa [U, SCV.realToComplex, osiiPositiveRealTimeEmbed] using
-      osiiPositiveRealTimeEmbed_mem_osiiNarrowTimeCarrier
-        η hη τ hτ
+    change osiiPositiveRealTimeEmbed τ ∈ U
+    exact osiiPositiveRealTimeEmbed_mem_osiiNarrowTimeCarrier η hη τ hτ
   have hF_zero :
       ∀ τ ∈ section43TimeStrictPositiveRegion k,
         F (SCV.realToComplex τ) = 0 := by
     intro τ hτ
-    simpa [F, osiiPositiveRealTimeEmbed] using
-      sub_eq_zero.mpr (hreal τ hτ)
+    change F (osiiPositiveRealTimeEmbed τ) = 0
+    exact sub_eq_zero.mpr (hreal τ hτ)
   intro ζ hζ
   have hz :
       F ζ = 0 :=
@@ -441,9 +440,12 @@ theorem quantitativeFixedTimePacketData_factor_smul_uniform_seminorm_bound
           (((D.quantitativeFixedTimePacketData hφ_compact N
             ).quantitativeLevelCover.carrier a).factors i)
           f) ≤ M := by
-  simpa using
-    D.coherentLevelCarrierFactor_smul_uniform_seminorm_bound
-      a hφ_compact i f p q
+  change ∃ M : ℝ, 0 ≤ M ∧ ∀ N : ℕ,
+    (SchwartzMap.seminorm ℝ p q)
+      (SchwartzMap.smulLeftCLM ℂ
+        (D.coherentLevelCarrierFactor a hφ_compact N i) f) ≤ M
+  exact D.coherentLevelCarrierFactor_smul_uniform_seminorm_bound
+    a hφ_compact i f p q
 
 /-- A fixed noncomputable selection of coherent packet data at every
 factorwise truncation level. -/

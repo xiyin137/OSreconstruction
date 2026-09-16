@@ -152,7 +152,7 @@ theorem exists_seminorm_translateSchwartz_sub_le_linear {m : ℕ}
         HasDerivAt (fun r : ℝ => H (x + r • (t • v)))
           ((fderiv ℝ H (x + s • (t • v))) (t • v)) s := by
       exact (hH_diff (x + s • (t • v))).hasFDerivAt.comp_hasDerivAt s hgamma
-    simpa [hxFun] using hcomp.const_smul (‖x‖ ^ k)
+    exact hcomp.const_smul (‖x‖ ^ k)
   have hxFun_bound :
       ∀ s ∈ Set.Ico (0 : ℝ) 1,
         ‖‖x‖ ^ k • (fderiv ℝ H (x + s • (t • v)) (t • v))‖ ≤ C * |t| := by
@@ -183,8 +183,9 @@ theorem exists_seminorm_translateSchwartz_sub_le_linear {m : ℕ}
       have htrans :
           iteratedFDeriv ℝ (n + 1) (⇑(SCV.translateSchwartz (s • (t • v)) g)) x =
             iteratedFDeriv ℝ (n + 1) (g : (Fin m → ℝ) → ℂ) (x + s • (t • v)) := by
-        simpa [SCV.translateSchwartz] using
-          (iteratedFDeriv_comp_add_right (f := (g : (Fin m → ℝ) → ℂ)) (n + 1) (s • (t • v)) x)
+        change iteratedFDeriv ℝ (n + 1) (fun z => g (z + s • (t • v))) x = _
+        exact iteratedFDeriv_comp_add_right
+          (f := (g : (Fin m → ℝ) → ℂ)) (n + 1) (s • (t • v)) x
       simpa [htrans] using hseminorm0
     have hxpow_nonneg : 0 ≤ ‖x‖ ^ k := by positivity
     calc
@@ -229,8 +230,9 @@ theorem exists_seminorm_translateSchwartz_sub_le_linear {m : ℕ}
     have htrans :
         iteratedFDeriv ℝ n (⇑(SCV.translateSchwartz (t • v) g)) x =
           H (x + t • v) := by
-      simpa [H, SCV.translateSchwartz] using
-        (iteratedFDeriv_comp_add_right (f := (g : (Fin m → ℝ) → ℂ)) n (t • v) x)
+      change iteratedFDeriv ℝ n (fun z => g (z + t • v)) x = _
+      exact iteratedFDeriv_comp_add_right
+        (f := (g : (Fin m → ℝ) → ℂ)) n (t • v) x
     simp [H, htrans, sub_eq_add_neg]
   have hxFun_diff :
       hxFun 1 - hxFun 0 = ‖x‖ ^ k • (H (x + t • v) - H x) := by
@@ -388,7 +390,7 @@ theorem exists_seminorm_diffQuotient_translateSchwartz_sub_lineDeriv_le {m : ℕ
           (fun r : ℝ =>
             ‖x‖ ^ k • (t⁻¹ • H (x + r • (t • v)) - t⁻¹ • H x) - ‖x‖ ^ k • (r • K x))
           (‖x‖ ^ k • (t⁻¹ • ((fderiv ℝ H (x + s • (t • v))) (t • v))) - ‖x‖ ^ k • K x) s := by
-      convert (hmain0.const_smul (‖x‖ ^ k)).sub (hlin.const_smul (‖x‖ ^ k)) using 1
+      exact (hmain0.const_smul (‖x‖ ^ k)).sub (hlin.const_smul (‖x‖ ^ k))
     have hsub :
         HasDerivAt
           (fun r : ℝ =>
@@ -422,8 +424,10 @@ theorem exists_seminorm_diffQuotient_translateSchwartz_sub_lineDeriv_le {m : ℕ
       have hshift :
           iteratedFDeriv ℝ n (⇑(SCV.translateSchwartz ((s * t) • v) g)) x =
             K (x + s • (t • v)) := by
-        simpa [K, SCV.translateSchwartz, smul_smul, mul_comm, mul_left_comm, mul_assoc] using
-          (iteratedFDeriv_comp_add_right (f := (g : (Fin m → ℝ) → ℂ)) n ((s * t) • v) x)
+        change iteratedFDeriv ℝ n (fun z => g (z + (s * t) • v)) x = _
+        simpa [K, smul_smul, mul_comm, mul_left_comm, mul_assoc] using
+          (iteratedFDeriv_comp_add_right
+            (f := (g : (Fin m → ℝ) → ℂ)) n ((s * t) • v) x)
       rw [show (⇑(SCV.translateSchwartz ((s * t) • v) g - g) : (Fin m → ℝ) → ℂ) =
             (⇑(SCV.translateSchwartz ((s * t) • v) g)) + fun z => -(⇑g z) by
               ext z; simp [sub_eq_add_neg]]
@@ -469,8 +473,9 @@ theorem exists_seminorm_diffQuotient_translateSchwartz_sub_lineDeriv_le {m : ℕ
           H (x + t • v) - H x := by
       have hshift :
           iteratedFDeriv ℝ n (⇑(SCV.translateSchwartz (t • v) f)) x = H (x + t • v) := by
-        simpa [H, SCV.translateSchwartz] using
-          (iteratedFDeriv_comp_add_right (f := (f : (Fin m → ℝ) → ℂ)) n (t • v) x)
+        change iteratedFDeriv ℝ n (fun z => f (z + t • v)) x = _
+        exact iteratedFDeriv_comp_add_right
+          (f := (f : (Fin m → ℝ) → ℂ)) n (t • v) x
       rw [show (⇑(SCV.translateSchwartz (t • v) f - f) : (Fin m → ℝ) → ℂ) =
             (⇑(SCV.translateSchwartz (t • v) f)) + fun z => -(⇑f z) by
               ext z; simp [sub_eq_add_neg]]
@@ -493,8 +498,10 @@ theorem exists_seminorm_diffQuotient_translateSchwartz_sub_lineDeriv_le {m : ℕ
       rw [iteratedFDeriv_const_smul_apply ((SCV.translateSchwartz (t • v) f - f).smooth n).contDiffAt]
     have hneg :
         iteratedFDeriv ℝ n (fun z => -((g : (Fin m → ℝ) → ℂ) z)) x = - K x := by
+      change iteratedFDeriv ℝ n (-(g : (Fin m → ℝ) → ℂ)) x = _
       simpa [K] using
-        (iteratedFDeriv_neg_apply (𝕜 := ℝ) (i := n) (f := (g : (Fin m → ℝ) → ℂ)) (x := x))
+        (iteratedFDeriv_neg_apply (𝕜 := ℝ) (i := n)
+          (f := (g : (Fin m → ℝ) → ℂ)) (x := x))
     rw [hsc, hneg, hshift_sub]
     simp [sub_eq_add_neg, add_left_comm, add_comm]
   have hψ0 : ψ 0 = 0 := by
@@ -580,7 +587,10 @@ theorem hasCompactSupport_unitBallBumpSchwartzPi (m : ℕ) :
     exact (Complex.ofRealCLM.contDiff.of_le le_top).comp b.contDiff
   have hf_compact : HasCompactSupport f :=
     b.hasCompactSupport.comp_left Complex.ofReal_zero
-  simpa [unitBallBumpSchwartzPi, b, f] using hf_compact
+  rw [show (⇑(unitBallBumpSchwartzPi m) : (Fin m → ℝ) → ℂ) = f by
+    funext x
+    exact HasCompactSupport.toSchwartzMap_toFun hf_compact hf_smooth x]
+  exact hf_compact
 
 /-- The unit-ball Schwartz bump rescaled to radius `R`. -/
 noncomputable def unitBallBumpSchwartzPiRadius (m : ℕ) (R : ℝ) (hR : 0 < R) :
@@ -619,9 +629,10 @@ theorem unitBallBumpSchwartzPiRadius_one_of_mem_closedBall {m : ℕ}
 theorem hasCompactSupport_unitBallBumpSchwartzPiRadius (m : ℕ) (R : ℝ) (hR : 0 < R) :
     HasCompactSupport ((unitBallBumpSchwartzPiRadius m R hR :
       SchwartzMap (Fin m → ℝ) ℂ) : (Fin m → ℝ) → ℂ) := by
-  simpa [unitBallBumpSchwartzPiRadius, Units.smul_def] using
-    (hasCompactSupport_unitBallBumpSchwartzPi m).comp_homeomorph
-      ((Homeomorph.smulOfNeZero R hR.ne').symm)
+  change HasCompactSupport
+    ((unitBallBumpSchwartzPi m : (Fin m → ℝ) → ℂ) ∘ fun x => R⁻¹ • x)
+  exact (hasCompactSupport_unitBallBumpSchwartzPi m).comp_homeomorph
+    ((Homeomorph.smulOfNeZero R hR.ne').symm)
 
 theorem hasCompactSupport_cutoff_mul_radius {m : ℕ}
     (R : ℝ) (hR : 0 < R) (f : SchwartzMap (Fin m → ℝ) ℂ) :
@@ -691,9 +702,10 @@ private theorem norm_iteratedFDeriv_cutoff_compl_radius_le_uniform {m n : ℕ} :
           C * (1 + ‖x‖) ^ a := by
   let ψ : (Fin m → ℝ) → ℂ := fun y => (1 : ℂ) - unitBallBumpSchwartzPi m y
   have hψ : ψ.HasTemperateGrowth := by
-    simpa [ψ] using
-      (Function.HasTemperateGrowth.const (1 : ℂ)).sub
-        (unitBallBumpSchwartzPi m).hasTemperateGrowth
+    change ((fun _ : Fin m → ℝ => (1 : ℂ)) -
+      (unitBallBumpSchwartzPi m : (Fin m → ℝ) → ℂ)).HasTemperateGrowth
+    exact (Function.HasTemperateGrowth.const (1 : ℂ)).sub
+      (unitBallBumpSchwartzPi m).hasTemperateGrowth
   obtain ⟨a, C, hC, hψbound⟩ := hψ.norm_iteratedFDeriv_le_uniform n
   refine ⟨a, C, hC, ?_⟩
   intro R hR N hN x
@@ -773,9 +785,12 @@ theorem smulLeftCLM_cutoff_compl_uniform_seminorm_bound {m : ℕ}
   let ψR : (Fin m → ℝ) → ℂ := fun y =>
     (1 : ℂ) - unitBallBumpSchwartzPiRadius m (R + 1) (add_pos hR zero_lt_one) y
   have hψR_temp : ψR.HasTemperateGrowth := by
-    simpa [ψR] using
-      (Function.HasTemperateGrowth.const (1 : ℂ)).sub
-        (unitBallBumpSchwartzPiRadius m (R + 1) (add_pos hR zero_lt_one)).hasTemperateGrowth
+    change ((fun _ : Fin m → ℝ => (1 : ℂ)) -
+      (unitBallBumpSchwartzPiRadius m (R + 1) (add_pos hR zero_lt_one) :
+        (Fin m → ℝ) → ℂ)).HasTemperateGrowth
+    exact (Function.HasTemperateGrowth.const (1 : ℂ)).sub
+      (unitBallBumpSchwartzPiRadius m (R + 1)
+        (add_pos hR zero_lt_one)).hasTemperateGrowth
   have hEq :
       f - SchwartzMap.smulLeftCLM ℂ
         (unitBallBumpSchwartzPiRadius m (R + 1) (add_pos hR zero_lt_one)) f =
@@ -914,7 +929,7 @@ theorem hasCompactSupport_prependField {n : ℕ}
       refine Fin.cases ?_ ?_ j
       · exact continuous_fst
       · intro i
-        simpa using (continuous_apply i).comp continuous_snd
+        exact (continuous_apply i).comp continuous_snd
     simpa [K] using (hφ.isCompact.prod hg.isCompact).image hcont
   refine HasCompactSupport.of_support_subset_isCompact hKcompact ?_
   intro x hx

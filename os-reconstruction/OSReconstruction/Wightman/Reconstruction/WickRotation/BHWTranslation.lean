@@ -372,7 +372,8 @@ theorem F_ext_on_translatedPET_total_rotation_invariant {d n : ℕ} [NeZero d]
         (W_analytic_BHW Wfn n).val (fun k μ => z k μ + hz.choose μ) := by
     have h :=
       (W_analytic_BHW Wfn n).property.2.2.1 Λ (fun k μ => z k μ + hz.choose μ) hzc
-    simpa [hzR_add, BHW.complexLorentzAction] using h
+    rw [hzR_add]
+    exact h
   have hbridge :
       (W_analytic_BHW Wfn n).val (fun k μ => zR k μ + cR μ) =
         (W_analytic_BHW Wfn n).val (fun k μ => zR k μ + hzR.choose μ) :=

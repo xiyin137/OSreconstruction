@@ -105,8 +105,10 @@ private theorem continuous_euclideanTranslateSchwartz
         (fun h : EuclideanSpace ℝ ι =>
           SCV.euclideanTranslateSchwartzCLM (h - h₀) φ₀)
         h₀ := by
-    simpa [Function.comp] using
-      (ContinuousAt.comp_of_eq hzero hshift (by simp))
+    change ContinuousAt
+      ((fun h => SCV.euclideanTranslateSchwartzCLM h φ₀) ∘
+        fun h => h - h₀) h₀
+    exact ContinuousAt.comp_of_eq hzero hshift (by simp)
   convert hcomp using 1
   funext h
   rw [SCV.euclideanTranslateSchwartzCLM_comp]
@@ -227,8 +229,8 @@ theorem continuous_osiiOriginalOSTimeShiftSchwartzNPoint
   intro mu
   by_cases hmu : mu = 0
   · subst mu
-    simpa [timeShiftVec] using
-      (continuous_id : Continuous (fun t : Real => t))
+    simp only [timeShiftVec, if_pos rfl]
+    exact continuous_id
   · simpa [timeShiftVec, hmu] using
       (continuous_const : Continuous (fun _ : Real => (0 : Real)))
 
@@ -300,20 +302,34 @@ theorem osiiOriginalOSHilbertShift_single_eq
         (osiiPositiveTimeSingleVectorCLM OS n f) =
       osiiPositiveTimeSingleVectorCLM OS n
         (osiiOriginalOSPositiveTimeShiftSource f t) := by
-  rw [osiiPositiveTimeSingleVectorCLM_apply,
-    osTimeShiftHilbertOfOS_coe,
-    osiiPositiveTimeSingleVectorCLM_apply]
+  have hf := f.2
+  change tsupport (f.1 : NPointDomain d n → ℂ) ⊆
+    OrderedPositiveTimeRegion d n at hf
+  let ft := osiiOriginalOSPositiveTimeShiftSource f t
+  have hft := ft.2
+  change tsupport (ft.1 : NPointDomain d n → ℂ) ⊆
+    OrderedPositiveTimeRegion d n at hft
+  let x₀ : OSPreHilbertSpace OS :=
+    ⟦PositiveTimeBorchersSequence.single n f.1 hf⟧
+  rw [osiiPositiveTimeSingleVectorCLM_apply]
+  change osTimeShiftHilbertOfOS (d := d) OS t.1 t.2
+      (x₀ : OSHilbertSpace OS) = _
+  rw [osTimeShiftHilbertOfOS_coe]
+  rw [osiiPositiveTimeSingleVectorCLM_apply]
   apply congrArg (fun x : OSPreHilbertSpace OS => (x : OSHilbertSpace OS))
   apply OSPreHilbertSpace.mk_eq_of_funcs_eq
   intro k
+  change
+    (timeShiftPositiveTimeBorchers t.1 t.2
+      (PositiveTimeBorchersSequence.single n f.1 hf)).toBorchersSequence.funcs k =
+    (PositiveTimeBorchersSequence.single n ft.1 hft).toBorchersSequence.funcs k
   by_cases hk : k = n
   · subst k
-    simp [osiiOriginalOSPositiveTimeShiftSource,
-      PositiveTimeBorchersSequence.single_toBorchersSequence,
-      BorchersSequence.single]
-  · simp [osiiOriginalOSPositiveTimeShiftSource,
-      PositiveTimeBorchersSequence.single_toBorchersSequence,
-      BorchersSequence.single, hk]
+    rw [PositiveTimeBorchersSequence.single_toBorchersSequence]
+    simp [BorchersSequence.single]
+    rfl
+  · rw [PositiveTimeBorchersSequence.single_toBorchersSequence]
+    simp [BorchersSequence.single, hk]
 
 /-- The original Euclidean shift is strongly continuous on every homogeneous
 positive-time Schwartz source vector. -/
@@ -328,7 +344,12 @@ theorem continuous_osiiOriginalOSHilbertShift_single
   have hcontinuous :=
     (osiiPositiveTimeSingleVectorCLM OS n).continuous.comp
       (continuous_osiiOriginalOSPositiveTimeShiftSource f)
-  simpa only [osiiOriginalOSHilbertShift_single_eq] using hcontinuous
+  change Continuous
+    ((osiiPositiveTimeSingleVectorCLM OS n) ∘
+      osiiOriginalOSPositiveTimeShiftSource f) at hcontinuous
+  convert hcontinuous using 1
+  funext t
+  exact osiiOriginalOSHilbertShift_single_eq OS f t
 
 /-- Positivity and the genuine semigroup law identify every positive rational
 shift with the spectral power of the time-one shift. -/
@@ -441,7 +462,11 @@ theorem osiiOriginalOSHilbertShift_single_eq_nnrpow
         (A := osTimeShiftHilbertOfOS (d := d) OS 1 one_pos))
   have hh : Continuous h := by
     rw [continuousOn_iff_continuous_restrict] at hh0
-    simpa [h] using hh0
+    change Continuous
+      (fun s : {s : Real // 0 < s} =>
+        CFC.nnrpow (osTimeShiftHilbertOfOS (d := d) OS 1 one_pos)
+          (Real.toNNReal s.1) x) at hh0
+    exact hh0
   let ratCast : {q : Rat // 0 < (q : Real)} -> {s : Real // 0 < s} :=
     fun q => ⟨(q : Real), q.2⟩
   have hrat : g ∘ ratCast = h ∘ ratCast := by
@@ -462,10 +487,22 @@ theorem osiiOriginalOSHilbertShift_single_eq_nnrpow
           g ⟨(p : Real) * (m : Real)⁻¹, hratio_positive⟩ :=
         congrArg g hsubtype
       _ = h ⟨(p : Real) * (m : Real)⁻¹, hratio_positive⟩ := by
-        simpa [g, h, Real.toNNReal_of_nonneg hratio_positive.le,
-          div_eq_mul_inv] using
-          congrArg (fun A => A x)
-            (osiiOriginalOSHilbertShift_rational_eq_nnrpow OS p m hp hm)
+        have hexponent :
+            Real.toNNReal ((p : Real) * (m : Real)⁻¹) =
+              (p : NNReal) * (m : NNReal)⁻¹ := by
+          apply NNReal.eq
+          rw [Real.coe_toNNReal]
+          · simp
+          · positivity
+        rw [show g ⟨(p : Real) * (m : Real)⁻¹, hratio_positive⟩ =
+            osTimeShiftHilbertOfOS (d := d) OS
+              ((p : Real) * (m : Real)⁻¹) hratio_positive x by rfl]
+        rw [show h ⟨(p : Real) * (m : Real)⁻¹, hratio_positive⟩ =
+            CFC.nnrpow (osTimeShiftHilbertOfOS (d := d) OS 1 one_pos)
+              (Real.toNNReal ((p : Real) * (m : Real)⁻¹)) x by rfl]
+        rw [hexponent]
+        exact congrArg (fun A => A x)
+          (osiiOriginalOSHilbertShift_rational_eq_nnrpow OS p m hp hm)
       _ = h (ratCast q) := (congrArg h hsubtype).symm
   have heverywhere : g = h :=
     DenseRange.equalizer (f := ratCast)
@@ -504,9 +541,22 @@ theorem osiiOriginalOSBorchersVector_eq_sum_single
   · intro y
     induction y using Quotient.inductionOn with
     | h G =>
-      simp only [inner_sum, osiiPositiveTimeSingleVectorCLM_apply,
-        UniformSpace.Completion.inner_coe, OSPreHilbertSpace.inner_eq]
-      exact PositiveTimeBorchersSequence.osInner_eq_sum_right_singles OS G F
+      rw [inner_sum]
+      let g₀ : OSPreHilbertSpace OS := ⟦G⟧
+      let f₀ : OSPreHilbertSpace OS := ⟦F⟧
+      change @inner Complex (OSHilbertSpace OS) inferInstance
+          (g₀ : OSHilbertSpace OS) (f₀ : OSHilbertSpace OS) = _
+      rw [UniformSpace.Completion.inner_coe, OSPreHilbertSpace.inner_eq]
+      rw [PositiveTimeBorchersSequence.osInner_eq_sum_right_singles]
+      apply Finset.sum_congr rfl
+      intro i hi
+      rw [osiiPositiveTimeSingleVectorCLM_apply]
+      let s₀ : OSPreHilbertSpace OS :=
+        ⟦PositiveTimeBorchersSequence.single i
+          (F.toBorchersSequence.funcs i) (F.ordered_tsupport i)⟧
+      change _ = @inner Complex (OSHilbertSpace OS) inferInstance
+          (g₀ : OSHilbertSpace OS) (s₀ : OSHilbertSpace OS)
+      rw [UniformSpace.Completion.inner_coe, OSPreHilbertSpace.inner_eq]
 
 /-- On the whole completed OS Hilbert space, the holomorphic spectral
 semigroup agrees with the actual Euclidean shift at every positive real time. -/
@@ -559,11 +609,32 @@ theorem osiiOriginalOSPositiveTimeRealShiftPairingRightCLM_eq_schwinger
         (osiiPositiveTimeSingleVectorCLM OS n f)
         ((osTimeShiftHilbertOfOS (d := d) OS t ht)
           (osiiPositiveTimeSingleVectorCLM OS m g)) = _
+  have hf := f.2
+  change tsupport (f.1 : NPointDomain d n → ℂ) ⊆
+    OrderedPositiveTimeRegion d n at hf
+  have hg := g.2
+  change tsupport (g.1 : NPointDomain d m → ℂ) ⊆
+    OrderedPositiveTimeRegion d m at hg
+  let F₀ := PositiveTimeBorchersSequence.single n f.1 hf
+  let G₀ := PositiveTimeBorchersSequence.single m g.1 hg
+  let x₀ : OSPreHilbertSpace OS :=
+    ⟦F₀⟧
+  let y₀ : OSPreHilbertSpace OS :=
+    ⟦G₀⟧
   rw [osiiPositiveTimeSingleVectorCLM_apply,
-    osiiPositiveTimeSingleVectorCLM_apply,
-    osTimeShiftHilbertOfOS_coe (d := d) OS t ht]
+    osiiPositiveTimeSingleVectorCLM_apply]
+  change
+    @inner Complex (OSHilbertSpace OS) inferInstance
+      (x₀ : OSHilbertSpace OS)
+      ((osTimeShiftHilbertOfOS (d := d) OS t ht)
+        (y₀ : OSHilbertSpace OS)) = _
+  rw [osTimeShiftHilbertOfOS_coe (d := d) OS t ht]
   rw [UniformSpace.Completion.inner_coe]
-  simpa [osTimeShiftLinear, osTimeShift,
+  dsimp [x₀, y₀, osTimeShiftLinear, osTimeShift]
+  change @inner Complex (OSPreHilbertSpace OS) inferInstance
+      (⟦F₀⟧) (⟦timeShiftPositiveTimeBorchers t ht G₀⟧) = _
+  rw [OSPreHilbertSpace.inner_eq]
+  simpa [F₀, G₀, osTimeShiftLinear, osTimeShift,
     PositiveTimeBorchersSequence.osInner,
     timeShiftPositiveTimeBorchers,
     PositiveTimeBorchersSequence.single_toBorchersSequence] using

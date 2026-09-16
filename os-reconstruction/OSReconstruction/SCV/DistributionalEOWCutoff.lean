@@ -152,7 +152,8 @@ theorem exists_schwartz_cutoff_eq_one_on_compact_subset_open
     simp [f, hχx]
   · intro x hx
     have hxf : x ∈ tsupport f := by
-      simpa [χS, hχS_apply] using hx
+      have hχS_fun : (χS : (Fin m → ℝ) → ℂ) = f := funext hχS_apply
+      simpa [hχS_fun] using hx
     have hxχ : x ∈ tsupport χ := by
       simpa [tsupport, f, Function.support] using hxf
     exact hχ_tsupport_U hxχ

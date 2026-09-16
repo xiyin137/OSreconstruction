@@ -486,19 +486,25 @@ instance : Group (RestrictedLorentzGroup d) where
 
 instance : IsTopologicalGroup (RestrictedLorentzGroup d) where
   continuous_mul := by
+    letI lorentzTopology : TopologicalSpace (LorentzGroup d) :=
+      LorentzGroup.instTopologicalSpace d
+    change @Continuous _ _
+      (@instTopologicalSpaceProd _ _ lorentzTopology lorentzTopology)
+      lorentzTopology (fun p => p.1 * p.2)
     apply continuous_induced_rng.mpr
     apply continuous_induced_rng.mpr
     show Continuous fun p : RestrictedLorentzGroup d × RestrictedLorentzGroup d =>
       p.1.val.val * p.2.val.val
-    exact ((continuous_subtype_val.comp (continuous_subtype_val.comp continuous_fst)).mul
-      (continuous_subtype_val.comp (continuous_subtype_val.comp continuous_snd)))
+    fun_prop
   continuous_inv := by
+    letI lorentzTopology : TopologicalSpace (LorentzGroup d) :=
+      LorentzGroup.instTopologicalSpace d
+    change @Continuous _ _ lorentzTopology lorentzTopology (fun a => a⁻¹)
     apply continuous_induced_rng.mpr
     apply continuous_induced_rng.mpr
     show Continuous fun a : RestrictedLorentzGroup d => lorentzInv d a.val.val
-    exact (continuous_const.matrix_mul
-      ((continuous_subtype_val.comp continuous_subtype_val).matrix_transpose)).matrix_mul
-      continuous_const
+    unfold lorentzInv
+    fun_prop
 
 /-- Joined 1 a → Joined 1 b → Joined 1 (a * b) in any topological group. -/
 private theorem joined_one_mul_general {G : Type*} [TopologicalSpace G] [Group G]

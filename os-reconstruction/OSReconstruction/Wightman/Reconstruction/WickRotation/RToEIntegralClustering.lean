@@ -114,6 +114,7 @@ private theorem bulk_integral_tendsto (Wfn : WightmanFunctions d)
     filter_upwards [ae_pairwise_distinct_timeCoords (d := d) (n := n+m)] with z hz
     by_cases hzs : z ∈ s a
     · rw [Set.indicator_of_mem hzs]
+      change L * (1 + ‖z‖) < ‖a‖ at hzs
       have hzt : Function.Injective (fun i => z i 0) := by
         intro i j hij
         by_contra hne
@@ -245,7 +246,7 @@ private theorem translated_block_pairing (Wfn : WightmanFunctions d)
   refine ⟨?_,?_⟩
   · have hi := (measurePreserving_add_right volume (blockShift n m a)).integrable_comp_of_integrable
       (wick_rotated_kernel_mul_zeroDiagonal_integrable Wfn fg_a)
-    simpa only [Function.comp_def,heq] using hi
+    simpa only [Function.comp_def,heq,kernel] using hi
   · change (∫ z, kernel Wfn z*fg_a.1 z) = _
     calc
       _ = ∫ z : NPointDomain d (n+m),

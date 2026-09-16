@@ -304,7 +304,7 @@ theorem frontier_adjacent_reducedSpacelikeSwapEdge_subset_closure_interior_compl
   let sec : (Fin (d + 1) → ℝ) → NPointDomain d m :=
     fun v => replaceReducedCoord (d := d) m q ξ v
   have hsec_cont : Continuous sec := by
-    simpa [sec] using
+    simpa [sec, Function.comp_def] using
       (continuous_replaceReducedCoord (d := d) m q).comp
         (continuous_const.prodMk continuous_id)
   have hsec_at : sec (ξ q) = ξ := by
@@ -420,14 +420,19 @@ theorem reducedAdjacentEdgeQuadratic_hasTemperateGrowth
     let Lμ : SpacetimeDim d →L[ℝ] ℝ :=
       ContinuousLinearMap.proj (R := ℝ) (ι := Fin (d + 1))
         (φ := fun _ => ℝ) μ
-    simpa [Lq, Lμ] using (Lμ.comp Lq).hasTemperateGrowth
+    change (fun ξ : NPointDomain d m => (Lμ.comp Lq) ξ).HasTemperateGrowth
+    exact (Lμ.comp Lq).hasTemperateGrowth
   unfold reducedAdjacentEdgeQuadratic
   unfold MinkowskiSpace.minkowskiNormSq MinkowskiSpace.minkowskiInner
   exact Function.HasTemperateGrowth.sum (s := Finset.univ) (fun μ _ => by
     have hμ := hcoord μ
-    simpa [mul_assoc] using
-      ((Function.HasTemperateGrowth.const
-        (MinkowskiSpace.metricSignature d μ)).mul hμ).mul hμ)
+    have hc :
+        (fun _ : NPointDomain d m =>
+          MinkowskiSpace.metricSignature d μ).HasTemperateGrowth :=
+      Function.HasTemperateGrowth.const (MinkowskiSpace.metricSignature d μ)
+    change (fun ξ : NPointDomain d m =>
+      MinkowskiSpace.metricSignature d μ * ξ q μ * ξ q μ).HasTemperateGrowth
+    exact (hc.mul hμ).mul hμ)
 
 /-- The distance from a reduced configuration to the complement of the adjacent
 spacelike edge is controlled by the square root of the edge quadratic.  This is
@@ -516,8 +521,11 @@ theorem reducedAdjacentEdgeInteriorCutoff_hasTemperateGrowth
         ((2 * (N + 1) : ℝ) * reducedAdjacentEdgeQuadratic d m i hi ξ) - 2
         ).HasTemperateGrowth := by
     fun_prop
-  simpa [reducedAdjacentEdgeInteriorCutoff] using
-    SCV.smoothCutoff_complex_hasTemperateGrowth.comp harg
+  change (fun ξ : NPointDomain d m =>
+    (SCV.smoothCutoff
+      (((2 * (N + 1) : ℝ) * reducedAdjacentEdgeQuadratic d m i hi ξ) - 2) : ℂ)
+    ).HasTemperateGrowth
+  exact SCV.smoothCutoff_complex_hasTemperateGrowth.comp harg
 
 omit [NeZero d] in
 
@@ -550,9 +558,10 @@ theorem reducedAdjacentEdgeInteriorCutoff_tsupport_subset_edge
     show 1 ≤ scale * Q ξ
     nlinarith
   have hQ_cont : Continuous Q := by
-    simpa [Q, reducedAdjacentEdgeQuadratic, q] using
-      (MinkowskiEdge.continuous_minkowskiNormSq (d := d)).comp
-        (continuous_apply q)
+    change Continuous (fun ξ : NPointDomain d m =>
+      MinkowskiSpace.minkowskiNormSq d (ξ q))
+    exact (MinkowskiEdge.continuous_minkowskiNormSq (d := d)).comp
+      (continuous_apply q : Continuous fun ξ : NPointDomain d m => ξ q)
   have hC_closed : IsClosed C := by
     exact isClosed_le continuous_const (continuous_const.mul hQ_cont)
   have htsupport_C :
@@ -666,11 +675,12 @@ theorem reducedAdjacentEdgeInteriorCutoff_iteratedFDeriv_succ_support_subset_col
   let cut : NPointDomain d m → ℂ := reducedAdjacentEdgeInteriorCutoff d m i hi N
   have hQ_cont : Continuous Q := by
     let q : Fin m := ⟨i.val, by omega⟩
-    simpa [Q, reducedAdjacentEdgeQuadratic, q] using
-      (MinkowskiEdge.continuous_minkowskiNormSq (d := d)).comp
-        (continuous_apply q)
+    change Continuous (fun ξ : NPointDomain d m =>
+      MinkowskiSpace.minkowskiNormSq d (ξ q))
+    exact (MinkowskiEdge.continuous_minkowskiNormSq (d := d)).comp
+      (continuous_apply q : Continuous fun ξ : NPointDomain d m => ξ q)
   have harg_cont : Continuous arg := by
-    simpa [arg] using (continuous_const.mul hQ_cont).sub continuous_const
+    fun_prop
   let A : Set (NPointDomain d m) := {ξ | 0 < arg ξ}
   let B : Set (NPointDomain d m) := {ξ | arg ξ < -1}
   have hA_open : IsOpen A := by
@@ -866,11 +876,12 @@ theorem exists_scaled_reducedAdjacentEdgeQuadratic_argument_iteratedFDeriv_bound
     have hscale :
         iteratedFDeriv ℝ r (fun ξ : NPointDomain d m => scale * Q ξ) ξ =
           scale • iteratedFDeriv ℝ r Q ξ := by
-      simpa [smul_eq_mul] using
-        (iteratedFDeriv_const_smul_apply
-          (𝕜 := ℝ) (a := scale)
-          (f := Q) (x := ξ)
-          ((hQ_smooth.of_le (by exact_mod_cast le_top)).contDiffAt))
+      change iteratedFDeriv ℝ r (scale • Q) ξ =
+        scale • iteratedFDeriv ℝ r Q ξ
+      exact iteratedFDeriv_const_smul_apply
+        (𝕜 := ℝ) (a := scale)
+        (f := Q) (x := ξ)
+        ((hQ_smooth.of_le (by exact_mod_cast le_top)).contDiffAt)
     have hsub :
         iteratedFDeriv ℝ r
             (fun ξ : NPointDomain d m => scale * Q ξ - 2) ξ =
@@ -936,7 +947,7 @@ theorem exists_reducedAdjacentEdgeInteriorCutoff_iteratedFDeriv_bound_on_compact
     simpa [Q, smul_eq_mul] using
       ((hQ_smooth.const_smul (2 * (N + 1) : ℝ)).sub contDiff_const)
   have hχ_smooth : ContDiff ℝ (↑(⊤ : ℕ∞)) χ := by
-    simpa [χ] using
+    simpa [χ, Function.comp_def] using
       (Complex.ofRealCLM.contDiff.comp SCV.smoothCutoff_contDiff)
   have harg0 : ‖arg ξ‖ ≤ A * (N + 1 : ℝ) := by
     simpa [arg, Q, norm_iteratedFDeriv_zero] using
@@ -1029,7 +1040,9 @@ theorem norm_le_infDist_pow_of_flat_on_closed_of_uniform_iteratedFDeriv_bound
   have hshift_contDiff :
       ∀ r : ℕ, ContDiff ℝ r (fun z : E => f (z + y)) :=
     fun r => by
-      simpa using (hf_smooth.of_le (by exact_mod_cast le_top)).comp
+      simpa [Function.comp_def] using (hf_smooth.of_le
+        (show ((r : ℕ) : WithTop ℕ∞) ≤ (↑(⊤ : ℕ∞) : WithTop ℕ∞) from
+          WithTop.coe_le_coe.mpr le_top)).comp
         (contDiff_id.add contDiff_const)
   have hg_contDiff : ∀ r : ℕ, ContDiff ℝ r g := fun r => by
     simpa [g] using (ContDiff.comp_continuousLinearMap (g := L) (hf := hshift_contDiff r))
@@ -1574,7 +1587,6 @@ theorem reducedAdjacentEdgeInteriorCutoffCLM_error_seminorm_le_inv
               ‖iteratedFDeriv ℝ (n - j)
                 (φ : NPointDomain d m → ℂ) ξ‖ := by
       gcongr
-      exact hLeib
     _ =
         ∑ j ∈ Finset.range (n + 1),
           ‖ξ‖ ^ k *

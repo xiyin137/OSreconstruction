@@ -156,7 +156,8 @@ private theorem bv_translation_invariance_transfer_of_F_invariant
       congr 1
       ext x
       have hxg : g x = f (fun i => x i + a) := by
-        simpa using hfg x
+        change g.toFun x = f.toFun (fun i => x i + a)
+        exact hfg x
       rw [hxg]
     calc
       (fun ε : ℝ =>
@@ -350,8 +351,6 @@ theorem bv_lorentz_covariance_transfer_orthochronous_of_tube_covariance
       rw [show (Λ⁻¹ * Λ).val = Λ⁻¹.val * Λ.val from rfl] at h1
       rw [show (1 : LorentzGroup d).val = (1 : Matrix _ _ ℝ) from rfl] at h1
       exact h1
-    have hΛinv_mul_full : Λ⁻¹.val * Λ.toFull.val = 1 := by
-      simpa using hΛinv_mul
     have hcov :
         ∫ x : NPointDomain d n,
           F_n (fun k μ => ↑(x k μ) + ε * ↑(Λη k μ) * Complex.I) *
@@ -361,7 +360,8 @@ theorem bv_lorentz_covariance_transfer_orthochronous_of_tube_covariance
           F_n (fun k μ => ∑ ν, (Λ.val μ ν : ℂ) *
             (↑(x k ν) + ε * ↑(η k ν) * Complex.I)) * (f x) := by
       symm
-      simpa [hlin, Matrix.mulVec_mulVec, hΛinv_mul_full] using
+      simpa only [LorentzGroup.toFull, hlin, Matrix.mulVec_mulVec,
+        hΛinv_mul, Matrix.one_mulVec] using
         (integral_lorentz_eq_self_full (d := d) (n := n) Λ
           (fun y : NPointDomain d n =>
             F_n (fun k μ => ↑(y k μ) + ε * ↑(Λη k μ) * Complex.I) *
@@ -467,9 +467,12 @@ theorem exists_compactSupportApprox_zeroOff_npoint
           ((localityBumpTruncationRadiusNPoint (d := d) f N :
             SchwartzNPoint d n) : NPointDomain d n → ℂ) from by
         rw [localityBumpTruncationRadiusNPoint_eq_unflatten (d := d)]
-        simpa [OSReconstruction.unflattenSchwartzNPoint_apply] using
-          hflat_compact.comp_homeomorph
-            (flattenCLEquivReal n (d + 1)).toHomeomorph)
+        convert hflat_compact.comp_homeomorph
+            (flattenCLEquivReal n (d + 1)).toHomeomorph using 1
+        funext x
+        simp only [Function.comp_apply,
+          OSReconstruction.unflattenSchwartzNPoint_apply]
+        rfl)
   · intro N x hxU
     change
       (localityBumpTruncationRadiusNPoint (d := d) f N :
@@ -500,8 +503,12 @@ theorem exists_compactSupportApprox_zeroOff_npoint
       simpa [fN] using
         localityBumpTruncationRadiusNPoint_eq_unflatten (d := d) f N
     rw [hrew]
-    simpa [Function.comp,
-      locality_unflatten_flattenSchwartzNPoint (d := d) f] using hunflat
+    change Filter.Tendsto
+      ((OSReconstruction.unflattenSchwartzNPoint (d := d)) ∘
+        fun N : ℕ => OSReconstruction.bumpTruncationRadius
+          (OSReconstruction.flattenSchwartzNPoint (d := d) f) N)
+      Filter.atTop (nhds f)
+    simpa only [locality_unflatten_flattenSchwartzNPoint (d := d) f] using hunflat
 
 private noncomputable def localityPermuteSchwartzCLM {n : ℕ}
     (σ : Equiv.Perm (Fin n)) :
@@ -575,4 +582,3 @@ theorem bv_local_commutativity_full_of_compact_support_adjacent_locality {n : �
     Filter.Tendsto.congr'
       (Filter.Eventually.of_forall fun N => (hcompact_eq N).symm) hright
   exact tendsto_nhds_unique hleft hleft_as_right
-

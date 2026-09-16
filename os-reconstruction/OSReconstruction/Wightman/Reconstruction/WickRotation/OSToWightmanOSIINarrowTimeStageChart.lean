@@ -164,7 +164,9 @@ theorem osiiAxisPairCoeffMap_pureTime_mem_narrowSector
   · rw [abs_div, abs_of_pos hc]
     have hdiv :=
       div_lt_div_of_pos_right hz.2 hc
-    convert hdiv using 1 <;> ring
+    convert hdiv using 1
+    · rfl
+    · ring
 
 def osiiNarrowTimeLogCoordinate
     (T : ℝ)
@@ -291,8 +293,12 @@ theorem differentiableOn_osiiNarrowTimeLogCoordinate
       simp [osiiAxisPairCoeffMap, osiiAxisPairCoeff,
         osiiPureTimeComplex] <;>
       fun_prop
-  simpa [osiiNarrowTimeLogCoordinate, osiiAxisPairLogCoeffMap,
-    Function.comp] using
+  change DifferentiableWithinAt ℂ
+    (Complex.log ∘ fun w : OSIITimeGapSpace k =>
+      osiiAxisPairCoeffMap T (fun _ => 0)
+        (osiiPureTimeComplex (d := d) (w i)) a)
+    (osiiNarrowTimeCarrier (k := k) η) ζ
+  exact
     (Complex.differentiableAt_log hslit).comp_differentiableWithinAt
       ζ hinner.differentiableAt.differentiableWithinAt
 
@@ -452,7 +458,8 @@ theorem osiiNarrowTimeLogCoordinate_real
         · simpa using hτ i
         · simp
           exact hτ i) a
-  simpa using hsector.1
+  rw [← hpure]
+  exact hsector.1
 
 theorem osiiNarrowTimeRealCoordinate_gapTranslation
     (T : ℝ) (hT : 0 < T)
@@ -476,7 +483,16 @@ theorem osiiNarrowTimeRealCoordinate_gapTranslation
           · simpa using hτ i
           · simp
             exact hτ i) a
-    simpa using hsector.1
+    have hpure :
+        osiiPureTimeComplex (d := d) (τ i : ℂ) =
+          fun ν => (osiiPureTimeReal (d := d) (τ i) ν : ℂ) := by
+      funext ν
+      refine Fin.cases ?_ ?_ ν
+      · simp [osiiPureTimeComplex, osiiPureTimeReal]
+      · intro j
+        simp [osiiPureTimeComplex, osiiPureTimeReal]
+    rw [← hpure]
+    exact hsector.1
   calc
     (∑ a : osiiAxisPairIndex d,
         osiiAxisPairPositiveCoefficients

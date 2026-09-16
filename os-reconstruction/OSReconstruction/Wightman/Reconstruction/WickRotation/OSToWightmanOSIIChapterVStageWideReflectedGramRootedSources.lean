@@ -157,7 +157,7 @@ noncomputable def toOpenFieldScaleBlockRealEdgeData
     intro x hx
     apply
       D.reflectedGram.atlas.initialGramPolydisc_subset_spatialLinearDomain
-    simpa [SCV.realToComplex] using hx.2
+    exact hx.2
   field_realEdge := by
     intro scale mode
     exact
@@ -321,10 +321,14 @@ noncomputable def
               (A.rootedLeftBlockAnchor i)
               (A.rootedLeftBlockAnchor_positive i) χ scale := by
     intro scale χ
-    simpa [D,
-      rootedLeftNontrivialReflectedGramSpatialSourceData] using
-      A.rootedLeftBlockAnchoredSourceCLM_source_translated
-        R i scale χ
+    change
+      UniformCompactTimeSource.source
+          (A.rootedLeftBlockAnchoredSourceCLM R i scale χ) =
+        (A.rootedLeftBlockApproximateIdentity R i
+          ).translatedPositiveTimeSpatialSource
+            (A.rootedLeftBlockAnchor i)
+            (A.rootedLeftBlockAnchor_positive i) χ scale
+    exact A.rootedLeftBlockAnchoredSourceCLM_source_translated R i scale χ
   have hmode :
       ∀ mode,
         leftSpatialHermiteBlock d i mode =
@@ -384,10 +388,14 @@ noncomputable def
               (A.rootedRightBlockAnchor i)
               (A.rootedRightBlockAnchor_positive i) χ scale := by
     intro scale χ
-    simpa [D,
-      rootedRightNontrivialReflectedGramSpatialSourceData] using
-      A.rootedRightBlockAnchoredSourceCLM_source_translated
-        R i scale χ
+    change
+      UniformCompactTimeSource.source
+          (A.rootedRightBlockAnchoredSourceCLM R i scale χ) =
+        (A.rootedRightBlockApproximateIdentity R i
+          ).translatedPositiveTimeSpatialSource
+            (A.rootedRightBlockAnchor i)
+            (A.rootedRightBlockAnchor_positive i) χ scale
+    exact A.rootedRightBlockAnchoredSourceCLM_source_translated R i scale χ
   have hmode :
       ∀ mode,
         rightSpatialHermiteBlock d i mode =

@@ -248,8 +248,10 @@ private theorem transpose_action_real_of_annihilates_imaginary
       fun i => (pullback L p i : ℂ) := by
   have hcol : ∀ j, (∑ i, p i * (L.val i j).im) = 0 := by
     intro j
-    simpa [dot, imaginaryPart, Matrix.toLin'_apply, Matrix.mulVec, dotProduct,
-      Pi.single_apply] using h (Pi.single j 1)
+    have hv := h (Pi.single j (1 : ℝ))
+    change (∑ i, p i * ∑ k, (L.val i k).im *
+      ((Pi.single j (1 : ℝ)) : Fin (d + 1) → ℝ) k) = 0 at hv
+    simpa [Pi.single_apply] using hv
   ext j
   apply Complex.ext
   · simp [complexLorentzVectorAction, transposeLorentz, pullback, Complex.mul_re,
@@ -272,7 +274,8 @@ private theorem pullback_causal [NeZero d] (L : ComplexLorentzGroup d)
 
 private theorem dot_realPart (L : ComplexLorentzGroup d) (p y : Fin (d + 1) → ℝ) :
     dot p (realPart L y) = dot (pullback L p) y := by
-  simp only [dot, realPart, Matrix.toLin'_apply, Matrix.mulVec, dotProduct, pullback]
+  change (∑ i, p i * ∑ j, (L.val i j).re * y j) =
+    ∑ j, (∑ i, p i * (L.val i j).re) * y j
   simp_rw [Finset.mul_sum]
   rw [Finset.sum_comm]
   apply Finset.sum_congr rfl
@@ -289,8 +292,9 @@ private theorem dot_action_imaginary (L : ComplexLorentzGroup d) (p : Fin (d + 1
   have heq : (fun i => (complexLorentzVectorAction L z i).im) =
       realPart L (fun i => (z i).im) + imaginaryPart L (fun i => (z i).re) := by
     ext i
-    simp [realPart, imaginaryPart, Matrix.toLin'_apply, Matrix.mulVec, dotProduct,
-      complexLorentzVectorAction, Complex.mul_im, Finset.sum_add_distrib]
+    change (∑ x, L.val i x * z x).im =
+      (∑ x, (L.val i x).re * (z x).im) + ∑ x, (L.val i x).im * (z x).re
+    simp [Complex.mul_im, Finset.sum_add_distrib]
   rw [heq, ← dotCLM_apply, map_add, dotCLM_apply, dotCLM_apply, h, add_zero]
   exact dot_realPart L p _
 
@@ -459,9 +463,15 @@ private theorem real_action_decomp (L : ComplexLorentzGroup d) (v : Fin (d + 1) 
     complexLorentzVectorAction L (fun i => (v i : ℂ)) =
       fun i => (realPart L v i : ℂ) + (imaginaryPart L v i : ℂ) * Complex.I := by
   ext i
-  apply Complex.ext <;>
-    simp [realPart, imaginaryPart, Matrix.toLin'_apply, Matrix.mulVec, dotProduct,
-      complexLorentzVectorAction, Complex.mul_re, Complex.mul_im]
+  apply Complex.ext
+  · change (∑ x, L.val i x * (v x : ℂ)).re =
+      ((∑ x, (L.val i x).re * v x : ℝ) : ℂ).re +
+        (((∑ x, (L.val i x).im * v x : ℝ) : ℂ) * Complex.I).re
+    simp [Complex.mul_re]
+  · change (∑ x, L.val i x * (v x : ℂ)).im =
+      ((∑ x, (L.val i x).re * v x : ℝ) : ℂ).im +
+        (((∑ x, (L.val i x).im * v x : ℝ) : ℂ) * Complex.I).im
+    simp [Complex.mul_im]
 
 theorem spacelike_of_imaginary_forward [NeZero d] (L : ComplexLorentzGroup d)
     (v : Fin (d + 1) → ℝ) (hv : InOpenForwardCone d (imaginaryPart L v)) :

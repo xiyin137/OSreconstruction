@@ -54,8 +54,8 @@ private theorem integral_normedUnitBumpSchwartz :
     have hf_compact :
         HasCompactSupport (fun y : ℝ => ((b.normed MeasureTheory.volume y : ℝ) : ℂ)) :=
       b.hasCompactSupport_normed.comp_left Complex.ofReal_zero
-    simpa [normedUnitBumpSchwartz, b] using
-      (HasCompactSupport.toSchwartzMap_toFun hf_compact hf_smooth x)
+    change (hf_compact.toSchwartzMap hf_smooth) x = _
+    exact HasCompactSupport.toSchwartzMap_toFun hf_compact hf_smooth x
   rw [happly, integral_complex_ofReal]
   exact congrArg (fun r : ℝ => (r : ℂ)) (b.integral_normed (μ := MeasureTheory.volume))
 
@@ -73,15 +73,17 @@ private theorem zeroTailBlockShift_zero {m n : ℕ} :
       rfl
   | succ m ihm =>
       have hconszero :
-          (Fin.cons 0 (zeroTailBlockShift (m := m) (n := n) (0 : Fin m → ℝ)) :
-              Fin (m + n + 1) → ℝ) = 0 := by
+          (Fin.cons 0 (zeroTailBlockShift (m := m) (n := n) (fun _ => 0)) :
+              Fin (m + n + 1) → ℝ) = (fun _ => 0) := by
         funext j
         refine Fin.cases ?_ ?_ j
         · simp
         · intro k
-          simp [ihm]
-      simpa [zeroTailBlockShift] using
-        congrArg ((castFinCLE (Nat.succ_add m n)).symm) hconszero
+          have ihm' : zeroTailBlockShift (m := m) (n := n) (fun _ => 0) = 0 := ihm
+          exact congrFun ihm' k
+      change zeroTailBlockShift (m := m + 1) (n := n) (fun _ => 0) = (fun _ => 0)
+      rw [zeroTailBlockShift, hconszero]
+      exact map_zero ((castFinCLE (Nat.succ_add m n)).symm)
 
 private theorem reindexSchwartzFin_translate_zeroTailBlockShift_succ
     {m n : ℕ} (a : Fin (m + 1) → ℝ)
@@ -103,12 +105,36 @@ private theorem reindexSchwartzFin_symm_translate_zeroTailBlockShift
       SCV.translateSchwartz (zeroTailBlockShift (m := m + 1) (n := n) a)
         (reindexSchwartzFin (Nat.succ_add m n).symm F) := by
   let e := Nat.succ_add m n
+  have hcancelF : reindexSchwartzFin e (reindexSchwartzFin e.symm F) = F := by
+    ext x
+    change F (((castFinCLE e).symm.symm) (((castFinCLE e).symm) x)) = F x
+    simpa using congrArg F ((castFinCLE e).symm.apply_symm_apply x)
   have hforward :=
     reindexSchwartzFin_translate_zeroTailBlockShift_succ
       (m := m) (n := n) (a := a)
       (F := reindexSchwartzFin e.symm F)
+  rw [hcancelF] at hforward
   have hback := congrArg (reindexSchwartzFin e.symm) hforward
-  simpa [e] using hback.symm
+  have hcancelTranslate :
+      reindexSchwartzFin e.symm
+          (reindexSchwartzFin e
+            (SCV.translateSchwartz (zeroTailBlockShift (m := m + 1) (n := n) a)
+              (reindexSchwartzFin e.symm F))) =
+        SCV.translateSchwartz (zeroTailBlockShift (m := m + 1) (n := n) a)
+          (reindexSchwartzFin e.symm F) := by
+    ext x
+    change
+      SCV.translateSchwartz (zeroTailBlockShift (m := m + 1) (n := n) a)
+          (reindexSchwartzFin e.symm F)
+          (((castFinCLE e).symm) (((castFinCLE e).symm.symm) x)) =
+        SCV.translateSchwartz (zeroTailBlockShift (m := m + 1) (n := n) a)
+          (reindexSchwartzFin e.symm F) x
+    simpa using congrArg
+      (SCV.translateSchwartz (zeroTailBlockShift (m := m + 1) (n := n) a)
+        (reindexSchwartzFin e.symm F))
+      ((castFinCLE e).symm.symm_apply_apply x)
+  rw [hcancelTranslate] at hback
+  exact hback.symm
 
 private theorem prependField_translate_zeroTailBlockShift
     {m n : ℕ} (φ : SchwartzMap ℝ ℂ)
@@ -193,15 +219,19 @@ theorem map_eq_of_integrateHeadBlock_eq_of_headBlockTranslationInvariant
               SCV.translateSchwartz
                 (zeroTailBlockShift (m := m + 1) (n := n) (Fin.cons a 0))
                 (reindexSchwartzFin (Nat.succ_add m n).symm H) := by
+          have hzero :
+              zeroTailBlockShift (m := m) (n := n) (fun _ => 0) = 0 := by
+            exact zeroTailBlockShift_zero (m := m) (n := n)
           have hcons :
-              (Fin.cons a (zeroTailBlockShift (m := m) (n := n) (0 : Fin m → ℝ)) :
+              (Fin.cons a (zeroTailBlockShift (m := m) (n := n) (fun _ => 0)) :
                   Fin (m + n + 1) → ℝ) =
                 Fin.cons a 0 := by
-            simp [zeroTailBlockShift_zero (m := m) (n := n)]
+            simp [hzero]
           rw [← hcons]
-          simpa using
+          convert
             reindexSchwartzFin_symm_translate_zeroTailBlockShift
-              (m := m) (n := n) (a := Fin.cons a 0) H
+              (m := m) (n := n) (a := Fin.cons a 0) H using 1 <;>
+            simp [zeroTailBlockShift_zero (m := m) (n := n)]
         rw [hreindex]
         have := congrArg
           (fun S : SchwartzMap (Fin (m + 1 + n) → ℝ) ℂ →L[ℂ] ℂ =>

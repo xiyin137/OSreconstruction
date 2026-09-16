@@ -100,11 +100,13 @@ theorem reflectedSelfPairHeadTailCastCLE_measurePreserving
         (Fin (((r + 1) + (r + 1)) * d) -> Real))
       (volume : Measure
         (Fin (d + (r + (r + 1)) * d) -> Real)) := by
-  simpa [reflectedSelfPairHeadTailCastCLE] using
-    (volume_measurePreserving_piCongrLeft
+  let h := volume_measurePreserving_piCongrLeft
       (fun _ : Fin (d + (r + (r + 1)) * d) => Real)
       (finCongr (by ring :
-        ((r + 1) + (r + 1)) * d = d + (r + (r + 1)) * d)))
+        ((r + 1) + (r + 1)) * d = d + (r + (r + 1)) * d))
+  convert h using 1
+  funext x j
+  rfl
 
 /-- The reflected head-tail chart has unit Jacobian. -/
 theorem reflectedSelfPairHeadTailSpatialCLE_measurePreserving

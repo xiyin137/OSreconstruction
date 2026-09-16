@@ -238,6 +238,9 @@ theorem eventually_holomorphicField_eq_localPositiveTimeParameterTranslate_famil
   have hsmall :
       ∀ᶠ x : Fin m → ℝ in 𝓝 0,
         ‖(fun i => (x i : ℂ))‖ < bound := by
+    change
+      ∀ᶠ x : Fin m → ℝ in 𝓝 (fun _ => 0),
+        ‖(fun i => (x i : ℂ))‖ < bound
     have hball :
         Metric.ball (0 : Fin m → ℂ) bound ∈ 𝓝 0 :=
       Metric.ball_mem_nhds _ hbound
@@ -478,7 +481,9 @@ theorem eventually_holomorphicField_eq_localPositiveTimeParameterTranslate_famil
       inner_holomorphicField_eq_localRightScalar_of_norm_lt
         hTowerC (by infer_instance) OS T g fa directions hRc hRw
         hUx hRwUx hscalarx hrealx Ψa hΨRw hT zx
-        (by simpa [zx, bound] using hxsmall) hxP
+        (by
+          change ‖(fun i => (x i : ℂ))‖ < bound at hxsmall
+          simpa [zx, bound] using hxsmall) hxP
   have hdiag := hslice_real x hxpr
   have hself :
       scalarx zx =

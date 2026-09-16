@@ -873,9 +873,10 @@ theorem isOpen_vi2Equation621Carrier
         osiiVI2TimeAverageBase k (osiiVI2Shift k epsilon zeta)) := by
     unfold osiiVI2TimeAverageBase osiiVI2Shift
     fun_prop
-  simpa only [vi2Equation621Carrier, Set.mem_setOf_eq] using
-    (A.carrier_open.preimage hshift).inter
-      (isOpen_ne_fun hbase continuous_const)
+  change IsOpen ((osiiVI2Shift k epsilon) ⁻¹' A.carrier ∩
+    {zeta | osiiVI2TimeAverageBase k (osiiVI2Shift k epsilon zeta) ≠ 0})
+  exact (A.carrier_open.preimage hshift).inter
+    (isOpen_ne_fun hbase continuous_const)
 
 theorem osiiVI2TimeNormalization_differentiableOn
     (t k : Nat) (epsilon : Real) :
@@ -889,8 +890,8 @@ theorem osiiVI2TimeNormalization_differentiableOn
         osiiVI2TimeAverageBase k (osiiVI2Shift k epsilon z)) zeta := by
     unfold osiiVI2TimeAverageBase osiiVI2Shift
     fun_prop
-  simpa only [osiiVI2TimeNormalization] using
-    ((hbase.inv hzeta).pow (k * t)).differentiableWithinAt
+  unfold osiiVI2TimeNormalization
+  exact ((hbase.inv hzeta).pow (k * t)).differentiableWithinAt
 
 theorem osiiVI2Equation621Normalization_differentiableOn
     (t k : Nat) (epsilon : Real) :
@@ -899,8 +900,8 @@ theorem osiiVI2Equation621Normalization_differentiableOn
       {zeta |
         osiiVI2TimeAverageBase k (osiiVI2Shift k epsilon zeta) ≠ 0} := by
   have htime := osiiVI2TimeNormalization_differentiableOn t k epsilon
-  simpa only [osiiVI2Equation621Normalization] using
-    htime.mul_const (osiiVI2Normalization t k epsilon : Complex)
+  unfold osiiVI2Equation621Normalization
+  exact htime.mul_const (osiiVI2Normalization t k epsilon : Complex)
 
 /-- The distribution-valued family in the printed OS II equation `(6.21)`. -/
 noncomputable def vi2Equation621NormalizedDistribution
@@ -935,8 +936,8 @@ noncomputable def vi2Equation621NormalizedStage
         (A.vi2Equation621Carrier epsilon) :=
       (osiiVI2Equation621Normalization_differentiableOn t k epsilon).mono
         (fun _ hzeta => hzeta.2)
-    simpa only [vi2Equation621NormalizedDistribution, smul_eq_mul] using
-      hnormalization.mul hraw
+    unfold vi2Equation621NormalizedDistribution
+    exact hnormalization.mul hraw
 
 @[simp] theorem vi2Equation621NormalizedStage_carrier
     (A : OSIITimeContinuationStage d k)
@@ -991,8 +992,8 @@ noncomputable def vi2NormalizedStage
       (A.weaklyHolomorphic chi).comp
         hshift.differentiableOn
           (fun _ hzeta => hzeta)
-    simpa [vi2NormalizedDistribution, osiiVI2Shift, smul_eq_mul] using
-      hcomp.const_mul (osiiVI2Normalization t k epsilon : Complex)
+    unfold vi2NormalizedDistribution
+    exact hcomp.const_mul (osiiVI2Normalization t k epsilon : Complex)
 
 @[simp] theorem vi2NormalizedStage_carrier
     (A : OSIITimeContinuationStage d k)

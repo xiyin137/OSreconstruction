@@ -101,12 +101,36 @@ theorem osiiReducedToFullMomentum_complex_pairing
       (osiiReducedToFullMomentumCLM d k p i : Complex)) =
       ∑ i, BHW.flattenCfg k d (BHW.reducedDiffMap (k + 1) d z) i * (p i : Complex) := by
   apply Complex.ext
-  · simpa [Complex.mul_re, BHW.flattenCfg, BHW.reducedDiffMap,
-      BHW.reducedDiffMapReal, flattenCLEquiv_apply, flattenCLEquivReal_apply] using
-      osiiReducedToFullMomentum_pairing (fun j mu => (z j mu).re) p
-  · simpa [Complex.mul_im, BHW.flattenCfg, BHW.reducedDiffMap,
-      BHW.reducedDiffMapReal, flattenCLEquiv_apply, flattenCLEquivReal_apply] using
-      osiiReducedToFullMomentum_pairing (fun j mu => (z j mu).im) p
+  · calc
+      (∑ i, flattenCLEquiv (k + 1) (d + 1) z i *
+          (osiiReducedToFullMomentumCLM d k p i : Complex)).re =
+          ∑ i, flattenCLEquivReal (k + 1) (d + 1) (fun j mu => (z j mu).re) i *
+            osiiReducedToFullMomentumCLM d k p i := by
+            simp [Complex.mul_re, flattenCLEquiv_apply, flattenCLEquivReal_apply]
+      _ = ∑ i, flattenCLEquivReal k (d + 1)
+          (BHW.reducedDiffMapReal (k + 1) d (fun j mu => (z j mu).re)) i * p i :=
+        osiiReducedToFullMomentum_pairing (fun j mu => (z j mu).re) p
+      _ = (∑ i, BHW.flattenCfg k d (BHW.reducedDiffMap (k + 1) d z) i *
+          (p i : Complex)).re := by
+            simp [Complex.mul_re, BHW.flattenCfg, flattenCLEquivReal_apply]
+            apply Finset.sum_congr rfl
+            intro i _
+            congr 1
+  · calc
+      (∑ i, flattenCLEquiv (k + 1) (d + 1) z i *
+          (osiiReducedToFullMomentumCLM d k p i : Complex)).im =
+          ∑ i, flattenCLEquivReal (k + 1) (d + 1) (fun j mu => (z j mu).im) i *
+            osiiReducedToFullMomentumCLM d k p i := by
+            simp [Complex.mul_im, flattenCLEquiv_apply, flattenCLEquivReal_apply]
+      _ = ∑ i, flattenCLEquivReal k (d + 1)
+          (BHW.reducedDiffMapReal (k + 1) d (fun j mu => (z j mu).im)) i * p i :=
+        osiiReducedToFullMomentum_pairing (fun j mu => (z j mu).im) p
+      _ = (∑ i, BHW.flattenCfg k d (BHW.reducedDiffMap (k + 1) d z) i *
+          (p i : Complex)).im := by
+            simp [Complex.mul_im, BHW.flattenCfg, flattenCLEquivReal_apply]
+            apply Finset.sum_congr rfl
+            intro i _
+            congr 1
 
 theorem osiiReducedToFullMomentum_total_zero
     (p : Fin (k * (d + 1)) -> Real) :
@@ -136,10 +160,13 @@ theorem osiiReducedToFullMomentum_mem_spectralRegion
   rw [hflat]
   intro j
   have hj := hy j.succ
+  have hcast : (⟨j.val, by omega⟩ : Fin (k + 1)) = j.castSucc := by
+    ext
+    rfl
   apply (inOpenForwardCone_iff _).2
   change 0 < y j.succ 0 - y j.castSucc 0 ∧
     MinkowskiSpace.minkowskiNormSq d (fun mu => y j.succ mu - y j.castSucc mu) < 0
-  simpa [ForwardConeAbs, _root_.InOpenForwardCone] using hj
+  simpa [ForwardConeAbs, _root_.InOpenForwardCone, hcast] using hj
 
 theorem osiiFullFrequencyRestriction_physicsFourier
     (f : SchwartzNPoint d (k + 1)) :
@@ -202,19 +229,26 @@ theorem fullFrequencyDistribution_fourierLaplace
   have hred : (fun j mu => (BHW.reducedDiffMap (k + 1) d z j mu).im) ∈
       BHW.ProductForwardConeReal d k := by
     intro j
+    have hcast : (⟨j.val, by omega⟩ : Fin (k + 1)) = j.castSucc := by
+      ext
+      rfl
     apply (inOpenForwardCone_iff _).2
     change 0 < (z j.succ 0 - z j.castSucc 0).im ∧
       MinkowskiSpace.minkowskiNormSq d
         (fun mu => (z j.succ mu - z j.castSucc mu).im) < 0
-    simpa [TubeDomainSetPi, ForwardConeAbs, _root_.InOpenForwardCone] using hz j.succ
+    simpa [TubeDomainSetPi, ForwardConeAbs, _root_.InOpenForwardCone, hcast] using hz j.succ
   have hzred : BHW.flattenCfg k d (BHW.reducedDiffMap (k + 1) d z) ∈
       SCV.TubeDomain (osiiReducedForwardFlatCone d k) := by
     change BHW.ProductForwardConeReal d k
       (BHW.unflattenCfgReal k d
         (fun i => (BHW.flattenCfg k d (BHW.reducedDiffMap (k + 1) d z) i).im))
-    convert hred using 1
-    ext j mu
-    simp [BHW.unflattenCfgReal, BHW.flattenCfg]
+    have hflat : BHW.unflattenCfgReal k d
+        (fun i => (BHW.flattenCfg k d (BHW.reducedDiffMap (k + 1) d z) i).im) =
+          fun j mu => (BHW.reducedDiffMap (k + 1) d z j mu).im := by
+      ext j mu
+      simp [BHW.unflattenCfgReal, BHW.flattenCfg]
+    rw [hflat]
+    exact hred
   simp only [kernel, flatKernel, fourierLaplaceExtMultiDim_eq_ext,
     fullFrequencyDistribution, ContinuousLinearMap.comp_apply]
   apply hasFourierSupportIn_eqOn P.support

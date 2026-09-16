@@ -80,7 +80,7 @@ theorem
   rw [osiiReflectedMixedMovingKernel_centers_eq_distribution_of_cutoff_eq_one
     A rho left right w leftCenter rightCenter physicalTime htime hrho]
     at hdiagonal
-  simpa only [equation621ReflectedMovingSlicePoint] using hdiagonal
+  exact hdiagonal
 
 namespace ReflectedGramSpatialSourceData
 

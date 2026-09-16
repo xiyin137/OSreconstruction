@@ -389,7 +389,8 @@ theorem
           hV_open hV_ne hV_sub hreal_eq
     funext z
     have hz_eq := hambient_eq z.property
-    simpa [ambient, eval, z.property] using hz_eq
+    change eval y z = eval y₀ z
+    simpa [ambient, z.property] using hz_eq
   have hG_tendsto :
       Tendsto G atTop (nhds y₀) :=
     hcompact.tendsto_nhds_of_unique_mapClusterPt hG_mem hunique

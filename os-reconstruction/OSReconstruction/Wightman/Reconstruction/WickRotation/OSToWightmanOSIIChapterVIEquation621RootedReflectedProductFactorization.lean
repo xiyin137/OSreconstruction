@@ -116,13 +116,13 @@ theorem current_reflectedLeftDiagonal_row_tendsto
     simpa [i, DLeft, equation621NontrivialGeneratorIndex] using
       rootedLeftNontrivialReflectedGram_cutoff_eq_one
         D.adapted Q.packet Q.roots qLeft (qRight + 2)
-          (by omega) (by omega) hindex
+          i.hn i.hm i.hnm
   have hrow :=
     tendsto_rootedLeftNontrivialDiagonalScalar_to_distribution_generatorProbe_adapted
       D.adapted Q.packet Q.roots qLeft (qRight + 2)
-      (by omega) (by omega) hindex spatialApprox x N
+      i.hn i.hm i.hnm spatialApprox x N
       (equation621TargetLeftParameter i v)
-      (by simpa [i, equation621NontrivialGeneratorIndex] using hzLeft)
+      (by simpa [i, DLeft, equation621NontrivialGeneratorIndex] using hzLeft)
       (osiiMixedBlockGlobalReducedTime (qLeft + 1)
         (Fin.append (Q.packet.rootedLeftBlockAnchor i)
           (Q.packet.rootedLeftBlockAnchor i))) rfl hcutoff
@@ -131,9 +131,11 @@ theorem current_reflectedLeftDiagonal_row_tendsto
   dsimp only at hrow
   rw [RootedA0BlockContinuousTranslationData.generatorLeftBlockProbe_eq_positiveTargetTest]
     at hrow
-  simpa [i, v, y, DLeft, rootedReflectedGlobalProductLeftDiagonal,
-    equation621NontrivialGeneratorIndex,
-    RootedA0BlockContinuousTranslationData.positiveBlockSpatialTest] using hrow
+  convert hrow using 1 <;>
+    simp [i, v, rootedReflectedGlobalProductLeftDiagonal,
+      equation621NontrivialGeneratorIndex,
+      RootedA0BlockContinuousTranslationData.positiveBlockSpatialTest] <;>
+    congr 1
 
 theorem current_reflectedRightDiagonal_row_tendsto
     {rank qLeft qRight : Nat}
@@ -209,13 +211,13 @@ theorem current_reflectedRightDiagonal_row_tendsto
     simpa [i, DRight, equation621NontrivialGeneratorIndex] using
       rootedRightNontrivialReflectedGram_cutoff_eq_one
         D.adapted Q.packet Q.roots (qLeft + 2) qRight
-          (by omega) (by omega) hindex
+          i.hn i.hm i.hnm
   have hrow :=
     tendsto_rootedRightNontrivialDiagonalScalar_to_distribution_generatorProbe_adapted
       D.adapted Q.packet Q.roots (qLeft + 2) qRight
-      (by omega) (by omega) hindex spatialApprox x N
+      i.hn i.hm i.hnm spatialApprox x N
       (equation621TargetRightParameter i v)
-      (by simpa [i, equation621NontrivialGeneratorIndex] using hzRight)
+      (by simpa [i, DRight, equation621NontrivialGeneratorIndex] using hzRight)
       (osiiMixedBlockGlobalReducedTime (qRight + 1)
         (Fin.append (Q.packet.rootedRightBlockAnchor i)
           (Q.packet.rootedRightBlockAnchor i))) rfl hcutoff
@@ -224,9 +226,11 @@ theorem current_reflectedRightDiagonal_row_tendsto
   dsimp only at hrow
   rw [RootedA0BlockContinuousTranslationData.generatorRightBlockProbe_eq_positiveTargetTest]
     at hrow
-  simpa [i, v, y, DRight, rootedReflectedGlobalProductRightDiagonal,
-    equation621NontrivialGeneratorIndex,
-    RootedA0BlockContinuousTranslationData.positiveBlockSpatialTest] using hrow
+  convert hrow using 1 <;>
+    simp [i, v, rootedReflectedGlobalProductRightDiagonal,
+      equation621NontrivialGeneratorIndex,
+      RootedA0BlockContinuousTranslationData.positiveBlockSpatialTest] <;>
+    congr 1
 
 noncomputable def current_reflectedProductApproximationRows
     {rank qLeft qRight : Nat}
@@ -330,12 +334,12 @@ noncomputable def current_reflectedProductApproximationRows
         E spatialApprox w hw x N
   · intro x N
     simpa [leftApprox, leftProbe, DLeft, i, v,
-      equation621TargetLeftTimePoint] using
+      equation621NontrivialGeneratorIndex, equation621TargetLeftTimePoint] using
       current_reflectedLeftDiagonal_row_tendsto
         E spatialApprox w hw x N
   · intro x N
     simpa [rightApprox, rightProbe, DRight, i, v,
-      equation621TargetRightTimePoint] using
+      equation621NontrivialGeneratorIndex, equation621TargetRightTimePoint] using
       current_reflectedRightDiagonal_row_tendsto
         E spatialApprox w hw x N
   · intro x N

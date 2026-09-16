@@ -73,7 +73,7 @@ theorem continuous_osiiStep4MultiGapCenteredCoefficientOffset
   apply continuous_pi
   intro a
   exact
-    ((continuous_apply a).comp (continuous_apply i)).sub
+    (continuous_apply_apply i a).sub
       continuous_const
 
 /-- Membership in the centered coefficient ball controls every nested

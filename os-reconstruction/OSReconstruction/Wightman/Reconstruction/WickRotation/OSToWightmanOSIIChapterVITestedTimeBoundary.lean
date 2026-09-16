@@ -519,7 +519,11 @@ private theorem tendsto_weightedRemainder
       intro s hs
       exact (hasDerivAt_sliceJet hF hC hgrowth hy hs.1 phi (M + 1)
         ).continuousAt.continuousWithinAt
-    have hcont := (continuousOn_id.neg.pow M).smul hjcont
+    have hcont : ContinuousOn
+        (fun s : Real => (-s) ^ M •
+          sliceJet F phi (M + 1) (epsilon • eta + s • unitDirection k))
+        (Icc (0 : Real) 1) :=
+      (continuousOn_id.neg.pow M).smul hjcont
     simpa only [uIoc_of_le (show (0 : Real) <= 1 by norm_num)] using
       (hcont.mono Ioc_subset_Icc_self).aestronglyMeasurable measurableSet_Ioc
   · filter_upwards [Ioc_mem_nhdsGT (show (0 : Real) < 1 by norm_num)]

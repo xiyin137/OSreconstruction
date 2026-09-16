@@ -362,8 +362,8 @@ theorem rootedLeftNontrivialReflectedGram_cutoff_eq_one
     (A.rootedLeftBlockAnchor i)
     (A.rootedLeftBlockAnchor_positive i)
   intro scale chi
-  simpa [D, i, rootedLeftNontrivialReflectedGramSpatialSourceData] using
-    A.rootedLeftBlockAnchoredSourceCLM_source_translated R i scale chi
+  change A.rootedLeftBlockSpatialSource R i scale chi = _
+  exact A.rootedLeftBlockAnchoredSourceCLM_source_translated R i scale chi
 
 /-- The canonical rooted right reflected-Gram germ is one at its fixed
 reflected packet anchor. -/
@@ -390,8 +390,8 @@ theorem rootedRightNontrivialReflectedGram_cutoff_eq_one
     (A.rootedRightBlockAnchor i)
     (A.rootedRightBlockAnchor_positive i)
   intro scale chi
-  simpa [D, i, rootedRightNontrivialReflectedGramSpatialSourceData] using
-    A.rootedRightBlockAnchoredSourceCLM_source_translated R i scale chi
+  change A.rootedRightBlockSpatialSource R i scale chi = _
+  exact A.rootedRightBlockAnchoredSourceCLM_source_translated R i scale chi
 
 end AnchoredPacketTimeShellFamilyData
 end Section43ProductTimeApproximateIdentity

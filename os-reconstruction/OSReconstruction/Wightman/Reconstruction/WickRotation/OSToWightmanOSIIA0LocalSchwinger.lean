@@ -150,14 +150,14 @@ private def osiiA0_timeReflectionNHomeomorph {d n : ℕ} [NeZero d] :
     intro μ
     by_cases hμ : μ = 0
     · subst hμ
-      simpa [timeReflectionN, timeReflection] using
-        ((((continuous_apply 0 : Continuous fun y : SpacetimeDim d => y 0).comp
-            (continuous_apply i : Continuous fun x : NPointDomain d n => x i))).neg :
-          Continuous fun x : NPointDomain d n => -x i 0)
-    · simpa [timeReflectionN, timeReflection, hμ] using
-        ((continuous_apply μ : Continuous fun y : SpacetimeDim d => y μ).comp
-          (continuous_apply i : Continuous fun x : NPointDomain d n => x i) :
-          Continuous fun x : NPointDomain d n => x i μ)
+      change Continuous fun x : NPointDomain d n => -x i 0
+      exact
+        ((continuous_apply 0 : Continuous fun y : SpacetimeDim d => y 0).comp
+          (continuous_apply i : Continuous fun x : NPointDomain d n => x i)).neg
+    · simp only [timeReflectionN, timeReflection, hμ]
+      exact
+        (continuous_apply μ : Continuous fun y : SpacetimeDim d => y μ).comp
+          (continuous_apply i : Continuous fun x : NPointDomain d n => x i)
   continuous_invFun := by
     apply continuous_pi
     intro i
@@ -165,14 +165,14 @@ private def osiiA0_timeReflectionNHomeomorph {d n : ℕ} [NeZero d] :
     intro μ
     by_cases hμ : μ = 0
     · subst hμ
-      simpa [timeReflectionN, timeReflection] using
-        ((((continuous_apply 0 : Continuous fun y : SpacetimeDim d => y 0).comp
-            (continuous_apply i : Continuous fun x : NPointDomain d n => x i))).neg :
-          Continuous fun x : NPointDomain d n => -x i 0)
-    · simpa [timeReflectionN, timeReflection, hμ] using
-        ((continuous_apply μ : Continuous fun y : SpacetimeDim d => y μ).comp
-          (continuous_apply i : Continuous fun x : NPointDomain d n => x i) :
-          Continuous fun x : NPointDomain d n => x i μ)
+      change Continuous fun x : NPointDomain d n => -x i 0
+      exact
+        ((continuous_apply 0 : Continuous fun y : SpacetimeDim d => y 0).comp
+          (continuous_apply i : Continuous fun x : NPointDomain d n => x i)).neg
+    · simp only [timeReflectionN, timeReflection, hμ]
+      exact
+        (continuous_apply μ : Continuous fun y : SpacetimeDim d => y μ).comp
+          (continuous_apply i : Continuous fun x : NPointDomain d n => x i)
 
 private theorem osiiA0_osConj_tsupport_subset_orderedNegative
     [NeZero d]
@@ -240,7 +240,9 @@ theorem osiiA0_osConjTensorProduct_tsupport_disjoint_coincidence_of_ordered
     have hxprod :
         x ∈ tsupport (fun y : NPointDomain d (n + m) =>
           f.osConj (splitFirst n m y) * g (splitLast n m y)) := by
-      simpa [SchwartzNPoint.osConjTensorProduct, SchwartzMap.tensorProduct_apply] using hx
+      change x ∈ tsupport (fun y : NPointDomain d (n + m) =>
+        (f.osConj.tensorProduct g) y)
+      exact hx
     refine ⟨hA ((tsupport_mul_subset_left (f := fun y : NPointDomain d (n + m) =>
       f.osConj (splitFirst n m y)) (g := fun y : NPointDomain d (n + m) =>
       g (splitLast n m y))) hxprod), ?_⟩

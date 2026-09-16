@@ -73,11 +73,23 @@ theorem continuous_osiiStep4MixedSpatialRealPoint_uncurry :
   obtain ⟨⟨i, mu⟩, rfl⟩ := finProdFinEquiv.surjective q
   cases mu using Fin.cases with
   | zero =>
-      simpa [osiiStep4MixedSpatialRealPoint] using
-        (continuous_apply i).comp continuous_fst
+      rw [show
+        (fun p : (Fin k → ℝ) × (Fin (k * d) → ℝ) =>
+          osiiStep4MixedSpatialRealPoint d k p.1 p.2
+            (finProdFinEquiv (i, 0))) =
+          fun p => p.1 i by
+        funext p
+        simp [osiiStep4MixedSpatialRealPoint]]
+      exact (continuous_apply i).comp continuous_fst
   | succ j =>
-      simpa [osiiStep4MixedSpatialRealPoint] using
-        (continuous_apply (finProdFinEquiv (i, j))).comp continuous_snd
+      rw [show
+        (fun p : (Fin k → ℝ) × (Fin (k * d) → ℝ) =>
+          osiiStep4MixedSpatialRealPoint d k p.1 p.2
+            (finProdFinEquiv (i, j.succ))) =
+          fun p => p.2 (finProdFinEquiv (i, j)) by
+        funext p
+        simp [osiiStep4MixedSpatialRealPoint]]
+      exact (continuous_apply (finProdFinEquiv (i, j))).comp continuous_snd
 
 @[simp] theorem osiiEquation66FlatTime_mixedSpatialRealPoint
     (tau : Fin k → ℝ) (x : Fin (k * d) → ℝ) :
@@ -176,7 +188,20 @@ theorem tsupport_osiiEquation66FlatTimeSpatialTensor_subset_time_preimage
   have ht :=
     tsupport_section43NPointTimeSpatialTensor_subset_time_preimage
       d k phi chi hq
-  simpa [osiiAxisPairUnflattenRealBlocks] using ht
+  have htime :
+      section43QTime (d := d) (n := k)
+          ((flattenCLEquivReal k (d + 1)).symm y) =
+        osiiEquation66FlatTime (d := d) y := by
+    funext i
+    simp [osiiEquation66FlatTime, section43QTime,
+      nPointTimeSpatialCLE, flattenCLEquivReal_apply]
+  change section43QTime (d := d) (n := k)
+      ((flattenCLEquivReal k (d + 1)).symm y) ∈
+        tsupport (phi : (Fin k → ℝ) → ℂ) at ht
+  change osiiEquation66FlatTime (d := d) y ∈
+    tsupport (phi : (Fin k → ℝ) → ℂ)
+  rw [← htime]
+  exact ht
 
 @[simp] theorem unflattenSchwartzNPoint_osiiEquation66FlatTimeSpatialTensor
     (phi : SchwartzMap (Fin k → ℝ) ℂ)
@@ -277,9 +302,14 @@ theorem continuousOn_osiiEquation66OSBuiltCanonicalPhysicalSpatialPairing
     tsupport (flatChi : (Fin (k * d) → ℝ) → ℂ)
   have hflatChi : HasCompactSupport
       (flatChi : (Fin (k * d) → ℝ) → ℂ) := by
-    simpa [flatChi, section43SpatialFlatSchwartzCLE_apply] using
-      hchi.comp_homeomorph
-        (section43SpatialFlatCLE d k).symm.toHomeomorph
+    have hfun :
+        (flatChi : (Fin (k * d) → ℝ) → ℂ) =
+          fun x => chi ((section43SpatialFlatCLE d k).symm x) := by
+      funext x
+      simp [flatChi]
+    rw [hfun]
+    exact hchi.comp_homeomorph
+      (section43SpatialFlatCLE d k).symm.toHomeomorph
   have hK : IsCompact K := by
     simpa [K, HasCompactSupport] using hflatChi
   let f : (Fin k → ℝ) → (Fin (k * d) → ℝ) → ℂ :=
@@ -306,7 +336,15 @@ theorem continuousOn_osiiEquation66OSBuiltCanonicalPhysicalSpatialPairing
     flatChi.continuous.comp continuous_snd
   have hf : ContinuousOn (Function.uncurry f)
       (D.realRegion ×ˢ (Set.univ : Set (Fin (k * d) → ℝ))) := by
-    simpa [f] using hleft.mul hright.continuousOn
+    have hfun : Function.uncurry f =
+        (fun p =>
+          osiiEquation66OSBuiltCanonicalPhysicalDensity lgc D
+              (osiiStep4MixedSpatialRealPoint d k p.1 p.2) *
+            flatChi p.2) := by
+      funext p
+      rfl
+    rw [hfun]
+    exact hleft.mul hright.continuousOn
   have hzero : ∀ tau x, tau ∈ D.realRegion → x ∉ K → f tau x = 0 := by
     intro tau x _ hx
     have hxzero : flatChi x = 0 :=
@@ -381,7 +419,11 @@ theorem osiiEquation66OSBuiltCanonicalPhysicalSpatialPairing_represents
         hmix_cont.continuousOn hmix_map
     have hpsicont : Continuous (fun p ↦ psi (mix p)) :=
       psi.continuous.comp hmix_cont
-    simpa [Fprod, fflat] using hHcont.mul hpsicont.continuousOn
+    have hfun : Fprod = fun p => H (mix p) * psi (mix p) := by
+      funext p
+      rfl
+    rw [hfun]
+    exact hHcont.mul hpsicont.continuousOn
   have hFprod_support : Function.support Fprod ⊆ K := by
     intro p hp
     constructor
@@ -674,4 +716,3 @@ theorem osiiEquation66OSBuiltMixedSpatialDensity_stageDistribution_eq_all
   rw [heq, hT]
 
 end OSReconstruction
-

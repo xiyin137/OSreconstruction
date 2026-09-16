@@ -75,9 +75,9 @@ theorem continuous_smoothedStageValue
         T (SCV.translateSchwartz (-x) (Q.test N))) :=
     (SCV.continuous_apply_translateSchwartz_of_isCompactSupport
       T (Q.test N) (Q.compactSupport N)).comp continuous_neg
-  simpa [smoothedStageValue,
-    OSIIEquation621SpatialApproxIdentityData.section43Probe,
-    OSIIEquation621WeightedDensityAtlasData.flatDistribution] using htranslate
+  change Continuous (fun x : Fin (k * d) -> Real =>
+    T (SCV.translateSchwartz (-x) (Q.test N)))
+  exact htranslate
 
 /-- The compactly supported spatial pairing of the smoothed values converges
 to the actual stage distribution. -/
@@ -95,8 +95,16 @@ theorem tendsto_integral_smoothedStageValue_mul
       atTop
       (nhds
         (OSIIEquation621WeightedDensityAtlasData.flatDistribution A zeta phi)) := by
-  simpa [smoothedStageValue,
+  change Tendsto
+    (fun N => ∫ x : Fin (k * d) -> Real,
+      (OSIIEquation621WeightedDensityAtlasData.flatDistribution A zeta)
+        (SCV.translateSchwartz (-x) (Q.test N)) * phi x)
+    atTop
+    (nhds
+      (OSIIEquation621WeightedDensityAtlasData.flatDistribution A zeta phi))
+  simpa [toSchwartzTimeApproximateIdentity,
     OSIIEquation621SpatialApproxIdentityData.section43Probe,
+    OSIIEquation621SpatialApproxIdentityData.translatedTest,
     OSIIEquation621WeightedDensityAtlasData.flatDistribution] using
       (Q.toSchwartzTimeApproximateIdentity
         ).tendsto_integral_apply_translate_test_mul phi hphi

@@ -31,7 +31,12 @@ theorem realDiffCoordCLE_symm_prependBasepointReal_eq_diffVarSection
   ext k μ
   induction k using Fin.induction with
   | zero =>
-      simp [diffVarSection_zero]
+      rw [diffVarSection_zero, add_zero]
+      have h := congrFun
+        (congrFun
+          ((BHW.realDiffCoordCLE (m + 1) d).apply_symm_apply
+            (BHW.prependBasepointReal d m x₀ ξ)) 0) μ
+      simpa [BHW.realDiffCoordCLE_apply] using h
   | succ k ih =>
       have hred :=
         congrFun

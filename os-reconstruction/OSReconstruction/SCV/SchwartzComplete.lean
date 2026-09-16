@@ -253,7 +253,7 @@ instance instCompleteSpace [CompleteSpace F] : CompleteSpace (SchwartzMap E F) :
   have hsmooth_g : ContDiff ℝ (↑(⊤ : ℕ∞)) g := by
     have htsum_smooth : ContDiff ℝ (↑(⊤ : ℕ∞))
         (fun x => ∑' j, (w j : SchwartzMap E F) x) := by
-      convert htsum_contDiff 0 using 2
+      simpa using htsum_contDiff 0
     exact (u (φ 0)).smooth'.add htsum_smooth
   -- Step 6: Rapid decay
   have hdecay : ∀ k n : ℕ, ∃ C : ℝ, ∀ x : E,
@@ -434,13 +434,8 @@ theorem tempered_apply_tendsto_zero_of_tendsto
         (nhds (f - f)))
     have hws := schwartz_withSeminorms ℝ E F
     have hp_cont : Continuous p := by
-      refine Seminorm.continuous_of_le ?_
-        (show p ≤ ∑ i ∈ s, schwartzSeminormFamily ℝ E F i by
-          simpa [p] using Seminorm.finset_sup_le_sum (schwartzSeminormFamily ℝ E F) s)
-      change Continuous (fun x => Seminorm.coeFnAddMonoidHom ℝ (SchwartzMap E F)
-        (∑ i ∈ s, schwartzSeminormFamily ℝ E F i) x)
-      simp_rw [map_sum, Finset.sum_apply]
-      exact continuous_finset_sum _ fun i _ => hws.continuous_seminorm i
+      exact Seminorm.continuous_finsetSup fun i _ => hws.continuous_seminorm i
+    change Filter.Tendsto (p ∘ fun n => u n - f) atTop (nhds 0)
     simpa using (hp_cont.tendsto 0).comp hsub
   refine Metric.tendsto_nhds.mpr ?_
   intro ε hε
@@ -499,7 +494,8 @@ theorem tempered_apply_tendsto_zero_of_tendsto_filter
     intro g
     exact (hT g).comp hv
   have hu' : Filter.Tendsto (fun n => u (v n)) atTop (nhds f) := hu.comp hv
-  simpa using tempered_apply_tendsto_zero_of_tendsto hT' hu'
+  change Filter.Tendsto (fun n => T (v n) (u (v n))) atTop (nhds 0)
+  exact tempered_apply_tendsto_zero_of_tendsto hT' hu'
 
 /-- Filter-version Banach-Steinhaus payoff for a nonzero pointwise limit.
 

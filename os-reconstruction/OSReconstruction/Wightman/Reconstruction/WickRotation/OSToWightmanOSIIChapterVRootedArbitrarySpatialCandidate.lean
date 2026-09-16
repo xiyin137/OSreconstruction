@@ -641,14 +641,22 @@ theorem differentiableOn_rootSmearedArbitrarySpatialGeneratorCandidate
       DifferentiableOn Complex
         (D.leftArbitrarySpatialGeneratorField i timeScale leftTest)
         (H.left i).domain := by
-    simpa [D, leftArbitrarySpatialGeneratorField] using
+    change DifferentiableOn Complex
+      (fun z =>
+        (H.left i).field (D.leftCofinalIndex i timeScale) z leftTest)
+      (H.left i).domain
+    exact
       (H.left i).field_holomorphic
         (D.leftCofinalIndex i timeScale) leftTest
   have hright :
       DifferentiableOn Complex
         (D.rightArbitrarySpatialGeneratorField i timeScale rightTest)
         (H.right i).domain := by
-    simpa [D, rightArbitrarySpatialGeneratorField] using
+    change DifferentiableOn Complex
+      (fun z =>
+        (H.right i).field (D.rightCofinalIndex i timeScale) z rightTest)
+      (H.right i).domain
+    exact
       (H.right i).field_holomorphic
         (D.rightCofinalIndex i timeScale) rightTest
   have hrightSmeared :

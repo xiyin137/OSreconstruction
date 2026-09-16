@@ -233,8 +233,10 @@ theorem chapterVTimeMarginCutoffArgument_hasTemperateGrowth
       Function.HasTemperateGrowth
         (fun _ : E => (fun _ : Fin n => (2 : ℝ))) :=
     Function.HasTemperateGrowth.const _
-  simpa [chapterVTimeMarginCutoffArgument, Pi.smul_apply, smul_eq_mul,
-    Pi.sub_apply] using hscaled.sub hconst
+  convert hscaled.sub hconst using 1
+  ext x i
+  simp [chapterVTimeMarginCutoffArgument, Pi.smul_apply, smul_eq_mul,
+    Pi.sub_apply]
 
 /-- A smooth temperate two-block cutoff depending only on the reflected-left
 and right difference-time coordinates. -/
@@ -273,7 +275,14 @@ theorem osiiA0TwoBlockTimeMarginCutoff_hasTemperateGrowth
     (section43TimePositiveCutoff_hasTemperateGrowth n).comp
       (chapterVTimeMarginCutoffArgument_hasTemperateGrowth n (2 / ε)
         (rightDifferenceTimeCLM d n))
-  simpa [osiiA0TwoBlockTimeMarginCutoff] using hleft.mul hright
+  change Function.HasTemperateGrowth (fun x =>
+    section43TimePositiveCutoff n
+        (chapterVTimeMarginCutoffArgument n (2 / ε)
+          (reflectedLeftDifferenceTimeCLM d n) x) *
+      section43TimePositiveCutoff n
+        (chapterVTimeMarginCutoffArgument n (2 / ε)
+          (rightDifferenceTimeCLM d n) x))
+  exact hleft.mul hright
 
 /-- The two-block time cutoff is one whenever both blockwise positive
 difference-time vectors have the prescribed margin. -/
@@ -347,7 +356,8 @@ theorem osiiA0TwoBlockTimeMarginCutoff_tsupport_left_positive
         (chapterVTimeMarginCutoffArgument n (2 / ε)
           (rightDifferenceTimeCLM d n) y)
   have hxprod : x ∈ tsupport (fun y => left y * right y) := by
-    simpa [left, right, osiiA0TwoBlockTimeMarginCutoff] using hx
+    change x ∈ tsupport (fun y => left y * right y) at hx
+    exact hx
   have hxleft : x ∈ tsupport left :=
     tsupport_mul_subset_left hxprod
   have harg :
@@ -394,7 +404,8 @@ theorem osiiA0TwoBlockTimeMarginCutoff_tsupport_right_positive
         (chapterVTimeMarginCutoffArgument n (2 / ε)
           (rightDifferenceTimeCLM d n) y)
   have hxprod : x ∈ tsupport (fun y => left y * right y) := by
-    simpa [left, right, osiiA0TwoBlockTimeMarginCutoff] using hx
+    change x ∈ tsupport (fun y => left y * right y) at hx
+    exact hx
   have hxright : x ∈ tsupport right :=
     tsupport_mul_subset_right hxprod
   have harg :
@@ -600,8 +611,10 @@ theorem osConjTensorProduct_tsupport_reflectedLeft_mem
       x ∈ tsupport
         (fun y : NPointDomain d (n + m) =>
           f.osConj (splitFirst n m y) * g (splitLast n m y)) := by
-    simpa [SchwartzNPoint.osConjTensorProduct,
-      SchwartzMap.tensorProduct_apply] using hx
+    change x ∈ tsupport
+      (fun y : NPointDomain d (n + m) =>
+        f.osConj (splitFirst n m y) * g (splitLast n m y)) at hx
+    exact hx
   have hxleft_fun :
       x ∈ tsupport
         (fun y : NPointDomain d (n + m) =>
@@ -643,8 +656,10 @@ theorem osConjTensorProduct_tsupport_right_mem
       x ∈ tsupport
         (fun y : NPointDomain d (n + m) =>
           f.osConj (splitFirst n m y) * g (splitLast n m y)) := by
-    simpa [SchwartzNPoint.osConjTensorProduct,
-      SchwartzMap.tensorProduct_apply] using hx
+    change x ∈ tsupport
+      (fun y : NPointDomain d (n + m) =>
+        f.osConj (splitFirst n m y) * g (splitLast n m y)) at hx
+    exact hx
   have hxright_fun :
       x ∈ tsupport
         (fun y : NPointDomain d (n + m) =>
@@ -1605,7 +1620,11 @@ theorem osiiA0TemperateCutoffSchwingerCLM_homogeneousSource_eq
   intro α hα
   congr 1
   rw [osiiPositiveTimeSingleVectorCLM_inner_eq_schwinger]
-  simpa using
+  change
+    osiiA0TemperateCutoffSchwingerCLM OS χ hχ_growth hχ_disj
+        (g.1.osConjTensorProduct
+          (normalizedSourceMultiDerivative directions α f.1)) = _
+  simpa only [normalizedSourceMultiDerivative_zero] using
     osiiA0TemperateCutoffSchwingerCLM_normalized_reflectedProduct_eq
       OS directions (0 : Fin r → ℕ) α g.1 f.1 χ
       hχ_growth hχ_disj hχ_one hgf_disj
@@ -1965,10 +1984,12 @@ theorem norm_sq_holomorphicField_eq_reflectedScalar_of_compatibility_of_norm_lt
           (2 * ((((q + 1) + (q + 1) - 1 : ℕ) : ℝ) + 2))) :
     ‖Ψ z‖ ^ 2 =
       (D.scalar (D.center + reflectedCauchyIncrement z)).re := by
+  letI : AddCommMonoid ℂ :=
+    (inferInstance : NormedAddCommGroup ℂ).toAddCommMonoid
   apply
     norm_sq_holomorphicField_eq_reflectedScalar_of_compatibility_of_hasSum
       OS f directions D hcompat Ψ hΨ z hzP
-  simpa using
+  exact
     SCV.hasSum_cauchyPowerSeriesPolydisc_diag_of_differentiableOn
       D.radius_pos hRw hU hRwU hscalar hz
 
@@ -2040,7 +2061,8 @@ theorem eventually_norm_sq_holomorphicField_eq_reflectedScalar_family_of_compati
         Metric.ball (0 : Fin (q + 1) → ℂ) bound ∈ 𝓝 0 :=
       Metric.ball_mem_nhds _ hbound
     have hevent := hembed_cont.continuousAt.eventually hball
-    simpa [Metric.mem_ball, dist_zero_right] using hevent
+    rw [show (0 : Fin (q + 1) → ℝ) = (fun _ => 0) by ext; rfl]
+    simpa only [Metric.mem_ball, dist_zero_right] using hevent
   filter_upwards [hsmall] with x hx
   intro a
   let z : Fin (q + 1) → ℂ := fun i => (x i : ℂ)

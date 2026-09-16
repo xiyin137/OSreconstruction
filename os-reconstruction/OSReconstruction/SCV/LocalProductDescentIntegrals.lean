@@ -259,7 +259,13 @@ theorem shearedProductKernelFunctional_localQuotient_of_productCovariant {m : �
         have ht_translate' :
             t ∈ tsupport
               ((ψ : (Fin m → ℝ) → ℂ) ∘ fun x : Fin m → ℝ => x + a) := by
-          simpa [translateSchwartz_apply] using ht_translate
+          rw [← show
+            (((translateSchwartz a ψ : SchwartzMap (Fin m → ℝ) ℂ) :
+                (Fin m → ℝ) → ℂ)) =
+              ((ψ : (Fin m → ℝ) → ℂ) ∘ fun x : Fin m → ℝ => x + a) by
+            funext x
+            exact translateSchwartz_apply a ψ x]
+          exact ht_translate
         have hta_ψ : t + a ∈ tsupport (ψ : (Fin m → ℝ) → ℂ) :=
           hsub ht_translate'
         have htη_ball := hη_support ht_eta

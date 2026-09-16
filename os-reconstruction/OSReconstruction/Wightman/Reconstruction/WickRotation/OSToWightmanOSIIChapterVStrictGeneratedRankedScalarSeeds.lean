@@ -243,7 +243,7 @@ theorem exists_one_lt_smul
       refine ⟨q, hq, ?_⟩
       have htail :=
         mixedTailMemScalar k N (q • x) hxq
-      simpa [Fin.tail, Pi.smul_apply] using htail
+      exact htail
 
 /-- Equivalently, every ranked point is a strict radial contraction of
 another point in the same rank stratum. -/
@@ -424,7 +424,7 @@ theorem coordinatewiseShrink
             OSIIStrictGeneratedLogarithmicArgumentAtRank.mixed_head_eq_zero
               hk1 hx
           simpa [x'] using congrArg abs hx0.symm
-        · simpa [x'] using hy a
+        · exact hy a
       have hseed :=
         mixedTailMemScalar k N x' hx'
       simpa [x'] using hseed

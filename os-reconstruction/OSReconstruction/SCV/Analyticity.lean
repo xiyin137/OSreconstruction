@@ -529,9 +529,10 @@ private lemma exists_larger_polydisc_in_open {k : ℕ} {z : Fin k → ℂ} {R : 
               rw [show (1 : ℂ) - (↑c : ℂ) = ↑((1 : ℝ) - c) from by push_cast; ring,
                 Complex.norm_of_nonneg (by linarith)]]
           calc (1 - c) * ‖w i - z i‖ ≤ (1 - c) * (R + δ / 2) := by
-                gcongr
+                apply mul_le_mul_of_nonneg_left
+                · rw [← dist_eq_norm]
+                  exact hw i
                 · linarith
-                · rw [← dist_eq_norm]; exact hw i
             _ = δ / 2 := by
                 rw [hc_def, show 1 - R / (R + δ / 2) = (δ / 2) / (R + δ / 2) from by
                   field_simp; ring, div_mul_cancel₀ _ hRd_pos.ne']
@@ -642,6 +643,8 @@ private lemma hasSum_multiIdx_cauchyCoeff :
     set e := (Equiv.funUnique (Fin (0 + 1)) ℕ).symm
     rw [← Equiv.hasSum_iff e]
     convert h1d using 1
+    funext n
+    congr 2 <;> funext i <;> simp [e, Subsingleton.elim i 0]
   | succ m ih =>
     intro f z R Rw hR hRw hf_sep hf_cont y hy
     -- Setup: split variables into first (m+1) and last
@@ -837,7 +840,11 @@ private lemma hasSum_multiIdx_cauchyCoeff :
           from funext (deriv_circleMap zL R)]; exact (continuous_circleMap 0 R).mul continuous_const)
         apply Continuous.smul
           (((continuous_circleMap zL R).sub continuous_const).inv₀
-            (fun θ => norm_ne_zero_iff.mp (by rw [circleMap_sub_center]; simp [circleMap]; exact hR.ne'))
+            (fun θ => norm_ne_zero_iff.mp (by
+              change ‖circleMap zL R θ - zL‖ ≠ 0
+              rw [circleMap_sub_center]
+              simp [circleMap]
+              exact hR.ne'))
             |>.pow _)
         exact hf_cont.comp_continuous
           (continuous_pi (fun ℓ => by
@@ -950,7 +957,7 @@ private lemma hasSum_multiIdx_cauchyCoeff :
                 rw [circleMap_sub_center]; simp [circleMap, abs_of_pos hR]
           _ = R * R⁻¹ ^ (k + 1) * M := by ring
       · -- 3. Bound is interval integrable
-        exact intervalIntegrable_const (by exact ENNReal.coe_ne_top)
+        exact intervalIntegrable_const
       · -- 4. Continuity in w' for each θ
         apply Filter.Eventually.of_forall
         intro θ _

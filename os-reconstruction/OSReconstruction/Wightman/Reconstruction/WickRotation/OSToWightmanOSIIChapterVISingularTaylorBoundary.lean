@@ -55,7 +55,6 @@ theorem singularTaylor_firstDerivative_bound
       exact hu.1.trans_le hs'.1
     have hexpand := osii_testedTaylor_between (fun j => J (j + 1)) m u 1
       (fun j s hs => hJ (j + 1) s (hpos s hs))
-    dsimp only at hexpand
     have hpoly :
         ‖∑ j ∈ Finset.range (m + 1),
           ((j.factorial : Real)⁻¹ * (u - 1) ^ j) • J (j + 1) 1‖ <=

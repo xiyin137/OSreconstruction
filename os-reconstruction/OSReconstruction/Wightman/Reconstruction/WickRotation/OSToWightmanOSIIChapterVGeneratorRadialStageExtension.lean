@@ -155,10 +155,10 @@ theorem agreesOnOld_of_radialConvexAtlas
     have hnew :=
       (B.distribution_commonPositiveRealEdge E i u hu).1
     have hold_chart := atlas.realEdge_mem j u hu
-    simpa [D, SCV.realToComplex, osiiPositiveRealTimeEmbed] using
-      (show osiiPositiveRealTimeEmbed u ∈
-          B.domain i ∩ atlas.domain j from
-        ⟨hnew, hold_chart⟩)
+    change SCV.realToComplex u ∈ B.domain i ∩ atlas.domain j
+    rw [show SCV.realToComplex u =
+        osiiPositiveRealTimeEmbed u by rfl]
+    exact ⟨hnew, hold_chart⟩
   have hG_zero :
       ∀ u ∈ E.realRegion, G (SCV.realToComplex u) = 0 := by
     intro u hu

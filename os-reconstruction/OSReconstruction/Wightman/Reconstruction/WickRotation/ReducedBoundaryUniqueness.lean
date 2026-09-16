@@ -44,7 +44,7 @@ theorem eqOn_reducedForwardTube_of_boundary_values
     let η' : Fin m → Fin (d + 1) → ℝ := eR.symm η
     have hη' : η' ∈ ProductForwardConeReal d m := by
       change unflattenCfgReal m d η ∈ ProductForwardConeReal d m at hη
-      simpa [η', eR, unflattenCfgReal, flattenCLEquivReal_symm_apply] using hη
+      exact hη
     refine (hH f η' hη').congr' (Eventually.of_forall fun ε => ?_)
     dsimp only
     rw [integral_flatten_change_of_variables m (d + 1)]
@@ -106,7 +106,10 @@ theorem Route1ReducedAnalyticInput.pullback_boundary_values
   filter_upwards with x
   have hz : (fun k μ => (x k μ : ℂ) + ε * (η k μ : ℂ) * I) ∈ ForwardTube d (m + 1) := by
     rw [BHW_forwardTube_eq, forwardTube_eq_imPreimage]
-    simpa [Pi.smul_apply] using forwardConeAbs_smul d (m + 1) ε hε η hη
+    have hsmul : (ε • η) = (fun k μ => ε * η k μ) := by
+      ext k μ
+      rfl
+    simpa [Pi.smul_apply, hsmul] using forwardConeAbs_smul d (m + 1) ε hε η hη
   exact congrArg (fun a : ℂ => a * f x) (F.pullback_eq_spectrum Wfn χ _ hz).symm
 
 /-- An inverse to forward-tube descent, preserving the literal absolute

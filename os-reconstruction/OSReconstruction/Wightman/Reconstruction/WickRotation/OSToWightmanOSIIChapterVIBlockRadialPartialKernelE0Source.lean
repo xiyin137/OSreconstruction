@@ -106,7 +106,18 @@ theorem
             (osiiStep4CenteredPartialConvolutionKernelComplexSchwartz
               (d + 1) k hrho center y y' :
                 (Fin (k * (d + 1)) → Real) → Complex) := by
-      simpa [Function.mem_support, phi, osiiStep4NPointFlatCLM] using hu
+      rw [Function.mem_support] at hu ⊢
+      intro hzero
+      apply hu
+      rw [show phi u =
+          flattenSchwartzNPoint (d := d) phi
+            (osiiStep4NPointFlatCLM d k u) by
+        rw [flattenSchwartzNPoint_apply]
+        congr 1
+        funext i j
+        simp [osiiStep4NPointFlatCLM, flattenCLEquivReal_apply]]
+      rw [flatten_osiiStep4CenteredPartialConvolutionKernelFullSource]
+      exact hzero
     exact
       osiiStep4CenteredPartialConvolutionKernelComplexSchwartz_support_subset
         (d + 1) k hrho center y y' hflat
@@ -135,11 +146,23 @@ theorem
     exact
       osiiStep4CenteredPartialConvolutionKernelComplexSchwartz_support_subset
         (d + 1) k hrho center y y'
-  simpa [osiiStep4CenteredPartialConvolutionKernelFullSource,
-    unflattenSchwartzNPoint,
-    SchwartzMap.compCLMOfContinuousLinearEquiv_apply] using
-      hflat.comp_homeomorph
-        (flattenCLEquivReal k (d + 1)).toHomeomorph
+  have hflat' :
+      HasCompactSupport
+        ((flattenSchwartzNPoint (d := d)
+          (osiiStep4CenteredPartialConvolutionKernelFullSource
+            d k hrho center y y')) :
+              (Fin (k * (d + 1)) → Real) → Complex) := by
+    convert hflat using 1
+    ext z
+    exact flatten_osiiStep4CenteredPartialConvolutionKernelFullSource
+      d k hrho center y y' z
+  convert hflat'.comp_homeomorph
+      (flattenCLEquivReal k (d + 1)).toHomeomorph using 1
+  ext z
+  rw [Function.comp_apply, flattenSchwartzNPoint_apply]
+  congr 1
+  funext i j
+  simp [flattenCLEquivReal_apply]
 
 /-- If every center time is at least `rho`, every reduced time gap on the
 support of the centered partial kernel is strictly positive. -/

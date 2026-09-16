@@ -731,8 +731,11 @@ theorem spectatorPackage_realEdge_eq_centeredSchwinger
               (osiiAxisPairPositiveCoefficients (x i))
               (fun a => le_of_lt
                 (osiiAxisPairPositiveCoefficients_pos (x i) a)))) := by
-    simpa [osiiStep4FixedRadiusCenteredSchwinger,
-      osiiAxisPairChronologicalGapTranslation, Nat.add_assoc] using hedge
+    unfold osiiStep4FixedRadiusCenteredSchwinger
+    change ((D.spectatorPackage x i).toSemigroupPacketFamily OS lgc).realEdge
+      (x i) = OS.S (i.val + 1 + (osiiStep4MultiGapAfterCount i + 1)) _
+    simpa [osiiAxisPairChronologicalGapTranslation,
+      spectatorPackage_T] using hedge
   rw [hedge']
   calc
     osiiStep4FixedRadiusCenteredSchwinger d OS
@@ -762,6 +765,7 @@ theorem spectatorPackage_realEdge_eq_centeredSchwinger
         d k OS i hrho
         (center + osiiStep4AxisPairGapTranslationFlat d D.T x) y y' _
 
+set_option maxHeartbeats 800000 in
 noncomputable def packetFamily
     {d k : Nat} [NeZero d] [NeZero k]
     (OS : OsterwalderSchraderAxioms d)

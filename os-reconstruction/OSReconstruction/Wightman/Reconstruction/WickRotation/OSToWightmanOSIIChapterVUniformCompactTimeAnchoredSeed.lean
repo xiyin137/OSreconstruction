@@ -38,7 +38,9 @@ def uniformCompactTimeSourceSubmodule
           (section43DiffCoordRealCLE d n x) ∈ K}
   zero_mem' := by
     intro x hx
-    simp at hx
+    change x ∈ tsupport (0 : NPointDomain d n → ℂ) at hx
+    rw [tsupport_zero] at hx
+    exact hx.elim
   add_mem' := by
     intro f g hf hg x hx
     have hx' :=

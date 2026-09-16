@@ -86,7 +86,9 @@ def initialPhysicalFixedCarrierSourceSubmodule
     tsupport (φ : NPointDomain d k → ℂ) ⊆ K}
   zero_mem' := by
     intro x hx
-    simp at hx
+    change x ∈ tsupport (0 : NPointDomain d k → ℂ) at hx
+    rw [tsupport_zero] at hx
+    exact hx.elim
   add_mem' := by
     intro φ ψ hφ hψ x hx
     have hx' :=

@@ -138,7 +138,7 @@ theorem osiiStep4_prod_beforeBlockIndex_eq_Iio
   · intro b hb
     have hbval : b.val < n := by
       have hlt := Finset.mem_Iio.mp hb
-      simpa [osiiStep4SelectedBlockIndex] using hlt
+      exact hlt
     let i : Fin n := ⟨b.val, hbval⟩
     refine ⟨i, Finset.mem_univ i, ?_⟩
     apply Fin.ext
@@ -166,7 +166,7 @@ theorem osiiStep4_prod_afterBlockIndex_eq_Ioi
   · intro b hb
     have hbgt : n < b.val := by
       have hlt := Finset.mem_Ioi.mp hb
-      simpa [osiiStep4SelectedBlockIndex] using hlt
+      exact hlt
     let j : Fin m := ⟨b.val - (n + 1), by omega⟩
     refine ⟨j, Finset.mem_univ j, ?_⟩
     apply Fin.ext
@@ -725,12 +725,10 @@ private theorem osiiStep4_continuous_timeReflectionN
   intro mu
   by_cases hmu : mu = 0
   · subst mu
-    simpa [timeReflectionN, timeReflection] using
-      ((((continuous_apply 0 : Continuous fun y : SpacetimeDim d => y 0).comp
-        (continuous_apply i : Continuous fun x : NPointDomain d k => x i))).neg)
-  · simpa [timeReflectionN, timeReflection, hmu] using
-      ((continuous_apply mu : Continuous fun y : SpacetimeDim d => y mu).comp
-        (continuous_apply i : Continuous fun x : NPointDomain d k => x i))
+    simp [timeReflectionN, timeReflection]
+    fun_prop
+  · simp [timeReflectionN, timeReflection, hmu]
+    fun_prop
 
 private theorem osiiStep4_continuous_append_reflected_pair
     (d n m : Nat) :
@@ -750,16 +748,18 @@ private theorem osiiStep4_continuous_append_reflected_pair
       apply Fin.ext
       rfl
     rw [hi_eq]
-    simpa [leftMap] using
-      (continuous_apply ii).comp hleft
+    simp only [Fin.append_left]
+    change Continuous ((fun z => z ii) ∘ leftMap)
+    exact (continuous_apply ii).comp hleft
   · let jj : Fin (m + 1) := ⟨i.val - (n + 1), by omega⟩
     have hi_eq : i = Fin.natAdd (n + 1) jj := by
       apply Fin.ext
       simp [jj, Fin.natAdd]
       omega
     rw [hi_eq]
-    simpa [rightMap] using
-      (continuous_apply jj).comp hright
+    simp only [Fin.append_right]
+    change Continuous ((fun z => z jj) ∘ rightMap)
+    exact (continuous_apply jj).comp hright
 
 theorem osiiStep4SelectedBlockChronologicalConfigOfPair_continuous
     (d n m : Nat) :
@@ -770,8 +770,9 @@ theorem osiiStep4SelectedBlockChronologicalConfigOfPair_continuous
     osiiStep4_continuous_append_reflected_pair d n m
   apply continuous_pi
   intro i
-  simpa [osiiStep4SelectedBlockChronologicalConfigOfPair, appendMap] using
-    (continuous_apply (osiiStep4SelectedBlockLeftReversePerm n m i)).comp happ
+  change Continuous ((fun z =>
+    z (osiiStep4SelectedBlockLeftReversePerm n m i)) ∘ appendMap)
+  exact (continuous_apply (osiiStep4SelectedBlockLeftReversePerm n m i)).comp happ
 
 /-- Undoing the chronological permutation sends support back into the raw OS
 reflected tensor-product support. -/
@@ -805,7 +806,7 @@ theorem osiiStep4SelectedBlockChronologicalOSSource_raw_mem_tsupport
     rw [← hts]
     simpa [osiiStep4SelectedBlockChronologicalOSSource, e,
       SchwartzMap.compCLMOfContinuousLinearEquiv_apply] using hx
-  simpa [e] using hx'
+  exact hx'
 
 theorem osiiStep4SelectedBlockChronologicalLeftConfig_mem_tsupport
     (d n m : Nat) [NeZero d]
@@ -943,8 +944,7 @@ theorem osiiStep4_hasCompactStrictPositiveReducedTimeSupport_of_gap_pos
       (OSIIChapterV.reducedTimeProjectionCLM d k).continuous, ?_, ?_⟩
   · rintro tau ⟨x, hx, rfl⟩
     intro i
-    simpa [OSIIChapterV.reducedTimeProjectionCLM_apply,
-      section43QTime] using hgap x hx i
+    exact hgap x hx i
   · intro x hx
     exact ⟨x, hx, rfl⟩
 

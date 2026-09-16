@@ -463,8 +463,9 @@ theorem continuous_section43DerivativeWordScalar
           have hqk : Continuous fun _τ : Fin n → ℝ =>
               (section43QTime (d := d) (n := n) (m 0) k : ℂ) :=
             continuous_const
-          simpa [section43DerivativeWordScalar, h, oldWord, oldDirections, mul_assoc]
-            using (hτk.mul (hqk.mul hold)).neg
+          convert (hτk.mul (hqk.mul hold)).neg using 1 <;>
+            funext τ <;>
+            simp [section43DerivativeWordScalar, h, oldWord, oldDirections, mul_assoc]
       | spatial i =>
           let oldWord : Section43DerivativeWord d n r :=
             section43DerivativeWordTail d n r a
@@ -476,8 +477,9 @@ theorem continuous_section43DerivativeWordScalar
           have hhead : Continuous fun _τ : Fin n → ℝ =>
               ((section43QSpatial (d := d) (n := n) (m 0) i : ℝ) : ℂ) :=
             continuous_const
-          simpa [section43DerivativeWordScalar, h, oldWord, oldDirections]
-            using hhead.mul hold
+          convert hhead.mul hold using 1 <;>
+            funext τ <;>
+            simp [section43DerivativeWordScalar, h, oldWord, oldDirections]
 
 set_option backward.isDefEq.respectTransparency false in
 /-- Applied all-order pointwise derivatives are continuous in the real time
@@ -527,7 +529,11 @@ theorem continuous_section43FourierLaplace_timeIntegrand_iteratedFDeriv_apply
       let hpath : Continuous fun τ : Fin n → ℝ =>
           (τ, section43QSpatial (d := d) (n := n) q) :=
         continuous_id.prodMk continuous_const
-      simpa using hbase.comp hpath
+      change Continuous
+        (partialFourierSpatial_fun (d := d) (n := n)
+          (section43DerivativeWordInput d n r F a) ∘
+            fun τ => (τ, section43QSpatial (d := d) (n := n) q))
+      exact hbase.comp hpath
     exact (hscalar.mul hE).mul hP
   convert hsum using 1
   ext τ
@@ -794,7 +800,7 @@ theorem integrable_section43FourierLaplace_timeIntegrand_iteratedFDeriv_of_compa
                   (τ, section43QSpatial (d := d) (n := n) q))) :=
         (e.symm : ℂ →L[ℝ]
           ContinuousMultilinearMap ℝ (fun _ : Fin 0 => NPointDomain d n) ℂ).integrable_comp hbase
-      convert hcomp using 1
+      simpa only [iteratedFDeriv_zero_eq_comp, Function.comp_apply] using hcomp
   | succ r =>
       rcases
         section43FourierLaplace_timeIntegrand_iteratedFDeriv_curryLeft_local_bound_of_compact
@@ -1146,9 +1152,12 @@ theorem section43PositiveEnergyCutoff_hasTemperateGrowth
     intro i
     have hcoord : Function.HasTemperateGrowth
         (fun q : NPointDomain d n => section43QTime (d := d) (n := n) q i) := by
-      simpa [section43QTimeCLM_apply] using
-        (((ContinuousLinearMap.proj (R := ℝ) (ι := Fin n) (φ := fun _ => ℝ) i).comp
-          (section43QTimeCLM d n)).hasTemperateGrowth)
+      change Function.HasTemperateGrowth
+        ⇑((ContinuousLinearMap.proj (R := ℝ) (ι := Fin n) (φ := fun _ => ℝ) i).comp
+          (section43QTimeCLM d n))
+      exact
+        ((ContinuousLinearMap.proj (R := ℝ) (ι := Fin n) (φ := fun _ => ℝ) i).comp
+          (section43QTimeCLM d n)).hasTemperateGrowth
     simpa [factor, Function.comp_def] using
       SCV.smoothCutoff_complex_hasTemperateGrowth.comp hcoord
   have hprod : Function.HasTemperateGrowth
@@ -1162,7 +1171,7 @@ theorem section43PositiveEnergyCutoff_hasTemperateGrowth
       have ha : Function.HasTemperateGrowth (factor a) := hfactor a
       have hs : Function.HasTemperateGrowth
           (fun q : NPointDomain d n => ∏ i ∈ s, factor i q) := ih
-      simpa [P, Finset.prod_insert has] using ha.mul hs
+      simpa [P, Finset.prod_insert has] using ha.fun_mul hs
   simpa [factor] using hprod
 
 /-- Every derivative of the positive-energy cutoff vanishes outside the unit
@@ -1177,9 +1186,12 @@ theorem section43PositiveEnergyCutoff_iteratedFDeriv_eq_zero_of_not_mem_thickeni
   have hi : section43QTime (d := d) (n := n) q i < -1 := not_le.mp hi_not
   have hcoord_cont : Continuous fun q' : NPointDomain d n =>
       section43QTime (d := d) (n := n) q' i := by
-    simpa [section43QTimeCLM_apply] using
-      (((ContinuousLinearMap.proj (R := ℝ) (ι := Fin n) (φ := fun _ => ℝ) i).comp
-        (section43QTimeCLM d n)).continuous)
+    change Continuous
+      ⇑((ContinuousLinearMap.proj (R := ℝ) (ι := Fin n) (φ := fun _ => ℝ) i).comp
+        (section43QTimeCLM d n))
+    exact
+      ((ContinuousLinearMap.proj (R := ℝ) (ι := Fin n) (φ := fun _ => ℝ) i).comp
+        (section43QTimeCLM d n)).continuous
   have hlt_event : ∀ᶠ q' in 𝓝 q,
       section43QTime (d := d) (n := n) q' i < -1 := by
     exact (isOpen_lt hcoord_cont continuous_const).mem_nhds hi
@@ -1310,7 +1322,13 @@ theorem section43FourierLaplaceIntegral_iteratedFDerivCandidate_norm_le_thickene
         calc
           ‖G τ‖ ≤
               ‖Complex.exp (-(∑ k : Fin n, (τ k : ℂ) * (t k : ℂ)))‖ * Jfun τ := by
-                simpa [G, Jfun, F, ξ, t] using hmain
+                change ‖G τ‖ ≤
+                  ‖Complex.exp (-(∑ k : Fin n,
+                    (τ k : ℂ) * (section43QTime (d := d) (n := n) q k : ℂ)))‖ *
+                    section43FourierLaplace_iteratedFDerivWordMajorant
+                      d n r F (section43QSpatial (d := d) (n := n) q) τ
+                rw [section43FourierLaplace_iteratedFDerivWordMajorant]
+                simpa [G, F] using hmain
           _ ≤ E * Jfun τ := by
                 exact mul_le_mul_of_nonneg_right hExp (hJfun_nonneg τ)
   calc

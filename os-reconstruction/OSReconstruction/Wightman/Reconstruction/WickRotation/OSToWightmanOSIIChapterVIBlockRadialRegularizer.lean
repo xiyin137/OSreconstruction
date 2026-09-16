@@ -146,7 +146,7 @@ theorem osiiStep4ComplexBlockRadialRaw_contDiff
         (EuclideanSpace ℂ (Fin q))).toFun 2
           (((16 / rho : ℝ) : ℂ) •
             osiiStep4ComplexBlockToEuclideanCLE q w)) z
-  simpa only [Function.comp_apply, Function.uncurry_apply_pair] using
+  simpa only [Function.comp_def, Function.uncurry_apply_pair] using
     hbase.comp z hpair
 
 /-- The block-Euclidean support ball, expressed on ordinary complex
@@ -358,7 +358,8 @@ theorem osiiStep4ComplexBlockFlattenMeasurableEquiv_differentiable
     Differentiable ℂ (osiiStep4ComplexBlockFlattenMeasurableEquiv k q) := by
   rw [differentiable_pi]
   intro a
-  simpa only [osiiStep4ComplexBlockFlattenMeasurableEquiv_apply] using
+  simpa only [osiiStep4ComplexBlockFlattenMeasurableEquiv_apply,
+    Function.comp_def] using
     ((differentiable_apply (finProdFinEquiv.symm a).2 :
         Differentiable ℂ
           (fun z : Fin q → ℂ => z (finProdFinEquiv.symm a).2)).comp
@@ -493,12 +494,17 @@ theorem osiiStep4FullBlockRadialG_contDiff
   apply (osiiStep4ComplexBlockRadialG_contDiff q hrho).comp
   rw [contDiff_pi]
   intro mu
-  simpa using
+  change ContDiff ℝ (⊤ : ℕ∞)
     (ContinuousLinearMap.proj
       (R := ℝ)
       (ι := Fin (k * q))
       (φ := fun _ => ℂ)
-      (finProdFinEquiv (i, mu))).contDiff
+      (finProdFinEquiv (i, mu)))
+  exact (ContinuousLinearMap.proj
+    (R := ℝ)
+    (ι := Fin (k * q))
+    (φ := fun _ => ℂ)
+    (finProdFinEquiv (i, mu))).contDiff
 
 theorem osiiStep4FullBlockRadialG_hasCompactSupport
     (q k : ℕ) {rho : ℝ} (hrho : 0 < rho) :

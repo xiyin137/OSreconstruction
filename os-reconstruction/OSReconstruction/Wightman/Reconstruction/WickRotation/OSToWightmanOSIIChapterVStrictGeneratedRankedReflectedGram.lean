@@ -47,7 +47,7 @@ theorem reflectedMixedDiagonal_strictGeneratedAtRank
       (by omega :
         2 * (m + 1) - 1 = m + (m + 1))
       hdiag
-  simpa [reflectedMixedDiagonal] using hreindexed
+  exact hreindexed
 
 /-- Every reflected Cauchy point over a strict-positive time parameter stays
 in the same ranked scalar argument carrier as the original mixed point. -/

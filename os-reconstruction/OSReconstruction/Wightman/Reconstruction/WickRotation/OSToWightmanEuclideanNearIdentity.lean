@@ -33,8 +33,8 @@ private theorem exp_nhd_of_one_euclidean (ε : ℝ) (hε : 0 < ε) :
   let mexp : E → E := NormedSpace.exp
   have hexp_strict : HasStrictFDerivAt mexp
       ((ContinuousLinearEquiv.refl ℂ E : E →L[ℂ] E)) (0 : E) := by
-    show HasStrictFDerivAt NormedSpace.exp _ _
-    convert hasStrictFDerivAt_exp_zero (𝕂 := ℂ) (𝔸 := E) using 1
+    change HasStrictFDerivAt NormedSpace.exp (1 : E →L[ℂ] E) 0
+    exact hasStrictFDerivAt_exp_zero (𝕂 := ℂ) (𝔸 := E)
   set Φ := hexp_strict.toOpenPartialHomeomorph mexp
   have h0_mem : (0 : E) ∈ Φ.source := hexp_strict.mem_toOpenPartialHomeomorph_source
   have hS_nhds : Φ.source ∈ 𝓝 (0 : E) := Φ.open_source.mem_nhds h0_mem
@@ -90,7 +90,7 @@ private theorem exp_nhd_of_one_euclidean (ε : ℝ) (hε : 0 < ε) :
       rwa [ComplexLorentzGroup.mul_val] at this
     have hexp_rinv : mexp X * mexp (-X) = 1 := by
       show NormedSpace.exp X * NormedSpace.exp (-X) = 1
-      rw [← NormedSpace.exp_add_of_commute (Commute.neg_right (Commute.refl X))]
+      rw [← Matrix.exp_add_of_commute X (-X) (Commute.neg_right (Commute.refl X))]
       simp [NormedSpace.exp_zero]
     calc
       (Λ⁻¹).val = (Λ⁻¹).val * (mexp X * mexp (-X)) := by rw [hexp_rinv, mul_one]

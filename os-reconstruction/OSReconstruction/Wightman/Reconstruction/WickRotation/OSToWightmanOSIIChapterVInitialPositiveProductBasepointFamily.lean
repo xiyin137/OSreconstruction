@@ -182,8 +182,8 @@ theorem positiveHeadSpatialSource_uniformCompactSupport
     refine Fin.cases ?_ ?_ i
     · exact continuous_fst
     · intro j
-      simpa using
-        (continuous_apply j).comp continuous_snd
+      change Continuous (fun a : ℝ × (Fin k → ℝ) => a.2 j)
+      exact (continuous_apply j).comp continuous_snd
   have hK_compact : IsCompact K := by
     exact
       (normalizedPositiveTimeBasepointCutoff.compact.isCompact.prod

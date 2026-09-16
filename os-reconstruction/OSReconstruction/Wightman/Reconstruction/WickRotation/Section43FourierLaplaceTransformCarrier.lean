@@ -84,9 +84,12 @@ theorem section43FourierLaplaceTransformComponent_zero
       intro q hq
       rw [hΦ_rep q hq]
       exact section43FourierLaplaceIntegral_zero d n hzero_ord q
-    simpa using
-      section43PositiveEnergyQuotientMap_eq_of_eqOn_region
-        (d := d) (n := n) hEqOn
+    calc
+      section43PositiveEnergyQuotientMap (d := d) n Φ =
+          section43PositiveEnergyQuotientMap (d := d) n 0 :=
+        section43PositiveEnergyQuotientMap_eq_of_eqOn_region
+          (d := d) (n := n) hEqOn
+      _ = 0 := map_zero (section43PositiveEnergyQuotientMap (d := d) n)
   exact hΦ_q ▸ hΦ_zero_q
 
 /-- A canonical ambient Schwartz representative of a compact ordered

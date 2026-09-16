@@ -91,31 +91,15 @@ private def timeReflectionNHomeomorph_local {n : ℕ} :
     intro i
     apply continuous_pi
     intro μ
-    by_cases hμ : μ = 0
-    · subst hμ
-      simpa [timeReflectionN, timeReflection] using
-        ((((continuous_apply 0 : Continuous fun y : SpacetimeDim d => y 0).comp
-            (continuous_apply i : Continuous fun x : NPointDomain d n => x i))).neg :
-          Continuous fun x : NPointDomain d n => -x i 0)
-    · simpa [timeReflectionN, timeReflection, hμ] using
-        ((continuous_apply μ : Continuous fun y : SpacetimeDim d => y μ).comp
-          (continuous_apply i : Continuous fun x : NPointDomain d n => x i) :
-          Continuous fun x : NPointDomain d n => x i μ)
+    unfold timeReflectionN timeReflection
+    split <;> fun_prop
   continuous_invFun := by
     apply continuous_pi
     intro i
     apply continuous_pi
     intro μ
-    by_cases hμ : μ = 0
-    · subst hμ
-      simpa [timeReflectionN, timeReflection] using
-        ((((continuous_apply 0 : Continuous fun y : SpacetimeDim d => y 0).comp
-            (continuous_apply i : Continuous fun x : NPointDomain d n => x i))).neg :
-          Continuous fun x : NPointDomain d n => -x i 0)
-    · simpa [timeReflectionN, timeReflection, hμ] using
-        ((continuous_apply μ : Continuous fun y : SpacetimeDim d => y μ).comp
-          (continuous_apply i : Continuous fun x : NPointDomain d n => x i) :
-          Continuous fun x : NPointDomain d n => x i μ)
+    unfold timeReflectionN timeReflection
+    split <;> fun_prop
 
 /-- Ordered positive-time support forces the OS-conjugated left factor onto the
 strict ordered negative-time region, hence away from the coincidence locus. -/
@@ -130,7 +114,9 @@ private theorem VanishesToInfiniteOrderOnCoincidence_osConj_of_tsupport_subset_o
     have hxpre_conj :
         x ∈ tsupport (fun y : NPointDomain d n =>
           starRingEnd ℂ (f (timeReflectionN d y))) := by
-      simpa [SchwartzNPoint.osConj_apply] using hx
+      change x ∈ tsupport (fun y : NPointDomain d n =>
+        starRingEnd ℂ (f (timeReflectionN d y))) at hx
+      exact hx
     have hxpre :
         timeReflectionN d x ∈ tsupport (f : NPointDomain d n → ℂ) := by
       exact tsupport_comp_subset_preimage (f : NPointDomain d n → ℂ)
@@ -225,4 +211,3 @@ theorem schwinger_cluster_osConjTensorProduct_translate_spatial_right_local
       (f := g_translated) hga_vanish]
     simp [g_translated, translateSchwartzNPoint_apply, SchwartzNPoint.osConjTensorProduct]
   simpa [f0, g0, a0] using hcluster a0 ha0 (by simpa [a0] using ha_large) g_a hg_a fg_a hfg_a
-

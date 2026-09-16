@@ -274,8 +274,12 @@ theorem canonicalReducedCompactStageEdgeData_distribution_eqOn_narrow
           osiiNarrowTimeCarrier (k := k) η := by
     intro τ hτ
     have hmem := (D₁.edge.stageEdge τ hτ.1).1
-    simpa [hAcarrier, SCV.realToComplex,
-      osiiPositiveRealTimeEmbed] using hmem
+    have hmem' :
+        osiiPositiveRealTimeEmbed τ ∈
+          osiiNarrowTimeCarrier (k := k) η := by
+      simpa [hAcarrier] using hmem
+    rw [show SCV.realToComplex τ = osiiPositiveRealTimeEmbed τ by rfl]
+    exact hmem'
   have hF_zero :
       ∀ τ ∈ U, F (SCV.realToComplex τ) = 0 := by
     intro τ hτ
@@ -284,8 +288,8 @@ theorem canonicalReducedCompactStageEdgeData_distribution_eqOn_narrow
         OS D₁ D₂ τ hτ.1 hτ.2
     have hscalar :=
       congrArg (fun R : OSIISpatialDistribution d k => R χ) hagree
-    simpa [F, SCV.realToComplex, osiiPositiveRealTimeEmbed] using
-      (sub_eq_zero.mpr hscalar)
+    rw [show SCV.realToComplex τ = osiiPositiveRealTimeEmbed τ by rfl]
+    exact sub_eq_zero.mpr hscalar
   have hzero :
       F z = 0 :=
     SCV.identity_theorem_totally_real

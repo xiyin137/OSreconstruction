@@ -440,7 +440,8 @@ theorem
       exact
         G.locallyUniform.comp e
           (fun τ hτ => by
-            simpa [e] using hnative i τ hτ)
+            simpa [e, rootedReflectedGramPacketScaleBranchOfOS] using
+              hnative i τ hτ)
           he_cont.continuousOn
     have hcontinuous :
         ∀ timeScale,
@@ -543,8 +544,10 @@ theorem
           have heq :
               T.scalarLimit i₀ (osiiPositiveRealTimeEmbed τ) χ =
                 E.orbit τ χ := by
-            simpa using
-              (E.toDiagonal.scalarLimit_realEdge i₀ τ hτV).2 χ
+            change
+              T.diagonal.scalarLimit i₀ (osiiPositiveRealTimeEmbed τ) χ =
+                E.toDiagonal.orbit τ χ
+            exact (E.toDiagonal.scalarLimit_realEdge i₀ τ hτV).2 χ
           rw [heq]
         · have hφ_zero : φ τ = 0 :=
             image_eq_zero_of_notMem_tsupport hτ
@@ -554,7 +557,9 @@ theorem
     exact (hVQ hτ).1
   · exact hV_radial
   · exact hV_positive
-  · simpa [E, W] using hrep
+  · simpa [E, W,
+      GeneratorSpatialTwoScaleApproximationFamily.CommonPositiveRealEdgeData.ofCommonDistributionalTrace]
+      using hrep
 
 /-- A rooted current gives the reflected-Gram radial family one
 split-independent represented positive-real edge.  The edge can be confined
@@ -689,7 +694,8 @@ theorem
       exact
         G.locallyUniform.comp e
           (fun τ hτ => by
-            simpa [e] using hnative i τ hτ)
+            simpa [e, rootedReflectedGramPacketScaleBranch] using
+              hnative i τ hτ)
           he_cont.continuousOn
     have hcontinuous :
         ∀ timeScale,
@@ -792,8 +798,10 @@ theorem
           have heq :
               T.scalarLimit i₀ (osiiPositiveRealTimeEmbed τ) χ =
                 E.orbit τ χ := by
-            simpa using
-              (E.toDiagonal.scalarLimit_realEdge i₀ τ hτV).2 χ
+            change
+              T.diagonal.scalarLimit i₀ (osiiPositiveRealTimeEmbed τ) χ =
+                E.toDiagonal.orbit τ χ
+            exact (E.toDiagonal.scalarLimit_realEdge i₀ τ hτV).2 χ
           rw [heq]
         · have hφ_zero : φ τ = 0 :=
             image_eq_zero_of_notMem_tsupport hτ
@@ -803,7 +811,9 @@ theorem
     exact (hVQ hτ).1
   · exact hV_radial
   · exact hV_positive
-  · simpa [E, W] using hrep
+  · simpa [E, W,
+      GeneratorSpatialTwoScaleApproximationFamily.CommonPositiveRealEdgeData.ofCommonDistributionalTrace]
+      using hrep
 
 end AnchoredPacketTimeShellFamilyData
 end Section43ProductTimeApproximateIdentity

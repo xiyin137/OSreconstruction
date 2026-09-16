@@ -83,8 +83,8 @@ theorem compatible_of_commonPositiveRealEdge
     intro τ hτ
     have hi := (hreal i τ hτ).1
     have hj := (hreal j τ hτ).1
-    simpa [D, SCV.realToComplex, osiiPositiveRealTimeEmbed] using
-      (show osiiPositiveRealTimeEmbed τ ∈ domain i ∩ domain j from ⟨hi, hj⟩)
+    change osiiPositiveRealTimeEmbed τ ∈ D
+    exact ⟨hi, hj⟩
   have hF_zero :
       ∀ τ ∈ U, F (SCV.realToComplex τ) = 0 := by
     intro τ hτ

@@ -100,7 +100,13 @@ private theorem reducedTestLift_tsupport_basepoint_mem_endpointCarrier
   have hprod :
       x ∈ tsupport (fun u : NPointDomain d (m + 1) =>
         chi (u 0) * phi (BHW.reducedDiffMapReal (m + 1) d u)) := by
-    simpa [BHW.reducedTestLift_apply] using hx
+    have hfun :
+        ((BHW.reducedTestLift m d chi phi : SchwartzNPoint d (m + 1)) :
+            NPointDomain d (m + 1) -> Complex) =
+          fun u => chi (u 0) * phi (BHW.reducedDiffMapReal (m + 1) d u) := by
+      funext u
+      exact BHW.reducedTestLift_apply m d chi phi u
+    rwa [hfun] at hx
   have hheadPre :
       x ∈ tsupport (fun u : NPointDomain d (m + 1) => chi (u 0)) :=
     tsupport_mul_subset_left hprod
@@ -255,11 +261,22 @@ theorem osiiStep4RadialEndpointCommonCarrier_orderedPositive
   have hbase : 0 < p.1 0 :=
     endpointCarrier_time_pos d hrho endpointCenter p.1
       hEndpointCenter hp.1
+  have hzero :
+      (BHW.realDiffCoordCLE (k + 1) d).symm
+          (BHW.prependBasepointReal d k p.1 p.2) 0 0 = p.1 0 := by
+    rw [BHW.realDiffCoordCLE_symm_apply]
+    change (∑ j : Fin 1,
+      BHW.prependBasepointReal d k p.1 p.2 ⟨j.val, by omega⟩ 0) = p.1 0
+    rw [Fin.sum_univ_one]
+    simp [BHW.prependBasepointReal]
   intro i
   constructor
   · by_cases hi : i = 0
     · subst i
-      simpa [BHW.prependBasepointReal] using hbase
+      change 0 < (BHW.realDiffCoordCLE (k + 1) d).symm
+        (BHW.prependBasepointReal d k p.1 p.2) 0 0
+      rw [hzero]
+      exact hbase
     · have h0i : (0 : Fin (k + 1)) < i := Fin.pos_iff_ne_zero.mpr hi
       have hlt := hordered 0 i h0i
       change
@@ -267,10 +284,6 @@ theorem osiiStep4RadialEndpointCommonCarrier_orderedPositive
               (BHW.prependBasepointReal d k p.1 p.2) 0 0 <
           (BHW.realDiffCoordCLE (k + 1) d).symm
               (BHW.prependBasepointReal d k p.1 p.2) i 0 at hlt
-      have hzero :
-          (BHW.realDiffCoordCLE (k + 1) d).symm
-              (BHW.prependBasepointReal d k p.1 p.2) 0 0 = p.1 0 := by
-        simp [BHW.prependBasepointReal]
       rw [hzero] at hlt
       exact hbase.trans hlt
   · intro j hij

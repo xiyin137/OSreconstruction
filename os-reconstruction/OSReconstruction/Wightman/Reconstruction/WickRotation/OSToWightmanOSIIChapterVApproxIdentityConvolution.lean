@@ -112,23 +112,25 @@ private theorem lineDeriv_convolution_eq_convolution_lineDeriv
         φ z *
           ((LineDeriv.lineDerivOp v h :
             SchwartzMap (Fin n → ℝ) ℂ) (x - z)) := by
-  letI : NormedSpace ℝ ((Fin n → ℝ) →L[ℝ] ℂ) :=
-    ContinuousLinearMap.toNormedSpace
-  have hfd : HasFDerivAt
+  have hfd :=
+    hcompact.hasFDerivAt_convolution_right
+      (𝕜 := ℝ)
+      (μ := volume)
+      (L := ContinuousLinearMap.mul ℝ ℂ)
+      (hf := (SchwartzMap.integrable φ).locallyIntegrable)
+      (hg := (SchwartzMap.smooth h ⊤).of_le (by simp)) x
+  have hconv :
       (fun y : Fin n → ℝ =>
-        ∫ z : Fin n → ℝ, φ z * h (y - z))
-      (MeasureTheory.convolution
-        (𝕜 := ℝ)
-        (f := (φ : (Fin n → ℝ) → ℂ))
-        (g := fderiv ℝ (h : (Fin n → ℝ) → ℂ))
-        (L := (ContinuousLinearMap.mul ℝ ℂ).precompR (Fin n → ℝ))
-        (μ := volume) x)
-      x := by
-    simpa [MeasureTheory.convolution] using
-      (hcompact.hasFDerivAt_convolution_right
-        (L := ContinuousLinearMap.mul ℝ ℂ)
-        (hf := (SchwartzMap.integrable φ).locallyIntegrable)
-        (hg := (SchwartzMap.smooth h ⊤).of_le (by simp)) x)
+        ∫ z : Fin n → ℝ, φ z * h (y - z)) =
+        MeasureTheory.convolution
+          (𝕜 := ℝ)
+          (μ := volume)
+          (L := ContinuousLinearMap.mul ℝ ℂ)
+          (φ : (Fin n → ℝ) → ℂ)
+          (h : (Fin n → ℝ) → ℂ) := by
+    funext y
+    rfl
+  rw [hconv]
   rw [hfd.hasLineDerivAt v |>.lineDeriv]
   have hconv_apply :
       ((MeasureTheory.convolution
@@ -155,7 +157,6 @@ private theorem lineDeriv_convolution_eq_convolution_lineDeriv
         (x₀ := x) (x := v)
   rw [hconv_apply]
   simp [MeasureTheory.convolution, SchwartzMap.lineDerivOp_apply_eq_fderiv]
-  rfl
 
 private theorem convolutionTest_iteratedLineDeriv_eq
     (I : SchwartzTimeApproximateIdentity n)
@@ -281,8 +282,8 @@ private theorem iteratedFDeriv_convolutionTest_sub_apply_eq_integral
   have hIntProd :
       Integrable (fun z : Fin n → ℝ =>
         I.test N z * hu (x - z)) := by
-    convert hIntDiff.add hIntConst using 1
-    funext z
+    refine (hIntDiff.add hIntConst).congr ?_
+    filter_upwards with z
     simp only [Pi.add_apply]
     ring
   calc
@@ -395,7 +396,7 @@ theorem tendsto_convolutionTest
             (𝓝 0) (𝓝 0) by
           simpa using
             (continuous_neg.tendsto (0 : Fin n → ℝ)))
-    simpa using hbase
+    simpa only [Function.comp_def, SCV.translateSchwartz_zero] using hbase
   have hseminorm :
       Tendsto
         (fun z : Fin n → ℝ =>
@@ -415,7 +416,8 @@ theorem tendsto_convolutionTest
             (𝓝 0) (𝓝 h) :=
         tendsto_const_nhds
       simpa using htranslate.sub hconst
-    simpa only [Function.comp_apply, map_zero] using
+    simpa only [Function.comp_def, map_zero,
+      SchwartzMap.schwartzSeminormFamily_apply] using
       ((schwartz_withSeminorms ℝ
         (Fin n → ℝ) ℂ).continuous_seminorm (p, j)).continuousAt.tendsto.comp
         hsub
@@ -509,10 +511,15 @@ theorem tendsto_convolutionTest
                         (Fin n → ℝ) → ℂ) x =
                     iteratedFDeriv ℝ j
                       (h : (Fin n → ℝ) → ℂ) (x - z) by
-                    simpa [SCV.translateSchwartz] using
-                      (iteratedFDeriv_comp_add_right
-                        (f := (h : (Fin n → ℝ) → ℂ))
-                        j (-z) x)]
+                    have hcoe :
+                        (SCV.translateSchwartz (-z) h :
+                          (Fin n → ℝ) → ℂ) =
+                            fun y => h (y - z) := by
+                      funext y
+                      simp [SCV.translateSchwartz_apply, sub_eq_add_neg]
+                    rw [hcoe]
+                    exact iteratedFDeriv_comp_sub
+                      (f := (h : (Fin n → ℝ) → ℂ)) j z x]
               rfl
             _ ≤
                 SchwartzMap.seminorm ℝ p j
@@ -537,9 +544,16 @@ theorem tendsto_convolutionTest
                       ∏ i, ‖u i‖ := by
                   exact mul_le_mul_of_nonneg_right
                     (by
-                      simpa [D] using
-                        (SchwartzMap.le_seminorm ℝ p j
-                          (SCV.translateSchwartz (-z) h - h) x))
+                      dsimp only [D]
+                      have hcoe :
+                          ((↑(SCV.translateSchwartz (-z) h - h) :
+                            (Fin n → ℝ) → ℂ)) =
+                            (↑(SCV.translateSchwartz (-z) h) :
+                              (Fin n → ℝ) → ℂ) -
+                              (↑h : (Fin n → ℝ) → ℂ) := rfl
+                      rw [← hcoe]
+                      exact SchwartzMap.le_seminorm ℝ p j
+                        (SCV.translateSchwartz (-z) h - h) x)
                     (Finset.prod_nonneg fun _ _ => norm_nonneg _)
             _ ≤ (ε / 2) * ∏ i, ‖u i‖ := by
               exact mul_le_mul_of_nonneg_right

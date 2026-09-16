@@ -263,15 +263,16 @@ theorem hasFDerivAt_realFiberIntegralRaw {m n : ℕ}
         HasFDerivAt (F : ((Fin n → ℝ) × (Fin m → ℝ)) → V)
           (fderiv ℝ (F : ((Fin n → ℝ) × (Fin m → ℝ)) → V) (u', t)) (u', t) :=
       F.differentiableAt.hasFDerivAt
-    simpa [inl] using hFderiv.comp u' hinner
-  simpa [realFiberIntegralRaw] using
-    (hasFDerivAt_integral_of_dominated_of_fderiv_le
-      (μ := (MeasureTheory.volume : MeasureTheory.Measure (Fin m → ℝ)))
-      (s := (Set.univ : Set (Fin n → ℝ)))
-      (x₀ := u)
-      (F := fun u' t => F (u', t))
-      (F' := fun u' t => realFiberBaseFDerivSchwartz F (u', t))
-      hs hF_meas hF_int hF'_meas h_bound hbound_int h_diff)
+    exact hFderiv.comp u' hinner
+  change HasFDerivAt (fun u : Fin n → ℝ => ∫ t : Fin m → ℝ, F (u, t))
+    (∫ t : Fin m → ℝ, realFiberBaseFDerivSchwartz F (u, t)) u
+  exact hasFDerivAt_integral_of_dominated_of_fderiv_le
+    (μ := (MeasureTheory.volume : MeasureTheory.Measure (Fin m → ℝ)))
+    (s := (Set.univ : Set (Fin n → ℝ)))
+    (x₀ := u)
+    (F := fun u' t => F (u', t))
+    (F' := fun u' t => realFiberBaseFDerivSchwartz F (u', t))
+    hs hF_meas hF_int hF'_meas h_bound hbound_int h_diff
 
 theorem fderiv_realFiberIntegralRaw_eq {m n : ℕ}
     {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V] [CompleteSpace V]

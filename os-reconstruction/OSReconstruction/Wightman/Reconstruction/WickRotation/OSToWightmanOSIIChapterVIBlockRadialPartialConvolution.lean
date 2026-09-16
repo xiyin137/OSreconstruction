@@ -377,7 +377,7 @@ theorem osiiStep4FullBlockRadialG_partialKernel_weighted_integrable
         ((volume : Measure (Fin (k * q) → ℝ)).prod
           (volume : Measure (Fin (k * q) → ℝ)))) := by
     have hcomp := hsplit.integrable_comp_of_integrable hPint
-    simpa [Q, Function.comp_def] using hcomp
+    simpa [Q, Function.comp_def, Prod.map] using hcomp
   let R : (((Fin (k * q) → ℂ) × (Fin (k * q) → ℝ)) ×
       (Fin (k * q) → ℝ)) → ℂ := fun p =>
     Q (p.1.1, (p.2, p.1.2))
@@ -403,7 +403,8 @@ theorem osiiStep4FullBlockRadialG_partialKernel_weighted_integrable
     have hprod :=
       (MeasurePreserving.id
         (volume : Measure (Fin (k * q) → ℂ))).prod hswap
-    simpa [Function.comp_def] using hprod.comp hassoc
+    simpa [Function.comp_def, MeasurableEquiv.prodAssoc, Prod.map] using
+      hprod.comp hassoc
   have hRint : Integrable R
       (((volume : Measure (Fin (k * q) → ℂ)).prod
           (volume : Measure (Fin (k * q) → ℝ))).prod

@@ -571,9 +571,11 @@ theorem continuousOn_explicitFrozenPacket_branch
             (osiiStep4MultiGapAfterCount q.1 + 1)
             (D.rotatedFrozenRightPositiveSource p.1 q)))
       (Set.univ ×ˢ {w : Complex | |w.im| < Real.pi / 2}) := by
-    simpa [Phi] using
+    convert
       (continuousOn_osTimeShiftHilbertComplex_jointly
-        (d := d) OS lgc).comp hPhi.continuousOn hPhi_maps
+        (d := d) OS lgc).comp hPhi.continuousOn hPhi_maps using 1
+    ext p
+    rfl
   have hleftVector : Continuous
       (fun p : (Fin k -> osiiAxisPairIndex d -> Real) × Complex =>
         osiiPositiveTimeSingleVectorCLM OS (q.1.val + 1)

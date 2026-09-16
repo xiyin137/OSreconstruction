@@ -316,7 +316,7 @@ theorem vacuumTailPacketSpatialDistribution_realEdge
             (vacuumTailSpatialLiftCLM χ))
           (fun i : Fin (q + 1) =>
             chronologicalTimeSourceDirection (d := d) i) u) by
-    simpa [SCV.realToComplex] using hedge]
+    simpa [SCV.realToComplex] using! hedge]
   rw [show
     (innerSL ℂ (osiiChapterVVacuumVector OS))
         (osiiPositiveTimeSingleVectorCLM OS ((q + 1) + 1)

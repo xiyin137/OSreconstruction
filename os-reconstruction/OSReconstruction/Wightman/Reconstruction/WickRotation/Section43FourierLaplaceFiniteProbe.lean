@@ -40,10 +40,11 @@ instance : Zero Section43CompactPositiveTimeSource1D where
     { f := 0
       positive := by
         intro t ht
-        simp at ht
+        exfalso
+        simpa only [FunLike.coe_zero, tsupport_zero, Set.mem_empty_iff_false] using ht
       compact := by
-        simpa using
-          (HasCompactSupport.zero : HasCompactSupport (0 : ℝ → ℂ)) }
+        change HasCompactSupport (0 : ℝ → ℂ)
+        exact HasCompactSupport.zero }
 
 instance : Add Section43CompactPositiveTimeSource1D where
   add g h :=
@@ -53,7 +54,8 @@ instance : Add Section43CompactPositiveTimeSource1D where
         have ht' := tsupport_add (g.f : ℝ → ℂ) (h.f : ℝ → ℂ) ht
         exact ht'.elim (fun hg => g.positive hg) (fun hh => h.positive hh)
       compact := by
-        simpa using HasCompactSupport.add g.compact h.compact }
+        change HasCompactSupport ((g.f : ℝ → ℂ) + (h.f : ℝ → ℂ))
+        exact HasCompactSupport.add g.compact h.compact }
 
 instance : SMul ℕ Section43CompactPositiveTimeSource1D where
   smul n g :=
@@ -63,9 +65,10 @@ instance : SMul ℕ Section43CompactPositiveTimeSource1D where
           (tsupport_smul_subset_right
             (fun _ : ℝ => (n : ℂ)) (g.f : ℝ → ℂ)).trans g.positive
       compact := by
-        simpa using
-          (HasCompactSupport.smul_left
-            (f := fun _ : ℝ => (n : ℂ)) (f' := (g.f : ℝ → ℂ)) g.compact) }
+        change HasCompactSupport ((fun _ : ℝ => (n : ℂ)) * (g.f : ℝ → ℂ))
+        exact
+          HasCompactSupport.smul_left
+            (f := fun _ : ℝ => (n : ℂ)) (f' := (g.f : ℝ → ℂ)) g.compact }
 
 instance : AddCommMonoid Section43CompactPositiveTimeSource1D :=
   Function.Injective.addCommMonoid
@@ -85,9 +88,10 @@ instance : SMul ℂ Section43CompactPositiveTimeSource1D where
           (tsupport_smul_subset_right
             (fun _ : ℝ => c) (g.f : ℝ → ℂ)).trans g.positive
       compact := by
-        simpa using
-          (HasCompactSupport.smul_left
-            (f := fun _ : ℝ => c) (f' := (g.f : ℝ → ℂ)) g.compact) }
+        change HasCompactSupport ((fun _ : ℝ => c) * (g.f : ℝ → ℂ))
+        exact
+          HasCompactSupport.smul_left
+            (f := fun _ : ℝ => c) (f' := (g.f : ℝ → ℂ)) g.compact }
 
 private def fAddMonoidHom :
     Section43CompactPositiveTimeSource1D →+ SchwartzMap ℝ ℂ where
@@ -618,7 +622,7 @@ theorem section43Probe_representative_component_apply_eq_integral_probeImagAxisF
     section43ProbeCLM s
         (section43OneSidedLaplaceSchwartzRepresentative1D g) p σ =
       ∫ t : ℝ, section43ProbeImagAxisFamily s g t p σ := by
-  simpa [section43ProbeImagAxisFamily_apply] using
+  simpa [section43ProbeCLM, section43ProbeImagAxisFamily_apply] using
     section43WeightedDerivToBCFCLM_representative_eq_integral_kernel_apply
       g p.1.1.1 p.1.1.2 σ
 
@@ -950,7 +954,12 @@ theorem dense_section43OneSidedLaplaceCompactTransform1D_preimage :
       refine
         section43PositiveEnergyVanishingSubmodule1D.isOpenQuotientMap_mkQ.isQuotientMap.continuous_iff.2
           ?_
-      simpa [A_lin, F, Function.comp] using F.continuous)
+      have hcomp :
+          A_lin.toFun ∘ ⇑section43PositiveEnergyVanishingSubmodule1D.mkQ = ⇑F := by
+        funext φ
+        simp [A_lin]
+      rw [hcomp]
+      exact F.continuous)
   have hAq :
       ∀ φ : SchwartzMap ℝ ℂ, A (q φ) = F φ := by
     intro φ

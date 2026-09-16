@@ -180,7 +180,7 @@ theorem
     · exact hU_open
     · exact hclosed a
     · exact hscalar a
-    · simpa [raw] using hreal_a
+    · simpa [raw, ReflectedCauchyPolydiscData.atIncrement] using hreal_a
   have hnorm_reflected :=
     eventually_norm_sq_holomorphicField_eq_reflectedScalar_family_of_compatibility
       OS f

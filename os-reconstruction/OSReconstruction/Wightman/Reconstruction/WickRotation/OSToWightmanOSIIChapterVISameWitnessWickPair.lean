@@ -120,7 +120,9 @@ theorem wickPairKernel_approach
       BHW.ProductForwardConeReal d k := by
     intro j
     simpa [Pi.smul_apply] using BHW.inOpenForwardCone_smul_pos (d := d) (hred j) hepsilon
-  simpa [TubeDomainSetPi, Pi.smul_apply, Complex.ofReal_mul, mul_assoc] using hscaled
+  change (fun j μ => epsilon * BHW.reducedDiffMapReal (k + 1) d eta j μ) ∈
+    BHW.ProductForwardConeReal d k at hscaled
+  simpa [TubeDomainSetPi, Complex.ofReal_mul, mul_assoc] using hscaled
 
 theorem wickPairKernel_compactSubsetGrowth
     (H : OSIIReducedForwardTubeBoundaryData W)
@@ -137,7 +139,8 @@ theorem wickPairKernel_compactSubsetGrowth
   intro x y hy
   have heq : H.wickPairKernel (fun j mu => (x j mu : Complex) + (y j mu : Complex) * I) =
       H.kernel (fun j mu => (L x j mu : Complex) + (L y j mu : Complex) * I) := by
-    simpa using H.wickPairKernel_approach y (hKsub hy) 1 zero_lt_one x
+    simpa [L, BHW.reducedDiffMapRealCLM] using
+      H.wickPairKernel_approach y (hKsub hy) 1 zero_lt_one x
   rw [heq]
   calc
     ‖H.kernel (fun j mu => (L x j mu : Complex) + (L y j mu : Complex) * I)‖
@@ -272,6 +275,7 @@ theorem strictGenerated_isWickRotationPair
     initial.strictGeneratedWickKernel_holomorphic lgc n,
     initial.strictGeneratedWickKernel_boundaryValue lgc n, ?_⟩
   intro f
+  change OS.S n f = _
   simpa only [initial.strictGeneratedWickKernel_wick] using
     initial.strictGeneratedEuclideanKernel_reproducesZeroDiagonal lgc n f
 

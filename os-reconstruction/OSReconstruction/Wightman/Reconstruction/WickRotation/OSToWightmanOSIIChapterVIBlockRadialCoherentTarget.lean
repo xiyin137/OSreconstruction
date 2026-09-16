@@ -63,6 +63,10 @@ theorem continuous_osiiStep4CoherentTargetSource
   have hcontinuous :=
     (continuous_osiiStep4PositiveLiftedCenteredPartialConvolutionKernelFullSource
       d k hrho (osiiStep4MultiGapXiHatCenter d k center)).comp hsplit
-  simpa only [osiiStep4CoherentTargetSource] using hcontinuous
+  change Continuous (fun z : OSIIStep4FullComplexSpace d k =>
+    osiiStep4PositiveLiftedCenteredPartialConvolutionKernelFullSource
+      d k hrho (osiiStep4MultiGapXiHatCenter d k center)
+        (fun a => (z a).re) (fun a => (z a).im))
+  exact hcontinuous
 
 end OSReconstruction

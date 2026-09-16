@@ -44,7 +44,13 @@ theorem reflectedMixedDiagonal_rawStrictGenerated
       (by omega :
         2 * (m + 1) - 1 = m + (m + 1))
       hdiag
-  simpa [reflectedMixedDiagonal] using hreindexed
+  change
+    OSIIRawStrictGeneratedLogarithmicArgument .scalar
+      (m + (m + 1)) N
+      (fun j =>
+        osiiArgumentDiagonal (by omega) (reflectedMixedArgument z)
+          (Fin.cast (by omega) j))
+  exact hreindexed
 
 /-- A positive-real reflected Cauchy shift of a raw mixed tail lies in the
 raw scalar argument carrier.  This is the exact carrier-level source

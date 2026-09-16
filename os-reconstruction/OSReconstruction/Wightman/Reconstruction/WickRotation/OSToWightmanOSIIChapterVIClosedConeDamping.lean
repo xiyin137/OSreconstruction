@@ -123,7 +123,8 @@ theorem osiiClosedConeDampedTest_pairing_tendsto
     apply hasFourierSupportIn_eqOn hT
     intro p hp
     simp [coneCutoffTest_apply, coneCutoff_eq_one hp]
-  simpa only [heq] using T.continuous.tendsto (coneCutoffTest C f) |>.comp hlim
+  rw [← heq]
+  exact T.continuous.tendsto (coneCutoffTest C f) |>.comp hlim
 
 theorem osiiFourierLaplace_slice_pairing
     (C : Set (Fin m -> Real)) (hopen : IsOpen C) (hconv : Convex Real C)
@@ -190,7 +191,8 @@ theorem osiiCone_smul_mem_closure
     {C : Set (Fin m -> Real)} (hcone : IsCone C)
     {y : Fin m -> Real} (hy : y ∈ closure C) {u : Real} (hu : 0 < u) : u • y ∈ closure C := by
   have hclosed : IsClosed {z : Fin m -> Real | u • z ∈ closure C} :=
-    isClosed_closure.preimage (continuous_const.smul continuous_id)
+    isClosed_closure.preimage
+      (show Continuous (fun z : Fin m -> Real => u • z) by fun_prop)
   have hsub : C ⊆ {z : Fin m -> Real | u • z ∈ closure C} :=
     fun z hz => subset_closure (hcone z hz u hu)
   exact closure_minimal hsub hclosed hy
@@ -297,6 +299,9 @@ theorem osiiFourierLaplace_closedFace_eq_integral
   filter_upwards with x
   rw [hmatch _ (by
     have := osiiCone_add_mem_of_closure hopen hconv hcone hy (hcone eta heta t ht)
-    simpa [SCV.TubeDomain, Pi.add_apply, Pi.smul_apply, smul_eq_mul] using this)]
+    have hpoint : (fun i => y i + t * eta i) ∈ C := by
+      change y + t • eta ∈ C
+      exact this
+    simpa [SCV.TubeDomain] using hpoint)]
 
 end OSReconstruction

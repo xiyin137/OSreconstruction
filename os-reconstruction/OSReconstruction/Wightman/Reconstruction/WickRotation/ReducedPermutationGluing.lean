@@ -46,6 +46,7 @@ theorem Route1ReducedAnalyticInput.perm_eq_on_forwardTube_of_mapsTo
   have ha : a ∈ JostSet d (m + 1) :=
     jostSet_permutation_invariant σ.symm (forwardJostSet_subset_jostSet hd hb)
   have haET : permAct σ (realEmbed a) ∈ ExtendedTube d (m + 1) := by
+    change permAct σ (realEmbed a) ∈ BHWCore.ExtendedTube d (m + 1)
     convert forwardJostSet_subset_extendedTube hd b hb using 1
     ext k μ
     simp [permAct, realEmbed, a]
@@ -98,7 +99,6 @@ def reversalLorentz (d : ℕ) [NeZero d] : ComplexLorentzGroup d where
       Matrix.diagonal_mul_diagonal]
     congr 1
     ext i
-    dsimp
     split_ifs <;> ring
   proper := by
     rw [Matrix.det_diagonal]
@@ -242,8 +242,15 @@ theorem exists_forward_lift_of_reduced_perm_overlap
       ReducedForwardTubeN d m := hdiff ▸ hLξ
   obtain ⟨v, hv⟩ := SliceGeometry.exists_imaginary_forward_of_relative_perm_overlap
     L σ hσ hrev z
-    (fun i => by simpa [ForwardTube] using hz i.succ)
-    (fun i => by simpa [reducedDiffMap_eq_successive_differences] using hred i)
+    (fun i => by
+      convert hz i.succ using 1
+      ext μ
+      congr 2)
+    (fun i => by
+      convert hred i using 1
+      ext μ
+      simp only [reducedDiffMap_eq_successive_differences, Complex.sub_im]
+      congr 2 <;> apply Fin.ext <;> rfl)
   obtain ⟨t, ht⟩ := exists_forward_add_smul (SliceGeometry.imaginaryPart L v)
     (fun μ => (complexLorentzAction L (permAct σ z) 0 μ).im) hv
   let w : Fin (m + 1) → Fin (d + 1) → ℂ := fun k μ => z k μ + (t * v μ : ℝ)
@@ -263,6 +270,8 @@ theorem exists_forward_lift_of_reduced_perm_overlap
         SliceGeometry.imaginaryPart, Matrix.toLin'_apply, Matrix.mulVec, dotProduct,
         Complex.mul_im, Finset.sum_add_distrib, Finset.mul_sum,
         mul_add, mul_left_comm, add_assoc]
+      change ∑ x, t * ((L.val μ x).im * v x) = t * ∑ x, (L.val μ x).im * v x
+      rw [Finset.mul_sum]
     · have hwDiff : reducedDiffMap (m + 1) d (complexLorentzAction L (permAct σ w)) =
           complexLorentzAction L (permOnReducedDiff (d := d) (n := m + 1) σ ξ) := by
         rw [reducedDiffMap_action]
@@ -280,7 +289,8 @@ theorem Route1ReducedAnalyticInput.perm_eq_on_forwardTube
     F.toFun ξ = F.preInput.extend (permOnReducedDiff (d := d) (n := m + 1) σ ξ) := by
   by_cases hσ : σ = 1
   · subst σ
-    simpa only [permOnReducedDiff_one] using (F.preInput.extend_eq ξ hξ).symm
+    rw [permOnReducedDiff_one, F.preInput.extend_eq ξ hξ]
+    rfl
   by_cases hrev : σ = Fin.revPerm
   · subst σ
     exact F.rev_eq_on_forwardTube Wfn χ ξ hξ
@@ -422,7 +432,8 @@ theorem Route1ReducedAnalyticInput.permutedExtend_eq
   have hET := (mem_reducedExtendedTubeN_iff ξ).mpr ⟨1, ξ, hξ, complexLorentzAction_one ξ⟩
   have h := F.permutedExtend_eq_sector Wfn χ 1 ξ
     (by rw [permOnReducedDiff_one]; exact hET)
-  simpa only [permOnReducedDiff_one, F.preInput.extend_eq ξ hξ] using h
+  rw [permOnReducedDiff_one, F.preInput.extend_eq ξ hξ] at h
+  exact h
 
 theorem Route1ReducedAnalyticInput.permutedExtend_lorentz_invariant
     (Wfn : WightmanFunctions d) (χ : NormalizedBasepointCutoff d)

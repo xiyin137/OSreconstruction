@@ -97,15 +97,25 @@ theorem positiveRealTimeEmbed_mem_generatorSemigroupDomain
     osiiPositiveRealTimeEmbed τ ∈
       generatorSemigroupDomain i U V := by
   refine ⟨?_, ?_, ?_⟩
-  · simpa using hbridge
+  · change
+      0 < ((i.splitCoordinatesCLM
+        (osiiPositiveRealTimeEmbed τ)).1).re
+    rw [GeneratorIndex.splitCoordinatesCLM_positiveReal_bridge]
+    exact hbridge
   · change
       (fun a =>
         star ((i.splitCoordinatesCLM
           (osiiPositiveRealTimeEmbed τ)).2.1 a)) ∈ U
     simpa only [GeneratorIndex.splitCoordinatesCLM_positiveReal_left] using
       hleft
-  · simpa only [GeneratorIndex.splitCoordinatesCLM_positiveReal_right] using
-      hright
+  · have hrightCoordinates :
+        (i.splitCoordinatesCLM
+          (osiiPositiveRealTimeEmbed τ)).2.2 =
+            fun b => (i.rightRealCoordinates τ b : ℂ) := by
+      ext b
+      exact GeneratorIndex.splitCoordinatesCLM_positiveReal_right i τ b
+    rw [hrightCoordinates]
+    exact hright
 
 /-- The genuine split generator recovers its exact zero-diagonal Schwinger
 source on the positive real edge using only the original OS axioms. -/

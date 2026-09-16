@@ -109,12 +109,15 @@ theorem complexLorentzInvariant
   let w := (BHW.diffCoordEquiv k d).symm z
   have hw : w ∈ BHW.ForwardTube d k := by
     rw [BHW.forwardTube_eq_diffCoord_preimage]
-    simpa [w] using hz
+    simpa [w] using
+      (BHW.mem_productForwardCone_iff_im_mem_real k d z).mpr hz
   have hLw : BHW.complexLorentzAction L w ∈ BHW.ForwardTube d k := by
     rw [BHW.forwardTube_eq_diffCoord_preimage]
     change BHW.diffCoordEquiv k d (BHW.complexLorentzAction L w) ∈ BHW.ProductForwardCone d k
     rw [BHW.diffCoordEquiv_action]
-    simpa [w] using hLz
+    simpa [w] using
+      (BHW.mem_productForwardCone_iff_im_mem_real k d
+        (BHW.complexLorentzAction L z)).mpr hLz
   have h := BHW.Task5Bridge.complex_lorentz_invariance_from_euclidean_distributional
     k F hFholo hFdist L w hw hLw
   simpa [F, w, BHW.diffCoordEquiv_action] using h

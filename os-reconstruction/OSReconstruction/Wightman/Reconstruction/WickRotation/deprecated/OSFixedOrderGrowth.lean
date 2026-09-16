@@ -46,7 +46,7 @@ theorem OSFixedOrderGrowthCondition.sobolev_index_eq_zero
       rw [show x = 0 from Subsingleton.elim x 0, norm_zero]
     simp [hx, zero_pow horder]
   have hnormalized : OS.S 0 ⟨test, hvanish⟩ = 1 := by
-    rw [lgc.normalized_zero]
+    apply Eq.trans (lgc.normalized_zero ⟨test, hvanish⟩)
     simp [test, factors, SchwartzMap.productTensor_apply]
   have hgrowth := lgc.growth_estimate 0 ⟨test, hvanish⟩
   rw [hnormalized, hseminorm] at hgrowth

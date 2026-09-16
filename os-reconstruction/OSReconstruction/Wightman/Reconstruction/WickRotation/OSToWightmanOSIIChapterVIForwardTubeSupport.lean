@@ -143,8 +143,13 @@ theorem boundarySlice_integrable
           (epsilon : Complex) * (eta j mu : Complex) * I) ∈
         TubeDomainSetPi (BHW.ProductForwardConeReal d k) := by
     intro x
-    simpa [TubeDomainSetPi, y, Pi.smul_apply, Complex.ofReal_mul,
-      mul_assoc] using hy
+    have hy' : (fun j mu => epsilon * eta j mu) ∈
+        BHW.ProductForwardConeReal d k := by
+      rw [show (fun j mu => epsilon * eta j mu) = epsilon • eta by
+        ext j mu
+        rfl]
+      exact hy
+    simpa [TubeDomainSetPi, Complex.ofReal_mul, mul_assoc] using hy'
   have hg_cont : Continuous g := by
     apply ContinuousOn.comp_continuous H.holomorphic.continuousOn
     · fun_prop

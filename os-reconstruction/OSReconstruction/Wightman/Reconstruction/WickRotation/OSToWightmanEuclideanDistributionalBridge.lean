@@ -75,8 +75,10 @@ theorem exp_wick_conjugation
   rw [h_smul]
   let Wunit : (Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ)ˣ :=
     ⟨wickW, wickWinv, wickW_mul_wickWinv, wickWinv_mul_wickW⟩
-  have := NormedSpace.exp_units_conj Wunit (s • Y.map Complex.ofReal)
-  convert this using 2
+  have hW : (↑Wunit : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ) = wickW := rfl
+  have hWinv : (↑(Wunit⁻¹) : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ) = wickWinv := rfl
+  rw [← hW, ← hWinv]
+  exact NormedSpace.exp_units_conj Wunit (s • Y.map Complex.ofReal)
 
 private theorem exp_map_ofReal_bridge
     (Y : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ) (s : ℝ) :
@@ -129,8 +131,9 @@ private theorem exp_real_det_one_skew
     calc
       (((NormedSpace.exp (s • Y) : Matrix _ _ ℝ).det : ℂ))
           = (((NormedSpace.exp (s • Y) : Matrix _ _ ℝ).map Complex.ofReal).det) := by
-              simpa using
+              convert
                 (Complex.ofRealHom.map_det (NormedSpace.exp (s • Y) : Matrix _ _ ℝ))
+                using 1 <;> rfl
       _ = (NormedSpace.exp ((s : ℂ) • Y.map Complex.ofReal) : Matrix _ _ ℂ).det := by
               exact congrArg Matrix.det (exp_map_ofReal_bridge Y s)
   exact Complex.ofReal_injective (hmapdet.trans hdetC)
@@ -243,7 +246,8 @@ theorem distributional_to_generator_zero (n : ℕ) [NeZero d]
       fun t k μ => ∑ ν, (NormedSpace.exp (t • Z) : Matrix _ _ ℂ) μ ν * wickRotatePoint (x0 k) ν
     have hcont : Continuous action0c :=
       (differentiable_expAction_local Z (fun k => wickRotatePoint (x0 k))).continuous
-    simpa [action0, action0c] using hcont.comp Complex.continuous_ofReal
+    change Continuous (action0c ∘ Complex.ofReal)
+    exact hcont.comp Complex.continuous_ofReal
   let U0 : Set ℝ := {s : ℝ | action0 s ∈ ForwardTube d n}
   have hU0_open : IsOpen U0 := by
     apply isOpen_forwardTube.preimage
@@ -526,16 +530,20 @@ private theorem norm_wickRePart_le
     · subst hi
       subst hj
       simp [wickRePart]
-      simpa [Real.norm_eq_abs] using Complex.abs_re_le_norm (X 0 0)
+      exact NNReal.coe_le_coe.mp
+        (by simpa [Real.norm_eq_abs] using Complex.abs_re_le_norm (X 0 0))
     · subst hi
       simp [wickRePart, hj]
-      simpa [Real.norm_eq_abs] using Complex.abs_im_le_norm (X 0 j)
+      exact NNReal.coe_le_coe.mp
+        (by simpa [Real.norm_eq_abs] using Complex.abs_im_le_norm (X 0 j))
   · by_cases hj : j = (0 : Fin (d + 1))
     · subst hj
       simp [wickRePart, hi]
-      simpa [Real.norm_eq_abs] using Complex.abs_im_le_norm (X i 0)
+      exact NNReal.coe_le_coe.mp
+        (by simpa [Real.norm_eq_abs] using Complex.abs_im_le_norm (X i 0))
     · simp [wickRePart, hi, hj]
-      simpa [Real.norm_eq_abs] using Complex.abs_re_le_norm (X i j)
+      exact NNReal.coe_le_coe.mp
+        (by simpa [Real.norm_eq_abs] using Complex.abs_re_le_norm (X i j))
 
 private theorem norm_wickImPart_le
     (X : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ) :

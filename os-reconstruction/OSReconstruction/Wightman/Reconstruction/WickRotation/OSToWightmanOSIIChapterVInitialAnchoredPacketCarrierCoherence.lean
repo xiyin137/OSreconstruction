@@ -82,12 +82,13 @@ theorem isCompact_commonPiecePureTimeCarrierSet
     apply continuous_pi
     intro μ
     refine Fin.cases ?_ (fun _ => ?_) μ
-    · simpa using
+    · change Continuous (fun p => initialBaseTimeConfigurationCLM d k p i 0)
+      exact
         (continuous_apply 0).comp
           ((continuous_apply i).comp
             (initialBaseTimeConfigurationCLM d k).continuous)
-    · simpa using (continuous_const :
-        Continuous (fun _ : InitialBaseTimeSpace d k => (0 : ℝ)))
+    · change Continuous (fun _ : InitialBaseTimeSpace d k => (0 : ℝ))
+      exact continuous_const
 
 theorem commonPiecePureTimeCarrierSet_subset_cell
     (A : AnchoredPacketTimeShellFamilyData (d := d) I anchor)
@@ -264,9 +265,11 @@ theorem commonTimeMultiplier_hasTemperateGrowth
     (a : A.partition.index)
     (i : Fin (k + 1)) :
     Function.HasTemperateGrowth (A.commonTimeMultiplier a i) := by
-  simpa [commonTimeMultiplier] using
+  convert
     ((A.commonTimeGuardData a).guard.factors i).hasTemperateGrowth.comp
-      (headCoordProjectorCLM d).hasTemperateGrowth
+      (headCoordProjectorCLM d).hasTemperateGrowth using 1
+  ext y
+  rfl
 
 /-- A level carrier with a common pure-time guard and the existing expanding
 radial cutoff. It is independent of the shrinking time scale. -/
@@ -396,6 +399,25 @@ theorem commonCoherentLevelFactor_one_on_carrier
       (A.partitionAt timeScale
         ).levelPieceOnePointCarrierSet_inner_norm_bound
           a (A.timeTest_compact timeScale) level i hy
+    have hradius :
+        (A.partitionAt 0).levelCarrierInnerNormRadius
+            a (A.timeTest_compact 0) level =
+          (A.partitionAt timeScale).levelCarrierInnerNormRadius
+            a (A.timeTest_compact timeScale) level := by
+      have hbase :
+          ((A.partitionAt 0).levelCarrierBaseRadiusData
+              a (A.timeTest_compact 0)).radius =
+            ((A.partitionAt timeScale).levelCarrierBaseRadiusData
+              a (A.timeTest_compact timeScale)).radius := by
+        change
+          (InitialBaseTimePartitionData.schwartzCutoffRadiusData
+              (A.partition.cutoff a) _).radius =
+            (InitialBaseTimePartitionData.schwartzCutoffRadiusData
+              (A.partition.cutoff a) _).radius
+        rfl
+      unfold InitialBaseTimePartitionData.levelCarrierInnerNormRadius
+      rw [hbase]
+    rw [hradius]
     simpa [Metric.mem_closedBall, dist_zero_right] using hbound.le
   rw [htime, hradial, one_mul]
 
@@ -438,8 +460,26 @@ theorem commonCoherentLevelFactor_one_on_carrier_forTest
       (A.partitionForTest ψ hψ
         ).levelPieceOnePointCarrierSet_inner_norm_bound
           a (A.test_compact_of_tsupport_subset_carrier ψ hψ) level i hy
-    simpa [partitionForTest, partitionAt, Metric.mem_closedBall,
-      dist_zero_right] using hbound.le
+    have hradius :
+        (A.partitionAt 0).levelCarrierInnerNormRadius
+            a (A.timeTest_compact 0) level =
+          (A.partitionForTest ψ hψ).levelCarrierInnerNormRadius
+            a (A.test_compact_of_tsupport_subset_carrier ψ hψ) level := by
+      have hbase :
+          ((A.partitionAt 0).levelCarrierBaseRadiusData
+              a (A.timeTest_compact 0)).radius =
+            ((A.partitionForTest ψ hψ).levelCarrierBaseRadiusData
+              a (A.test_compact_of_tsupport_subset_carrier ψ hψ)).radius := by
+        change
+          (InitialBaseTimePartitionData.schwartzCutoffRadiusData
+              (A.partition.cutoff a) _).radius =
+            (InitialBaseTimePartitionData.schwartzCutoffRadiusData
+              (A.partition.cutoff a) _).radius
+        rfl
+      unfold InitialBaseTimePartitionData.levelCarrierInnerNormRadius
+      rw [hbase]
+    rw [hradius]
+    simpa [Metric.mem_closedBall, dist_zero_right] using hbound.le
   rw [htime, hradial, one_mul]
 
 theorem commonCoherentLevelFactor_tsupport_subset_radial

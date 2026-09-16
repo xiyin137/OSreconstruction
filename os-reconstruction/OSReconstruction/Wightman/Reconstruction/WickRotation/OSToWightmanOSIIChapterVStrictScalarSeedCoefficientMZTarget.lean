@@ -243,11 +243,18 @@ theorem eqOn_logDomain_of_eq_realEdge
       isConnected_osiiAxisPairLogDomain
       hGamma₁ hGamma₂
       (x₀ := (0 : osiiAxisPairIndex n -> Real))
-  · simpa [osiiAxisPairLogRealEmbed] using
-      (osiiAxisPairLogRealEmbed_mem
-        (0 : osiiAxisPairIndex n -> Real))
+  · change
+      osiiAxisPairLogRealEmbed
+          (0 : osiiAxisPairIndex n -> Real) ∈
+        osiiAxisPairLogDomain
+    exact
+      osiiAxisPairLogRealEmbed_mem
+        (0 : osiiAxisPairIndex n -> Real)
   · intro x _hx
-    simpa [osiiAxisPairLogRealEmbed] using hreal x
+    change
+      Gamma₁ (osiiAxisPairLogRealEmbed x) =
+        Gamma₂ (osiiAxisPairLogRealEmbed x)
+    exact hreal x
   · exact hz
 
 omit [NeZero n] in

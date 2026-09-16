@@ -44,8 +44,8 @@ theorem initial_unitBallBumpSchwartzPi_zero_of_two_le_norm
     b.hasCompactSupport.comp_left Complex.ofReal_zero
   have happly :
       unitBallBumpSchwartzPi m x = f x := by
-    simpa [unitBallBumpSchwartzPi, b, f] using
-      (HasCompactSupport.toSchwartzMap_toFun hf_compact hf_smooth x)
+    change (HasCompactSupport.toSchwartzMap hf_compact hf_smooth) x = f x
+    rfl
   rw [happly]
   change ((b x : ℝ) : ℂ) = 0
   refine congrArg (fun r : ℝ => (r : ℂ)) ?_
@@ -100,12 +100,15 @@ theorem initialSpatialFactorBump_tsupport_flat_subset_closedBall
         tsupport
           (unitBallBumpSchwartzPiRadius (k * d) R hR :
             (Fin (k * d) → ℝ) → ℂ) := by
+    change η ∈ tsupport
+      ((unitBallBumpSchwartzPiRadius (k * d) R hR :
+        (Fin (k * d) → ℝ) → ℂ) ∘ section43SpatialFlatCLE d k) at hη
     apply
       tsupport_comp_subset_preimage
         (unitBallBumpSchwartzPiRadius (k * d) R hR :
           (Fin (k * d) → ℝ) → ℂ)
         (section43SpatialFlatCLE d k).continuous
-    simpa [initialSpatialFactorBump, R] using hη
+    exact hη
   simpa [R] using htsupport hη'
 
 /-- Reconstruct the full absolute configuration from the compact base/time
@@ -286,7 +289,11 @@ theorem levelPiece_support_coordinates
     tsupport_comp_subset_preimage
       (D.cutoff a : InitialBaseTimeSpace d k → ℂ)
       (initialBaseTimeProjectionCLM d k).continuous
-      (by simpa [InitialBaseTimePartitionData.weight] using hxpair.2)
+      (by
+        change x ∈ tsupport
+          ((D.cutoff a : InitialBaseTimeSpace d k → ℂ) ∘
+            initialBaseTimeProjectionCLM d k)
+        exact hxpair.2)
   have hdiff :
       BHW.reducedDiffMapRealCLM (k + 1) d x ∈
         tsupport

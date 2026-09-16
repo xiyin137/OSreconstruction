@@ -190,7 +190,7 @@ theorem OSIIAxisPairFlatCrossData.continuous_gaussianShiftedFlatTubeInput
   have hcont :=
     (X.chart_continuous a).comp_continuous hchartPoint
       (fun u => hmaps (Set.mem_univ u))
-  simpa [gaussianShiftedFlatTubeInput, chartPoint] using hcont
+  exact hcont.congr (fun u => by rfl)
 
 /-- A global coordinate-chart bound controls every shifted Gaussian input on
 that horizontal line. -/
@@ -351,10 +351,7 @@ theorem OSIIAxisPairFlatCrossData.gaussianApproximant_realEdge_tendsto
       Tendsto (fun n : ℕ => ((n + 1 : ℕ) : ℝ)) atTop atTop :=
     (tendsto_natCast_atTop_atTop (R := ℝ)).comp
       (tendsto_add_atTop_nat 1)
-  simpa [OSIIAxisPairFlatCrossData.gaussianApproximant,
-    OSIIAxisPairFlatCrossData.gaussianRealEdgeInput, xE,
-    SCV.gaussianRealEmbed, osiiAxisPairLogRealEmbed] using
-      hbase.comp hscale
+  convert hbase.comp hscale using 1 <;> rfl
 
 /-- A global bound on one coordinate chart gives the same scale-independent
 bound for every Gaussian approximant on that flat tube. -/
@@ -703,15 +700,20 @@ theorem OSIIAxisPairFlatCrossData.exists_gaussianApproximant_locallyUniform_limi
         isConnected_osiiAxisPairLogDomain
         hy_properties.1 hy₀_properties.1
         (x₀ := 0)
-        (by simpa [U] using
-          (osiiAxisPairLogRealEmbed_mem
-            (d := d) (0 : osiiAxisPairIndex d → ℝ)))
+        (by
+          change osiiAxisPairLogRealEmbed
+            (0 : osiiAxisPairIndex d → ℝ) ∈ U
+          exact osiiAxisPairLogRealEmbed_mem
+            (d := d) (0 : osiiAxisPairIndex d → ℝ))
         (fun x _hx => by
-          simpa [osiiAxisPairLogRealEmbed] using
-            (hy_properties.2 x).trans (hy₀_properties.2 x).symm)
+          change ambient y (osiiAxisPairLogRealEmbed x) =
+            ambient y₀ (osiiAxisPairLogRealEmbed x)
+          exact (hy_properties.2 x).trans (hy₀_properties.2 x).symm)
     funext z
     have hz_eq := hambient_eq z.property
-    simpa [ambient, U, T, z.property] using hz_eq
+    change ambient y z = ambient y₀ z at hz_eq
+    change T y z = T y₀ z
+    simpa only [ambient, dif_pos z.property] using hz_eq
   have hG_tendsto :
       Tendsto G atTop (nhds y₀) :=
     hcompact.tendsto_nhds_of_unique_mapClusterPt hG_mem hunique
@@ -874,9 +876,11 @@ theorem OSIIAxisPairFlatCrossData.gaussianApproximant_tendsto_extension
         A.limit_holomorphic hGamma
         (x₀ := (0 : osiiAxisPairIndex d → ℝ))
         (by
-          simpa [osiiAxisPairLogRealEmbed] using
-            (osiiAxisPairLogRealEmbed_mem
-              (d := d) (0 : osiiAxisPairIndex d → ℝ)))
+          change osiiAxisPairLogRealEmbed
+            (0 : osiiAxisPairIndex d → ℝ) ∈
+              osiiAxisPairLogDomain (d := d)
+          exact osiiAxisPairLogRealEmbed_mem
+            (d := d) (0 : osiiAxisPairIndex d → ℝ))
         (fun x _hx => by
           change
             limit (osiiAxisPairLogRealEmbed x) =
@@ -884,7 +888,7 @@ theorem OSIIAxisPairFlatCrossData.gaussianApproximant_tendsto_extension
           calc
             limit (osiiAxisPairLogRealEmbed x) =
                 X.family.realEdge x := by
-              simpa [A] using A.limit_realEdge x
+              exact A.limit_realEdge x
             _ = Gamma (osiiAxisPairLogRealEmbed x) :=
               (hreal x).symm)
         w hw

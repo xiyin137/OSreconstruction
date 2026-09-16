@@ -146,7 +146,10 @@ theorem osiiStageMovingSliceScalar_eqOn_of_positiveRealEdge_source_eq
     A rho F hrho_compact U hU_open hU_connected hU_moving
     G hG V hV_open hV_nonempty hV_subset
   intro x hx
-  simpa only [osiiPositiveRealTimeEmbed] using
+  change
+    osiiStageMovingSliceScalar A rho F (osiiPositiveRealTimeEmbed x) =
+      G (fun i => (x i : Complex))
+  exact
     (osiiStageMovingSliceScalar_positiveRealTimeEmbed_eq_orderedPullbackFullCutoff_of_edgeData
       A W rho edgeRegion E hrho_compact F x (hrho_shift_support x hx)).trans
       (hG_real x hx).symm

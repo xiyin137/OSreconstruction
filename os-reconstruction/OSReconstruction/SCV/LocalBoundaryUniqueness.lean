@@ -120,14 +120,16 @@ theorem tendsto_realMollifyLocal_line_zero_of_cutoff {m : ℕ}
     ring
   let l := nhdsWithin (a : ℂ) EOW.UpperHalfPlane
   have him : Tendsto (fun w : ℂ => w.im) l (nhdsWithin 0 (Ioi 0)) := by
-    simpa [l] using
+    convert
       Complex.continuous_im.continuousAt.continuousWithinAt.tendsto_nhdsWithin
-        (show MapsTo Complex.im EOW.UpperHalfPlane (Ioi 0) from fun _ h => h)
+        (show MapsTo Complex.im EOW.UpperHalfPlane (Ioi 0) from fun _ h => h) using 1 <;>
+      norm_num [l]
   have hre : Tendsto (fun w : ℂ => -(x₀ + w.re • η)) l (nhds (-(x₀ + a • η))) := by
     have hc : Continuous (fun w : ℂ => -(x₀ + w.re • η)) :=
       (continuous_const.add (Complex.continuous_re.smul continuous_const)).neg
-    simpa [l] using hc.continuousAt.tendsto.comp
-      (tendsto_id'.2 nhdsWithin_le_nhds)
+    convert hc.continuousAt.tendsto.comp
+      (tendsto_id'.2 nhdsWithin_le_nhds) using 1 <;>
+      simp [l]
   have hz := SchwartzMap.tempered_apply_tendsto_zero_of_tendsto_filter
     (fun φ => (hT φ).comp him)
     ((tendsto_translateSchwartz_nhds_of_isCompactSupport ψ hψ (-(x₀ + a • η))).comp hre)
@@ -148,7 +150,8 @@ theorem tendsto_realMollifyLocal_line_zero_of_cutoff {m : ℕ}
       dsimp [T]
       rw [dif_pos he, (hex w.im he).choose_spec]
       simp [z, Complex.mul_im]
-  simpa [hre_z, z] using hrepr.symm
+  rw [Function.comp_apply, ← hre_z]
+  exact hrepr.symm
 
 set_option maxHeartbeats 1000000 in
 /-- Local tube uniqueness from weak boundary zero on compact tests. Only
@@ -198,7 +201,8 @@ theorem local_distributional_uniqueness_tube {m : ℕ}
   have hx : ‖x₀ - c‖ < R / 8 := by
     have h := (norm_complexChart_re_le (z - realEmbed c)).trans_lt
       (by simpa [Metric.mem_ball, dist_eq_norm] using hz.1)
-    simpa [x₀, realEmbed] using h
+    change ‖(fun i => (z i).re - c i)‖ < R / 8
+    exact h
   have hη : ‖η‖ < R / 8 := by
     have h := (norm_complexChart_im_le (z - realEmbed c)).trans_lt
       (by simpa [Metric.mem_ball, dist_eq_norm] using hz.1)
@@ -279,7 +283,8 @@ theorem local_distributional_uniqueness_tube {m : ℕ}
               have := mul_le_mul_of_nonneg_right hε.2.le (norm_nonneg η)
               linarith
         · change (fun i => ((x i : ℂ) + ((ε * η i : ℝ) : ℂ) * I).im) ∈ C
-          simpa using hcone ε hε.1 η hηC
+          convert hcone ε hε.1 η hηC using 1 <;>
+            ext i <;> simp
       · intro φ
         let φχ := SchwartzMap.smulLeftCLM ℂ (χ : (Fin m → ℝ) → ℂ) φ
         have heq : (φχ : (Fin m → ℝ) → ℂ) = fun x => χ x * φ x := by
@@ -400,7 +405,13 @@ theorem local_eq_of_distributional_boundary_pairing {m : ℕ}
       (nhdsWithin 0 (Ioi 0)) (nhds (∫ x, G (realEmbed x) * φ x)) := by
     have h := hGc.tendsto.comp
       ((by simpa [hshift0] using (hshift.continuousAt (x := 0)).tendsto) : Tendsto shift (nhds 0) (nhds 0))
-    simpa [realMollifyLocal] using h.mono_left nhdsWithin_le_nhds
+    have hfun : realMollifyLocal G φ ∘ shift =
+        (fun ε => ∫ x, G (shift ε + realEmbed x) * φ x) := by
+      rfl
+    have hzero : realMollifyLocal G φ 0 = ∫ x, G (realEmbed x) * φ x := by
+      simp [realMollifyLocal]
+    rw [hfun, hzero] at h
+    exact h.mono_left nhdsWithin_le_nhds
   have hFb : Tendsto (fun ε => ∫ x, F (shift ε + realEmbed x) * φ x)
       (nhdsWithin 0 (Ioi 0)) (nhds (∫ x, G (realEmbed x) * φ x)) := by
     simpa only [harg] using hb φ hφ hs η hη
@@ -423,7 +434,8 @@ theorem local_eq_of_distributional_boundary_pairing {m : ℕ}
       intro x hx
       refine ⟨hεs x hx, ?_⟩
       change (fun i => (shift ε i + (x i : ℂ)).im) ∈ C
-      simpa [shift] using hcone ε hε η hη)
+      convert hcone ε hε η hη using 1 <;>
+        ext i <;> simp [shift])
   have hI_G := integrable_realMollifyLocal_integrand_of_translate_margin G φ
     (Metric.ball (realEmbed c) R) (shift ε) Metric.isOpen_ball hG hφ hεs
   rw [← integral_sub hI_F hI_G]

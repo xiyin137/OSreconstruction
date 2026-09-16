@@ -278,12 +278,10 @@ theorem generatorBlockGlobalTimeAffine_displacement
             splitFirst i.n i.m
               (generatorBlockTimeDisplacement i τ) x := by
       rw [section43ScalarDiffCLE_symm_apply]
-      simpa using
-        (Equiv.sum_comp
-          (finCongr (Nat.sub_add_cancel i.hn))
-          (fun x : Fin i.n =>
-            splitFirst i.n i.m
-              (generatorBlockTimeDisplacement i τ) x))
+      rw [← Equiv.sum_comp (finCongr (Nat.sub_add_cancel i.hn))]
+      apply Finset.sum_congr rfl
+      intro j hj
+      congr 1
     rw [hcumulative, hsum]
     simp [generatorGlobalTimeDisplacement]
   · rw [dif_neg hc0]

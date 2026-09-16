@@ -87,11 +87,7 @@ theorem vacuumTailTargetHubBox_compact
             sourceAnchor sourceHub z p.1 p.2) := by
     apply continuous_pi
     intro i
-    simpa [tailAnchorTargetHubBoxPoint_apply] using
-      (((Complex.continuous_ofReal.comp continuous_fst).mul
-          continuous_const).add
-        ((Complex.continuous_ofReal.comp continuous_snd).mul
-          continuous_const))
+    continuity
   exact
     (isCompact_Icc.prod isCompact_Icc).image hcontinuous
 

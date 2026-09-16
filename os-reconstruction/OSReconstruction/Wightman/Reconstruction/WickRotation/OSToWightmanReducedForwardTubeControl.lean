@@ -90,8 +90,19 @@ theorem reducedDiffMapReal_mem_productForwardConeReal_of_mem_forwardConeAbs
       BHW.ProductForwardConeReal d m := by
   intro j
   have hj := hη j.succ
+  have hj' : InOpenForwardCone d
+      (fun μ => η j.succ μ - η j.castSucc μ) := by
+    convert hj using 1
+    funext μ
+    congr 2
+  have heq : BHW.reducedDiffMapReal (m + 1) d η j =
+      (fun μ => η j.succ μ - η j.castSucc μ) := by
+    ext μ
+    rw [BHW.reducedDiffMapReal_apply]
+    rfl
   apply (inOpenForwardCone_iff _).2
-  simpa [ForwardConeAbs, BHW.reducedDiffMapReal_apply] using hj
+  rw [heq]
+  exact hj'
 
 omit [NeZero d] in
 /-- Taking successive differences commutes with a real forward-tube

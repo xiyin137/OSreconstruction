@@ -282,7 +282,7 @@ theorem pointwiseBounded_cmm_encodedHermite_polyBounded
         hC i
     have hL_equicont :
         Equicontinuous
-          ((↑) ∘ fun i => (L i).restrictScalars Real) := by
+          (fun i f => (L i).restrictScalars Real f) := by
       simpa only [Function.comp_apply] using
         (SchwartzMap.tempered_equicontinuous
           (E := D) (F := Complex) (G := G)
@@ -414,7 +414,11 @@ theorem pointwiseBounded_cmm_encodedHermite_polyBounded
               (βs m a)))) :=
       BoundedContinuousFunction.norm_coe_le_norm _ _
     _ ≤ C * (1 + (m : Real)) ^ p := by
-      simpa [PhiReal] using hp m
+      change norm (PhiReal (fun a =>
+        GaussianField.DyninMityaginSpace.basis
+          (E := SchwartzMap D Real) (βs m a))) ≤
+        C * (1 + (m : Real)) ^ p
+      exact hp m
 
 set_option backward.isDefEq.respectTransparency false in
 /-- Product-aware specialization of
@@ -467,9 +471,9 @@ theorem pointwiseBounded_cmm_productHermite_polyBounded
       forall i m,
         norm (T i (productHermiteFactor (d := d) hn m)) ≤
           C * (1 + (m : Real)) ^ p := by
-  simpa [productHermiteFactor] using
-    pointwiseBounded_cmm_productBasis_polyBounded
-      (D := SpacetimeDim d) T hn hT
+  unfold productHermiteFactor
+  exact pointwiseBounded_cmm_productBasis_polyBounded
+    (D := SpacetimeDim d) T hn hT
 
 /-- A polynomial product-Hermite bound for one full Schwartz distribution
 controls its action on every complexified real Schwartz test. -/
@@ -730,8 +734,8 @@ theorem continuous_distribution_joint_apply_on_compact
       (A.differentiableOn_pairing hA e).continuousOn.mono hK_domain
     have hrestrict :
         Continuous (fun z : K => A.pairing e z.1) := by
-      simpa using
-        (continuousOn_iff_continuous_restrict.mp hcont)
+      exact (continuousOn_iff_continuous_restrict.mp hcont).congr
+        (fun z => rfl)
     apply hrestrict.congr
     intro z
     exact A.pairing_of_mem e z.1 (hK_domain z.2)

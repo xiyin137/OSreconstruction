@@ -120,9 +120,14 @@ theorem isOpen_jostSet : IsOpen (JostSet d n) := by
       · convert isOpen_univ using 1; ext x; simp [hij]
       · have hcont : Continuous (fun (x : Fin n → Fin (d + 1) → ℝ) (μ : Fin (d + 1)) =>
             x i μ - x j μ) :=
-          continuous_pi fun μ =>
-            ((continuous_apply μ).comp (continuous_apply i)).sub
-            ((continuous_apply μ).comp (continuous_apply j))
+          continuous_pi fun μ => by
+            change Continuous
+              (((fun p : Fin (d + 1) → ℝ => p μ) ∘
+                  fun x : Fin n → Fin (d + 1) → ℝ => x i) -
+                ((fun p : Fin (d + 1) → ℝ => p μ) ∘
+                  fun x : Fin n → Fin (d + 1) → ℝ => x j))
+            exact ((continuous_apply μ).comp (continuous_apply i)).sub
+              ((continuous_apply μ).comp (continuous_apply j))
         have hseteq : {x : Fin n → Fin (d + 1) → ℝ |
             i ≠ j → IsSpacelike d (fun μ => x i μ - x j μ)} =
             {x | IsSpacelike d (fun μ => x i μ - x j μ)} := by
@@ -834,17 +839,25 @@ theorem tendsto_extendF_boundary_integral_of_hasCompactSupport_ET
       exact Complex.continuous_ofReal.comp h1'
     have h2 : Continuous fun p : (Fin n → Fin (d + 1) → ℝ) × ℝ =>
         ((p.2 : ℝ) : ℂ) * (η k μ : ℂ) * Complex.I := by
-      simpa using
+      change Continuous
+        (((Complex.ofReal ∘ Prod.snd) * fun _ => (η k μ : ℂ)) * fun _ => Complex.I)
+      exact
         (((Complex.continuous_ofReal.comp continuous_snd).mul continuous_const).mul continuous_const)
-    simpa [zε] using h1.add h2
+    change Continuous
+      ((fun p : (Fin n → Fin (d + 1) → ℝ) × ℝ => ((p.1 k μ : ℝ) : ℂ)) +
+        fun p => ((p.2 : ℝ) : ℂ) * (η k μ : ℂ) * Complex.I)
+    exact h1.add h2
   have hK_sub : K ⊆ {p | zε p.1 p.2 ∈ ExtendedTube d n} := by
     intro p hp
     rcases hp with ⟨hx, hε⟩
     rcases Set.mem_Icc.mp hε with ⟨hε0, hε1⟩
     by_cases hzero : p.2 = 0
     · have hxET : realEmbed p.1 ∈ ExtendedTube d n := hφ_ET p.1 hx
-      simpa [zε, realEmbed, hzero]
-        using hxET
+      change zε p.1 p.2 ∈ ExtendedTube d n
+      rw [hzero]
+      simp only [zε, ofReal_zero, zero_mul, add_zero]
+      change realEmbed p.1 ∈ ExtendedTube d n
+      exact hxET
     · have hεpos : 0 < p.2 := lt_of_le_of_ne hε0 (Ne.symm hzero)
       exact forwardTube_subset_extendedTube (hη_FT p.1 p.2 hεpos)
   have hq_cont : ContinuousOn q K := by

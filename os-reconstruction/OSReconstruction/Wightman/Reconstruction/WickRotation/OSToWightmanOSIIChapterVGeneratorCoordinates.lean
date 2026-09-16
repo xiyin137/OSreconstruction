@@ -169,11 +169,10 @@ theorem convex_generatorSemigroupDomain
     (hU : Convex ℝ (conjugateFieldDomain U))
     (hV : Convex ℝ V) :
     Convex ℝ (generatorSemigroupDomain i U V) := by
-  simpa only [
-    generatorSemigroupDomain,
-    bridgedMixedHilbertPairingDomain,
-    mixedHilbertPairingDomain
-  ] using
+  change Convex ℝ
+    ((i.splitCoordinatesCLM.restrictScalars ℝ).toLinearMap ⁻¹'
+      ({z : ℂ | 0 < z.re} ×ˢ conjugateFieldDomain U ×ˢ V))
+  exact
     ((convex_halfSpace_re_gt (r := (0 : ℝ))).prod (hU.prod hV)
       ).linear_preimage
         (i.splitCoordinatesCLM.restrictScalars ℝ).toLinearMap
@@ -218,8 +217,12 @@ theorem differentiableOn_generatorSemigroupCandidate
     DifferentiableOn ℂ
       (generatorSemigroupCandidate OS lgc i left right)
       (generatorSemigroupDomain i U V) := by
-  simpa only [generatorSemigroupCandidate] using
-    differentiableOn_generatorSemigroupPairing OS i hU hV hleft hright
+  change DifferentiableOn ℂ
+    (fun w =>
+      osiiSemigroupMixedHilbertPairing OS left right
+        (i.splitCoordinatesCLM w))
+    (generatorSemigroupDomain i U V)
+  exact differentiableOn_generatorSemigroupPairing OS i hU hV hleft hright
 
 @[simp]
 theorem generatorSemigroupCandidate_apply

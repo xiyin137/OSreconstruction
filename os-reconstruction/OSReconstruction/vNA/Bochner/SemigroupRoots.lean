@@ -81,10 +81,12 @@ theorem continuousOn_nnrpow_pos
         (nhds t₀)
         K := by
     rw [tendstoUniformlyOn_iff_tendstoUniformly_comp_coe]
-    simpa [K] using
-      (ContinuousOn.tendstoUniformly
-        (f := fun t : ℝ≥0 => fun x : K => (x : ℝ≥0) ^ (t : ℝ))
-        hxU hpow_cont)
+    change TendstoUniformly
+      (fun t : ℝ≥0 => fun x : K => (x : ℝ≥0) ^ (t : ℝ))
+      (fun x : K => (x : ℝ≥0) ^ (t₀ : ℝ)) (nhds t₀)
+    exact ContinuousOn.tendstoUniformly
+      (f := fun t : ℝ≥0 => fun x : K => (x : ℝ≥0) ^ (t : ℝ))
+      hxU hpow_cont
   set_option backward.isDefEq.respectTransparency false in
   have hcont :
       ContinuousAt
@@ -110,7 +112,7 @@ theorem continuousOn_nnrpow_posReal
     ContinuousOn (fun t : ℝ => CFC.nnrpow A (Real.toNNReal t)) (Set.Ioi 0) := by
   refine (continuousOn_nnrpow_pos (A := A)).comp continuous_real_toNNReal.continuousOn ?_
   intro t ht
-  simpa [Real.toNNReal_of_nonneg ht.le] using ht
+  exact Real.toNNReal_pos.mpr ht
 
 omit [CompleteSpace H] in
 /-- The `(n+1)`-fold product of a positive-time semigroup element is the value at

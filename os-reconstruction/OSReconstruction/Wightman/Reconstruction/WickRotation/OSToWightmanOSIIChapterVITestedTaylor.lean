@@ -29,12 +29,14 @@ private theorem hasDerivAt_testedTaylorCoefficient
     HasDerivAt
       (fun u : Real => ((j + 1).factorial : Real)⁻¹ * (-u) ^ (j + 1))
       (-((j.factorial : Real)⁻¹ * (-s) ^ j)) s := by
-  convert (monomial_has_deriv_aux s 0 j).const_mul
-    (((j + 1).factorial : Real)⁻¹) using 1
-  · simp
-  · simp only [zero_sub, Nat.factorial_succ, Nat.cast_mul,
-      Nat.cast_add, Nat.cast_one]
+  have h := (monomial_has_deriv_aux s 0 j).const_mul
+    (((j + 1).factorial : Real)⁻¹)
+  have hcoef : ((j + 1).factorial : Real)⁻¹ *
+      (-((j : Real) + 1) * (-s) ^ j) =
+      -((j.factorial : Real)⁻¹ * (-s) ^ j) := by
+    rw [Nat.factorial_succ, Nat.cast_mul, Nat.cast_add, Nat.cast_one]
     field
+  simpa only [zero_sub, Nat.cast_add, Nat.cast_one, hcoef] using h
 
 private theorem hasDerivAt_testedTaylorPolynomial
     (J : Nat -> Real -> E) (M : Nat) (s : Real)
@@ -57,7 +59,9 @@ private theorem hasDerivAt_testedTaylorPolynomial
       exact Finset.sum_range_succ _ (M + 1)
     rw [hfun]
     convert ih.add hterm using 1
-    module
+    · rfl
+    · rw [neg_smul]
+      abel
 
 /-- Taylor expansion at the regular endpoint `1`, evaluated at `0`.
 The remainder vanishes to order `M` at the endpoint that will become

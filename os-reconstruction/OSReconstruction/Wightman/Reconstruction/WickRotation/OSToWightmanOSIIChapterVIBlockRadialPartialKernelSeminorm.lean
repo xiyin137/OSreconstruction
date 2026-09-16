@@ -156,7 +156,8 @@ private theorem osiiStep4PartialConvolutionKernelJointIntegrand_contDiff
       dsimp [osiiStep4PartialKernelFlatY,
         osiiStep4PartialKernelFlatY', splitFirst, splitLast]
       fun_prop
-    simpa only [osiiStep4ComplexOfRealImag] using
+    simpa only [osiiStep4ComplexOfRealImag, Function.comp_apply,
+      Complex.ofRealCLM_apply] using
       (Complex.ofRealCLM.contDiff.comp hre).add
         ((Complex.ofRealCLM.contDiff.comp him).mul contDiff_const)
   have hrightArg : ContDiff Real (⊤ : ℕ∞)
@@ -173,7 +174,8 @@ private theorem osiiStep4PartialConvolutionKernelJointIntegrand_contDiff
           osiiStep4PartialKernelFlatY' q k p.1 a) := by
       dsimp [osiiStep4PartialKernelFlatY', splitLast]
       fun_prop
-    simpa only [osiiStep4ComplexOfRealImag] using
+    simpa only [osiiStep4ComplexOfRealImag, Function.comp_apply,
+      Complex.ofRealCLM_apply] using
       (Complex.ofRealCLM.contDiff.comp hre).add
         ((Complex.ofRealCLM.contDiff.comp him).mul contDiff_const)
   have hleft :=
@@ -381,7 +383,9 @@ theorem continuous_osiiStep4PartialConvolutionKernelComplexSchwartz
       (fun p : (Fin (k * q) → Real) × (Fin (k * q) → Real) =>
         Fin.append p.1 p.2) := by
     have h := (SCV.finAppendCLE (k * q) (k * q)).continuous
-    simpa only [osiiStep4_finAppendCLE_eq_append] using h
+    convert h using 1
+    funext p
+    exact osiiStep4_finAppendCLE_eq_append p
   rw [show (fun p : (Fin (k * q) → Real) × (Fin (k * q) → Real) =>
       osiiStep4PartialConvolutionKernelComplexSchwartz
         q k hrho p.1 p.2) =
@@ -423,10 +427,9 @@ theorem continuous_osiiStep4CenteredPartialConvolutionKernelFullSource
     translate.continuous.comp hkernel
   have hfull :=
     (unflattenSchwartzNPoint (d := d)).continuous.comp htranslated
-  simpa [translate,
-    osiiStep4CenteredPartialConvolutionKernelFullSource,
-    osiiStep4CenteredPartialConvolutionKernelComplexSchwartz,
-    SCV.translateSchwartzCLM_apply] using hfull
+  refine hfull.congr ?_
+  intro p
+  rfl
 
 set_option maxHeartbeats 800000 in
 /-- At the reference radius, every finite collection of real Schwartz

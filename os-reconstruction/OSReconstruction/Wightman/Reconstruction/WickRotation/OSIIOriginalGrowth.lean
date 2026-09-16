@@ -51,7 +51,8 @@ theorem osArityLinearSchwartzSeminorm_le_original (d n s : Nat) (f : SchwartzNPo
   rw [heq] at h
   simp only [one_mul, one_pow] at h
   have hfinal := h.trans (squareSeminorm_le_osiiOriginalSeminorm (n * s) g)
-  simpa only [Nat.cast_mul, Nat.cast_add, Nat.cast_one] using hfinal
+  simpa only [osArityLinearSchwartzSeminorm, osiiOriginalNPointSeminorm, g,
+    Nat.cast_mul, Nat.cast_add, Nat.cast_one] using hfinal
 
 /-- Original E0' supplies the current arity-linear input without an additional
 hypothesis. Only the uniformly controlled numerical convention changes. -/

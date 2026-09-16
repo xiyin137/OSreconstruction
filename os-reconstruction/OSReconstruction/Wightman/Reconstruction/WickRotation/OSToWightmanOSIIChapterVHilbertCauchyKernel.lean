@@ -44,8 +44,8 @@ private def hilbertToDualRealLinearIsometry
     change
       InnerProductSpace.toDual ℂ H ((r : ℂ) • x) =
         (r : ℂ) • InnerProductSpace.toDual ℂ H x
-    simpa using
-      (InnerProductSpace.toDual ℂ H).map_smulₛₗ (r : ℂ) x
+    rw [(InnerProductSpace.toDual ℂ H).map_smulₛₗ]
+    simp only [Complex.conj_ofReal, Complex.real_smul]
   norm_map' x := (InnerProductSpace.toDual ℂ H).norm_map x
 
 private theorem star_circleMap_star
@@ -724,11 +724,16 @@ theorem reflectedHilbertKernel_holomorphic
           ((fun i => w (Fin.castAdd m i)),
             (fun i => w (Fin.natAdd m i)))) := by
     fun_prop
-  simpa only [reflectedHilbertKernel, mixedHilbertPairing,
-    reflectedHilbertKernelDomain, mixedHilbertPairingDomain,
-    conjugateFieldDomain, Set.mem_setOf_eq, Set.mem_preimage,
-    Set.mem_prod] using
-      hpair.comp hsplit.differentiableOn (fun _ hw => hw)
+  change DifferentiableOn ℂ
+    (mixedHilbertPairing field field ∘
+      fun w : Fin (m + m) → ℂ =>
+        ((fun i => w (Fin.castAdd m i)),
+          (fun i => w (Fin.natAdd m i))))
+    ((fun w : Fin (m + m) → ℂ =>
+      ((fun i => w (Fin.castAdd m i)),
+        (fun i => w (Fin.natAdd m i)))) ⁻¹'
+      mixedHilbertPairingDomain U U)
+  exact hpair.comp hsplit.differentiableOn (fun _ hw => hw)
 
 /-- A reflected pair kernel is holomorphic when both source-indexed Hilbert
 fields are holomorphic on their respective domains. -/
@@ -756,11 +761,16 @@ theorem reflectedHilbertPairKernel_holomorphic
           ((fun i => w (Fin.castAdd m i)),
             (fun i => w (Fin.natAdd m i)))) := by
     fun_prop
-  simpa only [reflectedHilbertPairKernel, mixedHilbertPairing,
-    reflectedHilbertPairKernelDomain, mixedHilbertPairingDomain,
-    conjugateFieldDomain, Set.mem_setOf_eq, Set.mem_preimage,
-    Set.mem_prod] using
-      hpair.comp hsplit.differentiableOn (fun _ hw => hw)
+  change DifferentiableOn ℂ
+    (mixedHilbertPairing left right ∘
+      fun w : Fin (m + m) → ℂ =>
+        ((fun i => w (Fin.castAdd m i)),
+          (fun i => w (Fin.natAdd m i))))
+    ((fun w : Fin (m + m) → ℂ =>
+      ((fun i => w (Fin.castAdd m i)),
+        (fun i => w (Fin.natAdd m i)))) ⁻¹'
+      mixedHilbertPairingDomain U V)
+  exact hpair.comp hsplit.differentiableOn (fun _ hw => hw)
 
 /-- The reflected scalar center corresponding to a Hilbert-field center. -/
 def reflectedCauchyCenter

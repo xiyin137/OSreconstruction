@@ -391,8 +391,12 @@ theorem nonempty_rootedTargetHubPointedDirectExtensionDataOfOS_of_rootedData
       ((CanonicalGeneratorStageLevelProvider.stage
         (OS := OS) S k).recenter C0.anchor)
       (by
-        simpa [X.predecessor_orbit] using
-          X.predecessorEdge.stageEdge)
+        change
+          ((CanonicalGeneratorStageLevelProvider.stage
+            (OS := OS) S k).recenter C0.anchor).HasPositiveRealEdge
+              X.edge.orbit X.edge.realRegion
+        rw [← X.predecessor_orbit]
+        exact X.predecessorEdge.stageEdge)
       (atlas.recenter C0.anchor)
       seedChart
       (by

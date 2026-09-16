@@ -77,14 +77,19 @@ theorem axisPairBlockTimeSpatialTensor_generatorHermite_apply
     section43NPointTimeSpatialTensor_apply,
     section43NPointTimeSpatialTensor_apply]
   rw [map_mul]
+  have hfirst :
+      splitFirst i.n i.m q = section43LeftBlock d i.n i.m q := rfl
+  have hlast :
+      splitLast i.n i.m q = section43RightTailBlock d i.n i.m q := rfl
+  rw [hfirst, hlast]
   have hleft :
       starRingEnd ℂ
           (leftSpatialHermiteBlock d i r
             (section43QSpatial (d := d) (n := i.n)
-              (splitFirst i.n i.m q))) =
+              (section43LeftBlock d i.n i.m q))) =
         leftSpatialHermiteBlock d i r
           (section43QSpatial (d := d) (n := i.n)
-            (splitFirst i.n i.m q)) := by
+            (section43LeftBlock d i.n i.m q)) := by
     simp [leftSpatialHermiteBlock_apply, spatialHermiteFactor]
   have hspatial :
       spatialHermite d (k + 1) (Nat.succ_pos k) r
@@ -92,22 +97,23 @@ theorem axisPairBlockTimeSpatialTensor_generatorHermite_apply
             (generatorAbsoluteSpatialCoordinates i q)) =
         leftSpatialHermiteBlock d i r
             (section43QSpatial (d := d) (n := i.n)
-              (splitFirst i.n i.m q)) *
+              (section43LeftBlock d i.n i.m q)) *
           rightSpatialHermiteBlock d i r
             (section43QSpatial (d := d) (n := i.m)
-              (splitLast i.n i.m q)) := by
+              (section43RightTailBlock d i.n i.m q)) := by
     have hleftPoint :
         (section43SpatialParticleCLE d i.n).symm
             (fun a =>
               generatorAbsoluteSpatialCoordinates i q
                 (i.leftAbsoluteIndex a)) =
           section43QSpatial (d := d) (n := i.n)
-            (splitFirst i.n i.m q) := by
+            (section43LeftBlock d i.n i.m q) := by
       apply (section43SpatialParticleCLE d i.n).injective
       rw [ContinuousLinearEquiv.apply_symm_apply]
       funext a j
       simpa [generatorAbsoluteSpatialCoordinates,
-        GeneratorIndex.leftAbsoluteIndex] using
+        GeneratorIndex.leftAbsoluteIndex, splitFirst,
+        section43LeftBlock] using
         (section43QSpatial_leftBlock_apply
           d i.n i.m q (a, j)).symm
     have hrightPoint :
@@ -116,12 +122,13 @@ theorem axisPairBlockTimeSpatialTensor_generatorHermite_apply
               generatorAbsoluteSpatialCoordinates i q
                 (i.rightAbsoluteIndex b)) =
           section43QSpatial (d := d) (n := i.m)
-            (splitLast i.n i.m q) := by
+            (section43RightTailBlock d i.n i.m q) := by
       apply (section43SpatialParticleCLE d i.m).injective
       rw [ContinuousLinearEquiv.apply_symm_apply]
       funext b j
       simpa [generatorAbsoluteSpatialCoordinates,
-        GeneratorIndex.rightAbsoluteIndex] using
+        GeneratorIndex.rightAbsoluteIndex, splitLast,
+        section43RightTailBlock] using
         (section43QSpatial_rightTailBlock_apply
           d i.n i.m q (b, j)).symm
     rw [spatialHermite_eq_leftBlock_mul_rightBlock]

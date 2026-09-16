@@ -50,7 +50,7 @@ theorem continuous_reducedTestLiftReconstruction :
   refine Fin.cases ?_ ?_ i
   · simpa using continuous_fst
   · intro j
-    simpa using (continuous_apply j).comp continuous_snd
+    exact (continuous_apply j).comp continuous_snd
 
 omit [NeZero d] in
 theorem realDiffCoordCLE_symm_prependBasepointReal_self

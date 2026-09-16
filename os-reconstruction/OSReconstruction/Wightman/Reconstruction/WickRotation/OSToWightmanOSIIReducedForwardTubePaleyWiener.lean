@@ -200,7 +200,9 @@ theorem osiiReducedForwardFlatCone_salient :
       closure_mono himage <|
         image_closure_subset_closure_image
           (continuous_osiiUnflattenCfgReal d m) hnu_image
-    simpa [unflatten, BHW.unflattenCfgReal] using this
+    convert this using 1
+    ext j mu
+    simp [unflatten, BHW.unflattenCfgReal]
   have hunflatten_zero : unflatten u = 0 :=
     osiiProductForwardConeReal_salient d m
       (unflatten u) hu_closure hnu_closure
@@ -239,27 +241,8 @@ private theorem differentiable_osiiFlattenCfg (d m : Nat) :
           OSIIReducedForwardFlatSpace d m) := by
   rw [differentiable_pi]
   intro i
-  let p : Fin m × Fin (d + 1) := finProdFinEquiv.symm i
-  let projInner :
-      (Fin m -> Fin (d + 1) -> Complex) ->
-        (Fin (d + 1) -> Complex) :=
-    fun z => z p.1
-  let evalInner :
-      (Fin m -> Fin (d + 1) -> Complex) →L[Complex]
-        (Fin (d + 1) -> Complex) :=
-    ContinuousLinearMap.proj (R := Complex) p.1
-  have hconst :
-      Differentiable Complex
-        (fun _ : Fin m -> Fin (d + 1) -> Complex =>
-          (ContinuousLinearMap.proj (R := Complex) p.2 :
-            (Fin (d + 1) -> Complex) →L[Complex] Complex)) :=
-    differentiable_const _
-  simpa [BHW.flattenCfg, p] using
-    (hconst.clm_apply
-      (by
-        simpa [projInner, evalInner] using
-          (differentiable_apply p.1 :
-            Differentiable Complex projInner)))
+  simp only [BHW.flattenCfg]
+  fun_prop
 
 /-- The precise spectral input needed for a reduced forward-tube
 Fourier-Laplace continuation. -/

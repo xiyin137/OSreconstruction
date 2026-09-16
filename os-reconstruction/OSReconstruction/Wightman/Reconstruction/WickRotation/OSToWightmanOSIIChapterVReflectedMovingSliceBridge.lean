@@ -209,23 +209,21 @@ theorem continuous_reflectedReducedTimeDisplacement
   intro j
   refine Fin.addCases ?_ ?_ j
   · intro i
-    simpa only [reflectedReducedTimeDisplacement_left] using
-      (continuous_neg.comp
-        (continuous_apply (Fin.castAdd k (Fin.rev i))) :
-        Continuous
-          (fun u : Fin (k + k) → ℝ =>
-            -u (Fin.castAdd k (Fin.rev i))))
+    simp only [reflectedReducedTimeDisplacement_left]
+    have h : Continuous
+        (fun u : Fin (k + k) → ℝ => u (Fin.castAdd k (Fin.rev i))) :=
+      continuous_apply _
+    exact h.neg
   · intro r
     refine Fin.cases ?_ (fun i => ?_) r
     · simpa only [reflectedReducedTimeDisplacement_bridge] using
         (continuous_const :
           Continuous (fun _ : Fin (k + k) → ℝ => (0 : ℝ)))
-    · simpa only [reflectedReducedTimeDisplacement_right] using
-        (continuous_neg.comp
-          (continuous_apply (Fin.natAdd k i)) :
-          Continuous
-            (fun u : Fin (k + k) → ℝ =>
-              -u (Fin.natAdd k i)))
+    · simp only [reflectedReducedTimeDisplacement_right]
+      have h : Continuous
+          (fun u : Fin (k + k) → ℝ => u (Fin.natAdd k i)) :=
+        continuous_apply _
+      exact h.neg
 
 /-- A source-specific equality for the translated convolution of the stage's
 own positive-real orbit is already the complete reflected scalar real edge.

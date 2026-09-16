@@ -195,7 +195,7 @@ theorem
   have hradial :
       (fun a => -star (u (j.leftGlobalIndex a))) ∈
         D.unsmearedFieldData.radialLeftDomain j := by
-    simpa only [GeneratorIndex.leftCoordinatesCLM_apply, map_neg] using hleft
+    simpa only [GeneratorIndex.leftCoordinatesCLM_apply, star_neg] using hleft
   rw [D.unsmearedSourceProvenance.family_eq] at hradial
   have hblock :
       rootedReflectedGramLeftGeneratorOpenFieldScaleBlockRealEdgeData
@@ -396,7 +396,7 @@ noncomputable def
     have hdom :=
       reflectedTimeAnchorMarginRegion_sub_const_dominates
         hepsilon hmargin (hsupport hsigma)
-    simpa [Pi.add_apply] using hdom
+    simpa [j, Pi.add_apply] using hdom
   have hraw : forall point,
       point ∈ segment Real
         (tailAnchorCenteredHubPoint
@@ -658,14 +658,16 @@ theorem recursiveSectorRankInduction_distribution_eq_depthZero_of_positiveReal
         ((D.pointed.scalarRankInduction
           depth D.strictGeneratedCarrier_subset lgc 0
           ).pointed.stageLevel.stage arity).carrier := by
-    simpa using hzD
+    exact hzD
   have hrank :
       ((D.recursiveSectorRankInduction lgc rank
         ).pointed.stageLevel.stage arity).distribution
           (osiiPositiveRealTimeEmbed tau) =
         (D.pointed.stageLevel.stage arity).distribution
           (osiiPositiveRealTimeEmbed tau) := by
-    simpa [recursiveSectorRankInduction] using
+    simpa only [recursiveSectorRankInduction,
+      CanonicalGeneratorPointedConvexAtlasStageLevelData.scalarRankInduction_zero,
+      CanonicalGeneratorPointedConvexAtlasStageLevelData.scalarRankInductionZero] using
       D.pointed.scalarRankInduction_distribution_eq_of_le
         depth D.strictGeneratedCarrier_subset lgc
         (Nat.zero_le rank) hzRankZero
@@ -699,8 +701,10 @@ theorem recursiveSectorRankInduction_distribution_eq_nextDepth
       z ∈ ((D.pointed.scalarRankInduction
         depth D.strictGeneratedCarrier_subset lgc rank
         ).pointed.stageLevel.stage arity).carrier := by
-    simpa [D, StrictGeneratedScalarDepthPointedData.recursiveSectorRankInduction,
-      CanonicalGeneratorStageLevelProvider.toSimultaneousTimeContinuationStageLevel]
+    change z ∈
+      ((((D0.depthInduction lgc depth).recursiveSectorRankInduction
+        lgc rank).pointed).stageLevel.stage arity).carrier at hz
+    simpa [D, StrictGeneratedScalarDepthPointedData.recursiveSectorRankInduction]
       using hz
   have heq :=
     D.next_extends_rankInduction lgc rank arity hzrank

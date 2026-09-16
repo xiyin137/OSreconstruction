@@ -57,7 +57,8 @@ theorem integrable_realMollifyLocal_integrand_of_translate_margin
         (continuous_const.add hrealEmbed_cont).continuousAt
       have hleft : ContinuousAt (fun u : Fin m → ℝ => F (z + realEmbed u)) t :=
         ContinuousAt.comp_of_eq hF_at hshift_at rfl
-      simpa [I] using hleft.mul ψ.continuous.continuousAt
+      refine (hleft.mul ψ.continuous.continuousAt).congr_of_eventuallyEq ?_
+      exact Filter.Eventually.of_forall (fun _ => rfl)
     · have hψ_zero :
         (ψ : (Fin m → ℝ) → ℂ) =ᶠ[nhds t] fun _ => 0 := by
           rwa [notMem_tsupport_iff_eventuallyEq] at ht
@@ -150,7 +151,8 @@ theorem localRealMollifySide_holomorphicOn_of_translate_margin
         (continuous_const.add hrealEmbed_cont).continuousAt
       have hleft : ContinuousAt (fun u : Fin m → ℝ => F (w + realEmbed u)) t :=
         ContinuousAt.comp_of_eq hF_at hshift_at rfl
-      simpa [I] using hleft.mul ψ.continuous.continuousAt
+      refine (hleft.mul ψ.continuous.continuousAt).congr_of_eventuallyEq ?_
+      exact Filter.Eventually.of_forall (fun _ => rfl)
     · have hψ_zero :
         (ψ : (Fin m → ℝ) → ℂ) =ᶠ[nhds t] fun _ => 0 := by
           rwa [notMem_tsupport_iff_eventuallyEq] at ht
@@ -216,7 +218,8 @@ theorem localRealMollifySide_holomorphicOn_of_translate_margin
       have hfderiv_shift :
           ContinuousAt (fun u : Fin m → ℝ => fderiv ℂ F (z + realEmbed u)) t :=
         ContinuousAt.comp_of_eq hderiv_at hshift_at rfl
-      simpa [I'] using ψ.continuous.continuousAt.smul hfderiv_shift
+      refine (ψ.continuous.continuousAt.smul hfderiv_shift).congr_of_eventuallyEq ?_
+      exact Filter.Eventually.of_forall (fun _ => rfl)
     · have hψ_zero :
         (ψ : (Fin m → ℝ) → ℂ) =ᶠ[nhds t] fun _ => 0 := by
           rwa [notMem_tsupport_iff_eventuallyEq] at ht
@@ -288,16 +291,10 @@ theorem localRealMollifySide_holomorphicOn_of_translate_margin
           HasFDerivAt F (fderiv ℂ F (w + realEmbed t)) (w + realEmbed t) :=
         ((hF_holo (w + realEmbed t) hshift).differentiableAt
           (hΩ_open.mem_nhds hshift)).hasFDerivAt
-      have htrans :
-          HasFDerivAt (fun u : ComplexChartSpace m => u + realEmbed t)
-            (ContinuousLinearMap.id ℂ (ComplexChartSpace m)) w := by
-        simpa using
-          ((ContinuousLinearMap.id ℂ (ComplexChartSpace m)).hasFDerivAt).add_const
-            (realEmbed t)
       have hcomp :
           HasFDerivAt (fun u : ComplexChartSpace m => F (u + realEmbed t))
             (fderiv ℂ F (w + realEmbed t)) w := by
-        simpa using hderiv_F.comp w htrans
+        exact (hasFDerivAt_comp_add_right (realEmbed t)).2 hderiv_F
       simpa [I, I'] using hcomp.mul_const (ψ t)
   have hderiv :
       HasFDerivAt
@@ -307,7 +304,9 @@ theorem localRealMollifySide_holomorphicOn_of_translate_margin
     exact
       hasFDerivAt_integral_of_dominated_of_fderiv_le
         hs hF_meas hF_int hF'_meas h_bound hbound_int h_diff
-  simpa [realMollifyLocal, I] using hderiv.differentiableAt.differentiableWithinAt
+  refine hderiv.differentiableAt.differentiableWithinAt.congr_of_eventuallyEq ?_ ?_
+  · exact Filter.Eventually.of_forall (fun _ => rfl)
+  · rfl
 
 /-- A real-direction mollified value is the boundary slice at the imaginary
 part, paired with the translated real kernel centered at the real part. -/
@@ -386,7 +385,8 @@ theorem exists_cutoffSliceIntegral_clm_of_continuousOn
         (hF_cont (slice x) hFx).continuousAt (hΩ_open.mem_nhds hFx)
       have hF_slice : ContinuousAt (fun u : Fin m → ℝ => F (slice u)) x :=
         hF_at.comp hslice_cont.continuousAt
-      simpa [g] using χ.continuous.continuousAt.mul hF_slice
+      refine (χ.continuous.continuousAt.mul hF_slice).congr_of_eventuallyEq ?_
+      exact Filter.Eventually.of_forall (fun _ => rfl)
     · have hχ_zero : (χ : (Fin m → ℝ) → ℂ) =ᶠ[nhds x] fun _ => 0 := by
         rwa [notMem_tsupport_iff_eventuallyEq] at hx
       have hg_zero : g =ᶠ[nhds x] fun _ => 0 := by

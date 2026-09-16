@@ -276,8 +276,7 @@ theorem osiiStep4ComplexBlockRadialGRealSchwartz_Iic_gevrey_bound
     rw [le_div_iff₀ hrho]
     simpa using hrho_le
   apply Seminorm.finset_sup_apply_le
-  · dsimp [I, A, a]
-    positivity
+  · positivity
   intro j hj
   have hjle : j.1 ≤ p ∧ j.2 ≤ l := Finset.mem_Iic.mp hj
   have hjp : j.1 ≤ p := hjle.1
@@ -351,8 +350,7 @@ theorem osiiStep4CenteredComplexBlockRadialGRealSchwartz_Iic_gevrey_bound
     osiiStep4ComplexBlockRadialGRealSchwartz_Iic_gevrey_bound
       q hrho hrho_le imag p l
   apply Seminorm.finset_sup_apply_le
-  · dsimp [I, A, a, b]
-    positivity
+  · positivity
   intro j hj
   have hjle : j.1 ≤ p ∧ j.2 ≤ l := Finset.mem_Iic.mp hj
   have hjzero : (0, j.2) ∈ Finset.Iic (p, l) := by

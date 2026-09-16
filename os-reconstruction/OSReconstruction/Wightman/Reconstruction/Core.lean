@@ -1077,7 +1077,8 @@ theorem VanishesToInfiniteOrderOnCoincidence.one_add_norm_pow_mul_norm_le_pairDi
   have hshift_contDiff :
       ∀ r : ℕ, ContDiff ℝ r (fun z : NPointDomain d n => (f : NPointDomain d n → ℂ) (z + c)) :=
     fun r => by
-      simpa using ((f : SchwartzNPoint d n).smooth r).comp (contDiff_id.add contDiff_const)
+      change ContDiff ℝ r ((f : NPointDomain d n → ℂ) ∘ fun z => z + c)
+      exact ((f : SchwartzNPoint d n).smooth r).comp (contDiff_id.add contDiff_const)
   have hg_contDiff : ∀ r : ℕ, ContDiff ℝ r g := fun r => by
     simpa [g] using (ContDiff.comp_continuousLinearMap (g := L) (hf := hshift_contDiff r))
   have hc_coin : c ∈ CoincidenceLocus d n := by
@@ -1114,10 +1115,11 @@ theorem VanishesToInfiniteOrderOnCoincidence.one_add_norm_pow_mul_norm_le_pairDi
     have hsem_bound :
         (1 + ‖L t + c‖) ^ N *
             ‖iteratedFDeriv ℝ (m + 1) (f : NPointDomain d n → ℂ) (L t + c)‖ ≤ A := by
-      simpa [A, sem] using
-        (SchwartzMap.one_add_le_sup_seminorm_apply
-          (𝕜 := ℂ) (m := (N, m + 1)) (k := N) (n := m + 1)
-          le_rfl le_rfl f (L t + c))
+      change _ ≤ 2 ^ N *
+        ((Finset.Iic (N, m + 1)).sup (fun m => SchwartzMap.seminorm ℂ m.1 m.2)) f
+      exact SchwartzMap.one_add_le_sup_seminorm_apply
+        (𝕜 := ℂ) (m := (N, m + 1)) (k := N) (n := m + 1)
+        le_rfl le_rfl f (L t + c)
     have hnorm_seg : ‖L t + c‖ = ‖x‖ := by
       simpa [L, v, c, ContinuousLinearMap.smulRight_apply, add_comm, add_left_comm, add_assoc]
         using norm_segment_coincidenceCopy_eq_norm (d := d) x src dst hsrcdst hmax t ht
@@ -1273,7 +1275,8 @@ theorem VanishesToInfiniteOrderOnCoincidence.weighted_pairDifference_bound_expli
   have hshift_contDiff :
       ∀ r : ℕ, ContDiff ℝ r (fun z : NPointDomain d n => (f : NPointDomain d n → ℂ) (z + c)) :=
     fun r => by
-      simpa using ((f : SchwartzNPoint d n).smooth r).comp (contDiff_id.add contDiff_const)
+      change ContDiff ℝ r ((f : NPointDomain d n → ℂ) ∘ fun z => z + c)
+      exact ((f : SchwartzNPoint d n).smooth r).comp (contDiff_id.add contDiff_const)
   have hg_contDiff : ∀ r : ℕ, ContDiff ℝ r g := fun r => by
     simpa [g] using (ContDiff.comp_continuousLinearMap (g := L) (hf := hshift_contDiff r))
   have hc_coin : c ∈ CoincidenceLocus d n := by
@@ -1310,10 +1313,11 @@ theorem VanishesToInfiniteOrderOnCoincidence.weighted_pairDifference_bound_expli
     have hsem_bound :
         (1 + ‖L t + c‖) ^ N *
             ‖iteratedFDeriv ℝ (m + 1) (f : NPointDomain d n → ℂ) (L t + c)‖ ≤ A := by
-      simpa [A, sem] using
-        (SchwartzMap.one_add_le_sup_seminorm_apply
-          (𝕜 := ℂ) (m := (N, m + 1)) (k := N) (n := m + 1)
-          le_rfl le_rfl f (L t + c))
+      change _ ≤ 2 ^ N *
+        ((Finset.Iic (N, m + 1)).sup (fun m => SchwartzMap.seminorm ℂ m.1 m.2)) f
+      exact SchwartzMap.one_add_le_sup_seminorm_apply
+        (𝕜 := ℂ) (m := (N, m + 1)) (k := N) (n := m + 1)
+        le_rfl le_rfl f (L t + c)
     have hnorm_seg : ‖L t + c‖ = ‖x‖ := by
       simpa [L, v, c, ContinuousLinearMap.smulRight_apply, add_comm, add_left_comm, add_assoc]
         using norm_segment_coincidenceCopy_eq_norm (d := d) x src dst hsrcdst hmax t ht
@@ -1431,14 +1435,17 @@ def zeroDiagonalSubmodule (d n : ℕ) : Submodule ℂ (SchwartzNPoint d n) where
       exact congrFun (iteratedFDeriv_const_of_ne (𝕜 := ℝ) hk (0 : ℂ)) x
   add_mem' := by
     intro f g hf hg k x hx
-    simpa using
+    change iteratedFDeriv ℝ k
+      ((f : NPointDomain d n → ℂ) + (g : NPointDomain d n → ℂ)) x = 0
+    exact
       (iteratedFDeriv_add_apply
         ((f : SchwartzNPoint d n).smooth _).contDiffAt
         ((g : SchwartzNPoint d n).smooth _).contDiffAt).trans
         (by rw [hf k x hx, hg k x hx, zero_add])
   smul_mem' := by
     intro c f hf k x hx
-    simpa using
+    change iteratedFDeriv ℝ k (c • (f : NPointDomain d n → ℂ)) x = 0
+    exact
       (iteratedFDeriv_const_smul_apply (𝕜 := ℝ) (a := c)
         (((f : SchwartzNPoint d n).smooth _).contDiffAt)).trans
         (by rw [hf k x hx, smul_zero])
@@ -1562,8 +1569,9 @@ theorem VanishesToInfiniteOrderOnCoincidence.compCLMOfContinuousLinearEquiv
         ((f : SchwartzNPoint d k).smooth r) (x := x) (i := r) le_rfl
   have hzero :
       iteratedFDeriv ℝ r (f : NPointDomain d k → ℂ) (e x) = 0 := by
-    exact hf r (e x) (by
-      simpa [e] using mem_CoincidenceLocus_precomp_equiv (d := d) (σ := σ) hx)
+    apply hf r (e x)
+    change (fun i => x (σ i)) ∈ CoincidenceLocus d k
+    exact mem_CoincidenceLocus_precomp_equiv (d := d) (σ := σ) hx
   rw [hcomp, hzero]
   ext u
   simp
@@ -1758,8 +1766,8 @@ theorem reverseNPoint_measurePreserving {n : ℕ} :
     let x' : (a : Fin n) → (fun _ : Fin n => SpacetimeDim d) (e a) := x
     funext i
     simpa [e] using
-      (Equiv.piCongrLeft_apply_apply (P := fun _ : Fin n => SpacetimeDim d) (e := e) x'
-        (Fin.rev i))
+      (MeasurableEquiv.piCongrLeft_apply_apply (β := fun _ : Fin n => SpacetimeDim d)
+        e x' (Fin.rev i))
   exact heq ▸
     (MeasureTheory.volume_measurePreserving_piCongrLeft (fun _ : Fin n => SpacetimeDim d) e)
 
@@ -1939,14 +1947,14 @@ private theorem continuous_timeReflectionN {n : ℕ} :
   intro μ
   by_cases hμ : μ = 0
   · subst hμ
-    simpa [timeReflectionN, timeReflection] using
-      ((((continuous_apply 0 : Continuous fun y : SpacetimeDim d => y 0).comp
-          (continuous_apply i : Continuous fun x : NPointDomain d n => x i))).neg :
-        Continuous fun x : NPointDomain d n => -x i 0)
-  · simpa [timeReflectionN, timeReflection, hμ] using
-      ((continuous_apply μ : Continuous fun y : SpacetimeDim d => y μ).comp
-        (continuous_apply i : Continuous fun x : NPointDomain d n => x i) :
-        Continuous fun x : NPointDomain d n => x i μ)
+    simp only [timeReflectionN, timeReflection, if_pos rfl]
+    exact
+      ((continuous_apply 0 : Continuous fun y : SpacetimeDim d => y 0).comp
+        (continuous_apply i : Continuous fun x : NPointDomain d n => x i)).neg
+  · simp only [timeReflectionN, timeReflection, if_neg hμ]
+    exact
+      (continuous_apply μ : Continuous fun y : SpacetimeDim d => y μ).comp
+        (continuous_apply i : Continuous fun x : NPointDomain d n => x i)
 
 omit [NeZero d] in
 private theorem continuous_splitFirst {n m : ℕ} :
@@ -2007,7 +2015,9 @@ theorem SchwartzMap.prependField_tsupport_subset_orderedPositiveTimeRegion_of_ba
     have hxprod :
         x ∈ tsupport (fun y : NPointDomain d (n + 1) =>
           f (y 0) * g (fun i : Fin n => y i.succ)) := by
-      simpa [SchwartzMap.prependField_apply] using hx
+      change x ∈ tsupport (fun y : NPointDomain d (n + 1) =>
+        f (y 0) * g (fun i : Fin n => y i.succ)) at hx
+      exact hx
     refine ⟨hA ((tsupport_mul_subset_left
       (f := fun y : NPointDomain d (n + 1) => f (y 0))
       (g := fun y : NPointDomain d (n + 1) => g (fun i : Fin n => y i.succ))) hxprod), ?_⟩
@@ -2112,7 +2122,9 @@ theorem VanishesToInfiniteOrderOnCoincidence_osConjTensorProduct_of_tsupport_sub
     have hxprod :
         x ∈ tsupport (fun y : NPointDomain d (n + m) =>
           f.osConj (splitFirst n m y) * g (splitLast n m y)) := by
-      simpa [SchwartzNPoint.osConjTensorProduct, SchwartzMap.tensorProduct_apply] using hx
+      change x ∈ tsupport (fun y : NPointDomain d (n + m) =>
+        f.osConj (splitFirst n m y) * g (splitLast n m y)) at hx
+      exact hx
     refine ⟨hA ((tsupport_mul_subset_left (f := fun y : NPointDomain d (n + m) =>
       f.osConj (splitFirst n m y)) (g := fun y : NPointDomain d (n + m) =>
       g (splitLast n m y))) hxprod), ?_⟩

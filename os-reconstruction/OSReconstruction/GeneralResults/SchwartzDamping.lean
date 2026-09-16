@@ -155,7 +155,6 @@ private lemma decay_exp_mul_schwartz
           (n.choose j : ℝ) * ‖iteratedFDeriv ℝ j e ξ‖ *
             ‖iteratedFDeriv ℝ (n - j) (⇑h) ξ‖ := by
       gcongr
-      convert hLeib using 2 <;> rfl
     have hstep2 : ‖ξ‖ ^ k * ∑ j ∈ Finset.range (n + 1),
           (n.choose j : ℝ) * ‖iteratedFDeriv ℝ j e ξ‖ *
             ‖iteratedFDeriv ℝ (n - j) (⇑h) ξ‖ =

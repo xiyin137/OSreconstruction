@@ -103,10 +103,11 @@ def SchwartzNPoint.osConjRLM {n : ℕ} :
       L
     intro q
     rcases q with ⟨k, l⟩
-    refine ⟨{(k, l)}, 1, ?_⟩
+    refine ⟨{(k, l)}, (1 : NNReal), ?_⟩
     intro f
-    simpa [Finset.sup_singleton] using
-      (SchwartzNPoint.seminorm_osConj_le (d := d) k l f)
+    simp only [Seminorm.comp_apply, Finset.sup_singleton,
+      SchwartzMap.schwartzSeminormFamily_apply, one_smul]
+    exact SchwartzNPoint.seminorm_osConj_le (d := d) k l f
 
 /-- The OS conjugation is continuous on Schwartz n-point space. -/
 theorem SchwartzNPoint.osConj_continuous {n : ℕ} :
@@ -158,8 +159,9 @@ theorem SchwartzNPoint.osConjTensorProduct_continuous {n m : ℕ} :
   have hos : Continuous (fun fg : SchwartzNPoint d n × SchwartzNPoint d m =>
       (fg.1.osConj, fg.2)) :=
     (SchwartzNPoint.osConj_continuous (d := d)).prodMap continuous_id
-  simpa [SchwartzNPoint.osConjTensorProduct] using
-    (SchwartzMap.tensorProduct_continuous (E := SpacetimeDim d)).comp hos
+  change Continuous (fun fg : SchwartzNPoint d n × SchwartzNPoint d m =>
+    fg.1.osConj.tensorProduct fg.2)
+  exact (SchwartzMap.tensorProduct_continuous (E := SpacetimeDim d)).comp hos
 
 /-- Ordered positive-time topological support is enough to guarantee that every
     OS tensor term of two Borchers sequences already lies in `°S`. -/
@@ -202,7 +204,7 @@ def single (n : ℕ) (f : SchwartzNPoint d n)
           NPointDomain d m → ℂ) = 0 := by
         simp [BorchersSequence.single, h]
       rw [hzero]
-      simpa using (empty_subset (OrderedPositiveTimeRegion d m) :
+      simpa using (Set.empty_subset (OrderedPositiveTimeRegion d m) :
         (∅ : Set (NPointDomain d m)) ⊆ OrderedPositiveTimeRegion d m)
 
 instance : Coe (PositiveTimeBorchersSequence d) (BorchersSequence d) :=
@@ -211,8 +213,9 @@ instance : Coe (PositiveTimeBorchersSequence d) (BorchersSequence d) :=
 instance : Zero (PositiveTimeBorchersSequence d) where
   zero :=
     ⟨0, fun n => by
-      simpa using (empty_subset (OrderedPositiveTimeRegion d n) :
-        (∅ : Set (NPointDomain d n)) ⊆ OrderedPositiveTimeRegion d n)⟩
+      rw [show (((0 : BorchersSequence d).funcs n : SchwartzNPoint d n) :
+        NPointDomain d n → ℂ) = 0 by rfl, tsupport_zero]
+      exact Set.empty_subset (OrderedPositiveTimeRegion d n)⟩
 
 instance : Add (PositiveTimeBorchersSequence d) where
   add F G :=
@@ -223,6 +226,16 @@ instance : Add (PositiveTimeBorchersSequence d) where
               NPointDomain d n → ℂ) +
               (((G : BorchersSequence d).funcs n : SchwartzNPoint d n) :
                 NPointDomain d n → ℂ)) := by
+        rw [show
+          ((((F : BorchersSequence d).funcs n : SchwartzNPoint d n) :
+              NPointDomain d n → ℂ) +
+            (((G : BorchersSequence d).funcs n : SchwartzNPoint d n) :
+              NPointDomain d n → ℂ)) =
+            ((((F : BorchersSequence d).funcs n +
+              (G : BorchersSequence d).funcs n : SchwartzNPoint d n) :
+                NPointDomain d n → ℂ)) by
+              ext y
+              rfl]
         simpa [BorchersSequence.add_funcs] using hx
       have hx'' := (tsupport_add
         ((((F : BorchersSequence d).funcs n : SchwartzNPoint d n) :
@@ -257,6 +270,16 @@ instance : Sub (PositiveTimeBorchersSequence d) where
               NPointDomain d n → ℂ) -
               (((G : BorchersSequence d).funcs n : SchwartzNPoint d n) :
                 NPointDomain d n → ℂ)) := by
+        rw [show
+          ((((F : BorchersSequence d).funcs n : SchwartzNPoint d n) :
+              NPointDomain d n → ℂ) -
+            (((G : BorchersSequence d).funcs n : SchwartzNPoint d n) :
+              NPointDomain d n → ℂ)) =
+            ((((F : BorchersSequence d).funcs n -
+              (G : BorchersSequence d).funcs n : SchwartzNPoint d n) :
+                NPointDomain d n → ℂ)) by
+              ext y
+              rfl]
         simpa [BorchersSequence.sub_funcs] using hx
       have hx'' := (tsupport_sub
         ((((F : BorchersSequence d).funcs n : SchwartzNPoint d n) :

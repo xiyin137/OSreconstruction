@@ -73,14 +73,14 @@ theorem vacuumTailAbsoluteStage_hasPositiveRealEdge
     D.vacuumTailAbsoluteStage.HasPositiveRealEdge
       D.vacuumTailAbsoluteOrbit
       (D.vacuumTailAbsoluteRealRegion C) := by
-  simpa [vacuumTailAbsoluteStage, vacuumTailAbsoluteOrbit,
-    vacuumTailAbsoluteRealRegion] using
-    D.vacuumTailLimitStage.recenter_hasPositiveRealEdge
-      (fun u =>
-        D.vacuumTailLimitSpatialDistribution (SCV.realToComplex u))
-      (D.vacuumTailRealRegion C)
-      (-anchor)
-      (D.vacuumTailLimitStage_hasPositiveRealEdge C)
+  unfold vacuumTailAbsoluteStage vacuumTailAbsoluteOrbit
+    vacuumTailAbsoluteRealRegion
+  exact D.vacuumTailLimitStage.recenter_hasPositiveRealEdge
+    (fun u =>
+      D.vacuumTailLimitSpatialDistribution (SCV.realToComplex u))
+    (D.vacuumTailRealRegion C)
+    (-anchor)
+    (D.vacuumTailLimitStage_hasPositiveRealEdge C)
 
 /-- In absolute coordinates, the vacuum-tail orbit represents the ordinary
 ordered transport of the retained current. -/

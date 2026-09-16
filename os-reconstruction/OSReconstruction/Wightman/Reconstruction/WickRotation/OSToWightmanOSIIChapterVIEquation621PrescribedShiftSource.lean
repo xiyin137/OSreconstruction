@@ -272,7 +272,12 @@ theorem compactCenterReflectedGram_completeShift_field_eq
   apply hhead.trans
   apply congrArg (osiiOriginalOSHilbertComplex OS
     ((epsilon / 2 : Real) : Complex))
-  simpa only [baseAt, hrec, osiiVI2Shift, Pi.add_apply] using hinternal
+  have hshift : z + (fun _ : Fin (q + 1) => (epsilon : Complex)) =
+      osiiVI2Shift (q + 1) epsilon z := by
+    rfl
+  simpa only [baseAt, hrec, hshift, source,
+    compactCenterReflectedGramSpatialSourceData,
+    StageWideStrictGeneratedMixedReflectedGramRankData.toAtlasFamily] using hinternal
 
 set_option maxHeartbeats 2000000 in
 /-- The damped Gram scalar is the literal reflected product of the completely
@@ -346,7 +351,7 @@ theorem compactCenterReflectedGram_completeShift_inner_eq_scalar
       ).coversStrictGeneratedAtRank hz).1
   have hgram := A.gram.anchoredAtlas_scalar_reflectedCauchyCenter_eq_inner
     A.sourceStage.stage A.sourceStage.germ shiftedLeft shiftedRight z hcovered
-  rw [A.gram.cauchy_scalar] at hgram
+  rw [A.gram.cauchy_scalar shiftedLeft shiftedRight] at hgram
   exact (osiiOriginalOSHilbertComplex_inner_halfShift_self OS hepsilon
     (field leftBase (osiiVI2Shift (q + 1) epsilon z))
     (field rightBase (osiiVI2Shift (q + 1) epsilon z))).symm.trans

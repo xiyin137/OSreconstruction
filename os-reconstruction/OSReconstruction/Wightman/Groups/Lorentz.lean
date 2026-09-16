@@ -484,9 +484,8 @@ instance : Group (LorentzGroup d) where
   mul Λ₁ Λ₂ := ⟨Λ₁.val * Λ₂.val, by
     refine ⟨IsLorentzMatrix.mul Λ₁.2.1 Λ₂.2.1, ?_, ?_⟩
     · simp [Matrix.det_mul, Λ₁.2.2.1, Λ₂.2.2.1]
-    · simpa [FullLorentzGroup.IsOrthochronous] using
-        (FullLorentzGroup.IsOrthochronous.mul (d := d)
-          (Λ₁ := toFull Λ₁) (Λ₂ := toFull Λ₂) Λ₁.2.2.2 Λ₂.2.2.2)⟩
+    · change 1 ≤ (toFull Λ₁ * toFull Λ₂).val 0 0
+      exact FullLorentzGroup.IsOrthochronous.mul Λ₁.2.2.2 Λ₂.2.2.2⟩
   one := ⟨1, ⟨IsLorentzMatrix.one, by simp, by simp⟩⟩
   inv Λ := ⟨(toFull Λ)⁻¹.val, by
     refine ⟨(toFull Λ)⁻¹.2, ?_, ?_⟩

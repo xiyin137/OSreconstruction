@@ -340,7 +340,7 @@ theorem hasDerivAt_schwartz_osiiEuclideanSkewFlow_zero
       (OSIIChapterVI.linearVectorFieldCLM (osiiDiagonalRealMatrixCLM Y) phi x) 0 := by
   have h := (phi.hasFDerivAt (osiiEuclideanSkewFlow Y hY 0 x)).comp_hasDerivAt 0
     (hasDerivAt_osiiEuclideanSkewFlow_zero Y hY x)
-  simpa using h
+  convert h using 1 <;> first | rfl | simp
 
 namespace OSIIChapterV
 
@@ -355,7 +355,11 @@ def initialPhysicalEuclideanWardTest
   initialPhysicalSchwartzToTestFunction (initialReducedStrictPositiveGapOpen d k)
     G
     (OSIIChapterVI.linearVectorFieldCLM_hasCompactSupport _ F
-      (by simpa [F, initialPhysicalTestToSchwartzCLM_apply] using phi.hasCompactSupport))
+      (by
+        dsimp only [F]
+        rw [initialPhysicalTestToSchwartzCLM_apply]
+        change HasCompactSupport (phi : NPointDomain d k → Complex)
+        exact phi.hasCompactSupport))
     ((OSIIChapterVI.tsupport_linearVectorFieldCLM_subset _ F).trans
       (initialPhysicalTestToSchwartzCLM_tsupport_subset
         (initialReducedStrictPositiveGapOpen d k) phi))
@@ -387,7 +391,10 @@ theorem initialPhysicalPositiveChamberCurrent_euclideanWard_eq_zero
   let e := osiiEuclideanSkewFlow (k := k) Y hY
   let G := OSIIChapterVI.linearVectorFieldCLM (osiiDiagonalRealMatrixCLM Y) F
   have hF : HasCompactSupport (F : NPointDomain d k -> Complex) := by
-    simpa [F, initialPhysicalTestToSchwartzCLM_apply] using phi.hasCompactSupport
+    dsimp only [F]
+    rw [initialPhysicalTestToSchwartzCLM_apply]
+    change HasCompactSupport (phi : NPointDomain d k → Complex)
+    exact phi.hasCompactSupport
   have he := contDiff_osiiEuclideanSkewFlow (k := k) Y hY
   have hinv := continuous_osiiEuclideanSkewFlow_symm (k := k) Y hY
   obtain ⟨K, hK, hKU, hnear⟩ :=
@@ -395,8 +402,9 @@ theorem initialPhysicalPositiveChamberCurrent_euclideanWard_eq_zero
       (initialReducedStrictPositiveGapRegion d k)
       isOpen_initialReducedStrictPositiveGapRegion (by
         intro x hx
-        simpa [e] using
-          initialPhysicalTestToSchwartzCLM_tsupport_subset U phi hx)
+        have hxU := initialPhysicalTestToSchwartzCLM_tsupport_subset U phi hx
+        change x ∈ initialReducedStrictPositiveGapRegion d k at hxU
+        simpa [e] using hxU)
   have hzero : SchwartzMap.compCLMOfContinuousLinearEquiv Complex (e 0) F = F := by
     ext x
     simp [e]
@@ -430,7 +438,9 @@ theorem initialPhysicalPositiveChamberCurrent_euclideanWard_eq_zero
       intro x hx
       apply hKU
       apply ht
-      simpa [F, U, e, R, initialPhysicalTestToSchwartzCLM_apply] using hx
+      change x ∈ tsupport (fun x : NPointDomain d k =>
+        phi (fun i => R.transpose.transpose.mulVec (x i)))
+      exact hx
     let phit := initialPhysicalRotatePositiveTest R.transpose hRt phi hsupport
     have hFt : initialPhysicalTestToSchwartzCLM U phit =
         SchwartzMap.compCLMOfContinuousLinearEquiv Complex (e t) F := by
@@ -497,7 +507,11 @@ theorem canonicalReducedTimeCutoffSchwingerCLM_euclideanWard_eq_zero
         (OSIIChapterVI.linearVectorFieldCLM (osiiDiagonalRealMatrixCLM Y) phi) =
         initialPhysicalPositiveChamberCurrent (k := k) OS chi
           (initialPhysicalEuclideanWardTest Y psi) := by
-      simpa only [initialPhysicalTestToSchwartzCLM_euclideanWardTest, hsource] using hcut.symm
+      have hsource' : initialPhysicalTestToSchwartzCLM
+          (initialReducedStrictPositiveGapOpen d k) psi = phi := by
+        simpa [U] using hsource
+      rw [initialPhysicalTestToSchwartzCLM_euclideanWardTest, hsource'] at hcut
+      exact hcut.symm
     _ = 0 := initialPhysicalPositiveChamberCurrent_euclideanWard_eq_zero OS chi Y hY psi
 
 end OSIIChapterV

@@ -211,9 +211,10 @@ theorem exists_seminorm_translate_secondLineDeriv_unit_bound
   have htrans :
       iteratedFDeriv ℝ n (⇑(euclideanTranslateSchwartzCLM a h)) x =
         iteratedFDeriv ℝ n (h : EuclideanSpace ℝ ι → ℂ) (x + a) := by
-    simpa using
-      (iteratedFDeriv_comp_add_right
-        (f := (h : EuclideanSpace ℝ ι → ℂ)) n a x)
+    rw [show (⇑(euclideanTranslateSchwartzCLM a h) : EuclideanSpace ℝ ι → ℂ) =
+      fun z => h (z + a) by rfl]
+    exact iteratedFDeriv_comp_add_right
+      (f := (h : EuclideanSpace ℝ ι → ℂ)) n a x
   rw [htrans]
   have hk_point :
       ‖x + a‖ ^ k *
@@ -310,7 +311,7 @@ theorem exists_seminorm_translate_lineDeriv_sub_le_linear_uniform_unit
         HasDerivAt (fun r : ℝ => H (x + r • (t • v)))
           ((fderiv ℝ H (x + s • (t • v))) (t • v)) s := by
       exact (hH_diff (x + s • (t • v))).hasFDerivAt.comp_hasDerivAt s hgamma
-    simpa [hxFun] using hcomp.const_smul (‖x‖ ^ k)
+    exact hcomp.const_smul (‖x‖ ^ k)
   have hxFun_bound :
       ∀ s ∈ Set.Ico (0 : ℝ) 1,
         ‖‖x‖ ^ k • (fderiv ℝ H (x + s • (t • v)) (t • v))‖ ≤ C * |t| := by
@@ -341,9 +342,12 @@ theorem exists_seminorm_translate_lineDeriv_sub_le_linear_uniform_unit
               (⇑(euclideanTranslateSchwartzCLM (s • (t • v)) h2)) x =
             iteratedFDeriv ℝ n (h2 : EuclideanSpace ℝ ι → ℂ)
               (x + s • (t • v)) := by
-        simpa using
-          (iteratedFDeriv_comp_add_right
-            (f := (h2 : EuclideanSpace ℝ ι → ℂ)) n (s • (t • v)) x)
+        rw [show
+          (⇑(euclideanTranslateSchwartzCLM (s • (t • v)) h2) :
+              EuclideanSpace ℝ ι → ℂ) =
+            fun z => h2 (z + s • (t • v)) by rfl]
+        exact iteratedFDeriv_comp_add_right
+          (f := (h2 : EuclideanSpace ℝ ι → ℂ)) n (s • (t • v)) x
       simpa [htrans] using hle
     have hfderiv_eq :
         fderiv ℝ H (x + s • (t • v)) (t • v) =
@@ -352,14 +356,19 @@ theorem exists_seminorm_translate_lineDeriv_sub_le_linear_uniform_unit
       dsimp [H, g, h2]
       rw [fderiv_iteratedFDeriv_eq_iteratedFDeriv_euclideanLineDeriv]
       rw [LineDeriv.lineDerivOp_left_smul]
-      simpa [Pi.smul_apply] using
-        (iteratedFDeriv_const_smul_apply'
-          (𝕜 := ℝ) (a := t)
-          (f := (((∂_{v} (∂_{v} φ : SchwartzMap (EuclideanSpace ℝ ι) ℂ) :
-            SchwartzMap (EuclideanSpace ℝ ι) ℂ)) : EuclideanSpace ℝ ι → ℂ))
-          (x := x + s • (t • v))
-          (((∂_{v} (∂_{v} φ : SchwartzMap (EuclideanSpace ℝ ι) ℂ) :
-            SchwartzMap (EuclideanSpace ℝ ι) ℂ)).smooth n).contDiffAt)
+      rw [show
+        (⇑(t • (∂_{v} (∂_{v} φ : SchwartzMap (EuclideanSpace ℝ ι) ℂ) :
+            SchwartzMap (EuclideanSpace ℝ ι) ℂ)) : EuclideanSpace ℝ ι → ℂ) =
+          fun y => (t : ℂ) *
+            (∂_{v} (∂_{v} φ : SchwartzMap (EuclideanSpace ℝ ι) ℂ) :
+              SchwartzMap (EuclideanSpace ℝ ι) ℂ) y by rfl]
+      exact iteratedFDeriv_const_smul_apply'
+        (𝕜 := ℝ) (a := t)
+        (f := (((∂_{v} (∂_{v} φ : SchwartzMap (EuclideanSpace ℝ ι) ℂ) :
+          SchwartzMap (EuclideanSpace ℝ ι) ℂ)) : EuclideanSpace ℝ ι → ℂ))
+        (x := x + s • (t • v))
+        (((∂_{v} (∂_{v} φ : SchwartzMap (EuclideanSpace ℝ ι) ℂ) :
+          SchwartzMap (EuclideanSpace ℝ ι) ℂ)).smooth n).contDiffAt
     have hxpow_nonneg : 0 ≤ ‖x‖ ^ k := by positivity
     calc
       ‖‖x‖ ^ k • (fderiv ℝ H (x + s • (t • v)) (t • v))‖
@@ -390,9 +399,11 @@ theorem exists_seminorm_translate_lineDeriv_sub_le_linear_uniform_unit
         iteratedFDeriv ℝ n
           (⇑(euclideanTranslateSchwartzCLM (t • v) g)) x =
           H (x + t • v) := by
-      simpa [H] using
-        (iteratedFDeriv_comp_add_right
-          (f := (g : EuclideanSpace ℝ ι → ℂ)) n (t • v) x)
+      rw [show
+        (⇑(euclideanTranslateSchwartzCLM (t • v) g) : EuclideanSpace ℝ ι → ℂ) =
+          fun z => g (z + t • v) by rfl]
+      exact iteratedFDeriv_comp_add_right
+        (f := (g : EuclideanSpace ℝ ι → ℂ)) n (t • v) x
     rw [iteratedFDeriv_sub_euclidean_schwartz]
     rw [htrans]
   have hxFun_diff :
@@ -579,7 +590,12 @@ theorem tendsto_frechetRemainder_euclideanTranslateSchwartz_zero
         gcongr
       _ = ε := by
         field_simp [ne_of_gt hC1]
-  simpa using lt_of_le_of_lt hbound_linear hδ_eps
+  change (schwartzSeminormFamily ℝ (EuclideanSpace ℝ ι) ℂ p)
+    (‖h‖⁻¹ • (euclideanTranslateSchwartzCLM h φ - φ -
+      euclideanLineDerivDirectionCLM φ h) - 0) < ε
+  rw [show p = (p.1, p.2) from p.eta,
+    SchwartzMap.schwartzSeminormFamily_apply, sub_zero]
+  exact lt_of_le_of_lt hbound_linear hδ_eps
 
 /-- Candidate Frechet derivative of the reflected regularized distribution
 `x ↦ T (euclideanReflectedTranslate x ρ)`. -/
@@ -621,7 +637,6 @@ private theorem regularizedDistribution_remainder_eq
   simp [regularizedDistributionFDeriv, euclideanReflectedTranslate,
     euclideanLineDerivDirectionCLM_apply, euclideanTranslateSchwartzCLM_comp,
     norm_neg, map_add, sub_eq_add_neg, add_comm]
-  ring
 
 private theorem regularizedDistribution_remainder_norm_eq
     {ι : Type*} [Fintype ι]
@@ -818,12 +833,21 @@ theorem hasFDerivAt_apply_euclideanTranslateSchwartz
   have hneg : HasFDerivAt negCLM negCLM x := negCLM.hasFDerivAt
   have hbase := hasFDerivAt_regularizedDistribution T ρ (-x)
   have hcomp := hbase.comp x hneg
-  convert hcomp using 1
-  · funext y
-    simp [euclideanReflectedTranslate]
-  · ext v
+  rw [show (fun y : EuclideanSpace ℝ ι =>
+      T (euclideanTranslateSchwartzCLM y ρ)) =
+      (fun y : EuclideanSpace ℝ ι => T (euclideanReflectedTranslate y ρ)) ∘
+        fun y => -y by
+    funext y
+    simp [euclideanReflectedTranslate]]
+  rw [show
+    ((T.restrictScalars ℝ).comp
+        ((euclideanTranslateSchwartzCLM x).restrictScalars ℝ)).comp
+        (euclideanLineDerivDirectionCLM ρ) =
+      (regularizedDistributionFDeriv T ρ (-x)).comp negCLM by
+    ext v
     simp [negCLM, regularizedDistributionFDeriv_apply,
-      euclideanReflectedTranslate]
+      euclideanReflectedTranslate]]
+  exact hcomp
 
 @[simp] theorem fderiv_apply_euclideanTranslateSchwartz_apply
     {ι : Type*} [Fintype ι]
@@ -935,12 +959,11 @@ private theorem flatToEuclidean_lineDeriv
       ∂_{(EuclideanSpace.equiv (Fin m) ℝ).symm v}
         (flatToEuclidean f) := by
   symm
-  simpa [flatToEuclidean] using
-    (SchwartzMap.lineDerivOp_compCLMOfContinuousLinearEquiv
-      (𝕜 := ℂ)
-      (m := (EuclideanSpace.equiv (Fin m) ℝ).symm v)
-      (g := EuclideanSpace.equiv (Fin m) ℝ)
-      (f := f))
+  convert (SchwartzMap.lineDerivOp_compCLMOfContinuousLinearEquiv
+    (𝕜 := ℂ)
+    (m := (EuclideanSpace.equiv (Fin m) ℝ).symm v)
+    (g := EuclideanSpace.equiv (Fin m) ℝ)
+    (f := f)) using 1 <;> rfl
 
 private theorem flatToEuclidean_iteratedLineDeriv
     {m N : ℕ} (u : Fin N → (Fin m → ℝ))

@@ -360,7 +360,8 @@ theorem section43DerivativeWordScalar_norm_le
           have hhead :
               ‖head‖ ≤ section43QSpatialCoordOpNorm d n i * ‖m 0‖ := by
             have hm := abs_section43QSpatial_coord_le_opNorm d n (m 0) i
-            simpa [head, Complex.norm_real, Real.norm_eq_abs] using hm
+            simpa [head, Complex.norm_real, Real.norm_eq_abs,
+              section43QSpatialCoordOpNorm] using hm
           have hold :
               ‖oldScalar‖ ≤
                 section43DerivativeWordCoeff d n r oldWord *
@@ -535,7 +536,7 @@ theorem contDiff_section43FourierLaplace_timeIntegrand_q
       let L : NPointDomain d n →L[ℝ] ℝ :=
         (ContinuousLinearMap.proj (R := ℝ) (ι := Fin n) (φ := fun _ => ℝ) k).comp
           (section43QTimeCLM d n)
-      simpa [L] using L.contDiff
+      convert L.contDiff using 1 <;> funext q' <;> simp [L]
     have hcomplex : ContDiff ℝ (⊤ : ℕ∞) (fun q' : NPointDomain d n =>
         (section43QTime (d := d) (n := n) q' k : ℂ)) := by
       exact Complex.ofRealCLM.contDiff.comp hreal
@@ -554,12 +555,13 @@ theorem contDiff_section43FourierLaplace_timeIntegrand_q
       contDiff_partialFourierSpatial_fun_joint (d := d) (n := n) F
     have hspatial : ContDiff ℝ (⊤ : ℕ∞) (fun q' : NPointDomain d n =>
         section43QSpatial (d := d) (n := n) q') := by
-      simpa using (section43QSpatialCLM d n).contDiff
+      convert (section43QSpatialCLM d n).contDiff using 1 <;>
+        funext q' <;> simp
     let hpath : ContDiff ℝ (⊤ : ℕ∞) (fun q' : NPointDomain d n =>
         (τ, section43QSpatial (d := d) (n := n) q')) :=
       (contDiff_const :
         ContDiff ℝ (⊤ : ℕ∞) (fun _ : NPointDomain d n => τ)).prodMk hspatial
-    simpa using hbase.comp hpath
+    convert hbase.comp hpath using 1 <;> rfl
   exact hE.mul hP
 
 /-- Differentiating a fixed old-word summand only differentiates the basic

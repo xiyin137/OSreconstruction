@@ -124,28 +124,14 @@ theorem dense_section43Spatial_hasCompactSupport (d n : ℕ) :
   have hsubset :
       ((fun κ : SchwartzMap P ℂ => T κ) '' Sflat) ⊆ Ssp := by
     rintro _ ⟨κ, hκ, rfl⟩
-    have htsupport :
-        tsupport ((T κ : SchwartzMap E ℂ) : E → ℂ) =
-          e.toHomeomorph ⁻¹' tsupport (κ : P → ℂ) := by
-      simpa [T, E, P, e, section43SpatialFlatSchwartzCLE,
-        SchwartzMap.compCLMOfContinuousLinearEquiv_apply] using
-        (tsupport_comp_eq_preimage (g := (κ : P → ℂ)) e.toHomeomorph)
-    have hpre_eq :
-        e.toHomeomorph ⁻¹' tsupport (κ : P → ℂ) =
-          e.symm '' tsupport (κ : P → ℂ) := by
-      ext η
-      constructor
-      · intro hη
-        refine ⟨e η, hη, ?_⟩
-        simp [e]
-      · rintro ⟨x, hx, rfl⟩
-        simpa [e] using hx
-    have hcompact :
-        IsCompact (e.symm '' tsupport (κ : P → ℂ)) :=
-      hκ.isCompact.image e.symm.continuous
     change HasCompactSupport ((T κ : SchwartzMap E ℂ) : E → ℂ)
-    rw [HasCompactSupport, htsupport, hpre_eq]
-    exact hcompact
+    have hcomp :
+        ((T κ : SchwartzMap E ℂ) : E → ℂ) =
+          (κ : P → ℂ) ∘ e.toHomeomorph := by
+      funext η
+      simp [T, E, P, e]
+    rw [hcomp]
+    exact hκ.comp_homeomorph e.toHomeomorph
   exact Dense.mono hsubset himage_dense
 
 /-- Spatial-frequency functions obtained by Fourier-transforming compactly
@@ -565,8 +551,13 @@ theorem tsupport_section43NPointTimeSpatialTensor_subset_time_preimage
       (φ : (Fin n → ℝ) → ℂ)
       (f := section43QTime (d := d) (n := n))
       (by
-        simpa [section43QTimeCLM_apply] using
-          (section43QTimeCLM d n).continuous)) ht_pullback
+        have hfun :
+            section43QTime (d := d) (n := n) =
+              (section43QTimeCLM d n : NPointDomain d n → Fin n → ℝ) := by
+          funext q
+          exact (section43QTimeCLM_apply d n q).symm
+        rw [hfun]
+        exact (section43QTimeCLM d n).continuous)) ht_pullback
 
 /-- A transported time/spatial tensor is compactly supported if both factors
 are compactly supported. -/
@@ -620,11 +611,19 @@ instance (d n : ℕ) [NeZero d] :
     { f := 0
       positive := by
         intro q hq
-        simp at hq
+        have hzero :
+            ((0 : SchwartzNPoint d n) : NPointDomain d n → ℂ) = 0 := by
+          ext x
+          rfl
+        rw [hzero] at hq
+        simpa using hq
       compact := by
-        simpa using
-          (HasCompactSupport.zero :
-            HasCompactSupport (0 : NPointDomain d n → ℂ)) }
+        have hzero :
+            ((0 : SchwartzNPoint d n) : NPointDomain d n → ℂ) = 0 := by
+          ext x
+          rfl
+        rw [hzero]
+        exact HasCompactSupport.zero }
 
 instance (d n : ℕ) [NeZero d] :
     Add (Section43CompactStrictPositiveTimeSpatialSource d n) where
@@ -637,7 +636,14 @@ instance (d n : ℕ) [NeZero d] :
             (H.f : NPointDomain d n → ℂ) hq
         exact hq'.elim (fun hG => G.positive hG) (fun hH => H.positive hH)
       compact := by
-        simpa using HasCompactSupport.add G.compact H.compact }
+        have hadd :
+            ((G.f + H.f : SchwartzNPoint d n) : NPointDomain d n → ℂ) =
+              (G.f : NPointDomain d n → ℂ) +
+                (H.f : NPointDomain d n → ℂ) := by
+          ext q
+          rfl
+        rw [hadd]
+        exact HasCompactSupport.add G.compact H.compact }
 
 instance (d n : ℕ) [NeZero d] :
     SMul ℂ (Section43CompactStrictPositiveTimeSpatialSource d n) where
@@ -649,10 +655,17 @@ instance (d n : ℕ) [NeZero d] :
             (fun _ : NPointDomain d n => c)
             (G.f : NPointDomain d n → ℂ)).trans G.positive
       compact := by
-        simpa using
-          (HasCompactSupport.smul_left
+        have hsmul :
+            ((c • G.f : SchwartzNPoint d n) : NPointDomain d n → ℂ) =
+              (fun _ : NPointDomain d n => c) *
+                (G.f : NPointDomain d n → ℂ) := by
+          ext q
+          rfl
+        rw [hsmul]
+        exact
+          HasCompactSupport.smul_left
             (f := fun _ : NPointDomain d n => c)
-            (f' := (G.f : NPointDomain d n → ℂ)) G.compact) }
+            (f' := (G.f : NPointDomain d n → ℂ)) G.compact }
 
 end Section43CompactStrictPositiveTimeSpatialSource
 

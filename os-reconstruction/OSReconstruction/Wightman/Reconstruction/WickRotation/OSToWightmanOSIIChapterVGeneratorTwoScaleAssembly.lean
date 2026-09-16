@@ -318,7 +318,11 @@ noncomputable def toDiagonal
       simpa using E.real_mem i τ hτ)
     (by
       intro i τ hτ χ
-      simpa using
+      change Tendsto
+        (((fun p : ℕ × ℕ =>
+            (A.approximation i p.1 p.2 (osiiPositiveRealTimeEmbed τ)) χ) ∘
+          fun N : ℕ => (N, N))) atTop (𝓝 ((E.orbit τ) χ))
+      exact
         (E.approximation_tendsto_orbit i τ hτ χ).comp
           tendsto_natDiagonal_atTop)
 

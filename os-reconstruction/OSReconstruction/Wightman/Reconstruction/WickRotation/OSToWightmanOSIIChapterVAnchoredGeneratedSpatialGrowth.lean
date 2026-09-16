@@ -225,7 +225,8 @@ noncomputable def
                   (Fin.append anchor anchor + y) := by
         dsimp [a, b]
         simpa [tail, θ, headedTimeSpatialFullSource, timeTest,
-          SchwartzTimeApproximateIdentity.tail] using
+          SchwartzTimeApproximateIdentity.tail,
+          Section43ProductTimeApproximateIdentity.toSchwartzTimeApproximateIdentity] using
           (reflectedMovingSliceScalar_headedTimeSpatial_translatedApproximateIdentities
             D.sourceStage.stage D.sourceStage.germ.η
             θ θ tail tail anchor anchor χ χ

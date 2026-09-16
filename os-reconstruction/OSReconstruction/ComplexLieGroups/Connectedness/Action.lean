@@ -68,8 +68,13 @@ theorem complexLorentzAction_inv {d n : ℕ} (Λ : ComplexLorentzGroup d)
 instance instMulActionComplexLorentzCfg {d n : ℕ} :
     MulAction (ComplexLorentzGroup d) (Fin n → Fin (d + 1) → ℂ) where
   smul := complexLorentzAction
-  one_smul z := by simpa using complexLorentzAction_one z
-  mul_smul g h z := by simpa using (complexLorentzAction_mul g h z)
+  one_smul z := by
+    change complexLorentzAction 1 z = z
+    exact complexLorentzAction_one z
+  mul_smul g h z := by
+    change complexLorentzAction (g * h) z =
+      complexLorentzAction g (complexLorentzAction h z)
+    exact complexLorentzAction_mul g h z
 
 instance instContinuousSMulComplexLorentzCfg {d n : ℕ} :
     ContinuousSMul (ComplexLorentzGroup d) (Fin n → Fin (d + 1) → ℂ) where

@@ -176,8 +176,10 @@ theorem fderiv_partialFourierSpatial_fun_spatial_apply_eq_sum_multiplierTranspor
                     (innerSL ℝ) v
                   have hreal : Function.HasTemperateGrowth (Linner.comp Lfst) :=
                     (Linner.comp Lfst).hasTemperateGrowth
-                  simpa [Lfst, Linner, real_inner_comm] using
-                    Complex.ofRealCLM.toContinuousLinearMap.hasTemperateGrowth.comp hreal
+                  convert Function.Complex.hasTemperateGrowth_ofReal.comp hreal using 1
+                  · rfl
+                  · funext p
+                    simp [Lfst, Linner, real_inner_comm]
                 have hcoord :
                     ∀ i : Fin n × Fin d,
                       (fun p : EuclideanSpace ℝ (Fin n × Fin d) × (Fin n → ℝ) =>
@@ -193,8 +195,10 @@ theorem fderiv_partialFourierSpatial_fun_spatial_apply_eq_sum_multiplierTranspor
                     (EuclideanSpace.proj (𝕜 := ℝ) i).comp Lfst
                   have hreal : Function.HasTemperateGrowth Lcoord :=
                     Lcoord.hasTemperateGrowth
-                  simpa [Lfst, Lcoord] using
-                    Complex.ofRealCLM.toContinuousLinearMap.hasTemperateGrowth.comp hreal
+                  convert Function.Complex.hasTemperateGrowth_ofReal.comp hreal using 1
+                  · rfl
+                  · funext p
+                    simp [Lfst, Lcoord]
                 simp only [E, section43SpatialMultiplierTransport, map_sum, map_smul,
                   ContinuousLinearEquiv.apply_symm_apply, SchwartzMap.smul_apply]
                 simp_rw [SchwartzMap.smulLeftCLM_apply_apply hinner]
@@ -260,9 +264,13 @@ theorem fderiv_partialFourierSpatial_fun_spatial_apply_eq_sum_multiplierTranspor
                     refine Finset.sum_congr rfl ?_
                     intro x _hx
                     exact hG_eval x]
-                simp [PiLp.inner_apply, real_inner_eq_re_inner ℝ, RCLike.inner_apply,
-                  Complex.ofReal_sum, Finset.mul_sum, Finset.sum_mul, smul_eq_mul,
-                  mul_assoc, mul_comm]
+                rw [PiLp.inner_apply]
+                simp only [RCLike.inner_apply, conj_trivial, Complex.ofReal_sum,
+                  smul_eq_mul, Finset.mul_sum, Finset.sum_mul]
+                congr 1
+                funext x
+                push_cast
+                ring
               exact E.injective hinput_fwd
             rw [hinput]
             rw [partialFourierSpatial_fun_fintype_sum]
@@ -370,7 +378,7 @@ theorem continuous_section43FourierLaplace_timeIntegrand
     let hpath : Continuous fun τ : Fin n → ℝ =>
         (τ, section43QSpatial (d := d) (n := n) q) :=
       continuous_id.prodMk continuous_const
-    simpa using hbase.comp hpath
+    exact hbase.comp hpath
   exact hE.mul hP
 
 /-- Pointwise first derivative of the Section 4.3 Fourier-Laplace time
@@ -423,12 +431,20 @@ theorem hasFDerivAt_section43FourierLaplace_timeIntegrand
           partialFourierSpatial_fun (d := d) (n := n) F (τ, ξ))
         (section43QSpatial (d := d) (n := n) q)).comp
           (section43QSpatialCLM d n)) q := by
-    simpa using hP0.comp q (section43QSpatialCLM d n).hasFDerivAt
+    exact hP0.comp q (section43QSpatialCLM d n).hasFDerivAt
   have hprod := hE.mul hP
-  convert hprod using 1
-  · ext q'
-    simp [hL_apply]
-  · ext m
+  have hderiv :
+      section43FourierLaplace_timeIntegrandFDerivCLM d n F q τ =
+        Complex.exp (L q) •
+            ((fderiv ℝ
+              (fun ξ : EuclideanSpace ℝ (Fin n × Fin d) =>
+                partialFourierSpatial_fun (d := d) (n := n) F (τ, ξ))
+              (section43QSpatial (d := d) (n := n) q)).comp
+                (section43QSpatialCLM d n)) +
+          partialFourierSpatial_fun (d := d) (n := n) F
+              (τ, section43QSpatial (d := d) (n := n) q) •
+            (Complex.exp (L q) • L) := by
+    ext m
     simp [section43FourierLaplace_timeIntegrandFDerivCLM, L,
       section43FourierLaplace_expArgCLM, ContinuousLinearMap.comp_apply,
       ContinuousLinearMap.smulRight_apply,
@@ -437,6 +453,19 @@ theorem hasFDerivAt_section43FourierLaplace_timeIntegrand
     rw [← Finset.sum_mul]
     rw [← Finset.sum_mul]
     ring_nf
+  rw [hderiv]
+  convert hprod using 1 <;> try rfl <;> try exact Subsingleton.elim _ _
+  funext q'
+  change
+    Complex.exp
+        (-(∑ k : Fin n,
+          (τ k : ℂ) * (section43QTime (d := d) (n := n) q' k : ℂ))) *
+      partialFourierSpatial_fun (d := d) (n := n) F
+        (τ, section43QSpatial (d := d) (n := n) q') =
+    Complex.exp (L q') *
+      partialFourierSpatial_fun (d := d) (n := n) F
+        (τ, section43QSpatial (d := d) (n := n) q')
+  rw [hL_apply q']
 
 private theorem exists_pos_le_on_compact_of_forall_pos
     {E : Type*} [TopologicalSpace E] {K : Set E} (hK : IsCompact K)
@@ -495,9 +524,7 @@ theorem exists_orderedPositiveTimeRegion_margin_of_compact_tsupport_subset
               exact (hf_ord hx i).1
         | inr p =>
             refine exists_pos_le_on_compact_of_forall_pos hK_compact ?_ ?_
-            · exact (((continuous_apply (0 : Fin (d + 1))).comp
-                (continuous_apply p.1.2)).sub
-                ((continuous_apply (0 : Fin (d + 1))).comp (continuous_apply p.1.1)))
+            · apply Continuous.sub <;> fun_prop
             · intro x hx
               exact sub_pos.mpr ((hf_ord hx p.1.1).2 p.1.2 p.2)
   let ε : I → ℝ := fun a => Classical.choose (hbounds a)

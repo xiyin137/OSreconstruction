@@ -66,7 +66,8 @@ theorem spectralIntegral_eq_laplace_restrictZero
   apply integral_congr_ae
   have hae_nonneg : ∀ᵐ s ∂μ, 0 ≤ s := by
     rw [ae_iff]
-    simpa [Set.compl_setOf, not_le] using hsupp_nonneg
+    rw [show {s : ℝ | ¬ 0 ≤ s} = Set.Iio 0 by ext s; simp]
+    exact hsupp_nonneg
   filter_upwards [hae_nonneg] with s hs
   by_cases hpos : 0 < s
   · simp [Set.indicator_of_mem, hpos]

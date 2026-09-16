@@ -111,7 +111,17 @@ theorem W_analytic_lorentz_on_tube_of_restrictedCovariance {d n : ℕ} [NeZero d
         exact forward_tube_bv_integrable_of_compact F hF_hol
           hF_growth
           f η hη ε hε
-      simpa [sub_mul] using hInt₁.sub hInt₂)
+      have hInt_sub :
+          @MeasureTheory.Integrable ℂ _ _ (NPointDomain d n) MeasurableSpace.pi
+            ((fun x : NPointDomain d n =>
+                F (fun k μ => ∑ ν, (Λ.val μ ν : ℂ) *
+                  (↑(x k ν) + ε * ↑(η k ν) * Complex.I)) * f x) -
+              (fun x : NPointDomain d n =>
+                F (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * f x))
+            MeasureTheory.volume := by
+        exact cast (by rfl) (hInt₁.sub hInt₂)
+      refine hInt_sub.congr (Filter.Eventually.of_forall fun x => ?_)
+      simp [sub_mul])
     (W_analytic_lorentz_bv_agree_of_restrictedCovariance
       (d := d) (n := n)
       W_n hW_linear hW_cont hW_lorentz

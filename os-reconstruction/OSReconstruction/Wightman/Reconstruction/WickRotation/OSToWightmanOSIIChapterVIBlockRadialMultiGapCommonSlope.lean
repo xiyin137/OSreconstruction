@@ -166,11 +166,8 @@ theorem exists_orderedPositiveTimeRegion_margin_of_compact_subset
               exact (hK_ordered hx i).1
         | inr p =>
             apply exists_pos_le_on_compact_of_forall_pos hK_compact
-            · exact
-                (((continuous_apply (0 : Fin (d + 1))).comp
-                    (continuous_apply p.1.2)).sub
-                  ((continuous_apply (0 : Fin (d + 1))).comp
-                    (continuous_apply p.1.1)))
+            · exact (continuous_id.matrix_elem p.1.2 0).sub
+                (continuous_id.matrix_elem p.1.1 0)
             · intro x hx
               exact sub_pos.mpr ((hK_ordered hx p.1.1).2 p.1.2 p.2)
   let epsilon : I -> Real := fun a => Classical.choose (hbounds a)

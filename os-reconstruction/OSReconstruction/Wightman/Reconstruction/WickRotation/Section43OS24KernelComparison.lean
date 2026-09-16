@@ -88,10 +88,14 @@ theorem section43NPointProductSplitMeasurableEquiv_measurePreserving
       MeasureTheory.volume
       ((MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d n)).prod
         (MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d r))) := by
-    simpa using
-      (MeasureTheory.volume_measurePreserving_sumPiEquivProdPi
-        (fun _ : Fin n ⊕ Fin r => SpacetimeDim d))
-  simpa [section43NPointProductSplitMeasurableEquiv, e1] using he2.comp (he1.symm e1)
+    have h := MeasureTheory.volume_measurePreserving_sumPiEquivProdPi
+      (fun _ : Fin n ⊕ Fin r => SpacetimeDim d)
+    rw [MeasureTheory.Measure.volume_eq_prod] at h
+    exact h
+  refine (he2.comp (he1.symm e1)).congr
+    (section43NPointProductSplitMeasurableEquiv d n r).measurable ?_
+  filter_upwards with x
+  rfl
 
 private theorem section43NPointProductSplitMeasurableEquiv_fst_apply
     (d n r : ℕ) (x : NPointDomain d (n + r)) (i : Fin n) :
@@ -604,7 +608,15 @@ private theorem section43OSBorchersPhase_full_sum_eq_factorized_succRight
               wickRotatePoint (xR p.1) p.2) *
             (ξ (finProdFinEquiv
                 (Fin.natAdd n p.1, p.2)) : ℂ) := by
-              rw [← finProdFinEquiv.sum_comp]
+              rw [← finProdFinEquiv.sum_comp
+                (g := fun a : Fin ((m + 1) * (d + 1)) =>
+                  flattenCLEquiv (m + 1) (d + 1)
+                    (fun j μ =>
+                      if μ = 0 then
+                        wickRotatePoint (xR j) μ + (t : ℂ) * Complex.I
+                      else
+                        wickRotatePoint (xR j) μ) a *
+                    (section43SplitRightFlat d n (m + 1) ξ a : ℂ))]
               refine Finset.sum_congr rfl ?_
               intro p _hp
               simp only [flattenCLEquiv_apply, finProdFinEquiv.symm_apply_apply]
@@ -662,7 +674,12 @@ private theorem section43OSBorchersPhase_full_sum_eq_factorized_succRight
         section43OSBorchersTimeShiftConfig_succRight
           (d := d) t y p.1 p.2 *
           (ξ (finProdFinEquiv p) : ℂ) := by
-          rw [← finProdFinEquiv.sum_comp]
+          rw [← finProdFinEquiv.sum_comp
+            (g := fun a : Fin ((n + (m + 1)) * (d + 1)) =>
+              flattenCLEquiv (n + (m + 1)) (d + 1)
+                (section43OSBorchersTimeShiftConfig_succRight
+                  (d := d) t y) a *
+                (ξ a : ℂ))]
           simp [flattenCLEquiv_apply]
     _ =
       ∑ k : Fin (n + (m + 1)),
@@ -1163,7 +1180,8 @@ private theorem section43OSForwardTubeLift_phase_cancel_of_totalMomentumZero_suc
           section43ComplexDiagonalTranslationFlat d N a i * (ξ i : ℂ)) = 0 := by
     rw [section43ComplexDiagonalTranslationFlat_pair_eq_totalMomentum]
     have hzero : section43TotalMomentumFlat d N ξ = 0 := by
-      simpa [N] using hξ_zero
+      change section43TotalMomentumFlat d N ξ = 0 at hξ_zero
+      exact hξ_zero
     simp [hzero]
   rw [hsum, htrans, add_zero]
 
@@ -1233,15 +1251,11 @@ private theorem section43_continuous_timeReflectionN
   apply continuous_pi
   intro μ
   by_cases hμ : μ = 0
-  · subst hμ
-    simpa [timeReflectionN, timeReflection] using
-      ((((continuous_apply 0 : Continuous fun y : SpacetimeDim d => y 0).comp
-          (continuous_apply i : Continuous fun x : NPointDomain d n => x i))).neg :
-        Continuous fun x : NPointDomain d n => -x i 0)
-  · simpa [timeReflectionN, timeReflection, hμ] using
-      ((continuous_apply μ : Continuous fun y : SpacetimeDim d => y μ).comp
-        (continuous_apply i : Continuous fun x : NPointDomain d n => x i) :
-        Continuous fun x : NPointDomain d n => x i μ)
+  · subst μ
+    change Continuous (fun x : NPointDomain d n => -x i 0)
+    fun_prop
+  · simp only [timeReflectionN, timeReflection, hμ, if_false]
+    fun_prop
 
 private theorem section43_continuous_splitFirst
     (d : ℕ) {n m : ℕ} :
@@ -1380,7 +1394,10 @@ theorem tsupport_osConjTensorProduct_subset_split_neg_pos
   have hyprod :
       y ∈ tsupport (fun x : NPointDomain d (n + m) =>
         f.1.osConj (splitFirst n m x) * g.1 (splitLast n m x)) := by
-    simpa [SchwartzNPoint.osConjTensorProduct, SchwartzMap.tensorProduct_apply] using hy
+    change y ∈ tsupport
+      ((f.1.osConjTensorProduct g.1 : SchwartzNPoint d (n + m)) :
+        NPointDomain d (n + m) → ℂ)
+    exact hy
   refine ⟨?_, ?_⟩
   · exact hA ((tsupport_mul_subset_left
       (f := fun x : NPointDomain d (n + m) =>

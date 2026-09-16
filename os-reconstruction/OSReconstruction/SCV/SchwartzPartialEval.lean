@@ -262,26 +262,26 @@ theorem hasFDerivAt_iteratedFDeriv_partialEval₁_param
         ((fderiv ℝ (iteratedFDeriv ℝ l (⇑f)) (x, y)).comp
           (ContinuousLinearMap.inl ℝ E₁ E₂)))
       x := by
+  letI : NormedAddCommGroup
+      (ContinuousMultilinearMap ℝ (fun _ : Fin l => E₁ × E₂) F) :=
+    ContinuousMultilinearMap.normedAddCommGroup'
+  letI : NormedSpace ℝ
+      (ContinuousMultilinearMap ℝ (fun _ : Fin l => E₁ × E₂) F) :=
+    ContinuousMultilinearMap.normedSpace'
   let A :
       ContinuousMultilinearMap ℝ (fun _ : Fin l => E₁ × E₂) F →L[ℝ]
         ContinuousMultilinearMap ℝ (fun _ : Fin l => E₂) F :=
     ContinuousMultilinearMap.compContinuousLinearMapL (F := _)
       (fun _ => ContinuousLinearMap.inr ℝ E₁ E₂)
-  let H :
-      E₁ → ContinuousMultilinearMap ℝ (fun _ : Fin l => E₁ × E₂) F :=
-    fun x' => iteratedFDeriv ℝ l (⇑f) (x', y)
-  have hH :
-      HasFDerivAt H
-        ((fderiv ℝ (iteratedFDeriv ℝ l (⇑f)) (x, y)).comp
-          (ContinuousLinearMap.inl ℝ E₁ E₂))
-        x := by
+  let H := fun x' : E₁ => iteratedFDeriv ℝ l (⇑f) (x', y)
+  have hH := by
     have hfull :
         HasFDerivAt (iteratedFDeriv ℝ l (⇑f))
           (fderiv ℝ (iteratedFDeriv ℝ l (⇑f)) (x, y)) (x, y) := by
       exact
         (f.smooth (l + 1)).differentiable_iteratedFDeriv
           (by exact_mod_cast Nat.lt_succ_self l) (x, y) |>.hasFDerivAt
-    simpa [H] using hfull.comp x (hasFDerivAt_prodMk_left x y)
+    exact hfull.comp x (hasFDerivAt_prodMk_left (𝕜 := ℝ) x y)
   have hEq :
       (fun x' => iteratedFDeriv ℝ l (fun y' => f (x', y')) y) = A ∘ H := by
     funext x'
@@ -368,7 +368,8 @@ theorem continuous_schwartzPartialEval₁
   obtain ⟨C, hC⟩ := f.decay' 0 (l + 1)
   have hC_nonneg : 0 ≤ C := by
     have hC0 : ‖iteratedFDeriv ℝ (l + 1) (⇑f) (x₀, 0)‖ ≤ C := by
-      simpa using hC (x₀, 0)
+      change ‖iteratedFDeriv ℝ (l + 1) f.toFun (x₀, 0)‖ ≤ C
+      simpa only [pow_zero, one_mul] using hC (x₀, 0)
     exact le_trans (norm_nonneg _) hC0
   let A : ℝ := (max R 1) ^ k * C
   have hA_nonneg : 0 ≤ A := by
@@ -460,7 +461,8 @@ theorem continuous_schwartzPartialEval₁
               ≤ ‖iteratedFDeriv ℝ (l + 1) (⇑f) (z, y)‖ := by
                   simpa [g] using norm_fderiv_iteratedFDeriv_partialEval₁_param_le f l z y
             _ ≤ C := by
-                  simpa using hC (z, y)
+                  change ‖iteratedFDeriv ℝ (l + 1) f.toFun (z, y)‖ ≤ C
+                  simpa only [pow_zero, one_mul] using hC (z, y)
         simpa [g] using
           (Convex.norm_image_sub_le_of_norm_fderiv_le
             (s := (Set.univ : Set E₁))

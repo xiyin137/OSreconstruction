@@ -199,7 +199,11 @@ theorem
           B.sourceStage.stage B.sourceStage.germ))
   have hzeroV : (0 : Fin (q + 1) -> Real) ∈ V := by
     constructor
-    · simpa using hzeroU
+    · change
+        (fun a => (((0 : Fin (q + 1) -> Real) a) : Complex)) ∈ U
+      convert hzeroU using 1
+      ext
+      simp
     · exact ⟨mem_of_mem_nhds
           (A.gram.anchoredAtlasRealRegion_mem_nhds
             A.sourceStage.stage A.sourceStage.germ),
@@ -340,7 +344,11 @@ theorem anchoredAtlasField_eq_holomorphicTranslationField_on_commonKernel
         A.sourceStage.stage A.sourceStage.germ).inter hWOpen)
   have hzeroV : (0 : Fin (q + 1) -> Real) ∈ V := by
     constructor
-    · simpa using hzeroU
+    · change
+        (fun a => (((0 : Fin (q + 1) -> Real) a) : Complex)) ∈ U
+      convert hzeroU using 1
+      ext
+      simp
     · exact ⟨mem_of_mem_nhds
           (A.gram.anchoredAtlasRealRegion_mem_nhds
             A.sourceStage.stage A.sourceStage.germ), hzeroW⟩

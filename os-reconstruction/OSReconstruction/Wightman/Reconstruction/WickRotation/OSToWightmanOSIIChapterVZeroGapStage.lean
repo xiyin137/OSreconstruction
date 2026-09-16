@@ -42,13 +42,14 @@ noncomputable def zeroGapUnitTimeSchwartz :
 @[simp] theorem zeroGapUnitTimeSchwartz_apply
     (τ : Fin 0 → ℝ) :
     zeroGapUnitTimeSchwartz τ = 1 := by
-  simp [zeroGapUnitTimeSchwartz]
+  change (1 : ℂ) = 1
+  rfl
 
 theorem zeroGapUnitTimeSchwartz_compact :
     HasCompactSupport
       (zeroGapUnitTimeSchwartz : (Fin 0 → ℝ) → ℂ) := by
-  simpa [HasCompactSupport, tsupport, Function.support,
-    zeroGapUnitTimeSchwartz] using
+  change IsCompact (tsupport (fun _ : Fin 0 → ℝ => (1 : ℂ)))
+  simpa [tsupport, Function.support] using
     (show IsCompact (Set.univ : Set (Fin 0 → ℝ)) from isCompact_univ)
 
 theorem zeroGapUnitTimeSchwartz_support :

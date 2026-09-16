@@ -898,7 +898,7 @@ private def swapWitnessRealSwappedRot
 private lemma swapWitnessRealSwappedRot_diff_time
     (hd : 2 ≤ d) (i : Fin n) (hi : i.val + 1 < n) (k : Fin n) :
     consecutiveDiff (swapWitnessRealSwappedRot (d := d) (n := n) hd i hi) k 0 = 0 := by
-  simpa [consecutiveDiff, swapWitnessRealSwappedRot] using
+  simpa [consecutiveDiff, swapWitnessRealSwappedRot, swapWitnessRealSwapped] using
     (swapWitnessReal_swapped_time_zero (d := d) (n := n) hd i hi k)
 
 private lemma swapWitnessRealSwappedRot_diff_e1
@@ -1209,8 +1209,11 @@ private def wickPlus1 : ComplexLorentzGroup 1 where
     fin_cases μ <;> fin_cases ν <;>
       simp [minkowskiSignature, Complex.I_mul_I]
   proper := by
-    rw [Matrix.det_fin_two]
-    simp
+    apply Eq.trans (Matrix.det_fin_two (Matrix.of fun μ ν =>
+      if μ = 0 ∧ ν = (1 : Fin 2) then Complex.I
+      else if μ = (1 : Fin 2) ∧ ν = 0 then Complex.I
+      else 0))
+    simp [Complex.I_mul_I]
 
 private def liftByWick {n : ℕ} (z : Fin n → Fin 2 → ℂ) : Fin n → Fin 2 → ℂ :=
   fun k μ => if μ = 0 then -Complex.I * z k 1 else -Complex.I * z k 0
@@ -1278,6 +1281,7 @@ theorem adjacent_overlap_witness_exists_d1 {n : ℕ}
     let z : Fin n → Fin 2 → ℂ := swappedX i hi
     refine Set.mem_iUnion.mpr ?_
     refine ⟨wickPlus1, liftByWick z, liftByWick_swapped_mem_forwardTube i hi, ?_⟩
-    simpa [z] using (wickPlus1_action_liftByWick z).symm
+    convert (wickPlus1_action_liftByWick z).symm using 1
+    rfl
 
 end BHW

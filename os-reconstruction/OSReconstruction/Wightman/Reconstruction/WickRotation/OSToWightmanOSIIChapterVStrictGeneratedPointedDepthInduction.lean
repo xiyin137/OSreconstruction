@@ -111,7 +111,8 @@ theorem next_extends_rankInduction
         depth D.strictGeneratedCarrier_subset lgc rank
         ).pointed.stageLevel.stage arity).carrier := by
   simpa [next,
-    CanonicalGeneratorPointedConvexAtlasStageLevelData.scalarRankUnionPointedNext]
+    CanonicalGeneratorPointedConvexAtlasStageLevelData.scalarRankUnionPointedNext,
+    CanonicalGeneratorPointedConvexAtlasStageLevelData.scalarRankUnionStageLevel]
     using
       D.pointed.scalarRankUnionStage_extends_rank
         depth D.strictGeneratedCarrier_subset lgc rank arity

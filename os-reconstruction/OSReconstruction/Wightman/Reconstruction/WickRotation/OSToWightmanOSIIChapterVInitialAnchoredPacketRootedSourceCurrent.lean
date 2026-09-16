@@ -124,15 +124,10 @@ theorem eventually_translatedTimeTest_tsupport_subset
           -(generatorChronologicalParameter i ξ)) := by
     apply continuous_pi
     intro j
-    by_cases hj : j.val < i.bridgeGlobalIndex.val
-    · change Continuous
-        (fun ξ : Fin k → ℝ =>
-          -(if j.val < i.bridgeGlobalIndex.val then -ξ j else ξ j))
-      simpa only [hj, if_pos, neg_neg] using (continuous_apply j)
-    · change Continuous
-        (fun ξ : Fin k → ℝ =>
-          -(if j.val < i.bridgeGlobalIndex.val then -ξ j else ξ j))
-      simpa only [hj, if_neg] using (continuous_apply j).neg
+    change Continuous
+      (fun ξ : Fin k → ℝ =>
+        -(if j.val < i.bridgeGlobalIndex.val then -ξ j else ξ j))
+    split_ifs <;> fun_prop
   have hzero :
       -(generatorChronologicalParameter i (0 : Fin k → ℝ)) = 0 := by
     ext j

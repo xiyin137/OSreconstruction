@@ -497,11 +497,10 @@ theorem continuous_generatorBridgeVariation
     apply continuous_pi
     intro j
     refine Fin.cases ?_ (fun b => ?_) j
-    · simpa using (continuous_id : Continuous (fun t : ℝ => t))
-    · simpa using
-        (continuous_const :
-          Continuous
-            (fun _ : ℝ => τ (i.rightGlobalIndex b)))
+    · change Continuous (fun t : ℝ => t)
+      exact continuous_id
+    · change Continuous (fun _ : ℝ => τ (i.rightGlobalIndex b))
+      exact continuous_const
   have happend :
       Continuous
         (fun t : ℝ =>
@@ -517,8 +516,12 @@ theorem continuous_generatorBridgeVariation
     apply continuous_pi
     intro j
     exact continuous_apply (Fin.cast hcard.symm j)
-  simpa [generatorBridgeVariation, generatorSplitTimeTuple, hcard] using
-    hreindex.comp happend
+  change Continuous (fun t =>
+    (fun f j => f (Fin.cast hcard.symm j))
+      (Fin.append
+        (fun a => τ (i.leftGlobalIndex (Fin.rev a)))
+        (Fin.cons t (fun b => τ (i.rightGlobalIndex b)))))
+  exact hreindex.comp happend
 
 /-- Translating an anchored tail test by a real stage parameter is the
 original approximate-identity test centered at `τ + anchor`. -/

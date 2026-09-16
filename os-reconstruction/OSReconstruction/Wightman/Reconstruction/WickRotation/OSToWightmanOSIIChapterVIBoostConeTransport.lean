@@ -216,6 +216,8 @@ theorem osiiCanonicalFrequencyLorentzTransport_of_boosts
     apply hp
     rw [← hd']
     apply mul_nonneg hr.le
-    simpa only [e, osiiFlatBoostWordCLE_block, osiiCanonicalFrequencyParticleBlock] using ht
+    change 0 ≤ osiiBoostWordCLE d (osiiDualBoostWord w)
+      (fun nu => p (finProdFinEquiv (j, nu))) 0
+    simpa only [e, osiiFlatBoostWordCLE_block] using ht
 
 end OSReconstruction

@@ -165,10 +165,8 @@ theorem agreesOnOld_of_convexAtlas
     have hnew :=
       (B.distribution_commonPositiveRealEdge E i τ hτ).1
     have hold_chart := atlas.realEdge_mem j τ hτ
-    simpa [D, SCV.realToComplex, osiiPositiveRealTimeEmbed] using
-      (show osiiPositiveRealTimeEmbed τ ∈
-          B.domain i ∩ atlas.domain j from
-        ⟨hnew, hold_chart⟩)
+    rw [show SCV.realToComplex τ = osiiPositiveRealTimeEmbed τ by rfl]
+    exact ⟨hnew, hold_chart⟩
   have hF_zero :
       ∀ τ ∈ E.realRegion, F (SCV.realToComplex τ) = 0 := by
     intro τ hτ

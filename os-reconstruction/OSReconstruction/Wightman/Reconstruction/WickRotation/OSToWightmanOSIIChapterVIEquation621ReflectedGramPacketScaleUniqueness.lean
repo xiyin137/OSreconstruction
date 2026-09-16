@@ -68,8 +68,12 @@ theorem
       H lgc i (liftF chiF) (liftG chiG) hhead
     let K := rootedReflectedGramGeneratorCommonComplexModeGermData
       S depth P lgc A R H
-    simpa [G, rootedReflectedGramPacketScaleGermData, K] using
-      K.ball_subset_second i hx.2
+    have hball := K.ball_subset_second i hx.2
+    rw [rootedLocalGeneratorOpenHilbertFieldScaleFamilyRealEdgeData_domain] at hball
+    change SCV.realToComplex x ∈ generatorSemigroupDomain i
+      ((H.left i).toLocalReflectedA0ContinuousTranslationFieldData).domain
+      ((H.right i).toLocalReflectedA0ContinuousTranslationFieldData).domain at hball
+    exact hball
   have hzero :=
     SCV.identity_theorem_totally_real
       (rootedReflectedGramPacketScaleBranch_open

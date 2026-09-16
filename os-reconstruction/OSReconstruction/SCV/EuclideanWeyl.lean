@@ -109,7 +109,8 @@ theorem supportsInOpen_euclideanReflectedTranslate_of_kernelSupport
           (euclideanReflectedTranslate x ρ :
             EuclideanSpace ℝ ι → ℂ) =
           e ⁻¹' tsupport (ρ : EuclideanSpace ℝ ι → ℂ) := by
-      simpa [e, euclideanReflectedTranslate, sub_eq_add_neg] using
+      change tsupport ((ρ : EuclideanSpace ℝ ι → ℂ) ∘ e) = _
+      simpa [e] using
         (tsupport_comp_eq_preimage
           (g := (ρ : EuclideanSpace ℝ ι → ℂ)) e)
     intro y hy
@@ -252,7 +253,8 @@ theorem euclideanDiffQuotient_iteratedFDeriv_pointwise
         iteratedFDeriv ℝ n
           (⇑(euclideanTranslateSchwartzCLM (t • v) φ)) x =
           iteratedFDeriv ℝ n (φ : EuclideanSpace ℝ ι → ℂ) (x + t • v) := by
-      simpa using
+      change iteratedFDeriv ℝ n (fun z => φ (z + t • v)) x = _
+      exact
         (iteratedFDeriv_comp_add_right
           (f := (φ : EuclideanSpace ℝ ι → ℂ)) n (t • v) x)
     rw [iteratedFDeriv_sub_euclidean_schwartz, hshift]
@@ -274,7 +276,9 @@ theorem euclideanDiffQuotient_iteratedFDeriv_pointwise
         (⇑(t⁻¹ • (euclideanTranslateSchwartzCLM (t • v) φ - φ))) x =
         t⁻¹ • iteratedFDeriv ℝ n
           (⇑(euclideanTranslateSchwartzCLM (t • v) φ - φ)) x := by
-    simpa [Pi.smul_apply] using
+    change iteratedFDeriv ℝ n (fun z => t⁻¹ •
+      ((euclideanTranslateSchwartzCLM (t • v) φ - φ) z)) x = _
+    simpa only using
       (iteratedFDeriv_const_smul_apply'
         (𝕜 := ℝ) (a := t⁻¹)
         (f := (⇑(euclideanTranslateSchwartzCLM (t • v) φ - φ) :
@@ -287,7 +291,8 @@ theorem euclideanDiffQuotient_iteratedFDeriv_pointwise
         -iteratedFDeriv ℝ n
           (((∂_{v} φ : SchwartzMap (EuclideanSpace ℝ ι) ℂ) :
             EuclideanSpace ℝ ι → ℂ)) x := by
-    simpa [g] using
+    change iteratedFDeriv ℝ n (-(g : EuclideanSpace ℝ ι → ℂ)) x = _
+    simpa only [g] using
       (iteratedFDeriv_neg_apply (𝕜 := ℝ) (i := n)
         (f := (g : EuclideanSpace ℝ ι → ℂ)) (x := x))
   rw [hsc, hneg, hshift_sub]
@@ -330,6 +335,12 @@ theorem euclideanDiffQuotient_weighted_pointwise_bound
         (fun _ : Fin n => EuclideanSpace ℝ ι) ℂ :=
     fun s => ‖x‖ ^ k • (t⁻¹ • H (x + s • (t • v)) - t⁻¹ • H x) -
       ‖x‖ ^ k • (s • K x)
+  letI : AddCommGroup (EuclideanSpace ℝ ι [×n]→L[ℝ] ℂ) :=
+    ContinuousMultilinearMap.normedAddCommGroup'.toAddCommGroup
+  letI : Module ℝ (EuclideanSpace ℝ ι [×n]→L[ℝ] ℂ) :=
+    ContinuousMultilinearMap.normedSpace'.toModule
+  letI : TopologicalSpace (EuclideanSpace ℝ ι [×n]→L[ℝ] ℂ) :=
+    PseudoMetricSpace.toUniformSpace.toTopologicalSpace
   have hH_diff : Differentiable ℝ H := by
     simpa [H] using
       (φ.smooth (n + 1)).differentiable_iteratedFDeriv (by
@@ -379,7 +390,19 @@ theorem euclideanDiffQuotient_weighted_pointwise_bound
               ‖x‖ ^ k • (r • K x))
           (‖x‖ ^ k • (t⁻¹ • ((fderiv ℝ H (x + s • (t • v))) (t • v))) -
             ‖x‖ ^ k • K x) s := by
-      convert (hmain0.const_smul (‖x‖ ^ k)).sub (hlin.const_smul (‖x‖ ^ k)) using 1
+      change @HasDerivAt ℝ _ (EuclideanSpace ℝ ι [×n]→L[ℝ] ℂ)
+        ContinuousMultilinearMap.normedAddCommGroup'.toAddCommGroup
+        ContinuousMultilinearMap.normedSpace'.toModule
+        PseudoMetricSpace.toUniformSpace.toTopologicalSpace _
+        (fun r : ℝ =>
+          ‖x‖ ^ k • (t⁻¹ • H (x + r • (t • v)) - t⁻¹ • H x) -
+            ‖x‖ ^ k • (r • K x))
+        (‖x‖ ^ k • (t⁻¹ • ((fderiv ℝ H (x + s • (t • v))) (t • v))) -
+          ‖x‖ ^ k • K x) s
+      convert (hmain0.const_smul (‖x‖ ^ k)).sub
+        (hlin.const_smul (‖x‖ ^ k)) using 1
+      funext r
+      rfl
     have hsub :
         HasDerivAt
           (fun r : ℝ =>
@@ -418,6 +441,7 @@ theorem euclideanDiffQuotient_weighted_pointwise_bound
           iteratedFDeriv ℝ n
             (⇑(euclideanTranslateSchwartzCLM ((s * t) • v) g)) x =
             K (x + s • (t • v)) := by
+        change iteratedFDeriv ℝ n (fun z => g (z + (s * t) • v)) x = _
         simpa [K, smul_smul, mul_comm, mul_left_comm, mul_assoc] using
           (iteratedFDeriv_comp_add_right
             (f := (g : EuclideanSpace ℝ ι → ℂ)) n ((s * t) • v) x)
@@ -593,11 +617,13 @@ theorem tendsto_euclideanTranslateSchwartz_nhds_of_isCompactSupport
       have htrans_a :
           iteratedFDeriv ℝ n (⇑(euclideanTranslateSchwartzCLM a ψ)) x =
             H (x, a) := by
+        change iteratedFDeriv ℝ n (fun z => ψ (z + a)) x = _
         simpa [H] using
           (iteratedFDeriv_comp_add_right (f := ⇑ψ) n a x)
       have htrans_a0 :
           iteratedFDeriv ℝ n (⇑(euclideanTranslateSchwartzCLM a0 ψ)) x =
             H (x, a0) := by
+        change iteratedFDeriv ℝ n (fun z => ψ (z + a0)) x = _
         simpa [H] using
           (iteratedFDeriv_comp_add_right (f := ⇑ψ) n a0 x)
       rw [iteratedFDeriv_sub_euclidean_schwartz, htrans_a, htrans_a0]
@@ -635,11 +661,13 @@ theorem tendsto_euclideanTranslateSchwartz_nhds_of_isCompactSupport
       rw [iteratedFDeriv_sub_euclidean_schwartz]
       rw [show iteratedFDeriv ℝ n (⇑(euclideanTranslateSchwartzCLM a ψ)) x =
             iteratedFDeriv ℝ n (⇑ψ) (x + a) by
-              simpa using
+              change iteratedFDeriv ℝ n (fun z => ψ (z + a)) x = _
+              exact
                 (iteratedFDeriv_comp_add_right (f := ⇑ψ) n a x)]
       rw [show iteratedFDeriv ℝ n (⇑(euclideanTranslateSchwartzCLM a0 ψ)) x =
             iteratedFDeriv ℝ n (⇑ψ) (x + a0) by
-              simpa using
+              change iteratedFDeriv ℝ n (fun z => ψ (z + a0)) x = _
+              exact
                 (iteratedFDeriv_comp_add_right (f := ⇑ψ) n a0 x)]
       simp [hzero_a, hzero_a0]
     rw [hEq]

@@ -263,8 +263,9 @@ theorem hasSum_complexSpatialHermite
             spatialHermite d k hk m)
         (SCV.schwartzOfRealCLM fRe) := by
     have h := hRe0.mapL SCV.schwartzOfRealCLM
-    simpa [e, fRe, spatialHermite, realSpatialHermite,
-      realSpatialHermiteCoefficientCLM, Complex.real_smul] using h
+    convert h using 1 <;>
+      simp [e, fRe, spatialHermite, realSpatialHermite,
+        realSpatialHermiteCoefficientCLM_apply]
   have hIm :
       HasSum
         (fun m =>
@@ -273,8 +274,9 @@ theorem hasSum_complexSpatialHermite
             spatialHermite d k hk m)
         (Complex.I • SCV.schwartzOfRealCLM fIm) := by
     have h := (hIm0.mapL SCV.schwartzOfRealCLM).const_smul Complex.I
-    simpa [e, fIm, spatialHermite, realSpatialHermite,
-      realSpatialHermiteCoefficientCLM, Complex.real_smul, mul_smul] using h
+    convert h using 1 <;>
+      simp [e, fIm, spatialHermite, realSpatialHermite,
+        realSpatialHermiteCoefficientCLM_apply, mul_smul]
   have h := hRe.add hIm
   convert h using 1
   · funext m

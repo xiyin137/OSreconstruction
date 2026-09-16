@@ -203,14 +203,16 @@ theorem narrowDistributionOfOS_eqOn_of_source_eq
       ∀ τ ∈ section43TimeStrictPositiveRegion k,
         SCV.realToComplex τ ∈ U := by
     intro τ hτ
-    simpa [U, SCV.realToComplex, osiiPositiveRealTimeEmbed] using
+    change osiiPositiveRealTimeEmbed τ ∈ U
+    simpa [U] using
       osiiPositiveRealTimeEmbed_mem_osiiNarrowTimeCarrier
         η hη τ hτ
   have hF_zero :
       ∀ τ ∈ section43TimeStrictPositiveRegion k,
         F (SCV.realToComplex τ) = 0 := by
     intro τ hτ
-    simpa [F, osiiPositiveRealTimeEmbed] using
+    change F (osiiPositiveRealTimeEmbed τ) = 0
+    simpa [F] using
       sub_eq_zero.mpr (hreal τ hτ)
   intro ζ hζ
   have hz :

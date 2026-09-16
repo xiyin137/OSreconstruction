@@ -48,10 +48,16 @@ theorem equation621DampedTargetTimePoints_timeAverageSplitCondition
         (equation621TargetRightParameter i (w - osiiPositiveRealTimeEmbed anchor))) w := by
   have hleft : forall j, 0 <= (equation621RootedLeftCenter i anchor w j).re := by
     intro j
-    simpa using (hcentered (i.leftGlobalIndex j)).le
+    rw [equation621RootedLeftCenter_apply]
+    have h := (hcentered (i.leftGlobalIndex j)).le
+    change 0 <= (w (i.leftGlobalIndex j)).re - anchor (i.leftGlobalIndex j) at h ⊢
+    exact h
   have hright : forall j, 0 <= (equation621RootedRightCenter i anchor w j).re := by
     intro j
-    simpa using (hcentered (i.rightGlobalIndex j)).le
+    rw [equation621RootedRightCenter_apply]
+    have h := (hcentered (i.rightGlobalIndex j)).le
+    change 0 <= (w (i.rightGlobalIndex j)).re - anchor (i.rightGlobalIndex j) at h ⊢
+    exact h
   have hnonneg {m : Nat} (tau : Fin (m + 1) -> Real)
       (htau : forall j, 0 <= tau j) (z : Fin m -> Complex)
       (hz : forall j, 0 <= (z j).re) :
@@ -206,9 +212,7 @@ noncomputable def current_reflectedPrescribedShiftProductApproximationRows
             (Q.packet.rootedLeftBlockAnchor i)
             (Q.packet.rootedLeftBlockAnchor_positive i) chi scale := by
       intro scale chi
-      simpa [DLeft, i, equation621NontrivialGeneratorIndex,
-        rootedLeftNontrivialReflectedGramSpatialSourceData] using
-        Q.packet.rootedLeftBlockAnchoredSourceCLM_source_translated Q.roots i scale chi
+      exact Q.packet.rootedLeftBlockAnchoredSourceCLM_source_translated Q.roots i scale chi
     have hz : equation621TargetLeftParameter i v ∈
         openZeroConvexKernel DLeft.reflectedGram.atlas.spatialLinearDomain :=
       hradial.2.1
@@ -222,17 +226,16 @@ noncomputable def current_reflectedPrescribedShiftProductApproximationRows
     have hpoint : reflectedSelfPairMarginalSpatialPoint d (qLeft + 1)
         (generatorLeftBlockSpatialPoint d i (equation621SplitTargetSpatialPoint i x)) =
           (i.equation621TargetAdaptedSpatialSplitData d).leftPoint x := by
-      simpa [i] using generatorLeftBlockSpatialPoint_reflectedSelfPair
-        (d := d) i (equation621SplitTargetSpatialPoint i x)
+      apply eq_of_heq
+      exact heq_of_eq (generatorLeftBlockSpatialPoint_reflectedSelfPair
+        (d := d) i (equation621SplitTargetSpatialPoint i x))
     rw [hpoint] at hrow
     have htest : block.toEquation621SpatialApproxIdentity.section43Probe
         (generatorLeftBlockSpatialPoint d i (equation621SplitTargetSpatialPoint i x)) N =
           RootedA0BlockContinuousTranslationData.absoluteProductTargetLeftSpatialTest
             spatialApprox i (equation621SplitTargetSpatialPoint i x) N := by
-      simpa [block, i, equation621NontrivialGeneratorIndex,
-        RootedA0BlockContinuousTranslationData.positiveBlockSpatialTest] using
-        RootedA0BlockContinuousTranslationData.generatorLeftBlockProbe_eq_positiveTargetTest
-          (d := d) spatialApprox i (equation621SplitTargetSpatialPoint i x) N
+      exact RootedA0BlockContinuousTranslationData.generatorLeftBlockProbe_eq_positiveTargetTest
+        spatialApprox i (equation621SplitTargetSpatialPoint i x) N
     apply (tendsto_congr' (Filter.Eventually.of_forall fun scale => ?_)).2 hrow
     apply congrArg diagonal
     exact congrArg (fun chi => DLeft.reflectedGram.atlas.gram.anchoredAtlasField
@@ -249,9 +252,7 @@ noncomputable def current_reflectedPrescribedShiftProductApproximationRows
             (Q.packet.rootedRightBlockAnchor i)
             (Q.packet.rootedRightBlockAnchor_positive i) chi scale := by
       intro scale chi
-      simpa [DRight, i, equation621NontrivialGeneratorIndex,
-        rootedRightNontrivialReflectedGramSpatialSourceData] using
-        Q.packet.rootedRightBlockAnchoredSourceCLM_source_translated Q.roots i scale chi
+      exact Q.packet.rootedRightBlockAnchoredSourceCLM_source_translated Q.roots i scale chi
     have hz : equation621TargetRightParameter i v ∈
         openZeroConvexKernel DRight.reflectedGram.atlas.spatialLinearDomain :=
       hradial.2.2
@@ -265,17 +266,16 @@ noncomputable def current_reflectedPrescribedShiftProductApproximationRows
     have hpoint : reflectedSelfPairMarginalSpatialPoint d (qRight + 1)
         (generatorRightBlockSpatialPoint d i (equation621SplitTargetSpatialPoint i x)) =
           (i.equation621TargetAdaptedSpatialSplitData d).rightPoint x := by
-      simpa [i] using generatorRightBlockSpatialPoint_reflectedSelfPair
-        (d := d) i (equation621SplitTargetSpatialPoint i x)
+      apply eq_of_heq
+      exact heq_of_eq (generatorRightBlockSpatialPoint_reflectedSelfPair
+        (d := d) i (equation621SplitTargetSpatialPoint i x))
     rw [hpoint] at hrow
     have htest : block.toEquation621SpatialApproxIdentity.section43Probe
         (generatorRightBlockSpatialPoint d i (equation621SplitTargetSpatialPoint i x)) N =
           RootedA0BlockContinuousTranslationData.absoluteProductTargetRightSpatialTest
             spatialApprox i (equation621SplitTargetSpatialPoint i x) N := by
-      simpa [block, i, equation621NontrivialGeneratorIndex,
-        RootedA0BlockContinuousTranslationData.positiveBlockSpatialTest] using
-        RootedA0BlockContinuousTranslationData.generatorRightBlockProbe_eq_positiveTargetTest
-          (d := d) spatialApprox i (equation621SplitTargetSpatialPoint i x) N
+      exact RootedA0BlockContinuousTranslationData.generatorRightBlockProbe_eq_positiveTargetTest
+        spatialApprox i (equation621SplitTargetSpatialPoint i x) N
     apply (tendsto_congr' (Filter.Eventually.of_forall fun scale => ?_)).2 hrow
     apply congrArg diagonal
     exact congrArg (fun chi => DRight.reflectedGram.atlas.gram.anchoredAtlasField

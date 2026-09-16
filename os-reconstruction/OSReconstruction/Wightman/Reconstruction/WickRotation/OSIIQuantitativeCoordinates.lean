@@ -239,6 +239,6 @@ theorem squareSeminorm_timeSpatial_le (d k r : Nat) [NeZero d]
     (nPointTimeSpatialCLE (d := d) k).symm (k * d + 1) 1
       (by nlinarith [Nat.cast_nonneg (α := Real) (k * d)]) le_rfl
       (nPointTimeSpatialCLE_opNorm_le d k) (nPointTimeSpatialCLE_symm_opNorm_le_one d k) f r
-  simpa only [mul_one] using h
+  simpa [nPointTimeSpatialSchwartzCLE, mul_one] using h
 
 end OSReconstruction

@@ -44,7 +44,8 @@ theorem translateSchwartzNPoint_hasCompactSupport
     (hg_compact : HasCompactSupport (g : NPointDomain d n → ℂ)) :
     HasCompactSupport
       (translateSchwartzNPoint (d := d) a g : NPointDomain d n → ℂ) := by
-  simpa [translateSchwartzNPoint_apply, sub_eq_add_neg] using
+  simpa [translateSchwartzNPoint_apply, Function.comp_def,
+    section43TranslateNPointDomainHomeomorph] using
     hg_compact.comp_homeomorph
       (section43TranslateNPointDomainHomeomorph (d := d) (n := n) a)
 
@@ -86,12 +87,17 @@ private theorem section43FrequencyRepresentative_translate_spatial
     ContinuousLinearMap.comp_apply,
     SchwartzMap.compCLMOfContinuousLinearEquiv_apply, Function.comp_apply]
   rw [flatten_translateSchwartzNPoint_spatial]
+  have hdiag :
+      section43DiagonalTranslationFlat d n (-(Fin.cons 0 a)) =
+        -(section43DiagonalTranslationFlat d n (Fin.cons 0 a)) := by
+    ext k μ
+    simp [section43DiagonalTranslationFlat]
   have h := congrArg
     (fun K : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ =>
       K ((section43CumulativeTailMomentumCLE d n).symm q))
     (physicsFourierFlatCLM_diagonalTranslate_eq_phaseCLM
       d n (-(Fin.cons 0 a)) (flattenSchwartzNPoint (d := d) ψ))
-  simpa [section43DiagonalTranslationFlat] using h
+  simpa [hdiag] using h
 
 /-- A diagonal spatial translation becomes a translation in only the first
 spatial difference coordinate. -/

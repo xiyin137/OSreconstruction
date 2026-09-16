@@ -111,7 +111,8 @@ theorem osiiStep4_integral_complex_eq_integral_imag_real
     simpa [Function.comp_def] using he.symm.integrable_comp_of_integrable hf
   calc
     ∫ z, f z = ∫ p, f (e.symm p) := by
-      simpa [Function.comp_def] using (he.symm.integral_comp' f).symm
+      simpa only [Measure.volume_eq_prod, Function.comp_def] using
+        (he.symm.integral_comp' f).symm
     _ = ∫ y : Fin m → ℝ, ∫ x : Fin m → ℝ, f (e.symm (x, y)) := by
       exact integral_prod_symm _ hf'
     _ = ∫ y : Fin m → ℝ, ∫ x : Fin m → ℝ,

@@ -328,7 +328,9 @@ private theorem continuousAt_pointPair {n m : ℕ} (Wfn : WightmanFunctions d)
       intro μ
       simp only [timeReflectionN, timeReflection]
       split_ifs <;> fun_prop
-    · simpa only [Fin.append_right] using (continuous_apply j).comp continuous_snd
+    · simp only [Fin.append_right]
+      set_option backward.isDefEq.respectTransparency false in
+        exact (continuous_apply j).comp continuous_snd
   exact (continuousAt_euclidean_kernel_of_mem_translatedPET Wfn
     (reflected_ordered_points_mem_translatedPET x y hx hy)).comp
       (f := fun p : NPointDomain d n × NPointDomain d m =>

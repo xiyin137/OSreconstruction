@@ -110,7 +110,7 @@ theorem hasFDerivAt_intervalPiece_tailFixed {n : ℕ}
         refine continuous_pi ?_
         intro j
         refine Fin.cases ?_ ?_ j
-        · simpa using (continuous_id : Continuous fun t : ℝ => t)
+        · fun_prop
         · intro i
           simpa using (continuous_const : Continuous fun _ : ℝ => y' i)
       exact F.continuous.comp hpath
@@ -129,7 +129,7 @@ theorem hasFDerivAt_intervalPiece_tailFixed {n : ℕ}
       refine continuous_pi ?_
       intro j
       refine Fin.cases ?_ ?_ j
-      · simpa using (continuous_id : Continuous fun t : ℝ => t)
+      · fun_prop
       · intro i
         simpa using (continuous_const : Continuous fun _ : ℝ => y i)
     have hcont :
@@ -196,8 +196,10 @@ theorem hasFDerivAt_intervalPiece_tailFixed_prod {n : ℕ}
             (tailInsertCLM n))).comp
         (ContinuousLinearMap.snd ℝ ℝ (Fin n → ℝ)))
       p := by
-  simpa using
-    (hasFDerivAt_intervalPiece_tailFixed F a p.2).comp p hasFDerivAt_snd
+  change HasFDerivAt
+    ((fun y' : Fin n → ℝ => ∫ t in (0 : ℝ)..a, F (Fin.cons t y')) ∘ Prod.snd)
+    _ p
+  exact (hasFDerivAt_intervalPiece_tailFixed F a p.2).comp p hasFDerivAt_snd
 
 /-- The fixed-tail moving-endpoint piece is Fréchet differentiable on the
 product space; its derivative only sees the head variable. -/
@@ -214,7 +216,7 @@ theorem hasFDerivAt_intervalPiece_headFixed_prod {n : ℕ}
       refine continuous_pi ?_
       intro j
       refine Fin.cases ?_ ?_ j
-      · simpa using (continuous_id : Continuous fun t : ℝ => t)
+      · fun_prop
       · intro i
         simpa using (continuous_const : Continuous fun _ : ℝ => p.2 i)
     exact F.continuous.comp hpath
@@ -230,7 +232,10 @@ theorem hasFDerivAt_intervalPiece_headFixed_prod {n : ℕ}
         (fun q : ℝ × (Fin n → ℝ) => q.1)
         (ContinuousLinearMap.fst ℝ ℝ (Fin n → ℝ))
         p := hasFDerivAt_fst
-  simpa using hhead.hasFDerivAt.comp p hfst
+  change HasFDerivAt
+    ((fun x : ℝ => ∫ t in p.1..x, F (Fin.cons t p.2)) ∘ Prod.fst)
+    _ p
+  exact hhead.hasFDerivAt.comp p hfst
 
 /-- The remaining error term after splitting the interval piece into the
 fixed-interval tail piece and the fixed-tail moving-endpoint piece. This is the
@@ -484,7 +489,8 @@ theorem hasFDerivAt_intervalPiece {n : ℕ}
   have hprod := hasFDerivAt_intervalPiece_prod F (headTailCLM n v)
   have hcomp :
       HasFDerivAt (fun w : Fin (n + 1) → ℝ => headTailCLM n w) (headTailCLM n) v := by
-    simpa using (headTailCLM n).hasFDerivAt
+    change HasFDerivAt (headTailCLM n) (headTailCLM n) v
+    exact (headTailCLM n).hasFDerivAt
   have h := hprod.comp v hcomp
   let Ltail : (Fin n → ℝ) →L[ℝ] ℂ :=
     ∫ t in (0 : ℝ)..(v 0),
@@ -508,7 +514,10 @@ theorem hasFDerivAt_intervalPiece {n : ℕ}
     ext w
     simp [LprodComp, Ltarget, Ltail, headTailCLM, tailCLM_apply,
       ContinuousLinearMap.comp_apply, Fin.cons_self_tail, add_comm]
-  simpa [intervalPiece, Ltarget, hL] using h'
+  rw [hL] at h'
+  change HasFDerivAt (intervalPiece F) Ltarget v at h'
+  change HasFDerivAt (intervalPiece F) Ltarget v
+  exact h'
 
 /-- The interval piece is C^∞. Proof by induction on derivative order:
 - Head derivative of intervalPiece F = F (Schwartz, hence C^∞)
@@ -548,7 +557,7 @@ theorem contDiff_intervalPiece {n : ℕ}
                     refine continuous_pi ?_
                     intro j
                     refine Fin.cases ?_ ?_ j
-                    · simpa using (continuous_id : Continuous fun t : ℝ => t)
+                    · fun_prop
                     · intro i
                       simpa using (continuous_const : Continuous fun _ : ℝ => Fin.tail x i)
                   simpa [φ] using
@@ -634,7 +643,7 @@ theorem lineDeriv_headFiberAntiderivRaw {n : ℕ}
       refine continuous_pi ?_
       intro j
       refine Fin.cases ?_ ?_ j
-      · simpa using (continuous_id : Continuous fun s : ℝ => s)
+      · fun_prop
       · intro i
         simpa using (continuous_const : Continuous fun _ : ℝ => y i)
     exact F.continuous.comp hcons_cont

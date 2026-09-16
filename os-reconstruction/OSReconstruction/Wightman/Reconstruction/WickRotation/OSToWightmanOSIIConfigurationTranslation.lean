@@ -140,7 +140,8 @@ theorem tsupport_translateSchwartz_eq_preimage
           SchwartzMap (Fin m → ℝ) ℂ) : (Fin m → ℝ) → ℂ) =
       (Homeomorph.addRight s) ⁻¹'
         tsupport (η : (Fin m → ℝ) → ℂ) := by
-  simpa [SCV.translateSchwartz] using
+  change closure (Function.support (fun x : Fin m → ℝ => η (x + s))) = _
+  simpa [tsupport, Function.comp_def] using
     (tsupport_comp_eq_preimage
       (g := (η : (Fin m → ℝ) → ℂ))
       (Homeomorph.addRight s))

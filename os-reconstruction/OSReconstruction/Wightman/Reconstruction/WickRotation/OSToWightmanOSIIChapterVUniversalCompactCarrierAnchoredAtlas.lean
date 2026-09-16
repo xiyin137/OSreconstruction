@@ -194,10 +194,12 @@ theorem spatialLinearDomain_open
     apply continuous_pi
     intro j
     refine Fin.addCases (fun i => ?_) (fun i => ?_) j
-    · simpa [reflectedCauchyCenter] using
+    · convert
         (continuous_star.comp
           (continuous_apply i :
-            Continuous (fun z : Fin (q + 1) → ℂ => z i)))
+            Continuous (fun z : Fin (q + 1) → ℂ => z i))) using 1
+      funext z
+      simp [Function.comp_apply, reflectedCauchyCenter]
     · convert
         (continuous_apply i :
           Continuous (fun z : Fin (q + 1) → ℂ => z i)) using 1
@@ -242,7 +244,7 @@ theorem initialGramPolydisc_subset_spatialLinearDomain
         (fun a => D.gram.hilbert.field a 0) :=
     { gram := P, anchored := A₀ }
   have hzP : z ∈ P.domain := by
-    simpa [P] using hz
+    exact hz
   refine ⟨?_, ?_, ?_⟩
   · exact Set.mem_iUnion.mpr ⟨C, hzP⟩
   · exact A₀.anchorPair_subset_scalarDomain z hzP

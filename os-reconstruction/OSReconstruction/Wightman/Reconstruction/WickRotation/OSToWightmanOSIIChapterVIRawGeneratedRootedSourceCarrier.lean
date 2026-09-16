@@ -64,7 +64,7 @@ theorem rootedLeftBlockTarget_mem_rawMixedTailArgumentCarrier_of_raw_generator
         osiiTimeArgumentCarrier
           ({osiiMixedArgumentTail left} :
             Set (Fin (q + 1) -> Real)) := by
-    simpa [i, zleft] using
+    simpa [i, zleft, rootedLeftBlockTarget] using
       star_generatorChronological_split_left_mem_argumentCarrier
         i left theta right hz
   refine ⟨hzleft_exact.1, ?_⟩
@@ -88,7 +88,7 @@ theorem rootedLeftBlockTarget_mem_rawMixedTailArgumentCarrier_of_raw_generator
       (fun v : Fin (q + 1) -> Real =>
         @Fin.cons (q + 1) (fun _ => Real) 0 v) harg
   rw [hconsarg, hcons]
-  simpa [i] using hleft
+  simpa [i, osiiRawStrictGeneratedMixedLogarithmicBase] using hleft
 
 /-- The right block of an exact raw generator chart remains in the
 corresponding raw mixed-tail carrier. -/
@@ -122,7 +122,7 @@ theorem rootedRightBlockTarget_mem_rawMixedTailArgumentCarrier_of_raw_generator
         osiiTimeArgumentCarrier
           ({osiiMixedArgumentTail right} :
             Set (Fin (q + 1) -> Real)) := by
-    simpa [i, zright] using
+    simpa [i, zright, rootedRightBlockTarget] using
       generatorChronological_split_right_mem_argumentCarrier
         i left theta right hz
   refine ⟨hzright_exact.1, ?_⟩
@@ -146,7 +146,7 @@ theorem rootedRightBlockTarget_mem_rawMixedTailArgumentCarrier_of_raw_generator
       (fun v : Fin (q + 1) -> Real =>
         @Fin.cons (q + 1) (fun _ => Real) 0 v) harg
   rw [hconsarg, hcons]
-  simpa [i] using hright
+  simpa [i, osiiRawStrictGeneratedMixedLogarithmicBase] using hright
 
 /-- A one-particle left endpoint contributes the zero raw mixed source at
 every depth. -/
@@ -165,6 +165,10 @@ theorem rootedLeftBlockTarget_mem_rawMixedTailArgumentCarrier_of_left_endpoint
   · have hzero :=
       OSIIRawStrictGeneratedLogarithmicArgument.mixed_zero
         1 depth (by omega)
+    change OSIIRawStrictGeneratedLogarithmicArgument .mixed 1 depth
+      (Fin.cons 0 (osiiTimeArgumentVector
+        (rootedLeftBlockTarget
+          (⟨1, m, le_rfl, hm, hnm⟩ : GeneratorIndex k) z)))
     convert hzero using 1
     funext j
     have hj : j = 0 := Fin.eq_zero j
@@ -188,6 +192,10 @@ theorem rootedRightBlockTarget_mem_rawMixedTailArgumentCarrier_of_right_endpoint
   · have hzero :=
       OSIIRawStrictGeneratedLogarithmicArgument.mixed_zero
         1 depth (by omega)
+    change OSIIRawStrictGeneratedLogarithmicArgument .mixed 1 depth
+      (Fin.cons 0 (osiiTimeArgumentVector
+        (rootedRightBlockTarget
+          (⟨n, 1, hn, le_rfl, hnm⟩ : GeneratorIndex k) z)))
     convert hzero using 1
     funext j
     have hj : j = 0 := Fin.eq_zero j
@@ -267,8 +275,7 @@ private theorem firstBridge_expandedRight_raw
           apply rawStrict_recursiveAngle_mixedBox_subset q depth
           refine ⟨by simpa using hright0, ?_⟩
           intro j
-          simpa [RecursiveAngleRadialGeneratorChartAtRank.firstBridgeExpandedRight]
-            using expanded_right_tail_bound j
+          exact expanded_right_tail_bound j
 
 /-- A canonical first-bridge radial chart has raw provenance for both of its
 expanded lower blocks.

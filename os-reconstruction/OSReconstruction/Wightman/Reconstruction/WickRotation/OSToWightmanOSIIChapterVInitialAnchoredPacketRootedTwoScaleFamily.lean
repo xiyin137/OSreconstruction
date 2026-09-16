@@ -213,11 +213,13 @@ theorem rootedGeneratorTwoScaleApproximationFamilyOfOS_domain_convex
         (generatorSemigroupDomain i
           (D.left i).domain (D.right i).domain) := by
     apply convex_generatorSemigroupDomain i
-    · simpa [D, conjugateFieldDomain] using
-        (H.left i).domain_convex.linear_preimage
-          (starL' ℝ :
-            (Fin (i.n - 1) → ℂ) ≃L[ℝ]
-              (Fin (i.n - 1) → ℂ)).toLinearMap
+    · intro x hx y hy a b ha hb hab
+      change star x ∈ (H.left i).domain at hx
+      change star y ∈ (H.left i).domain at hy
+      change star (a • x + b • y) ∈ (H.left i).domain
+      rw [show star (a • x + b • y) =
+        a • star x + b • star y by ext j; simp]
+      exact (H.left i).domain_convex hx hy ha hb hab
     · exact (H.right i).domain_convex
   change
     Convex ℝ

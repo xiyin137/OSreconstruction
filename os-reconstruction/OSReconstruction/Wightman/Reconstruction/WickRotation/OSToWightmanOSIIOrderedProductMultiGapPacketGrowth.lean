@@ -81,6 +81,9 @@ theorem osiiFiniteSchwartzSeminorm_translateSchwartzConfiguration_le
   have hderivative :=
     SchwartzMap.one_add_le_sup_seminorm_apply
       (𝕜 := ℝ) (m := (r, r)) hp hl f (x + a)
+  change
+    (1 + ‖x + a‖) ^ p * ‖iteratedFDeriv ℝ l f.toFun (x + a)‖ ≤
+      (2 : ℝ) ^ r * Q at hderivative
   calc
     ‖x‖ ^ p * ‖iteratedFDeriv ℝ l f.toFun (x + a)‖ ≤
         ((1 + ‖a‖) * (1 + ‖x + a‖)) ^ p *
@@ -93,7 +96,7 @@ theorem osiiFiniteSchwartzSeminorm_translateSchwartzConfiguration_le
       ring
     _ ≤ (1 + ‖a‖) ^ p * ((2 : ℝ) ^ r * Q) := by
       exact mul_le_mul_of_nonneg_left
-        (by simpa [Q] using hderivative) (by positivity)
+        hderivative (by positivity)
     _ ≤ (1 + ‖a‖) ^ r * ((2 : ℝ) ^ r * Q) := by
       exact mul_le_mul_of_nonneg_right
         (pow_le_pow_right₀ (by linarith [norm_nonneg a]) hp)

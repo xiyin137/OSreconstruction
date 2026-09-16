@@ -239,7 +239,6 @@ theorem
   have hη₁_compact :
       HasCompactSupport (η₁ : (Fin i.n → ℝ) → ℂ) := by
     apply hasCompactSupport_schwartzMap_conj
-    dsimp only [η₁]
     unfold rootedLeftTranslatedTimeProfile
     exact
       hasCompactSupport_translateSchwartz
@@ -630,7 +629,7 @@ theorem
       · have htJ : t ∈ J := by
           apply hsupport timeScale
           exact subset_tsupport _
-            (by simpa [Function.mem_support] using hweight)
+            (show t ∈ Function.support (weight : ℝ → ℂ) from hweight)
         rw [norm_mul]
         apply mul_le_mul_of_nonneg_left _ (norm_nonneg _)
         exact
@@ -654,7 +653,7 @@ theorem
       · have htJ : t ∈ J := by
           apply hsupport timeScale
           exact subset_tsupport _
-            (by simpa [Function.mem_support] using hweight)
+            (show t ∈ Function.support (weight : ℝ → ℂ) from hweight)
         have ht : 0 < t := hJ_positive htJ
         have hct : 0 < c + t :=
           add_pos_of_nonneg_of_pos hc ht

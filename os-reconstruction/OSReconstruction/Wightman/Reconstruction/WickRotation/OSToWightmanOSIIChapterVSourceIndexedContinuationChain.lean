@@ -188,16 +188,8 @@ theorem segmentSubdivision_ne_nil
     (segmentSubdivision start target steps).getLast
         (segmentSubdivision_ne_nil start target steps) =
       target := by
-  change
-    (List.ofFn (fun j : Fin (steps + 1) =>
-      AffineMap.lineMap (k := ℝ) start target
-        ((j.val : ℝ) / (steps : ℝ)))).getLast _ =
-      target
-  rw [List.getLast_ofFn]
-  have hindex : steps + 1 - 1 = steps := by omega
-  rw [show
-    ((⟨steps + 1 - 1, by omega⟩ : Fin (steps + 1))).val =
-      steps by exact hindex]
+  simp only [segmentSubdivision, List.getLast_ofFn]
+  funext i
   simp [hsteps.ne']
 
 /-- Every subdivision waypoint lies on the original real segment. -/

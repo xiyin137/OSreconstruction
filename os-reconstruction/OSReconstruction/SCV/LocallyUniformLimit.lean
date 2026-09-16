@@ -87,7 +87,9 @@ theorem _root_.TendstoLocallyUniformlyOn.differentiableOn_fin
       intro j
       by_cases hji : j = i
       · subst hji
-        simpa [line] using (continuous_id : Continuous fun w : ℂ => w)
+        simp only [line, Function.update_self]
+        change Continuous (id : ℂ → ℂ)
+        exact continuous_id
       · simpa [line, Function.update, hji] using
           (continuous_const : Continuous fun _ : ℂ => z j)
     have hline_diff : Differentiable ℂ line := by
@@ -111,8 +113,8 @@ theorem _root_.TendstoLocallyUniformlyOn.differentiableOn_fin
       exact hn.comp hline_diff.differentiableOn (mapsTo_preimage _ _)
     have hline_limit_hol :=
       hF_line.differentiableOn hF_line_hol hV
-    simpa [Function.comp_apply, line] using
-      hline_limit_hol.differentiableAt (hV.mem_nhds hzi)
+    change DifferentiableAt ℂ (f ∘ Function.update z i) (z i)
+    exact hline_limit_hol.differentiableAt (hV.mem_nhds hzi)
 
 /-- A locally uniform limit of holomorphic functions on a finite complex
 coordinate space is holomorphic. -/
@@ -376,7 +378,13 @@ theorem exists_tendstoLocallyUniformlyOn_of_locally_bounded_holomorphic_of_tends
               (hy₀_properties.2 x hx).symm)
     funext z
     have hz_eq := hambient_eq z.property
-    simpa [ambient, T, z.property] using hz_eq
+    have hy : (UniformOnFun.toFun 𝔖 y) z = y z :=
+      congrFun (UniformOnFun.ofFun_toFun y) z
+    have hy₀ : (UniformOnFun.toFun 𝔖 y₀) z = y₀ z :=
+      congrFun (UniformOnFun.ofFun_toFun y₀) z
+    have hmid : (UniformOnFun.toFun 𝔖 y) z = (UniformOnFun.toFun 𝔖 y₀) z := by
+      simpa only [ambient, z.property, ↓reduceDIte, T] using hz_eq
+    exact Eq.trans hy.symm (Eq.trans hmid hy₀)
   have hG_tendsto :
       Tendsto G atTop (nhds y₀) :=
     hcompact.tendsto_nhds_of_unique_mapClusterPt hG_mem hunique

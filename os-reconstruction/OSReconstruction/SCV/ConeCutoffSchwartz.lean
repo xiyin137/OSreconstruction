@@ -104,11 +104,8 @@ theorem psiZRaw_contDiff {C : Set (Fin m → ℝ)} (χ : FixedConeCutoff (DualCo
   unfold psiZRaw
   have hscale : ContDiff ℝ ∞ (fun ξ : Fin m → ℝ => fun i => R⁻¹ * ξ i) := by
     refine contDiff_pi.2 fun i => ?_
-    simpa [Pi.smul_apply, smul_eq_mul] using
-      (((R⁻¹ : ℝ) •
-        (ContinuousLinearMap.proj (R := ℝ) (ι := Fin m) (φ := fun _ => ℝ) i)).contDiff :
-        ContDiff ℝ ∞ ((R⁻¹ : ℝ) •
-          (ContinuousLinearMap.proj (R := ℝ) (ι := Fin m) (φ := fun _ => ℝ) i)))
+    exact contDiff_const.mul
+      ((ContinuousLinearMap.proj (R := ℝ) (ι := Fin m) (φ := fun _ => ℝ) i).contDiff)
   have hcutoff : ContDiff ℝ ∞
       (fun ξ : Fin m → ℝ => (χ.val (fun i => R⁻¹ * ξ i) : ℂ)) := by
     exact Complex.ofRealCLM.contDiff.comp (χ.smooth.comp hscale)

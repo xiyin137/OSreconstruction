@@ -90,8 +90,11 @@ theorem osiiStep4PartialConvolutionTransform_integrable
             (volume : Measure (Fin m → ℝ))).prod
           (volume : Measure (Fin m → ℝ))) :=
       Measure.measurePreserving_swap
-    simpa [Function.comp_def] using
-      houterSwap.comp (hinnerSwap.comp hassoc)
+    have hcomp := houterSwap.comp (hinnerSwap.comp hassoc)
+    convert hcomp using 1
+    funext p
+    rcases p with ⟨⟨x, y⟩, z⟩
+    rfl
   have hRint : Integrable R
       (((volume : Measure (Fin m → ℝ)).prod
           (volume : Measure (Fin m → ℝ))).prod

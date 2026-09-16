@@ -159,8 +159,9 @@ theorem reducedDiffMapReal_permute_realDiffCoordCLE_symm_prependBasepointReal
         y ⟨k.val + 1, by omega⟩ μ -
             y ⟨k.val, by omega⟩ μ =
           ξ k μ := by
-      simpa [BHW.reducedDiffMapReal_apply] using
-        congrFun (congrFun hred_real k) μ
+      have hk := congrFun (congrFun hred_real k) μ
+      rw [BHW.reducedDiffMapReal_apply] at hk
+      exact hk
     rw [BHW.reducedDiffMap_eq_successive_differences]
     change ((y ⟨k.val + 1, by omega⟩ μ : ℂ) -
         (y ⟨k.val, by omega⟩ μ : ℂ)) = (ξ k μ : ℂ)
@@ -293,7 +294,8 @@ theorem realPermOnReducedDiff_symm_apply
               BHW.permOnReducedDiff (d := d) (n := m + 1)
                   (1 : Equiv.Perm (Fin (m + 1))) ξC = ξC :=
                 BHW.permOnReducedDiff_one (d := d) (n := m + 1) ξC
-          simpa [ξC] using congrFun (congrFun hone k) μ
+          rw [show σ * σ.symm = 1 by exact mul_inv_cancel σ]
+          exact congrFun (congrFun hone k) μ
 
 omit [NeZero d] in
 /-- The induced real reduced permutation action is continuous. -/
@@ -353,15 +355,12 @@ noncomputable def realPermOnReducedDiffLinearEquiv
   map_add' := by
     intro ξ η
     ext k μ
-    have h :=
-      congrFun
-        (congrFun
-          ((BHW.permOnReducedDiff (d := d) (n := m + 1) σ).map_add
-            (fun k μ => (ξ k μ : ℂ))
-            (fun k μ => (η k μ : ℂ)))
-          k)
-        μ
-    simpa [realPermOnReducedDiff, Pi.add_apply] using congrArg Complex.re h
+    simp only [realPermOnReducedDiff, Pi.add_apply]
+    simp_rw [Complex.ofReal_add]
+    change (BHW.permOnReducedDiff (d := d) (n := m + 1) σ
+      ((fun k μ => (ξ k μ : ℂ)) + (fun k μ => (η k μ : ℂ))) k μ).re = _
+    rw [(BHW.permOnReducedDiff (d := d) (n := m + 1) σ).map_add]
+    simp [Pi.add_apply]
   map_smul' := by
     intro a ξ
     ext k μ

@@ -204,7 +204,11 @@ theorem rootedReflectedGramSeedOfOS_joinedIn_nativeBridgePoint
           S depth P A R H.toContinuousTranslationData
           i (i.rightRealCoordinates C.center) hrightCenter
           t ht.1 ht.2
-  simpa [E, Q, C, rootedReflectedGramRootSmearedGlobalFamilyOfOS] using hjoin
+  change
+    JoinedIn (E.domain i)
+      (i.nativeBridgePoint (C.center i.bridgeGlobalIndex))
+      (osiiPositiveRealTimeEmbed C.center)
+  exact hjoin
 
 /-- The common reflected-Gram packet-scale seed is joined to its bridge-only
 projection through the initial Gram polydiscs. -/
@@ -265,7 +269,11 @@ theorem rootedReflectedGramSeed_joinedIn_nativeBridgePoint
           S depth P A R H.toContinuousTranslationData
           i (i.rightRealCoordinates C.center) hrightCenter
           t ht.1 ht.2
-  simpa [E, Q, C, rootedReflectedGramRootSmearedGlobalFamily] using hjoin
+  change
+    JoinedIn (E.domain i)
+      (i.nativeBridgePoint (C.center i.bridgeGlobalIndex))
+      (osiiPositiveRealTimeEmbed C.center)
+  exact hjoin
 
 end AnchoredPacketTimeShellFamilyData
 end Section43ProductTimeApproximateIdentity

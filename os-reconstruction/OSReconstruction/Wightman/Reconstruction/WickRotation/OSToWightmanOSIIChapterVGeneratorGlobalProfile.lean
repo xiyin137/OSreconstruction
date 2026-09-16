@@ -336,7 +336,9 @@ private theorem blockGlobalSpacetime_spatial
           (EuclideanSpace.equiv
             (ι := Fin (n + m) × Fin d) (𝕜 := ℝ) η) (c, j))
         hzero
-    simpa [section43QSpatial_apply] using hc
+    change qtime c j.succ = 0
+    rw [section43QSpatial_apply] at hc
+    simpa using hc
   calc
     section43QSpatial (d := d) (n := n + m)
         (osiiAxisPairBlockGlobalSpacetimeCLE d n m q) =

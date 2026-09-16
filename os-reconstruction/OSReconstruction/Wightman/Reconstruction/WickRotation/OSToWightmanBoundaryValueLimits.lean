@@ -455,7 +455,9 @@ theorem zeroHeadBlockShift_flatTimeShiftDirection_pairing_eq_neg_tailTimeSum
           y k μ = 0 := by
         have h := congrArg (fun z : Fin n → Fin (d + 1) → ℝ => z k') hsplitFirst
         have h' := congrArg (fun f : Fin (d + 1) → ℝ => f μ) h
-        simpa [k', hk_cast] using h'
+        rw [← hk_cast]
+        change splitFirst n m y k' μ = 0
+        exact h'
       simp [hk, hval]
     · let j : Fin m := ⟨(k : ℕ) - n, by omega⟩
       have hk_tail : Fin.natAdd n j = k := by
@@ -668,8 +670,11 @@ theorem zeroHeadBlockShift_flatTimeShiftDirection_pairing_nonpos_of_mem_dualCone
       calc
         (∑ i, (flattenCLEquivReal (n + m) (d + 1) yε) i * ξ i)
             = ∑ k : Fin (n + m), a k * ξ (finProdFinEquiv (k, (0 : Fin (d + 1)))) := by
-                simpa [yε, a, flattenCLEquivReal_apply] using
-                  (sum_over_flat_timeSlots (d := d) (a := a) ξ)
+                have h := sum_over_flat_timeSlots (d := d) (a := a) ξ
+                simp only [a] at h
+                simp_rw [ite_mul] at h
+                simp only [a, ite_mul]
+                simpa [yε, flattenCLEquivReal_apply] using h
         _ = ∑ k : Fin (n + m),
               (b k * ξ (finProdFinEquiv (k, (0 : Fin (d + 1)))) +
                 ε * (c k * ξ (finProdFinEquiv (k, (0 : Fin (d + 1)))))) := by
@@ -742,4 +747,3 @@ final Stage-5 support theorem. -/
 /- Polynomial seminorm growth of the full flattened Fourier-shift orbit. This
 is the exact Schwartz-family bound needed by `schwartz_clm_fubini_exchange` in
 the final flattened spectral step. -/
-

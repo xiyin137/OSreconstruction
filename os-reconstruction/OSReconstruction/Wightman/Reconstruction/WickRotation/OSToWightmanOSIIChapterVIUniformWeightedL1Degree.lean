@@ -124,7 +124,11 @@ theorem osiiSpatialPolynomialWeightedL1_le_explicitFlatSeminorms
     have hsch :
         (1 + ‖x‖) ^ (p + n) * ‖phi x‖ <=
           2 ^ (p + n) * sem := by
-      simpa [s, sem] using
+      dsimp [sem]
+      change (1 + ‖x‖) ^ (p + n) * ‖phi x‖ <=
+        2 ^ (p + n) *
+          ((s.sup fun m => SchwartzMap.seminorm Complex m.1 m.2) phi)
+      simpa [s] using
         (SchwartzMap.one_add_le_sup_seminorm_apply
           (𝕜 := Complex) (m := (p + n, 0)) (k := p + n) (n := 0)
           le_rfl le_rfl phi x)
@@ -197,8 +201,13 @@ noncomputable def explicitIndexPreserving
             (Section43SpatialSpace d k) Complex) chi := by
     rw [osiiSchwartzComplexFinsetSup_eq_real,
       osiiSchwartzComplexFinsetSup_eq_real]
-    simpa [flat, e, factor, m] using
-      finsetSup_compContinuousLinearEquiv_le e s chi
+    change s.sup
+        (schwartzSeminormFamily Real (Fin (k * d) -> Real) Complex)
+        ((SchwartzMap.compCLMOfContinuousLinearEquiv Complex e) chi) <=
+      factor * s.sup
+        (schwartzSeminormFamily Real
+          (Section43SpatialSpace d k) Complex) chi
+    exact finsetSup_compContinuousLinearEquiv_le e s chi
   let Q := s.sup
     (schwartzSeminormFamily Complex
       (Section43SpatialSpace d k) Complex) chi

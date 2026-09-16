@@ -377,6 +377,7 @@ theorem osiiStep4MultiGapXiHat_add_complexTargetCoeffTranslation
     osiiStep4AxisPairCoeffGapTranslationFlat_finProdFinEquiv]
   simpa [osiiStep4MultiGapComplexTargetCoeff,
     osiiStep4MultiGapComplexBlock, osiiStep4MultiGapRealBlock,
+    osiiAxisPairCoeffMap,
     SCV.realToComplex] using
       osiiAxisPairCoeff_linear_identity (d := d) T hT
         (osiiStep4MultiGapRealBlock (d + 1) k center i)

@@ -54,7 +54,8 @@ theorem eq_zero_on_open_of_supportsInOpen_schwartz_integral_zero
   have hχS_apply : ∀ y, χS y = χC y :=
     HasCompactSupport.toSchwartzMap_toFun hχC_compact hχC_smooth
   have hχC_temp : χC.HasTemperateGrowth := by
-    simpa [χS, hχS_apply] using χS.hasTemperateGrowth
+    rw [← show (χS : E → ℂ) = χC from funext hχS_apply]
+    exact χS.hasTemperateGrowth
   have hχC_support : Function.support χC = Function.support χ := by
     ext y
     simp [χC, Function.mem_support]

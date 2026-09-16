@@ -466,6 +466,7 @@ theorem ACROneEuclideanWeightedKernelData.reproducesZeroDiagonal_of_eq_on_dense
     congrArg
       (fun T : ZeroDiagonalSchwartz d k →L[ℂ] ℂ => T f)
       hL_eq
+  change (OsterwalderSchraderAxioms.schwingerCLM (d := d) OS k) f = _
   simpa [L, E.pairingCLM_apply hcoin f] using h.symm
 
 /-- The post-completion weighted estimate uses the pre-completion pairing

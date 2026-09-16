@@ -37,8 +37,8 @@ private noncomputable def schwartzPartialEvalRightZeroCLM
     SchwartzMap (E × F) Complex →L[Complex] SchwartzMap E Complex := by
   let g : E -> E × F := fun x => (x, 0)
   have hg : g.HasTemperateGrowth := by
-    simpa [g] using
-      (ContinuousLinearMap.inl Real E F).hasTemperateGrowth
+    change (ContinuousLinearMap.inl Real E F : E → E × F).HasTemperateGrowth
+    exact (ContinuousLinearMap.inl Real E F).hasTemperateGrowth
   have hg_upper : exists (n : Nat) (C : Real),
       forall x, norm x <= C * (1 + norm (g x)) ^ n := by
     refine ⟨1, 1, ?_⟩
@@ -53,8 +53,8 @@ private noncomputable def schwartzPartialEvalLeftZeroCLM
     SchwartzMap (E × F) Complex →L[Complex] SchwartzMap F Complex := by
   let g : F -> E × F := fun y => (0, y)
   have hg : g.HasTemperateGrowth := by
-    simpa [g] using
-      (ContinuousLinearMap.inr Real E F).hasTemperateGrowth
+    change (ContinuousLinearMap.inr Real E F : F → E × F).HasTemperateGrowth
+    exact (ContinuousLinearMap.inr Real E F).hasTemperateGrowth
   have hg_upper : exists (n : Nat) (C : Real),
       forall y, norm y <= C * (1 + norm (g y)) ^ n := by
     refine ⟨1, 1, ?_⟩
@@ -336,9 +336,13 @@ private noncomputable def flatTimeSpatialCMM
       fun fs => (fs 0, fs 1)
     have hevalPair : Continuous evalPair :=
       (continuous_apply 0).prodMk (continuous_apply 1)
-    simpa [evalPair] using
+    have hcont :=
       (continuous_flatTimeSpatialBilinearMap
         (d := d) (k := k) B hB).comp hevalPair
+    change Continuous (fun fs :
+        Fin 2 → SchwartzMap (Fin (k + k * d) → ℝ) ℂ =>
+      flatTimeSpatialBilinearMap (d := d) (k := k) B (fs 0) (fs 1)) at hcont
+    exact hcont
 
 @[simp] private theorem flatTimeSpatialCMM_apply
     (B : SchwartzMap (Fin k -> Real) Complex →ₗ[Complex]

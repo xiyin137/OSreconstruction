@@ -660,7 +660,9 @@ private theorem integrable_split_product {m : ℕ}
       _ = (splitFirst n m z, splitLast n m z) := e.apply_symm_apply _
   have h := (volume_preserving_finAddProd n m (SpacetimeDim d)).integrable_comp_of_integrable
     (hF.mul_prod hG)
-  simpa only [Function.comp_def, he] using h
+  change Integrable ((fun z => F z.1 * G z.2) ∘ e) at h
+  exact h.congr (Filter.Eventually.of_forall fun z => by
+    simp only [Function.comp_apply, he])
 
 omit [NeZero d] in
 private theorem exists_regulated_rotated_ordered_normalization

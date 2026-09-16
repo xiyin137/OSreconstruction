@@ -92,9 +92,9 @@ theorem tendsto_rootedLeftNontrivialDiagonalScalar_to_distribution_generatorProb
             (A.rootedLeftBlockAnchor i)
             (A.rootedLeftBlockAnchor_positive i) spatial scale := by
     intro scale spatial
-    simpa [D, i, rootedLeftNontrivialReflectedGramSpatialSourceData] using
-      A.rootedLeftBlockAnchoredSourceCLM_source_translated
-        R i scale spatial
+    change UniformCompactTimeSource.source
+      ((A.rootedLeftBlockAnchoredSourceCLM R i scale) spatial) = _
+    exact A.rootedLeftBlockAnchoredSourceCLM_source_translated R i scale spatial
   have hlimit :=
     D.tendsto_diagonalScalar_tailDiagonal_to_distribution_marginalSpatialProbe
       (A.rootedLeftBlockApproximateIdentity R i)
@@ -179,9 +179,9 @@ theorem tendsto_rootedRightNontrivialDiagonalScalar_to_distribution_generatorPro
             (A.rootedRightBlockAnchor i)
             (A.rootedRightBlockAnchor_positive i) spatial scale := by
     intro scale spatial
-    simpa [D, i, rootedRightNontrivialReflectedGramSpatialSourceData] using
-      A.rootedRightBlockAnchoredSourceCLM_source_translated
-        R i scale spatial
+    change UniformCompactTimeSource.source
+      ((A.rootedRightBlockAnchoredSourceCLM R i scale) spatial) = _
+    exact A.rootedRightBlockAnchoredSourceCLM_source_translated R i scale spatial
   have hlimit :=
     D.tendsto_diagonalScalar_tailDiagonal_to_distribution_marginalSpatialProbe
       (A.rootedRightBlockApproximateIdentity R i)

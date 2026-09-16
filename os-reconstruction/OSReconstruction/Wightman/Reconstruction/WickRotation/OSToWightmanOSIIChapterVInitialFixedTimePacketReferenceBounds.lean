@@ -51,9 +51,21 @@ theorem fixedTimePacketData_localizedFactor_isVonNBounded
   refine ⟨M + 1, by linarith, ?_⟩
   intro g hg
   rcases hg with ⟨N, rfl⟩
+  have hle :
+      (SchwartzMap.seminorm ℝ pq.1 pq.2)
+        (SchwartzMap.smulLeftCLM ℂ
+          (((D.quantitativeFixedTimePacketData hφ_compact N
+            ).quantitativeLevelCover.carrier a).factors i)
+          f) ≤ M := hbound N
   exact lt_of_le_of_lt
     (by
-      simpa [fixedTimePacketData] using hbound N)
+      change
+        (SchwartzMap.seminorm ℝ pq.1 pq.2)
+          (SchwartzMap.smulLeftCLM ℂ
+            (((D.quantitativeFixedTimePacketData hφ_compact N
+              ).quantitativeLevelCover.carrier a).factors i)
+            f) ≤ M
+      exact hle)
     (lt_add_of_pos_right M zero_lt_one)
 
 /-- Conjugating the localized one-point factors preserves level-uniform
@@ -79,10 +91,22 @@ theorem fixedTimePacketData_localizedFactor_conj_isVonNBounded
   refine ⟨M + 1, by linarith, ?_⟩
   intro g hg
   rcases hg with ⟨N, rfl⟩
+  have hle :
+      (SchwartzMap.seminorm ℝ pq.1 pq.2)
+        (SchwartzMap.smulLeftCLM ℂ
+          (((D.quantitativeFixedTimePacketData hφ_compact N
+            ).quantitativeLevelCover.carrier a).factors i)
+          f) ≤ M := hbound N
   exact lt_of_le_of_lt
     ((SchwartzMap.seminorm_conj_le pq.1 pq.2 _).trans
       (by
-        simpa [fixedTimePacketData] using hbound N))
+        change
+          (SchwartzMap.seminorm ℝ pq.1 pq.2)
+            (SchwartzMap.smulLeftCLM ℂ
+              (((D.quantitativeFixedTimePacketData hφ_compact N
+                ).quantitativeLevelCover.carrier a).factors i)
+              f) ≤ M
+        exact hle))
     (lt_add_of_pos_right M zero_lt_one)
 
 /-- For a fixed source tuple and split, the right packet reference tensors are
@@ -458,10 +482,11 @@ theorem fixedTimePacketData_exists_compensatedMovingPacket_centered_cosh_bound_u
           (Real.cosh_pos _).le))
   have hcenter :
       ‖F.packetCenterOffsetVector P.slope hordered q‖ ≤ B := by
-    simpa [P, F, hordered, B, fixedTimePacketData] using
+    convert
       (D.quantitativeFixedTimePacketData hφ_compact level
-        ).sourcewiseLocalized_norm_packetCenterOffsetVector_le
-          a fs q
+        ).sourcewiseLocalized_norm_packetCenterOffsetVector_le a fs q using 1
+    apply congrArg norm
+    congr 1
   have hleftConfig :
       1 + ‖F.packetLeftConfiguration P.slope hordered x q‖ ≤
         A * E := by

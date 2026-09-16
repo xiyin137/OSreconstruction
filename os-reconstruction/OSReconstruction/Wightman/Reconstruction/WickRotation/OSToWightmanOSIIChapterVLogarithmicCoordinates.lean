@@ -182,7 +182,11 @@ noncomputable def logarithmicPullbackStage
   distribution := fun z => A.distribution (osiiLogExp z)
   weaklyHolomorphic := by
     intro χ
-    simpa [Function.comp_def] using
+    change DifferentiableOn ℂ
+      (fun z : OSIITimeGapSpace k =>
+        A.distribution (osiiLogExp z) χ)
+      (osiiLogExp ⁻¹' A.carrier)
+    exact
       (A.weaklyHolomorphic χ).comp
         osiiLogExp_differentiable.differentiableOn
         (fun _z hz => hz)

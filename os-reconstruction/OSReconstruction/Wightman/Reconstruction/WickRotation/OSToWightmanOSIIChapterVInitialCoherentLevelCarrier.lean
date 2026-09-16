@@ -45,8 +45,8 @@ theorem unitBallBumpSchwartzPi_tsupport_eq_closedBall (m : ℕ) :
       (((unitBallBumpSchwartzPi m : SchwartzMap (Fin m → ℝ) ℂ) :
         (Fin m → ℝ) → ℂ)) = f := by
     funext x
-    simpa [unitBallBumpSchwartzPi, b, f] using
-      (HasCompactSupport.toSchwartzMap_toFun hf_compact hf_smooth x)
+    change (hf_compact.toSchwartzMap hf_smooth) x = f x
+    exact HasCompactSupport.toSchwartzMap_toFun hf_compact hf_smooth x
   rw [hfun]
   have hsupport : Function.support f = Function.support b := by
     ext x
@@ -114,7 +114,8 @@ theorem levelCarrierTimeMultiplier_hasTemperateGrowth
     (i : Fin (k + 1)) :
     Function.HasTemperateGrowth
       (D.levelCarrierTimeMultiplier a hφ_compact i) := by
-  simpa [levelCarrierTimeMultiplier] using
+  unfold levelCarrierTimeMultiplier
+  exact
     ((D.levelCarrierTimeGuardData a hφ_compact).guard.factors i).hasTemperateGrowth.comp
       (headCoordProjectorCLM d).hasTemperateGrowth
 

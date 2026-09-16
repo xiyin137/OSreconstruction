@@ -122,7 +122,9 @@ theorem exists_packetFamily_logBranch_uniformDegree_bound_at_gap
         (osiiAxisPairMultiGapUpdate
           (osiiAxisPairSimultaneousLogRealEmbed x) (i, a) w)) <=
         (D.spectatorPackage x i).flatTubeBranchCoordinateChartBound OS a := by
-    simpa [OSIIAxisPairMultiGapSemigroupPacketFamily.logBranch,
+    simpa [OSIIStep4MultiGapSelectedCommonSlopeData.packetFamily,
+      OSIIAxisPairMultiGapSemigroupPacketFamily.logBranch,
+      OSIIAxisPairGapRotatedSourcePacket.branch,
       OSIIAxisPairSemigroupPacketFamily.toDirectionalBranchFamily,
       OSIIAxisPairSemigroupPacketFamily.logBranch,
       osiiAxisPairMultiGapUpdate] using hlocal
@@ -429,7 +431,9 @@ theorem nonempty_arityLinearUniformMultiGapGrowthData
           (osiiAxisPairMultiGapUpdate
             (osiiAxisPairSimultaneousLogRealEmbed x) q w)) <=
           (D.spectatorPackage x i).flatTubeBranchCoordinateChartBound OS q.2 := by
-      simpa [i, OSIIAxisPairMultiGapSemigroupPacketFamily.logBranch,
+      simpa [i, OSIIStep4MultiGapSelectedCommonSlopeData.packetFamily,
+        OSIIAxisPairMultiGapSemigroupPacketFamily.logBranch,
+        OSIIAxisPairGapRotatedSourcePacket.branch,
         OSIIAxisPairSemigroupPacketFamily.toDirectionalBranchFamily,
         OSIIAxisPairSemigroupPacketFamily.logBranch,
         osiiAxisPairMultiGapUpdate] using hlocal

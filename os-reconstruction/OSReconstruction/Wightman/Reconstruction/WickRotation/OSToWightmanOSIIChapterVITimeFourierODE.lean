@@ -203,8 +203,9 @@ theorem exists_positiveFrequencyPairing_largeHeight_bound
         (T psi) <=
       (D : Real) * s.sup
         (schwartzSeminormFamily Complex (Fin k -> Real) Complex) psi := by
-    simpa only [q, Seminorm.comp_apply, Seminorm.smul_apply, NNReal.smul_def,
-      smul_eq_mul] using hD psi
+    change q psi <= (D : Real) * s.sup
+      (schwartzSeminormFamily Complex (Fin k -> Real) Complex) psi
+    exact hD psi
   have hslice := G.norm_coupledTimeSlice_le
     (osiiTimePositiveCone_isCone k eta heta t htpos) (T psi)
   rw [show T psi = section43TimeSpatialTensor d k

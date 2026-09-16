@@ -275,7 +275,14 @@ theorem rToE_reflected_pairing_point_limit
         intro μ
         simp only [timeReflectionN, timeReflection]
         split_ifs <;> fun_prop
-      · simpa only [Fin.append_right] using (continuous_apply j).comp continuous_snd
+      · rw [show (fun a : NPointDomain d n × NPointDomain d m =>
+            Fin.append (timeReflectionN d a.1) a.2 (Fin.natAdd n j)) =
+            (fun a => a.2 j) by
+          funext a
+          exact Fin.append_right ..]
+        apply continuous_pi
+        intro μ
+        fun_prop
     obtain ⟨η, hη, hclose⟩ := Metric.continuousAt_iff.mp (hcont.continuousAt (x := (x,y))) δ hδ
     filter_upwards [hfs η hη, hgs η hη] with i hfi hgi
     intro z hz

@@ -118,6 +118,7 @@ theorem axisPairBlockGlobalSpatialScalarCLE_duplicated_tail
               (splitLast (r + 1) (r + 1)
                 (Fin.append (Fin.cons x0 x) (Fin.cons x0 x))) 0 = x0 := by
         rw [section43ScalarDiffCLE_symm_apply]
+        rw [Finset.sum_fin_eq_sum_range]
         simp
       have hleft0 :
           (section43ScalarDiffCLE (r + 1)).symm
@@ -125,6 +126,7 @@ theorem axisPairBlockGlobalSpatialScalarCLE_duplicated_tail
                 (Fin.append (Fin.cons x0 x) (Fin.cons x0 x)))
               (Fin.rev (Fin.last r)) = x0 := by
         rw [Fin.rev_last, section43ScalarDiffCLE_symm_apply]
+        rw [Finset.sum_fin_eq_sum_range]
         simp
       simpa only [hright0, hleft0, sub_self]
     · simp only [Fin.val_natAdd, Fin.append_right, Fin.cons_succ]

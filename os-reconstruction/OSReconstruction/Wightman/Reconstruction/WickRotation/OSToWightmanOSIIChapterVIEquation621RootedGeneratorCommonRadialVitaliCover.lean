@@ -114,7 +114,11 @@ theorem positiveReal_mem_localRootedRadial_of_commonAutomatic
         (H.left i).domain := by
       have hmem := F.leftRealToComplex_mem_domain i
         (i.leftRealCoordinates xi) (hautomatic.2 i).1
-      simpa [F] using hmem
+      change (fun a => (i.leftRealCoordinates xi a : ℂ)) ∈
+        (H.left i).domain
+      simpa [F,
+        RootedA0BlockHolomorphicTranslationData.toContinuousTranslationData]
+        using hmem
     have hradial : SCV.realToComplex (i.leftRealCoordinates xi) ∈
         openZeroConvexKernel (H.left i).domain := by
       apply mem_openZeroConvexKernel_of_segment_subset (H.left i).domain_open
@@ -137,7 +141,11 @@ theorem positiveReal_mem_localRootedRadial_of_commonAutomatic
         (H.right i).domain := by
       have hmem := F.rightRealToComplex_mem_domain i
         (i.rightRealCoordinates xi) (hautomatic.2 i).2
-      simpa [F] using hmem
+      change (fun a => (i.rightRealCoordinates xi a : ℂ)) ∈
+        (H.right i).domain
+      simpa [F,
+        RootedA0BlockHolomorphicTranslationData.toContinuousTranslationData]
+        using hmem
     have hradial : SCV.realToComplex (i.rightRealCoordinates xi) ∈
         openZeroConvexKernel (H.right i).domain := by
       apply mem_openZeroConvexKernel_of_segment_subset (H.right i).domain_open
@@ -149,7 +157,14 @@ theorem positiveReal_mem_localRootedRadial_of_commonAutomatic
       (osiiPositiveRealTimeEmbed xi)).2.2 ∈
         openZeroConvexKernel (F.rightDomain i)
     rw [rootedLocalGeneratorOpenHilbertFieldScaleFamilyRealEdgeData_rightDomain]
-    simpa [xi] using hradial
+    have heq : (i.splitCoordinatesCLM
+        (osiiPositiveRealTimeEmbed xi)).2.2 =
+        SCV.realToComplex (i.rightRealCoordinates xi) := by
+      ext a
+      exact i.splitCoordinatesCLM_positiveReal_right xi a
+    rw [heq]
+    simpa [RootedA0BlockHolomorphicTranslationData.toContinuousTranslationData]
+      using hradial
 
 theorem equation621CommonRadialRealSeed_mem_carrier
     (P : StageWideReflectedGramAtlasFamilyData (OS := OS) S depth)
@@ -208,11 +223,20 @@ theorem equation621CommonRadialCarrier_targetParameters_mem_commonKernels
   rw [openZeroConvexKernel_inter, openZeroConvexKernel_inter]
   constructor
   · refine ⟨?_, ?_⟩
-    · simpa [E, equation621TargetLeftParameter] using hreflected.2.1
-    · have hleftRoot : equation621TargetLeftParameter i z ∈
-          (rootedLocalGeneratorOpenHilbertFieldScaleFamilyRealEdgeData
-            A R H).radialLeftDomain i := by
-        simpa [F, equation621TargetLeftParameter] using hrooted.2.1
+    · have hleft := hreflected.2.1
+      change star (i.splitCoordinatesCLM
+        (generatorChronologicalParameterComplexCLE i z)).2.1 ∈
+          E.radialLeftDomain i at hleft
+      change equation621TargetLeftParameter i z ∈ E.radialLeftDomain i
+      simpa only [equation621TargetLeftParameter_eq_rootedLeftBlockTarget,
+        rootedLeftBlockTarget] using hleft
+    · have hleftRoot := hrooted.2.1
+      change star (i.splitCoordinatesCLM
+        (generatorChronologicalParameterComplexCLE i z)).2.1 ∈
+          F.radialLeftDomain i at hleftRoot
+      change equation621TargetLeftParameter i z ∈
+        (rootedLocalGeneratorOpenHilbertFieldScaleFamilyRealEdgeData
+          A R H).radialLeftDomain i at hleftRoot
       change equation621TargetLeftParameter i z ∈
         openZeroConvexKernel
           ((rootedLocalGeneratorOpenHilbertFieldScaleFamilyRealEdgeData
@@ -221,11 +245,16 @@ theorem equation621CommonRadialCarrier_targetParameters_mem_commonKernels
         at hleftRoot
       exact hleftRoot
   · refine ⟨?_, ?_⟩
-    · simpa [E, equation621TargetRightParameter] using hreflected.2.2
-    · have hrightRoot : equation621TargetRightParameter i z ∈
-          (rootedLocalGeneratorOpenHilbertFieldScaleFamilyRealEdgeData
-            A R H).radialRightDomain i := by
-        simpa [F, equation621TargetRightParameter] using hrooted.2.2
+    · have hright := hreflected.2.2
+      change rootedRightBlockTarget i z ∈ E.radialRightDomain i at hright
+      change equation621TargetRightParameter i z ∈ E.radialRightDomain i
+      simpa only [equation621TargetRightParameter_eq_rootedRightBlockTarget]
+        using hright
+    · have hrightRoot := hrooted.2.2
+      change rootedRightBlockTarget i z ∈ F.radialRightDomain i at hrightRoot
+      change equation621TargetRightParameter i z ∈
+        (rootedLocalGeneratorOpenHilbertFieldScaleFamilyRealEdgeData
+          A R H).radialRightDomain i at hrightRoot
       change equation621TargetRightParameter i z ∈
         openZeroConvexKernel
           ((rootedLocalGeneratorOpenHilbertFieldScaleFamilyRealEdgeData

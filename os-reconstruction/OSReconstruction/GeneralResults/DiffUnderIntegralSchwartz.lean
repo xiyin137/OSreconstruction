@@ -72,6 +72,8 @@ theorem integrable_polyGrowth_mul_schwartz {m : ℕ}
       have hsch :
           (1 + ‖x‖) ^ (N + n) * ‖(φ : (Fin m → ℝ) → ℂ) x‖ ≤
             2 ^ (N + n) * (s.sup (schwartzSeminormFamily ℂ (Fin m → ℝ) ℂ)) φ := by
+        change (1 + ‖x‖) ^ (N + n) * ‖(φ : (Fin m → ℝ) → ℂ) x‖ ≤
+          2 ^ (N + n) * (s.sup (fun q => SchwartzMap.seminorm ℂ q.1 q.2)) φ
         simpa [s, norm_iteratedFDeriv_zero] using
           (SchwartzMap.one_add_le_sup_seminorm_apply
             (𝕜 := ℂ) (m := (N + n, 0)) (k := N + n) (n := 0)
@@ -165,6 +167,8 @@ theorem hasDerivAt_schwartz_integral
         have hsch :
             (1 + ‖x‖) ^ (N' + n) * ‖(φ : (Fin m → ℝ) → ℂ) x‖ ≤
               2 ^ (N' + n) * (s.sup (schwartzSeminormFamily ℂ (Fin m → ℝ) ℂ)) φ := by
+          change (1 + ‖x‖) ^ (N' + n) * ‖(φ : (Fin m → ℝ) → ℂ) x‖ ≤
+            2 ^ (N' + n) * (s.sup (fun q => SchwartzMap.seminorm ℂ q.1 q.2)) φ
           simpa [s, norm_iteratedFDeriv_zero] using
             (SchwartzMap.one_add_le_sup_seminorm_apply
               (𝕜 := ℂ) (m := (N' + n, 0)) (k := N' + n) (n := 0)

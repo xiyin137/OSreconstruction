@@ -120,13 +120,14 @@ theorem normalizedCutoffOfBump_hasCompactSupport (d : ℕ) [NeZero d] :
   have hreal :
       HasCompactSupport
         (fun x : SpacetimeDim d => (f_schwartz x : ℂ)) := by
-    simpa using hcs.comp_left Complex.ofReal_zero
+    convert hcs.comp_left Complex.ofReal_zero using 1 <;> ext x <;> rfl
   have hscaled :
       HasCompactSupport
         (fun x : SpacetimeDim d => (↑I⁻¹ : ℂ) * (f_schwartz x : ℂ)) := by
-    simpa using
-      (HasCompactSupport.mul_left
-        (f := fun _ : SpacetimeDim d => (↑I⁻¹ : ℂ)) hreal)
+    change HasCompactSupport
+      ((fun _ : SpacetimeDim d => (↑I⁻¹ : ℂ)) *
+        fun x : SpacetimeDim d => (f_schwartz x : ℂ))
+    exact HasCompactSupport.mul_left hreal
   change HasCompactSupport
     (fun x : SpacetimeDim d => (↑I⁻¹ : ℂ) * (f_schwartz x : ℂ))
   exact hscaled
@@ -151,7 +152,7 @@ noncomputable def reducedTestLift (m d : ℕ)
       (fun i => (realDiffCoordCLE (m + 1) d x) i.succ) =
         reducedDiffMapReal (m + 1) d x := by
     ext j μ
-    simpa [realDiffCoordCLE_apply] using
+    simpa [realDiffCoordCLE_apply, Fin.succ] using
       (reducedDiffMapReal_apply (m + 1) d x j μ).symm
   calc
     reducedTestLift m d χ φ x
