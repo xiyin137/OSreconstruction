@@ -2,7 +2,7 @@
 
 > **The verified proof package is [`os-reconstruction/`](os-reconstruction/)**
 > (PR #93, merged 2026-09-14): a self-contained source distribution, pinned to
-> Lean 4.29.0, with a Lean contract guard, no `sorry`, and no project axioms.
+> Lean 4.33.0-rc1, with a Lean contract guard, no `sorry`, and no project axioms.
 > The tree at the repository root is the development history the package was
 > extracted from, frozen at commit `135ed13`; the axiom inventory below
 > describes that tree, not the package. Start from

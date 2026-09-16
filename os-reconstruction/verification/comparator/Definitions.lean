@@ -232,13 +232,16 @@ def zeroDiagonalSubmodule (d n : ℕ) : Submodule ℂ (Test d n) where
       exact congrFun (iteratedFDeriv_const_of_ne (𝕜 := ℝ) hk (0 : ℂ)) x
   add_mem' := by
     intro f g hf hg k x hx
-    simpa using (iteratedFDeriv_add_apply
+    change iteratedFDeriv ℝ k
+      ((f : Config d n → ℂ) + (g : Config d n → ℂ)) x = 0
+    exact (iteratedFDeriv_add_apply
       ((f : Test d n).smooth _).contDiffAt
       ((g : Test d n).smooth _).contDiffAt).trans
       (by rw [hf k x hx, hg k x hx, zero_add])
   smul_mem' := by
     intro c f hf k x hx
-    simpa using (iteratedFDeriv_const_smul_apply (𝕜 := ℝ) (a := c)
+    change iteratedFDeriv ℝ k (c • (f : Config d n → ℂ)) x = 0
+    exact (iteratedFDeriv_const_smul_apply (𝕜 := ℝ) (a := c)
       (((f : Test d n).smooth _).contDiffAt)).trans
       (by rw [hf k x hx, smul_zero])
 

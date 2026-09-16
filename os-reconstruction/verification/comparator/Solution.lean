@@ -55,6 +55,7 @@ theorem rToE_iff {d : ℕ} [NeZero d] :
   · intro h W
     obtain ⟨A, identity, pair⟩ := h (Wightman.ofProduction W)
     refine ⟨A.toProduction, ?_, (wickPair_iff _ _).mp pair⟩
+    change A.S = constructSchwingerFunctions W
     simpa only [constructSchwinger_eq, Wightman.toProduction_ofProduction] using identity
   · intro h W
     obtain ⟨A, identity, pair⟩ := h W.toProduction
