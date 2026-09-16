@@ -84,9 +84,17 @@ Comparator exports the Challenge and Solution environments separately, checks
 that target statements and all constants in their definition closure match,
 checks the solution's transitive axiom closure, and replays the exported proof
 in a fresh Lean kernel environment. Only `propext`, `Quot.sound` and
-`Classical.choice` are permitted. No external kernel is enabled by this
-configuration. The Challenge placeholders are never imported by the Solution
-or by the default production build.
+`Classical.choice` are permitted. The Challenge placeholders are never imported
+by the Solution or by the default production build.
+
+The recorded verification uses `enable_nanoda: false`: proof replay runs in a
+fresh instance of Lean's kernel. Nanoda, a separate kernel implementation, has
+not been tested on this package; no compatibility or performance result for it
+is claimed. Here independence refers to the separate mathematical specification,
+exported-environment comparison, and fresh replay. Verification by a second
+kernel implementation remains an additional check. The source gate does not
+pin `enable_nanoda`, since enabling that optional check does not remove the
+mandatory Lean replay or relax the target, definition-hole, or axiom checks.
 
 The source gate also checks this boundary, and the existing `quick`,
 `contracts`, and `full` verification commands remain available. `contracts`

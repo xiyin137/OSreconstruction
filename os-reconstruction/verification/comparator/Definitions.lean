@@ -67,6 +67,12 @@ def forwardDirections (d n : ℕ) (y : Config d n) : Prop :=
     let previous : Point d := if h : k.val = 0 then 0 else y ⟨k.val - 1, by omega⟩
     openForwardCone d (fun μ => y k μ - previous μ)
 
+/-- The absolute-coordinate tube used by this formalization: in addition to
+`Im (z_k - z_{k-1}) ∈ V₊` for `1 ≤ k < n`, it requires `Im z₀ ∈ V₊`.
+For `n > 0` this is a proper subset of the usual literal n-point forward tube
+defined only by the successive-difference conditions; `forwardAnalyticity` and
+`wickPair` below use this smaller tube and do not assert extension to the larger
+literal tube. -/
 def forwardTube (d n : ℕ) : Set (Fin n → Fin (d + 1) → ℂ) :=
   { z | ∀ k : Fin n,
     let previous : Fin (d + 1) → ℂ :=
@@ -205,7 +211,8 @@ end OSReconstructionAudit
 end
 
 /-! ## Zero-diagonal tests, OS axioms, and growth -/
-set_option backward.isDefEq.respectTransparency false
+-- Use Lean's default elaboration transparency. The former compatibility override
+-- is unnecessary on Lean 4.33.0-rc1; the declarations below typecheck without it.
 namespace OSReconstructionAudit
 noncomputable section
 open scoped SchwartzMap
