@@ -162,7 +162,7 @@ theorem osiiProduction_iteratedFDeriv_prod_gevrey_bound
           ∏ i : Fin r,
             (A * B ^ ((p : Multiset (Fin r)).count i) *
               (((p : Multiset (Fin r)).count i).factorial : Real) ^ 2) := by
-        apply Finset.prod_le_prod
+        apply Finset.prod_le_prod₀
         · intro i hi
           positivity
         · intro i hi
@@ -437,7 +437,7 @@ theorem osiiStep4ComplexBlockRadialG_iteratedFDeriv_gevrey_bound
       ContinuousMultilinearMap.norm_compContinuousLinearMap_le _ _
     _ ≤ C * 1 := by
       apply mul_le_mul hglobal
-      · exact Finset.prod_le_one
+      · exact Finset.prod_le_one₀
           (fun _ _ => hLnonneg) (fun _ _ => hL)
       · exact Finset.prod_nonneg (fun _ _ => hLnonneg)
       · exact hC
@@ -746,7 +746,7 @@ theorem osiiStep4ComplexBlockPartialConvolutionKernel_iteratedFDeriv_gevrey_boun
       ContinuousMultilinearMap.norm_compContinuousLinearMap_le _ _
     _ ≤ C * 1 := by
       apply mul_le_mul hF
-      · exact Finset.prod_le_one
+      · exact Finset.prod_le_one₀
           (fun _ _ => hLnonneg) (fun _ _ => hL)
       · exact Finset.prod_nonneg (fun _ _ => hLnonneg)
       · exact hC
@@ -905,7 +905,7 @@ theorem osiiStep4ComplexBlockPartialConvolutionKernel_projected_derivative
       ContinuousMultilinearMap.norm_compContinuousLinearMap_le _ _
     _ ≤ C * 1 := by
       apply mul_le_mul hbase
-      · exact Finset.prod_le_one
+      · exact Finset.prod_le_one₀
           (fun _ _ => norm_nonneg _) (fun _ _ => hP)
       · positivity
       · exact hC

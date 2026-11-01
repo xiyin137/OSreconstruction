@@ -746,7 +746,7 @@ private theorem norm_iteratedFDeriv_cutoff_compl_radius_le_uniform {m n : ℕ} :
       (f := ψ) hψ.1 (x := x) (i := N) (by exact_mod_cast le_top)
   rw [hcomp, hitercomp]
   have hprod_le : ∏ _ : Fin N, ‖e‖ ≤ 1 := by
-    simpa [Finset.prod_const] using Finset.prod_le_one (s := (Finset.univ : Finset (Fin N)))
+    simpa [Finset.prod_const] using Finset.prod_le_one₀ (s := (Finset.univ : Finset (Fin N)))
       (fun _ _ => norm_nonneg _)
       (fun _ _ => he_norm_le)
   calc

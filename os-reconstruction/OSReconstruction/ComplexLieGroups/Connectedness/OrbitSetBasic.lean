@@ -124,7 +124,7 @@ theorem orbitSet_isPreconnected_of_orbit_eq {n : ℕ}
     IsPreconnected (orbitSet w) := by
   rw [orbitSet_eq_image_mul_right_inv (d := d) (n := n) w0 w Γ hEq]
   have hcont : Continuous (fun Λ : ComplexLorentzGroup d => Λ * Γ⁻¹) :=
-    continuous_mul_right Γ⁻¹
+    continuous_id.mul continuous_const
   exact hpre0.image _ hcont.continuousOn
 
 end BHW

@@ -65,7 +65,7 @@ theorem osiiProductionCauchyPowerSeries_norm_le_of_coefficient_bound
               SCV.cauchyCoeffPolydisc f z (fun _ => R)
                 (SCV.multiIdx sigma))‖ * 1 := by
         gcongr
-        apply Finset.prod_le_one (fun j _ => norm_nonneg _) (fun j _ => ?_)
+        apply Finset.prod_le_one₀ (fun j _ => norm_nonneg _) (fun j _ => ?_)
         apply ContinuousLinearMap.opNorm_le_bound _ zero_le_one
         intro v
         simpa using norm_le_pi_norm v (sigma j)
@@ -298,7 +298,7 @@ theorem osiiProductionRealRadialBump_iteratedFDeriv_gevrey_bound
       ContinuousMultilinearMap.le_opNorm _ _
     _ ≤ bound * ∏ j, ‖directions j‖ := by
       apply mul_le_mul hcomplex
-      · apply Finset.prod_le_prod
+      · apply Finset.prod_le_prod₀
         · intro j _
           exact norm_nonneg _
         · intro j _

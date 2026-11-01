@@ -303,14 +303,13 @@ theorem W_analytic_translation_on_forwardTube {d n : ℕ} [NeZero d]
             hW_growth
             f η hη ε hε
         convert hInt_F₁f.sub hInt_Wf using 1
-        · rfl
-        · funext x
-          change
-            (F₁ (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) -
-                W_analytic (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I)) * f x =
-              F₁ (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * f x -
-                W_analytic (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * f x
-          ring)
+        funext x
+        change
+          (F₁ (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) -
+              W_analytic (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I)) * f x =
+            F₁ (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * f x -
+              W_analytic (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * f x
+        ring)
       h_agree
     exact huniq w hw
 

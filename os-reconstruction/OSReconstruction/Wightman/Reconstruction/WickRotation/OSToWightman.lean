@@ -2366,14 +2366,14 @@ private def rightBlockTailShiftMeasurableEquiv {n m : ℕ}
         · simp [tailTimeShiftConfig, hi] }
   measurable_toFun := by
     unfold tailTimeShiftConfig
-    exact measurable_pi_lambda _ (fun i => by
+    exact Measurable.of_eval (fun i => by
       by_cases h : n ≤ i.val
       · simp [h]
         exact (measurable_pi_apply i).add measurable_const
       · simpa [h] using (measurable_pi_apply i))
   measurable_invFun := by
     unfold tailTimeShiftConfig
-    exact measurable_pi_lambda _ (fun i => by
+    exact Measurable.of_eval (fun i => by
       by_cases h : n ≤ i.val
       · simp [h]
         exact (measurable_pi_apply i).add measurable_const

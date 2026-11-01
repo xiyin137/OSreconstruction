@@ -61,7 +61,7 @@ Linux sandbox setup additionally requires Go 1.24 or newer and a working
 writable `.lake` directory, under
 `${XDG_CACHE_HOME:-$HOME/.cache}/osreconstruction-comparator` by default.
 Set `OS_COMPARATOR_TOOLS_DIR` to choose another absolute path. The package's
-Lean toolchain is 4.33.0-rc1. Comparator builds with its own toolchain,
+Lean toolchain is 4.35.0-rc4. Comparator builds with its own toolchain,
 while the exporter is pinned to match the package's version.
 
 The Linux runner follows upstream's `systemd-run` restriction on Unix sockets.

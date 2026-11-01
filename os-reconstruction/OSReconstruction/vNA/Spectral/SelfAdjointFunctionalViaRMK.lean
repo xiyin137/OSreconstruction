@@ -181,6 +181,7 @@ theorem re_inner_cfc_eq_integral_selfAdjointSpectralMeasureDiagonal
     Complex.re (@inner ℂ H _ x ((cfc g A) x))
       = Complex.re (@inner ℂ H _ x ((cfcHom hA gSpec) x)) := by
           rw [cfc_apply g A hA hg]
+          rfl
     _ = Complex.re (@inner ℂ H _ x ((cfcHom hA gCc.toContinuousMap) x)) := by
           rfl
     _ = (selfAdjointSpectralFunctionalCc A hA x) gCc := by rfl

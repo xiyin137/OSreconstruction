@@ -251,9 +251,9 @@ theorem integral_lorentz_eq_self_full {n : ℕ}
           ext i j
           simp [Matrix.mulVec_mulVec, hΛ_mul_inv] }
       measurable_toFun :=
-        measurable_pi_lambda _ fun i => hcont_Λ.measurable.comp (measurable_pi_apply i)
+        Measurable.of_eval fun i => hcont_Λ.measurable.comp (measurable_pi_apply i)
       measurable_invFun :=
-        measurable_pi_lambda _ fun i => hcont_Λinv.measurable.comp (measurable_pi_apply i) }
+        Measurable.of_eval fun i => hcont_Λinv.measurable.comp (measurable_pi_apply i) }
   have hmp : MeasureTheory.MeasurePreserving e MeasureTheory.volume MeasureTheory.volume :=
     MeasureTheory.volume_preserving_pi (fun (_ : Fin n) => hmp_factor)
   exact hmp.integral_comp' h

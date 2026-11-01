@@ -623,7 +623,7 @@ theorem norm_multiIndexTerm_atIncrement_le
   have hprod :
       (∏ i : Fin (k + k), ‖increment i‖ ^ α i) ≤
         ∏ i : Fin (k + k), r ^ α i := by
-    apply Finset.prod_le_prod
+    apply Finset.prod_le_prod₀
     · intro i _
       exact pow_nonneg (norm_nonneg _) _
     · intro i _

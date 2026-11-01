@@ -422,8 +422,7 @@ noncomputable def logarithmicRankTargetAtlas
       convert
         (OSIIStrictGeneratedLogarithmicArgumentAtRank.scalar_zero_mem
           (rank + 1) m (depth + 1)) using 1
-      funext j
-      rfl }⟩
+      all_goals (funext j <;> try rfl) }⟩
   chartData q :=
     (D.retainedLogarithmicRankTargetChart
       q.target q.target_mem).repointZero

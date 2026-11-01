@@ -177,9 +177,8 @@ theorem fderiv_partialFourierSpatial_fun_spatial_apply_eq_sum_multiplierTranspor
                   have hreal : Function.HasTemperateGrowth (Linner.comp Lfst) :=
                     (Linner.comp Lfst).hasTemperateGrowth
                   convert Function.Complex.hasTemperateGrowth_ofReal.comp hreal using 1
-                  · rfl
-                  · funext p
-                    simp [Lfst, Linner, real_inner_comm]
+                  funext p
+                  simp [Lfst, Linner, real_inner_comm]
                 have hcoord :
                     ∀ i : Fin n × Fin d,
                       (fun p : EuclideanSpace ℝ (Fin n × Fin d) × (Fin n → ℝ) =>
@@ -196,9 +195,8 @@ theorem fderiv_partialFourierSpatial_fun_spatial_apply_eq_sum_multiplierTranspor
                   have hreal : Function.HasTemperateGrowth Lcoord :=
                     Lcoord.hasTemperateGrowth
                   convert Function.Complex.hasTemperateGrowth_ofReal.comp hreal using 1
-                  · rfl
-                  · funext p
-                    simp [Lfst, Lcoord]
+                  funext p
+                  simp [Lfst, Lcoord]
                 simp only [E, section43SpatialMultiplierTransport, map_sum, map_smul,
                   ContinuousLinearEquiv.apply_symm_apply, SchwartzMap.smul_apply]
                 simp_rw [SchwartzMap.smulLeftCLM_apply_apply hinner]

@@ -85,7 +85,7 @@ theorem multilinear_norm_le_coordinate_bound {m b : Nat}
       intro c _
       rw [M.map_smul_univ, norm_smul, norm_prod]
       exact mul_le_mul
-        (Finset.prod_le_prod (fun _ _ => norm_nonneg _) (fun i _ => norm_le_pi_norm (v i) (c i)))
+        (Finset.prod_le_prod₀ (fun _ _ => norm_nonneg _) (fun i _ => norm_le_pi_norm (v i) (c i)))
         (hM c) (norm_nonneg _) (Finset.prod_nonneg fun _ _ => norm_nonneg _)
     _ = (m : Real) ^ b * ((∏ i, ‖v i‖) * C) := by simp
     _ <= (m + 1 : Real) ^ b * C * ∏ i, ‖v i‖ := by

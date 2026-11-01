@@ -490,7 +490,7 @@ theorem norm_multilinear_on_basis_bound
       _ ≤ ∏ i : Fin n,
           (2 * (C_basis + 1) / δ *
             (1 + (ks i : ℝ)) ^ s_basis) := by
-        apply Finset.prod_le_prod
+        apply Finset.prod_le_prod₀
           (fun i _ => (hc_pos i).le)
           (fun i _ => ?_)
         show
@@ -559,7 +559,7 @@ theorem norm_multilinear_on_basis_polyBounded
       h_bound (βs m)
     _ ≤ C * ∏ _i : Fin n, A ^ s :=
       mul_le_mul_of_nonneg_left
-        (Finset.prod_le_prod
+        (Finset.prod_le_prod₀
           (fun i _ => by positivity)
           (fun i _ => h_each i))
         hC.le

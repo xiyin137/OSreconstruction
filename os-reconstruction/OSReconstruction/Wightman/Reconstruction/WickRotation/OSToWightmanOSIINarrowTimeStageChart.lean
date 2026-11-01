@@ -165,8 +165,7 @@ theorem osiiAxisPairCoeffMap_pureTime_mem_narrowSector
     have hdiv :=
       div_lt_div_of_pos_right hz.2 hc
     convert hdiv using 1
-    · rfl
-    · ring
+    ring
 
 def osiiNarrowTimeLogCoordinate
     (T : ℝ)
