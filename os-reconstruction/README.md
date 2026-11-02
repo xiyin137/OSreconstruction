@@ -77,6 +77,16 @@ admissions and project-specific axioms, and permits only the standard
 foundations `propext`, `Classical.choice`, and `Quot.sound` in transitive axiom
 dependencies. This is not a claim that Lean uses no foundational axioms.
 
+The guard runs with `lean --run`: Lean first checks the contract examples through
+the public module interface, then the standalone verifier loads full declarations
+at the private import level. This keeps proved-theorem placeholders in module
+interfaces distinct from genuine axioms, while retaining the checks of private
+and generated proof bodies. To run the guard's acceptance and rejection fixtures:
+
+```sh
+bash verification/test_contract_guard.sh
+```
+
 The separate standard Lean Comparator check compares the trusted Challenge
 with the implemented Solution and replays the proof with the same three-axiom
 whitelist:

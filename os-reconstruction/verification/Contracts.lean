@@ -49,12 +49,30 @@ example (Wfn : WightmanFunctions 1) (f : ZeroDiagonalSchwartz 1 0)
     (g : ZeroDiagonalSchwartz 1 2) :=
   (constructOsterwalderSchraderAxioms Wfn).E4_cluster 0 2 f g
 
-open Lean in
-run_cmd do
+end
+
+namespace OSReconstructionVerification
+open Lean
+
+/-- Inspect full declarations, including private and generated proof bodies.
+The parameters also let regression fixtures exercise this same audit. -/
+def auditContracts (projectRoot : Name := `OSReconstruction)
+    (requiredRoots : Array Name := #[``os_to_wightman, ``os_to_wightman_full,
+      ``os_to_wightman_osii, ``os_to_wightman_osii_original,
+      ``constructWightmanFunctions, ``constructWightmanFunctionsCore,
+      ``constructWightmanFunctions_isWickRotationPair,
+      ``constructWightmanFunctions_osii_growth,
+      ``OSReconstruction.osiiOriginalLinearGrowth_iff,
+      ``OSReconstruction.wightman_to_os_axioms,
+      ``OSReconstruction.constructOsterwalderSchraderAxioms,
+      ``OSReconstruction.constructSchwingerFunctions_isWickRotationPair,
+      ``OSReconstruction.e_to_r_specification,
+      ``OSReconstruction.e_to_r_osii_specification,
+      ``OSReconstruction.r_to_e_specification]) : CoreM Unit := do
   let env ← getEnv
   let mut localModules : Nat := 0
   for name in env.header.moduleNames do
-    if (`OSReconstruction).isPrefixOf name then
+    if projectRoot.isPrefixOf name then
       let path := System.FilePath.mk (name.toString.replace "." "/" ++ ".lean")
       unless ← path.pathExists do
         throwError "Loaded local module has no retained source: {name}"
@@ -64,7 +82,7 @@ run_cmd do
   let mut localNames : Array Name := #[]
   for (name, info) in env.constants.toList do
     if let some index := env.getModuleIdxFor? name then
-      if (`OSReconstruction).isPrefixOf env.header.moduleNames[index]! then
+      if projectRoot.isPrefixOf env.header.moduleNames[index]! then
         localDeclarations := localDeclarations + 1
         localNames := localNames.push name
         if info.isAxiom then
@@ -83,20 +101,25 @@ run_cmd do
   unless unexpected.isEmpty do
     throwError "Nonstandard transitive axioms in the package: {unexpected}"
   logInfo m!"PASS: every loaded project declaration transitively uses only standard axioms"
-  for decl in #[``os_to_wightman, ``os_to_wightman_full,
-      ``os_to_wightman_osii, ``os_to_wightman_osii_original,
-      ``constructWightmanFunctions, ``constructWightmanFunctionsCore,
-      ``constructWightmanFunctions_isWickRotationPair,
-      ``constructWightmanFunctions_osii_growth,
-      ``OSReconstruction.osiiOriginalLinearGrowth_iff,
-      ``OSReconstruction.wightman_to_os_axioms,
-      ``OSReconstruction.constructOsterwalderSchraderAxioms,
-      ``OSReconstruction.constructSchwingerFunctions_isWickRotationPair,
-      ``OSReconstruction.e_to_r_specification,
-      ``OSReconstruction.e_to_r_osii_specification,
-      ``OSReconstruction.r_to_e_specification] do
+  for decl in requiredRoots do
     unless localNames.contains decl do
       throwError "Expected checked production root is absent: {decl}"
     logInfo m!"PASS: {decl} uses only standard axioms"
 
-end
+end OSReconstructionVerification
+
+/-- Run only after the public module contract examples above have elaborated.
+Module interfaces erase theorem bodies to axiom placeholders, so the audit needs
+the private import level. Initializer execution belongs in this standalone
+frontend, after elaboration, rather than in a concurrent `run_cmd`. -/
+unsafe def main : IO Unit := do
+  Lean.initSearchPath (← Lean.findSysroot)
+  Lean.enableInitializersExecution
+  let env ← Lean.importModules #[{ module := `OSReconstruction }] {}
+    (loadExts := true) (level := .private)
+  let (_, state) ← OSReconstructionVerification.auditContracts.toIO
+    { fileName := "verification/Contracts.lean", fileMap := default } { env }
+  for message in state.messages.toList do
+    IO.print (← message.toString)
+  if state.messages.hasErrors then
+    throw <| IO.userError "Contract audit failed"
