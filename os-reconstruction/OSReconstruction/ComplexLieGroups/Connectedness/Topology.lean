@@ -1,7 +1,11 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import Mathlib.Topology.Connected.PathConnected
-import Mathlib.Topology.Algebra.Group.Quotient
+module
+
+public import Mathlib.Topology.Connected.PathConnected
+public import Mathlib.Topology.Algebra.Group.Quotient
+
+@[expose] public section
 
 open Topology Filter
 

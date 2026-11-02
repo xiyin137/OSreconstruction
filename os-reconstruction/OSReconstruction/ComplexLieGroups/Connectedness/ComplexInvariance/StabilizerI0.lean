@@ -1,10 +1,14 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.ComplexLieGroups.Connectedness.OrbitSetBasic
-import OSReconstruction.ComplexLieGroups.Connectedness.ForwardTubeDomain
-import OSReconstruction.ComplexLieGroups.Complexification
-import OSReconstruction.ComplexLieGroups.SOConnected
-import Mathlib.FieldTheory.IsAlgClosed.Basic
+module
+
+public import OSReconstruction.ComplexLieGroups.Connectedness.OrbitSetBasic
+public import OSReconstruction.ComplexLieGroups.Connectedness.ForwardTubeDomain
+public import OSReconstruction.ComplexLieGroups.Complexification
+public import OSReconstruction.ComplexLieGroups.SOConnected
+public import Mathlib.FieldTheory.IsAlgClosed.Basic
+
+@[expose] public section
 
 noncomputable section
 
@@ -23,7 +27,7 @@ def wScalarE0 (c : ℂ) : Fin 1 → Fin (m + 2) → ℂ :=
   fun _ μ => if μ = 0 then c else 0
 
 /-- Forward-tube characterization for one-point configurations. -/
-private lemma forwardTube_one_iff_inOpenForwardCone
+lemma forwardTube_one_iff_inOpenForwardCone
     (w : Fin 1 → Fin (m + 2) → ℂ) :
     w ∈ ForwardTube (m + 1) 1 ↔
       InOpenForwardCone (m + 1) (fun μ => (w 0 μ).im) := by
@@ -77,7 +81,7 @@ theorem mem_orbitSet_wScalarE0_iff_firstCol
       InOpenForwardCone (m + 1) (fun μ => (c * firstColCLG (m := m) Λ μ).im) := by
   simpa [firstColCLG] using (mem_orbitSet_wScalarE0_iff (m := m) Λ c)
 
-private lemma minkowskiComplex_decomp
+lemma minkowskiComplex_decomp
     (v : Fin (m + 2) → ℂ) :
     (∑ μ : Fin (m + 2), (minkowskiSignature (m + 1) μ : ℂ) * v μ ^ 2) =
       -(v 0) ^ 2 + ∑ i : Fin (m + 1), v i.succ ^ 2 := by

@@ -5,33 +5,16 @@ Copyright (c) 2025 ModularPhysics Contributors.
 Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
-import Mathlib.Analysis.Complex.CauchyIntegral
-import Mathlib.Analysis.Complex.Liouville
-import Mathlib.Analysis.Complex.LocallyUniformLimit
-import Mathlib.Analysis.Calculus.FDeriv.Prod
-import Mathlib.Analysis.Calculus.FDeriv.Comp
-import Mathlib.Analysis.Calculus.ParametricIntervalIntegral
+module
 
+public import Mathlib.Analysis.Complex.CauchyIntegral
+public import Mathlib.Analysis.Complex.Liouville
+public import Mathlib.Analysis.Complex.LocallyUniformLimit
+public import Mathlib.Analysis.Calculus.FDeriv.Prod
+public import Mathlib.Analysis.Calculus.FDeriv.Comp
+public import Mathlib.Analysis.Calculus.ParametricIntervalIntegral
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -142,7 +125,7 @@ lemma continuousAt_deriv_of_continuousOn [CompleteSpace E] [CompleteSpace F]
 
 set_option maxHeartbeats 400000 in
 /-- Cauchy power series p(1) applied to h equals h • deriv g z₀ (F-valued). -/
-private lemma cauchyPowerSeries_one_eq_smul_deriv [CompleteSpace F]
+lemma cauchyPowerSeries_one_eq_smul_deriv [CompleteSpace F]
     (z₀ : ℂ) (ρ : ℝ) (hρ : 0 < ρ)
     (g : ℂ → F) (hg : DifferentiableOn ℂ g (Metric.closedBall z₀ ρ)) (h : ℂ) :
     (cauchyPowerSeries g z₀ ρ 1) (fun _ => h) = h • deriv g z₀ := by
@@ -159,7 +142,7 @@ private lemma cauchyPowerSeries_one_eq_smul_deriv [CompleteSpace F]
   rw [h_smul, hd]
 
 /-- Geometric tail bound ∑_{n≥0} M·r^(n+2) ≤ 2M·r² for r < 1/2. -/
-private lemma tsum_geometric_tail_le (M r : ℝ) (hM : 0 ≤ M)
+lemma tsum_geometric_tail_le (M r : ℝ) (hM : 0 ≤ M)
     (hr : 0 ≤ r) (hr2 : r < 1 / 2) :
     ∑' n, M * r ^ (n + 2) ≤ 2 * M * r ^ 2 := by
   have hr1 : r < 1 := by linarith
@@ -176,7 +159,7 @@ private lemma tsum_geometric_tail_le (M r : ℝ) (hM : 0 ≤ M)
 
 set_option maxHeartbeats 800000 in
 /-- Cauchy coefficient bound ‖p(n)(fun _ => h)‖ ≤ M * (‖h‖/ρ)^n (F-valued). -/
-private lemma cauchyPowerSeries_coeff_bound [CompleteSpace F]
+lemma cauchyPowerSeries_coeff_bound [CompleteSpace F]
     (z₀ : ℂ) (ρ : ℝ) (hρ : 0 < ρ)
     (g : ℂ → F) (hg : DifferentiableOn ℂ g (Metric.closedBall z₀ ρ))
     (M : ℝ) (hM : ∀ w ∈ Metric.closedBall z₀ ρ, ‖g w‖ ≤ M) (n : ℕ) (h : ℂ) :
@@ -221,7 +204,7 @@ private lemma cauchyPowerSeries_coeff_bound [CompleteSpace F]
 
 set_option maxHeartbeats 800000 in
 /-- Taylor remainder equals power series tail (F-valued). -/
-private lemma taylor_remainder_eq_tsum [CompleteSpace F]
+lemma taylor_remainder_eq_tsum [CompleteSpace F]
     (z₀ : ℂ) (ρ : ℝ) (hρ : 0 < ρ)
     (g : ℂ → F) (hg : DifferentiableOn ℂ g (Metric.closedBall z₀ ρ))
     (h : ℂ) (hh : ‖h‖ < ρ) :
@@ -252,7 +235,7 @@ private lemma taylor_remainder_eq_tsum [CompleteSpace F]
 
 set_option maxHeartbeats 800000 in
 /-- Norm of tail tsum bounded by geometric series (F-valued). -/
-private lemma taylor_tail_norm_le [CompleteSpace F]
+lemma taylor_tail_norm_le [CompleteSpace F]
     (z₀ : ℂ) (ρ : ℝ) (hρ : 0 < ρ)
     (g : ℂ → F) (hg : DifferentiableOn ℂ g (Metric.closedBall z₀ ρ))
     (M : ℝ) (hM : ∀ w ∈ Metric.closedBall z₀ ρ, ‖g w‖ ≤ M)
@@ -287,7 +270,7 @@ private lemma taylor_tail_norm_le [CompleteSpace F]
   linarith
 
 /-- Taylor remainder bound: ‖g(z₀+h) - g(z₀) - h • g'(z₀)‖ ≤ 4M/ρ² · ‖h‖² (F-valued). -/
-private lemma taylor_remainder_single [CompleteSpace F]
+lemma taylor_remainder_single [CompleteSpace F]
     {z₀ : ℂ} {ρ : ℝ} (hρ : 0 < ρ)
     {g : ℂ → F} (hg : DifferentiableOn ℂ g (Metric.closedBall z₀ ρ))
     {M : ℝ} (hM : ∀ w ∈ Metric.closedBall z₀ ρ, ‖g w‖ ≤ M)
@@ -299,7 +282,7 @@ private lemma taylor_remainder_single [CompleteSpace F]
 
 
 /-- ContinuousOn f on K ×ˢ V with K compact gives uniform bound near x₀ (F-valued). -/
-private lemma uniform_bound_near_point [CompleteSpace E] [CompleteSpace F]
+lemma uniform_bound_near_point [CompleteSpace E] [CompleteSpace F]
     {z₀ : ℂ} {ρ : ℝ} (hρ : 0 < ρ)
     {V : Set E} (_hV : IsOpen V)
     (f : ℂ × E → F)

@@ -5,28 +5,13 @@ Copyright (c) 2025 ModularPhysics Contributors. All rights reserved.
 Released under Apache 2.0 license.
 Authors: Michael Douglas, ModularPhysics Contributors
 -/
-import OSReconstruction.ComplexLieGroups.Complexification
-import Mathlib.Analysis.Convex.Deriv
+module
 
+public import OSReconstruction.ComplexLieGroups.Complexification
+public import Mathlib.Analysis.Convex.Deriv
+public import Mathlib.Analysis.Matrix.Normed
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -84,7 +69,7 @@ lemma spatial_norm_lt_time {η : Fin (d + 1) → ℝ} (h : InOpenForwardCone d �
     (by have := h.2; rw [minkowski_sum_decomp] at this; linarith)
 
 /-- Expand ∑(ax + by)² into a²∑x² + 2ab∑xy + b²∑y². -/
-private lemma sum_sq_expand {n : ℕ} (x y : Fin n → ℝ) (a b : ℝ) :
+lemma sum_sq_expand {n : ℕ} (x y : Fin n → ℝ) (a b : ℝ) :
     ∑ i : Fin n, (a * x i + b * y i) ^ 2 =
     a ^ 2 * ∑ i : Fin n, x i ^ 2 + 2 * (a * b) * ∑ i : Fin n, x i * y i +
     b ^ 2 * ∑ i : Fin n, y i ^ 2 := by
@@ -93,7 +78,7 @@ private lemma sum_sq_expand {n : ℕ} (x y : Fin n → ℝ) (a b : ℝ) :
   simp only [Finset.sum_add_distrib, ← Finset.mul_sum]
 
 /-- Triangle inequality squared: ∑(ax+by)² ≤ (a‖x‖ + b‖y‖)². Uses Cauchy-Schwarz. -/
-private lemma sum_sq_convex_combo_le {n : ℕ} (x y : Fin n → ℝ) (a b : ℝ)
+lemma sum_sq_convex_combo_le {n : ℕ} (x y : Fin n → ℝ) (a b : ℝ)
     (ha : 0 ≤ a) (hb : 0 ≤ b) :
     ∑ i : Fin n, (a * x i + b * y i) ^ 2 ≤
     (a * Real.sqrt (∑ i, x i ^ 2) + b * Real.sqrt (∑ i, y i ^ 2)) ^ 2 := by
@@ -281,7 +266,7 @@ abbrev conjMap (M : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ) :
   M.map star
 
 /-- Bridge lemma: conjMap equals (starRingEnd ℂ).mapMatrix. -/
-private theorem conjMap_eq_mapMatrix (M : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ) :
+theorem conjMap_eq_mapMatrix (M : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ) :
     conjMap M = (starRingEnd ℂ).mapMatrix M := by
   ext i j; simp [RingHom.mapMatrix_apply]
 

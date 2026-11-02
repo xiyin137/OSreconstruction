@@ -1,21 +1,11 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.SCV.DistributionalEOWCutoff
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVITimeSpectralSupport
+module
 
+public import OSReconstruction.SCV.DistributionalEOWCutoff
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVITimeSpectralSupport
 
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -28,7 +18,7 @@ variable {d k : Nat} [NeZero d]
 
 /-- Schwartz-space transport along the standard Section 4.3 time/spatial
 flattening. -/
-private noncomputable def section43TimeSpatialFlatSchwartzCLE (d k : Nat) :
+noncomputable def section43TimeSpatialFlatSchwartzCLE (d k : Nat) :
     SchwartzMap (Section43TimeSpatialSpace d k) Complex ≃L[Complex]
       SchwartzMap (Fin (k + k * d) -> Real) Complex := by
   let e := section43TimeSpatialFlatCLE d k
@@ -61,7 +51,7 @@ private noncomputable def section43TimeSpatialFlatSchwartzCLE (d k : Nat) :
 
 /-- Standard radial compact truncation transported to the Section 4.3
 time/spatial product block. -/
-private noncomputable def section43TimeSpatialBumpTruncation
+noncomputable def section43TimeSpatialBumpTruncation
     (d k N : Nat)
     (F : SchwartzMap (Section43TimeSpatialSpace d k) Complex) :
     SchwartzMap (Section43TimeSpatialSpace d k) Complex :=
@@ -71,7 +61,7 @@ private noncomputable def section43TimeSpatialBumpTruncation
 
 /-- Transported radial truncations converge in the Section 4.3 product
 Schwartz topology. -/
-private theorem section43TimeSpatialBumpTruncation_tendsto
+theorem section43TimeSpatialBumpTruncation_tendsto
     (F : SchwartzMap (Section43TimeSpatialSpace d k) Complex) :
     Tendsto
       (fun N : Nat => section43TimeSpatialBumpTruncation d k N F)
@@ -90,7 +80,7 @@ private theorem section43TimeSpatialBumpTruncation_tendsto
     htransport
 
 /-- Each transported radial truncation has compact topological support. -/
-private theorem section43TimeSpatialBumpTruncation_hasCompactSupport
+theorem section43TimeSpatialBumpTruncation_hasCompactSupport
     (F : SchwartzMap (Section43TimeSpatialSpace d k) Complex)
     (N : Nat) :
     HasCompactSupport
@@ -114,7 +104,7 @@ private theorem section43TimeSpatialBumpTruncation_hasCompactSupport
 
 /-- Radial truncation does not enlarge topological support after transport to
 the Section 4.3 product block. -/
-private theorem section43TimeSpatialBumpTruncation_tsupport_subset
+theorem section43TimeSpatialBumpTruncation_tsupport_subset
     (F : SchwartzMap (Section43TimeSpatialSpace d k) Complex)
     (N : Nat) :
     tsupport
@@ -183,7 +173,7 @@ def section43TimeComplementTensorSubmodule
 
 /-- A compactly supported time/spatial test missing a closed temporal set is
 already in the closed span of tensors whose time factors miss that set. -/
-private theorem section43TimeSpatial_mem_timeComplementTensorClosure_of_compactSupport
+theorem section43TimeSpatial_mem_timeComplementTensorClosure_of_compactSupport
     (S : Set (Fin k -> Real)) (hS_closed : IsClosed S)
     (F : SchwartzMap (Section43TimeSpatialSpace d k) Complex)
     (hF_compact : HasCompactSupport

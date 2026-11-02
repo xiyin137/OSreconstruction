@@ -1,21 +1,15 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import Mathlib.Analysis.Fourier.Inversion
-import Mathlib.Analysis.Calculus.ParametricIntegral
-import Mathlib.Analysis.Calculus.BumpFunction.FiniteDimension
-import Mathlib.Analysis.Complex.CauchyIntegral
-import Mathlib.Analysis.Complex.Schwarz
-import OSReconstruction.SCV.HorizontalConvexity
+module
 
+public import Mathlib.Analysis.Fourier.Inversion
+public import Mathlib.Analysis.Calculus.ParametricIntegral
+public import Mathlib.Analysis.Calculus.BumpFunction.FiniteDimension
+public import Mathlib.Analysis.Complex.CauchyIntegral
+public import Mathlib.Analysis.Complex.Schwarz
+public import OSReconstruction.SCV.HorizontalConvexity
 
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -261,7 +255,7 @@ theorem norm_gaussianKernel
   ring_nf
 
 /-- A translated real Gaussian is integrable at every positive scale. -/
-private theorem integrable_rexp_neg_sq_translate
+theorem integrable_rexp_neg_sq_translate
     (c : ℝ) (hc : 0 < c) (u : EuclideanSpace ℝ ι) :
     Integrable (fun x : EuclideanSpace ℝ ι =>
       Real.exp (-Real.pi ^ 2 * c * ‖u - x‖ ^ 2)) := by

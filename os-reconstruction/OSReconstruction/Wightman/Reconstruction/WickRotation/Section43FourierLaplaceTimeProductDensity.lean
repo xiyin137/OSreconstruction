@@ -1,17 +1,12 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceTimeProduct
-import Init
-import OSReconstruction.SCV.SchwartzComplete
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceTimeProduct
+public import Init
+public import OSReconstruction.SCV.SchwartzComplete
 
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 

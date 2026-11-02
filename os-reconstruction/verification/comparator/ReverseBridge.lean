@@ -1,5 +1,9 @@
-import OSBridge
-import OSReconstruction.Wightman.Reconstruction.WickRotation.BHWTranslation
+module
+
+public import OSBridge
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.BHWTranslation
+
+@[expose] public section
 
 noncomputable section
 open MeasureTheory Complex Filter Set Topology Matrix

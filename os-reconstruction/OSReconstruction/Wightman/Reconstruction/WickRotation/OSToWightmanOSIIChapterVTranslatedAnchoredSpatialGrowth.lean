@@ -1,5 +1,9 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVUniversalCompactCarrierAnchoredAtlas
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVTranslatedMixedDeltaProducer
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVUniversalCompactCarrierAnchoredAtlas
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVTranslatedMixedDeltaProducer
+
+@[expose] public section
 
 /-!
 # Translated spatial growth on the universal anchored atlas
@@ -33,7 +37,7 @@ variable
   {OS : OsterwalderSchraderAxioms d}
   {K : Set (Fin ((q + 1) + 1) → ℝ)}
 
-private theorem reflectedCauchyCenter_eq_increment
+theorem reflectedCauchyCenter_eq_increment
     (z : Fin (q + 1) → ℂ) :
     reflectedCauchyCenter z = reflectedCauchyIncrement z := by
   funext j

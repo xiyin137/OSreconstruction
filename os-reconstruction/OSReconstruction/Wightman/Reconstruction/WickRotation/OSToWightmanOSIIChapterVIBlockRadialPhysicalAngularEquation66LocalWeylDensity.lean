@@ -1,24 +1,15 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIBlockRadialPhysicalAngularEquation66DensityRecovery
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIBlockRadialMultiGapSynchronizedCommonSlope
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVInitialReducedFlatWickCovariance
-import OSReconstruction.SCV.LocalEOWPairingCLM
-import OSReconstruction.SCV.LocalProductRecovery
-import OSReconstruction.SCV.DistributionalRepresentationUniqueness
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIBlockRadialPhysicalAngularEquation66DensityRecovery
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIBlockRadialMultiGapSynchronizedCommonSlope
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVInitialReducedFlatWickCovariance
+public import OSReconstruction.SCV.LocalEOWPairingCLM
+public import OSReconstruction.SCV.LocalProductRecovery
+public import OSReconstruction.SCV.DistributionalRepresentationUniqueness
 
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -40,19 +31,19 @@ variable {Z : OSIIStep4SynchronizedMultiGapContinuationData d k hrho
 
 namespace OSIIStep4FullSchwartzAngularContinuationData
 
-private abbrev FlatSource := Fin (k * (d + 1)) -> Real
+abbrev FlatSource_uation66LocalWeylDensity := Fin (k * (d + 1)) -> Real
 
 /-- Pull a flat test centered at zero to the reduced source chart centered at
 `XiHat`. -/
 noncomputable def equation66_centeredFlatReducedSourceCLM :
-    SchwartzMap (FlatSource (d := d) (k := k)) Complex →L[Complex]
+    SchwartzMap (FlatSource_uation66LocalWeylDensity (d := d) (k := k)) Complex →L[Complex]
       SchwartzNPoint d k :=
   (unflattenSchwartzNPoint (d := d)).comp
     (SCV.translateSchwartzCLM
       (-osiiStep4MultiGapXiHatCenter d k center))
 
 @[simp] theorem equation66_centeredFlatReducedSourceCLM_apply
-    (psi : SchwartzMap (FlatSource (d := d) (k := k)) Complex) :
+    (psi : SchwartzMap (FlatSource_uation66LocalWeylDensity (d := d) (k := k)) Complex) :
     equation66_centeredFlatReducedSourceCLM (d := d) (k := k)
         (center := center) psi =
       unflattenSchwartzNPoint (d := d)
@@ -62,7 +53,7 @@ noncomputable def equation66_centeredFlatReducedSourceCLM :
 
 /-- The full absolute-coordinate source used by the angular distribution. -/
 noncomputable def equation66_centeredFlatFullSourceCLM :
-    SchwartzMap (FlatSource (d := d) (k := k)) Complex →L[Complex]
+    SchwartzMap (FlatSource_uation66LocalWeylDensity (d := d) (k := k)) Complex →L[Complex]
       SchwartzNPoint d (k + 1) :=
   (BHW.reducedTestLift k d
     (osiiStep4PositiveTimeBasepointCutoff d).toSchwartz).comp
@@ -70,7 +61,7 @@ noncomputable def equation66_centeredFlatFullSourceCLM :
         (center := center))
 
 @[simp] theorem equation66_centeredFlatFullSourceCLM_apply
-    (psi : SchwartzMap (FlatSource (d := d) (k := k)) Complex) :
+    (psi : SchwartzMap (FlatSource_uation66LocalWeylDensity (d := d) (k := k)) Complex) :
     equation66_centeredFlatFullSourceCLM (d := d) (k := k)
         (center := center) psi =
       BHW.reducedTestLift k d
@@ -80,8 +71,8 @@ noncomputable def equation66_centeredFlatFullSourceCLM :
   rfl
 
 theorem equation66_centeredFlatReducedSource_translate
-    (a : FlatSource (d := d) (k := k))
-    (psi : SchwartzMap (FlatSource (d := d) (k := k)) Complex) :
+    (a : FlatSource_uation66LocalWeylDensity (d := d) (k := k))
+    (psi : SchwartzMap (FlatSource_uation66LocalWeylDensity (d := d) (k := k)) Complex) :
     equation66_centeredFlatReducedSourceCLM (d := d) (k := k) (center := center)
         (SCV.translateSchwartz a psi) =
       translateSchwartzConfiguration
@@ -102,7 +93,7 @@ theorem equation66_centeredFlatReducedSource_translate
   ring
 
 theorem equation66_centeredFlatReducedSource_support
-    (psi : SchwartzMap (FlatSource (d := d) (k := k)) Complex)
+    (psi : SchwartzMap (FlatSource_uation66LocalWeylDensity (d := d) (k := k)) Complex)
     (r : Real) (hr : r <= rho / 4)
     (hpsi : SCV.KernelSupportWithin psi r) :
     Function.support
@@ -118,7 +109,7 @@ theorem equation66_centeredFlatReducedSource_support
       flattenSchwartzNPoint_apply, unflattenSchwartzNPoint_apply,
       SCV.translateSchwartz_apply, sub_eq_add_neg] using hx
   have hxt : x - c ∈ tsupport
-      (psi : FlatSource (d := d) (k := k) -> Complex) :=
+      (psi : FlatSource_uation66LocalWeylDensity (d := d) (k := k) -> Complex) :=
     subset_closure (by simpa [Function.mem_support] using hxne)
   have hball := hpsi hxt
   rw [Metric.mem_closedBall, dist_zero_right] at hball
@@ -130,7 +121,7 @@ at the origin. -/
 noncomputable def equation66_centeredFlatPairing
     (D : OSIIStep4FullSchwartzAngularContinuationData
       (hcenter := hcenter) Z OS lgc)
-    (psi : SchwartzMap (FlatSource (d := d) (k := k)) Complex)
+    (psi : SchwartzMap (FlatSource_uation66LocalWeylDensity (d := d) (k := k)) Complex)
     (z : Fin (k * (d + 1)) -> Complex) : Complex :=
   D.complexTargetPairing
     (equation66_centeredFlatReducedSourceCLM
@@ -142,7 +133,7 @@ noncomputable def equation66_centeredFlatPairingCLM
     (D : OSIIStep4FullSchwartzAngularContinuationData
       (hcenter := hcenter) Z OS lgc)
     (z : Fin (k * (d + 1)) -> Complex) :
-    SchwartzMap (FlatSource (d := d) (k := k)) Complex →L[Complex] Complex :=
+    SchwartzMap (FlatSource_uation66LocalWeylDensity (d := d) (k := k)) Complex →L[Complex] Complex :=
   (D.distribution
     (osiiStep4MultiGapComplexTargetLog d k Z.uniform.T center z)).comp
       (equation66_centeredFlatFullSourceCLM
@@ -160,12 +151,12 @@ theorem equation66_exists_centeredFlatPairingKernel
         D.complexTargetDomain) :
     ∃ K : SchwartzMap
         ((Fin (k * (d + 1)) -> Complex) ×
-          (FlatSource (d := d) (k := k))) Complex →L[Complex] Complex,
-      (∀ psi : SchwartzMap (FlatSource (d := d) (k := k)) Complex,
+          (FlatSource_uation66LocalWeylDensity (d := d) (k := k))) Complex →L[Complex] Complex,
+      (∀ psi : SchwartzMap (FlatSource_uation66LocalWeylDensity (d := d) (k := k)) Complex,
         DifferentiableOn Complex (D.equation66_centeredFlatPairing psi)
           (Metric.ball 0 R)) ∧
       ∀ (phi : SchwartzMap (Fin (k * (d + 1)) -> Complex) Complex)
-          (psi : SchwartzMap (FlatSource (d := d) (k := k)) Complex),
+          (psi : SchwartzMap (FlatSource_uation66LocalWeylDensity (d := d) (k := k)) Complex),
         SCV.SupportsInOpen
           (phi : (Fin (k * (d + 1)) -> Complex) -> Complex)
           (Metric.ball 0 (2 * sigma)) ->
@@ -207,11 +198,11 @@ theorem equation66_exists_centeredFlatPairingKernel
       ∃ s : Finset (Nat × Nat), ∃ C : Real, 0 <= C ∧
         ∀ z ∈ Metric.closedBall
             (0 : Fin (k * (d + 1)) -> Complex) (3 * sigma),
-        ∀ psi : SchwartzMap (FlatSource (d := d) (k := k)) Complex,
+        ∀ psi : SchwartzMap (FlatSource_uation66LocalWeylDensity (d := d) (k := k)) Complex,
           ‖D.equation66_centeredFlatPairingCLM z psi‖ <=
             C * s.sup
               (schwartzSeminormFamily Complex
-                (FlatSource (d := d) (k := k)) Complex) psi := by
+                (FlatSource_uation66LocalWeylDensity (d := d) (k := k)) Complex) psi := by
     refine ⟨s, CD * Cmap, mul_nonneg hCD.le hCmap, ?_⟩
     intro z hz psi
     have hzB : z ∈ B := hz
@@ -226,11 +217,11 @@ theorem equation66_exists_centeredFlatPairingKernel
         exact hDbound (logMap z) hzlog _
       _ <= CD * (Cmap * s.sup
             (schwartzSeminormFamily Complex
-              (FlatSource (d := d) (k := k)) Complex) psi) := by
+              (FlatSource_uation66LocalWeylDensity (d := d) (k := k)) Complex) psi) := by
         exact mul_le_mul_of_nonneg_left (hmap psi) hCD.le
       _ = (CD * Cmap) * s.sup
             (schwartzSeminormFamily Complex
-              (FlatSource (d := d) (k := k)) Complex) psi := by ring
+              (FlatSource_uation66LocalWeylDensity (d := d) (k := k)) Complex) psi := by ring
   obtain ⟨chi, hchi_one, _hchi_support⟩ :=
     SCV.exists_complexChart_schwartz_cutoff_eq_one_on_closedBall
       (m := k * (d + 1))
@@ -239,7 +230,7 @@ theorem equation66_exists_centeredFlatPairingKernel
   have hcont_integrand :
       ∀ F : SchwartzMap
           ((Fin (k * (d + 1)) -> Complex) ×
-            (FlatSource (d := d) (k := k))) Complex,
+            (FlatSource_uation66LocalWeylDensity (d := d) (k := k))) Complex,
         ContinuousOn
           (fun z : Fin (k * (d + 1)) -> Complex =>
             chi z * D.equation66_centeredFlatPairingCLM z
@@ -280,7 +271,7 @@ theorem equation66_exists_centeredFlatPairingKernel
         exact Metric.ball_subset_ball (by linarith))
       (chi) hchi_one
       (Good := fun _ : SchwartzMap
-        (FlatSource (d := d) (k := k)) Complex => True)
+        (FlatSource_uation66LocalWeylDensity (d := d) (k := k)) Complex => True)
       (G := D.equation66_centeredFlatPairing)
       (L := D.equation66_centeredFlatPairingCLM)
       (hL_value := fun _ _ _ _ => rfl)
@@ -302,8 +293,8 @@ theorem equation66_centeredFlatPairing_translate_eq
     (hball : Metric.ball
       (0 : Fin (k * (d + 1)) -> Complex) R ⊆
         D.complexTargetDomain)
-    (a : FlatSource (d := d) (k := k))
-    (psi : SchwartzMap (FlatSource (d := d) (k := k)) Complex)
+    (a : FlatSource_uation66LocalWeylDensity (d := d) (k := k))
+    (psi : SchwartzMap (FlatSource_uation66LocalWeylDensity (d := d) (k := k)) Complex)
     (ha : ‖a‖ < 5 * sigma)
     (hpsi : SCV.KernelSupportWithin psi (sigma / 2))
     (hpsi_shift : SCV.KernelSupportWithin
@@ -384,12 +375,12 @@ theorem equation66_exists_locallyCovariantCenteredFlatPairingKernel
         D.complexTargetDomain) :
     ∃ K : SchwartzMap
         ((Fin (k * (d + 1)) -> Complex) ×
-          (FlatSource (d := d) (k := k))) Complex →L[Complex] Complex,
-      (∀ psi : SchwartzMap (FlatSource (d := d) (k := k)) Complex,
+          (FlatSource_uation66LocalWeylDensity (d := d) (k := k))) Complex →L[Complex] Complex,
+      (∀ psi : SchwartzMap (FlatSource_uation66LocalWeylDensity (d := d) (k := k)) Complex,
         DifferentiableOn Complex (D.equation66_centeredFlatPairing psi)
           (Metric.ball 0 R)) ∧
       (∀ (phi : SchwartzMap (Fin (k * (d + 1)) -> Complex) Complex)
-          (psi : SchwartzMap (FlatSource (d := d) (k := k)) Complex),
+          (psi : SchwartzMap (FlatSource_uation66LocalWeylDensity (d := d) (k := k)) Complex),
         SCV.SupportsInOpen
           (phi : (Fin (k * (d + 1)) -> Complex) -> Complex)
           (Metric.ball 0 (2 * sigma)) ->
@@ -430,12 +421,12 @@ theorem equation66_exists_centeredFlatHolomorphicRepresentative
     ∃ H : (Fin (k * (d + 1)) -> Complex) -> Complex,
       DifferentiableOn Complex H (Metric.ball 0 sigma) ∧
       ∀ (psi : SchwartzMap
-          (FlatSource (d := d) (k := k)) Complex),
+          (FlatSource_uation66LocalWeylDensity (d := d) (k := k)) Complex),
         SCV.KernelSupportWithin psi (sigma / 4) ->
         ∀ z ∈ Metric.ball
           (0 : Fin (k * (d + 1)) -> Complex) (sigma / 2),
           D.equation66_centeredFlatPairing psi z =
-            ∫ t : FlatSource (d := d) (k := k),
+            ∫ t : FlatSource_uation66LocalWeylDensity (d := d) (k := k),
               H (z + SCV.realEmbed t) * psi t := by
   obtain ⟨K, hKholo, hKrep, hKcov⟩ :=
     D.equation66_exists_locallyCovariantCenteredFlatPairingKernel
@@ -448,7 +439,7 @@ theorem equation66_exists_centeredFlatHolomorphicRepresentative
   have hmargin_core :
       ∀ z ∈ Metric.ball
           (0 : Fin (k * (d + 1)) -> Complex) (sigma / 2),
-        ∀ t : FlatSource (d := d) (k := k), ‖t‖ <= sigma / 4 ->
+        ∀ t : FlatSource_uation66LocalWeylDensity (d := d) (k := k), ‖t‖ <= sigma / 4 ->
           z + SCV.realEmbed t ∈ Metric.ball
             (0 : Fin (k * (d + 1)) -> Complex) sigma := by
     intro z hz t ht
@@ -462,7 +453,7 @@ theorem equation66_exists_centeredFlatHolomorphicRepresentative
   have hmargin_desc_cov :
       ∀ z ∈ Metric.ball
           (0 : Fin (k * (d + 1)) -> Complex) sigma,
-        ∀ t : FlatSource (d := d) (k := k),
+        ∀ t : FlatSource_uation66LocalWeylDensity (d := d) (k := k),
           ‖t‖ <= sigma / 4 + sigma / 4 ->
             z + SCV.realEmbed t ∈ Metric.ball
               (0 : Fin (k * (d + 1)) -> Complex) (2 * sigma) := by
@@ -502,7 +493,7 @@ theorem equation66_exists_centeredFlatHolomorphicRepresentative
 
 theorem equation66_recenteredFlatKernel_support
     (phi : SchwartzNPoint d k)
-    (c : FlatSource (d := d) (k := k))
+    (c : FlatSource_uation66LocalWeylDensity (d := d) (k := k))
     (r : Real)
     (hphi : Function.support (flattenSchwartzNPoint (d := d) phi) ⊆
       Metric.closedBall c r) :
@@ -512,8 +503,8 @@ theorem equation66_recenteredFlatKernel_support
   rw [OSIIChapterV.tsupport_translateSchwartz_eq_preimage] at ht
   have hflat : tsupport
       ((flattenSchwartzNPoint (d := d) phi :
-        SchwartzMap (FlatSource (d := d) (k := k)) Complex) :
-        FlatSource (d := d) (k := k) -> Complex) ⊆
+        SchwartzMap (FlatSource_uation66LocalWeylDensity (d := d) (k := k)) Complex) :
+        FlatSource_uation66LocalWeylDensity (d := d) (k := k) -> Complex) ⊆
       Metric.closedBall c r :=
     closure_minimal hphi isClosed_closedBall
   have htball := hflat ht
@@ -550,7 +541,7 @@ theorem equation66_exists_holomorphic_density_representsOnSupport
           (SCV.realEmbed (osiiStep4MultiGapXiHatCenter d k center)) sigma) ∧
       D.imaginarySliceFamily.RepresentsOnSupport
         (Metric.closedBall
-          (0 : FlatSource (d := d) (k := k)) (sigma / 4))
+          (0 : FlatSource_uation66LocalWeylDensity (d := d) (k := k)) (sigma / 4))
         (Metric.closedBall
           (osiiStep4MultiGapXiHatCenter d k center) (sigma / 4)) F := by
   obtain ⟨H, hH_holo, hpointwise⟩ :=
@@ -570,9 +561,9 @@ theorem equation66_exists_holomorphic_density_representsOnSupport
         simpa [Metric.mem_ball, dist_eq_norm] using hz)
   refine ⟨F, hF_holo, ?_⟩
   intro y hy phi hphi
-  let flat : SchwartzMap (FlatSource (d := d) (k := k)) Complex :=
+  let flat : SchwartzMap (FlatSource_uation66LocalWeylDensity (d := d) (k := k)) Complex :=
     flattenSchwartzNPoint (d := d) phi
-  let psi : SchwartzMap (FlatSource (d := d) (k := k)) Complex :=
+  let psi : SchwartzMap (FlatSource_uation66LocalWeylDensity (d := d) (k := k)) Complex :=
     SCV.translateSchwartz c flat
   have hpsi : SCV.KernelSupportWithin psi (sigma / 4) := by
     exact equation66_recenteredFlatKernel_support
@@ -585,7 +576,7 @@ theorem equation66_exists_holomorphic_density_representsOnSupport
     have hy_norm : ‖y‖ <= sigma / 4 := by
       simpa [Metric.mem_closedBall, dist_zero_right] using hy
     calc
-      ‖zi‖ <= ‖(0 : FlatSource (d := d) (k := k))‖ + ‖y‖ :=
+      ‖zi‖ <= ‖(0 : FlatSource_uation66LocalWeylDensity (d := d) (k := k))‖ + ‖y‖ :=
         osiiStep4ComplexOfRealImag_norm_le_add 0 y
       _ <= sigma / 4 := by simpa using hy_norm
       _ < sigma / 2 := by linarith
@@ -596,7 +587,7 @@ theorem equation66_exists_holomorphic_density_representsOnSupport
       (equation66_centeredFlatReducedSource_recenter
         (d := d) (k := k) (center := center) phi)
   have hp' : D.imaginarySliceFamily y phi =
-      ∫ t : FlatSource (d := d) (k := k),
+      ∫ t : FlatSource_uation66LocalWeylDensity (d := d) (k := k),
         H (zi + SCV.realEmbed t) * psi t := by
     have htarget :
         osiiStep4MultiGapComplexTargetLog d k Z.uniform.T center zi =
@@ -605,15 +596,15 @@ theorem equation66_exists_holomorphic_density_representsOnSupport
     simpa [equation66_centeredFlatPairing, complexTargetPairing,
       imaginarySliceFamily, hcentered, htarget, zi] using hp
   rw [hp']
-  let g : FlatSource (d := d) (k := k) -> Complex := fun x =>
+  let g : FlatSource_uation66LocalWeylDensity (d := d) (k := k) -> Complex := fun x =>
     F (osiiStep4ComplexOfRealImag x y) * flat x
   have hshift := MeasureTheory.integral_add_right_eq_self
     (μ := (volume : MeasureTheory.Measure
-      (FlatSource (d := d) (k := k)))) g c
+      (FlatSource_uation66LocalWeylDensity (d := d) (k := k)))) g c
   calc
-    (∫ t : FlatSource (d := d) (k := k),
+    (∫ t : FlatSource_uation66LocalWeylDensity (d := d) (k := k),
         H (zi + SCV.realEmbed t) * psi t) =
-        ∫ t : FlatSource (d := d) (k := k), g (t + c) := by
+        ∫ t : FlatSource_uation66LocalWeylDensity (d := d) (k := k), g (t + c) := by
       apply MeasureTheory.integral_congr_ae
       filter_upwards with t
       have harg : zi + SCV.realEmbed t =
@@ -623,8 +614,8 @@ theorem equation66_exists_holomorphic_density_representsOnSupport
         ring
       rw [harg]
       simp [g, F, psi, flat, SCV.translateSchwartz_apply]
-    _ = ∫ x : FlatSource (d := d) (k := k), g x := hshift
-    _ = ∫ x : FlatSource (d := d) (k := k),
+    _ = ∫ x : FlatSource_uation66LocalWeylDensity (d := d) (k := k), g x := hshift
+    _ = ∫ x : FlatSource_uation66LocalWeylDensity (d := d) (k := k),
         F (osiiStep4ComplexOfRealImag x y) *
           flattenSchwartzNPoint (d := d) phi x := by rfl
 
@@ -644,17 +635,17 @@ structure OSIIEquation66LocalWeylDensityData
       (SCV.realEmbed (osiiStep4MultiGapXiHatCenter d k center)) scale)
   represents : D.imaginarySliceFamily.RepresentsOnSupport
     (Metric.closedBall
-      (0 : FlatSource (d := d) (k := k)) (scale / 4))
+      (0 : FlatSource_uation66LocalWeylDensity (d := d) (k := k)) (scale / 4))
       (Metric.closedBall
       (osiiStep4MultiGapXiHatCenter d k center) (scale / 4)) density
-  firstCarrierCoverage : forall y : FlatSource (d := d) (k := k),
+  firstCarrierCoverage : forall y : FlatSource_uation66LocalWeylDensity (d := d) (k := k),
     y ∈ Metric.closedBall 0 (scale / 4) ->
       osiiStep4MultiGapTargetLog d k Z.uniform.T center y ∈
         osiiAxisPairMultiGapLogDomain d k
   meanValue : density (osiiStep4ComplexOfRealImag
       (osiiStep4MultiGapXiHatCenter d k center) 0) =
-    ∫ y' : FlatSource (d := d) (k := k),
-      ∫ y : FlatSource (d := d) (k := k),
+    ∫ y' : FlatSource_uation66LocalWeylDensity (d := d) (k := k),
+      ∫ y : FlatSource_uation66LocalWeylDensity (d := d) (k := k),
         osiiStep4DistributionalPartialConvolutionTransform
           D.imaginarySliceFamily scale_pos
             (osiiStep4MultiGapXiHatCenter d k center) y y'
@@ -667,8 +658,8 @@ theorem OSIIEquation66LocalWeylDensityData.distributionalPartialConvolutionTrans
     {D : OSIIStep4FullSchwartzAngularContinuationData
       (hcenter := hcenter) Z OS lgc}
     (A : OSIIEquation66LocalWeylDensityData D)
-    (p : FlatSource (d := d) (k := k) ×
-      FlatSource (d := d) (k := k))
+    (p : FlatSource_uation66LocalWeylDensity (d := d) (k := k) ×
+      FlatSource_uation66LocalWeylDensity (d := d) (k := k))
     (hp : p ∈ osiiStep4PartialConvolutionClosedImaginaryBox
       (d + 1) k A.scale) :
     osiiStep4DistributionalPartialConvolutionTransform
@@ -730,7 +721,7 @@ theorem OSIIEquation66LocalWeylDensityData.norm_density_center_le_supportVolume_
     A.holomorphic hradial B
   intro p hp
   have hy : p.1 ∈ Metric.closedBall
-      (0 : FlatSource (d := d) (k := k)) (A.scale / 4) := hp.1
+      (0 : FlatSource_uation66LocalWeylDensity (d := d) (k := k)) (A.scale / 4) := hp.1
   have hsource : Function.support
       (flattenSchwartzNPoint (d := d)
         (osiiStep4CenteredPartialConvolutionKernelFullSource
@@ -745,7 +736,7 @@ theorem OSIIEquation66LocalWeylDensityData.norm_density_center_le_supportVolume_
     osiiStep4DistributionalPartialConvolutionTransform_eq_partialTransform_of_representsOnSupport
       D.imaginarySliceFamily A.density
       (Metric.closedBall
-        (0 : FlatSource (d := d) (k := k)) (A.scale / 4))
+        (0 : FlatSource_uation66LocalWeylDensity (d := d) (k := k)) (A.scale / 4))
       (Metric.closedBall
         (osiiStep4MultiGapXiHatCenter d k center) (A.scale / 4))
       A.represents A.scale_pos

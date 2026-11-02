@@ -5,60 +5,38 @@ Copyright (c) 2025 ModularPhysics Contributors. All rights reserved.
 Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
-import Init
-import OSReconstruction.Wightman.Reconstruction.Core
-import OSReconstruction.Wightman.Reconstruction.DenseCLM
-import Mathlib.Analysis.Calculus.FDeriv.Basic
-import Mathlib.Analysis.Calculus.FDeriv.Comp
-import Mathlib.Analysis.Calculus.FDeriv.Prod
-import Mathlib.Analysis.Distribution.SchwartzSpace.Basic
-import Mathlib.Analysis.Distribution.SchwartzSpace.Deriv
-import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
-import Mathlib.MeasureTheory.Integral.IntegralEqImproper
-import Mathlib.MeasureTheory.Measure.Lebesgue.Integral
-import OSReconstruction.Mathlib429Compat
-import OSReconstruction.Wightman.Reconstruction.SchwartzPartialEval
-import OSReconstruction.Wightman.Reconstruction.SliceIntegral
-import OSReconstruction.Wightman.Reconstruction.HeadTranslationInvariant
-import OSReconstruction.Wightman.Reconstruction.HeadBlockTranslationInvariant
-import OSReconstruction.Wightman.Reconstruction.SchwartzDensity
-import OSReconstruction.Wightman.Reconstruction.BlockIntegral
-import OSReconstruction.Wightman.Reconstruction.SchwartzCutoff
-import Mathlib.Analysis.Complex.Basic
-import Mathlib.Topology.ContinuousMap.StoneWeierstrass
-import Mathlib.Topology.UrysohnsLemma
-import Mathlib.Analysis.Fourier.FourierTransform
-import Mathlib.Analysis.Distribution.SchwartzSpace.Fourier
-import Mathlib.MeasureTheory.Measure.Haar.InnerProductSpace
-import OSReconstruction.Wightman.Reconstruction.TranslationInvariantSchwartz
-import OSReconstruction.Wightman.Reconstruction.SchwingerOS
-import OSReconstruction.Wightman.WightmanAxioms
+module
 
+public import Init
+public import OSReconstruction.Wightman.Reconstruction.Core
+public import OSReconstruction.Wightman.Reconstruction.DenseCLM
+public import Mathlib.Analysis.Calculus.FDeriv.Basic
+public import Mathlib.Analysis.Calculus.FDeriv.Comp
+public import Mathlib.Analysis.Calculus.FDeriv.Prod
+public import Mathlib.Analysis.Distribution.SchwartzSpace.Basic
+public import Mathlib.Analysis.Distribution.SchwartzSpace.Deriv
+public import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
+public import Mathlib.MeasureTheory.Integral.IntegralEqImproper
+public import Mathlib.MeasureTheory.Measure.Lebesgue.Integral
+public import OSReconstruction.Mathlib429Compat
+public import OSReconstruction.Wightman.Reconstruction.SchwartzPartialEval
+public import OSReconstruction.Wightman.Reconstruction.SliceIntegral
+public import OSReconstruction.Wightman.Reconstruction.HeadTranslationInvariant
+public import OSReconstruction.Wightman.Reconstruction.HeadBlockTranslationInvariant
+public import OSReconstruction.Wightman.Reconstruction.SchwartzDensity
+public import OSReconstruction.Wightman.Reconstruction.BlockIntegral
+public import OSReconstruction.Wightman.Reconstruction.SchwartzCutoff
+public import Mathlib.Analysis.Complex.Basic
+public import Mathlib.Topology.ContinuousMap.StoneWeierstrass
+public import Mathlib.Topology.UrysohnsLemma
+public import Mathlib.Analysis.Fourier.FourierTransform
+public import Mathlib.Analysis.Distribution.SchwartzSpace.Fourier
+public import Mathlib.MeasureTheory.Measure.Haar.InnerProductSpace
+public import OSReconstruction.Wightman.Reconstruction.TranslationInvariantSchwartz
+public import OSReconstruction.Wightman.Reconstruction.SchwingerOS
+public import OSReconstruction.Wightman.WightmanAxioms
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 open scoped Matrix SchwartzMap InnerProductSpace
 
@@ -75,7 +53,7 @@ def poincareActNPointDomain (g : PoincareGroup d) {n : ℕ}
 
 /-- The n-point domain action is smooth (ContDiff). Each component is affine,
     and the map into the product is smooth by `contDiff_pi`. -/
-private theorem affineCompNPoint_smooth (g : PoincareGroup d) {n : ℕ}
+theorem affineCompNPoint_smooth (g : PoincareGroup d) {n : ℕ}
     (f : SchwartzNPoint d n) :
     ContDiff ℝ (↑(⊤ : ℕ∞))
       (fun x : NPointDomain d n => f (poincareActNPointDomain g x)) := by
@@ -93,7 +71,7 @@ private theorem affineCompNPoint_smooth (g : PoincareGroup d) {n : ℕ}
       (φ := fun _ : Fin n => SpacetimeDim d) i).contDiff
 
 /-- The n-point Poincaré action has temperate growth. -/
-private theorem poincareActNPoint_hasTemperateGrowth (g : PoincareGroup d) (n : ℕ) :
+theorem poincareActNPoint_hasTemperateGrowth (g : PoincareGroup d) (n : ℕ) :
     Function.HasTemperateGrowth
       (poincareActNPointDomain g : NPointDomain d n → NPointDomain d n) := by
   have hL : Function.HasTemperateGrowth
@@ -109,14 +87,14 @@ private theorem poincareActNPoint_hasTemperateGrowth (g : PoincareGroup d) (n : 
     ext x i <;> simp [poincareActNPointDomain, PoincareGroup.act_def]
 
 /-- The inverse Lorentz matrix recovers the original vector (n-point version). -/
-private theorem lorentz_inv_mulVec' (g : PoincareGroup d) (x : SpacetimeDim d) :
+theorem lorentz_inv_mulVec' (g : PoincareGroup d) (x : SpacetimeDim d) :
     Matrix.mulVec g.lorentz⁻¹.val (Matrix.mulVec g.lorentz.val x) = x := by
   have : g.lorentz⁻¹.val * g.lorentz.val = 1 := by
     exact_mod_cast congr_arg Subtype.val (inv_mul_cancel (g.lorentz))
   rw [Matrix.mulVec_mulVec, this, Matrix.one_mulVec]
 
 /-- Upper bound for n-point Poincaré action: ‖x‖ ≤ C * (1 + ‖g·x‖)^k. -/
-private theorem poincareActNPoint_upperBound (g : PoincareGroup d) (n : ℕ) :
+theorem poincareActNPoint_upperBound (g : PoincareGroup d) (n : ℕ) :
     ∃ (k : ℕ) (C : ℝ), ∀ (x : NPointDomain d n),
       ‖x‖ ≤ C * (1 + ‖poincareActNPointDomain g x‖) ^ k := by
   set Λ_inv := (Matrix.mulVecLin g.lorentz⁻¹.val).toContinuousLinearMap
@@ -156,7 +134,7 @@ private theorem poincareActNPoint_upperBound (g : PoincareGroup d) (n : ℕ) :
 
 /-- Decay for n-point Schwartz functions composed with Poincaré action.
     Generalizes `affineComp_decay` to n-point functions. -/
-private theorem affineCompNPoint_decay (g : PoincareGroup d) {n : ℕ}
+theorem affineCompNPoint_decay (g : PoincareGroup d) {n : ℕ}
     (f : SchwartzNPoint d n) (k m : ℕ) :
     ∃ C, ∀ (x : NPointDomain d n),
       ‖x‖ ^ k * ‖iteratedFDeriv ℝ m

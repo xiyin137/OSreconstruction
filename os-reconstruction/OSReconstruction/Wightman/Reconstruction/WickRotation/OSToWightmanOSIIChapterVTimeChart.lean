@@ -1,27 +1,11 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVReflectedRealEdge
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIITimeParametricContinuation
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVReflectedRealEdge
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIITimeParametricContinuation
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 

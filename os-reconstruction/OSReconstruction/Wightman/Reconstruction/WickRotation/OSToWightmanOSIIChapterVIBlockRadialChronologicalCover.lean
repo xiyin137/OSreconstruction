@@ -1,23 +1,12 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVChronologicalCompactCover
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVReducedTestLiftRepresentative
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIBlockRadialPartialKernelRealEdge
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVChronologicalCompactCover
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVReducedTestLiftRepresentative
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIBlockRadialPartialKernelRealEdge
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -146,7 +135,7 @@ theorem osiiStep4PositiveLiftedCenteredPartialKernelCommonCarrier_isCompact
     (osiiStep4CenteredPartialKernelCommonReducedCarrier_isCompact
       d k rho center)
 
-private theorem reducedTestLift_tsupport_basepoint_mem_commonCarrier
+theorem reducedTestLift_tsupport_basepoint_mem_commonCarrier
     (d m : Nat)
     (chi : SchwartzMap (SpacetimeDim d) Complex)
     (phi : SchwartzNPoint d m)

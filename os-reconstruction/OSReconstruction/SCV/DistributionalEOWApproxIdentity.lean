@@ -5,16 +5,13 @@ Copyright (c) 2026 ModularPhysics Contributors.
 Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
-import OSReconstruction.SCV.DistributionalEOWRepresentative
-import Mathlib.Analysis.Calculus.BumpFunction.Basic
-import Mathlib.Analysis.Calculus.MeanValue
+module
 
+public import OSReconstruction.SCV.DistributionalEOWRepresentative
+public import Mathlib.Analysis.Calculus.BumpFunction.Basic
+public import Mathlib.Analysis.Calculus.MeanValue
 
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -196,12 +193,12 @@ theorem continuous_realEmbed :
 
 /-- Local continuous-linear form of `realEmbed`, used only to compute the
 base derivative of the sheared real-convolution tensor. -/
-private def realEmbedCLMApprox : (Fin m → ℝ) →L[ℝ] ComplexChartSpace m :=
+def realEmbedCLMApprox : (Fin m → ℝ) →L[ℝ] ComplexChartSpace m :=
   ContinuousLinearMap.pi fun i =>
     Complex.ofRealCLM.comp (ContinuousLinearMap.proj i)
 
 @[simp]
-private theorem realEmbedCLMApprox_apply (t : Fin m → ℝ) :
+theorem realEmbedCLMApprox_apply (t : Fin m → ℝ) :
     realEmbedCLMApprox t = realEmbed t := by
   ext i
   simp [realEmbedCLMApprox, realEmbed]

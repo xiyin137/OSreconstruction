@@ -1,18 +1,12 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVSourceIndexedCauchyContinuation
-import Mathlib.Data.List.Chain
-import Mathlib.Data.List.ChainOfFn
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVSourceIndexedCauchyContinuation
+public import Mathlib.Data.List.Chain
+public import Mathlib.Data.List.ChainOfFn
 
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 

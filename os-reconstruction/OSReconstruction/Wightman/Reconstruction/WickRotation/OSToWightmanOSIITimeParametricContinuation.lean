@@ -1,5 +1,9 @@
-import OSReconstruction.SCV.ConnectedNeighborhood
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIProductTensorSourceCurrent
+module
+
+public import OSReconstruction.SCV.ConnectedNeighborhood
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIProductTensorSourceCurrent
+
+@[expose] public section
 
 /-!
 # OS-II Time-Parametric Continuation

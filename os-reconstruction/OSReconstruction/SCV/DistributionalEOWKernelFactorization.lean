@@ -5,17 +5,11 @@ Copyright (c) 2026 ModularPhysics Contributors.
 Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
-import OSReconstruction.SCV.DistributionalEOWKernelTransport
+module
 
+public import OSReconstruction.SCV.DistributionalEOWKernelTransport
 
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -24,7 +18,7 @@ open Complex MeasureTheory
 namespace SCV
 
 /-- Product norm is controlled by the sum of the coordinate norms. -/
-private theorem norm_prod_le_fst_add_snd
+theorem norm_prod_le_fst_add_snd_alEOWKernelFactorization
     {E₁ E₂ : Type*} [SeminormedAddCommGroup E₁] [SeminormedAddCommGroup E₂]
     (x : E₁ × E₂) :
     ‖x‖ ≤ ‖x.1‖ + ‖x.2‖ := by
@@ -99,7 +93,7 @@ def schwartzTensorProduct₂CLMRight {m : ℕ}
       _ ≤ (2 : ℝ) ^ k * (‖x.1‖ ^ k + ‖x.2‖ ^ k) :=
         mul_le_mul_of_nonneg_left hmax (pow_nonneg (by norm_num) _)
   have h_pow : ‖x‖ ^ k ≤ (2 : ℝ) ^ k * (‖x.1‖ ^ k + ‖x.2‖ ^ k) :=
-    (pow_le_pow_left₀ (norm_nonneg _) (norm_prod_le_fst_add_snd x) _).trans add_pow_le
+    (pow_le_pow_left₀ (norm_nonneg _) (norm_prod_le_fst_add_snd_alEOWKernelFactorization x) _).trans add_pow_le
   have h_term : ∀ i ∈ Finset.range (l + 1),
       ‖x‖ ^ k * (↑(l.choose i) * ‖iteratedFDeriv ℝ i φ.toFun x.1‖ *
         ‖iteratedFDeriv ℝ (l - i) η.toFun x.2‖) ≤

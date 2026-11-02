@@ -1,9 +1,13 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceTransform
-import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43SpectralSupport
-import OSReconstruction.Wightman.Reconstruction.WickRotation.BHWReducedExtension
-import OSReconstruction.GeneralResults.FinProductIntegral
-import Mathlib.MeasureTheory.Measure.Haar.InnerProductSpace
-import Mathlib.MeasureTheory.Group.Prod
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceTransform
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43SpectralSupport
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.BHWReducedExtension
+public import OSReconstruction.GeneralResults.FinProductIntegral
+public import Mathlib.MeasureTheory.Measure.Haar.InnerProductSpace
+public import Mathlib.MeasureTheory.Group.Prod
+
+@[expose] public section
 
 noncomputable section
 
@@ -122,7 +126,7 @@ def section43TimeSpatialIndexEquiv (d n : ℕ) :
   rw [Equiv.symm_apply_eq]
   exact section43TimeSpatialIndexEquiv_spatial d n i μ
 
-private theorem section43_volume_map_curry_symm (α β : Type*)
+theorem section43_volume_map_curry_symm (α β : Type*)
     [Fintype α] [Fintype β] :
     (volume : Measure (α → β → ℝ)).map
       (MeasurableEquiv.curry α β ℝ).symm =
@@ -336,7 +340,7 @@ theorem section43DiffCoord_pairing_coord_eq_rawCumulativeTail
           intro j _hj
           simp [section43RawCumulativeTailMomentumCLE_apply]
 
-private theorem section43WickRotatePairing_timePart_after_diffCoord_symm
+theorem section43WickRotatePairing_timePart_after_diffCoord_symm
     (d n : ℕ) [NeZero d]
     (q δ : NPointDomain d n) :
     Complex.I *
@@ -405,7 +409,7 @@ private theorem section43WickRotatePairing_timePart_after_diffCoord_symm
           rw [hcomplex]
           simp [section43QTime, nPointTimeSpatialCLE]
 
-private theorem section43WickRotatePairing_spatialPart_after_diffCoord_symm
+theorem section43WickRotatePairing_spatialPart_after_diffCoord_symm
     (d n : ℕ) [NeZero d]
     (q δ : NPointDomain d n) :
     Complex.I *
@@ -601,7 +605,7 @@ theorem section43WickRotatePhase_after_diffCoord_symm_eq_fourierLaplacePhase
     (d := d) (n := n) q δ]
   ring
 
-private theorem section43FourierLaplacePhase_norm_exp_le_one_of_nonneg
+theorem section43FourierLaplacePhase_norm_exp_le_one_of_nonneg
     (d n : ℕ) [NeZero d]
     (q δ : NPointDomain d n)
     (hq : q ∈ section43PositiveEnergyRegion d n)
@@ -635,7 +639,7 @@ private theorem section43FourierLaplacePhase_norm_exp_le_one_of_nonneg
   rw [hre]
   exact neg_nonpos.mpr hsum_nonneg
 
-private theorem section43SpatialFourierPhase_eq_fourierChar
+theorem section43SpatialFourierPhase_eq_fourierChar
     (d n : ℕ) [NeZero d]
     (η ξ : EuclideanSpace ℝ (Fin n × Fin d)) :
     Complex.exp
@@ -655,7 +659,7 @@ private theorem section43SpatialFourierPhase_eq_fourierChar
   congr 1
   simp [Finset.mul_sum, mul_assoc, mul_comm]
 
-private theorem section43SchwartzNPoint_integrable
+theorem section43SchwartzNPoint_integrable
     (d n : ℕ) [NeZero d] (φ : SchwartzNPoint d n) :
     Integrable φ (volume : Measure (NPointDomain d n)) := by
   let flatφ : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ :=
@@ -789,7 +793,7 @@ theorem integrable_section43WickRotatePhaseIntegral_of_mem_positiveEnergy
 
 /-- Evaluation compatibility between the measurable time/spatial split and the
 existing Schwartz-space split. -/
-private theorem section43NPointTimeSpatialSchwartzCLE_symm_eval
+theorem section43NPointTimeSpatialSchwartzCLE_symm_eval
     (d n : ℕ) [NeZero d]
     (φ : SchwartzNPoint d n)
     (p : (Fin n → ℝ) × EuclideanSpace ℝ (Fin n × Fin d)) :

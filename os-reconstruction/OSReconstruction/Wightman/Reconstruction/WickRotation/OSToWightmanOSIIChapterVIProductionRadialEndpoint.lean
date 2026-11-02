@@ -1,5 +1,9 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIBlockRadialEndpointSeminorm
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIProductionRadialGlobal
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIBlockRadialEndpointSeminorm
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIProductionRadialGlobal
+
+@[expose] public section
 
 /-!
 # OS II Chapter VI: explicit production endpoint Schwartz estimates

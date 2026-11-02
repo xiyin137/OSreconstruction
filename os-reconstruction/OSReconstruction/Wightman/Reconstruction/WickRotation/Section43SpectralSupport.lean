@@ -1,9 +1,13 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import Init
-import OSReconstruction.Wightman.Reconstruction.BlockIntegral
-import OSReconstruction.Wightman.Reconstruction.TranslationInvariantSchwartz
-import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceTransform
+module
+
+public import Init
+public import OSReconstruction.Wightman.Reconstruction.BlockIntegral
+public import OSReconstruction.Wightman.Reconstruction.TranslationInvariantSchwartz
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceTransform
+
+@[expose] public section
 
 noncomputable section
 

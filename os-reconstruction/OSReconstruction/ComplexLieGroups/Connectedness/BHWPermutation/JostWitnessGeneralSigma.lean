@@ -35,8 +35,12 @@ Then:
 Obligation (1) of `hExtPerm_of_geometric`: a Jost witness with
   realEmbed(x) ∈ ET and realEmbed(x∘σ) ∈ ET.
 -/
-import OSReconstruction.ComplexLieGroups.JostPoints
-import OSReconstruction.ComplexLieGroups.BHWCore
+module
+
+public import OSReconstruction.ComplexLieGroups.JostPoints
+public import OSReconstruction.ComplexLieGroups.BHWCore
+
+@[expose] public section
 
 noncomputable section
 

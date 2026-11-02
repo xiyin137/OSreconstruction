@@ -1,5 +1,9 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.RToEReflectionPositivity
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanClusterSection43
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.RToEReflectionPositivity
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanClusterSection43
+
+@[expose] public section
 
 /-!
 # R-to-E clustering through the Section 4.3 transform

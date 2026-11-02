@@ -1,10 +1,14 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.HeadTranslationInvariant
-import OSReconstruction.Wightman.Reconstruction.BlockIntegral
-import Init
-import OSReconstruction.Wightman.Reconstruction.SchwingerOS
-import Mathlib.Analysis.Calculus.BumpFunction.Normed
+module
+
+public import OSReconstruction.Wightman.Reconstruction.HeadTranslationInvariant
+public import OSReconstruction.Wightman.Reconstruction.BlockIntegral
+public import Init
+public import OSReconstruction.Wightman.Reconstruction.SchwingerOS
+public import Mathlib.Analysis.Calculus.BumpFunction.Normed
+
+@[expose] public section
 
 open scoped SchwartzMap
 
@@ -12,27 +16,27 @@ noncomputable section
 
 namespace OSReconstruction
 
-private def uncurryLinearEquivBlockLocal (n d : ℕ) (𝕜 : Type*) [CommSemiring 𝕜] :
+def uncurryLinearEquivBlockLocal (n d : ℕ) (𝕜 : Type*) [CommSemiring 𝕜] :
     (Fin n → Fin d → 𝕜) ≃ₗ[𝕜] (Fin n × Fin d → 𝕜) :=
   { (Equiv.curry (Fin n) (Fin d) 𝕜).symm with
     map_add' := fun _ _ => rfl
     map_smul' := fun _ _ => rfl }
 
-private def flattenLinearEquivBlockLocal (n d : ℕ) (𝕜 : Type*) [CommSemiring 𝕜] :
+def flattenLinearEquivBlockLocal (n d : ℕ) (𝕜 : Type*) [CommSemiring 𝕜] :
     (Fin n → Fin d → 𝕜) ≃ₗ[𝕜] (Fin (n * d) → 𝕜) :=
   (uncurryLinearEquivBlockLocal n d 𝕜).trans
     (LinearEquiv.funCongrLeft 𝕜 𝕜 finProdFinEquiv.symm)
 
-private def flattenCLEquivRealBlockLocal (n d : ℕ) :
+def flattenCLEquivRealBlockLocal (n d : ℕ) :
     (Fin n → Fin d → ℝ) ≃L[ℝ] (Fin (n * d) → ℝ) :=
   (flattenLinearEquivBlockLocal n d ℝ).toContinuousLinearEquiv
 
-@[simp] private theorem flattenCLEquivRealBlockLocal_apply (n d : ℕ)
+@[simp] theorem flattenCLEquivRealBlockLocal_apply (n d : ℕ)
     (f : Fin n → Fin d → ℝ) (k : Fin (n * d)) :
     flattenCLEquivRealBlockLocal n d f k =
       f (finProdFinEquiv.symm k).1 (finProdFinEquiv.symm k).2 := rfl
 
-private noncomputable def normedUnitBumpSchwartz : SchwartzMap ℝ ℂ := by
+noncomputable def normedUnitBumpSchwartz : SchwartzMap ℝ ℂ := by
   let b : ContDiffBump (0 : ℝ) := ⟨1, 2, zero_lt_one, one_lt_two⟩
   let f : ℝ → ℂ := fun x => ((b.normed MeasureTheory.volume x : ℝ) : ℂ)
   have hf_smooth : ContDiff ℝ (⊤ : ENat) f := by
@@ -41,7 +45,7 @@ private noncomputable def normedUnitBumpSchwartz : SchwartzMap ℝ ℂ := by
     b.hasCompactSupport_normed.comp_left Complex.ofReal_zero
   exact hf_compact.toSchwartzMap hf_smooth
 
-private theorem integral_normedUnitBumpSchwartz :
+theorem integral_normedUnitBumpSchwartz :
     ∫ x : ℝ, normedUnitBumpSchwartz x = 1 := by
   let b : ContDiffBump (0 : ℝ) := ⟨1, 2, zero_lt_one, one_lt_two⟩
   have happly :
@@ -66,7 +70,7 @@ def IsHeadBlockTranslationInvariantSchwartzCLM {m n : ℕ}
     (T : SchwartzMap (Fin (m + n) → ℝ) ℂ →L[ℂ] ℂ) : Prop :=
   ∀ a : Fin m → ℝ, T.comp (SCV.translateSchwartzCLM (zeroTailBlockShift (m := m) (n := n) a)) = T
 
-private theorem zeroTailBlockShift_zero {m n : ℕ} :
+theorem zeroTailBlockShift_zero {m n : ℕ} :
     zeroTailBlockShift (m := m) (n := n) (0 : Fin m → ℝ) = 0 := by
   induction m with
   | zero =>
@@ -85,7 +89,7 @@ private theorem zeroTailBlockShift_zero {m n : ℕ} :
       rw [zeroTailBlockShift, hconszero]
       exact map_zero ((castFinCLE (Nat.succ_add m n)).symm)
 
-private theorem reindexSchwartzFin_translate_zeroTailBlockShift_succ
+theorem reindexSchwartzFin_translate_zeroTailBlockShift_succ
     {m n : ℕ} (a : Fin (m + 1) → ℝ)
     (F : SchwartzMap (Fin ((m + 1) + n) → ℝ) ℂ) :
     reindexSchwartzFin (Nat.succ_add m n)
@@ -96,7 +100,7 @@ private theorem reindexSchwartzFin_translate_zeroTailBlockShift_succ
   ext x
   simp [reindexSchwartzFin_apply, SCV.translateSchwartz_apply, zeroTailBlockShift]
 
-private theorem reindexSchwartzFin_symm_translate_zeroTailBlockShift
+theorem reindexSchwartzFin_symm_translate_zeroTailBlockShift
     {m n : ℕ} (a : Fin (m + 1) → ℝ)
     (F : SchwartzMap (Fin ((m + n) + 1) → ℝ) ℂ) :
     reindexSchwartzFin (Nat.succ_add m n).symm
@@ -136,7 +140,7 @@ private theorem reindexSchwartzFin_symm_translate_zeroTailBlockShift
   rw [hcancelTranslate] at hback
   exact hback.symm
 
-private theorem prependField_translate_zeroTailBlockShift
+theorem prependField_translate_zeroTailBlockShift
     {m n : ℕ} (φ : SchwartzMap ℝ ℂ)
     (a : Fin m → ℝ) (F : SchwartzMap (Fin (m + n) → ℝ) ℂ) :
     φ.prependField (SCV.translateSchwartz (zeroTailBlockShift (m := m) (n := n) a) F) =
@@ -148,7 +152,7 @@ private theorem prependField_translate_zeroTailBlockShift
   congr 1
   simp [Pi.add_apply]
 
-private theorem headTranslationDescentCLM_headBlockInvariant
+theorem headTranslationDescentCLM_headBlockInvariant
     {m n : ℕ}
     (T : SchwartzMap (Fin ((m + n) + 1) → ℝ) ℂ →L[ℂ] ℂ)
     (hT : ∀ a : Fin (m + 1) → ℝ,

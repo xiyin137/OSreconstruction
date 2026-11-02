@@ -1,19 +1,14 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVReflectedRealEdge
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVTimeChartGeometry
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIAxisPairProductSourceComparison
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIAxisPairChronologicalTranslation
-import OSReconstruction.Wightman.SpectralEquivalence
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVReflectedRealEdge
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVTimeChartGeometry
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIAxisPairProductSourceComparison
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIAxisPairChronologicalTranslation
+public import OSReconstruction.Wightman.SpectralEquivalence
 
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -45,7 +40,7 @@ def reducedConfigurationDisplacement
       a i.succ μ - a i.castSucc μ
   rfl
 
-private theorem diffVarSection_add_reducedConfigurationDisplacement
+theorem diffVarSection_add_reducedConfigurationDisplacement
     (ξ : NPointDomain d m)
     (a : NPointDomain d (m + 1))
     (j : Fin (m + 1))
@@ -99,7 +94,7 @@ theorem diffVarReduction_translateSchwartzConfiguration
   dsimp [G]
   ring
 
-private theorem blockwiseSpacetimeDiff_symm_time
+theorem blockwiseSpacetimeDiff_symm_time
     {d n m : ℕ}
     (q : NPointDomain d (n + m)) :
     (fun i =>
@@ -119,7 +114,7 @@ private theorem blockwiseSpacetimeDiff_symm_time
       osiiAxisPairBlockwiseTimeDiffCLE_symm_apply_right]
     simp [section43ScalarDiffCLE_symm_apply, splitLast]
 
-private theorem reflectReverseLeftSpacetime_time
+theorem reflectReverseLeftSpacetime_time
     {d n m : ℕ}
     (x : NPointDomain d (n + m)) :
     (fun i =>
@@ -133,7 +128,7 @@ private theorem reflectReverseLeftSpacetime_time
   · intro j
     simp
 
-private theorem section43DiffCoordRealCLE_time
+theorem section43DiffCoordRealCLE_time
     {d n : ℕ}
     (x : NPointDomain d n) :
     (fun i => section43DiffCoordRealCLE d n x i 0) =
@@ -141,7 +136,7 @@ private theorem section43DiffCoordRealCLE_time
   funext i
   simp [section43ScalarDiffCLE_apply]
 
-private theorem blockGlobalSpacetime_time
+theorem blockGlobalSpacetime_time
     {d n m : ℕ}
     (q : NPointDomain d (n + m)) :
     (fun i => osiiAxisPairBlockGlobalSpacetimeCLE d n m q i 0) =
@@ -160,7 +155,7 @@ private theorem blockGlobalSpacetime_time
   rw [reflectReverseLeftSpacetime_time,
     blockwiseSpacetimeDiff_symm_time]
 
-private theorem blockGlobalSpacetime_spatial_eq_zero
+theorem blockGlobalSpacetime_spatial_eq_zero
     {d n m : ℕ}
     (q : NPointDomain d (n + m))
     (hq : ∀ i (μ : Fin d), q i μ.succ = 0)
@@ -205,7 +200,7 @@ private theorem blockGlobalSpacetime_spatial_eq_zero
   rw [section43DiffCoordRealCLE_apply]
   split_ifs <;> simp [hreflect]
 
-private def unreflectedSourceParameterDisplacement
+def unreflectedSourceParameterDisplacement
     {d k : ℕ}
     (u : Fin (k + k) → ℝ) :
     NPointDomain d ((k + 1) + (k + 1)) :=
@@ -217,7 +212,7 @@ private def unreflectedSourceParameterDisplacement
       (fun i : Fin k => chronologicalTimeSourceDirection (d := d) i)
       (fun i => u (Fin.natAdd k i)))
 
-private theorem reflectedSourceParameterDisplacement_permuted
+theorem reflectedSourceParameterDisplacement_permuted
     {d k : ℕ}
     (u : Fin (k + k) → ℝ) :
     (fun i =>
@@ -257,7 +252,7 @@ private theorem reflectedSourceParameterDisplacement_permuted
       osiiAxisPairReflectReverseLeftSpacetimeCLE_apply_right]
     rw [Fin.append_right, Fin.append_right]
 
-private theorem blockwiseDiff_unreflectedSource_time
+theorem blockwiseDiff_unreflectedSource_time
     {d k : ℕ} [NeZero d]
     (u : Fin (k + k) → ℝ) :
     (fun i =>
@@ -323,7 +318,7 @@ private theorem blockwiseDiff_unreflectedSource_time
     · simpa using
         (reflectedBlockTimeDisplacement_right_succ u r).symm
 
-private theorem blockwiseDiff_unreflectedSource_spatial_eq_zero
+theorem blockwiseDiff_unreflectedSource_spatial_eq_zero
     {d k : ℕ} [NeZero d]
     (u : Fin (k + k) → ℝ)
     (i : Fin ((k + 1) + (k + 1)))

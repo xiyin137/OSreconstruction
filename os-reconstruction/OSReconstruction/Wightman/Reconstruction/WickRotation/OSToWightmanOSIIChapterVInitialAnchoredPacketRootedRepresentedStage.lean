@@ -1,17 +1,12 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVInitialAnchoredPacketRootedTwoScaleFamily
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVAnchoredOrderedTransport
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIAxisPairMultiGapFullSourceRealEdge
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVInitialAnchoredPacketRootedTwoScaleFamily
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVAnchoredOrderedTransport
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIAxisPairMultiGapFullSourceRealEdge
 
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -46,7 +41,7 @@ variable
             A.scalarLimit i (osiiPositiveRealTimeEmbed τ) χ * φ τ =
           trace χ φ)
 
-private noncomputable def selectedEdge :
+noncomputable def selectedEdge :
     A.CommonPositiveRealEdgeData :=
   ofCommonDistributionalTrace A U hU_open hU_ne hmem trace htrace
 

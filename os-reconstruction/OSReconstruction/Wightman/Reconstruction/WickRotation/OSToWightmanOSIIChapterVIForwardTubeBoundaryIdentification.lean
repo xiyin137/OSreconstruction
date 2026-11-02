@@ -1,16 +1,11 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIForwardTubeSmearing
-import OSReconstruction.SCV.DistributionalUniqueness
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIForwardTubeSmearing
+public import OSReconstruction.SCV.DistributionalUniqueness
 
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -22,7 +17,7 @@ namespace OSReconstruction
 variable {d k : Nat} [NeZero d] {A : OSIITimeContinuationStage d k}
 
 omit [NeZero d] in
-private theorem rotate_timeSlice (eta t : Fin k -> Real) (epsilon : Real) :
+theorem rotate_timeSlice (eta t : Fin k -> Real) (epsilon : Real) :
     osiiTubeToRightHalfPlane k
         (fun j => (t j : Complex) + (epsilon : Complex) * (eta j : Complex) * I) =
       osiiMinkowskiTimeApproach eta t epsilon := by
@@ -35,7 +30,7 @@ private theorem rotate_timeSlice (eta t : Fin k -> Real) (epsilon : Real) :
 
 namespace OSIIFullTimeStageTemperedBoundaryData
 
-private theorem reducedBoundary_tensor_eq
+theorem reducedBoundary_tensor_eq
     (B : OSIIFullTimeStageTemperedBoundaryData A)
     (phi : SchwartzMap (Fin k -> Real) Complex)
     (chi : SchwartzMap (Section43SpatialSpace d k) Complex) :

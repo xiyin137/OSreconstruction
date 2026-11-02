@@ -1,6 +1,10 @@
-import Mathlib.Topology.Algebra.Module.Multilinear.Bounded
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVInitialFixedTimePacket
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIOrderedProductMultiGapPacketCenteredUniformBounds
+module
+
+public import Mathlib.Topology.Algebra.Module.Multilinear.Bounded
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVInitialFixedTimePacket
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIOrderedProductMultiGapPacketCenteredUniformBounds
+
+@[expose] public section
 
 /-!
 # Uniform packet-reference bounds for the initial fixed-time exhaustion

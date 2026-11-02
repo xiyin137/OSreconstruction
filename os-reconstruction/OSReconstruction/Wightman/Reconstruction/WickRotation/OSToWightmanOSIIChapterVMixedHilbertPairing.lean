@@ -1,7 +1,11 @@
-import Mathlib.Analysis.Calculus.FDeriv.Star
-import Mathlib.Analysis.Calculus.FDeriv.CompCLM
-import Mathlib.Analysis.InnerProductSpace.LinearMap
-import OSReconstruction.SCV.Osgood
+module
+
+public import Mathlib.Analysis.Calculus.FDeriv.Star
+public import Mathlib.Analysis.Calculus.FDeriv.CompCLM
+public import Mathlib.Analysis.InnerProductSpace.LinearMap
+public import OSReconstruction.SCV.Osgood
+
+@[expose] public section
 
 /-!
 # OS-II Chapter V mixed Hilbert pairings

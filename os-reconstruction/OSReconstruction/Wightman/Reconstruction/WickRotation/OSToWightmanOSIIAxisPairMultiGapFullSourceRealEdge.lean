@@ -1,23 +1,12 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIAxisPairMultiGapDistributionRealEdge
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIConfigurationTranslation
-import OSReconstruction.Wightman.Reconstruction.DenseCLM
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIAxisPairMultiGapDistributionRealEdge
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIConfigurationTranslation
+public import OSReconstruction.Wightman.Reconstruction.DenseCLM
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -29,7 +18,7 @@ namespace OSReconstruction
 variable {d n k : ℕ} [NeZero d] [NeZero k]
 
 omit [NeZero d] [NeZero k] in
-private theorem productTensor_cutoff_productTensor
+theorem productTensor_cutoff_productTensor
     (χs fs : Fin n → SchwartzSpacetime d) :
     SchwartzMap.smulLeftCLM ℂ (SchwartzMap.productTensor χs)
         (SchwartzMap.productTensor fs) =
@@ -55,7 +44,7 @@ private theorem productTensor_cutoff_productTensor
     Finset.prod_mul_distrib]
 
 omit [NeZero d] in
-private theorem vanishes_smulLeft_of_hasTemperateGrowth
+theorem vanishes_smulLeft_of_hasTemperateGrowth
     {ψ : NPointDomain d n → ℂ} {f : SchwartzNPoint d n}
     (hψ : ψ.HasTemperateGrowth)
     (hf : VanishesToInfiniteOrderOnCoincidence f) :

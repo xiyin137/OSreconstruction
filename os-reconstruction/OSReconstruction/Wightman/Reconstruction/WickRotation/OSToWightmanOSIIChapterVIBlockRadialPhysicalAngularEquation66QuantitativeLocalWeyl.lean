@@ -1,10 +1,14 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIBlockRadialPhysicalAngularEquation66ComplexTargetRadius
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIBlockRadialPhysicalAngularEquation66SeparatedScaleBoundedTarget
-import Init
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIBlockRadialPhysicalAngularEquation66LocalWeylDensity
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIBlockRadialMultiGapBoundedTargetIdentification
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIBlockRadialPhysicalAngularEquation66ComplexTargetRadius
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIBlockRadialPhysicalAngularEquation66SeparatedScaleBoundedTarget
+public import Init
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIBlockRadialPhysicalAngularEquation66LocalWeylDensity
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIBlockRadialMultiGapBoundedTargetIdentification
+
+@[expose] public section
 
 /-!
 # Quantitative local-Weyl density for equation (6.6)
@@ -33,7 +37,7 @@ variable {Z : OSIIStep4SynchronizedMultiGapContinuationData d k hrho
   (osiiStep4MultiGapXiHatCenter d k center)
   (osiiStep4MultiGapXiHatCenter_time_lower d k center hcenter)}
 
-private abbrev FlatSource := Fin (k * (d + 1)) -> Real
+abbrev FlatSource_n66QuantitativeLocalWeyl := Fin (k * (d + 1)) -> Real
 
 /-- Fixed local-Weyl scale selected from the explicit complex first-carrier
 ball. -/
@@ -94,7 +98,7 @@ theorem nonempty_equation66QuantitativeLocalWeylDensityData
   obtain ⟨F, hF_holo, hF_rep⟩ :=
     D.equation66_exists_holomorphic_density_representsOnSupport
       R sigma hsigma hsigma_R hsigma_rho hball
-  have hfirst : forall y : FlatSource (d := d) (k := k),
+  have hfirst : forall y : FlatSource_n66QuantitativeLocalWeyl (d := d) (k := k),
       y ∈ Metric.closedBall 0 (sigma / 4) ->
         osiiStep4MultiGapTargetLog d k Z.uniform.T center y ∈
           osiiAxisPairMultiGapLogDomain d k := by
@@ -124,8 +128,8 @@ theorem nonempty_equation66QuantitativeLocalWeylDensityData
     simpa [osiiLocalBallDensityGeometry] using h
   have hmean : F (osiiStep4ComplexOfRealImag
         (osiiStep4MultiGapXiHatCenter d k center) 0) =
-      ∫ y' : FlatSource (d := d) (k := k),
-        ∫ y : FlatSource (d := d) (k := k),
+      ∫ y' : FlatSource_n66QuantitativeLocalWeyl (d := d) (k := k),
+        ∫ y : FlatSource_n66QuantitativeLocalWeyl (d := d) (k := k),
           osiiStep4DistributionalPartialConvolutionTransform
             D.imaginarySliceFamily hsigma
               (osiiStep4MultiGapXiHatCenter d k center) y y' :=
@@ -157,8 +161,8 @@ theorem OSIIEquation66QuantitativeLocalWeylDensityData.distributionalTransform_l
       (hcenter := hcenter) Z OS lgc}
     (A : OSIIEquation66QuantitativeLocalWeylDensityData D)
     (G : OSIIStep4MultiGapCenteredWindowScaleBoundData d k OS lgc)
-    (p : FlatSource (d := d) (k := k) ×
-      FlatSource (d := d) (k := k))
+    (p : FlatSource_n66QuantitativeLocalWeyl (d := d) (k := k) ×
+      FlatSource_n66QuantitativeLocalWeyl (d := d) (k := k))
     (hp : p ∈ osiiStep4PartialConvolutionClosedImaginaryBox
       (d + 1) k A.data.scale) :
     ‖osiiStep4DistributionalPartialConvolutionTransform

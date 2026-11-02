@@ -1,4 +1,8 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVStrictScalarSeedCoefficientMZ
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVStrictScalarSeedCoefficientMZ
+
+@[expose] public section
 
 /-!
 # Distribution-valued strict coefficient targets

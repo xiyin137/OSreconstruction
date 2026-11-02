@@ -5,21 +5,14 @@ Copyright (c) 2025 ModularPhysics Contributors. All rights reserved.
 Released under Apache 2.0 license.
 Authors: Michael Douglas, ModularPhysics Contributors
 -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.BHWExtension
-import OSReconstruction.Wightman.Reconstruction.PoincareRep
-import OSReconstruction.SCV.PaleyWiener
-import OSReconstruction.ComplexLieGroups.Connectedness.PermutedTubeConnected
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.BHWExtension
+public import OSReconstruction.Wightman.Reconstruction.PoincareRep
+public import OSReconstruction.SCV.PaleyWiener
+public import OSReconstruction.ComplexLieGroups.Connectedness.PermutedTubeConnected
 
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 open scoped Classical
 

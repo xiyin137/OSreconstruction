@@ -1,18 +1,12 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIComplexSemigroupContraction
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIEuclideanRotationSource
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIPositiveTimeHilbertRealEdge
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIComplexSemigroupContraction
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIEuclideanRotationSource
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIPositiveTimeHilbertRealEdge
 
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 

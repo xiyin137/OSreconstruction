@@ -1,19 +1,11 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVRootedStageAtlasSuccessor
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVAngleExhaustion
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVRootedStageAtlasSuccessor
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVAngleExhaustion
 
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 

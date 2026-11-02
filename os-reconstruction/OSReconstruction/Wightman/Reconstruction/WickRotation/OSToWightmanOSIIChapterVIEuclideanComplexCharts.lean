@@ -1,4 +1,8 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIForwardTubeEuclideanDensity
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIForwardTubeEuclideanDensity
+
+@[expose] public section
 
 /-!
 # Convex complex charts with Euclidean overlap points

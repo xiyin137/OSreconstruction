@@ -1,6 +1,10 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIRawGeneratedNormalizedWeightedL1Successor
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIFullStageHandoff
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIUniformWeightedL1Degree
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIRawGeneratedNormalizedWeightedL1Successor
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIFullStageHandoff
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIUniformWeightedL1Degree
+
+@[expose] public section
 
 /-!
 # Global growth from the normalized raw induction
@@ -61,7 +65,7 @@ theorem rawStrict_recursiveAngle_sector_subset_scalarCarrier
       obtain ⟨R, _hgenerator, htarget⟩ := hcharts z hz
       simpa only [htarget] using R.target_mem_rawScalarCarrier
 
-private theorem canonicalUnshift_norm_le
+theorem canonicalUnshift_norm_le
     {k : Nat} (hk : 0 < k)
     {z : OSIITimeGapSpace k} (hz : z ∈ osiiTimeRightHalfPlane k) :
     1 + ‖osiiVI2Unshift k (osiiVI2CanonicalEpsilon k z) z‖ <=
@@ -82,7 +86,7 @@ private theorem canonicalUnshift_norm_le
   change 1 + ‖osiiVI2Unshift k epsilon z‖ <= _
   linarith [norm_nonneg z]
 
-private theorem canonicalUnshift_boundaryFactor_le
+theorem canonicalUnshift_boundaryFactor_le
     {k : Nat} (hk : 0 < k)
     {z : OSIITimeGapSpace k} (hz : z ∈ osiiTimeRightHalfPlane k) :
     1 + (osiiTimeBoundaryDistance k
@@ -183,7 +187,7 @@ theorem osiiVI2NormalizedRawGlobalCoefficient_le_three_pow
       mul_le_mul_of_nonneg_left
         (pow_le_pow_right₀ (by norm_num) hexponent) halpha
 
-private theorem exists_rawStage_canonicalUnshift_depthFactor_le
+theorem exists_rawStage_canonicalUnshift_depthFactor_le
     {k : Nat} [NeZero k] (beta : Nat)
     {z : OSIITimeGapSpace k} (hz : z ∈ osiiTimeRightHalfPlane k) :
     exists N,

@@ -1,15 +1,12 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIReducedForwardTubePaleyWiener
-import OSReconstruction.Wightman.SpectralEquivalence
-import Mathlib.Analysis.Distribution.Support
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIReducedForwardTubePaleyWiener
+public import OSReconstruction.Wightman.SpectralEquivalence
+public import Mathlib.Analysis.Distribution.Support
 
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -23,7 +20,7 @@ variable {d k : Nat} [NeZero d]
 /-- A point outside the closed forward cone is separated by an open-forward
 Euclidean covector. This is the finite-dimensional self-duality calculation
 used by the distributional support theorem below. -/
-private lemma exists_openForwardCone_pairing_neg_of_not_mem_forwardMomentumCone'
+lemma exists_openForwardCone_pairing_neg_of_not_mem_forwardMomentumCone'
     (d : Nat) [NeZero d]
     {p : Fin (d + 1) -> Real}
     (hp : p ∉ ForwardMomentumCone d) :
@@ -189,7 +186,7 @@ theorem dsupport_subset_osiiCanonicalFrequencyProductForwardCone_of_vanishing
 omit [NeZero d] in
 /-- Flattening preserves the ordinary Euclidean pairing, splitting it into
 the individual particle-block pairings. -/
-private theorem osiiCanonicalFrequency_flatten_pairing
+theorem osiiCanonicalFrequency_flatten_pairing
     (y : Fin k -> Fin (d + 1) -> Real)
     (p : Fin (k * (d + 1)) -> Real) :
     (∑ i : Fin (k * (d + 1)), BHW.flattenCfgReal k d y i * p i) =

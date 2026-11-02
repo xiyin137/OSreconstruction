@@ -1,15 +1,10 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIUniformE0PrimeDegree
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIUniformE0PrimeDegree
 
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 

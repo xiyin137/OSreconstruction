@@ -1,24 +1,11 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIOrderedProductSourceNormalization
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIAxisPairChronologicalTranslation
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIOrderedProductSourceNormalization
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIAxisPairChronologicalTranslation
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -29,7 +16,7 @@ namespace OSReconstruction
 
 variable {d k : ℕ} [NeZero d] [NeZero k]
 
-private theorem exists_pos_le_on_compact
+theorem exists_pos_le_on_compact
     {E : Type*} [TopologicalSpace E]
     {K : Set E} (hK : IsCompact K)
     {g : E → ℝ} (hg : Continuous g)
@@ -47,7 +34,7 @@ private theorem exists_pos_le_on_compact
     intro x hx
     exact False.elim (hne ⟨x, hx⟩)
 
-private theorem exists_bounded_center_shift_of_compact_cross_order
+theorem exists_bounded_center_shift_of_compact_cross_order
     {E : Type*} [TopologicalSpace E]
     {L R : Set E} (hL : IsCompact L) (hR : IsCompact R)
     {t : E → ℝ} (ht : Continuous t)

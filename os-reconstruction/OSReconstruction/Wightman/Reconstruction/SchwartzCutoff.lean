@@ -1,13 +1,11 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import Mathlib.Analysis.Distribution.SchwartzSpace.Basic
-import Mathlib.Topology.MetricSpace.Basic
+module
 
+public import Mathlib.Analysis.Distribution.SchwartzSpace.Basic
+public import Mathlib.Topology.MetricSpace.Basic
 
-
-
-
-
+@[expose] public section
 
 noncomputable section
 

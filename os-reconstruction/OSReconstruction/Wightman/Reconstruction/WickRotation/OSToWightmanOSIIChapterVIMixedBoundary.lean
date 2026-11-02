@@ -1,5 +1,9 @@
-import Mathlib.Analysis.LocallyConvex.Barrelled
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVITimeBoundary
+module
+
+public import Mathlib.Analysis.LocallyConvex.Barrelled
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVITimeBoundary
+
+@[expose] public section
 
 /-!
 # OS II Chapter VI: Mixed Time--Spatial Boundary
@@ -29,7 +33,7 @@ variable {d k : Nat} [NeZero d]
 variable {A : OSIITimeContinuationStage d k}
 
 omit [NeZero d] in
-private theorem exists_timeIntegratedSpatialDistribution
+theorem exists_timeIntegratedSpatialDistribution
     (L : (Fin k -> Real) -> OSIISpatialDistribution d k)
     (hL_cont : forall chi : SchwartzMap (Section43SpatialSpace d k) Complex,
       Continuous (fun t => L t chi))

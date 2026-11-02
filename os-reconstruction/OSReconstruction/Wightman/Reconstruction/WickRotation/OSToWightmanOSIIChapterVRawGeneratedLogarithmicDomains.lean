@@ -1,22 +1,10 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVStrictGeneratedLogarithmicDomains
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVStrictGeneratedLogarithmicDomains
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -123,7 +111,7 @@ theorem toStrictGenerated
         OSIIStrictGeneratedLogarithmicArgument.mixedOfDiagonal
           n hn N x hx0 ih
 
-private theorem mixed_head_eq_zero_aux
+theorem mixed_head_eq_zero_aux
     {kind : OSIILogarithmicArgumentKind}
     {n N : Nat} {x : Fin n -> Real}
     (hx : OSIIRawStrictGeneratedLogarithmicArgument kind n N x) :
@@ -160,7 +148,7 @@ theorem mixed_head_eq_zero
     x ⟨0, hn⟩ = 0 :=
   mixed_head_eq_zero_aux hx hn
 
-private theorem depth_succ_aux
+theorem depth_succ_aux
     {kind : OSIILogarithmicArgumentKind}
     {n N : Nat} {x : Fin n -> Real}
     (hx : OSIIRawStrictGeneratedLogarithmicArgument kind n N x) :
@@ -229,7 +217,7 @@ theorem mixed_zero
   | succ N ih =>
       exact ih.mixed_depth_succ hn
 
-private theorem coordinatewise_closed_aux
+theorem coordinatewise_closed_aux
     {kind : OSIILogarithmicArgumentKind}
     {n N : Nat} {x : Fin n -> Real}
     (hx : OSIIRawStrictGeneratedLogarithmicArgument kind n N x) :
@@ -362,7 +350,7 @@ theorem scalar_hyperrectangle
     OSIIRawStrictGeneratedLogarithmicArgument .scalar n N y :=
   coordinatewise_closed_aux hx y hy
 
-private theorem mixed_diagonal_mem_scalar_aux
+theorem mixed_diagonal_mem_scalar_aux
     {kind : OSIILogarithmicArgumentKind}
     {n N : Nat} {x : Fin n -> Real}
     (hx : OSIIRawStrictGeneratedLogarithmicArgument kind n N x) :

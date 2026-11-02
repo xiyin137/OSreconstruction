@@ -5,42 +5,16 @@ Copyright (c) 2025 ModularPhysics Contributors.
 Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
-import Mathlib.Analysis.Distribution.SchwartzSpace.Basic
-import Mathlib.Analysis.LocallyConvex.Barrelled
-import Mathlib.Topology.Algebra.IsUniformGroup.Defs
-import Mathlib.Topology.Metrizable.CompletelyMetrizable
-import Mathlib.Topology.Baire.CompleteMetrizable
-import Mathlib.Analysis.Calculus.SmoothSeries
+module
 
+public import Mathlib.Analysis.Distribution.SchwartzSpace.Basic
+public import Mathlib.Analysis.LocallyConvex.Barrelled
+public import Mathlib.Topology.Algebra.IsUniformGroup.Defs
+public import Mathlib.Topology.Metrizable.CompletelyMetrizable
+public import Mathlib.Topology.Baire.CompleteMetrizable
+public import Mathlib.Analysis.Calculus.SmoothSeries
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -60,7 +34,7 @@ namespace SchwartzMap
 
 
 /-- Cauchy sequences in the Schwartz topology are Cauchy in each seminorm. -/
-private theorem cauchySeq_seminorm {u : ℕ → SchwartzMap E F} (hu : CauchySeq u)
+theorem cauchySeq_seminorm {u : ℕ → SchwartzMap E F} (hu : CauchySeq u)
     (k n : ℕ) (ε : ℝ) (hε : 0 < ε) :
     ∃ N, ∀ m ≥ N, ∀ m' ≥ N, SchwartzMap.seminorm ℝ k n (u m - u m') < ε := by
   have hws := schwartz_withSeminorms ℝ E F
@@ -85,7 +59,7 @@ private theorem cauchySeq_seminorm {u : ℕ → SchwartzMap E F} (hu : CauchySeq
 
 /-- Combined Cauchy bound: for each total degree j, there exists a threshold beyond
     which ALL seminorms of degree ≤ j are bounded by (1/2)^j. -/
-private theorem cauchySeq_combined_bound {u : ℕ → SchwartzMap E F} (hu : CauchySeq u)
+theorem cauchySeq_combined_bound {u : ℕ → SchwartzMap E F} (hu : CauchySeq u)
     (j : ℕ) : ∃ N, ∀ m ≥ N, ∀ m' ≥ N, ∀ k n, k + n ≤ j →
       SchwartzMap.seminorm ℝ k n (u m - u m') < (1/2 : ℝ) ^ j := by
   choose N hN using fun k n => cauchySeq_seminorm hu k n ((1/2) ^ j) (by positivity)
@@ -98,7 +72,7 @@ private theorem cauchySeq_combined_bound {u : ℕ → SchwartzMap E F} (hu : Cau
 /-- For a sequence of SchwartzMaps with geometric seminorm decay, the shifted tail
     tsum has interchangeable iteratedFDeriv, and the weighted derivative is bounded
     by the geometric tail. -/
-private theorem tail_tsum_iteratedFDeriv_bound [CompleteSpace F]
+theorem tail_tsum_iteratedFDeriv_bound [CompleteSpace F]
     {w : ℕ → SchwartzMap E F}
     (hw : ∀ j k n, k + n ≤ j → SchwartzMap.seminorm ℝ k n (w j) < (1/2 : ℝ) ^ j)
     (K : ℕ) (k n : ℕ) (hK : k + n ≤ K) (x : E) :

@@ -1,36 +1,20 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.SCV.LocalProductDescent
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVILadderGrowthHandoff
-import Init
-import Mathlib.Analysis.Calculus.BumpFunction.InnerProduct
-import Mathlib.Analysis.Calculus.BumpFunction.Normed
-import Mathlib.Analysis.Complex.MeanValue
-import Mathlib.Analysis.Complex.Tietze
-import Mathlib.Analysis.SpecialFunctions.PolarCoord
-import Mathlib.LinearAlgebra.Complex.FiniteDimensional
-import Mathlib.MeasureTheory.Integral.Pi
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIComplexMeanValue
+module
 
+public import OSReconstruction.SCV.LocalProductDescent
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVILadderGrowthHandoff
+public import Init
+public import Mathlib.Analysis.Calculus.BumpFunction.InnerProduct
+public import Mathlib.Analysis.Calculus.BumpFunction.Normed
+public import Mathlib.Analysis.Complex.MeanValue
+public import Mathlib.Analysis.Complex.Tietze
+public import Mathlib.Analysis.SpecialFunctions.PolarCoord
+public import Mathlib.LinearAlgebra.Complex.FiniteDimensional
+public import Mathlib.MeasureTheory.Integral.Pi
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIComplexMeanValue
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 

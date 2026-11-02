@@ -5,52 +5,14 @@ Copyright (c) 2025 ModularPhysics Contributors.
 Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
-import Mathlib.Analysis.Distribution.SchwartzSpace.Fourier
-import Mathlib.Analysis.SpecialFunctions.SmoothTransition
-import Mathlib.Analysis.SpecialFunctions.ExpDeriv
-import Mathlib.Analysis.SpecialFunctions.Pow.Asymptotics
+module
 
+public import Mathlib.Analysis.Distribution.SchwartzSpace.Fourier
+public import Mathlib.Analysis.SpecialFunctions.SmoothTransition
+public import Mathlib.Analysis.SpecialFunctions.ExpDeriv
+public import Mathlib.Analysis.SpecialFunctions.Pow.Asymptotics
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -86,7 +48,7 @@ theorem smoothCutoff_one_of_nonneg {ξ : ℝ} (h : 0 ≤ ξ) : smoothCutoff ξ =
 theorem smoothCutoff_contDiff : ContDiff ℝ (↑(⊤ : ℕ∞)) smoothCutoff :=
   Real.smoothTransition.contDiff.comp (contDiff_id.add contDiff_const)
 
-private lemma smoothCutoff_complex_contDiff :
+lemma smoothCutoff_complex_contDiff :
     ContDiff ℝ ↑(⊤ : ℕ∞) (fun ξ : ℝ => (smoothCutoff ξ : ℂ)) :=
   Complex.ofRealCLM.contDiff.comp smoothCutoff_contDiff
 
@@ -348,16 +310,16 @@ theorem iteratedDeriv_cexp_const_mul_real (n : ℕ) (c : ℂ) :
 /-- The divided first-order Taylor remainder
     `ξ ↦ (exp(I h ξ) - 1 - I h ξ) / h`. This is the scalar factor appearing in the
     complex difference quotient of `ψ_z`. -/
-private def expTaylorLinearRemainderQuot (h : ℂ) : ℝ → ℂ :=
+def expTaylorLinearRemainderQuot (h : ℂ) : ℝ → ℂ :=
   fun ξ => (Complex.exp (I * h * ξ) - 1 - I * h * ξ) / h
 
-private theorem iteratedDeriv_expTaylorLinearRemainderQuot_zero
+theorem iteratedDeriv_expTaylorLinearRemainderQuot_zero
     (h : ℂ) (ξ : ℝ) :
     iteratedDeriv 0 (expTaylorLinearRemainderQuot h) ξ =
       (Complex.exp (I * h * ξ) - 1 - I * h * ξ) / h := by
   simp [expTaylorLinearRemainderQuot]
 
-private theorem iteratedDeriv_expTaylorLinearRemainderQuot_one
+theorem iteratedDeriv_expTaylorLinearRemainderQuot_one
     (h : ℂ) (ξ : ℝ) :
     iteratedDeriv 1 (expTaylorLinearRemainderQuot h) ξ =
       I * (Complex.exp (I * h * ξ) - 1) := by
@@ -384,7 +346,7 @@ private theorem iteratedDeriv_expTaylorLinearRemainderQuot_one
   · field_simp [hh]
     simp [c, mul_assoc, mul_left_comm, mul_comm, sub_eq_add_neg]
 
-private theorem iteratedDeriv_expTaylorLinearRemainderQuot_succ_succ
+theorem iteratedDeriv_expTaylorLinearRemainderQuot_succ_succ
     (m : ℕ) (h : ℂ) (ξ : ℝ) :
     iteratedDeriv (m + 2) (expTaylorLinearRemainderQuot h) ξ =
       ((I * h) ^ (m + 2) / h) * Complex.exp (I * h * ξ) := by
@@ -444,7 +406,7 @@ private theorem iteratedDeriv_expTaylorLinearRemainderQuot_succ_succ
               _ = (((I * h) ^ (m + 2)) / h) * Complex.exp (c * ξ) := by rw [hscalar]
               _ = (((I * h) ^ (m + 2)) / h) * Complex.exp (I * h * ξ) := by simp [c]
 
-private theorem expTaylorLinearRemainderQuot_contDiff (h : ℂ) :
+theorem expTaylorLinearRemainderQuot_contDiff (h : ℂ) :
     ContDiff ℝ (↑(⊤ : ℕ∞)) (expTaylorLinearRemainderQuot h) := by
   let c : ℂ := I * h
   have hexp : ContDiff ℝ (↑(⊤ : ℕ∞)) (fun ξ : ℝ => Complex.exp ((ξ : ℂ) * c)) := by
@@ -456,7 +418,7 @@ private theorem expTaylorLinearRemainderQuot_contDiff (h : ℂ) :
   simpa [c, div_eq_mul_inv, sub_eq_add_neg, add_assoc, mul_assoc, mul_left_comm, mul_comm] using
     (contDiff_const.mul ((hexp.sub contDiff_const).sub hlin))
 
-private theorem norm_expTaylorLinearRemainderQuot_zero_le
+theorem norm_expTaylorLinearRemainderQuot_zero_le
     (h : ℂ) (ξ : ℝ) :
     ‖iteratedDeriv 0 (expTaylorLinearRemainderQuot h) ξ‖ ≤
       ‖h‖ * |ξ| ^ 2 * Real.exp (‖h‖ * |ξ|) := by
@@ -484,7 +446,7 @@ private theorem norm_expTaylorLinearRemainderQuot_zero_le
             rw [hnorm]
             field_simp [hh0]
 
-private theorem norm_expTaylorLinearRemainderQuot_one_le
+theorem norm_expTaylorLinearRemainderQuot_one_le
     (h : ℂ) (ξ : ℝ) :
     ‖iteratedDeriv 1 (expTaylorLinearRemainderQuot h) ξ‖ ≤
       ‖h‖ * |ξ| * Real.exp (‖h‖ * |ξ|) := by
@@ -499,7 +461,7 @@ private theorem norm_expTaylorLinearRemainderQuot_one_le
           simpa using hmain
     _ = ‖h‖ * |ξ| * Real.exp (‖h‖ * |ξ|) := by rw [hnorm]
 
-private theorem norm_expTaylorLinearRemainderQuot_succ_succ_le
+theorem norm_expTaylorLinearRemainderQuot_succ_succ_le
     (m : ℕ) (h : ℂ) (hh1 : ‖h‖ ≤ 1) (ξ : ℝ) :
     ‖iteratedDeriv (m + 2) (expTaylorLinearRemainderQuot h) ξ‖ ≤
       ‖h‖ * Real.exp (‖h‖ * |ξ|) := by
@@ -541,7 +503,7 @@ private theorem norm_expTaylorLinearRemainderQuot_succ_succ_le
           = ‖((I * h) ^ (m + 2) / h)‖ * ‖Complex.exp (I * h * ξ)‖ := by rw [norm_mul]
       _ ≤ ‖h‖ * Real.exp (‖h‖ * |ξ|) := by gcongr
 
-private theorem norm_expTaylorLinearRemainderQuot_tail_le
+theorem norm_expTaylorLinearRemainderQuot_tail_le
     (j : ℕ) (h : ℂ) (hh1 : ‖h‖ ≤ 1) (ξ : ℝ) (hξ1 : 1 ≤ ξ) :
     ‖iteratedDeriv j (expTaylorLinearRemainderQuot h) ξ‖ ≤
       ‖h‖ * ξ ^ 2 * Real.exp (‖h‖ * ξ) := by
@@ -575,7 +537,7 @@ private theorem norm_expTaylorLinearRemainderQuot_tail_le
             have := mul_le_mul_of_nonneg_left hmul (norm_nonneg h)
             simpa [mul_assoc, mul_left_comm, mul_comm] using this
 
-private theorem norm_expTaylorLinearRemainderQuot_mid_le
+theorem norm_expTaylorLinearRemainderQuot_mid_le
     (j : ℕ) (h : ℂ) (hh1 : ‖h‖ ≤ 1) (ξ : ℝ) (hξ : ξ ∈ Set.Icc (-1 : ℝ) 1) :
     ‖iteratedDeriv j (expTaylorLinearRemainderQuot h) ξ‖ ≤
       Real.exp 1 * ‖h‖ := by

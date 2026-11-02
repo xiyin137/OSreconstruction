@@ -1,22 +1,13 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIBlockRadialSelectedBlockPositiveSource
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIBlockRadialPartialKernelRealEdge
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVReducedSchwinger
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVCompactTimeSource
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIBlockRadialSelectedBlockPositiveSource
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIBlockRadialPartialKernelRealEdge
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVReducedSchwinger
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVCompactTimeSource
 
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -716,7 +707,7 @@ def osiiStep4SelectedBlockChronologicalConfigOfPair
         (Fin.natAdd (n + 1) j) = p.2 j := by
   simp [osiiStep4SelectedBlockChronologicalConfigOfPair]
 
-private theorem osiiStep4_continuous_timeReflectionN
+theorem osiiStep4_continuous_timeReflectionN
     (d k : Nat) :
     Continuous (timeReflectionN d : NPointDomain d k -> NPointDomain d k) := by
   apply continuous_pi
@@ -730,7 +721,7 @@ private theorem osiiStep4_continuous_timeReflectionN
   · simp [timeReflectionN, timeReflection, hmu]
     fun_prop
 
-private theorem osiiStep4_continuous_append_reflected_pair
+theorem osiiStep4_continuous_append_reflected_pair
     (d n m : Nat) :
     Continuous (fun p : NPointDomain d (n + 1) × NPointDomain d (m + 1) =>
       Fin.append (timeReflectionN d p.1) p.2) := by

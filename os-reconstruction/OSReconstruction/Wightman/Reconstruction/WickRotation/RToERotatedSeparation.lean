@@ -1,5 +1,9 @@
-import OSReconstruction.Wightman.Reconstruction.UniversalProjection
-import Mathlib.Algebra.Order.BigOperators.Ring.Finset
+module
+
+public import OSReconstruction.Wightman.Reconstruction.UniversalProjection
+public import Mathlib.Algebra.Order.BigOperators.Ring.Finset
+
+@[expose] public section
 
 /-!
 # Proper Rotations with Time and Spatial Separation
@@ -18,7 +22,7 @@ variable {d : ℕ} [NeZero d]
 set_option maxHeartbeats 800000
 
 omit [NeZero d] in
-private theorem orthogonal_row_sq
+theorem orthogonal_row_sq
     (R : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ) (hR : R.transpose * R = 1) :
     ∑ j, (R 0 j)^2 = 1 := by
   have hRR : R * R.transpose = 1 := mul_eq_one_comm.mp hR
@@ -26,7 +30,7 @@ private theorem orthogonal_row_sq
   simpa [Matrix.mul_apply, pow_two] using h
 
 omit [NeZero d] in
-private theorem orthogonal_sum_sq
+theorem orthogonal_sum_sq
     (R : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ) (hR : R.transpose * R = 1)
     (a : Fin (d + 1) → ℝ) :
     ∑ j, (R.mulVec a j)^2 = ∑ j, (a j)^2 := by
@@ -36,7 +40,7 @@ private theorem orthogonal_sum_sq
   simpa [dotProduct, pow_two] using h
 
 omit [NeZero d] in
-private theorem pi_norm_sq_le_sum_sq (a : Fin (d + 1) → ℝ) :
+theorem pi_norm_sq_le_sum_sq (a : Fin (d + 1) → ℝ) :
     ‖a‖^2 ≤ ∑ j, (a j)^2 := by
   have hS : 0 ≤ ∑ j, (a j)^2 := Finset.sum_nonneg fun j _ => sq_nonneg _
   have hcoord (j : Fin (d + 1)) : |a j| ≤ Real.sqrt (∑ k, (a k)^2) := by
@@ -49,7 +53,7 @@ private theorem pi_norm_sq_le_sum_sq (a : Fin (d + 1) → ℝ) :
   nlinarith [Real.sq_sqrt hS, norm_nonneg a]
 
 omit [NeZero d] in
-private theorem orthogonal_spatial_sq_lower
+theorem orthogonal_spatial_sq_lower
     (R : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ) (hR : R.transpose * R = 1)
     (a : Fin (d + 1) → ℝ) (ha : a 0 = 0) :
     (R 0 0)^2 * (∑ j, (a j)^2) ≤ ∑ j : Fin d, (R.mulVec a j.succ)^2 := by
@@ -67,7 +71,7 @@ private theorem orthogonal_spatial_sq_lower
   have hrowA := congrArg (fun x : ℝ => x * (∑ j, (a j)^2)) hrow
   nlinarith [hrowA]
 
-private theorem orient_projection
+theorem orient_projection
     (R : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ) (hR : R.transpose * R = 1)
     (hdet : R.det = 1) (a : Fin (d + 1) → ℝ) :
     ∃ S : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ,

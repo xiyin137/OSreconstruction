@@ -5,35 +5,31 @@ Copyright (c) 2025 ModularPhysics Contributors. All rights reserved.
 Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
-import Mathlib.Analysis.Complex.OperatorNorm
-import Mathlib.Topology.Algebra.Module.Equiv
-import Init
-import Mathlib.Analysis.Distribution.SchwartzSpace.Deriv
-import Mathlib.RingTheory.Polynomial.Hermite.Gaussian
-import Mathlib.Analysis.LocallyConvex.WithSeminorms
-import Mathlib.Analysis.Seminorm
-import Mathlib.Analysis.Convex.Gauge
-import Mathlib.Topology.Algebra.Module.LocallyConvex
-import Mathlib.Analysis.LocallyConvex.AbsConvex
-import Mathlib.Analysis.InnerProductSpace.Basic
-import Mathlib.Analysis.InnerProductSpace.Adjoint
-import Mathlib.Analysis.InnerProductSpace.LinearMap
-import Mathlib.Analysis.Normed.Operator.Compact
-import Mathlib.Topology.Algebra.InfiniteSum.Basic
-import Mathlib.Topology.Algebra.InfiniteSum.Module
-import Mathlib.Topology.Algebra.InfiniteSum.Constructions
-import Mathlib.Topology.Algebra.InfiniteSum.Order
-import Mathlib.Analysis.Normed.Group.InfiniteSum
-import SchwartzNuclear
-import GaussianField
+module
 
+public import Mathlib.Analysis.Complex.OperatorNorm
+public import Mathlib.Topology.Algebra.Module.Equiv
+public import Init
+public import Mathlib.Analysis.Distribution.SchwartzSpace.Deriv
+public import Mathlib.RingTheory.Polynomial.Hermite.Gaussian
+public import Mathlib.Analysis.LocallyConvex.WithSeminorms
+public import Mathlib.Analysis.Seminorm
+public import Mathlib.Analysis.Convex.Gauge
+public import Mathlib.Topology.Algebra.Module.LocallyConvex
+public import Mathlib.Analysis.LocallyConvex.AbsConvex
+public import Mathlib.Analysis.InnerProductSpace.Basic
+public import Mathlib.Analysis.InnerProductSpace.Adjoint
+public import Mathlib.Analysis.InnerProductSpace.LinearMap
+public import Mathlib.Analysis.Normed.Operator.Compact
+public import Mathlib.Topology.Algebra.InfiniteSum.Basic
+public import Mathlib.Topology.Algebra.InfiniteSum.Module
+public import Mathlib.Topology.Algebra.InfiniteSum.Constructions
+public import Mathlib.Topology.Algebra.InfiniteSum.Order
+public import Mathlib.Analysis.Normed.Group.InfiniteSum
+public import SchwartzNuclear
+public import GaussianField
 
-
-
-
-
-
-
+@[expose] public section
 
 open scoped SchwartzMap
 

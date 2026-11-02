@@ -1,6 +1,10 @@
-import OSReconstruction.SCV.SchwartzPartialEval
-import OSReconstruction.SCV.TranslationDifferentiation
-import OSReconstruction.Wightman.Reconstruction.TranslationInvariantSchwartz
+module
+
+public import OSReconstruction.SCV.SchwartzPartialEval
+public import OSReconstruction.SCV.TranslationDifferentiation
+public import OSReconstruction.Wightman.Reconstruction.TranslationInvariantSchwartz
+
+@[expose] public section
 
 /-!
 # Linear actions on compact Schwartz sources
@@ -23,7 +27,7 @@ namespace OSReconstruction.OSIIChapterVI
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace Real E]
 
-private def linearVectorFieldRealCLM (A : E →L[Real] E) :
+def linearVectorFieldRealCLM (A : E →L[Real] E) :
     SchwartzMap E Complex →L[Real] SchwartzMap E Complex :=
   (SchwartzMap.bilinLeftCLM
     (ContinuousLinearMap.id Real (E →L[Real] Complex)) A.hasTemperateGrowth).comp
@@ -119,10 +123,10 @@ theorem tendsto_diffQuotient_schwartzPartialEval_zero
   change P (u⁻¹ • (SCV.translateSchwartz (u • v) Kflat - Kflat)) = _
   rw [ContinuousLinearMap.map_smul_of_tower, map_sub, hslice, hbase]
 
-private def parameterCutoff : ContDiffBump (0 : Real) :=
+def parameterCutoff : ContDiffBump (0 : Real) :=
   ⟨1, 2, zero_lt_one, one_lt_two⟩
 
-private def linearActionParameterHomeomorph
+def linearActionParameterHomeomorph
     (e : Real -> E ≃L[Real] E)
     (he : Continuous (fun p : Real × E => e p.1 p.2))
     (hinv : Continuous (fun p : Real × E => (e p.1).symm p.2)) :
@@ -135,7 +139,7 @@ private def linearActionParameterHomeomorph
   continuous_invFun := continuous_fst.prodMk hinv
 
 omit [FiniteDimensional Real E] in
-private theorem exists_compactLinearActionKernel
+theorem exists_compactLinearActionKernel
     (e : Real -> E ≃L[Real] E)
     (he : ContDiff Real (⊤ : ℕ∞) (fun p : Real × E => e p.1 p.2))
     (hinv : Continuous (fun p : Real × E => (e p.1).symm p.2))

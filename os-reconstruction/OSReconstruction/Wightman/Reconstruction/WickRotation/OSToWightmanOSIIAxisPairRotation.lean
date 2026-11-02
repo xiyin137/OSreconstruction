@@ -1,6 +1,10 @@
-import OSReconstruction.Wightman.Reconstruction.UniversalProjection
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIILemma51AxisPair
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanSemigroup
+module
+
+public import OSReconstruction.Wightman.Reconstruction.UniversalProjection
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIILemma51AxisPair
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanSemigroup
+
+@[expose] public section
 
 /-!
 # Euclidean Rotations for OS-II Axis-Pair Directions

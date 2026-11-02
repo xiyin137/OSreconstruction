@@ -1,21 +1,11 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVRootedAnchoredSpatialGrowth
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVInitialAnchoredPacketRootedCanonicalFields
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVRootedAnchoredSpatialGrowth
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVInitialAnchoredPacketRootedCanonicalFields
 
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -35,7 +25,7 @@ variable
 
 /-- A centered real ball contained in the real edge of one local rooted
 holomorphic field. -/
-private structure RootedLocalRealEdgeBall
+structure RootedLocalRealEdgeBall
     {E : Type*}
     [NormedAddCommGroup E] [NormedSpace ℝ E]
     {n m : ℕ}
@@ -50,7 +40,7 @@ private structure RootedLocalRealEdgeBall
   ball_subset :
     Metric.ball (0 : Fin m → ℝ) radius ⊆ D.realRegion
 
-private theorem nonempty_rootedLocalRealEdgeBall
+theorem nonempty_rootedLocalRealEdgeBall
     {E : Type*}
     [NormedAddCommGroup E] [NormedSpace ℝ E]
     {n m : ℕ}
@@ -65,7 +55,7 @@ private theorem nonempty_rootedLocalRealEdgeBall
     ⟨r, hr, hball⟩
   exact ⟨⟨r, hr, hball⟩⟩
 
-private noncomputable def rootedLocalRealEdgeBall
+noncomputable def rootedLocalRealEdgeBall
     {E : Type*}
     [NormedAddCommGroup E] [NormedSpace ℝ E]
     {n m : ℕ}

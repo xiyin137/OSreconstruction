@@ -5,18 +5,14 @@ Copyright (c) 2025 ModularPhysics Contributors.
 Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
-import OSReconstruction.SCV.TubeDomainExtension
-import OSReconstruction.SCV.IdentityTheorem
-import OSReconstruction.SCV.IteratedCauchyIntegral
-import OSReconstruction.SCV.Polydisc
+module
 
+public import OSReconstruction.SCV.TubeDomainExtension
+public import OSReconstruction.SCV.IdentityTheorem
+public import OSReconstruction.SCV.IteratedCauchyIntegral
+public import OSReconstruction.SCV.Polydisc
 
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 

@@ -1,4 +1,8 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIRawGeneratedWeightedL1CenteredProvenance
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIRawGeneratedWeightedL1CenteredProvenance
+
+@[expose] public section
 
 /-!
 # Raw weighted-L1 generator seeds
@@ -177,7 +181,7 @@ def osiiRawGeneratorSeedBase
     Set (Fin k -> Real) :=
   {x | Nonempty (RawGeneratorSeedData k depth x)}
 
-private theorem raw_argumentGeneratorPoint_smul
+theorem raw_argumentGeneratorPoint_smul_WeightedL1GeneratorSeeds
     {k : Nat} (i : GeneratorIndex k)
     (r : Real)
     (left : Fin i.n -> Real) (theta : Real) (right : Fin i.m -> Real) :
@@ -188,7 +192,7 @@ private theorem raw_argumentGeneratorPoint_smul
   simp only [osiiArgumentGeneratorPoint, Pi.smul_apply]
   split_ifs <;> simp
 
-private theorem raw_argumentDiagonal_smul
+theorem raw_argumentDiagonal_smul_WeightedL1GeneratorSeeds
     {n : Nat} (hn : 1 <= n)
     (r : Real) (x : Fin n -> Real) :
     osiiArgumentDiagonal hn (r • x) =
@@ -225,7 +229,7 @@ theorem smul_of_nonneg_le_one
         (mul_le_mul_of_nonneg_right hr1 (abs_nonneg (x i))
           ).trans_eq (one_mul _)
 
-private theorem rescale_expansion
+theorem rescale_expansion
     {kind : OSIILogarithmicArgumentKind}
     {n N : Nat} {x : Fin n -> Real}
     {q Q : Real}
@@ -245,7 +249,7 @@ private theorem rescale_expansion
     field_simp [hQ_pos.ne']
   simpa [smul_smul, hmul] using hscaled
 
-private theorem exists_one_lt_mul_lt
+theorem exists_one_lt_mul_lt
     {a b : Real} (ha : 0 <= a) (hab : a < b) :
     ∃ q : Real, 1 < q ∧ q * a < b := by
   by_cases ha0 : a = 0
@@ -367,13 +371,13 @@ theorem exists_one_lt_smul
         generatorMemSucc
           i N (q • left) (q * theta) (q • right)
           hleftq' hrightq' hthetaq'
-      simpa [raw_argumentGeneratorPoint_smul] using hgenerator
+      simpa [raw_argumentGeneratorPoint_smul_WeightedL1GeneratorSeeds] using hgenerator
   | mixedOfDiagonal n hn N x hx0 hx ih =>
       obtain ⟨q, hq, hdiagq⟩ := ih
       refine ⟨q, hq, ?_⟩
       apply mixedOfDiagonal n hn N (q • x)
       · simp [Pi.smul_apply, hx0]
-      · simpa [raw_argumentDiagonal_smul] using hdiagq
+      · simpa [raw_argumentDiagonal_smul_WeightedL1GeneratorSeeds] using hdiagq
 
 /-- Equivalently, every raw argument is a strict radial contraction of
 another point in the same outer-depth grammar. -/
@@ -395,7 +399,7 @@ theorem exists_radial_expansion
 
 end OSIIRawStrictGeneratedLogarithmicArgument
 
-private theorem rawScalar_mem_convexHull_generatorSeed_aux
+theorem rawScalar_mem_convexHull_generatorSeed_aux
     {kind : OSIILogarithmicArgumentKind}
     {n N : Nat} {x : Fin n -> Real}
     (hx : OSIIRawStrictGeneratedLogarithmicArgument kind n N x) :

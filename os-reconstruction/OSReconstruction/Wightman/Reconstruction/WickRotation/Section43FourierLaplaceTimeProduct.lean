@@ -1,16 +1,12 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import Mathlib.MeasureTheory.Integral.Pi
-import OSReconstruction.Wightman.Reconstruction.DenseCLM
-import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceFiniteProbe
+module
 
+public import Mathlib.MeasureTheory.Integral.Pi
+public import OSReconstruction.Wightman.Reconstruction.DenseCLM
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceFiniteProbe
 
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -445,7 +441,7 @@ structure Section43CompactStrictPositiveTimeSource (n : ℕ) where
 
 namespace Section43CompactStrictPositiveTimeSource
 
-private theorem ext_f {n : ℕ}
+theorem ext_f {n : ℕ}
     {g h : Section43CompactStrictPositiveTimeSource n}
     (hf : g.f = h.f) : g = h := by
   cases g
@@ -454,7 +450,7 @@ private theorem ext_f {n : ℕ}
   subst hf
   rfl
 
-private theorem f_injective (n : ℕ) :
+theorem f_injective (n : ℕ) :
     Function.Injective
       (fun g : Section43CompactStrictPositiveTimeSource n => g.f) := by
   intro g h hf
@@ -530,7 +526,7 @@ instance (n : ℕ) : SMul ℂ (Section43CompactStrictPositiveTimeSource n) where
             (f := fun _ : Fin n → ℝ => c)
             (f' := (g.f : (Fin n → ℝ) → ℂ)) g.compact }
 
-private def fAddMonoidHom (n : ℕ) :
+def fAddMonoidHom (n : ℕ) :
     Section43CompactStrictPositiveTimeSource n →+
       SchwartzMap (Fin n → ℝ) ℂ where
   toFun := fun g => g.f

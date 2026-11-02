@@ -1,17 +1,12 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import Mathlib.LinearAlgebra.Complex.Module
-import OSReconstruction.SCV.DistributionalUniqueness
-import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceDensity
+module
 
+public import Mathlib.LinearAlgebra.Complex.Module
+public import OSReconstruction.SCV.DistributionalUniqueness
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceDensity
 
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -22,7 +17,7 @@ namespace OSReconstruction
 
 namespace Section43CompactPositiveTimeSource1D
 
-private theorem ext_f {g h : Section43CompactPositiveTimeSource1D}
+theorem ext_f {g h : Section43CompactPositiveTimeSource1D}
     (hf : g.f = h.f) : g = h := by
   cases g
   cases h
@@ -30,7 +25,7 @@ private theorem ext_f {g h : Section43CompactPositiveTimeSource1D}
   subst hf
   rfl
 
-private theorem f_injective :
+theorem f_injective :
     Function.Injective (fun g : Section43CompactPositiveTimeSource1D => g.f) := by
   intro g h hf
   exact ext_f hf
@@ -93,7 +88,7 @@ instance : SMul ℂ Section43CompactPositiveTimeSource1D where
           HasCompactSupport.smul_left
             (f := fun _ : ℝ => c) (f' := (g.f : ℝ → ℂ)) g.compact }
 
-private def fAddMonoidHom :
+def fAddMonoidHom :
     Section43CompactPositiveTimeSource1D →+ SchwartzMap ℝ ℂ where
   toFun := fun g => g.f
   map_zero' := rfl
@@ -186,7 +181,7 @@ theorem section43WeightedDerivToBCFCLM_norm_le
               gcongr
               exact le_add_of_nonneg_left (apply_nonneg _ _)
 
-private theorem section43_schwartzPsiZ_imagAxis_diff_eq
+theorem section43_schwartzPsiZ_imagAxis_diff_eq
     (t h : ℝ) (ht : 0 < t) (hth : 0 < t + h)
     (hh_im : ‖((h : ℂ) * Complex.I)‖ ≤ (((t : ℂ) * Complex.I).im) / 2)
     (hh1 : ‖((h : ℂ) * Complex.I)‖ ≤ 1) :
@@ -453,7 +448,7 @@ theorem continuousOn_section43WeightedDerivToBCFCLM_imagAxisPsiKernel_Ioi
     (continuousAt_section43WeightedDerivToBCFCLM_imagAxisPsiKernel_of_pos
       (Set.mem_Ioi.mp ht) k n).continuousWithinAt
 
-private theorem section43_identity_theorem_right_halfplane
+theorem section43_identity_theorem_right_halfplane
     (f g : ℂ → ℂ)
     (hf : DifferentiableOn ℂ f {z : ℂ | 0 < z.re})
     (hg : DifferentiableOn ℂ g {z : ℂ | 0 < z.re})
@@ -520,7 +515,7 @@ private theorem section43_identity_theorem_right_halfplane
   simp only [Pi.sub_apply, Pi.zero_apply, sub_eq_zero] at this
   exact this
 
-private theorem section43_identity_theorem_upperHalfPlane
+theorem section43_identity_theorem_upperHalfPlane
     (f g : ℂ → ℂ)
     (hf : DifferentiableOn ℂ f SCV.upperHalfPlane)
     (hg : DifferentiableOn ℂ g SCV.upperHalfPlane)

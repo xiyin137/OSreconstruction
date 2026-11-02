@@ -1,6 +1,10 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVITestedTaylor
-import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
-import Mathlib.Analysis.SpecialFunctions.Log.NegMulLog
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVITestedTaylor
+public import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
+public import Mathlib.Analysis.SpecialFunctions.Log.NegMulLog
+
+@[expose] public section
 
 /-!
 # A quantitative singular Taylor endpoint
@@ -20,11 +24,11 @@ namespace OSIIChapterVI
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace Real E] [CompleteSpace E]
 
-private theorem factorial_inv_le_one (j : Nat) : (j.factorial : Real)⁻¹ <= 1 :=
+theorem factorial_inv_le_one (j : Nat) : (j.factorial : Real)⁻¹ <= 1 :=
   inv_le_one_of_one_le₀ (by exact_mod_cast Nat.factorial_pos j)
 
 omit [CompleteSpace E] in
-private theorem norm_taylorTerm_le
+theorem norm_taylorTerm_le
     (v : E) {H u : Real} (hv : ‖v‖ <= H)
     (hu : u ∈ Ioc (0 : Real) 1) (j : Nat) :
     ‖((j.factorial : Real)⁻¹ * (u - 1) ^ j) • v‖ <= H := by
@@ -116,7 +120,7 @@ theorem singularTaylor_firstDerivative_bound
         nlinarith [abs_nonneg (Real.log u), mul_nonneg hH (abs_nonneg (Real.log u)),
           Nat.cast_nonneg (α := Real) m]
 
-private theorem intervalIntegrable_logMajorant (M : Nat) (H a b : Real) :
+theorem intervalIntegrable_logMajorant (M : Nat) (H a b : Real) :
     IntervalIntegrable
       (fun s : Real => H * ((M + 1 : Nat) + (M : Real) * |Real.log s|)) volume a b := by
   have hc : IntervalIntegrable (fun _ : Real => ((M + 1 : Nat) : Real)) volume a b :=
@@ -124,7 +128,7 @@ private theorem intervalIntegrable_logMajorant (M : Nat) (H a b : Real) :
   have hl : IntervalIntegrable Real.log volume a b := intervalIntegral.intervalIntegrable_log'
   exact (hc.add (hl.abs.const_mul (M : Real))).const_mul H
 
-private theorem integral_logMajorant (M : Nat) {u : Real}
+theorem integral_logMajorant (M : Nat) {u : Real}
     (hu : u ∈ Ioc (0 : Real) 1) :
     (∫ s in (0 : Real)..u, ((M + 1 : Nat) + (M : Real) * |Real.log s|)) =
       u * ((2 * M + 1 : Nat) + (M : Real) * |Real.log u|) := by

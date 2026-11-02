@@ -1,6 +1,10 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVGeneratorOpenFieldScales
-import OSReconstruction.SCV.ConnectedNeighborhood
-import OSReconstruction.SCV.LocallyUniformLimit
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVGeneratorOpenFieldScales
+public import OSReconstruction.SCV.ConnectedNeighborhood
+public import OSReconstruction.SCV.LocallyUniformLimit
+
+@[expose] public section
 
 /-!
 # Connected packet-scale continuation for open generator fields

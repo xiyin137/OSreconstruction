@@ -1,14 +1,10 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.SCV.TubeDomainExtension
+module
 
+public import OSReconstruction.SCV.TubeDomainExtension
 
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 

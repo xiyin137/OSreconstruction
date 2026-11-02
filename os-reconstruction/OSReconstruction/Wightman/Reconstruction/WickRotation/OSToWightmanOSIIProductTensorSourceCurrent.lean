@@ -1,19 +1,11 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceOrderedGeometry
-import OSReconstruction.SCV.DistributionalEOWCutoff
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceOrderedGeometry
+public import OSReconstruction.SCV.DistributionalEOWCutoff
 
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 

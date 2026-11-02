@@ -1,23 +1,17 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIOrderedProductMultiGapPacketContinuity
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIAxisPairMultiGapGrowthMZ
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIConfigurationTranslation
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanE0FiniteSeminorm
-import Init
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBase
-import OSReconstruction.Wightman.Reconstruction.WickRotation.BHWReduced
-import Mathlib.Data.Nat.Choose.Sum
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIOrderedProductMultiGapPacketContinuity
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIAxisPairMultiGapGrowthMZ
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIConfigurationTranslation
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanE0FiniteSeminorm
+public import Init
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBase
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.BHWReduced
+public import Mathlib.Data.Nat.Choose.Sum
 
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -1748,7 +1742,7 @@ theorem OSIIChronologicalCompactFactors.packetConfigurationCoshConstant_pos
       (d := d) (k := k) T,
      norm_nonneg (F.packetCenterOffsetVector T hordered q)]
 
-private theorem one_le_packetGaugeExp
+theorem one_le_packetGaugeExp
     (x : Fin k → osiiAxisPairIndex d → ℝ) :
     1 ≤
       Real.exp

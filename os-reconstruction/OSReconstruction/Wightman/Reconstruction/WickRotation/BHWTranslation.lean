@@ -5,32 +5,24 @@ Copyright (c) 2025 ModularPhysics Contributors. All rights reserved.
 Released under Apache 2.0 license.
 Authors: Michael Douglas, ModularPhysics Contributors
 -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.BHWExtension
-import Init
-import Mathlib.Analysis.SpecialFunctions.Trigonometric.Basic
-import Mathlib.Analysis.SpecialFunctions.Trigonometric.Arctan
-import Mathlib.Analysis.SpecialFunctions.Trigonometric.Bounds
-import Mathlib.Analysis.Convex.Basic
-import Mathlib.Analysis.Convex.Segment
-import OSReconstruction.Wightman.Reconstruction.WickRotation.BHWTranslationCore
-import OSReconstruction.Wightman.Reconstruction.WickRotation.BHWReducedExtension
-import OSReconstruction.ComplexLieGroups.DifferenceCoordinates
-import OSReconstruction.ComplexLieGroups.Connectedness.Permutation
-import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.IndexSetD1
-import OSReconstruction.Wightman.Reconstruction.PoincareRep
-import OSReconstruction.SCV.PaleyWiener
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.BHWExtension
+public import Init
+public import Mathlib.Analysis.SpecialFunctions.Trigonometric.Basic
+public import Mathlib.Analysis.SpecialFunctions.Trigonometric.Arctan
+public import Mathlib.Analysis.SpecialFunctions.Trigonometric.Bounds
+public import Mathlib.Analysis.Convex.Basic
+public import Mathlib.Analysis.Convex.Segment
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.BHWTranslationCore
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.BHWReducedExtension
+public import OSReconstruction.ComplexLieGroups.DifferenceCoordinates
+public import OSReconstruction.ComplexLieGroups.Connectedness.Permutation
+public import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.IndexSetD1
+public import OSReconstruction.Wightman.Reconstruction.PoincareRep
+public import OSReconstruction.SCV.PaleyWiener
 
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 open scoped Classical
 
@@ -71,7 +63,7 @@ omit [NeZero d] in
 
 For z ∈ ForwardTube, the successive differences z_{j+1} - z_j have imaginary
 parts in V₊ by definition, which is exactly the reduced forward-tube condition. -/
-private theorem reducedDiffMap_mem_reducedForwardTubeN [NeZero d]
+theorem reducedDiffMap_mem_reducedForwardTubeN [NeZero d]
     (m : ℕ) {z : Fin (m + 1) → Fin (d + 1) → ℂ}
     (hz : z ∈ ForwardTube d (m + 1)) :
     reducedDiffMap (m + 1) d z ∈ ReducedForwardTubeN d m := by

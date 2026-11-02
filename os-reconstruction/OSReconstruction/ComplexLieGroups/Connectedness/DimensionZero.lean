@@ -1,7 +1,11 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.ComplexLieGroups.Connectedness.Action
-import OSReconstruction.ComplexLieGroups.DifferenceCoordinates
+module
+
+public import OSReconstruction.ComplexLieGroups.Connectedness.Action
+public import OSReconstruction.ComplexLieGroups.DifferenceCoordinates
+
+@[expose] public section
 
 noncomputable section
 

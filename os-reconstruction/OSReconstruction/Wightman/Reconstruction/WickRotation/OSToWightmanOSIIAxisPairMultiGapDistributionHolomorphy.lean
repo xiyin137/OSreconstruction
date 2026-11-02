@@ -1,22 +1,12 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIAxisPairMultiGapDistributionRealEdge
-import OSReconstruction.Mathlib429Compat
-import Mathlib.Topology.ContinuousMap.Bounded.Normed
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIAxisPairMultiGapDistributionRealEdge
+public import OSReconstruction.Mathlib429Compat
+public import Mathlib.Topology.ContinuousMap.Bounded.Normed
 
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 

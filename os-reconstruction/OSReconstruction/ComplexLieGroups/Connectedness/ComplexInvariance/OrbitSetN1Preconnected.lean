@@ -1,5 +1,9 @@
-import OSReconstruction.ComplexLieGroups.Connectedness.ComplexInvariance.OrbitSetN1Geometry
-import OSReconstruction.ComplexLieGroups.Connectedness.ComplexInvariance.QuadricConeImPos
+module
+
+public import OSReconstruction.ComplexLieGroups.Connectedness.ComplexInvariance.OrbitSetN1Geometry
+public import OSReconstruction.ComplexLieGroups.Connectedness.ComplexInvariance.QuadricConeImPos
+
+@[expose] public section
 
 noncomputable section
 

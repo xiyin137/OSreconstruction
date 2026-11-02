@@ -1,4 +1,8 @@
-import Definitions
+module
+
+public import Definitions
+
+@[expose] public section
 
 /-!
 The standard Comparator's trusted theorem declarations. All their mathematical

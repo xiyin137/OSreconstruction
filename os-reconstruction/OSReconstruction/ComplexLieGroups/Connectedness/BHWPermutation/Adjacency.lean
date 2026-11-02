@@ -1,10 +1,14 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import Init
-import OSReconstruction.ComplexLieGroups.Connectedness.ComplexInvariance.Core
-import OSReconstruction.ComplexLieGroups.Connectedness.ComplexInvariance.OrbitSetN1Geometry
-import OSReconstruction.ComplexLieGroups.Connectedness.ComplexInvariance.OrbitSetN1Preconnected
-import OSReconstruction.ComplexLieGroups.Connectedness.ComplexInvariance.Extend
+module
+
+public import Init
+public import OSReconstruction.ComplexLieGroups.Connectedness.ComplexInvariance.Core
+public import OSReconstruction.ComplexLieGroups.Connectedness.ComplexInvariance.OrbitSetN1Geometry
+public import OSReconstruction.ComplexLieGroups.Connectedness.ComplexInvariance.OrbitSetN1Preconnected
+public import OSReconstruction.ComplexLieGroups.Connectedness.ComplexInvariance.Extend
+
+@[expose] public section
 
 noncomputable section
 

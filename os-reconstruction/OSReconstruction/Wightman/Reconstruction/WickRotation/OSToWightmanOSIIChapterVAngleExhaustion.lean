@@ -1,28 +1,15 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import Mathlib.Analysis.Complex.Convex
-import Mathlib.Analysis.SpecialFunctions.Complex.Arg
-import Mathlib.Analysis.SpecificLimits.Normed
-import Mathlib.Data.Nat.Choose.Sum
-import Mathlib.Topology.MetricSpace.Thickening
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIITimeParametricContinuation
+module
 
+public import Mathlib.Analysis.Complex.Convex
+public import Mathlib.Analysis.SpecialFunctions.Complex.Arg
+public import Mathlib.Analysis.SpecificLimits.Normed
+public import Mathlib.Data.Nat.Choose.Sum
+public import Mathlib.Topology.MetricSpace.Thickening
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIITimeParametricContinuation
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -104,7 +91,7 @@ Lemma 5.2. -/
 def binomialPartialSum (i N : ℕ) : ℝ :=
   ∑ t ∈ Finset.range i, (Nat.choose N t : ℝ)
 
-private theorem binomialPartialSum_succ_stage (i N : ℕ) :
+theorem binomialPartialSum_succ_stage (i N : ℕ) :
     binomialPartialSum (i + 1) (N + 1) =
       binomialPartialSum (i + 1) N + binomialPartialSum i N := by
   induction i with
@@ -132,7 +119,7 @@ def binomialAngle : ℕ → ℕ → ℝ
         (1 - binomialPartialSum (i + 1) N / (2 : ℝ) ^ N) :=
   rfl
 
-private theorem binomialPartialSum_zero_stage (i : ℕ) :
+theorem binomialPartialSum_zero_stage (i : ℕ) :
     binomialPartialSum (i + 1) 0 = 1 := by
   induction i with
   | zero => simp [binomialPartialSum]

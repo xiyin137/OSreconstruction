@@ -1,19 +1,10 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIBlockRadialPositiveSource
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIBlockRadialPositiveSource
 
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -22,16 +13,16 @@ open scoped Classical
 
 namespace OSReconstruction
 
-private theorem osiiStep4_endpoint_sixteen_pos : (0 : Real) < 16 := by
+theorem osiiStep4_endpoint_sixteen_pos : (0 : Real) < 16 := by
   norm_num
 
-private def osiiStep4ComplexBlockRadialGJointRealSlice
+def osiiStep4ComplexBlockRadialGJointRealSlice
     (q : Nat) (rho : Real)
     (p : (Fin q -> Real) × (Fin q -> Real)) : Complex :=
   osiiStep4ComplexBlockRadialG q rho
     (osiiStep4ComplexOfRealImag p.1 p.2)
 
-private theorem osiiStep4ComplexBlockRadialGJointRealSlice_contDiff
+theorem osiiStep4ComplexBlockRadialGJointRealSlice_contDiff
     (q : Nat) {rho : Real} (hrho : 0 < rho) :
     ContDiff Real (⊤ : ℕ∞)
       (osiiStep4ComplexBlockRadialGJointRealSlice q rho) := by
@@ -58,7 +49,7 @@ private theorem osiiStep4ComplexBlockRadialGJointRealSlice_contDiff
   exact Complex.ofRealCLM.contDiff.comp
     ((osiiStep4ComplexBlockRadialG_contDiff q hrho).comp harg)
 
-private theorem
+theorem
     osiiStep4ComplexBlockRadialGJointRealSlice_support_subset_closedBall
     (q : Nat) {rho : Real} (hrho : 0 < rho) :
     Function.support
@@ -99,7 +90,7 @@ private theorem
   rw [Metric.mem_closedBall, dist_zero_right, Prod.norm_def]
   exact max_le hreal himag
 
-private theorem
+theorem
     osiiStep4ComplexBlockRadialGJointRealSlice_hasCompactSupport
     (q : Nat) {rho : Real} (hrho : 0 < rho) :
     HasCompactSupport
@@ -307,7 +298,7 @@ theorem osiiStep4ComplexBlockRadialGRealSchwartz_seminorm_scale
             q osiiStep4_endpoint_sixteen_pos ((16 / rho) • imag)) := by
       rfl
 
-private theorem
+theorem
     endpointImaginaryClosedBall_scale_to_reference
     (q : Nat) {rho : Real} (hrho : 0 < rho)
     {imag : Fin q -> Real}

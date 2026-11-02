@@ -1,8 +1,12 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceTransform
-import OSReconstruction.Mathlib429Compat
-import Mathlib.Analysis.Normed.Operator.NormedSpace
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceTransform
+public import OSReconstruction.Mathlib429Compat
+public import Mathlib.Analysis.Normed.Operator.NormedSpace
+
+@[expose] public section
 
 noncomputable section
 
@@ -465,7 +469,7 @@ theorem hasFDerivAt_section43FourierLaplace_timeIntegrand
         (τ, section43QSpatial (d := d) (n := n) q')
   rw [hL_apply q']
 
-private theorem exists_pos_le_on_compact_of_forall_pos
+theorem exists_pos_le_on_compact_of_forall_pos_n43FourierLaplaceWitness
     {E : Type*} [TopologicalSpace E] {K : Set E} (hK : IsCompact K)
     {g : E → ℝ} (hg : Continuous g)
     (hpos : ∀ x ∈ K, 0 < g x) :
@@ -516,12 +520,12 @@ theorem exists_orderedPositiveTimeRegion_margin_of_compact_tsupport_subset
     | inr b =>
         cases b with
         | inl i =>
-            refine exists_pos_le_on_compact_of_forall_pos hK_compact ?_ ?_
+            refine exists_pos_le_on_compact_of_forall_pos_n43FourierLaplaceWitness hK_compact ?_ ?_
             · exact (continuous_apply (0 : Fin (d + 1))).comp (continuous_apply i)
             · intro x hx
               exact (hf_ord hx i).1
         | inr p =>
-            refine exists_pos_le_on_compact_of_forall_pos hK_compact ?_ ?_
+            refine exists_pos_le_on_compact_of_forall_pos_n43FourierLaplaceWitness hK_compact ?_ ?_
             · apply Continuous.sub <;> fun_prop
             · intro x hx
               exact sub_pos.mpr ((hf_ord hx p.1.1).2 p.1.2 p.2)

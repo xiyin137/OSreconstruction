@@ -1,8 +1,12 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import Mathlib.Analysis.Calculus.ContDiff.RestrictScalars
-import Init
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVSourceDerivatives
+module
+
+public import Mathlib.Analysis.Calculus.ContDiff.RestrictScalars
+public import Init
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVSourceDerivatives
+
+@[expose] public section
 
 /-!
 # OS-II Chapter V Real-Edge/Cauchy Transfer

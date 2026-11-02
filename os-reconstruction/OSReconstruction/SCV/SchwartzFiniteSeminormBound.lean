@@ -1,17 +1,14 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Mathlib429Compat
-import OSReconstruction.SCV.SchwartzComplete
-import OSReconstruction.SCV.DistributionalUniqueness
-import Mathlib.Analysis.Distribution.SchwartzSpace.Basic
+module
 
+public import OSReconstruction.Mathlib429Compat
+public import OSReconstruction.SCV.SchwartzComplete
+public import OSReconstruction.SCV.DistributionalUniqueness
+public import Mathlib.Analysis.Distribution.SchwartzSpace.Basic
+public import OSReconstruction.SchwartzSeminormCompat
 
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -36,8 +33,7 @@ theorem finsetSup_schwartzSeminormFamily_real_eq_complex
       have ha_eq :
           (schwartzSeminormFamily Real E Complex a) phi =
             (schwartzSeminormFamily Complex E Complex a) phi := by
-        cases a
-        rfl
+        simp only [SchwartzMap.schwartzSeminormFamily_apply', SchwartzMap.seminorm_eq_real]
       simp [Finset.sup_insert, ih, ha_eq]
 
 end SCV

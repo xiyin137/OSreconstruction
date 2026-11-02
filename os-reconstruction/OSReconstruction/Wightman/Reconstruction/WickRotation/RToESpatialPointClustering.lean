@@ -1,25 +1,14 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.RToEPointClustering
-import OSReconstruction.Wightman.Reconstruction.WickRotation.RToERotatedSeparation
-import OSReconstruction.GeneralResults.SchwartzWeightedFlatness
-import OSReconstruction.Wightman.Reconstruction.WickRotation.RuelleClusterBound
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIOrderedProductMultiGapPacketUniformBounds
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.RToEPointClustering
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.RToERotatedSeparation
+public import OSReconstruction.GeneralResults.SchwartzWeightedFlatness
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.RuelleClusterBound
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIOrderedProductMultiGapPacketUniformBounds
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 open Set Filter MeasureTheory
@@ -28,11 +17,11 @@ namespace OSReconstruction
 variable {d n : ℕ} [NeZero d]
 set_option maxHeartbeats 800000
 
-private def orderedBox (d n : ℕ) (M δ : ℝ) : Set (NPointDomain d n) :=
+def orderedBox (d n : ℕ) (M δ : ℝ) : Set (NPointDomain d n) :=
   {z | ‖z‖ ≤ 2*M+1 ∧ ∀ i, 1 ≤ z i 0 ∧ ∀ j, i < j → δ ≤ z j 0 - z i 0}
 
 omit [NeZero d] in
-private theorem orderedBox_isCompact (M δ : ℝ) : IsCompact (orderedBox d n M δ) := by
+theorem orderedBox_isCompact (M δ : ℝ) : IsCompact (orderedBox d n M δ) := by
   have ht : IsClosed {z : NPointDomain d n |
       ∀ i, 1 ≤ z i 0 ∧ ∀ j, i < j → δ ≤ z j 0 - z i 0} := by
     simp only [Set.setOf_forall]
@@ -54,7 +43,7 @@ private theorem orderedBox_isCompact (M δ : ℝ) : IsCompact (orderedBox d n M 
   simpa only [Metric.mem_closedBall, dist_zero_right] using hz.1
 
 omit [NeZero d] in
-private theorem orderedBox_subset_ordered (M δ : ℝ) (hδ : 0 < δ) :
+theorem orderedBox_subset_ordered (M δ : ℝ) (hδ : 0 < δ) :
     orderedBox d n M δ ⊆ OrderedPositiveTimeRegion d n := by
   intro z hz i
   refine ⟨lt_of_lt_of_le zero_lt_one (hz.2 i).1, fun j hij => ?_⟩
@@ -62,7 +51,7 @@ private theorem orderedBox_subset_ordered (M δ : ℝ) (hδ : 0 < δ) :
   linarith
 
 omit [NeZero d] in
-private theorem exists_uniform_point_gap (x : NPointDomain d n)
+theorem exists_uniform_point_gap (x : NPointDomain d n)
     (hx : Function.Injective x) (c : ℝ) (hc : 0 < c) :
     ∃ δ : ℝ, 0 < δ ∧ ∀ i j : Fin n, i ≠ j → δ ≤ c * ‖x i - x j‖ := by
   classical
@@ -77,7 +66,7 @@ private theorem exists_uniform_point_gap (x : NPointDomain d n)
   exact h.trans (min_le_right _ _)
 
 omit [NeZero d] in
-private theorem exists_sorted_in_orderedBox (z : NPointDomain d n)
+theorem exists_sorted_in_orderedBox (z : NPointDomain d n)
     (M δ : ℝ) (hM : 0 ≤ M) (hδ : 0 < δ) (hz : ‖z‖ ≤ M)
     (hgap : ∀ i j : Fin n, i ≠ j → δ ≤ |z i 0 - z j 0|) :
     ∃ π : Equiv.Perm (Fin n),
@@ -120,7 +109,7 @@ private theorem exists_sorted_in_orderedBox (z : NPointDomain d n)
     linarith
 
 omit [NeZero d] in
-private theorem norm_timeReflectionN_le (z : NPointDomain d n) :
+theorem norm_timeReflectionN_le (z : NPointDomain d n) :
     ‖timeReflectionN d z‖ ≤ ‖z‖ := by
   apply (pi_norm_le_iff_of_nonneg (norm_nonneg _)).2
   intro i
@@ -133,7 +122,7 @@ private theorem norm_timeReflectionN_le (z : NPointDomain d n) :
   · simpa [timeReflectionN, timeReflection, hμ] using h
 
 omit [NeZero d] in
-private theorem exists_compact_rotated_ordered_family (x : NPointDomain d n)
+theorem exists_compact_rotated_ordered_family (x : NPointDomain d n)
     (hx : Function.Injective x) (c : ℝ) (hc : 0 < c) :
     ∃ K : Set (NPointDomain d n), IsCompact K ∧ K ⊆ OrderedPositiveTimeRegion d n ∧
       ∀ (R : Matrix (Fin (d+1)) (Fin (d+1)) ℝ), R.transpose * R = 1 →
@@ -161,7 +150,7 @@ private theorem exists_compact_rotated_ordered_family (x : NPointDomain d n)
   obtain ⟨σ, hσ⟩ := exists_sorted_in_orderedBox (timeReflectionN d z) M δ hM hδ hθn hθδ
   exact ⟨π, σ, hπ, hσ⟩
 
-private def kernel (Wfn : WightmanFunctions d) (x : NPointDomain d n) : ℂ :=
+def kernel_oESpatialPointClustering (Wfn : WightmanFunctions d) (x : NPointDomain d n) : ℂ :=
   F_ext_on_translatedPET_total Wfn (fun i => wickRotatePoint (x i))
 
 /-- Euclidean reflection reality at each time-injective configuration. -/
@@ -186,35 +175,35 @@ theorem rToE_point_kernel_timeReflection (Wfn : WightmanFunctions d)
     apply Fin.rev_injective
     apply hx
     simpa [r, timeReflection] using hij
-  let S : Set (NPointDomain d n) := {y | starRingEnd ℂ (kernel Wfn y) = kernel Wfn (r y)}
+  let S : Set (NPointDomain d n) := {y | starRingEnd ℂ (kernel_oESpatialPointClustering Wfn y) = kernel_oESpatialPointClustering Wfn (r y)}
   have hae : ∀ᵐ y : NPointDomain d n, y ∈ S := bhw_euclidean_reality_ae Wfn n
   have hs : x ∈ closure S := (Measure.dense_of_ae (μ := volume) hae) x
   haveI : NeBot (𝓝[S] x) := mem_closure_iff_nhdsWithin_neBot.mp hs
-  have hl : ContinuousAt (fun y => starRingEnd ℂ (kernel Wfn y)) x :=
+  have hl : ContinuousAt (fun y => starRingEnd ℂ (kernel_oESpatialPointClustering Wfn y)) x :=
     Complex.continuous_conj.continuousAt.comp
     (continuousAt_euclidean_kernel_of_mem_translatedPET Wfn
       (wick_mem_translatedPET_of_time_injective x hx))
   have hright := (continuousAt_euclidean_kernel_of_mem_translatedPET Wfn
     (wick_mem_translatedPET_of_time_injective (r x) hrx)).comp (f := r) (x := x) hr.continuousAt
-  have hl' : Tendsto (fun y => starRingEnd ℂ (kernel Wfn y)) (𝓝[S] x)
-      (𝓝 (starRingEnd ℂ (kernel Wfn x))) := hl.tendsto.mono_left nhdsWithin_le_nhds
-  have hr' : Tendsto (fun y => kernel Wfn (r y)) (𝓝[S] x) (𝓝 (kernel Wfn (r x))) :=
+  have hl' : Tendsto (fun y => starRingEnd ℂ (kernel_oESpatialPointClustering Wfn y)) (𝓝[S] x)
+      (𝓝 (starRingEnd ℂ (kernel_oESpatialPointClustering Wfn x))) := hl.tendsto.mono_left nhdsWithin_le_nhds
+  have hr' : Tendsto (fun y => kernel_oESpatialPointClustering Wfn (r y)) (𝓝[S] x) (𝓝 (kernel_oESpatialPointClustering Wfn (r x))) :=
     hright.tendsto.mono_left nhdsWithin_le_nhds
   have hmem : ∀ᶠ y in 𝓝[S] x, y ∈ S := self_mem_nhdsWithin
-  have heq : starRingEnd ℂ (kernel Wfn x) = kernel Wfn (r x) :=
+  have heq : starRingEnd ℂ (kernel_oESpatialPointClustering Wfn x) = kernel_oESpatialPointClustering Wfn (r x) :=
     tendsto_nhds_unique hl' (hr'.congr'
       (hmem.mono fun y hy => hy.symm))
   have hperm := F_ext_permutation_invariant_translated Wfn n Fin.revPerm (timeReflectionN d x)
     (wick_mem_translatedPET_of_time_injective _ href)
   exact heq.trans hperm.symm
 
-private theorem kernel_rigid_reindex (Wfn : WightmanFunctions d)
+theorem kernel_rigid_reindex (Wfn : WightmanFunctions d)
     (x : NPointDomain d n)
     (hx : (fun i => wickRotatePoint (x i)) ∈ TranslatedPET d n)
     (R : Matrix (Fin (d+1)) (Fin (d+1)) ℝ)
     (hR : R.transpose * R = 1) (hdet : R.det = 1)
     (π : Equiv.Perm (Fin n)) (b : SpacetimeDim d) :
-    kernel Wfn x = kernel Wfn (fun i => R.mulVec (x (π i)) + b) := by
+    kernel_oESpatialPointClustering Wfn x = kernel_oESpatialPointClustering Wfn (fun i => R.mulVec (x (π i)) + b) := by
   let u := R.transpose.mulVec b
   let z : NPointDomain d n := fun i => x (π i) + u
   have hπ : (fun i => wickRotatePoint (x (π i))) ∈ TranslatedPET d n :=
@@ -232,7 +221,7 @@ private theorem kernel_rigid_reindex (Wfn : WightmanFunctions d)
   have heq : (fun i => R.mulVec (z i)) = (fun i => R.mulVec (x (π i)) + b) := by
     funext i
     simp only [z, Matrix.mulVec_add, hRu]
-  exact (hperm.trans htrans).trans (hrot.trans (congrArg (kernel Wfn) heq))
+  exact (hperm.trans htrans).trans (hrot.trans (congrArg (kernel_oESpatialPointClustering Wfn) heq))
 
 /-- One spatial radius works in every direction, without positive-time ordering. -/
 theorem rToE_point_kernel_cluster_spatial_norm {m : ℕ} (Wfn : WightmanFunctions d)
@@ -300,7 +289,7 @@ theorem rToE_point_kernel_cluster_spatial_norm {m : ℕ} (Wfn : WightmanFunction
   simp only [hzero, add_zero] at hcl
   let joint : NPointDomain d (n+m) := Fin.append (timeReflectionN d α)
     ((β + fun _ => timeShiftVec d t) + fun _ => Fin.cons 0 b)
-  change ‖kernel Wfn joint - starRingEnd ℂ (kernel Wfn α) * kernel Wfn β‖ < ε at hcl
+  change ‖kernel_oESpatialPointClustering Wfn joint - starRingEnd ℂ (kernel_oESpatialPointClustering Wfn α) * kernel_oESpatialPointClustering Wfn β‖ < ε at hcl
   have hαt : Function.Injective (fun i => α i 0) :=
     (show StrictMono (fun i => α i 0) from fun i j hij => (hαo i).2 j hij).injective
   have hαθ : timeReflectionN d α =
@@ -309,13 +298,13 @@ theorem rToE_point_kernel_cluster_spatial_norm {m : ℕ} (Wfn : WightmanFunction
     refine Fin.cases ?_ (fun j => ?_) μ
     · simp [timeReflectionN, timeReflection, α, timeShiftVec, add_comm]
     · simp [timeReflectionN, timeReflection, α, timeShiftVec]
-  have hαvalue : starRingEnd ℂ (kernel Wfn α) = kernel Wfn x := by
-    have hrefl : starRingEnd ℂ (kernel Wfn α) = kernel Wfn (timeReflectionN d α) :=
+  have hαvalue : starRingEnd ℂ (kernel_oESpatialPointClustering Wfn α) = kernel_oESpatialPointClustering Wfn x := by
+    have hrefl : starRingEnd ℂ (kernel_oESpatialPointClustering Wfn α) = kernel_oESpatialPointClustering Wfn (timeReflectionN d α) :=
       rToE_point_kernel_timeReflection Wfn α hαt
     rw [hrefl, hαθ]
     exact (kernel_rigid_reindex Wfn x (wick_mem_translatedPET_of_time_injective x hxt)
       R hR hRdet σ (timeShiftVec d (-Tx))).symm
-  have hβvalue : kernel Wfn β = kernel Wfn y :=
+  have hβvalue : kernel_oESpatialPointClustering Wfn β = kernel_oESpatialPointClustering Wfn y :=
     (kernel_rigid_reindex Wfn y (wick_mem_translatedPET_of_time_injective y hyt)
       R hR hRdet τ (timeShiftVec d Ty)).symm
   let ρ : Equiv.Perm (Fin (n+m)) :=
@@ -345,13 +334,13 @@ theorem rToE_point_kernel_cluster_spatial_norm {m : ℕ} (Wfn : WightmanFunction
       · simp [β, timeShiftVec, Matrix.mulVec_add, t]
         ring
       · simp [β, timeShiftVec, Matrix.mulVec_add, b]
-  have hJ : kernel Wfn joint = kernel Wfn orig := by
+  have hJ : kernel_oESpatialPointClustering Wfn joint = kernel_oESpatialPointClustering Wfn orig := by
     rw [hjoint]
     exact horig.symm
   rw [hJ, hαvalue, hβvalue] at hcl
   exact hcl
 
-/-- The actual point kernel clusters along the spatial cocompact filter. -/
+/-- The actual point kernel_oESpatialPointClustering clusters along the spatial cocompact filter. -/
 theorem rToE_point_kernel_tendsto_spatial {m : ℕ} (Wfn : WightmanFunctions d)
     (x : NPointDomain d n) (y : NPointDomain d m)
     (hxy : Function.Injective (fun i => Fin.append x y i 0)) :
@@ -394,7 +383,7 @@ theorem rToE_point_kernel_tendsto_spatial_ae (m : ℕ) (Wfn : WightmanFunctions 
   exact hz i j hne hij
 
 omit [NeZero d] in
-private theorem reflected_orderedBox_gap (M δ : ℝ) (hδ2 : δ ≤ 2)
+theorem reflected_orderedBox_gap (M δ : ℝ) (hδ2 : δ ≤ 2)
     (x : NPointDomain d n) (hx : x ∈ orderedBox d n M δ) :
     ∀ i j : Fin (n+n), i ≠ j →
       δ ≤ |Fin.append (timeReflectionN d x) x i 0 -
@@ -429,7 +418,7 @@ private theorem reflected_orderedBox_gap (M δ : ℝ) (hδ2 : δ ≤ 2)
       simpa only [Fin.append_right] using hgap p q hne
 
 omit [NeZero d] in
-private theorem reflected_orderedBox_infDist_lower (M δ : ℝ) (hδ2 : δ ≤ 2)
+theorem reflected_orderedBox_infDist_lower (M δ : ℝ) (hδ2 : δ ≤ 2)
     (x : NPointDomain d n) (hx : x ∈ orderedBox d n M δ)
     (hcoin : (CoincidenceLocus d (n+n)).Nonempty) :
     δ ≤ 2 * Metric.infDist (Fin.append (timeReflectionN d x) x)
@@ -441,7 +430,7 @@ private theorem reflected_orderedBox_infDist_lower (M δ : ℝ) (hδ2 : δ ≤ 2
   exact ((reflected_orderedBox_gap M δ hδ2 x hx i j hij).trans hcoord).trans hbound
 
 omit [NeZero d] in
-private theorem reflected_orderedBox_norm_bound (M δ : ℝ) (hM : 0 ≤ M)
+theorem reflected_orderedBox_norm_bound (M δ : ℝ) (hM : 0 ≤ M)
     (x : NPointDomain d n) (hx : x ∈ orderedBox d n M δ) :
     ‖Fin.append (timeReflectionN d x) x‖ ≤ 2*M+1 := by
   have hθ := (norm_timeReflectionN_le x).trans hx.1
@@ -451,12 +440,12 @@ private theorem reflected_orderedBox_norm_bound (M δ : ℝ) (hM : 0 ≤ M)
   · simpa only [Fin.append_left] using (norm_le_pi_norm (timeReflectionN d x) j).trans hθ
   · simpa only [Fin.append_right] using (norm_le_pi_norm x j).trans hx.1
 
-private theorem reflected_self_kernel_bound_on_orderedBox (Wfn : WightmanFunctions d)
+theorem reflected_self_kernel_bound_on_orderedBox (Wfn : WightmanFunctions d)
     (hcoin : (CoincidenceLocus d (n+n)).Nonempty) :
     ∃ (C : ℝ) (N q : ℕ), 0 < C ∧
       ∀ M δ : ℝ, 0 ≤ M → 0 < δ → δ ≤ 1 →
       ∀ x ∈ orderedBox d n M δ,
-        ‖kernel Wfn (Fin.append (timeReflectionN d x) x)‖ * δ^(q+1) ≤ C*(1+M)^N := by
+        ‖kernel_oESpatialPointClustering Wfn (Fin.append (timeReflectionN d x) x)‖ * δ^(q+1) ≤ C*(1+M)^N := by
   obtain ⟨C, N, q, hC, hgrowth⟩ :=
     wick_rotated_kernel_polynomial_growth_on_translatedPET (n := n+n) Wfn
   refine ⟨2^(q+1)*C*2^N, N, q, by positivity, fun M δ hM hδ hδ1 x hx => ?_⟩
@@ -468,10 +457,10 @@ private theorem reflected_self_kernel_bound_on_orderedBox (Wfn : WightmanFunctio
   have hδD : δ ≤ 2*D := reflected_orderedBox_infDist_lower M δ (by linarith) x hx hcoin
   have hnorm := reflected_orderedBox_norm_bound M δ hM x hx
   calc
-    ‖kernel Wfn (Fin.append (timeReflectionN d x) x)‖ * δ^(q+1)
-        ≤ ‖kernel Wfn (Fin.append (timeReflectionN d x) x)‖ * (2*D)^(q+1) :=
+    ‖kernel_oESpatialPointClustering Wfn (Fin.append (timeReflectionN d x) x)‖ * δ^(q+1)
+        ≤ ‖kernel_oESpatialPointClustering Wfn (Fin.append (timeReflectionN d x) x)‖ * (2*D)^(q+1) :=
       mul_le_mul_of_nonneg_left (pow_le_pow_left₀ hδ.le hδD _) (norm_nonneg _)
-    _ = 2^(q+1) * (‖kernel Wfn (Fin.append (timeReflectionN d x) x)‖ * D^(q+1)) := by
+    _ = 2^(q+1) * (‖kernel_oESpatialPointClustering Wfn (Fin.append (timeReflectionN d x) x)‖ * D^(q+1)) := by
       rw [mul_pow]
       ring
     _ ≤ 2^(q+1) * (C*(1+‖Fin.append (timeReflectionN d x) x‖)^N) :=
@@ -485,7 +474,7 @@ private theorem reflected_self_kernel_bound_on_orderedBox (Wfn : WightmanFunctio
       ring
 
 omit [NeZero d] in
-private theorem clear_min_regulator (K C D u ρ c : ℝ) (N p : ℕ)
+theorem clear_min_regulator (K C D u ρ c : ℝ) (N p : ℕ)
     (hK : 0 ≤ K) (hC : 0 ≤ C) (hD : 0 ≤ D) (hu : 0 ≤ u)
     (hρ : 0 ≤ ρ) (hρu : ρ ≤ u) (hc : 0 < c)
     (hbound : K * (min 1 (c*ρ))^p ≤ C*(1+D*u)^N) :
@@ -519,12 +508,12 @@ private theorem clear_min_regulator (K C D u ρ c : ℝ) (N p : ℕ)
       exact pow_le_pow_left₀ (by positivity) (by nlinarith) N
     _ = C*(D+1)^N*(1+u)^(N+p) := by rw [mul_pow, pow_add]; ring
 
-private theorem reflected_self_kernel_weighted_bound (Wfn : WightmanFunctions d)
+theorem reflected_self_kernel_weighted_bound (Wfn : WightmanFunctions d)
     (hcoin : (CoincidenceLocus d n).Nonempty) (c : ℝ) (hc : 0 < c) :
     ∃ (C : ℝ) (N q : ℕ), 0 < C ∧ ∀ (x α : NPointDomain d n),
       α ∈ orderedBox d n ((d+1 : ℝ)*‖x‖)
         (min 1 (c*Metric.infDist x (CoincidenceLocus d n))) →
-      ‖kernel Wfn (Fin.append (timeReflectionN d α) α)‖ *
+      ‖kernel_oESpatialPointClustering Wfn (Fin.append (timeReflectionN d α) α)‖ *
         Metric.infDist x (CoincidenceLocus d n)^(q+1) ≤ C*(1+‖x‖)^N := by
   obtain ⟨z,i,j,hij,_⟩ := hcoin
   have hzero : (0 : NPointDomain d n) ∈ CoincidenceLocus d n := ⟨i,j,hij,rfl⟩
@@ -539,46 +528,46 @@ private theorem reflected_self_kernel_weighted_bound (Wfn : WightmanFunctions d)
   have hρx : ρ ≤ ‖x‖ := by
     simpa only [dist_zero_right] using Metric.infDist_le_dist_of_mem hzero
   by_cases hρ0 : ρ = 0
-  · change ‖kernel Wfn (Fin.append (timeReflectionN d α) α)‖ * ρ^(q+1) ≤ _
+  · change ‖kernel_oESpatialPointClustering Wfn (Fin.append (timeReflectionN d α) α)‖ * ρ^(q+1) ≤ _
     rw [hρ0, zero_pow (by omega), mul_zero]
     positivity
   have hρpos : 0 < ρ := lt_of_le_of_ne hρ (Ne.symm hρ0)
   have hδ : 0 < min 1 (c*ρ) := lt_min zero_lt_one (mul_pos hc hρpos)
   have hb := hbound ((d+1 : ℝ)*‖x‖) (min 1 (c*ρ)) (by positivity) hδ (min_le_left _ _) α hα
   have h := clear_min_regulator
-    ‖kernel Wfn (Fin.append (timeReflectionN d α) α)‖ C (d+1 : ℝ) ‖x‖ ρ c N (q+1)
+    ‖kernel_oESpatialPointClustering Wfn (Fin.append (timeReflectionN d α) α)‖ C (d+1 : ℝ) ‖x‖ ρ c N (q+1)
     (norm_nonneg _) hC.le (by positivity) (norm_nonneg _) hρ hρx hc hb
-  change ‖kernel Wfn (Fin.append (timeReflectionN d α) α)‖ * ρ^(q+1) ≤ _
+  change ‖kernel_oESpatialPointClustering Wfn (Fin.append (timeReflectionN d α) α)‖ * ρ^(q+1) ≤ _
   convert h using 1
   dsimp [Cout]
   ring
 
-private theorem reflected_self_kernel_test_majorant (Wfn : WightmanFunctions d)
+theorem reflected_self_kernel_test_majorant (Wfn : WightmanFunctions d)
     (f : ZeroDiagonalSchwartz d n) (hcoin : (CoincidenceLocus d n).Nonempty)
     (c : ℝ) (hc : 0 < c) :
     ∃ B : NPointDomain d n → ℝ, Integrable B ∧ (∀ x, 0 ≤ B x) ∧
       ∀ (x α : NPointDomain d n),
         α ∈ orderedBox d n ((d+1 : ℝ)*‖x‖)
           (min 1 (c*Metric.infDist x (CoincidenceLocus d n))) →
-        ‖kernel Wfn (Fin.append (timeReflectionN d α) α)‖ * ‖f.1 x‖ ≤ B x := by
+        ‖kernel_oESpatialPointClustering Wfn (Fin.append (timeReflectionN d α) α)‖ * ‖f.1 x‖ ≤ B x := by
   obtain ⟨C,N,q,hC,hbound⟩ := reflected_self_kernel_weighted_bound Wfn hcoin c hc
   obtain ⟨B,hBi,hBn,hB⟩ :=
     SchwartzFlatness.schwartz_polynomial_kernel_integrable_majorant_uniform_pi f.1 q N
   refine ⟨fun x => C*B x, hBi.const_mul C, fun x => mul_nonneg hC.le (hBn x), ?_⟩
   intro x α hα
   exact hB (CoincidenceLocus d n) isClosed_CoincidenceLocus hcoin f.2 x
-    ‖kernel Wfn (Fin.append (timeReflectionN d α) α)‖ C (norm_nonneg _) (hbound x α hα)
+    ‖kernel_oESpatialPointClustering Wfn (Fin.append (timeReflectionN d α) α)‖ C (norm_nonneg _) (hbound x α hα)
 
-private def pointRegulator (d n : ℕ) (c : ℝ) (x : NPointDomain d n) : ℝ := by
+def pointRegulator (d n : ℕ) (c : ℝ) (x : NPointDomain d n) : ℝ := by
   classical
   exact if (CoincidenceLocus d n).Nonempty then min 1 (c*Metric.infDist x (CoincidenceLocus d n)) else 1
 
-private theorem reflected_self_kernel_test_majorant_all_arities (Wfn : WightmanFunctions d)
+theorem reflected_self_kernel_test_majorant_all_arities (Wfn : WightmanFunctions d)
     (f : ZeroDiagonalSchwartz d n) (c : ℝ) (hc : 0 < c) :
     ∃ B : NPointDomain d n → ℝ, Integrable B ∧ (∀ x, 0 ≤ B x) ∧
       ∀ (x α : NPointDomain d n),
         α ∈ orderedBox d n ((d+1 : ℝ)*‖x‖) (pointRegulator d n c x) →
-        ‖kernel Wfn (Fin.append (timeReflectionN d α) α)‖ * ‖f.1 x‖ ≤ B x := by
+        ‖kernel_oESpatialPointClustering Wfn (Fin.append (timeReflectionN d α) α)‖ * ‖f.1 x‖ ≤ B x := by
   classical
   by_cases hcoin : (CoincidenceLocus d n).Nonempty
   · obtain ⟨B,hBi,hBn,hB⟩ := reflected_self_kernel_test_majorant Wfn f hcoin c hc
@@ -588,7 +577,7 @@ private theorem reflected_self_kernel_test_majorant_all_arities (Wfn : WightmanF
     apply hcoin
     exact ⟨0, ⟨0,by omega⟩, ⟨1,by omega⟩, by simp [Fin.ext_iff], rfl⟩
   interval_cases n
-  · refine ⟨fun x => ‖kernel Wfn (0 : NPointDomain d 0)‖*‖f.1 x‖,
+  · refine ⟨fun x => ‖kernel_oESpatialPointClustering Wfn (0 : NPointDomain d 0)‖*‖f.1 x‖,
       f.1.integrable.norm.const_mul _, fun x => mul_nonneg (norm_nonneg _) (norm_nonneg _),
       fun x α hα => ?_⟩
     have heq : Fin.append (timeReflectionN d α) α = (0 : NPointDomain d 0) := by
@@ -609,7 +598,7 @@ private theorem reflected_self_kernel_test_majorant_all_arities (Wfn : WightmanF
     have hp : (1+(d+1 : ℝ)*‖x‖)^N ≤ ((d+2 : ℝ)*(1+‖x‖))^N :=
       pow_le_pow_left₀ (by positivity) (by nlinarith [norm_nonneg x]) N
     calc
-      ‖kernel Wfn (Fin.append (timeReflectionN d α) α)‖ * ‖f.1 x‖
+      ‖kernel_oESpatialPointClustering Wfn (Fin.append (timeReflectionN d α) α)‖ * ‖f.1 x‖
           ≤ (C*(1+(d+1 : ℝ)*‖x‖)^N)*‖f.1 x‖ :=
         mul_le_mul_of_nonneg_right hb (norm_nonneg _)
       _ ≤ (C*((d+2 : ℝ)*(1+‖x‖))^N)*‖f.1 x‖ :=
@@ -617,7 +606,7 @@ private theorem reflected_self_kernel_test_majorant_all_arities (Wfn : WightmanF
       _ = A*((1+‖x‖)^N*‖f.1 x‖) := by dsimp [A]; rw [mul_pow]; ring
 
 omit [NeZero d] in
-private theorem pointRegulator_pos (c : ℝ) (hc : 0 < c)
+theorem pointRegulator_pos (c : ℝ) (hc : 0 < c)
     (x : NPointDomain d n) (hx : Function.Injective x) :
     0 < pointRegulator d n c x := by
   classical
@@ -631,7 +620,7 @@ private theorem pointRegulator_pos (c : ℝ) (hc : 0 < c)
   · exact zero_lt_one
 
 omit [NeZero d] in
-private theorem pointRegulator_le_pair (c : ℝ) (hc : 0 ≤ c)
+theorem pointRegulator_le_pair (c : ℝ) (hc : 0 ≤ c)
     (x : NPointDomain d n) (i j : Fin n) (hij : i ≠ j) :
     pointRegulator d n c x ≤ c*‖x i - x j‖ := by
   classical
@@ -641,7 +630,7 @@ private theorem pointRegulator_le_pair (c : ℝ) (hc : 0 ≤ c)
     (infDist_CoincidenceLocus_le_pairDifference x i j hij) hc)
 
 omit [NeZero d] in
-private theorem integrable_split_product {m : ℕ}
+theorem integrable_split_product {m : ℕ}
     (F : NPointDomain d n → ℝ) (G : NPointDomain d m → ℝ)
     (hF : Integrable F) (hG : Integrable G) :
     Integrable (fun z : NPointDomain d (n+m) =>
@@ -665,7 +654,7 @@ private theorem integrable_split_product {m : ℕ}
     simp only [Function.comp_apply, he])
 
 omit [NeZero d] in
-private theorem exists_regulated_rotated_ordered_normalization
+theorem exists_regulated_rotated_ordered_normalization
     (x : NPointDomain d n) (hx : Function.Injective x) (c : ℝ) (hc : 0 < c)
     (R : Matrix (Fin (d+1)) (Fin (d+1)) ℝ) (hR : R.transpose * R = 1)
     (hproj : ∀ i j : Fin n, i ≠ j → c*‖x i - x j‖ ≤ |R.mulVec (x i - x j) 0|) :
@@ -774,9 +763,9 @@ theorem rToE_spatial_bulk_kernel_test_majorant {m : ℕ} (Wfn : WightmanFunction
   simp only [hzero,add_zero] at hcl
   let joint : NPointDomain d (n+m) := Fin.append (timeReflectionN d α)
     ((β + fun _ => timeShiftVec d t) + fun _ => Fin.cons 0 b)
-  change ‖kernel Wfn joint‖^2 ≤
-    ‖kernel Wfn (Fin.append (timeReflectionN d α) α)‖ *
-      ‖kernel Wfn (Fin.append (timeReflectionN d β) β)‖ at hcl
+  change ‖kernel_oESpatialPointClustering Wfn joint‖^2 ≤
+    ‖kernel_oESpatialPointClustering Wfn (Fin.append (timeReflectionN d α) α)‖ *
+      ‖kernel_oESpatialPointClustering Wfn (Fin.append (timeReflectionN d β) β)‖ at hcl
   let ρ : Equiv.Perm (Fin (n+m)) :=
     (finSumFinEquiv.symm.trans (Equiv.sumCongr σ τ)).trans finSumFinEquiv
   have hρl (i : Fin n) : ρ (Fin.castAdd m i) = Fin.castAdd m (σ i) := by simp [ρ]
@@ -804,19 +793,19 @@ theorem rToE_spatial_bulk_kernel_test_majorant {m : ℕ} (Wfn : WightmanFunction
       · simp [β,timeShiftVec,Matrix.mulVec_add,t]
         ring
       · simp [β,timeShiftVec,Matrix.mulVec_add,b]
-  have hJ : kernel Wfn joint = kernel Wfn orig := by rw [hjoint]; exact horig.symm
+  have hJ : kernel_oESpatialPointClustering Wfn joint = kernel_oESpatialPointClustering Wfn orig := by rw [hjoint]; exact horig.symm
   rw [hJ] at hcl
-  let Aα := ‖kernel Wfn (Fin.append (timeReflectionN d α) α)‖
-  let Aβ := ‖kernel Wfn (Fin.append (timeReflectionN d β) β)‖
+  let Aα := ‖kernel_oESpatialPointClustering Wfn (Fin.append (timeReflectionN d α) α)‖
+  let Aβ := ‖kernel_oESpatialPointClustering Wfn (Fin.append (timeReflectionN d β) β)‖
   have hAn : 0 ≤ Aα := norm_nonneg _
   have hBn : 0 ≤ Aβ := norm_nonneg _
-  have hsum : ‖kernel Wfn orig‖ ≤ Aα+Aβ := by
-    change ‖kernel Wfn orig‖^2 ≤ Aα*Aβ at hcl
-    nlinarith [norm_nonneg (kernel Wfn orig),sq_nonneg Aα,sq_nonneg Aβ]
+  have hsum : ‖kernel_oESpatialPointClustering Wfn orig‖ ≤ Aα+Aβ := by
+    change ‖kernel_oESpatialPointClustering Wfn orig‖^2 ≤ Aα*Aβ at hcl
+    nlinarith [norm_nonneg (kernel_oESpatialPointClustering Wfn orig),sq_nonneg Aα,sq_nonneg Aβ]
   have hfx : Aα*‖f.1 x‖ ≤ F x := hF x α hα
   have hgy : Aβ*‖g.1 y‖ ≤ G y := hG y β hβ
   calc
-    ‖kernel Wfn orig‖*‖f.1 x‖*‖g.1 y‖ ≤ (Aα+Aβ)*‖f.1 x‖*‖g.1 y‖ :=
+    ‖kernel_oESpatialPointClustering Wfn orig‖*‖f.1 x‖*‖g.1 y‖ ≤ (Aα+Aβ)*‖f.1 x‖*‖g.1 y‖ :=
       mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_right hsum (norm_nonneg _)) (norm_nonneg _)
     _ = (Aα*‖f.1 x‖)*‖g.1 y‖ + ‖f.1 x‖*(Aβ*‖g.1 y‖) := by ring
     _ ≤ F x*‖g.1 y‖ + ‖f.1 x‖*G y := add_le_add

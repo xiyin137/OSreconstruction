@@ -5,16 +5,12 @@ Copyright (c) 2026 ModularPhysics Contributors.
 Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
-import Init
-import OSReconstruction.SCV.LocalDistributionalEOW
+module
 
+public import Init
+public import OSReconstruction.SCV.LocalDistributionalEOW
 
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 

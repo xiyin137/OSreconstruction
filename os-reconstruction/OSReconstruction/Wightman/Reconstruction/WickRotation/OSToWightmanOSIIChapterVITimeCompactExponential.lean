@@ -1,9 +1,13 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.GeneralResults.SchwartzCutoffExp
-import OSReconstruction.SCV.TranslationDifferentiation
-import OSReconstruction.Wightman.Reconstruction.TranslationInvariantSchwartz
-import Mathlib.Analysis.SpecialFunctions.Pow.Asymptotics
+module
+
+public import OSReconstruction.GeneralResults.SchwartzCutoffExp
+public import OSReconstruction.SCV.TranslationDifferentiation
+public import OSReconstruction.Wightman.Reconstruction.TranslationInvariantSchwartz
+public import Mathlib.Analysis.SpecialFunctions.Pow.Asymptotics
+
+@[expose] public section
 
 set_option backward.isDefEq.respectTransparency false
 
@@ -49,10 +53,10 @@ def compactExponentialTest
   ext p
   simp
 
-private def compactExponentialTimeCutoff : ContDiffBump (0 : Real) :=
+def compactExponentialTimeCutoff : ContDiffBump (0 : Real) :=
   ⟨1, 2, zero_lt_one, one_lt_two⟩
 
-private theorem exists_compactExponentialKernel
+theorem exists_compactExponentialKernel
     (L : (Fin k -> Real) →L[Real] Complex)
     (psi : SchwartzMap (Fin k -> Real) Complex)
     (hpsi : HasCompactSupport (psi : (Fin k -> Real) -> Complex))
@@ -224,14 +228,14 @@ theorem hasDerivAt_compactExponential_pairing
   congr 1
   abel
 
-private def compactExponentialSeminormConstant
+def compactExponentialSeminormConstant
     (L : (Fin k -> Real) →L[Real] Complex)
     (psi : SchwartzMap (Fin k -> Real) Complex) (a n : Nat) : Real :=
   ∑ j ∈ Finset.range (n + 1),
     (n.choose j : Real) * (j.factorial : Real) * ‖L‖ ^ j *
       SchwartzMap.seminorm Complex a (n - j) psi
 
-private theorem compactExponentialSeminormConstant_nonneg
+theorem compactExponentialSeminormConstant_nonneg
     (L : (Fin k -> Real) →L[Real] Complex)
     (psi : SchwartzMap (Fin k -> Real) Complex) (a n : Nat) :
     0 <= compactExponentialSeminormConstant L psi a n := by

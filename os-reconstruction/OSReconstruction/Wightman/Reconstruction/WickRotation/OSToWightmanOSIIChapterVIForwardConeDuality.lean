@@ -1,22 +1,11 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVILorentzSupport
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVISchwartzSupport
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVILorentzSupport
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVISchwartzSupport
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -48,7 +37,7 @@ theorem osiiReducedForwardFlatCone_subset_productForwardCone :
 
 /-- The common unit future-time direction in canonical particle-block
 frequency coordinates. -/
-private def osiiCanonicalFrequencyFutureTimeVector (d k : Nat) :
+def osiiCanonicalFrequencyFutureTimeVector (d k : Nat) :
     Fin (k * (d + 1)) -> Real :=
   fun i => if (finProdFinEquiv.symm i).2 = 0 then 1 else 0
 
@@ -97,7 +86,7 @@ theorem osiiCanonicalFrequency_add_futureTime_mem_openCone
 strictly future-time translate has topological support disjoint from that
 cone.  Openness is essential because the original test can meet the cone in
 its topological support while still vanishing there pointwise. -/
-private theorem osiiCanonicalFrequency_futureTranslate_tsupport_subset_cone_compl
+theorem osiiCanonicalFrequency_futureTranslate_tsupport_subset_cone_compl
     (phi : SchwartzMap (Fin (k * (d + 1)) -> Real) Complex)
     (hphi : ∀ p ∈ Function.support
       (phi : (Fin (k * (d + 1)) -> Real) -> Complex),

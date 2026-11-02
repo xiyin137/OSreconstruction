@@ -1,9 +1,13 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Mathlib429Compat
-import OSReconstruction.Wightman.Reconstruction.BlockIntegral
-import OSReconstruction.Wightman.Reconstruction.SliceIntegral
-import OSReconstruction.Wightman.Reconstruction.TranslationInvariantSchwartz
+module
+
+public import OSReconstruction.Mathlib429Compat
+public import OSReconstruction.Wightman.Reconstruction.BlockIntegral
+public import OSReconstruction.Wightman.Reconstruction.SliceIntegral
+public import OSReconstruction.Wightman.Reconstruction.TranslationInvariantSchwartz
+
+@[expose] public section
 
 open scoped SchwartzMap
 

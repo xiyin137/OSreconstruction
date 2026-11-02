@@ -1,5 +1,9 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceTransformCarrier
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBoundaryValueLimits
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceTransformCarrier
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBoundaryValueLimits
+
+@[expose] public section
 
 /-!
 # Section 4.3 Fourier-Laplace Closure

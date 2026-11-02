@@ -3,8 +3,12 @@ Copyright (c) 2025 ModularPhysics Contributors. All rights reserved.
 Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
-import OSReconstruction.Wightman.Reconstruction.Core
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSIIOriginalSeminorm
+module
+
+public import OSReconstruction.Wightman.Reconstruction.Core
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSIIOriginalSeminorm
+
+@[expose] public section
 
 /-!
 # Osterwalder-Schrader reconstruction specification

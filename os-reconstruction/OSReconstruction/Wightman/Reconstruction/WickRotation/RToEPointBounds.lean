@@ -1,5 +1,9 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.RToEPointKernels
-import OSReconstruction.Wightman.Reconstruction.WickRotation.RToETimeShiftBounds
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.RToEPointKernels
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.RToETimeShiftBounds
+
+@[expose] public section
 
 /-!
 # Translated Euclidean Point Bounds
@@ -41,14 +45,14 @@ theorem wick_rotated_kernel_polynomial_growth_on_translatedPET
   exact le_of_tendsto_of_tendsto (hl.tendsto.mono_left nhdsWithin_le_nhds)
     (hr.tendsto.mono_left nhdsWithin_le_nhds) self_mem_nhdsWithin
 
-private theorem integral_translateSchwartzNPoint
+theorem integral_translateSchwartzNPoint
     {d n : ℕ} [NeZero d] (a : SpacetimeDim d) (f : SchwartzNPoint d n) :
     (∫ z, translateSchwartzNPoint a f z) = ∫ z, f z := by
   change (∫ z : NPointDomain d n, f (z - fun _ => a)) = _
   simpa only [sub_eq_add_neg] using
     (integral_add_right_eq_self (fun z : NPointDomain d n => f z) (-(fun _ => a)))
 
-private theorem support_translateSchwartzNPoint_subset_ball
+theorem support_translateSchwartzNPoint_subset_ball
     {d n : ℕ} [NeZero d] (a : SpacetimeDim d) (f : SchwartzNPoint d n)
     (x : NPointDomain d n) (δ : ℝ)
     (hf : Function.support (f : NPointDomain d n → ℂ) ⊆ Metric.ball x δ) :
@@ -64,7 +68,7 @@ private theorem support_translateSchwartzNPoint_subset_ball
   congr 1
   abel
 
-private theorem ordered_points_add_nonnegative_time
+theorem ordered_points_add_nonnegative_time
     {d n : ℕ} (x : NPointDomain d n) (hx : x ∈ OrderedPositiveTimeRegion d n)
     (a : SpacetimeDim d) (ha : 0 ≤ a 0) :
     (x + fun _ => a) ∈ OrderedPositiveTimeRegion d n := by

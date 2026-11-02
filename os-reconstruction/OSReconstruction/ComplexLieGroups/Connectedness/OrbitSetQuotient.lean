@@ -1,8 +1,12 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.ComplexLieGroups.Connectedness.OrbitSetBasic
-import Mathlib.Topology.Algebra.Group.OpenMapping
-import Mathlib.Topology.Homeomorph.Lemmas
+module
+
+public import OSReconstruction.ComplexLieGroups.Connectedness.OrbitSetBasic
+public import Mathlib.Topology.Algebra.Group.OpenMapping
+public import Mathlib.Topology.Homeomorph.Lemmas
+
+@[expose] public section
 
 noncomputable section
 
@@ -17,21 +21,21 @@ abbrev orbitSubtype {n : ℕ} (w : Fin n → Fin (d + 1) → ℂ) :=
   MulAction.orbit (ComplexLorentzGroup d) w
 
 /-- Orbit map with codomain the orbit subtype. -/
-private abbrev orbitSubtypeMap {n : ℕ} (w : Fin n → Fin (d + 1) → ℂ) :
+abbrev orbitSubtypeMap {n : ℕ} (w : Fin n → Fin (d + 1) → ℂ) :
     ComplexLorentzGroup d → orbitSubtype (d := d) w :=
   fun g => g • (⟨w, by exact MulAction.mem_orbit_self w⟩ : orbitSubtype (d := d) w)
 
 /-- Forward-tube slice inside the orbit subtype. -/
-private abbrev orbitTubeSubtype {n : ℕ} (w : Fin n → Fin (d + 1) → ℂ) :
+abbrev orbitTubeSubtype {n : ℕ} (w : Fin n → Fin (d + 1) → ℂ) :
     Set (orbitSubtype (d := d) w) :=
   {y | y.1 ∈ ForwardTube d n}
 
 /-- Restrict `orbitSubtypeMap` to `orbitSet`, landing in the forward-tube orbit slice. -/
-private abbrev orbitSetToTubeSubtype {n : ℕ} (w : Fin n → Fin (d + 1) → ℂ) :
+abbrev orbitSetToTubeSubtype {n : ℕ} (w : Fin n → Fin (d + 1) → ℂ) :
     orbitSet w → orbitTubeSubtype (d := d) (n := n) w :=
   fun Λ => ⟨orbitSubtypeMap (d := d) w Λ, Λ.property⟩
 
-private instance orbitSubtypeContinuousSMul {n : ℕ} (w : Fin n → Fin (d + 1) → ℂ) :
+instance orbitSubtypeContinuousSMul {n : ℕ} (w : Fin n → Fin (d + 1) → ℂ) :
     ContinuousSMul (ComplexLorentzGroup d) (orbitSubtype (d := d) w) where
   continuous_smul := by
     refine Continuous.subtype_mk
@@ -51,7 +55,7 @@ private instance orbitSubtypeContinuousSMul {n : ℕ} (w : Fin n → Fin (d + 1)
         rw [← hg]
         simp [smul_smul])
 
-private instance orbitSubtypeIsPretransitive {n : ℕ} (w : Fin n → Fin (d + 1) → ℂ) :
+instance orbitSubtypeIsPretransitive {n : ℕ} (w : Fin n → Fin (d + 1) → ℂ) :
     MulAction.IsPretransitive (ComplexLorentzGroup d) (orbitSubtype (d := d) w) where
   exists_smul_eq := by
     intro x y
@@ -64,7 +68,7 @@ private instance orbitSubtypeIsPretransitive {n : ℕ} (w : Fin n → Fin (d + 1
       _ = gy • w := by simp [smul_smul]
       _ = y.1 := by simpa using hgy
 
-private theorem orbitSubtypeMap_isQuotient {n : ℕ}
+theorem orbitSubtypeMap_isQuotient {n : ℕ}
     (w : Fin n → Fin (d + 1) → ℂ)
     [BaireSpace (orbitSubtype (d := d) w)] :
     Topology.IsQuotientMap (orbitSubtypeMap (d := d) w) := by
@@ -90,12 +94,12 @@ private theorem orbitSubtypeMap_isQuotient {n : ℕ}
     exact ⟨g, rfl⟩
   exact hopen.isQuotientMap hcont hsurj
 
-private theorem orbitTubeSubtype_isOpen {n : ℕ}
+theorem orbitTubeSubtype_isOpen {n : ℕ}
     (w : Fin n → Fin (d + 1) → ℂ) :
     IsOpen (orbitTubeSubtype (d := d) (n := n) w) :=
   isOpen_forwardTube.preimage continuous_subtype_val
 
-private theorem orbitSetToTubeSubtype_isQuotient {n : ℕ}
+theorem orbitSetToTubeSubtype_isQuotient {n : ℕ}
     (w : Fin n → Fin (d + 1) → ℂ)
     [BaireSpace (orbitSubtype (d := d) w)] :
     Topology.IsQuotientMap (orbitSetToTubeSubtype (d := d) (n := n) w) := by
@@ -107,7 +111,7 @@ private theorem orbitSetToTubeSubtype_isQuotient {n : ℕ}
   change Topology.IsQuotientMap (orbitSetToTubeSubtype (d := d) (n := n) w) at hqr
   exact hqr
 
-private theorem orbitImage_eq_ft_inter_orbitRange {n : ℕ}
+theorem orbitImage_eq_ft_inter_orbitRange {n : ℕ}
     (w : Fin n → Fin (d + 1) → ℂ) :
     orbitMap w '' orbitSet w =
       ForwardTube d n ∩

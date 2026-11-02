@@ -1,21 +1,12 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.SCV.DistributionalRepresentationGluing
-import OSReconstruction.Wightman.Reconstruction.WickRotation.BHWReducedExtension
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVCanonicalReducedSchwinger
+module
 
+public import OSReconstruction.SCV.DistributionalRepresentationGluing
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.BHWReducedExtension
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVCanonicalReducedSchwinger
 
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 

@@ -1,22 +1,11 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.SCV.Analyticity
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVReflectedTaylor
+module
 
+public import OSReconstruction.SCV.Analyticity
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVReflectedTaylor
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -87,7 +76,7 @@ theorem summable_norm_gradedTsum
 set_option maxHeartbeats 800000 in
 /-- A finite product of scalar geometric series is summable over all
 multi-indices. -/
-private theorem summable_geometric_multiIndex :
+theorem summable_geometric_multiIndex :
     ∀ (n : ℕ) (q : Fin n → ℝ),
       (∀ i, 0 ≤ q i) → (∀ i, q i < 1) →
       Summable (fun α : Fin n → ℕ => ∏ i : Fin n, q i ^ α i) := by

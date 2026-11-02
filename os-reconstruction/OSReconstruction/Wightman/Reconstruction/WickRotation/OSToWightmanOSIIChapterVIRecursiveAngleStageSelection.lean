@@ -1,5 +1,9 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVAngleExhaustion
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIRegularizationRadius
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVAngleExhaustion
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIRegularizationRadius
+
+@[expose] public section
 
 /-!
 # OS II Chapter VI: Quantitative recursive-angle stage selection
@@ -19,7 +23,7 @@ open scoped BigOperators Classical
 
 namespace OSReconstruction
 
-private theorem finUnivNonempty (k : ℕ) [NeZero k] :
+theorem finUnivNonempty (k : ℕ) [NeZero k] :
     (Finset.univ : Finset (Fin k)).Nonempty := by
   have hk : 0 < k := Nat.pos_of_ne_zero (NeZero.ne k)
   let i : Fin k := ⟨0, hk⟩
@@ -55,7 +59,7 @@ theorem osiiTimeAngularDefect_pos
     0 < osiiTimeAngularDefect k ζ := by
   exact sub_pos.2 (osiiTimeMaxAbsArg_lt_pi_div_two hζ)
 
-private theorem norm_apply_le_pi_norm
+theorem norm_apply_le_pi_norm
     {k : ℕ} (ζ : Fin k → ℂ) (i : Fin k) :
     ‖ζ i‖ ≤ ‖ζ‖ := by
   rw [Pi.norm_def]
@@ -217,7 +221,7 @@ theorem recursiveAngleQuantitativeCoefficient_le_envelope
   gcongr
   linarith
 
-private theorem one_lt_sqrt_two :
+theorem one_lt_sqrt_two :
     (1 : ℝ) < Real.sqrt 2 := by
   have hsqrt_nonneg : 0 ≤ Real.sqrt 2 := Real.sqrt_nonneg 2
   have hsqrt_sq : (Real.sqrt 2) ^ 2 = (2 : ℝ) := by norm_num

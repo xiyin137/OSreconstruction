@@ -5,23 +5,14 @@ Copyright (c) 2026 ModularPhysics Contributors. All rights reserved.
 Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
-import Mathlib
-import Init
-import OSReconstruction.SCV.Osgood
-import OSReconstruction.SCV.TotallyRealIdentity
+module
 
+public import Mathlib
+public import Init
+public import OSReconstruction.SCV.Osgood
+public import OSReconstruction.SCV.TotallyRealIdentity
 
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 

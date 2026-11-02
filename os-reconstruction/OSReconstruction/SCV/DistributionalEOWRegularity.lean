@@ -5,19 +5,12 @@ Copyright (c) 2026 ModularPhysics Contributors.
 Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
-import OSReconstruction.SCV.DistributionalEOWDbar
-import Mathlib.Analysis.Calculus.FDeriv.Symmetric
+module
 
+public import OSReconstruction.SCV.DistributionalEOWDbar
+public import Mathlib.Analysis.Calculus.FDeriv.Symmetric
 
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -568,13 +561,13 @@ theorem supportsInOpen_transport_from_euclidean {m : ℕ}
 
 /-- Measurable real-coordinate flattening in the same coordinate order as
 `realBlockFlattenCLE`. -/
-private def realBlockFlattenMeasurableEquiv (n d : ℕ) :
+def realBlockFlattenMeasurableEquiv (n d : ℕ) :
     (Fin n → Fin d → ℝ) ≃ᵐ (Fin (n * d) → ℝ) :=
   (MeasurableEquiv.curry (Fin n) (Fin d) ℝ).symm.trans
     (MeasurableEquiv.piCongrLeft (fun _ => ℝ) finProdFinEquiv)
 
 @[simp]
-private theorem realBlockFlattenMeasurableEquiv_apply (n d : ℕ)
+theorem realBlockFlattenMeasurableEquiv_apply (n d : ℕ)
     (f : Fin n → Fin d → ℝ) (k : Fin (n * d)) :
     realBlockFlattenMeasurableEquiv n d f k =
       f (finProdFinEquiv.symm k).1 (finProdFinEquiv.symm k).2 := by
@@ -582,7 +575,7 @@ private theorem realBlockFlattenMeasurableEquiv_apply (n d : ℕ)
     MeasurableEquiv.coe_curry_symm, MeasurableEquiv.piCongrLeft,
     Equiv.piCongrLeft, Function.uncurry]
 
-private theorem volume_map_curry_symm_realBlock (n d : ℕ) :
+theorem volume_map_curry_symm_realBlock (n d : ℕ) :
     (volume : Measure (Fin n → Fin d → ℝ)).map
       (MeasurableEquiv.curry (Fin n) (Fin d) ℝ).symm =
     (volume : Measure (Fin n × Fin d → ℝ)) := by
@@ -604,7 +597,7 @@ private theorem volume_map_curry_symm_realBlock (n d : ℕ) :
   simp_rw [volume_pi_pi]
   rw [← Finset.prod_product', ← Finset.univ_product_univ]
 
-private theorem realBlockFlattenMeasurableEquiv_measurePreserving (n d : ℕ) :
+theorem realBlockFlattenMeasurableEquiv_measurePreserving (n d : ℕ) :
     MeasurePreserving (realBlockFlattenMeasurableEquiv n d) := by
   have h_uncurry :
       MeasurePreserving
@@ -616,36 +609,36 @@ private theorem realBlockFlattenMeasurableEquiv_measurePreserving (n d : ℕ) :
       (fun _ => ℝ) finProdFinEquiv).comp h_uncurry
 
 /-- Measurable coordinatewise real/imaginary chart. -/
-private def complexChartRealBlockMeasurableEquiv (m : ℕ) :
+def complexChartRealBlockMeasurableEquiv (m : ℕ) :
     ComplexChartSpace m ≃ᵐ (Fin m → Fin 2 → ℝ) :=
   MeasurableEquiv.arrowCongr' (Equiv.refl (Fin m))
     Complex.measurableEquivPi
 
-private theorem complexChartRealBlockMeasurableEquiv_measurePreserving
+theorem complexChartRealBlockMeasurableEquiv_measurePreserving
     (m : ℕ) :
     MeasurePreserving (complexChartRealBlockMeasurableEquiv m) := by
   exact MeasureTheory.volume_preserving_arrowCongr'
     (Equiv.refl (Fin m)) Complex.measurableEquivPi
     Complex.volume_preserving_equiv_pi
 
-private def complexChartRealFlattenMeasurableEquiv (m : ℕ) :
+def complexChartRealFlattenMeasurableEquiv (m : ℕ) :
     ComplexChartSpace m ≃ᵐ (Fin (m * 2) → ℝ) :=
   (complexChartRealBlockMeasurableEquiv m).trans
     (realBlockFlattenMeasurableEquiv m 2)
 
-private theorem complexChartRealFlattenMeasurableEquiv_measurePreserving
+theorem complexChartRealFlattenMeasurableEquiv_measurePreserving
     (m : ℕ) :
     MeasurePreserving (complexChartRealFlattenMeasurableEquiv m) :=
   (complexChartRealBlockMeasurableEquiv_measurePreserving m).trans
     (realBlockFlattenMeasurableEquiv_measurePreserving m 2)
 
 /-- The measurable equivalence matching `complexChartEuclideanCLE`. -/
-private def complexChartEuclideanMeasurableEquiv (m : ℕ) :
+def complexChartEuclideanMeasurableEquiv (m : ℕ) :
     ComplexChartSpace m ≃ᵐ EuclideanSpace ℝ (Fin (m * 2)) :=
   (complexChartRealFlattenMeasurableEquiv m).trans
     (MeasurableEquiv.toLp 2 (Fin (m * 2) → ℝ))
 
-private theorem complexChartEuclideanMeasurableEquiv_apply (m : ℕ)
+theorem complexChartEuclideanMeasurableEquiv_apply (m : ℕ)
     (z : ComplexChartSpace m) :
     complexChartEuclideanMeasurableEquiv m z =
       complexChartEuclideanCLE m z := by

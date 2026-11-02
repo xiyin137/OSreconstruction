@@ -1,6 +1,10 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVCanonicalMovingSliceCutoff
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIBlockRadialPhysicalAngularEquation66OSBuiltGlobalPhysicalAtlas
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIFlatPairing
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVCanonicalMovingSliceCutoff
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIBlockRadialPhysicalAngularEquation66OSBuiltGlobalPhysicalAtlas
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIFlatPairing
+
+@[expose] public section
 
 /-!
 # Global equation-(6.6) density as a moving-slice representative

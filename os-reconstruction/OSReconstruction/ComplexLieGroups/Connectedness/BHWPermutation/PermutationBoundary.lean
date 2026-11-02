@@ -1,12 +1,16 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import Init
-import OSReconstruction.ComplexLieGroups.JostPoints
-import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.Adjacency
-import OSReconstruction.ComplexLieGroups.Connectedness.ComplexInvariance.Extend
-import OSReconstruction.SCV.DistributionalUniqueness
-import OSReconstruction.Wightman.Reconstruction.ForwardTubeDistributions
-import OSReconstruction.ComplexLieGroups.Connectedness.Permutation
+module
+
+public import Init
+public import OSReconstruction.ComplexLieGroups.JostPoints
+public import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.Adjacency
+public import OSReconstruction.ComplexLieGroups.Connectedness.ComplexInvariance.Extend
+public import OSReconstruction.SCV.DistributionalUniqueness
+public import OSReconstruction.Wightman.Reconstruction.ForwardTubeDistributions
+public import OSReconstruction.ComplexLieGroups.Connectedness.Permutation
+
+@[expose] public section
 
 /-!
 # Permutation locality on real spacelike boundary tests
@@ -74,7 +78,7 @@ abbrev permuteSchwartz {n : ℕ} (σ : Equiv.Perm (Fin n))
   ext x
   simp [permuteSchwartz]
 
-private theorem permute_support_jost {n : ℕ} (σ : Equiv.Perm (Fin n))
+theorem permute_support_jost {n : ℕ} (σ : Equiv.Perm (Fin n))
     (f : SchwartzNPoint d n)
     (hf : ∀ x : NPointDomain d n, f x ≠ 0 → x ∈ JostSet d n) :
     ∀ x : NPointDomain d n, permuteSchwartz (d := d) σ f x ≠ 0 → x ∈ JostSet d n := by
@@ -82,7 +86,7 @@ private theorem permute_support_jost {n : ℕ} (σ : Equiv.Perm (Fin n))
   have hy : (fun i => x (σ i)) ∈ JostSet d n := hf _ hx
   simpa using jostSet_permutation_invariant (d := d) (n := n) σ.symm hy
 
-private theorem areSpacelikeSeparated_of_jost_pair (x y : Fin (d + 1) → ℝ)
+theorem areSpacelikeSeparated_of_jost_pair (x y : Fin (d + 1) → ℝ)
     (h : IsSpacelike d (fun μ => x μ - y μ)) :
     MinkowskiSpace.AreSpacelikeSeparated d x y := by
   unfold MinkowskiSpace.AreSpacelikeSeparated MinkowskiSpace.IsSpacelike

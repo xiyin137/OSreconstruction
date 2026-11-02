@@ -1,7 +1,11 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVINativeClustering
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVINativeLocality
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVINativeSpectralCondition
-import OSReconstruction.Wightman.Reconstruction.WickRotation.WickRotationPairUniqueness
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVINativeClustering
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVINativeLocality
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVINativeSpectralCondition
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.WickRotationPairUniqueness
+
+@[expose] public section
 
 /-!
 # Native E-to-R reconstruction

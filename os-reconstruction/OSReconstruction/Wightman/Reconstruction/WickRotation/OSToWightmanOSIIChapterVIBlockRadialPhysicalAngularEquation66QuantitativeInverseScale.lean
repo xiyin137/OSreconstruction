@@ -1,4 +1,8 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIBlockRadialPhysicalAngularEquation66QuantitativeLocalWeyl
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIBlockRadialPhysicalAngularEquation66QuantitativeLocalWeyl
+
+@[expose] public section
 
 /-!
 # Polynomial inverse-scale control for equation (6.6)

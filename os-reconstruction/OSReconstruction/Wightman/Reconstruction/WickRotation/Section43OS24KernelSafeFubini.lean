@@ -1,6 +1,10 @@
-import Mathlib.Topology.UrysohnsLemma
-import OSReconstruction.SCV.PaleyWienerCompact
-import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43OS24KernelFubini
+module
+
+public import Mathlib.Topology.UrysohnsLemma
+public import OSReconstruction.SCV.PaleyWienerCompact
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43OS24KernelFubini
+
+@[expose] public section
 
 noncomputable section
 
@@ -9,7 +13,7 @@ open Set MeasureTheory
 
 namespace OSReconstruction
 
-private theorem isOpen_TubeDomainSetPi_forwardConeAbs
+theorem isOpen_TubeDomainSetPi_forwardConeAbs
     (d N : ℕ) [NeZero d] :
     IsOpen (TubeDomainSetPi (ForwardConeAbs d N)) := by
   change IsOpen

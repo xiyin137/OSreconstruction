@@ -1,26 +1,14 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVInitialAnchoredPacketRootedGeneratorBridge
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVGeneratorTimeGeometry
-import OSReconstruction.SCV.EuclideanWeylPairing
-import OSReconstruction.SCV.HeadFiberFubini
-import OSReconstruction.SCV.SchwartzExternalProduct
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVInitialAnchoredPacketRootedGeneratorBridge
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVGeneratorTimeGeometry
+public import OSReconstruction.SCV.EuclideanWeylPairing
+public import OSReconstruction.SCV.HeadFiberFubini
+public import OSReconstruction.SCV.SchwartzExternalProduct
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -132,7 +120,7 @@ theorem generatorBlockGlobalTimeAffine_headFiber
   · rw [if_neg hj]
     exact generatorBridgeVariation_eq_of_ne_bridge i τ t j hj
 
-private theorem rooted_cast_fin_function_apply'
+theorem rooted_cast_fin_function_apply'
     {n m : ℕ}
     (h : n = m)
     (x : Fin n → ℝ)
@@ -216,7 +204,7 @@ theorem splitLast_generatorBlockTimeDisplacement_chronological_add_head
   · intro c
     simp [splitLast, Pi.add_apply]
 
-private theorem rooted_cast_schwartz_apply
+theorem rooted_cast_schwartz_apply
     {n m : ℕ}
     (h : n = m)
     (φ : SchwartzMap (Fin n → ℝ) ℂ)
@@ -440,7 +428,7 @@ theorem rootedTranslatedGlobalTimeCutoff_apply_physicalPoint
       _ = _
   rw [hroot, hleft]
 
-private theorem section43TimeTupleTransport_cast_symm
+theorem section43TimeTupleTransport_cast_symm
     {n m : ℕ}
     (h : n = m)
     (y : Fin m → ℝ) :
@@ -605,14 +593,14 @@ theorem generatorBridgeVariation_self
     exact generatorBridgeVariation_bridge i τ _
   · exact generatorBridgeVariation_eq_of_ne_bridge i τ _ j hj
 
-private abbrev RootedJointTimeCoordinates (i : GeneratorIndex k) :=
+abbrev RootedJointTimeCoordinates (i : GeneratorIndex k) :=
   ℝ ×
     ((Fin (i.n - 1) → ℝ) ×
       (ℝ × (Fin (i.m - 1) → ℝ)))
 
 /-- Joint coordinates for the middle root, the two internal gap blocks, and
 the residual two-root bridge convolution. -/
-private def rootedJointTimeCoordLinearEquiv
+def rootedJointTimeCoordLinearEquiv
     (i : GeneratorIndex k) :
     (Fin (k + 1) → ℝ) ≃ₗ[ℝ] RootedJointTimeCoordinates i where
   toFun := fun x =>
@@ -691,7 +679,7 @@ private def rootedJointTimeCoordLinearEquiv
         · funext b
           rfl
 
-private noncomputable def rootedJointTimeCoordCLE
+noncomputable def rootedJointTimeCoordCLE
     (i : GeneratorIndex k) :
     (Fin (k + 1) → ℝ) ≃L[ℝ] RootedJointTimeCoordinates i :=
   (rootedJointTimeCoordLinearEquiv i).toContinuousLinearEquiv

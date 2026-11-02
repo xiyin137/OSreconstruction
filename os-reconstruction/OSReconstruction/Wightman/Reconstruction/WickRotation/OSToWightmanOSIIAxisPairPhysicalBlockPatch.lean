@@ -1,27 +1,17 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIAxisPairPhysicalChart
-import Init
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBase
-import OSReconstruction.SCV.ConnectedNeighborhood
-import OSReconstruction.SCV.TotallyRealIdentity
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIProductTensorSourceCurrent
-import OSReconstruction.SCV.DistributionalEOWKernel
-import OSReconstruction.SCV.DistributionalEOWKernelRecovery
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIAxisPairPhysicalChart
+public import Init
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBase
+public import OSReconstruction.SCV.ConnectedNeighborhood
+public import OSReconstruction.SCV.TotallyRealIdentity
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIProductTensorSourceCurrent
+public import OSReconstruction.SCV.DistributionalEOWKernel
+public import OSReconstruction.SCV.DistributionalEOWKernelRecovery
 
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 

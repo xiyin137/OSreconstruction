@@ -5,45 +5,21 @@ Copyright (c) 2025 ModularPhysics Contributors.
 Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
-import Mathlib.Geometry.Manifold.Algebra.LieGroup
-import Mathlib.Geometry.Manifold.Instances.UnitsOfNormedAlgebra
-import Mathlib.Analysis.Complex.Basic
-import Mathlib.Analysis.Matrix.Normed
-import Mathlib.Analysis.Normed.Algebra.MatrixExponential
-import Mathlib.Topology.Algebra.Group.Basic
-import Mathlib.Topology.Order.IntermediateValue
-import Mathlib.Analysis.InnerProductSpace.Basic
-import Mathlib.Analysis.SpecialFunctions.Trigonometric.Basic
-import Mathlib.Analysis.SpecialFunctions.Arcosh
-import Mathlib.Analysis.SpecialFunctions.Trigonometric.Arctan
+module
 
+public import Mathlib.Geometry.Manifold.Algebra.LieGroup
+public import Mathlib.Geometry.Manifold.Instances.UnitsOfNormedAlgebra
+public import Mathlib.Analysis.Complex.Basic
+public import Mathlib.Analysis.Matrix.Normed
+public import Mathlib.Analysis.Normed.Algebra.MatrixExponential
+public import Mathlib.Topology.Algebra.Group.Basic
+public import Mathlib.Topology.Order.IntermediateValue
+public import Mathlib.Analysis.InnerProductSpace.Basic
+public import Mathlib.Analysis.SpecialFunctions.Trigonometric.Basic
+public import Mathlib.Analysis.SpecialFunctions.Arcosh
+public import Mathlib.Analysis.SpecialFunctions.Trigonometric.Arctan
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -419,7 +395,7 @@ theorem row0_sum_sq {Λ : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ}
 
 
 
-private theorem ab_sqrt_ge_one (a b : ℝ) (ha : a ≥ 1) (hb : b ≥ 1) :
+theorem ab_sqrt_ge_one (a b : ℝ) (ha : a ≥ 1) (hb : b ≥ 1) :
     a * b - Real.sqrt ((a ^ 2 - 1) * (b ^ 2 - 1)) ≥ 1 := by
   have h1 : a * b - 1 ≥ 0 := by nlinarith
   rw [ge_iff_le, ← sub_nonneg,
@@ -507,7 +483,7 @@ instance : IsTopologicalGroup (RestrictedLorentzGroup d) where
     fun_prop
 
 /-- Joined 1 a → Joined 1 b → Joined 1 (a * b) in any topological group. -/
-private theorem joined_one_mul_general {G : Type*} [TopologicalSpace G] [Group G]
+theorem joined_one_mul_general {G : Type*} [TopologicalSpace G] [Group G]
     [IsTopologicalGroup G] {a b : G} (ha : Joined 1 a) (hb : Joined 1 b) :
     Joined 1 (a * b) := by
   obtain ⟨γa⟩ := ha
@@ -775,7 +751,7 @@ def spatialRot (i j : Fin d) (θ : ℝ) : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ
     spatialRot d i j θ a b = if a = b then 1 else 0 := by
   simp [spatialRot, Matrix.of_apply, ha_i, ha_j]
 
-private theorem nested_ite_sum {n : ℕ} {i j : Fin n} (hij : i ≠ j)
+theorem nested_ite_sum {n : ℕ} {i j : Fin n} (hij : i ≠ j)
     (f g : Fin n → ℝ) :
     ∑ x, (if x = i then f x else if x = j then g x else 0) = f i + g j := by
   have : ∀ x, (if x = i then f x else if x = j then g x else (0:ℝ)) =
@@ -836,12 +812,12 @@ theorem spatialRot_succ_apply (i j : Fin d) (hij : i ≠ j) (θ : ℝ)
         show x.succ ≠ i.succ from Fin.succ_injective _ |>.ne hxi,
         show x.succ ≠ j.succ from Fin.succ_injective _ |>.ne hxj]
 
-private theorem ite_mul_ite' {p q : Prop} [Decidable p] [Decidable q]
+theorem ite_mul_ite' {p q : Prop} [Decidable p] [Decidable q]
     (a b c d' e f : ℝ) :
     (if p then a else if q then b else c) * (if p then d' else if q then e else f) =
     if p then a * d' else if q then b * e else c * f := by split_ifs <;> ring
 
-private theorem nested_ite_sum_gen {n : ℕ} {i j : Fin n} (hij : i ≠ j)
+theorem nested_ite_sum_gen {n : ℕ} {i j : Fin n} (hij : i ≠ j)
     (A B : ℝ) (f : Fin n → ℝ) :
     ∑ x : Fin n, (if x = i then A else if x = j then B else f x) =
     A - f i + (B - f j) + ∑ x : Fin n, f x := by
@@ -854,7 +830,7 @@ private theorem nested_ite_sum_gen {n : ℕ} {i j : Fin n} (hij : i ≠ j)
       · simp only [h1, h2, ↓reduceIte]; ring
   simp_rw [this, Finset.sum_add_distrib, Finset.sum_ite_eq', Finset.mem_univ, ite_true]
 
-private theorem succ_indicator_sum (a b : Fin (d + 1)) :
+theorem succ_indicator_sum (a b : Fin (d + 1)) :
     ∑ x : Fin d, (if x.succ = a then (1:ℝ) else 0) * (if x.succ = b then 1 else 0) =
     if a = b then (if a = 0 then 0 else 1) else 0 := by
   by_cases hab : a = b
@@ -977,14 +953,14 @@ theorem rotation_zero_entry (a b : ℝ) : ∃ θ : ℝ, -Real.sin θ * a + Real.
     linarith
 
 /-- Joined 1 a implies Joined 1 a⁻¹ in any topological group. -/
-private theorem joined_one_inv' {a : RestrictedLorentzGroup d}
+theorem joined_one_inv' {a : RestrictedLorentzGroup d}
     (h : Joined 1 a) : Joined 1 a⁻¹ := by
   obtain ⟨γ⟩ := h
   exact ⟨⟨⟨fun t => (γ t)⁻¹, γ.continuous.inv⟩, by simp [γ.source], by simp [γ.target]⟩⟩
 
 /-- Boost column zeroing: there exists B (product of boosts, Joined 1) such that
     (B * Λ).val.val k.succ 0 = 0 for all k : Fin d. -/
-private theorem boost_column_zeroing (Λ : RestrictedLorentzGroup d) :
+theorem boost_column_zeroing (Λ : RestrictedLorentzGroup d) :
     ∃ B : RestrictedLorentzGroup d, Joined 1 B ∧
     ∀ k : Fin d, (B * Λ).val.val k.succ 0 = 0 := by
   suffices h : ∀ n : ℕ, n ≤ d → ∃ B : RestrictedLorentzGroup d, Joined 1 B ∧
@@ -1014,7 +990,7 @@ private theorem boost_column_zeroing (Λ : RestrictedLorentzGroup d) :
       exact hzero k (by omega)
 
 /-- If Λ is Lorentz with Λ_{k+1, 0} = 0 for all k and Λ₀₀ ≥ 1, then Λ₀₀ = 1. -/
-private theorem col0_zero_entry00_one {Λ : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ}
+theorem col0_zero_entry00_one {Λ : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ}
     (hL : IsLorentzMatrix d Λ) (ho : Λ 0 0 ≥ 1)
     (hcol : ∀ k : Fin d, Λ k.succ 0 = 0) : Λ 0 0 = 1 := by
   have h := col0_sum_sq d hL
@@ -1024,7 +1000,7 @@ private theorem col0_zero_entry00_one {Λ : Matrix (Fin (d + 1)) (Fin (d + 1)) �
   nlinarith [sq_nonneg (Λ 0 0 - 1)]
 
 /-- If Λ is Lorentz with column 0 = e₀, then row 0 = e₀ᵀ. -/
-private theorem col0_e0_implies_row0 {Λ : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ}
+theorem col0_e0_implies_row0 {Λ : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ}
     (hL : IsLorentzMatrix d Λ) (h00 : Λ 0 0 = 1)
     (hcol : ∀ k : Fin d, Λ k.succ 0 = 0) :
     ∀ k : Fin d, Λ 0 k.succ = 0 := by
@@ -1041,7 +1017,7 @@ private theorem col0_e0_implies_row0 {Λ : Matrix (Fin (d + 1)) (Fin (d + 1)) �
 
 /-- The spatial rotation in plane (i, j) applied to a matrix with column 0 = e₀
     preserves column 0 = e₀. -/
-private theorem spatialRot_preserves_col0 (i j : Fin d) (hij : i ≠ j) (θ : ℝ)
+theorem spatialRot_preserves_col0 (i j : Fin d) (hij : i ≠ j) (θ : ℝ)
     {Λ : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ}
     (h00 : Λ 0 0 = 1) (hcol : ∀ k : Fin d, Λ k.succ 0 = 0) :
     (∀ k : Fin d, (spatialRot d i j θ * Λ) k.succ 0 = 0) ∧
@@ -1070,7 +1046,7 @@ private theorem spatialRot_preserves_col0 (i j : Fin d) (hij : i ≠ j) (θ : �
     spatialRot(i, m, θ) * Λ has zero (m+1, j+1) entry, using `rotation_zero_entry`.
 
     This is the spatial analogue of `boost_zero_entry`. -/
-private theorem spatial_zero_entry (i m : Fin d) (him : i ≠ m) (j : Fin d)
+theorem spatial_zero_entry (i m : Fin d) (him : i ≠ m) (j : Fin d)
     {Λ : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ}
     (h00 : Λ 0 0 = 1) (hcol : ∀ k : Fin d, Λ k.succ 0 = 0)
     (hrow : ∀ k : Fin d, Λ 0 k.succ = 0) :
@@ -1089,7 +1065,7 @@ private theorem spatial_zero_entry (i m : Fin d) (him : i ≠ m) (j : Fin d)
 
 /-- If Λ is Lorentz with col 0 = e₀ and row 0 = e₀ᵀ, and the spatial block is the
     identity (Λ (i+1) (j+1) = δ_{ij} for all i j), then Λ = 1. -/
-private theorem spatial_identity_implies_one
+theorem spatial_identity_implies_one
     {Λ : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ}
     (h00 : Λ 0 0 = 1) (hcol : ∀ k : Fin d, Λ k.succ 0 = 0)
     (hrow : ∀ k : Fin d, Λ 0 k.succ = 0)
@@ -1109,7 +1085,7 @@ private theorem spatial_identity_implies_one
 /-- Lorentz orthogonality for spatial columns: if Λ is Lorentz with col 0 = e₀ and
     row 0 = e₀ᵀ, then the spatial columns are orthonormal:
     ∑_k Λ_{k+1, i+1} * Λ_{k+1, j+1} = δ_{ij}. -/
-private theorem lorentz_spatial_col_orthonormal
+theorem lorentz_spatial_col_orthonormal
     {Λ : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ}
     (hL : IsLorentzMatrix d Λ) (_h00 : Λ 0 0 = 1)
     (_hcol : ∀ k : Fin d, Λ k.succ 0 = 0)
@@ -1130,7 +1106,7 @@ private theorem lorentz_spatial_col_orthonormal
 
 /-- Subdiagonal entry zeroing: for a single column j, zero out entries below the
     diagonal, preserving col 0 = e₀, row 0 = e₀ᵀ, and any previously zeroed columns. -/
-private theorem spatial_subdiag_zeroing (j : Fin d)
+theorem spatial_subdiag_zeroing (j : Fin d)
     {Λ : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ}
     (hL : IsLorentzMatrix d Λ) (h00 : Λ 0 0 = 1)
     (hcol : ∀ k : Fin d, Λ k.succ 0 = 0)
@@ -1232,7 +1208,7 @@ private theorem spatial_subdiag_zeroing (j : Fin d)
     Key invariant: the rotation for column j acts in rows > j, so it preserves
     zeros created in columns < j (since those zeros are at positions (i, k) with
     i > k and i ≤ j, and the rotation only affects rows > j). -/
-private theorem spatial_givens_reduction
+theorem spatial_givens_reduction
     {Λ : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ}
     (hL : IsLorentzMatrix d Λ) (h00 : Λ 0 0 = 1)
     (hcol : ∀ k : Fin d, Λ k.succ 0 = 0)
@@ -1299,7 +1275,7 @@ private theorem spatial_givens_reduction
 
 /-- From upper-triangular + column orthonormality, the above-diagonal entries in
     the spatial block are also zero (by strong induction), and diagonal entries are ±1. -/
-private theorem upper_triangular_orthogonal_to_diagonal
+theorem upper_triangular_orthogonal_to_diagonal
     {Λ : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ}
     (hL : IsLorentzMatrix d Λ) (h00 : Λ 0 0 = 1)
     (hcol : ∀ k : Fin d, Λ k.succ 0 = 0)
@@ -1413,7 +1389,7 @@ private theorem upper_triangular_orthogonal_to_diagonal
 
 /-- A π-rotation in the (i,j)-plane applied to a diagonal spatial matrix
     flips the signs of the i-th and j-th diagonal entries. -/
-private theorem pi_rotation_diag_flip (i j : Fin d) (hij : i ≠ j)
+theorem pi_rotation_diag_flip (i j : Fin d) (hij : i ≠ j)
     {Λ : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ}
     (h00 : Λ 0 0 = 1)
     (hcol : ∀ k : Fin d, Λ k.succ 0 = 0)
@@ -1480,7 +1456,7 @@ private theorem pi_rotation_diag_flip (i j : Fin d) (hij : i ≠ j)
 
 /-- Given a diagonal ±1 Lorentz matrix where all spatial diagonal entries are 1,
     the matrix is the identity. -/
-private theorem diagonal_all_one_is_identity
+theorem diagonal_all_one_is_identity
     {Λ : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ}
     (h00 : Λ 0 0 = 1)
     (hcol : ∀ k : Fin d, Λ k.succ 0 = 0)
@@ -1494,7 +1470,7 @@ private theorem diagonal_all_one_is_identity
 
 /-- Given a diagonal ±1 Lorentz matrix with det = 1, products of π-rotations turn all
     spatial diagonal entries to 1. Uses well-founded induction on negative-index count. -/
-private theorem diagonal_sign_fixing
+theorem diagonal_sign_fixing
     {Λ : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ}
     (hL : IsLorentzMatrix d Λ) (h00 : Λ 0 0 = 1)
     (hcol : ∀ k : Fin d, Λ k.succ 0 = 0)
@@ -1663,7 +1639,7 @@ private theorem diagonal_sign_fixing
 
 /-- Full spatial reduction: there exists R (product of spatial rotations, Joined to 1)
     such that R * Λ = 1. -/
-private theorem spatial_full_reduction (Λ : RestrictedLorentzGroup d)
+theorem spatial_full_reduction (Λ : RestrictedLorentzGroup d)
     (hcol : ∀ k : Fin d, Λ.val.val k.succ 0 = 0) :
     ∃ R : RestrictedLorentzGroup d, Joined 1 R ∧ R * Λ = 1 := by
   -- Step 1: Extract key properties
@@ -1689,7 +1665,7 @@ private theorem spatial_full_reduction (Λ : RestrictedLorentzGroup d)
 
 /-- Spatial column zeroing: Given Λ ∈ SO⁺(1,d) with col 0 = e₀, there exists S
     (product of spatial rotations, Joined 1) such that S * Λ = 1. -/
-private theorem spatial_reduction (Λ : RestrictedLorentzGroup d)
+theorem spatial_reduction (Λ : RestrictedLorentzGroup d)
     (hcol : ∀ k : Fin d, Λ.val.val k.succ 0 = 0) :
     Joined 1 Λ := by
   obtain ⟨R, hJR, heq⟩ := spatial_full_reduction d Λ hcol
@@ -1698,7 +1674,7 @@ private theorem spatial_reduction (Λ : RestrictedLorentzGroup d)
   exact joined_one_inv' d hJR
 
 /-- Every element of SO⁺(1,d) is Joined to 1. -/
-private theorem joined_one (Λ : RestrictedLorentzGroup d) : Joined 1 Λ := by
+theorem joined_one (Λ : RestrictedLorentzGroup d) : Joined 1 Λ := by
   obtain ⟨B, hJB, hcol⟩ := boost_column_zeroing d Λ
   have h1 : Joined 1 (B * Λ) := spatial_reduction d (B * Λ) hcol
   have h2 : Λ = B⁻¹ * (B * Λ) := by group

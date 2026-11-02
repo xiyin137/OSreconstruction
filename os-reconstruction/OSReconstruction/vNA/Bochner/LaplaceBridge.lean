@@ -1,6 +1,10 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import Mathlib
+module
+
+public import Mathlib
+
+@[expose] public section
 
 open MeasureTheory Set
 open scoped Topology

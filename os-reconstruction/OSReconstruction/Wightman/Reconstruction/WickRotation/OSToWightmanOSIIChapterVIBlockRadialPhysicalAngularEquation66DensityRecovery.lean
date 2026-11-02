@@ -1,25 +1,12 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.SCV.LocallyUniformDistributionRepresentation
-import OSReconstruction.SCV.EuclideanWeylApproxIdentity
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIBlockRadialPhysicalAngularEquation66MeanValue
+module
 
+public import OSReconstruction.SCV.LocallyUniformDistributionRepresentation
+public import OSReconstruction.SCV.EuclideanWeylApproxIdentity
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIBlockRadialPhysicalAngularEquation66MeanValue
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 

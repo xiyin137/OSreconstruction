@@ -1,27 +1,19 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import Mathlib.Analysis.LocallyConvex.Barrelled
-import Init
-import OSReconstruction.SCV.SchwartzComplete
-import OSReconstruction.SCV.EuclideanWeylOpen
-import OSReconstruction.SCV.LocallyUniformLimit
-import OSReconstruction.SCV.SchwartzPartialEval
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIDeltaSmearing
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIITimeParametricContinuation
-import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceSpatialDensity
+module
 
+public import Mathlib.Analysis.LocallyConvex.Barrelled
+public import Init
+public import OSReconstruction.SCV.SchwartzComplete
+public import OSReconstruction.SCV.EuclideanWeylOpen
+public import OSReconstruction.SCV.LocallyUniformLimit
+public import OSReconstruction.SCV.SchwartzPartialEval
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIDeltaSmearing
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIITimeParametricContinuation
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceSpatialDensity
+public import OSReconstruction.SchwartzSeminormCompat
 
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -175,8 +167,7 @@ theorem exists_uniform_schwartz_bound_osiiSpatial
                 (Section43SpatialSpace d k) ℂ a) χ =
               (schwartzSeminormFamily ℂ
                 (Section43SpatialSpace d k) ℂ a) χ := by
-          cases a
-          rfl
+          simp only [SchwartzMap.schwartzSeminormFamily_apply', SchwartzMap.seminorm_eq_real]
         simp [Finset.sup_insert, ih, ha_eq]
   refine ⟨s, (Cnn : ℝ), ?_, ?_⟩
   · exact_mod_cast (show 0 < Cnn from pos_iff_ne_zero.mpr hCnn)

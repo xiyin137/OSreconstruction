@@ -5,17 +5,12 @@ Copyright (c) 2026 ModularPhysics Contributors.
 Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
-import OSReconstruction.SCV.DistributionalEOWCutoff
-import OSReconstruction.SCV.EuclideanWeylOpen
+module
 
+public import OSReconstruction.SCV.DistributionalEOWCutoff
+public import OSReconstruction.SCV.EuclideanWeylOpen
 
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 

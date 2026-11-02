@@ -1,17 +1,13 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Mathlib429Compat
-import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43OneVariableSlice
-import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceCompactDifferentiation
+module
 
+public import OSReconstruction.Mathlib429Compat
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43OneVariableSlice
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceCompactDifferentiation
+public import OSReconstruction.SchwartzSeminormCompat
 
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -1179,7 +1175,7 @@ theorem section43SchwartzFunctional_bound_by_probeNorm
               refine Finset.sum_le_sum ?_
               intro a ha
               let p : ↑s.attach := ⟨⟨a, ha⟩, by simp⟩
-              change SchwartzMap.seminorm ℝ a.1 a.2 f ≤ _
+              rw [SchwartzMap.schwartzSeminormFamily_apply', SchwartzMap.seminorm_eq_real]
               simpa [p] using
                 section43SchwartzSeminorm_le_probe_norm s p f
       _ = s.card *
@@ -1218,7 +1214,7 @@ theorem section43SchwartzFunctional_bound_by_probeNorm
         norm_num
         ring
 
-private noncomputable def section43RangeLiftLinear
+noncomputable def section43RangeLiftLinear
     (T : SchwartzMap ℝ ℂ →L[ℂ] ℂ)
     (s : Finset (ℕ × ℕ))
     (hker :
@@ -1229,7 +1225,7 @@ private noncomputable def section43RangeLiftLinear
       T.toLinearMap hker).comp
     ((section43ProbeCLM s).toLinearMap.quotKerEquivRange.symm.toLinearMap)
 
-private theorem section43RangeLiftLinear_apply
+theorem section43RangeLiftLinear_apply
     (T : SchwartzMap ℝ ℂ →L[ℂ] ℂ)
     (s : Finset (ℕ × ℕ))
     (hker :
@@ -1254,7 +1250,7 @@ private theorem section43RangeLiftLinear_apply
   rw [hsymm]
   simp
 
-private theorem section43RangeLiftLinear_bound
+theorem section43RangeLiftLinear_bound
     (T : SchwartzMap ℝ ℂ →L[ℂ] ℂ)
     (s : Finset (ℕ × ℕ))
     (C : NNReal)

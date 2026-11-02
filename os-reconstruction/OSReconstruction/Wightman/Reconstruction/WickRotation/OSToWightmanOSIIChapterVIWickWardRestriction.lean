@@ -1,5 +1,9 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVITestedWard
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIGrowthBoundaryHandoff
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVITestedWard
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIGrowthBoundaryHandoff
+
+@[expose] public section
 
 /-!
 # The signed temporal Ward calculation on a Wick slice
@@ -21,18 +25,18 @@ namespace OSIIChapterVI
 
 variable {d k : Nat} {A : OSIITimeContinuationStage d k}
 
-private def wickTimeLinearPartCLM (k : Nat) :
+def wickTimeLinearPartCLM (k : Nat) :
     (Fin k -> Real) →L[Real] OSIITimeGapSpace k :=
   ContinuousLinearMap.pi fun j =>
     ((-I) • Complex.ofRealCLM).comp (ContinuousLinearMap.proj j)
 
-private theorem wickTimeLinearPartCLM_single (j : Fin k) :
+theorem wickTimeLinearPartCLM_single (j : Fin k) :
     wickTimeLinearPartCLM k (Pi.single j (1 : Real)) =
       (-I) • (Pi.single j (1 : Complex) : OSIITimeGapSpace k) := by
   ext i
   by_cases h : i = j <;> simp [wickTimeLinearPartCLM, h]
 
-private theorem wickTimeApproach_hasFDerivAt
+theorem wickTimeApproach_hasFDerivAt
     (y x : Fin k -> Real) :
     HasFDerivAt (fun t => osiiMinkowskiTimeApproach y t 1)
       (wickTimeLinearPartCLM k) x := by
@@ -58,7 +62,7 @@ theorem continuous_wickRestriction
   rw [hfull]
   exact osiiMinkowskiTimeApproach_mem hy zero_lt_one
 
-private theorem wickTrace_hasFDerivAt
+theorem wickTrace_hasFDerivAt
     (hfull : A.carrier = osiiTimeRightHalfPlane k)
     (chi : SchwartzMap (Section43SpatialSpace d k) Complex)
     (y : Fin k -> Real) (hy : y ∈ osiiTimePositiveCone k) (x : Fin k -> Real) :

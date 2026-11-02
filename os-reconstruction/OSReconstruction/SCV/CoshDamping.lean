@@ -1,6 +1,10 @@
-import Mathlib.Analysis.Complex.CauchyIntegral
-import Mathlib.Analysis.SpecialFunctions.Trigonometric.Bounds
-import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
+module
+
+public import Mathlib.Analysis.Complex.CauchyIntegral
+public import Mathlib.Analysis.SpecialFunctions.Trigonometric.Bounds
+public import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
+
+@[expose] public section
 
 /-!
 # Cosh damping on logarithmic strips
@@ -81,7 +85,7 @@ theorem logCoshDamping_ne_zero (rate : ℝ) (z : ι → ℂ) :
     logCoshDamping rate z ≠ 0 :=
   Complex.exp_ne_zero _
 
-private theorem complex_cosh_re (z : ℂ) :
+theorem complex_cosh_re (z : ℂ) :
     (Complex.cosh z).re =
       Real.cosh z.re * Real.cos z.im := by
   rw [Complex.cosh]

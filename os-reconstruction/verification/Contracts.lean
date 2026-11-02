@@ -1,6 +1,10 @@
-import OSReconstruction
-import Lean.Util.CollectAxioms
-import Lean.Util.Sorry
+module
+
+public import OSReconstruction
+public import Lean.Util.CollectAxioms
+public import Lean.Util.Sorry
+
+@[expose] public section
 
 /-! Exact targets and standard-axiom guards for the distributable OS package. -/
 

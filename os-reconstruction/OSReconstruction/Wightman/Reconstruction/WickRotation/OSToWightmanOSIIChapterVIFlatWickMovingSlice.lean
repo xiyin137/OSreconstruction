@@ -1,6 +1,10 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIForwardTubeTimeSliceIdentification
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVCanonicalMovingSliceCutoff
-import OSReconstruction.SCV.EuclideanWeylOpen
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIForwardTubeTimeSliceIdentification
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVCanonicalMovingSliceCutoff
+public import OSReconstruction.SCV.EuclideanWeylOpen
+
+@[expose] public section
 
 /-!
 # Chapter VI flat-Wick moving-slice bridge
@@ -37,9 +41,11 @@ theorem continuous_osiiReducedWickRotateConfig :
   intro mu
   by_cases hmu : mu = 0
   · subst mu
-    continuity
+    simp only [wickRotatePoint, ↓reduceIte]
+    exact continuous_const.mul
+      (Complex.continuous_ofReal.comp ((continuous_apply 0).comp (continuous_apply j)))
   · simp only [wickRotatePoint, hmu, ↓reduceIte]
-    continuity
+    exact Complex.continuous_ofReal.comp ((continuous_apply mu).comp (continuous_apply j))
 
 /-- Positive Euclidean reduced times send the literal Wick slice into the
 reduced forward tube.  This is the domain-local fact needed whenever a

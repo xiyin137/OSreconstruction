@@ -1,19 +1,10 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVMovingSliceChart
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVMovingSliceChart
 
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -120,7 +111,7 @@ theorem differentiableOn_osiiStageMovingSliceDistribution_apply
         osiiStageMovingSliceDistribution_apply_of_mem
           A rho hrho_compact z hz F
 
-private theorem continuous_finsetFullSchwartzSeminorm
+theorem continuous_finsetFullSchwartzSeminorm
     (s : Finset (Nat × Nat)) :
     Continuous
       (fun F : SchwartzNPoint d k =>
@@ -133,7 +124,7 @@ private theorem continuous_finsetFullSchwartzSeminorm
 
 /-- On every compact subset of the moving-slice carrier, the bundled
 distributions obey one common finite full-Schwartz seminorm bound. -/
-private theorem
+theorem
     exists_uniform_bound_osiiStageMovingSliceDistribution_on_compact
     (A : OSIITimeContinuationStage d k)
     (rho : SchwartzMap (Fin k -> Real) Complex)

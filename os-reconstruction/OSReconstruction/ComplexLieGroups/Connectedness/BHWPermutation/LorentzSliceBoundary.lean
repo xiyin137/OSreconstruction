@@ -1,27 +1,13 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import Init
-import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.IndexSetD1
-import OSReconstruction.ComplexLieGroups.Connectedness.DimensionZero
-import Mathlib.Analysis.LocallyConvex.Separation
+module
 
+public import Init
+public import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.IndexSetD1
+public import OSReconstruction.ComplexLieGroups.Connectedness.DimensionZero
+public import Mathlib.Analysis.LocallyConvex.Separation
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -31,7 +17,7 @@ namespace BHW.SliceGeometry
 
 variable {d : ℕ}
 
-private theorem separator_of_range_avoids_forward
+theorem separator_of_range_avoids_forward
     (M : (Fin (d + 1) → ℝ) →ₗ[ℝ] (Fin (d + 1) → ℝ))
     (h : ∀ v, ¬ InOpenForwardCone d (M v)) :
     ∃ f : (Fin (d + 1) → ℝ) →L[ℝ] ℝ,
@@ -64,9 +50,9 @@ private theorem separator_of_range_avoids_forward
     change 0 < -f y
     linarith
 
-private def dot (p y : Fin (d + 1) → ℝ) : ℝ := ∑ i, p i * y i
+def dot (p y : Fin (d + 1) → ℝ) : ℝ := ∑ i, p i * y i
 
-private theorem dual_forward_coordinates (p : Fin (d + 1) → ℝ)
+theorem dual_forward_coordinates (p : Fin (d + 1) → ℝ)
     (h : ∀ y, InOpenForwardCone d y → 0 < dot p y) :
     0 < p 0 ∧ (∑ i : Fin d, p i.succ ^ 2) ≤ p 0 ^ 2 := by
   have hp : 0 < p 0 := by
@@ -113,7 +99,7 @@ private theorem dual_forward_coordinates (p : Fin (d + 1) → ℝ)
   rw [hdot] at hpos
   exact (not_lt_of_ge (mul_nonpos_of_nonneg_of_nonpos hp.le (sub_nonpos.mpr hs.le))) hpos
 
-private theorem dot_pos_of_coordinates (p y : Fin (d + 1) → ℝ)
+theorem dot_pos_of_coordinates (p y : Fin (d + 1) → ℝ)
     (hp0 : 0 < p 0) (hp : (∑ i : Fin d, p i.succ ^ 2) ≤ p 0 ^ 2)
     (hy : InOpenForwardCone d y) : 0 < dot p y := by
   have hyq : (∑ i : Fin d, y i.succ ^ 2) < y 0 ^ 2 := by
@@ -133,7 +119,7 @@ private theorem dot_pos_of_coordinates (p y : Fin (d + 1) → ℝ)
   rw [dot, Fin.sum_univ_succ]
   linarith [neg_abs_le (∑ i : Fin d, p i.succ * y i.succ)]
 
-private theorem dot_nonpos_of_nonpos_time (p y : Fin (d + 1) → ℝ)
+theorem dot_nonpos_of_nonpos_time (p y : Fin (d + 1) → ℝ)
     (hp0 : p 0 ≤ 0) (hp : (∑ i : Fin d, p i.succ ^ 2) ≤ p 0 ^ 2)
     (hy : InOpenForwardCone d y) : dot p y ≤ 0 := by
   have hyq : (∑ i : Fin d, y i.succ ^ 2) ≤ y 0 ^ 2 := by
@@ -152,7 +138,7 @@ private theorem dot_nonpos_of_nonpos_time (p y : Fin (d + 1) → ℝ)
   rw [dot, Fin.sum_univ_succ]
   linarith
 
-private theorem linear_eq_dot (f : (Fin (d + 1) → ℝ) →L[ℝ] ℝ)
+theorem linear_eq_dot (f : (Fin (d + 1) → ℝ) →L[ℝ] ℝ)
     (y : Fin (d + 1) → ℝ) :
     f y = dot (fun i => f (Pi.single i 1)) y := by
   have hvec : (∑ i : Fin (d + 1), y i •
@@ -162,7 +148,7 @@ private theorem linear_eq_dot (f : (Fin (d + 1) → ℝ) →L[ℝ] ℝ)
   conv_lhs => rw [← hvec, map_sum]
   simp [dot, map_smul, smul_eq_mul, mul_comm]
 
-private def transposeLorentz (L : ComplexLorentzGroup d) : ComplexLorentzGroup d where
+def transposeLorentz (L : ComplexLorentzGroup d) : ComplexLorentzGroup d where
   val := L.val.transpose
   metric_preserving := by
     apply ComplexLorentzGroup.of_metric_preserving_matrix
@@ -179,13 +165,13 @@ private def transposeLorentz (L : ComplexLorentzGroup d) : ComplexLorentzGroup d
       Matrix.one_mul] using hmul
   proper := by rw [Matrix.det_transpose, L.proper]
 
-private def dotCLM (p : Fin (d + 1) → ℝ) : (Fin (d + 1) → ℝ) →L[ℝ] ℝ :=
+def dotCLM (p : Fin (d + 1) → ℝ) : (Fin (d + 1) → ℝ) →L[ℝ] ℝ :=
   ∑ i, p i • ContinuousLinearMap.proj i
 
-@[simp] private theorem dotCLM_apply (p y : Fin (d + 1) → ℝ) : dotCLM p y = dot p y := by
+@[simp] theorem dotCLM_apply (p y : Fin (d + 1) → ℝ) : dotCLM p y = dot p y := by
   simp [dotCLM, dot, ContinuousLinearMap.sum_apply]
 
-private theorem forward_functional_strictMono {n : ℕ}
+theorem forward_functional_strictMono {n : ℕ}
     (f : (Fin (d + 1) → ℝ) →L[ℝ] ℝ)
     (hf : ∀ y, InOpenForwardCone d y → 0 < f y)
     (z : Fin n → Fin (d + 1) → ℂ) (hz : z ∈ ForwardTube d n) :
@@ -205,7 +191,7 @@ private theorem forward_functional_strictMono {n : ℕ}
     rw [heq, map_sub] at h
     exact sub_pos.mp h
 
-private theorem forward_functional_pos {n : ℕ}
+theorem forward_functional_pos {n : ℕ}
     (f : (Fin (d + 1) → ℝ) →L[ℝ] ℝ)
     (hf : ∀ y, InOpenForwardCone d y → 0 < f y)
     (z : Fin n → Fin (d + 1) → ℂ) (hz : z ∈ ForwardTube d n) (k : Fin n) :
@@ -217,7 +203,7 @@ private theorem forward_functional_pos {n : ℕ}
       simpa [ForwardTube] using hf _ (hz 0)
     exact h0.trans_le ((forward_functional_strictMono f hf z hz).monotone (Fin.zero_le k))
 
-private theorem complex_quadratic_preserved [NeZero d] (L : ComplexLorentzGroup d)
+theorem complex_quadratic_preserved [NeZero d] (L : ComplexLorentzGroup d)
     (z : Fin (d + 1) → ℂ) :
     (∑ μ, (minkowskiSignature d μ : ℂ) * (complexLorentzVectorAction L z μ) ^ 2) =
       ∑ μ, (minkowskiSignature d μ : ℂ) * z μ ^ 2 := by
@@ -234,14 +220,14 @@ def imaginaryPart (L : ComplexLorentzGroup d) :
     (Fin (d + 1) → ℝ) →ₗ[ℝ] (Fin (d + 1) → ℝ) :=
   Matrix.toLin' (fun i j => (L.val i j).im)
 
-private def realPart (L : ComplexLorentzGroup d) :
+def realPart (L : ComplexLorentzGroup d) :
     (Fin (d + 1) → ℝ) →ₗ[ℝ] (Fin (d + 1) → ℝ) :=
   Matrix.toLin' (fun i j => (L.val i j).re)
 
-private def pullback (L : ComplexLorentzGroup d) (p : Fin (d + 1) → ℝ) : Fin (d + 1) → ℝ :=
+def pullback (L : ComplexLorentzGroup d) (p : Fin (d + 1) → ℝ) : Fin (d + 1) → ℝ :=
   fun j => ∑ i, p i * (L.val i j).re
 
-private theorem transpose_action_real_of_annihilates_imaginary
+theorem transpose_action_real_of_annihilates_imaginary
     (L : ComplexLorentzGroup d) (p : Fin (d + 1) → ℝ)
     (h : ∀ v, dot p (imaginaryPart L v) = 0) :
     complexLorentzVectorAction (transposeLorentz L) (fun i => (p i : ℂ)) =
@@ -259,7 +245,7 @@ private theorem transpose_action_real_of_annihilates_imaginary
   · simpa [complexLorentzVectorAction, transposeLorentz, Complex.mul_im,
       mul_comm] using hcol j
 
-private theorem pullback_causal [NeZero d] (L : ComplexLorentzGroup d)
+theorem pullback_causal [NeZero d] (L : ComplexLorentzGroup d)
     (p : Fin (d + 1) → ℝ)
     (hp : (∑ i : Fin d, p i.succ ^ 2) ≤ p 0 ^ 2)
     (h : ∀ v, dot p (imaginaryPart L v) = 0) :
@@ -272,7 +258,7 @@ private theorem pullback_causal [NeZero d] (L : ComplexLorentzGroup d)
   rw [minkowski_sum_decomp, minkowski_sum_decomp] at hreal
   linarith
 
-private theorem dot_realPart (L : ComplexLorentzGroup d) (p y : Fin (d + 1) → ℝ) :
+theorem dot_realPart (L : ComplexLorentzGroup d) (p y : Fin (d + 1) → ℝ) :
     dot p (realPart L y) = dot (pullback L p) y := by
   change (∑ i, p i * ∑ j, (L.val i j).re * y j) =
     ∑ j, (∑ i, p i * (L.val i j).re) * y j
@@ -285,7 +271,7 @@ private theorem dot_realPart (L : ComplexLorentzGroup d) (p y : Fin (d + 1) → 
   intro i _
   ring
 
-private theorem dot_action_imaginary (L : ComplexLorentzGroup d) (p : Fin (d + 1) → ℝ)
+theorem dot_action_imaginary (L : ComplexLorentzGroup d) (p : Fin (d + 1) → ℝ)
     (h : ∀ v, dot p (imaginaryPart L v) = 0) (z : Fin (d + 1) → ℂ) :
     dot p (fun i => (complexLorentzVectorAction L z i).im) =
       dot (pullback L p) (fun i => (z i).im) := by
@@ -298,7 +284,7 @@ private theorem dot_action_imaginary (L : ComplexLorentzGroup d) (p : Fin (d + 1
   rw [heq, ← dotCLM_apply, map_add, dotCLM_apply, dotCLM_apply, h, add_zero]
   exact dot_realPart L p _
 
-private theorem forward_functional_nonpos {n : ℕ}
+theorem forward_functional_nonpos {n : ℕ}
     (f : (Fin (d + 1) → ℝ) →L[ℝ] ℝ)
     (hf : ∀ y, InOpenForwardCone d y → f y ≤ 0)
     (z : Fin n → Fin (d + 1) → ℂ) (hz : z ∈ ForwardTube d n) (k : Fin n) :
@@ -373,7 +359,7 @@ theorem exists_imaginary_forward_of_perm_overlap [NeZero d] {n : ℕ}
         forward_functional_strictMono (dotCLM (pullback L p)) hqf z hz
     exact hmono.lt_iff_lt.mp ht
 
-private theorem relative_functional_strictMono {m : ℕ}
+theorem relative_functional_strictMono {m : ℕ}
     (f : (Fin (d + 1) → ℝ) →L[ℝ] ℝ)
     (hf : ∀ y, InOpenForwardCone d y → 0 < f y)
     (z : Fin (m + 1) → Fin (d + 1) → ℂ)
@@ -386,7 +372,7 @@ private theorem relative_functional_strictMono {m : ℕ}
   change 0 < f ((fun μ => (z i.succ μ).im) - (fun μ => (z i.castSucc μ).im)) at h
   rwa [map_sub, sub_pos] at h
 
-private theorem relative_functional_antitone {m : ℕ}
+theorem relative_functional_antitone {m : ℕ}
     (f : (Fin (d + 1) → ℝ) →L[ℝ] ℝ)
     (hf : ∀ y, InOpenForwardCone d y → f y ≤ 0)
     (z : Fin (m + 1) → Fin (d + 1) → ℂ)
@@ -452,14 +438,14 @@ theorem exists_imaginary_forward_of_relative_perm_overlap [NeZero d] {m : ℕ}
     have hi := congrArg (fun σ : Equiv.Perm (Fin (m + 1)) => Fin.rev (σ i)) hid
     simpa using hi
 
-private theorem minkowskiNormSq_eq_sum [NeZero d] (v : Fin (d + 1) → ℝ) :
+theorem minkowskiNormSq_eq_sum [NeZero d] (v : Fin (d + 1) → ℝ) :
     MinkowskiSpace.minkowskiNormSq d v = ∑ i, minkowskiSignature d i * v i ^ 2 := by
   unfold MinkowskiSpace.minkowskiNormSq MinkowskiSpace.minkowskiInner
   apply Finset.sum_congr rfl
   intro i _
   simp [MinkowskiSpace.metricSignature, minkowskiSignature, pow_two]
 
-private theorem real_action_decomp (L : ComplexLorentzGroup d) (v : Fin (d + 1) → ℝ) :
+theorem real_action_decomp (L : ComplexLorentzGroup d) (v : Fin (d + 1) → ℝ) :
     complexLorentzVectorAction L (fun i => (v i : ℂ)) =
       fun i => (realPart L v i : ℂ) + (imaginaryPart L v i : ℂ) * Complex.I := by
   ext i

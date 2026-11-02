@@ -1,4 +1,8 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanTubeIdentity
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanTubeIdentity
+
+@[expose] public section
 
 /-!
 # Uniqueness from the literal Wick-pair contract

@@ -1,9 +1,13 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceCompactDifferentiation
-import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43OS24KernelSafeFubini
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanSemigroup
-import OSReconstruction.GeneralResults.SchwartzDamping
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceCompactDifferentiation
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43OS24KernelSafeFubini
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanSemigroup
+public import OSReconstruction.GeneralResults.SchwartzDamping
+
+@[expose] public section
 
 noncomputable section
 

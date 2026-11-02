@@ -5,46 +5,17 @@ Copyright (c) 2025 ModularPhysics Contributors.
 Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
-import Mathlib.Topology.Connected.PathConnected
-import Mathlib.Topology.Compactness.SigmaCompact
-import Mathlib.Topology.Baire.LocallyCompactRegular
-import Mathlib.Analysis.Complex.Basic
-import Mathlib.Analysis.Normed.Algebra.MatrixExponential
-import OSReconstruction.ComplexLieGroups.LorentzLieGroup
-import OSReconstruction.ComplexLieGroups.SOConnected
+module
 
+public import Mathlib.Topology.Connected.PathConnected
+public import Mathlib.Topology.Compactness.SigmaCompact
+public import Mathlib.Topology.Baire.LocallyCompactRegular
+public import Mathlib.Analysis.Complex.Basic
+public import Mathlib.Analysis.Normed.Algebra.MatrixExponential
+public import OSReconstruction.ComplexLieGroups.LorentzLieGroup
+public import OSReconstruction.ComplexLieGroups.SOConnected
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -253,7 +224,7 @@ instance instContinuousInv : ContinuousInv (ComplexLorentzGroup d) where
 instance instIsTopologicalGroup : IsTopologicalGroup (ComplexLorentzGroup d) :=
   { instContinuousMul, instContinuousInv with }
 
-private theorem isClosed_range_val :
+theorem isClosed_range_val :
     IsClosed (Set.range (ComplexLorentzGroup.val :
       ComplexLorentzGroup d → Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ)) := by
   let metricSet : Set (Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ) :=
@@ -301,7 +272,7 @@ private theorem isClosed_range_val :
       exact ⟨⟨M, hM.1, hM.2⟩, rfl⟩
   simpa [h_range_eq] using hmetric_closed.inter hdet_closed
 
-private theorem isClosedEmbedding_val :
+theorem isClosedEmbedding_val :
     Topology.IsClosedEmbedding (ComplexLorentzGroup.val :
       ComplexLorentzGroup d → Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ) := by
   have hind : Topology.IsInducing (ComplexLorentzGroup.val :
@@ -458,38 +429,38 @@ def IsInLieAlgebra (X : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ) : Prop :=
 
 
 /-- Wick rotation matrix W = diag(i, 1, ..., 1). -/
-private def W : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ :=
+def W : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ :=
   Matrix.diagonal (fun i => if i = (0 : Fin (d + 1)) then I else 1)
 
 /-- Inverse Wick rotation matrix W⁻¹ = diag(-i, 1, ..., 1). -/
-private def Winv : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ :=
+def Winv : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ :=
   Matrix.diagonal (fun i => if i = (0 : Fin (d + 1)) then -I else 1)
 
-private theorem W_mul_Winv :
+theorem W_mul_Winv :
     (W : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ) * Winv = 1 := by
   simp only [W, Winv, Matrix.diagonal_mul_diagonal, ← Matrix.diagonal_one]
   congr 1; ext i; split_ifs <;> simp [I_mul_I]
 
-private theorem Winv_mul_W :
+theorem Winv_mul_W :
     (Winv : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ) * W = 1 := by
   simp only [W, Winv, Matrix.diagonal_mul_diagonal, ← Matrix.diagonal_one]
   congr 1; ext i; split_ifs <;> simp [I_mul_I]
 
-private theorem Winv_sq_eq_eta :
+theorem Winv_sq_eq_eta :
     (Winv : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ) * Winv = ηℂ := by
   simp only [Winv, ηℂ, Matrix.diagonal_mul_diagonal]
   congr 1; ext i; simp only [minkowskiSignature]
   split_ifs <;> push_cast <;> simp [I_mul_I]
 
-private theorem W_transpose_eq :
+theorem W_transpose_eq :
     (W : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ).transpose = W :=
   Matrix.diagonal_transpose _
 
-private theorem Winv_transpose_eq :
+theorem Winv_transpose_eq :
     (Winv : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ).transpose = Winv :=
   Matrix.diagonal_transpose _
 
-private theorem W_eta_W :
+theorem W_eta_W :
     (W : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ) * ηℂ * W = 1 := by
   simp only [W, ηℂ, Matrix.diagonal_mul_diagonal, ← Matrix.diagonal_one]
   congr 1; ext i; simp only [minkowskiSignature]
@@ -639,7 +610,7 @@ theorem continuous_fromSOComplex :
     and SO(d+1;ℂ) is connected because every element can be written as a product
     of complex 2-plane rotations, each of which is exp of a Lie algebra element
     and hence continuously connected to the identity. -/
-private theorem joined_one_all (Λ : ComplexLorentzGroup d) :
+theorem joined_one_all (Λ : ComplexLorentzGroup d) :
     Joined (one : ComplexLorentzGroup d) Λ := by
   -- SOComplex (d + 1) is path-connected, so toSOComplex Λ is joined to SOComplex.one
   obtain ⟨γ, _⟩ := (SOComplex.isPathConnected (d + 1)).joinedIn

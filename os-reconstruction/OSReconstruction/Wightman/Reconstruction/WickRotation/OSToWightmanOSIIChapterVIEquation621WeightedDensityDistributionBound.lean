@@ -1,19 +1,12 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.SCV.LaplaceSchwartz
-import OSReconstruction.SCV.DistributionalEOWKernel
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIEquation621WeightedDensityPointRecovery
+module
 
+public import OSReconstruction.SCV.LaplaceSchwartz
+public import OSReconstruction.SCV.DistributionalEOWKernel
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIEquation621WeightedDensityPointRecovery
 
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 

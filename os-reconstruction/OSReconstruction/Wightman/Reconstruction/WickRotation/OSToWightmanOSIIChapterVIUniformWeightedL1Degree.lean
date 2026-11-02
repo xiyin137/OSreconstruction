@@ -1,17 +1,12 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIUniformSchwartzDegree
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIEquation621WeightedDensityDistributionBound
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIUniformSchwartzDegree
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIEquation621WeightedDensityDistributionBound
+public import OSReconstruction.SchwartzSeminormCompat
 
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -59,7 +54,10 @@ theorem osiiSchwartzComplexFinsetSup_eq_real
     s.sup (schwartzSeminormFamily Complex E Complex) phi =
       s.sup (schwartzSeminormFamily Real E Complex) phi := by
   rw [Seminorm.finset_sup_apply, Seminorm.finset_sup_apply]
-  rfl
+  congr 1
+  refine Finset.sup_congr rfl fun i _ => ?_
+  apply NNReal.eq
+  simp only [NNReal.coe_mk, SchwartzMap.schwartzSeminormFamily_apply', SchwartzMap.seminorm_eq_real]
 
 /-- The initial weight order of the explicit zero-derivative interval is
 exactly its endpoint. -/

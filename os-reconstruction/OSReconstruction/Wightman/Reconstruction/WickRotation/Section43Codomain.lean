@@ -1,8 +1,12 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.EuclideanPositiveTime
-import OSReconstruction.SCV.PaleyWiener
-import Mathlib.Topology.Algebra.Module.Basic
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.EuclideanPositiveTime
+public import OSReconstruction.SCV.PaleyWiener
+public import Mathlib.Topology.Algebra.Module.Basic
+
+@[expose] public section
 
 noncomputable section
 

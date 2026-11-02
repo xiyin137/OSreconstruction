@@ -1,29 +1,12 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVAngleExhaustion
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVGeneratorGluing
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVGeneratorCoordinates
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVAngleExhaustion
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVGeneratorGluing
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVGeneratorCoordinates
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -405,7 +388,7 @@ def osiiSecondRecursiveAngleGeneratorPoint (N s t : ℕ) :
     (-(Real.pi / 2))
     (osiiMixedAnglePoint N (s + 1) (2 * (t + 1)))
 
-private theorem recursiveAngle_succ_eq_average_of_two_le
+theorem recursiveAngle_succ_eq_average_of_two_le
     (N i : ℕ) (hi : 2 ≤ i) :
     recursiveAngle i (N + 1) =
       (recursiveAngle i N + recursiveAngle (i - 1) N) / 2 := by
@@ -545,7 +528,7 @@ structure OSIILogarithmicArgumentDomainSystem where
 
 namespace OSIILogarithmicArgumentDomainSystem
 
-private theorem mixedBase_reindex
+theorem mixedBase_reindex
     (D : OSIILogarithmicArgumentDomainSystem)
     {n m N : ℕ} (h : n = m) {x : Fin n → ℝ}
     (hx : x ∈ D.mixedBase n N) :
@@ -554,7 +537,7 @@ private theorem mixedBase_reindex
   subst m
   simpa
 
-private def diagonalSplit (n : ℕ) (hn : 1 ≤ n) :
+def diagonalSplit (n : ℕ) (hn : 1 ≤ n) :
     GeneratorIndex (2 * n - 1) where
   n := n
   m := n
@@ -562,7 +545,7 @@ private def diagonalSplit (n : ℕ) (hn : 1 ≤ n) :
   hm := hn
   hnm := by omega
 
-private theorem argumentGeneratorPoint_zero
+theorem argumentGeneratorPoint_zero
     {k : ℕ} (i : GeneratorIndex k) :
     osiiArgumentGeneratorPoint i
         (0 : Fin i.n → ℝ) 0 (0 : Fin i.m → ℝ) =
@@ -570,7 +553,7 @@ private theorem argumentGeneratorPoint_zero
   funext j
   simp [osiiArgumentGeneratorPoint]
 
-private theorem argumentDiagonal_zero
+theorem argumentDiagonal_zero
     (n : ℕ) (hn : 1 ≤ n) :
     osiiArgumentDiagonal hn (0 : Fin n → ℝ) =
       (0 : Fin (2 * n - 1) → ℝ) := by

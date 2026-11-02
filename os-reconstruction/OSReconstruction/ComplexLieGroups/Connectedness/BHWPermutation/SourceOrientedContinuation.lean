@@ -1,21 +1,15 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import Mathlib.Topology.UnitInterval
-import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SourceOriented
-import Init
-import Mathlib.Analysis.Calculus.ContDiff.Operations
-import Mathlib.Analysis.Calculus.Implicit
-import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SourceExtension
+module
 
+public import Mathlib.Topology.UnitInterval
+public import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SourceOriented
+public import Init
+public import Mathlib.Analysis.Calculus.ContDiff.Operations
+public import Mathlib.Analysis.Calculus.Implicit
+public import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SourceExtension
 
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 

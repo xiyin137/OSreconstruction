@@ -1,4 +1,8 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43OS24KernelComparison
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43OS24KernelComparison
+
+@[expose] public section
 
 noncomputable section
 

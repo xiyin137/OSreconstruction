@@ -1,13 +1,17 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceTransform
-import OSReconstruction.SCV.PaleyWiener
-import OSReconstruction.Mathlib429Compat
-import Mathlib.Analysis.Distribution.SchwartzSpace.Deriv
-import Mathlib.MeasureTheory.Integral.IntegralEqImproper
-import Mathlib.Analysis.Calculus.ParametricIntegral
-import Mathlib.Analysis.Complex.RealDeriv
-import Mathlib.Analysis.Complex.CauchyIntegral
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceTransform
+public import OSReconstruction.SCV.PaleyWiener
+public import OSReconstruction.Mathlib429Compat
+public import Mathlib.Analysis.Distribution.SchwartzSpace.Deriv
+public import Mathlib.MeasureTheory.Integral.IntegralEqImproper
+public import Mathlib.Analysis.Calculus.ParametricIntegral
+public import Mathlib.Analysis.Complex.RealDeriv
+public import Mathlib.Analysis.Complex.CauchyIntegral
+
+@[expose] public section
 
 noncomputable section
 

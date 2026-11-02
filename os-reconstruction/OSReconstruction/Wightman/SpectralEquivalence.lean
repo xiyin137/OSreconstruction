@@ -5,45 +5,26 @@ Copyright (c) 2025 ModularPhysics Contributors. All rights reserved.
 Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
-import OSReconstruction.Wightman.SpectralCondition
-import OSReconstruction.Wightman.Spacetime.MinkowskiGeometry
-import OSReconstruction.Wightman.Reconstruction.BlockIntegral
-import OSReconstruction.Wightman.Reconstruction.HeadBlockTranslationInvariant
-import OSReconstruction.Wightman.Reconstruction.ForwardTubeDistributions
-import OSReconstruction.Wightman.Reconstruction.WickRotation.ForwardTubeLorentz
-import OSReconstruction.Wightman.Reconstruction.WickRotation.BHWReducedExtension
-import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43SpectralSupport
-import OSReconstruction.SCV.TotallyRealIdentity
-import OSReconstruction.ComplexLieGroups.Connectedness.ForwardTubeDomain
-import OSReconstruction.ComplexLieGroups.BHWCore
-import OSReconstruction.ComplexLieGroups.DifferenceCoordinates
-import OSReconstruction.ComplexLieGroups.DifferenceCoordinatesReduced
-import Mathlib.Analysis.Distribution.SchwartzSpace.Fourier
-import Mathlib.MeasureTheory.Measure.Haar.InnerProductSpace
-import Mathlib.Analysis.SpecialFunctions.JapaneseBracket
+module
 
+public import OSReconstruction.Wightman.SpectralCondition
+public import OSReconstruction.Wightman.Spacetime.MinkowskiGeometry
+public import OSReconstruction.Wightman.Reconstruction.BlockIntegral
+public import OSReconstruction.Wightman.Reconstruction.HeadBlockTranslationInvariant
+public import OSReconstruction.Wightman.Reconstruction.ForwardTubeDistributions
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.ForwardTubeLorentz
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.BHWReducedExtension
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43SpectralSupport
+public import OSReconstruction.SCV.TotallyRealIdentity
+public import OSReconstruction.ComplexLieGroups.Connectedness.ForwardTubeDomain
+public import OSReconstruction.ComplexLieGroups.BHWCore
+public import OSReconstruction.ComplexLieGroups.DifferenceCoordinates
+public import OSReconstruction.ComplexLieGroups.DifferenceCoordinatesReduced
+public import Mathlib.Analysis.Distribution.SchwartzSpace.Fourier
+public import Mathlib.MeasureTheory.Measure.Haar.InnerProductSpace
+public import Mathlib.Analysis.SpecialFunctions.JapaneseBracket
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -108,13 +89,13 @@ lemma euclideanDot_nonneg_closedCone
     Satisfies: χ = 1 on V̄₊ⁿ, 0 ≤ χ ≤ 1, C∞, supported in a neighborhood
     of V̄₊ⁿ. Built as product of single-cone cutoffs using `Real.smoothTransition`
     (cf. `SCV.smoothCutoff` in `FourierLaplaceCore.lean`). -/
-private noncomputable def productConeCutoff (n : ℕ) :
+noncomputable def productConeCutoff (n : ℕ) :
     (Fin n → Fin (d + 1) → ℝ) → ℝ :=
   fun q => ∏ k : Fin n,
     Real.smoothTransition (q k 0 + 1) *
     Real.smoothTransition (-(MinkowskiSpace.minkowskiNormSq d (q k)) + 1)
 
-private noncomputable def flatPositiveRescaleCLE (m : ℕ) :
+noncomputable def flatPositiveRescaleCLE (m : ℕ) :
     (Fin m → ℝ) ≃L[ℝ] (Fin m → ℝ) :=
   let a : ℝˣ := Units.mk0 ((1 / (2 * Real.pi) : ℝ)) <| by
     exact one_div_ne_zero (mul_ne_zero two_ne_zero Real.pi_ne_zero)
@@ -126,13 +107,13 @@ private noncomputable def flatPositiveRescaleCLE (m : ℕ) :
 
 
 
-private abbrev BasepointSpace (d : ℕ) := Fin (d + 1) → ℝ
+abbrev BasepointSpace (d : ℕ) := Fin (d + 1) → ℝ
 
 /-- A normalized Schwartz bump on the basepoint variable. This is the cutoff
 used to choose a section of `diffVarReduction`. The implementation should
 eventually follow the local `normedUnitBumpSchwartzPi` pattern recorded in the
 blueprint. -/
-private noncomputable def normedUnitBumpSchwartzLocal :
+noncomputable def normedUnitBumpSchwartzLocal :
     SchwartzMap ℝ ℂ := by
   let b : ContDiffBump (0 : ℝ) := ⟨1, 2, zero_lt_one, one_lt_two⟩
   let f : ℝ → ℂ := fun x => ((b.normed MeasureTheory.volume x : ℝ) : ℂ)
@@ -142,7 +123,7 @@ private noncomputable def normedUnitBumpSchwartzLocal :
     b.hasCompactSupport_normed.comp_left Complex.ofReal_zero
   exact hf_compact.toSchwartzMap hf_smooth
 
-private lemma integral_normedUnitBumpSchwartzLocal :
+lemma integral_normedUnitBumpSchwartzLocal :
     ∫ x : ℝ, normedUnitBumpSchwartzLocal x = 1 := by
   let b : ContDiffBump (0 : ℝ) := ⟨1, 2, zero_lt_one, one_lt_two⟩
   have happly :
@@ -160,7 +141,7 @@ private lemma integral_normedUnitBumpSchwartzLocal :
   rw [happly, integral_complex_ofReal]
   exact congrArg (fun r : ℝ => (r : ℂ)) (b.integral_normed (μ := MeasureTheory.volume))
 
-private noncomputable def normedUnitBumpSchwartzPi : ∀ k : ℕ,
+noncomputable def normedUnitBumpSchwartzPi : ∀ k : ℕ,
     SchwartzMap (Fin k → ℝ) ℂ
   | 0 => by
       let f : (Fin 0 → ℝ) → ℂ := fun _ => 1
@@ -173,7 +154,7 @@ private noncomputable def normedUnitBumpSchwartzPi : ∀ k : ℕ,
       exact hf_compact.toSchwartzMap hf_smooth
   | k + 1 => normedUnitBumpSchwartzLocal.prependField (normedUnitBumpSchwartzPi k)
 
-private lemma integral_normedUnitBumpSchwartzPi :
+lemma integral_normedUnitBumpSchwartzPi :
     ∀ k : ℕ, ∫ x : Fin k → ℝ, normedUnitBumpSchwartzPi k x = 1
   | 0 => by
       have happly :
@@ -214,15 +195,15 @@ private lemma integral_normedUnitBumpSchwartzPi :
               rw [integral_normedUnitBumpSchwartzLocal, integral_normedUnitBumpSchwartzPi k]
               ring
 
-private noncomputable def normalizedBasepointBump (d : ℕ) :
+noncomputable def normalizedBasepointBump (d : ℕ) :
     SchwartzMap (BasepointSpace d) ℂ :=
   normedUnitBumpSchwartzPi (d + 1)
 
-private lemma integral_normalizedBasepointBump (d : ℕ) :
+lemma integral_normalizedBasepointBump (d : ℕ) :
     ∫ a : BasepointSpace d, normalizedBasepointBump d a = 1 := by
   simpa [normalizedBasepointBump] using integral_normedUnitBumpSchwartzPi (d + 1)
 
-private noncomputable def basepointDiffCLE (d : ℕ) (n : ℕ) :
+noncomputable def basepointDiffCLE (d : ℕ) (n : ℕ) :
     NPointSpacetime d (n + 1) ≃L[ℝ] (Fin (n + 1) → BasepointSpace d) where
   toFun x := Fin.cons (x 0) (fun k => fun μ => x k.succ μ - x k.castSucc μ)
   invFun y k μ := y 0 μ + diffVarSection d n (fun i => y i.succ) k μ
@@ -269,37 +250,37 @@ private noncomputable def basepointDiffCLE (d : ℕ) (n : ℕ) :
         ((diffVarSection d n).continuous.comp
           (continuous_pi fun i => continuous_apply i.succ)))
 
-@[simp] private lemma basepointDiffCLE_apply_zero (d : ℕ) (n : ℕ)
+@[simp] lemma basepointDiffCLE_apply_zero (d : ℕ) (n : ℕ)
     (x : NPointSpacetime d (n + 1)) :
     basepointDiffCLE d n x 0 = x 0 := rfl
 
-@[simp] private lemma basepointDiffCLE_apply_succ (d : ℕ) (n : ℕ)
+@[simp] lemma basepointDiffCLE_apply_succ (d : ℕ) (n : ℕ)
     (x : NPointSpacetime d (n + 1)) (k : Fin n) :
     basepointDiffCLE d n x k.succ = fun μ => x k.succ μ - x k.castSucc μ := rfl
 
 /-- A chosen Schwartz section of `diffVarReduction`. This should eventually be
 implemented by transporting the tensor product `(a, ξ) ↦ φ₀(a) g(ξ)` back from
 basepoint-plus-difference coordinates. -/
-private noncomputable def sectionOf (d : ℕ) (n : ℕ)
+noncomputable def sectionOf (d : ℕ) (n : ℕ)
     (φ₀ : SchwartzMap (BasepointSpace d) ℂ) :
     SchwartzNPointSpace d n → SchwartzNPointSpace d (n + 1) :=
   fun g =>
     SchwartzMap.compCLMOfContinuousLinearEquiv ℂ (basepointDiffCLE d n)
       (φ₀.prependField g)
 
-private noncomputable def sectionOfCLM (d : ℕ) (n : ℕ)
+noncomputable def sectionOfCLM (d : ℕ) (n : ℕ)
     (φ₀ : SchwartzMap (BasepointSpace d) ℂ) :
     SchwartzNPointSpace d n →L[ℂ] SchwartzNPointSpace d (n + 1) :=
   (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ (basepointDiffCLE d n)).comp
     (SchwartzMap.prependFieldCLMRight φ₀)
 
-@[simp] private lemma sectionOfCLM_apply (d : ℕ) (n : ℕ)
+@[simp] lemma sectionOfCLM_apply (d : ℕ) (n : ℕ)
     (φ₀ : SchwartzMap (BasepointSpace d) ℂ) (g : SchwartzNPointSpace d n) :
     sectionOfCLM d n φ₀ g = sectionOf d n φ₀ g := rfl
 
 /-- The chosen section is a right inverse to `diffVarReduction` once the bump
 has total integral `1`. -/
-private lemma diffVarReduction_sectionOf (d : ℕ) [NeZero d] (n : ℕ)
+lemma diffVarReduction_sectionOf (d : ℕ) [NeZero d] (n : ℕ)
     (φ₀ : SchwartzMap (BasepointSpace d) ℂ)
     (hφ₀ : ∫ a : BasepointSpace d, φ₀ a = 1)
     (g : SchwartzNPointSpace d n) :
@@ -331,7 +312,7 @@ private lemma diffVarReduction_sectionOf (d : ℕ) [NeZero d] (n : ℕ)
           · rw [smul_eq_mul, mul_comm]
     _ = g ξ := by rw [hφ₀]; ring
 
-private theorem eq_of_splitFirst_eq_splitLast_eq_local {p q : ℕ}
+theorem eq_of_splitFirst_eq_splitLast_eq_local {p q : ℕ}
     {x y : Fin (p + q) → ℝ}
     (hfirst : splitFirst p q x = splitFirst p q y)
     (hlast : splitLast p q x = splitLast p q y) :
@@ -343,23 +324,23 @@ private theorem eq_of_splitFirst_eq_splitLast_eq_local {p q : ℕ}
   · intro b
     exact congrFun hlast b
 
-private theorem splitFirst_smul_local {p q : ℕ} (r : ℝ)
+theorem splitFirst_smul_local {p q : ℕ} (r : ℝ)
     (x : Fin (p + q) → ℝ) :
     splitFirst p q (r • x) = r • splitFirst p q x := by
   ext i
   simp [splitFirst, Pi.smul_apply]
 
-private theorem splitLast_smul_local {p q : ℕ} (r : ℝ)
+theorem splitLast_smul_local {p q : ℕ} (r : ℝ)
     (x : Fin (p + q) → ℝ) :
     splitLast p q (r • x) = r • splitLast p q x := by
   ext i
   simp [splitLast, Pi.smul_apply]
 
-@[simp] private theorem castFinCLE_apply_local {a b : ℕ} (h : a = b)
+@[simp] theorem castFinCLE_apply_local {a b : ℕ} (h : a = b)
     (x : Fin a → ℝ) (i : Fin b) :
     castFinCLE h x i = x ((finCongr h).symm i) := rfl
 
-private noncomputable def basepointDiffPairCLE (d : ℕ) (n : ℕ) :
+noncomputable def basepointDiffPairCLE (d : ℕ) (n : ℕ) :
     NPointSpacetime d (n + 1) ≃L[ℝ] (BasepointSpace d × NPointSpacetime d n) where
   toFun x := (x 0, fun k μ => x k.succ μ - x k.castSucc μ)
   invFun y k μ := y.1 μ + diffVarSection d n y.2 k μ
@@ -428,12 +409,12 @@ private noncomputable def basepointDiffPairCLE (d : ℕ) (n : ℕ) :
         ((continuous_apply k).comp
           ((diffVarSection d n).continuous.comp continuous_snd))
 
-@[simp] private lemma basepointDiffPairCLE_apply
+@[simp] lemma basepointDiffPairCLE_apply
     (d : ℕ) (n : ℕ) (x : NPointSpacetime d (n + 1)) :
     basepointDiffPairCLE d n x =
       (x 0, fun k μ => x k.succ μ - x k.castSucc μ) := rfl
 
-@[simp] private lemma basepointDiffPairCLE_translate_diagonal
+@[simp] lemma basepointDiffPairCLE_translate_diagonal
     (d : ℕ) (n : ℕ) (a : BasepointSpace d) (x : NPointSpacetime d (n + 1)) :
     basepointDiffPairCLE d n (fun i μ => x i μ + a μ) =
       ((basepointDiffPairCLE d n x).1 + a, (basepointDiffPairCLE d n x).2) := by
@@ -444,7 +425,7 @@ private noncomputable def basepointDiffPairCLE (d : ℕ) (n : ℕ) :
     funext μ
     simp [basepointDiffPairCLE, add_sub_add_right_eq_sub]
 
-private noncomputable def flattenDiffCLE (d : ℕ) (n : ℕ) :
+noncomputable def flattenDiffCLE (d : ℕ) (n : ℕ) :
     NPointSpacetime d n ≃L[ℝ] (Fin (n * (d + 1)) → ℝ) :=
   (({ (Equiv.curry (Fin n) (Fin (d + 1)) ℝ).symm with
         map_add' := fun _ _ => rfl
@@ -452,11 +433,11 @@ private noncomputable def flattenDiffCLE (d : ℕ) (n : ℕ) :
       (Fin n → Fin (d + 1) → ℝ) ≃ₗ[ℝ] (Fin n × Fin (d + 1) → ℝ)).trans
     (LinearEquiv.funCongrLeft ℝ ℝ finProdFinEquiv.symm)).toContinuousLinearEquiv
 
-@[simp] private lemma flattenDiffCLE_symm_apply
+@[simp] lemma flattenDiffCLE_symm_apply
     (d : ℕ) (n : ℕ) (u : Fin (n * (d + 1)) → ℝ) (i : Fin n) (j : Fin (d + 1)) :
     (flattenDiffCLE d n).symm u i j = u (finProdFinEquiv (i, j)) := rfl
 
-private noncomputable def flattenBasepointDiffCLE (d : ℕ) (n : ℕ) :
+noncomputable def flattenBasepointDiffCLE (d : ℕ) (n : ℕ) :
     (BasepointSpace d × NPointSpacetime d n) ≃L[ℝ]
       (Fin ((d + 1) + n * (d + 1)) → ℝ) :=
   (({ toFun := fun y =>
@@ -493,7 +474,7 @@ private noncomputable def flattenBasepointDiffCLE (d : ℕ) (n : ℕ) :
       (BasepointSpace d × NPointSpacetime d n) ≃ₗ[ℝ]
         (Fin ((d + 1) + n * (d + 1)) → ℝ))).toContinuousLinearEquiv
 
-@[simp] private lemma flattenBasepointDiffCLE_add_basepoint
+@[simp] lemma flattenBasepointDiffCLE_add_basepoint
     (d : ℕ) (n : ℕ) (a₀ : BasepointSpace d)
     (y : BasepointSpace d × NPointSpacetime d n) :
     flattenBasepointDiffCLE d n (y.1 + a₀, y.2) =
@@ -506,7 +487,7 @@ private noncomputable def flattenBasepointDiffCLE (d : ℕ) (n : ℕ) :
   · ext i
     simp [flattenBasepointDiffCLE, splitLast_add, add_assoc, add_left_comm, add_comm]
 
-private noncomputable def flattenBasepointDiffSchwartz (d : ℕ) (n : ℕ) :
+noncomputable def flattenBasepointDiffSchwartz (d : ℕ) (n : ℕ) :
     SchwartzNPointSpace d (n + 1) →L[ℂ]
       SchwartzMap (Fin ((d + 1) + n * (d + 1)) → ℝ) ℂ :=
   (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
@@ -514,27 +495,27 @@ private noncomputable def flattenBasepointDiffSchwartz (d : ℕ) (n : ℕ) :
     (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
       (basepointDiffPairCLE d n).symm)
 
-@[simp] private lemma flattenBasepointDiffSchwartz_apply
+@[simp] lemma flattenBasepointDiffSchwartz_apply
     (d : ℕ) (n : ℕ) (f : SchwartzNPointSpace d (n + 1))
     (u : Fin ((d + 1) + n * (d + 1)) → ℝ) :
     flattenBasepointDiffSchwartz d n f u =
       f ((basepointDiffPairCLE d n).symm ((flattenBasepointDiffCLE d n).symm u)) := by
   simp [flattenBasepointDiffSchwartz, SchwartzMap.compCLMOfContinuousLinearEquiv_apply]
 
-private noncomputable def unflattenBasepointDiffSchwartz (d : ℕ) (n : ℕ) :
+noncomputable def unflattenBasepointDiffSchwartz (d : ℕ) (n : ℕ) :
     SchwartzMap (Fin ((d + 1) + n * (d + 1)) → ℝ) ℂ →L[ℂ]
       SchwartzNPointSpace d (n + 1) :=
   (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ (basepointDiffPairCLE d n)).comp
     (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ (flattenBasepointDiffCLE d n))
 
-@[simp] private lemma unflatten_flattenBasepointDiffSchwartz
+@[simp] lemma unflatten_flattenBasepointDiffSchwartz
     (d : ℕ) (n : ℕ) (f : SchwartzNPointSpace d (n + 1)) :
     unflattenBasepointDiffSchwartz d n (flattenBasepointDiffSchwartz d n f) = f := by
   ext x
   simpa [unflattenBasepointDiffSchwartz, flattenBasepointDiffSchwartz, basepointDiffPairCLE] using
     congrArg f ((basepointDiffPairCLE d n).symm_apply_apply x)
 
-private noncomputable def transportedWHeadBlockCLM
+noncomputable def transportedWHeadBlockCLM
     (d : ℕ) (n : ℕ)
     (W : SchwartzNPointSpace d (n + 1) → ℂ)
     (hW_cont : Continuous W)
@@ -549,7 +530,7 @@ private noncomputable def transportedWHeadBlockCLM
       simp [unflattenBasepointDiffSchwartz, hW_lin.map_smul]
     cont := hW_cont.comp (unflattenBasepointDiffSchwartz d n).continuous }
 
-private lemma transportedWHeadBlockInvariant
+lemma transportedWHeadBlockInvariant
     (d : ℕ) [NeZero d] (n : ℕ)
     {W : SchwartzNPointSpace d (n + 1) → ℂ}
     (hW_cont : Continuous W)
@@ -574,14 +555,14 @@ private lemma transportedWHeadBlockInvariant
       (basepointDiffPairCLE d n (fun i μ => x i μ + a μ)))
   rw [basepointDiffPairCLE_translate_diagonal, flattenBasepointDiffCLE_add_basepoint]
 
-private def basepointAssemble (d : ℕ) (m : ℕ) (hm : m ≤ d + 1) :
+def basepointAssemble (d : ℕ) (m : ℕ) (hm : m ≤ d + 1) :
     (Fin m → ℝ) → (Fin (d + 1 - m) → ℝ) → (Fin (d + 1) → ℝ) :=
   fun aHead aTail =>
     castFinCLE (Nat.add_sub_of_le hm)
       (fun i : Fin (m + (d + 1 - m)) =>
         Fin.addCases (fun j => aHead (Fin.rev j)) aTail i)
 
-@[simp] private lemma basepointAssemble_zero
+@[simp] lemma basepointAssemble_zero
     (d : ℕ) (aTail : Fin (d + 1) → ℝ) :
     basepointAssemble d 0 (Nat.zero_le (d + 1)) default aTail = aTail := by
   ext i
@@ -592,14 +573,14 @@ private def basepointAssemble (d : ℕ) (m : ℕ) (hm : m ≤ d + 1) :
     simp [Fin.natAdd]
   rw [hidx, Fin.addCases_right]
 
-@[simp] private lemma basepointAssemble_zero_any
+@[simp] lemma basepointAssemble_zero_any
     (d : ℕ) (hm : 0 ≤ d + 1) (aTail : Fin (d + 1) → ℝ) :
     basepointAssemble d 0 hm default aTail = aTail := by
   have hproof : hm = Nat.zero_le (d + 1) := Subsingleton.elim _ _
   cases hproof
   simpa using basepointAssemble_zero d aTail
 
-private lemma basepointAssemble_cons
+lemma basepointAssemble_cons
     (d : ℕ) (m : ℕ) (hm : m + 1 ≤ d + 1)
     (aHead : Fin m → ℝ) (aTail : Fin (d + 1 - (m + 1)) → ℝ) (t : ℝ) :
     basepointAssemble d m (by omega) aHead
@@ -711,7 +692,7 @@ private lemma basepointAssemble_cons
         omega
       rw [hsucc, Fin.cons_succ]
 
-private lemma sliceIntegral_flattenBasepointDiff_step
+lemma sliceIntegral_flattenBasepointDiff_step
     (d : ℕ) (n : ℕ) (m : ℕ)
     (hm : m + 1 ≤ d + 1)
     (f : SchwartzNPointSpace d (n + 1))
@@ -734,7 +715,7 @@ private lemma sliceIntegral_flattenBasepointDiff_step
           (Fin.cons t x)) := by
   simp [sliceIntegral_apply, sliceIntegralRaw, reindexSchwartzFin_apply]
 
-private lemma integrateHeadBlock_slice_swap_flattenBasepoint
+lemma integrateHeadBlock_slice_swap_flattenBasepoint
     {m N : ℕ}
     (F : SchwartzMap (Fin ((m + 1) + N) → ℝ) ℂ)
     (u : Fin N → ℝ) :
@@ -835,7 +816,7 @@ private lemma integrateHeadBlock_slice_swap_flattenBasepoint
                       (Fin.cons s u) = _
                   exact ihm (N := N + 1) (u := Fin.cons s u) (F := F')
 
-private lemma integrateHeadBlock_flattenBasepointDiff_aux_m
+lemma integrateHeadBlock_flattenBasepointDiff_aux_m
     (d : ℕ) [NeZero d] (n : ℕ)
     (m : ℕ) (hm : m ≤ d + 1)
     (f : SchwartzNPointSpace d (n + 1))
@@ -1353,7 +1334,7 @@ private lemma integrateHeadBlock_flattenBasepointDiff_aux_m
       have integ := MeasureTheory.integral_prod _ hint
       exact integ.symm.trans hFubini
 
-private lemma integrateHeadBlock_flattenBasepointDiff_aux
+lemma integrateHeadBlock_flattenBasepointDiff_aux
     (d : ℕ) [NeZero d] (n : ℕ)
     (f : SchwartzNPointSpace d (n + 1))
     (u : Fin (n * (d + 1)) → ℝ) :
@@ -1492,7 +1473,7 @@ private lemma integrateHeadBlock_flattenBasepointDiff_aux
       a μ +
       diffVarSection d n ((flattenDiffCLE d n).symm u) k μ))
 
-private lemma integrateHeadBlock_transport_eq_diffVarReduction
+lemma integrateHeadBlock_transport_eq_diffVarReduction
     (d : ℕ) [NeZero d] (n : ℕ)
     (f : SchwartzNPointSpace d (n + 1)) :
     integrateHeadBlock (m := d + 1) (n := n * (d + 1))
@@ -1509,7 +1490,7 @@ private lemma integrateHeadBlock_transport_eq_diffVarReduction
 invariant tempered distribution vanishes on the kernel of
 `diffVarReduction`. The preferred proof route is the head-block transport
 argument recorded in the blueprint. -/
-private lemma translationInvariant_vanishesOn_diffVarReduction_kernel
+lemma translationInvariant_vanishesOn_diffVarReduction_kernel
     (d : ℕ) [NeZero d]
     (n : ℕ)
     {W : SchwartzNPointSpace d (n + 1) → ℂ}
@@ -1598,7 +1579,7 @@ theorem exists_diffVar_distribution_fixed
   simpa [hW_lin.map_sub] using hzero
 
 /-- The constant-1 Schwartz function on the 0-dimensional spacetime. -/
-private noncomputable def schwartzConstOne (d : ℕ) [NeZero d] : SchwartzNPointSpace d 0 :=
+noncomputable def schwartzConstOne (d : ℕ) [NeZero d] : SchwartzNPointSpace d 0 :=
   ⟨fun _ => 1, contDiff_const, fun k n =>
     ⟨‖iteratedFDeriv ℝ n (fun _ : NPointSpacetime d 0 => (1 : ℂ)) 0‖, fun x => by
       rw [show x = 0 from Subsingleton.elim x 0, norm_zero]
@@ -1606,5 +1587,5 @@ private noncomputable def schwartzConstOne (d : ℕ) [NeZero d] : SchwartzNPoint
       · simp
       · rw [zero_pow hk, zero_mul]; exact norm_nonneg _⟩⟩
 
-@[simp] private lemma schwartzConstOne_apply (d : ℕ) [NeZero d] (x : NPointSpacetime d 0) :
+@[simp] lemma schwartzConstOne_apply (d : ℕ) [NeZero d] (x : NPointSpacetime d 0) :
     schwartzConstOne d x = 1 := rfl

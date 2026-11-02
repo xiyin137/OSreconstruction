@@ -1,20 +1,11 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIAxisPairProductSourceGeometry
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIProductTensorSchwingerSourceCurrent
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIAxisPairProductSourceGeometry
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIProductTensorSchwingerSourceCurrent
 
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -42,7 +33,7 @@ def osiiAxisPairLeftBlockReversePerm
       Fin.natAdd n j := by
   simp [osiiAxisPairLeftBlockReversePerm]
 
-private def osiiAxisPairNPointAppendLinearEquiv
+def osiiAxisPairNPointAppendLinearEquiv
     (d n m : ℕ) :
     (NPointDomain d n × NPointDomain d m) ≃ₗ[ℝ]
       NPointDomain d (n + m) :=
@@ -93,7 +84,7 @@ noncomputable def osiiAxisPairNPointAppendCLE
     (Fin.natAdd n j)
   simpa [splitLast] using h
 
-private def osiiAxisPairTimeReflectionLinearEquiv
+def osiiAxisPairTimeReflectionLinearEquiv
     (d : ℕ) : SpacetimeDim d ≃ₗ[ℝ] SpacetimeDim d :=
   { toFun := timeReflection d
     invFun := timeReflection d

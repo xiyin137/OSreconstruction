@@ -1,6 +1,10 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSIIQuantitativeReconstruction
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSIIOriginalGrowth
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanReconstruction
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSIIQuantitativeReconstruction
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSIIOriginalGrowth
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanReconstruction
+
+@[expose] public section
 
 /-!
 # OS II reconstruction including R0'

@@ -5,45 +5,20 @@ Copyright (c) 2026 ModularPhysics Contributors. All rights reserved.
 Released under Apache 2.0 license.
 Authors: Michael R. Douglas, ModularPhysics Contributors
 -/
-import Mathlib.Analysis.Calculus.BumpFunction.Normed
-import Mathlib.Analysis.Distribution.SchwartzSpace.Basic
-import Mathlib.Analysis.Normed.Operator.NormedSpace
-import Mathlib.MeasureTheory.Integral.Pi
-import Mathlib.Topology.Algebra.Module.FiniteDimension
-import OSReconstruction.GeneralResults.DiffUnderIntegralSchwartz
-import OSReconstruction.GeneralResults.FinProductIntegral
-import OSReconstruction.SCV.SchwartzComplete
-import OSReconstruction.SCV.SchwartzPrependField
+module
 
+public import Mathlib.Analysis.Calculus.BumpFunction.Normed
+public import Mathlib.Analysis.Distribution.SchwartzSpace.Basic
+public import Mathlib.Analysis.Normed.Operator.NormedSpace
+public import Mathlib.MeasureTheory.Integral.Pi
+public import Mathlib.Topology.Algebra.Module.FiniteDimension
+public import OSReconstruction.GeneralResults.DiffUnderIntegralSchwartz
+public import OSReconstruction.GeneralResults.FinProductIntegral
+public import OSReconstruction.SCV.SchwartzComplete
+public import OSReconstruction.SCV.SchwartzPrependField
+public import OSReconstruction.SchwartzSeminormCompat
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 open MeasureTheory
 noncomputable section
@@ -280,7 +255,8 @@ lemma integrable_schwartz_fubini_finset_sum_seminorm_weight {m : ℕ}
 
 lemma schwartz_seminorm_complex_eq_real {m : ℕ}
     (k n : ℕ) (ψ : SchwartzMap (Fin m → ℝ) ℂ) :
-    SchwartzMap.seminorm ℂ k n ψ = SchwartzMap.seminorm ℝ k n ψ := rfl
+    SchwartzMap.seminorm ℂ k n ψ = SchwartzMap.seminorm ℝ k n ψ :=
+  SchwartzMap.seminorm_eq_real k n ψ
 
 lemma continuous_finset_sup_schwartzSeminormFamily {m : ℕ}
     (s : Finset (ℕ × ℕ)) :
@@ -312,8 +288,7 @@ lemma integrable_schwartz_fubini_finset_sum_seminorm_weight_complex {m : ℕ}
       ∀ x, SchwartzMap.seminorm ℝ k n (g x) ≤ C * (1 + ‖x‖) ^ N) :
     Integrable fun x =>
       (∑ i ∈ s, SchwartzMap.seminorm ℂ i.1 i.2 (g x)) * ‖f x‖ := by
-  change Integrable fun x =>
-    (∑ i ∈ s, SchwartzMap.seminorm ℝ i.1 i.2 (g x)) * ‖f x‖
+  simp only [SchwartzMap.seminorm_eq_real]
   exact
     integrable_schwartz_fubini_finset_sum_seminorm_weight
       s g f hg_cont hg_bound
@@ -2680,39 +2655,39 @@ theorem schwartz_clm_fubini_exchange {m : ℕ}
       (T Φ = ∫ x : Fin m → ℝ, T (g x) * f x) :=
   schwartz_clm_fubini_exchange_aux T g f hg_cont hg_bound
 
-private noncomputable def finiteDimCoordCLE
+noncomputable def finiteDimCoordCLE
     (E : Type*) [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E] :
     E ≃L[ℝ] (Fin (Module.finrank ℝ E) → ℝ) :=
   ContinuousLinearEquiv.ofFinrankEq (by simp)
 
-private abbrev castFinCLE {a b : ℕ} (h : a = b) :
+abbrev castFinCLE_SchwartzFubini {a b : ℕ} (h : a = b) :
     (Fin a → ℝ) ≃L[ℝ] (Fin b → ℝ) :=
   ContinuousLinearEquiv.piCongrLeft ℝ (fun _ : Fin b => ℝ) (finCongr h)
 
-@[simp] private lemma castFinCLE_apply {a b : ℕ} (h : a = b)
+@[simp] lemma castFinCLE_apply_SchwartzFubini {a b : ℕ} (h : a = b)
     (x : Fin a → ℝ) (i : Fin b) :
-    castFinCLE h x i = x ((finCongr h).symm i) := rfl
+    castFinCLE_SchwartzFubini h x i = x ((finCongr h).symm i) := rfl
 
-@[simp] private lemma castFinCLE_symm_apply {a b : ℕ} (h : a = b)
+@[simp] lemma castFinCLE_symm_apply_SchwartzFubini {a b : ℕ} (h : a = b)
     (x : Fin b → ℝ) (i : Fin a) :
-    (castFinCLE h).symm x i = x ((finCongr h) i) := rfl
+    (castFinCLE_SchwartzFubini h).symm x i = x ((finCongr h) i) := rfl
 
-private noncomputable def toCoordSchwartz
+noncomputable def toCoordSchwartz
     (E : Type*) [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E] :
     SchwartzMap E ℂ →L[ℂ] SchwartzMap (Fin (Module.finrank ℝ E) → ℝ) ℂ :=
   SchwartzMap.compCLMOfContinuousLinearEquiv ℂ (finiteDimCoordCLE E).symm
 
-private noncomputable def fromCoordSchwartz
+noncomputable def fromCoordSchwartz
     (E : Type*) [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E] :
     SchwartzMap (Fin (Module.finrank ℝ E) → ℝ) ℂ →L[ℂ] SchwartzMap E ℂ :=
   SchwartzMap.compCLMOfContinuousLinearEquiv ℂ (finiteDimCoordCLE E)
 
-@[simp] private lemma toCoordSchwartz_apply
+@[simp] lemma toCoordSchwartz_apply
     {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E]
     (f : SchwartzMap E ℂ) (x : Fin (Module.finrank ℝ E) → ℝ) :
     toCoordSchwartz E f x = f ((finiteDimCoordCLE E).symm x) := rfl
 
-@[simp] private lemma fromCoordSchwartz_apply
+@[simp] lemma fromCoordSchwartz_apply
     {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E]
     (f : SchwartzMap (Fin (Module.finrank ℝ E) → ℝ) ℂ) (x : E) :
     fromCoordSchwartz E f x = f ((finiteDimCoordCLE E) x) := rfl

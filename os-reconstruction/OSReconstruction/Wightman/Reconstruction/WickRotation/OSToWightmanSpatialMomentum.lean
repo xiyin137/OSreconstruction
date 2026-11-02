@@ -1,28 +1,13 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import Init
-import OSReconstruction.SCV.LaplaceHolomorphic
-import OSReconstruction.Wightman.Reconstruction.SchwartzDensity
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanSemigroup
+module
 
+public import Init
+public import OSReconstruction.SCV.LaplaceHolomorphic
+public import OSReconstruction.Wightman.Reconstruction.SchwartzDensity
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanSemigroup
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 set_option backward.isDefEq.respectTransparency false
 
@@ -38,7 +23,7 @@ set_option linter.unusedVariables false
 variable {d : ℕ} [NeZero d]
 
 /-- Spatial translation on the honest positive-time OS Borchers algebra. -/
-private def spatialTranslatePositiveTimeBorchers (a : Fin d → ℝ)
+def spatialTranslatePositiveTimeBorchers (a : Fin d → ℝ)
     (F : PositiveTimeBorchersSequence d) : PositiveTimeBorchersSequence d where
   toBorchersSequence :=
     translateBorchers (d := d) (Fin.cons 0 a) (F : BorchersSequence d)
@@ -48,14 +33,14 @@ private def spatialTranslatePositiveTimeBorchers (a : Fin d → ℝ)
       (d := d) (n := n) (a := Fin.cons 0 a) (ha0 := by simp)
       ((F : BorchersSequence d).funcs n) (F.ordered_tsupport n)
 
-@[simp] private theorem spatialTranslatePositiveTimeBorchers_funcs
+@[simp] theorem spatialTranslatePositiveTimeBorchers_funcs
     (a : Fin d → ℝ) (F : PositiveTimeBorchersSequence d) (n : ℕ) :
     ((spatialTranslatePositiveTimeBorchers (d := d) a F :
         PositiveTimeBorchersSequence d) : BorchersSequence d).funcs n =
       translateSchwartzNPoint (d := d) (Fin.cons 0 a)
         ((F : BorchersSequence d).funcs n) := rfl
 
-private theorem translate_osConjTensorProduct_eq_of_spatial_local
+theorem translate_osConjTensorProduct_eq_of_spatial_local
     (a0 : SpacetimeDim d) (ha0 : a0 0 = 0)
     {n m : ℕ}
     (f : SchwartzNPoint d n) (g : SchwartzNPoint d m)
@@ -72,7 +57,7 @@ private theorem translate_osConjTensorProduct_eq_of_spatial_local
       simp [timeReflectionN, splitFirst, timeReflection, ha0]
     · simp [timeReflectionN, splitFirst, timeReflection, hμ]
 
-private theorem schwinger_translate_tensor_eq_of_spatial_local
+theorem schwinger_translate_tensor_eq_of_spatial_local
     (OS : OsterwalderSchraderAxioms d)
     {n m : ℕ} (a0 : SpacetimeDim d) (ha0 : a0 0 = 0)
     (f : SchwartzNPoint d n) (g : SchwartzNPoint d m)
@@ -102,7 +87,7 @@ private theorem schwinger_translate_tensor_eq_of_spatial_local
 
 /-- Spatial translation preserves the honest OS pairing on positive-time
 Borchers vectors. -/
-private theorem positiveTime_osInner_spatial_translate_eq
+theorem positiveTime_osInner_spatial_translate_eq
     (OS : OsterwalderSchraderAxioms d)
     (a : Fin d → ℝ)
     (F G : PositiveTimeBorchersSequence d) :
@@ -135,7 +120,7 @@ private theorem positiveTime_osInner_spatial_translate_eq
       ((F : BorchersSequence d).funcs n) ((G : BorchersSequence d).funcs m)
       (hleft n m) (hright n m)
 
-private theorem spatialTranslatePositiveTimeBorchers_respects_equiv
+theorem spatialTranslatePositiveTimeBorchers_respects_equiv
     (OS : OsterwalderSchraderAxioms d) (a : Fin d → ℝ)
     (F G : PositiveTimeBorchersSequence d)
     (hFG : osBorchersSetoid OS F G) :
@@ -188,7 +173,7 @@ private theorem spatialTranslatePositiveTimeBorchers_respects_equiv
 
 /-- Positive Euclidean time translation on the honest positive-time OS Borchers
 algebra, localized to the spatial-momentum lane. -/
-private def timeShiftPositiveTimeBorchersLocal (t : ℝ) (ht : 0 < t)
+def timeShiftPositiveTimeBorchersLocal (t : ℝ) (ht : 0 < t)
     (F : PositiveTimeBorchersSequence d) : PositiveTimeBorchersSequence d where
   toBorchersSequence := timeShiftBorchers (d := d) t (F : BorchersSequence d)
   ordered_tsupport := by
@@ -196,14 +181,14 @@ private def timeShiftPositiveTimeBorchersLocal (t : ℝ) (ht : 0 < t)
     simpa using timeShiftSchwartzNPoint_preserves_ordered_positive_tsupport
       (d := d) (n := n) t ht ((F : BorchersSequence d).funcs n) (F.ordered_tsupport n)
 
-@[simp] private theorem timeShiftPositiveTimeBorchersLocal_toBorchersSequence
+@[simp] theorem timeShiftPositiveTimeBorchersLocal_toBorchersSequence
     (t : ℝ) (ht : 0 < t) (F : PositiveTimeBorchersSequence d) :
     ((timeShiftPositiveTimeBorchersLocal (d := d) t ht F :
         PositiveTimeBorchersSequence d) : BorchersSequence d) =
       timeShiftBorchers (d := d) t (F : BorchersSequence d) := rfl
 
 /-- Spatial translation descends to the honest OS quotient. -/
-private def osSpatialTranslate (OS : OsterwalderSchraderAxioms d)
+def osSpatialTranslate (OS : OsterwalderSchraderAxioms d)
     (a : Fin d → ℝ) :
     OSPreHilbertSpace OS → OSPreHilbertSpace OS :=
   Quotient.map (spatialTranslatePositiveTimeBorchers (d := d) a)
@@ -262,7 +247,7 @@ theorem osSpatialTranslateLinear_norm_eq
   nlinarith [norm_nonneg ((osSpatialTranslateLinear (d := d) OS a) x), norm_nonneg x]
 
 /-- The quotient-level spatial translation is a bounded linear operator. -/
-private noncomputable def osSpatialTranslateContinuous
+noncomputable def osSpatialTranslateContinuous
     (OS : OsterwalderSchraderAxioms d)
     (a : Fin d → ℝ) :
     OSPreHilbertSpace OS →L[ℂ] OSPreHilbertSpace OS :=
@@ -270,7 +255,7 @@ private noncomputable def osSpatialTranslateContinuous
     simpa [one_mul] using
       le_of_eq (osSpatialTranslateLinear_norm_eq (d := d) OS a x))
 
-@[simp] private theorem osSpatialTranslateContinuous_apply
+@[simp] theorem osSpatialTranslateContinuous_apply
     (OS : OsterwalderSchraderAxioms d)
     (a : Fin d → ℝ) (x : OSPreHilbertSpace OS) :
     osSpatialTranslateContinuous (d := d) OS a x =
@@ -350,68 +335,68 @@ theorem osSpatialTranslateHilbert_inner_eq
 
 
 
-private noncomputable def unitBallBumpSchwartzNPointRadius
+noncomputable def unitBallBumpSchwartzNPointRadius_oWightmanSpatialMomentum
     (n d : ℕ) (R : ℝ) (hR : 0 < R) : SchwartzNPoint d n :=
   SchwartzMap.compCLMOfContinuousLinearEquiv ℂ (flattenCLEquivReal n (d + 1))
     (OSReconstruction.unitBallBumpSchwartzPiRadius (n * (d + 1)) R hR)
 
-private noncomputable def bumpTruncationRadiusNPoint {n : ℕ}
+noncomputable def bumpTruncationRadiusNPoint_oWightmanSpatialMomentum {n : ℕ}
     (f : SchwartzNPoint d n) (N : ℕ) : SchwartzNPoint d n :=
   SchwartzMap.smulLeftCLM ℂ
-    (unitBallBumpSchwartzNPointRadius n d
+    (unitBallBumpSchwartzNPointRadius_oWightmanSpatialMomentum n d
       (OSReconstruction.bumpTruncationRadiusValue N)
       (OSReconstruction.bumpTruncationRadiusValue_pos N)) f
 
-private theorem unflatten_flattenSchwartzNPoint_local {n : ℕ}
+theorem unflatten_flattenSchwartzNPoint_local_oWightmanSpatialMomentum {n : ℕ}
     (f : SchwartzNPoint d n) :
     unflattenSchwartzNPoint (d := d) (flattenSchwartzNPoint (d := d) f) = f := by
   ext x
   simp [flattenSchwartzNPoint_apply]
 
-private theorem bumpTruncationRadiusNPoint_eq_unflatten {n : ℕ}
+theorem bumpTruncationRadiusNPoint_eq_unflatten_oWightmanSpatialMomentum {n : ℕ}
     (f : SchwartzNPoint d n) (N : ℕ) :
-    bumpTruncationRadiusNPoint (d := d) f N =
+    bumpTruncationRadiusNPoint_oWightmanSpatialMomentum (d := d) f N =
       unflattenSchwartzNPoint (d := d)
         (OSReconstruction.bumpTruncationRadius (flattenSchwartzNPoint (d := d) f) N) := by
   ext x
   rw [unflattenSchwartzNPoint_apply]
-  rw [bumpTruncationRadiusNPoint]
+  rw [bumpTruncationRadiusNPoint_oWightmanSpatialMomentum]
   rw [OSReconstruction.bumpTruncationRadius]
   rw [SchwartzMap.smulLeftCLM_apply_apply (by fun_prop)]
   rw [SchwartzMap.smulLeftCLM_apply_apply (by fun_prop)]
-  simp [unitBallBumpSchwartzNPointRadius, flattenSchwartzNPoint_apply]
+  simp [unitBallBumpSchwartzNPointRadius_oWightmanSpatialMomentum, flattenSchwartzNPoint_apply]
 
 def compactApproxPositiveTimeBorchers
     (F : PositiveTimeBorchersSequence d) (N : ℕ) :
     PositiveTimeBorchersSequence d where
   toBorchersSequence :=
-    { funcs := fun n => bumpTruncationRadiusNPoint (((F : BorchersSequence d).funcs n)) N
+    { funcs := fun n => bumpTruncationRadiusNPoint_oWightmanSpatialMomentum (((F : BorchersSequence d).funcs n)) N
       bound := ((F : BorchersSequence d).bound)
       bound_spec := by
         intro n hn
-        simp [bumpTruncationRadiusNPoint, (F : BorchersSequence d).bound_spec n hn] }
+        simp [bumpTruncationRadiusNPoint_oWightmanSpatialMomentum, (F : BorchersSequence d).bound_spec n hn] }
   ordered_tsupport := by
     intro n x hx
     change x ∈ tsupport
       ((((SchwartzMap.smulLeftCLM ℂ
-          (unitBallBumpSchwartzNPointRadius n d
+          (unitBallBumpSchwartzNPointRadius_oWightmanSpatialMomentum n d
             (OSReconstruction.bumpTruncationRadiusValue N)
             (OSReconstruction.bumpTruncationRadiusValue_pos N)))
           (((F : BorchersSequence d).funcs n : SchwartzNPoint d n))) :
         SchwartzNPoint d n) : NPointDomain d n → ℂ) at hx
     have hsubset := SchwartzMap.tsupport_smulLeftCLM_subset
       (F := ℂ)
-      (g := unitBallBumpSchwartzNPointRadius n d
+      (g := unitBallBumpSchwartzNPointRadius_oWightmanSpatialMomentum n d
         (OSReconstruction.bumpTruncationRadiusValue N)
         (OSReconstruction.bumpTruncationRadiusValue_pos N))
       (f := ((F : BorchersSequence d).funcs n : SchwartzNPoint d n))
     exact F.ordered_tsupport n (hsubset hx).1
 
-@[simp] private theorem compactApproxPositiveTimeBorchers_funcs
+@[simp] theorem compactApproxPositiveTimeBorchers_funcs
     (F : PositiveTimeBorchersSequence d) (N n : ℕ) :
     (((compactApproxPositiveTimeBorchers (d := d) F N : PositiveTimeBorchersSequence d) :
         BorchersSequence d).funcs n : SchwartzNPoint d n) =
-      bumpTruncationRadiusNPoint (d := d)
+      bumpTruncationRadiusNPoint_oWightmanSpatialMomentum (d := d)
         (((F : BorchersSequence d).funcs n : SchwartzNPoint d n)) N := rfl
 
 theorem compactApproxPositiveTimeBorchers_component_compact
@@ -433,7 +418,7 @@ theorem compactApproxPositiveTimeBorchers_component_compact
         (flattenSchwartzNPoint (d := d)
           (((F : BorchersSequence d).funcs n : SchwartzNPoint d n))))
   rw [compactApproxPositiveTimeBorchers_funcs (d := d)]
-  rw [bumpTruncationRadiusNPoint_eq_unflatten (d := d)]
+  rw [bumpTruncationRadiusNPoint_eq_unflatten_oWightmanSpatialMomentum (d := d)]
   simpa using hflat.comp_homeomorph (flattenCLEquivReal n (d + 1)).toHomeomorph
 
 theorem tendsto_compactApproxPositiveTimeBorchers_component
@@ -463,14 +448,14 @@ theorem tendsto_compactApproxPositiveTimeBorchers_component
             PositiveTimeBorchersSequence d) :
           BorchersSequence d).funcs n : SchwartzNPoint d n)) =
       fun N : ℕ =>
-        bumpTruncationRadiusNPoint (d := d)
+        bumpTruncationRadiusNPoint_oWightmanSpatialMomentum (d := d)
           (((F : BorchersSequence d).funcs n : SchwartzNPoint d n)) N := by
     funext N
     simp [compactApproxPositiveTimeBorchers_funcs]
   rw [hrew]
   have hrew' :
       (fun N : ℕ =>
-        bumpTruncationRadiusNPoint (d := d)
+        bumpTruncationRadiusNPoint_oWightmanSpatialMomentum (d := d)
           (((F : BorchersSequence d).funcs n : SchwartzNPoint d n)) N) =
       fun N : ℕ =>
         unflattenSchwartzNPoint (d := d)
@@ -478,7 +463,7 @@ theorem tendsto_compactApproxPositiveTimeBorchers_component
             (flattenSchwartzNPoint (d := d)
               (((F : BorchersSequence d).funcs n : SchwartzNPoint d n))) N) := by
     funext N
-    rw [bumpTruncationRadiusNPoint_eq_unflatten (d := d)]
+    rw [bumpTruncationRadiusNPoint_eq_unflatten_oWightmanSpatialMomentum (d := d)]
   rw [hrew']
   have hunflat :=
     ((unflattenSchwartzNPoint (d := d)).continuous.tendsto
@@ -491,7 +476,7 @@ theorem tendsto_compactApproxPositiveTimeBorchers_component
           (((F : BorchersSequence d).funcs n : SchwartzNPoint d n))) N)
     Filter.atTop
     (nhds (((F : BorchersSequence d).funcs n : SchwartzNPoint d n)))
-  rw [unflatten_flattenSchwartzNPoint_local] at hunflat
+  rw [unflatten_flattenSchwartzNPoint_local_oWightmanSpatialMomentum] at hunflat
   exact hunflat
 
 /-- Lower-layer positive-time OS Hilbert vector.  This duplicates the direct

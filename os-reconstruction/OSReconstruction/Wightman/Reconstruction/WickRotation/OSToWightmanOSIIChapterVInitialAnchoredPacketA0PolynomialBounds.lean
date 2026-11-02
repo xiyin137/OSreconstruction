@@ -1,24 +1,17 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import Init
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVInitialAnchoredPacketBlockFamilies
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVDeltaHilbertLimit
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVInitialReflectedA0Factorization
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVReflectedMovingSliceBridge
-import OSReconstruction.SCV.DistributionalRepresentationGluing
-import Mathlib.Analysis.Complex.Tietze
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIAxisPairMultiGapDistributionHolomorphy
+module
 
+public import Init
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVInitialAnchoredPacketBlockFamilies
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVDeltaHilbertLimit
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVInitialReflectedA0Factorization
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVReflectedMovingSliceBridge
+public import OSReconstruction.SCV.DistributionalRepresentationGluing
+public import Mathlib.Analysis.Complex.Tietze
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIAxisPairMultiGapDistributionHolomorphy
 
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 

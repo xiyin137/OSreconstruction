@@ -1,18 +1,15 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import Mathlib.Analysis.SpecialFunctions.Complex.Arctan
-import Mathlib.Analysis.SpecialFunctions.Artanh
-import Mathlib.Analysis.Real.Pi.Bounds
-import OSReconstruction.SCV.StripCompactification
+module
 
+public import Mathlib.Analysis.SpecialFunctions.Complex.Arctan
+public import Mathlib.Analysis.SpecialFunctions.Artanh
+public import Mathlib.Analysis.Real.Pi.Bounds
+public import OSReconstruction.SCV.StripCompactification
+public import Mathlib.Analysis.SpecialFunctions.Log.Deriv
+public import Mathlib.Analysis.SpecialFunctions.Complex.LogDeriv
 
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 

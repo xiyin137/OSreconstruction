@@ -1,18 +1,11 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVITimeSpatialCanonicalFrequency
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIReducedForwardTubePaleyWiener
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVITimeSpatialCanonicalFrequency
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIReducedForwardTubePaleyWiener
 
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -23,7 +16,7 @@ namespace OSReconstruction
 
 /-- Split a particle coordinate into its time coordinate or its spatial
 coordinate together with the particle label. -/
-private def osiiFullToTimeSpatialSumIndexEquiv (d k : Nat) :
+def osiiFullToTimeSpatialSumIndexEquiv (d k : Nat) :
     (Fin k × Fin (d + 1)) ≃ (Fin k ⊕ (Fin k × Fin d)) where
   toFun p :=
     Fin.cases (Sum.inl p.1) (fun j => Sum.inr (p.1, j)) p.2
@@ -39,7 +32,7 @@ private def osiiFullToTimeSpatialSumIndexEquiv (d k : Nat) :
     cases s <;> rfl
 
 /-- Flatten the time summand first and the spatial particle block second. -/
-private def osiiTimeSpatialSumFlatIndexEquiv (d k : Nat) :
+def osiiTimeSpatialSumFlatIndexEquiv (d k : Nat) :
     (Fin k ⊕ (Fin k × Fin d)) ≃ Fin (k + k * d) :=
   (Equiv.sumCongr (Equiv.refl (Fin k))
       (finProdFinEquiv : (Fin k × Fin d) ≃ Fin (k * d))).trans
@@ -71,7 +64,7 @@ def osiiFullFlatTimeSpatialPullbackCLM (d k : Nat) :
   SchwartzMap.compCLMOfContinuousLinearEquiv Complex
     (osiiFullFlatTimeSpatialReindexCLE d k)
 
-private theorem osiiPiCongrLeft_pair_eq
+theorem osiiPiCongrLeft_pair_eq
     {a b : Nat} (e : Fin a ≃ Fin b)
     (x xi : Fin a -> Real) :
     (∑ i : Fin a, (x i : Complex) * (xi i : Complex)) =

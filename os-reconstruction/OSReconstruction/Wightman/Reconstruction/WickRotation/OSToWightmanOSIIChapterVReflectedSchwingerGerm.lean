@@ -1,15 +1,10 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVReducedSchwinger
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVReducedSchwinger
 
-
-
-
-
-
-
-
+@[expose] public section
 
 open Complex Topology MeasureTheory Set
 open scoped Classical
@@ -42,7 +37,7 @@ noncomputable def mixedReflectedChronologicalSource
       (finCongr (by omega)))
     (f.osConjTensorProduct g)
 
-private theorem osiiAxisPairLeftBlockReversePerm_involutive
+theorem osiiAxisPairLeftBlockReversePerm_involutive
     (n m : ℕ) (i : Fin (n + m)) :
     osiiAxisPairLeftBlockReversePerm n m
         (osiiAxisPairLeftBlockReversePerm n m i) =
@@ -127,7 +122,7 @@ theorem
       ((osiiAxisPairLeftBlockReversePerm (k + 1) (k + 1)).trans
         (finCongr (by omega)))
 
-private theorem schwinger_reindex_finCongr
+theorem schwinger_reindex_finCongr
     (OS : OsterwalderSchraderAxioms d)
     {n m : ℕ}
     (h : n = m)

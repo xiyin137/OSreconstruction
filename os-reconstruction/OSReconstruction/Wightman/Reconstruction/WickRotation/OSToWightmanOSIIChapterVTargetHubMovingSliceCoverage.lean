@@ -1,20 +1,10 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVTargetAdaptedMovingSliceCoverage
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVTargetAdaptedMovingSliceCoverage
 
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -154,7 +144,7 @@ theorem zeroAnchorShiftedStagePoint_targetHubBox_right
     Complex.real_smul, tailAnchorCenteredPoint]
   ring
 
-private theorem targetHub_real_shift_nonnegative
+theorem targetHub_real_shift_nonnegative
     {a h u : ℝ}
     (hah : a ≤ h)
     (hu : u ∈ Set.Icc (0 : ℝ) 1) :

@@ -1,6 +1,10 @@
-import Mathlib.Analysis.Calculus.Taylor
-import Mathlib.Analysis.Calculus.Deriv.Shift
-import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
+module
+
+public import Mathlib.Analysis.Calculus.Taylor
+public import Mathlib.Analysis.Calculus.Deriv.Shift
+public import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
+
+@[expose] public section
 
 /-!
 # The tested Taylor endpoint formula
@@ -19,12 +23,12 @@ namespace OSReconstruction
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace Real E]
 
-private def testedTaylorPolynomial
+def testedTaylorPolynomial
     (J : Nat -> Real -> E) (M : Nat) (s : Real) : E :=
   ∑ j ∈ Finset.range (M + 1),
     ((j.factorial : Real)⁻¹ * (-s) ^ j) • J j s
 
-private theorem hasDerivAt_testedTaylorCoefficient
+theorem hasDerivAt_testedTaylorCoefficient
     (j : Nat) (s : Real) :
     HasDerivAt
       (fun u : Real => ((j + 1).factorial : Real)⁻¹ * (-u) ^ (j + 1))
@@ -38,7 +42,7 @@ private theorem hasDerivAt_testedTaylorCoefficient
     field
   simpa only [zero_sub, Nat.cast_add, Nat.cast_one, hcoef] using h
 
-private theorem hasDerivAt_testedTaylorPolynomial
+theorem hasDerivAt_testedTaylorPolynomial
     (J : Nat -> Real -> E) (M : Nat) (s : Real)
     (hJ : forall j, HasDerivAt (J j) (J (j + 1) s) s) :
     HasDerivAt (testedTaylorPolynomial J M)

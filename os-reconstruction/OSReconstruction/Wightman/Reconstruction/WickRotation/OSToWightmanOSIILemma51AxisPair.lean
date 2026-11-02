@@ -1,21 +1,10 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIILemma51CoordinateEstimate
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIILemma51CoordinateEstimate
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -80,17 +69,17 @@ def osiiAxisPairLogRealEmbed
     osiiAxisPairIndex d → ℂ :=
   fun a => (x a : ℂ)
 
-private theorem osiiAxisPair_bool_sum_signed_half_mul_sign (z : ℂ) :
+theorem osiiAxisPair_bool_sum_signed_half_mul_sign (z : ℂ) :
     (∑ b : Bool,
       (if b then z / 2 else -z / 2) * (((if b then 1 else -1 : ℝ) : ℂ))) = z := by
   simp
   ring
 
-private theorem osiiAxisPair_bool_sum_const_mul_sign (c : ℂ) :
+theorem osiiAxisPair_bool_sum_const_mul_sign (c : ℂ) :
     (∑ b : Bool, c * (((if b then 1 else -1 : ℝ) : ℂ))) = 0 := by
   simp
 
-private theorem osiiAxisPairCoeff_time_sum
+theorem osiiAxisPairCoeff_time_sum
     (T : ℝ) (hT : T ≠ 0)
     (ξ : Fin (d + 1) → ℝ) (ζ : Fin (d + 1) → ℂ) :
     (∑ a : osiiAxisPairIndex d,
@@ -133,7 +122,7 @@ private theorem osiiAxisPairCoeff_time_sum
         push_cast
         ring_nf
 
-private theorem osiiAxisPairCoeff_spatial_sum
+theorem osiiAxisPairCoeff_spatial_sum
     (T : ℝ) (ξ : Fin (d + 1) → ℝ) (ζ : Fin (d + 1) → ℂ) (j : Fin d) :
     (∑ a : osiiAxisPairIndex d,
         osiiAxisPairCoeff T ξ ζ a *

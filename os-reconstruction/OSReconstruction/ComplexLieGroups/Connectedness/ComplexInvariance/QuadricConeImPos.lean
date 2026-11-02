@@ -1,6 +1,10 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.ComplexLieGroups.Connectedness.ComplexInvariance.OrbitSetN1Geometry
+module
+
+public import OSReconstruction.ComplexLieGroups.Connectedness.ComplexInvariance.OrbitSetN1Geometry
+
+@[expose] public section
 
 noncomputable section
 
@@ -10,14 +14,14 @@ namespace BHW
 
 variable {m : ℕ}
 
-private def etaContractFixed
+def etaContractFixed
     (c : ℂ) (η : MinkowskiSpace (m + 1)) (t : ℝ) : MinkowskiSpace (m + 1) :=
   fun μ =>
     Fin.cases
       (Real.sqrt (c.im ^ 2 + (1 - t) ^ 2 * MinkowskiSpace.spatialNormSq (m + 1) η))
       (fun i => (1 - t) * η i.succ) μ
 
-private lemma minkowskiNormSq_etaContractFixed
+lemma minkowskiNormSq_etaContractFixed
     (c : ℂ) (η : MinkowskiSpace (m + 1)) (t : ℝ) :
     MinkowskiSpace.minkowskiNormSq (m + 1) (etaContractFixed (m := m) c η t) = -c.im ^ 2 := by
   have hs_nonneg : 0 ≤ MinkowskiSpace.spatialNormSq (m + 1) η := by
@@ -46,7 +50,7 @@ private lemma minkowskiNormSq_etaContractFixed
   rw [htime_sq, hspatial]
   ring
 
-private lemma inOpenForwardCone_etaContractFixed
+lemma inOpenForwardCone_etaContractFixed
     (c : ℂ) (η : MinkowskiSpace (m + 1)) (hcim : 0 < c.im) (t : ℝ) :
     InOpenForwardCone (m + 1) (etaContractFixed (m := m) c η t) := by
   refine ⟨?_, ?_⟩
@@ -61,7 +65,7 @@ private lemma inOpenForwardCone_etaContractFixed
     simpa [InOpenForwardCone, MinkowskiSpace.minkowskiNormSq, MinkowskiSpace.minkowskiInner,
       MinkowskiSpace.metricSignature, minkowskiSignature, sq, pow_two] using hneg_norm
 
-private lemma etaContractFixed_zero
+lemma etaContractFixed_zero
     (c : ℂ) (η : MinkowskiSpace (m + 1))
     (hcone : InOpenForwardCone (m + 1) η)
     (hηnorm : MinkowskiSpace.minkowskiNormSq (m + 1) η = -c.im ^ 2) :
@@ -83,7 +87,7 @@ private lemma etaContractFixed_zero
   · intro i
     simp [etaContractFixed]
 
-private lemma etaContractFixed_one_general
+lemma etaContractFixed_one_general
     (c : ℂ) (η : MinkowskiSpace (m + 1)) (hcim : 0 < c.im) :
     etaContractFixed (m := m) c η 1 = (fun μ => if μ = 0 then c.im else 0) := by
   ext μ
@@ -92,7 +96,7 @@ private lemma etaContractFixed_one_general
   · intro i
     simp [etaContractFixed]
 
-private lemma continuous_etaContractFixed
+lemma continuous_etaContractFixed
     (c : ℂ) (η : MinkowskiSpace (m + 1)) :
     Continuous (fun t : ℝ => etaContractFixed (m := m) c η t) := by
   apply continuous_pi
@@ -109,7 +113,7 @@ private lemma continuous_etaContractFixed
     change Continuous (fun t : ℝ => (1 - t) * η i.succ)
     exact (continuous_const.sub continuous_id).mul continuous_const
 
-private lemma joinedIn_parallelSlice_to_canonical
+lemma joinedIn_parallelSlice_to_canonical
     (c : ℂ) (hcim : 0 < c.im)
     (η : MinkowskiSpace (m + 1))
     (hcone : InOpenForwardCone (m + 1) η)
@@ -167,12 +171,12 @@ private lemma joinedIn_parallelSlice_to_canonical
   exact parallel_mem_quadricConeSet_im_with_value (m := m) c hcim
     (etaContractFixed (m := m) c η t) hcone_t hnorm_t
 
-private def parallelPoint
+def parallelPoint
     (c : ℂ) (η : MinkowskiSpace (m + 1)) :
     Fin (m + 2) → ℂ :=
   fun μ => (((c.re / c.im) * η μ : ℝ) : ℂ) + ((η μ : ℂ) * Complex.I)
 
-private lemma minkowskiNormSq_smul
+lemma minkowskiNormSq_smul
     (a : ℝ) (η : MinkowskiSpace (m + 1)) :
     MinkowskiSpace.minkowskiNormSq (m + 1) (a • η) =
       a ^ 2 * MinkowskiSpace.minkowskiNormSq (m + 1) η := by
@@ -180,7 +184,7 @@ private lemma minkowskiNormSq_smul
   rw [MinkowskiSpace.minkowskiInner_smul_left, MinkowskiSpace.minkowskiInner_smul_right]
   ring
 
-private lemma orthogonal_timelike_norm_zero_eq_zero
+lemma orthogonal_timelike_norm_zero_eq_zero
     (ζ η : MinkowskiSpace (m + 1))
     (hcone : InOpenForwardCone (m + 1) η)
     (horth : MinkowskiSpace.minkowskiInner (m + 1) ζ η = 0)
@@ -233,7 +237,7 @@ private lemma orthogonal_timelike_norm_zero_eq_zero
   · intro i
     exact hsp_comp_zero i
 
-private theorem quadricConeSet_im_with_value_isPreconnected_of_im_pos
+theorem quadricConeSet_im_with_value_isPreconnected_of_im_pos
     (c : ℂ) (hcim : 0 < c.im) :
     IsPreconnected (quadricConeSet_im_with_value (m := m) (-(c ^ 2))) := by
   refine

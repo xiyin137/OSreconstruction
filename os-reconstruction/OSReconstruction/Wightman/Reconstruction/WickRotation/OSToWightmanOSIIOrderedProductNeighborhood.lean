@@ -1,17 +1,12 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import Mathlib.Data.Fin.Tuple.Sort
-import OSReconstruction.Wightman.Reconstruction.UniversalProjection
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIEuclideanRotationSource
+module
 
+public import Mathlib.Data.Fin.Tuple.Sort
+public import OSReconstruction.Wightman.Reconstruction.UniversalProjection
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIEuclideanRotationSource
 
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 

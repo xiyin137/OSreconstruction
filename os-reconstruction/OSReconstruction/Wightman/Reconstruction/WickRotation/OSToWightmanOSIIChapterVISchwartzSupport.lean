@@ -1,9 +1,13 @@
-import OSReconstruction.Wightman.Reconstruction.SchwartzDensity
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIGrowthBoundaryHandoff
-import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43SpectralSupport
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIPositiveTimeHilbertRealEdge
-import OSReconstruction.SCV.EuclideanWeylOpen
-import Mathlib.Analysis.Distribution.Support
+module
+
+public import OSReconstruction.Wightman.Reconstruction.SchwartzDensity
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIGrowthBoundaryHandoff
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43SpectralSupport
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIPositiveTimeHilbertRealEdge
+public import OSReconstruction.SCV.EuclideanWeylOpen
+public import Mathlib.Analysis.Distribution.Support
+
+@[expose] public section
 
 /-!
 # Schwartz support and the positive time cone
@@ -63,7 +67,7 @@ theorem osiiSchwartzDistribution_isVanishingOn_of_compact
 /-- A compact Schwartz test whose topological support avoids a distribution's
 support is annihilated by that distribution.  The local zero neighborhoods are
 assembled with a finite smooth Schwartz partition. -/
-private theorem osiiSchwartzDistribution_apply_eq_zero_of_compact_tsupport_disjoint
+theorem osiiSchwartzDistribution_apply_eq_zero_of_compact_tsupport_disjoint
     {m : Nat}
     (T : SchwartzMap (Fin m -> Real) Complex →L[Complex] Complex)
     (phi : SchwartzMap (Fin m -> Real) Complex)

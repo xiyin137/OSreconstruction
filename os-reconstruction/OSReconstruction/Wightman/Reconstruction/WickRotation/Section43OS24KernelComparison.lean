@@ -1,8 +1,12 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43SpectralFactorization
-import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43WickRotateFourierLaplaceBridge
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBoundaryValueLimits
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43SpectralFactorization
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43WickRotateFourierLaplaceBridge
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBoundaryValueLimits
+
+@[expose] public section
 
 noncomputable section
 
@@ -14,7 +18,7 @@ namespace OSReconstruction
 /-- The raw OS `xiShift` shell for a successor-right split.  This is the shell
 used by the already compiled Schwinger-side bridge; it is not asserted to lie
 in the forward tube. -/
-private def section43RawXiShiftConfig_succRight
+def section43RawXiShiftConfig_succRight
     (d : ℕ) {n m : ℕ} (t : ℝ)
     (y : NPointDomain d (n + (m + 1))) :
     Fin (n + (m + 1)) → Fin (d + 1) → ℂ :=
@@ -23,34 +27,34 @@ private def section43RawXiShiftConfig_succRight
 
 /-- Chronological reversal of the OS-reflected left block, fixing the right
 tail. -/
-private def section43LeftBlockReversePerm_succRight
+def section43LeftBlockReversePerm_succRight
     (n m : ℕ) :
     Equiv.Perm (Fin (n + (m + 1))) :=
   (finSumFinEquiv (m := n) (n := m + 1)).symm.trans
     ((Equiv.sumCongr Fin.revPerm (Equiv.refl (Fin (m + 1)))).trans
       (finSumFinEquiv (m := n) (n := m + 1)))
 
-@[simp] private theorem section43LeftBlockReversePerm_succRight_castAdd
+@[simp] theorem section43LeftBlockReversePerm_succRight_castAdd
     (n m : ℕ) (i : Fin n) :
     section43LeftBlockReversePerm_succRight n m
         (Fin.castAdd (m + 1) i) =
       Fin.castAdd (m + 1) (Fin.rev i) := by
   simp [section43LeftBlockReversePerm_succRight]
 
-@[simp] private theorem section43LeftBlockReversePerm_succRight_natAdd
+@[simp] theorem section43LeftBlockReversePerm_succRight_natAdd
     (n m : ℕ) (j : Fin (m + 1)) :
     section43LeftBlockReversePerm_succRight n m
         (Fin.natAdd n j) =
       Fin.natAdd n j := by
   simp [section43LeftBlockReversePerm_succRight]
 
-private theorem section43_eq_castAdd_of_val_lt
+theorem section43_eq_castAdd_of_val_lt
     {n m : ℕ} {i : Fin (n + (m + 1))} (hi : i.val < n) :
     i = Fin.castAdd (m + 1) (⟨i.val, hi⟩ : Fin n) := by
   ext
   rfl
 
-private theorem section43_eq_natAdd_of_not_val_lt
+theorem section43_eq_natAdd_of_not_val_lt
     {n m : ℕ} {i : Fin (n + (m + 1))} (hi : ¬ i.val < n) :
     i = Fin.natAdd n (⟨i.val - n, by omega⟩ : Fin (m + 1)) := by
   ext
@@ -97,7 +101,7 @@ theorem section43NPointProductSplitMeasurableEquiv_measurePreserving
   filter_upwards with x
   rfl
 
-private theorem section43NPointProductSplitMeasurableEquiv_fst_apply
+theorem section43NPointProductSplitMeasurableEquiv_fst_apply
     (d n r : ℕ) (x : NPointDomain d (n + r)) (i : Fin n) :
     (section43NPointProductSplitMeasurableEquiv d n r x).1 i =
       x (Fin.castAdd r i) := by
@@ -115,7 +119,7 @@ private theorem section43NPointProductSplitMeasurableEquiv_fst_apply
   rw [← h]
   simp [finSumFinEquiv_apply_left]
 
-private theorem section43NPointProductSplitMeasurableEquiv_snd_apply
+theorem section43NPointProductSplitMeasurableEquiv_snd_apply
     (d n r : ℕ) (x : NPointDomain d (n + r)) (j : Fin r) :
     (section43NPointProductSplitMeasurableEquiv d n r x).2 j =
       x (Fin.natAdd n j) := by
@@ -133,7 +137,7 @@ private theorem section43NPointProductSplitMeasurableEquiv_snd_apply
   rw [← h]
   simp [finSumFinEquiv_apply_right]
 
-private theorem section43NPointProductSplitMeasurableEquiv_symm_castAdd
+theorem section43NPointProductSplitMeasurableEquiv_symm_castAdd
     (d n r : ℕ) (xL : NPointDomain d n) (xR : NPointDomain d r)
     (i : Fin n) :
     (section43NPointProductSplitMeasurableEquiv d n r).symm (xL, xR)
@@ -150,7 +154,7 @@ private theorem section43NPointProductSplitMeasurableEquiv_symm_castAdd
       (e.symm (xL, xR)) i
   exact hsplit.symm.trans hcoord
 
-private theorem section43NPointProductSplitMeasurableEquiv_symm_natAdd
+theorem section43NPointProductSplitMeasurableEquiv_symm_natAdd
     (d n r : ℕ) (xL : NPointDomain d n) (xR : NPointDomain d r)
     (j : Fin r) :
     (section43NPointProductSplitMeasurableEquiv d n r).symm (xL, xR)
@@ -167,7 +171,7 @@ private theorem section43NPointProductSplitMeasurableEquiv_symm_natAdd
       (e.symm (xL, xR)) j
   exact hsplit.symm.trans hcoord
 
-private theorem section43NPointProductSplitMeasurableEquiv_symm_continuous
+theorem section43NPointProductSplitMeasurableEquiv_symm_continuous
     (d n r : ℕ) :
     Continuous
       ((section43NPointProductSplitMeasurableEquiv d n r).symm :
@@ -215,11 +219,11 @@ def section43OSBorchersTimeShiftConfig_succRight
     section43RawXiShiftConfig_succRight d t y
       (section43LeftBlockReversePerm_succRight n m i)
 
-private def section43FirstIndex_succRight
+def section43FirstIndex_succRight
     {n m : ℕ} : Fin (n + (m + 1)) :=
   ⟨0, by omega⟩
 
-private theorem section43OSBorchersTimeShiftConfig_splitLeft_timeReflection_succRight
+theorem section43OSBorchersTimeShiftConfig_splitLeft_timeReflection_succRight
     (d : ℕ) {n m : ℕ} (t : ℝ)
     (xL : NPointDomain d n) (xR : NPointDomain d (m + 1))
     (i : Fin n) (μ : Fin (d + 1)) :
@@ -235,7 +239,7 @@ private theorem section43OSBorchersTimeShiftConfig_splitLeft_timeReflection_succ
     section43RawXiShiftConfig_succRight, xiShift, hleft,
     section43NPointProductSplitMeasurableEquiv_symm_castAdd, timeReflectionN]
 
-private theorem section43OSBorchersTimeShiftConfig_splitRight_shift_succRight
+theorem section43OSBorchersTimeShiftConfig_splitRight_shift_succRight
     (d : ℕ) {n m : ℕ} (t : ℝ)
     (xL : NPointDomain d n) (xR : NPointDomain d (m + 1))
     (j : Fin (m + 1)) (μ : Fin (d + 1)) :
@@ -264,7 +268,7 @@ theorem section43TimeReflectionN_involutive
   ext i μ
   exact congrFun (timeReflection_timeReflection d (x i)) μ
 
-private theorem section43OSConjTensorProduct_split_timeReflection_succRight
+theorem section43OSConjTensorProduct_split_timeReflection_succRight
     (d : ℕ) [NeZero d] {n m : ℕ}
     (f : SchwartzNPoint d n) (g : SchwartzNPoint d (m + 1))
     (xL : NPointDomain d n) (xR : NPointDomain d (m + 1)) :
@@ -290,7 +294,7 @@ private theorem section43OSConjTensorProduct_split_timeReflection_succRight
   simp [SchwartzNPoint.osConjTensorProduct, SchwartzMap.tensorProduct_apply,
     SchwartzNPoint.osConj_apply, hfirst, hlast, section43TimeReflectionN_involutive]
 
-private theorem section43OSBorchersPhase_left_sum_eq_neg_star_sum
+theorem section43OSBorchersPhase_left_sum_eq_neg_star_sum
     (d n r : ℕ) [NeZero d]
     (ξ : Fin ((n + r) * (d + 1)) → ℝ)
     (xL : NPointDomain d n) :
@@ -352,7 +356,7 @@ private theorem section43OSBorchersPhase_left_sum_eq_neg_star_sum
           rw [← finProdFinEquiv.sum_comp]
           simp [flattenCLEquiv_apply, section43NegRevFlat, section43SplitLeftFlat]
 
-private theorem section43OSBorchersPhase_right_sum_eq_sum_add_tail
+theorem section43OSBorchersPhase_right_sum_eq_sum_add_tail
     (d n r : ℕ) [NeZero d]
     (t : ℝ)
     (ξ : Fin ((n + r) * (d + 1)) → ℝ)
@@ -464,7 +468,7 @@ private theorem section43OSBorchersPhase_right_sum_eq_sum_add_tail
           rw [← finProdFinEquiv.sum_comp]
           simp [flattenCLEquiv_apply, B, c]
 
-private theorem section43OSBorchersPhase_full_sum_eq_factorized_succRight
+theorem section43OSBorchersPhase_full_sum_eq_factorized_succRight
     (d : ℕ) [NeZero d] {n m : ℕ} (t : ℝ)
     (ξ : Fin ((n + (m + 1)) * (d + 1)) → ℝ)
     (xL : NPointDomain d n) (xR : NPointDomain d (m + 1)) :
@@ -730,7 +734,7 @@ private theorem section43OSBorchersPhase_full_sum_eq_factorized_succRight
             section43OSBorchersPhase_left_sum_eq_neg_star_sum,
             section43OSBorchersPhase_right_sum_eq_sum_add_tail]
 
-private theorem section43OSBorchersPhase_pointwise_factorized_succRight
+theorem section43OSBorchersPhase_pointwise_factorized_succRight
     (d : ℕ) [NeZero d] {n m : ℕ}
     {t : ℝ}
     (ξ : Fin ((n + (m + 1)) * (d + 1)) → ℝ)
@@ -948,7 +952,7 @@ theorem section43OSBorchersPhase_splitIntegrand_factorized_succRight
 /-- A y-dependent diagonal translation making the first imaginary time equal
 to `1`; later support lemmas prove the translated configuration is in the
 forward tube on OS support. -/
-private def section43OSForwardTubeLiftTranslation_succRight
+def section43OSForwardTubeLiftTranslation_succRight
     (d : ℕ) {n m : ℕ} (t : ℝ)
     (y : NPointDomain d (n + (m + 1))) :
     Fin (d + 1) → ℂ :=
@@ -1065,7 +1069,7 @@ theorem section43_Fext_forwardTubeLift_eq_xiShiftShell_succRight
           (fun i => wickRotatePoint (y i)) ((t : ℂ) * Complex.I)) := by
       rfl
 
-@[simp] private theorem section43OSBorchersTimeShiftConfig_castAdd_time_im_succRight
+@[simp] theorem section43OSBorchersTimeShiftConfig_castAdd_time_im_succRight
     (d : ℕ) {n m : ℕ} (t : ℝ)
     (y : NPointDomain d (n + (m + 1)))
     (i : Fin n) :
@@ -1077,7 +1081,7 @@ theorem section43_Fext_forwardTubeLift_eq_xiShiftShell_succRight
   simp [section43OSBorchersTimeShiftConfig_succRight,
     section43RawXiShiftConfig_succRight, xiShift, wickRotatePoint, hleft]
 
-@[simp] private theorem section43OSBorchersTimeShiftConfig_natAdd_time_im_succRight
+@[simp] theorem section43OSBorchersTimeShiftConfig_natAdd_time_im_succRight
     (d : ℕ) {n m : ℕ} (t : ℝ)
     (y : NPointDomain d (n + (m + 1)))
     (j : Fin (m + 1)) :
@@ -1087,7 +1091,7 @@ theorem section43_Fext_forwardTubeLift_eq_xiShiftShell_succRight
   simp [section43OSBorchersTimeShiftConfig_succRight,
     section43RawXiShiftConfig_succRight, xiShift, wickRotatePoint]
 
-@[simp] private theorem section43OSForwardTubeLift_first_time_im_succRight
+@[simp] theorem section43OSForwardTubeLift_first_time_im_succRight
     (d : ℕ) {n m : ℕ} (t : ℝ)
     (y : NPointDomain d (n + (m + 1))) :
     (section43OSForwardTubeLift_succRight d t y
@@ -1095,14 +1099,14 @@ theorem section43_Fext_forwardTubeLift_eq_xiShiftShell_succRight
   simp [section43OSForwardTubeLift_succRight,
     section43OSForwardTubeLiftTranslation_succRight]
 
-private def section43ComplexDiagonalTranslationFlat
+def section43ComplexDiagonalTranslationFlat
     (d N : ℕ) [NeZero d]
     (a : Fin (d + 1) → ℂ) : Fin (N * (d + 1)) → ℂ :=
   fun i =>
     let p := finProdFinEquiv.symm i
     a p.2
 
-private theorem section43ComplexDiagonalTranslationFlat_pair_eq_totalMomentum
+theorem section43ComplexDiagonalTranslationFlat_pair_eq_totalMomentum
     (d N : ℕ) [NeZero d]
     (a : Fin (d + 1) → ℂ)
     (ξ : Fin (N * (d + 1)) → ℝ) :
@@ -1136,7 +1140,7 @@ private theorem section43ComplexDiagonalTranslationFlat_pair_eq_totalMomentum
           a μ * (section43TotalMomentumFlat d N ξ μ : ℂ) := by
           simp [section43TotalMomentumFlat, Finset.mul_sum]
 
-private theorem section43OSForwardTubeLift_phase_cancel_of_totalMomentumZero_succRight
+theorem section43OSForwardTubeLift_phase_cancel_of_totalMomentumZero_succRight
     (d : ℕ) [NeZero d] {n m : ℕ}
     (t : ℝ)
     (y : NPointDomain d (n + (m + 1)))
@@ -1185,7 +1189,7 @@ private theorem section43OSForwardTubeLift_phase_cancel_of_totalMomentumZero_suc
     simp [hzero]
   rw [hsum, htrans, add_zero]
 
-private theorem section43OSConjTensorProduct_support_left_reflected_ordered_succRight
+theorem section43OSConjTensorProduct_support_left_reflected_ordered_succRight
     (d : ℕ) [NeZero d] {n m : ℕ}
     (f : euclideanPositiveTimeSubmodule (d := d) n)
     (g : euclideanPositiveTimeSubmodule (d := d) (m + 1))
@@ -1212,7 +1216,7 @@ private theorem section43OSConjTensorProduct_support_left_reflected_ordered_succ
     exact hleft_ne (by simp [SchwartzNPoint.osConj_apply, hf_zero])
   exact f.2 (subset_tsupport _ (Function.mem_support.mpr hf_ne))
 
-private theorem section43OSConjTensorProduct_support_right_ordered_succRight
+theorem section43OSConjTensorProduct_support_right_ordered_succRight
     (d : ℕ) [NeZero d] {n m : ℕ}
     (f : euclideanPositiveTimeSubmodule (d := d) n)
     (g : euclideanPositiveTimeSubmodule (d := d) (m + 1))
@@ -1235,7 +1239,7 @@ private theorem section43OSConjTensorProduct_support_right_ordered_succRight
     (mul_ne_zero_iff.mp hmul_ne).2
   exact g.2 (subset_tsupport _ (Function.mem_support.mpr hright_ne))
 
-private theorem section43_tsupport_precomp_subset {X Y α : Type*}
+theorem section43_tsupport_precomp_subset {X Y α : Type*}
     [TopologicalSpace X] [TopologicalSpace Y] [Zero α]
     {f : Y → α} {h : X → Y} (hh : Continuous h) :
     tsupport (fun x => f (h x)) ⊆ h ⁻¹' tsupport f := by
@@ -1243,7 +1247,7 @@ private theorem section43_tsupport_precomp_subset {X Y α : Type*}
   intro x hx
   exact subset_closure (by simpa [Function.mem_support] using hx)
 
-private theorem section43_continuous_timeReflectionN
+theorem section43_continuous_timeReflectionN
     (d : ℕ) {n : ℕ} :
     Continuous (timeReflectionN d (n := n)) := by
   apply continuous_pi
@@ -1257,7 +1261,7 @@ private theorem section43_continuous_timeReflectionN
   · simp only [timeReflectionN, timeReflection, hμ, if_false]
     fun_prop
 
-private theorem section43_continuous_splitFirst
+theorem section43_continuous_splitFirst
     (d : ℕ) {n m : ℕ} :
     Continuous (splitFirst n m : NPointDomain d (n + m) → NPointDomain d n) := by
   apply continuous_pi
@@ -1266,7 +1270,7 @@ private theorem section43_continuous_splitFirst
     (continuous_apply (Fin.castAdd m i) :
       Continuous fun x : NPointDomain d (n + m) => x (Fin.castAdd m i))
 
-private theorem section43_continuous_splitLast
+theorem section43_continuous_splitLast
     (d : ℕ) {n m : ℕ} :
     Continuous (splitLast n m : NPointDomain d (n + m) → NPointDomain d m) := by
   apply continuous_pi
@@ -1410,7 +1414,7 @@ theorem tsupport_osConjTensorProduct_subset_split_neg_pos
       (g := fun x : NPointDomain d (n + m) =>
         g.1 (splitLast n m x))) hyprod)
 
-private theorem section43OSConjTensorProduct_tsupport_left_reflected_ordered_succRight
+theorem section43OSConjTensorProduct_tsupport_left_reflected_ordered_succRight
     (d : ℕ) [NeZero d] {n m : ℕ}
     (f : euclideanPositiveTimeSubmodule (d := d) n)
     (g : euclideanPositiveTimeSubmodule (d := d) (m + 1))
@@ -1423,7 +1427,7 @@ private theorem section43OSConjTensorProduct_tsupport_left_reflected_ordered_suc
       OrderedPositiveTimeRegion d n :=
   (tsupport_osConjTensorProduct_subset_split_neg_pos d f g hy).1
 
-private theorem section43OSConjTensorProduct_tsupport_right_ordered_succRight
+theorem section43OSConjTensorProduct_tsupport_right_ordered_succRight
     (d : ℕ) [NeZero d] {n m : ℕ}
     (f : euclideanPositiveTimeSubmodule (d := d) n)
     (g : euclideanPositiveTimeSubmodule (d := d) (m + 1))
@@ -1436,7 +1440,7 @@ private theorem section43OSConjTensorProduct_tsupport_right_ordered_succRight
       OrderedPositiveTimeRegion d (m + 1) :=
   (tsupport_osConjTensorProduct_subset_split_neg_pos d f g hy).2
 
-private theorem section43OSBorchersTimeShiftConfig_strictOrdered_of_osSupport_succRight
+theorem section43OSBorchersTimeShiftConfig_strictOrdered_of_osSupport_succRight
     (d : ℕ) [NeZero d] {n m : ℕ}
     (f : euclideanPositiveTimeSubmodule (d := d) n)
     (g : euclideanPositiveTimeSubmodule (d := d) (m + 1))
@@ -1518,7 +1522,7 @@ private theorem section43OSBorchersTimeShiftConfig_strictOrdered_of_osSupport_su
       simp
       nlinarith
 
-private theorem section43OSBorchersTimeShiftConfig_strictOrdered_of_osTsupport_succRight
+theorem section43OSBorchersTimeShiftConfig_strictOrdered_of_osTsupport_succRight
     (d : ℕ) [NeZero d] {n m : ℕ}
     (f : euclideanPositiveTimeSubmodule (d := d) n)
     (g : euclideanPositiveTimeSubmodule (d := d) (m + 1))
@@ -1600,7 +1604,7 @@ private theorem section43OSBorchersTimeShiftConfig_strictOrdered_of_osTsupport_s
       simp
       nlinarith
 
-private def section43OSForwardTubeLiftRealConfig_succRight
+def section43OSForwardTubeLiftRealConfig_succRight
     (d : ℕ) {n m : ℕ} (t : ℝ)
     (y : NPointDomain d (n + (m + 1))) :
     NPointDomain d (n + (m + 1)) :=
@@ -1610,7 +1614,7 @@ private def section43OSForwardTubeLiftRealConfig_succRight
     else
       (section43OSForwardTubeLift_succRight d t y i μ).re
 
-private theorem section43OSForwardTubeLift_eq_wickRotatePoint_succRight
+theorem section43OSForwardTubeLift_eq_wickRotatePoint_succRight
     (d : ℕ) {n m : ℕ} (t : ℝ)
     (y : NPointDomain d (n + (m + 1))) :
     section43OSForwardTubeLift_succRight d t y =
@@ -1656,7 +1660,7 @@ private theorem section43OSForwardTubeLift_eq_wickRotatePoint_succRight
       section43OSBorchersTimeShiftConfig_succRight,
       section43RawXiShiftConfig_succRight, xiShift, wickRotatePoint, hμ]
 
-private theorem section43OSForwardTubeLift_mem_forwardTube_of_osSupport_succRight
+theorem section43OSForwardTubeLift_mem_forwardTube_of_osSupport_succRight
     (d : ℕ) [NeZero d] {n m : ℕ}
     (f : euclideanPositiveTimeSubmodule (d := d) n)
     (g : euclideanPositiveTimeSubmodule (d := d) (m + 1))
@@ -1931,7 +1935,7 @@ theorem section43SuccRightEtaCLM_eq_timeShiftFlatOrbit_eta
   rw [section43SuccRightEtaCLM_apply]
   rw [section43SuccRightTimeShiftFlatDirection_eq_flatTimeShiftDirection]
 
-private theorem section43SuccRightEtaCLM_nonneg_of_mem_dualCone
+theorem section43SuccRightEtaCLM_nonneg_of_mem_dualCone
     (d n m : ℕ) [NeZero d]
     {ξ : Fin ((n + (m + 1)) * (d + 1)) → ℝ}
     (hξ :

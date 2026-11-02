@@ -1,5 +1,9 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIOrderedProductMultiGapPacketGrowth
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIINarrowTimeStageChart
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIOrderedProductMultiGapPacketGrowth
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIINarrowTimeStageChart
+
+@[expose] public section
 
 /-!
 # Centered logarithmic growth for ordered-product packets

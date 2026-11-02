@@ -1,16 +1,11 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.SCV.DistributionalRepresentationGluing
-import OSReconstruction.SCV.DistributionalUniqueness
+module
 
+public import OSReconstruction.SCV.DistributionalRepresentationGluing
+public import OSReconstruction.SCV.DistributionalUniqueness
 
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 

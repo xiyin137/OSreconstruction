@@ -1,4 +1,8 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVMovingSliceCanonicalEdge
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVMovingSliceCanonicalEdge
+
+@[expose] public section
 
 /-!
 # Canonical Chapter V moving-slice cutoffs

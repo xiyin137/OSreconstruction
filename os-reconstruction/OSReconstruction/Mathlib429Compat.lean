@@ -4,21 +4,13 @@ and development comments removed; retained mathematical statements unchanged. -/
 Copyright (c) 2026. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
-import Mathlib.Analysis.Normed.Module.Basic
-import Mathlib.Analysis.InnerProductSpace.Basic
-import Mathlib.Topology.MetricSpace.Algebra
+module
 
+public import Mathlib.Analysis.Normed.Module.Basic
+public import Mathlib.Analysis.InnerProductSpace.Basic
+public import Mathlib.Topology.MetricSpace.Algebra
 
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 set_option backward.isDefEq.respectTransparency false in
 noncomputable instance : NormSMulClass ℝ ℂ := inferInstance

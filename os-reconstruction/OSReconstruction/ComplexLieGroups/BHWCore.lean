@@ -5,17 +5,13 @@ Copyright (c) 2025 ModularPhysics Contributors.
 Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
-import Mathlib.Analysis.Complex.CauchyIntegral
-import Mathlib.Topology.Connected.PathConnected
-import OSReconstruction.ComplexLieGroups.GeodesicConvexity
+module
 
+public import Mathlib.Analysis.Complex.CauchyIntegral
+public import Mathlib.Topology.Connected.PathConnected
+public import OSReconstruction.ComplexLieGroups.GeodesicConvexity
 
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 

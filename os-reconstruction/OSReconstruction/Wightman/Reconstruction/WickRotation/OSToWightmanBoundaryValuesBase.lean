@@ -5,46 +5,35 @@ Copyright (c) 2025 ModularPhysics Contributors. All rights reserved.
 Released under Apache 2.0 license.
 Authors: Michael Douglas, ModularPhysics Contributors
 -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightman
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanSpatialMomentum
-import OSReconstruction.Wightman.Reconstruction.WickRotation.ForwardTubeLorentz
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanTubeIdentity
-import OSReconstruction.Wightman.Reconstruction.WickRotation.BHWReducedExtension
-import Init
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBase
-import OSReconstruction.Wightman.Reconstruction.BlockIntegral
-import OSReconstruction.Wightman.Reconstruction.HeadBlockTranslationInvariant
-import OSReconstruction.Wightman.Reconstruction.DenseCLM
-import OSReconstruction.Wightman.Reconstruction.SchwartzDensity
-import OSReconstruction.Wightman.Reconstruction.SchwingerOS
-import OSReconstruction.Wightman.Reconstruction.WickRotation.SchwingerAxioms
-import OSReconstruction.Wightman.Reconstruction.SliceIntegral
-import OSReconstruction.SCV.LaplaceHolomorphic
-import Mathlib.Analysis.Calculus.ParametricIntegral
-import Mathlib.Analysis.Normed.Operator.Basic
-import Mathlib.Analysis.SpecialFunctions.ExpDeriv
-import OSReconstruction.SCV.ConeDefs
-import OSReconstruction.SCV.DistributionalUniqueness
-import OSReconstruction.SCV.LaplaceSchwartz
-import OSReconstruction.SCV.PaleyWienerSchwartz
-import OSReconstruction.Wightman.Reconstruction.ForwardTubeDistributions
-import OSReconstruction.Wightman.SchwartzTensorProduct
-import Mathlib.Analysis.Distribution.SchwartzSpace.Deriv
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightman
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanSpatialMomentum
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.ForwardTubeLorentz
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanTubeIdentity
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.BHWReducedExtension
+public import Init
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBase
+public import OSReconstruction.Wightman.Reconstruction.BlockIntegral
+public import OSReconstruction.Wightman.Reconstruction.HeadBlockTranslationInvariant
+public import OSReconstruction.Wightman.Reconstruction.DenseCLM
+public import OSReconstruction.Wightman.Reconstruction.SchwartzDensity
+public import OSReconstruction.Wightman.Reconstruction.SchwingerOS
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.SchwingerAxioms
+public import OSReconstruction.Wightman.Reconstruction.SliceIntegral
+public import OSReconstruction.SCV.LaplaceHolomorphic
+public import Mathlib.Analysis.Calculus.ParametricIntegral
+public import Mathlib.Analysis.Normed.Operator.Basic
+public import Mathlib.Analysis.SpecialFunctions.ExpDeriv
+public import OSReconstruction.SCV.ConeDefs
+public import OSReconstruction.SCV.DistributionalUniqueness
+public import OSReconstruction.SCV.LaplaceSchwartz
+public import OSReconstruction.SCV.PaleyWienerSchwartz
+public import OSReconstruction.Wightman.Reconstruction.ForwardTubeDistributions
+public import OSReconstruction.Wightman.SchwartzTensorProduct
+public import Mathlib.Analysis.Distribution.SchwartzSpace.Deriv
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 open scoped Classical NNReal
 open BigOperators Finset
@@ -76,7 +65,7 @@ variable {d : ℕ} [NeZero d]
 
 
 
-private def timeReflectionNHomeomorph_local {n : ℕ} :
+def timeReflectionNHomeomorph_local {n : ℕ} :
     NPointDomain d n ≃ₜ NPointDomain d n where
   toFun := timeReflectionN d
   invFun := timeReflectionN d
@@ -103,7 +92,7 @@ private def timeReflectionNHomeomorph_local {n : ℕ} :
 
 /-- Ordered positive-time support forces the OS-conjugated left factor onto the
 strict ordered negative-time region, hence away from the coincidence locus. -/
-private theorem VanishesToInfiniteOrderOnCoincidence_osConj_of_tsupport_subset_orderedPositiveTimeRegion_local
+theorem VanishesToInfiniteOrderOnCoincidence_osConj_of_tsupport_subset_orderedPositiveTimeRegion_local
     {n : ℕ} (f : SchwartzNPoint d n)
     (hf : tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n) :
     VanishesToInfiniteOrderOnCoincidence (f.osConj) := by

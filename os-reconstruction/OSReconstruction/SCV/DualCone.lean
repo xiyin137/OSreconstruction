@@ -5,32 +5,14 @@ Copyright (c) 2025 ModularPhysics Contributors. All rights reserved.
 Released under Apache 2.0 license.
 Authors: Michael R. Douglas, ModularPhysics Contributors
 -/
-import OSReconstruction.SCV.ConeDefs
-import OSReconstruction.GeneralResults.SmoothCutoff
-import Mathlib.Analysis.Convex.Cone.InnerDual
-import Mathlib.Analysis.InnerProductSpace.PiL2
+module
 
+public import OSReconstruction.SCV.ConeDefs
+public import OSReconstruction.GeneralResults.SmoothCutoff
+public import Mathlib.Analysis.Convex.Cone.InnerDual
+public import Mathlib.Analysis.InnerProductSpace.PiL2
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 open scoped Classical ContDiff
 noncomputable section

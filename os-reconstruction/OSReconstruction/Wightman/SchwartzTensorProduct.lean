@@ -5,38 +5,14 @@ Copyright (c) 2025 ModularPhysics Contributors. All rights reserved.
 Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
-import Mathlib.Analysis.Distribution.SchwartzSpace.Deriv
-import OSReconstruction.Mathlib429Compat
+module
 
+public import Mathlib.Analysis.Distribution.SchwartzSpace.Deriv
+public import OSReconstruction.Mathlib429Compat
+public import Mathlib.Analysis.Calculus.ContDiff.Bounds
+public import OSReconstruction.SchwartzSeminormCompat
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -505,7 +481,7 @@ theorem SchwartzMap.tensorProduct_smul_left {m k : ℕ}
 
 /-- Algebraic decomposition of the tensor product difference.
     f ⊗ g - f₀ ⊗ g₀ = (f - f₀) ⊗ g₀ + f₀ ⊗ (g - g₀) + (f - f₀) ⊗ (g - g₀) -/
-private theorem tensorProduct_decompose {m k : ℕ}
+theorem tensorProduct_decompose {m k : ℕ}
     (f f₀ : 𝓢(Fin m → E, ℂ)) (g g₀ : 𝓢(Fin k → E, ℂ)) :
     f.tensorProduct g - f₀.tensorProduct g₀ =
     (f - f₀).tensorProduct g₀ + f₀.tensorProduct (g - g₀) +
@@ -515,7 +491,7 @@ private theorem tensorProduct_decompose {m k : ℕ}
 /-- Seminorm bound for the tensor product: each seminorm of f ⊗ g is bounded
     by a finite sum of products of seminorms of f and g.
     This is the key estimate for joint continuity. -/
-private theorem seminorm_tensorProduct_le {m k : ℕ} (p l : ℕ)
+theorem seminorm_tensorProduct_le {m k : ℕ} (p l : ℕ)
     (f : 𝓢(Fin m → E, ℂ)) (g : 𝓢(Fin k → E, ℂ)) :
     SchwartzMap.seminorm ℂ p l (f.tensorProduct g) ≤
     2 ^ p * ∑ i ∈ Finset.range (l + 1), ↑(l.choose i) *
@@ -649,10 +625,11 @@ theorem SchwartzMap.tensorProduct_seminorm_le {m k : ℕ} (p l : ℕ)
     2 ^ p * ∑ i ∈ Finset.range (l + 1), ↑(l.choose i) *
       (SchwartzMap.seminorm ℝ p i f * SchwartzMap.seminorm ℝ 0 (l - i) g +
        SchwartzMap.seminorm ℝ 0 i f * SchwartzMap.seminorm ℝ p (l - i) g) := by
-  change SchwartzMap.seminorm ℂ p l (f.tensorProduct g) ≤
+  suffices SchwartzMap.seminorm ℂ p l (f.tensorProduct g) ≤
     2 ^ p * ∑ i ∈ Finset.range (l + 1), ↑(l.choose i) *
       (SchwartzMap.seminorm ℂ p i f * SchwartzMap.seminorm ℂ 0 (l - i) g +
-       SchwartzMap.seminorm ℂ 0 i f * SchwartzMap.seminorm ℂ p (l - i) g)
+       SchwartzMap.seminorm ℂ 0 i f * SchwartzMap.seminorm ℂ p (l - i) g) by
+    simpa only [SchwartzMap.seminorm_eq_real] using this
   exact seminorm_tensorProduct_le p l f g
 
 /-- The tensor product is jointly continuous as a bilinear map on Schwartz spaces.

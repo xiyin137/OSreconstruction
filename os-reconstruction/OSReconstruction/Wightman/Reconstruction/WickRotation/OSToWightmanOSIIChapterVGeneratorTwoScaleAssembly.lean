@@ -1,24 +1,13 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import Init
-import OSReconstruction.SCV.SchwartzComplete
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVGeneratorSpatialHermite
-import OSReconstruction.SCV.DistributionalUniqueness
+module
 
+public import Init
+public import OSReconstruction.SCV.SchwartzComplete
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVGeneratorSpatialHermite
+public import OSReconstruction.SCV.DistributionalUniqueness
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 

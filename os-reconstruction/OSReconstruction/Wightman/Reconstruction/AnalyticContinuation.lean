@@ -5,142 +5,79 @@ Copyright (c) 2025 ModularPhysics Contributors. All rights reserved.
 Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
-import OSReconstruction.Wightman.WightmanAxioms
-import OSReconstruction.Wightman.Spacetime.MinkowskiGeometry
-import Init
-import OSReconstruction.SCV.SeparatelyAnalytic
-import OSReconstruction.SCV.EdgeOfWedge
-import OSReconstruction.SCV.TubeDomainExtension
-import OSReconstruction.ComplexLieGroups.Connectedness.ComplexInvariance.Core
-import OSReconstruction.ComplexLieGroups.Connectedness.ComplexInvariance.OrbitSetN1Geometry
-import OSReconstruction.ComplexLieGroups.Connectedness.ComplexInvariance.OrbitSetN1Preconnected
-import OSReconstruction.ComplexLieGroups.Connectedness.ComplexInvariance.Extend
-import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.Adjacency
-import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.IndexSetD1
-import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SourceExtension
-import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SourceOriented
-import Mathlib.Analysis.Calculus.ContDiff.Operations
-import Mathlib.Analysis.Calculus.Implicit
-import Mathlib.LinearAlgebra.Reflection
-import Mathlib.Algebra.BigOperators.Group.Finset.Basic
-import Mathlib.LinearAlgebra.Basis.VectorSpace
-import Mathlib.LinearAlgebra.Matrix.BilinearForm
-import Mathlib.LinearAlgebra.Matrix.SchurComplement
-import Mathlib.LinearAlgebra.QuadraticForm.Basic
-import OSReconstruction.SCV.IdentityTheorem
-import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SourceOrientedContinuation
-import Mathlib.LinearAlgebra.Basis.Defs
-import Mathlib.LinearAlgebra.Matrix.Charpoly.Coeff
-import Mathlib.Geometry.Manifold.Algebra.LieGroup
-import Mathlib.Geometry.Manifold.Instances.UnitsOfNormedAlgebra
-import Mathlib.LinearAlgebra.Matrix.GeneralLinearGroup.Defs
-import Mathlib.LinearAlgebra.Matrix.SpecialLinearGroup
-import Mathlib.Topology.Algebra.Group.Matrix
-import Mathlib.Analysis.Complex.Basic
-import Mathlib.Analysis.Matrix.Normed
-import Mathlib.Analysis.Normed.Module.Connected
-import Mathlib.Algebra.Polynomial.Roots
-import Mathlib.LinearAlgebra.Complex.FiniteDimensional
-import Mathlib.Topology.UnitInterval
-import Mathlib.Analysis.Normed.Group.Bounded
-import Mathlib.GroupTheory.GroupAction.MultipleTransitivity
-import Mathlib.LinearAlgebra.Matrix.Permutation
-import Mathlib.Analysis.Convex.PathConnected
-import Mathlib.Analysis.Normed.Module.FiniteDimension
-import Mathlib.LinearAlgebra.Dimension.Free
-import Mathlib.Algebra.MvPolynomial.Basic
-import OSReconstruction.ComplexLieGroups.SOConnected
-import Mathlib.Algebra.MvPolynomial.Funext
-import Mathlib.Data.Real.Sqrt
-import Mathlib.Analysis.CStarAlgebra.Matrix
-import Mathlib.Analysis.Matrix.PosDef
-import Mathlib.Analysis.InnerProductSpace.PiL2
-import Mathlib.Data.Fintype.Sort
-import Mathlib.LinearAlgebra.ExteriorAlgebra.Basis
-import Mathlib.LinearAlgebra.ExteriorPower.Basis
-import Mathlib.Analysis.Calculus.InverseFunctionTheorem.FDeriv
-import Mathlib.Analysis.Calculus.FDeriv.Bilinear
-import Mathlib.Analysis.Normed.Group.Submodule
-import Mathlib.LinearAlgebra.Matrix.Gershgorin
-import Mathlib.Topology.Algebra.Module.FiniteDimensionBilinear
-import Mathlib.LinearAlgebra.Basis.Bilinear
-import Mathlib.LinearAlgebra.Basis.SMul
-import Mathlib.LinearAlgebra.BilinearForm.Orthogonal
-import Mathlib.FieldTheory.IsAlgClosed.Basic
-import Mathlib.LinearAlgebra.Dual.Lemmas
-import Mathlib.LinearAlgebra.Quotient.Bilinear
-import Mathlib.Topology.LocallyConstant.Basic
-import OSReconstruction.SCV.TotallyRealIdentity
-import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.PermutationFlow
-import OSReconstruction.Bridge.AxiomBridge
-import Mathlib.Data.Fin.Tuple.Sort
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+module
+
+public import OSReconstruction.Wightman.WightmanAxioms
+public import OSReconstruction.Wightman.Spacetime.MinkowskiGeometry
+public import Init
+public import OSReconstruction.SCV.SeparatelyAnalytic
+public import OSReconstruction.SCV.EdgeOfWedge
+public import OSReconstruction.SCV.TubeDomainExtension
+public import OSReconstruction.ComplexLieGroups.Connectedness.ComplexInvariance.Core
+public import OSReconstruction.ComplexLieGroups.Connectedness.ComplexInvariance.OrbitSetN1Geometry
+public import OSReconstruction.ComplexLieGroups.Connectedness.ComplexInvariance.OrbitSetN1Preconnected
+public import OSReconstruction.ComplexLieGroups.Connectedness.ComplexInvariance.Extend
+public import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.Adjacency
+public import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.IndexSetD1
+public import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SourceExtension
+public import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SourceOriented
+public import Mathlib.Analysis.Calculus.ContDiff.Operations
+public import Mathlib.Analysis.Calculus.Implicit
+public import Mathlib.LinearAlgebra.Reflection
+public import Mathlib.Algebra.BigOperators.Group.Finset.Basic
+public import Mathlib.LinearAlgebra.Basis.VectorSpace
+public import Mathlib.LinearAlgebra.Matrix.BilinearForm
+public import Mathlib.LinearAlgebra.Matrix.SchurComplement
+public import Mathlib.LinearAlgebra.QuadraticForm.Basic
+public import OSReconstruction.SCV.IdentityTheorem
+public import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SourceOrientedContinuation
+public import Mathlib.LinearAlgebra.Basis.Defs
+public import Mathlib.LinearAlgebra.Matrix.Charpoly.Coeff
+public import Mathlib.Geometry.Manifold.Algebra.LieGroup
+public import Mathlib.Geometry.Manifold.Instances.UnitsOfNormedAlgebra
+public import Mathlib.LinearAlgebra.Matrix.GeneralLinearGroup.Defs
+public import Mathlib.LinearAlgebra.Matrix.SpecialLinearGroup
+public import Mathlib.Topology.Algebra.Group.Matrix
+public import Mathlib.Analysis.Complex.Basic
+public import Mathlib.Analysis.Matrix.Normed
+public import Mathlib.Analysis.Normed.Module.Connected
+public import Mathlib.Algebra.Polynomial.Roots
+public import Mathlib.LinearAlgebra.Complex.FiniteDimensional
+public import Mathlib.Topology.UnitInterval
+public import Mathlib.Analysis.Normed.Group.Bounded
+public import Mathlib.GroupTheory.GroupAction.MultipleTransitivity
+public import Mathlib.LinearAlgebra.Matrix.Permutation
+public import Mathlib.Analysis.Convex.PathConnected
+public import Mathlib.Analysis.Normed.Module.FiniteDimension
+public import Mathlib.LinearAlgebra.Dimension.Free
+public import Mathlib.Algebra.MvPolynomial.Basic
+public import OSReconstruction.ComplexLieGroups.SOConnected
+public import Mathlib.Algebra.MvPolynomial.Funext
+public import Mathlib.Data.Real.Sqrt
+public import Mathlib.Analysis.CStarAlgebra.Matrix
+public import Mathlib.Analysis.Matrix.PosDef
+public import Mathlib.Analysis.InnerProductSpace.PiL2
+public import Mathlib.Data.Fintype.Sort
+public import Mathlib.LinearAlgebra.ExteriorAlgebra.Basis
+public import Mathlib.LinearAlgebra.ExteriorPower.Basis
+public import Mathlib.Analysis.Calculus.InverseFunctionTheorem.FDeriv
+public import Mathlib.Analysis.Calculus.FDeriv.Bilinear
+public import Mathlib.Analysis.Normed.Group.Submodule
+public import Mathlib.LinearAlgebra.Matrix.Gershgorin
+public import Mathlib.Topology.Algebra.Module.FiniteDimensionBilinear
+public import Mathlib.LinearAlgebra.Basis.Bilinear
+public import Mathlib.LinearAlgebra.Basis.SMul
+public import Mathlib.LinearAlgebra.BilinearForm.Orthogonal
+public import Mathlib.FieldTheory.IsAlgClosed.Basic
+public import Mathlib.LinearAlgebra.Dual.Lemmas
+public import Mathlib.LinearAlgebra.Quotient.Bilinear
+public import Mathlib.Topology.LocallyConstant.Basic
+public import OSReconstruction.SCV.TotallyRealIdentity
+public import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.PermutationFlow
+public import OSReconstruction.Bridge.AxiomBridge
+public import Mathlib.Data.Fin.Tuple.Sort
+
+@[expose] public section
 
 noncomputable section
 
@@ -576,13 +513,13 @@ theorem wickRotatePoint_ofEuclidean
 
 omit [NeZero d] in
 /-- The transpose of an orthogonal matrix with det 1 also has det 1. -/
-private lemma det_transpose_of_SO {R : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ}
+lemma det_transpose_of_SO {R : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ}
     (hR_det : R.det = 1) : R.transpose.det = 1 := by
   rw [Matrix.det_transpose]; exact hR_det
 
 omit [NeZero d] in
 /-- The transpose of an orthogonal matrix R (with RᵀR = I) satisfies (Rᵀ)ᵀRᵀ = I. -/
-private lemma transpose_orth_of_SO {R : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ}
+lemma transpose_orth_of_SO {R : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ}
     (hR_orth : R.transpose * R = 1) : R.transpose.transpose * R.transpose = 1 := by
   rw [Matrix.transpose_transpose]
   have : R * R.transpose = 1 := mul_eq_one_comm.mpr hR_orth
@@ -593,7 +530,7 @@ omit [NeZero d] in
 
     This follows from the fact that ofEuclidean is a group homomorphism:
     W·Rᵀ·W⁻¹ · W·R·W⁻¹ = W·(RᵀR)·W⁻¹ = W·I·W⁻¹ = I -/
-private lemma ofEuclidean_transpose_mul_self
+lemma ofEuclidean_transpose_mul_self
     (R : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ)
     (hR_det : R.det = 1) (hR_orth : R.transpose * R = 1) :
     ∀ μ α : Fin (d + 1),

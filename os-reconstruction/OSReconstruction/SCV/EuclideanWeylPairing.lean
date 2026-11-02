@@ -3,7 +3,11 @@ Copyright (c) 2026 ModularPhysics Contributors.
 Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
-import OSReconstruction.SCV.EuclideanWeylProbe
+module
+
+public import OSReconstruction.SCV.EuclideanWeylProbe
+
+@[expose] public section
 
 /-!
 # Euclidean Weyl Pairing Infrastructure

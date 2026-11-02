@@ -1,31 +1,27 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIFrequencyReduction
-import Init
-import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.EdgeDistribution
-import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SourceExtension
-import OSReconstruction.ComplexLieGroups.Connectedness.PermutedTube
-import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.Adjacency
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBoundaryValues
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanReduced
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanReducedTestLiftSupport
-import OSReconstruction.SCV.LocalDistributionalEOW
-import OSReconstruction.SCV.LocalContinuousEOW
-import OSReconstruction.SCV.DistributionalEOWSupport
-import Mathlib.Topology.MetricSpace.Thickening
-import OSReconstruction.SCV.LocalEOWPairingCLM
-import OSReconstruction.SCV.LocalEOWChartEnvelope
-import OSReconstruction.SCV.DistributionalEOWKernelRecovery
-import OSReconstruction.SCV.LocalProductRecovery
-import OSReconstruction.Wightman.SpectralEquivalence
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIFrequencyReduction
+public import Init
+public import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.EdgeDistribution
+public import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SourceExtension
+public import OSReconstruction.ComplexLieGroups.Connectedness.PermutedTube
+public import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.Adjacency
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBoundaryValues
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanReduced
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanReducedTestLiftSupport
+public import OSReconstruction.SCV.LocalDistributionalEOW
+public import OSReconstruction.SCV.LocalContinuousEOW
+public import OSReconstruction.SCV.DistributionalEOWSupport
+public import Mathlib.Topology.MetricSpace.Thickening
+public import OSReconstruction.SCV.LocalEOWPairingCLM
+public import OSReconstruction.SCV.LocalEOWChartEnvelope
+public import OSReconstruction.SCV.DistributionalEOWKernelRecovery
+public import OSReconstruction.SCV.LocalProductRecovery
+public import OSReconstruction.Wightman.SpectralEquivalence
 
-
-
-
-
-
-
+@[expose] public section
 
 open MeasureTheory Filter
 

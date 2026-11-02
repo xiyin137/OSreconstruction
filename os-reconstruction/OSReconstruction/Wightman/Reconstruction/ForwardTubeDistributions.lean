@@ -5,73 +5,44 @@ Copyright (c) 2025 ModularPhysics Contributors.
 Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
-import Init
-import OSReconstruction.SCV.TubeDomainExtension
-import OSReconstruction.SCV.IdentityTheorem
-import OSReconstruction.SCV.LaplaceSchwartz
-import OSReconstruction.SCV.BochnerTubeTheorem
-import Mathlib.Analysis.Distribution.SchwartzSpace.Deriv
-import OSReconstruction.SCV.ConeDefs
-import OSReconstruction.SCV.DistributionalUniqueness
-import OSReconstruction.Wightman.Reconstruction.Core
-import OSReconstruction.Wightman.Reconstruction.DenseCLM
-import Mathlib.Analysis.Calculus.FDeriv.Basic
-import Mathlib.Analysis.Calculus.FDeriv.Comp
-import Mathlib.Analysis.Calculus.FDeriv.Prod
-import Mathlib.Analysis.Distribution.SchwartzSpace.Basic
-import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
-import Mathlib.MeasureTheory.Integral.IntegralEqImproper
-import Mathlib.MeasureTheory.Measure.Lebesgue.Integral
-import OSReconstruction.Mathlib429Compat
-import OSReconstruction.Wightman.Reconstruction.SchwartzPartialEval
-import OSReconstruction.Wightman.Reconstruction.SliceIntegral
-import OSReconstruction.Wightman.Reconstruction.HeadTranslationInvariant
-import OSReconstruction.Wightman.Reconstruction.HeadBlockTranslationInvariant
-import OSReconstruction.Wightman.Reconstruction.SchwartzDensity
-import OSReconstruction.Wightman.Reconstruction.BlockIntegral
-import OSReconstruction.Wightman.Reconstruction.SchwartzCutoff
-import Mathlib.Analysis.Complex.Basic
-import Mathlib.Topology.ContinuousMap.StoneWeierstrass
-import Mathlib.Topology.UrysohnsLemma
-import Mathlib.Analysis.Fourier.FourierTransform
-import Mathlib.Analysis.Distribution.SchwartzSpace.Fourier
-import Mathlib.MeasureTheory.Measure.Haar.InnerProductSpace
-import OSReconstruction.Wightman.Reconstruction.TranslationInvariantSchwartz
-import OSReconstruction.Wightman.Reconstruction.SchwingerOS
-import OSReconstruction.Wightman.SpectralCondition
+module
 
+public import Init
+public import OSReconstruction.SCV.TubeDomainExtension
+public import OSReconstruction.SCV.IdentityTheorem
+public import OSReconstruction.SCV.LaplaceSchwartz
+public import OSReconstruction.SCV.BochnerTubeTheorem
+public import Mathlib.Analysis.Distribution.SchwartzSpace.Deriv
+public import OSReconstruction.SCV.ConeDefs
+public import OSReconstruction.SCV.DistributionalUniqueness
+public import OSReconstruction.Wightman.Reconstruction.Core
+public import OSReconstruction.Wightman.Reconstruction.DenseCLM
+public import Mathlib.Analysis.Calculus.FDeriv.Basic
+public import Mathlib.Analysis.Calculus.FDeriv.Comp
+public import Mathlib.Analysis.Calculus.FDeriv.Prod
+public import Mathlib.Analysis.Distribution.SchwartzSpace.Basic
+public import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
+public import Mathlib.MeasureTheory.Integral.IntegralEqImproper
+public import Mathlib.MeasureTheory.Measure.Lebesgue.Integral
+public import OSReconstruction.Mathlib429Compat
+public import OSReconstruction.Wightman.Reconstruction.SchwartzPartialEval
+public import OSReconstruction.Wightman.Reconstruction.SliceIntegral
+public import OSReconstruction.Wightman.Reconstruction.HeadTranslationInvariant
+public import OSReconstruction.Wightman.Reconstruction.HeadBlockTranslationInvariant
+public import OSReconstruction.Wightman.Reconstruction.SchwartzDensity
+public import OSReconstruction.Wightman.Reconstruction.BlockIntegral
+public import OSReconstruction.Wightman.Reconstruction.SchwartzCutoff
+public import Mathlib.Analysis.Complex.Basic
+public import Mathlib.Topology.ContinuousMap.StoneWeierstrass
+public import Mathlib.Topology.UrysohnsLemma
+public import Mathlib.Analysis.Fourier.FourierTransform
+public import Mathlib.Analysis.Distribution.SchwartzSpace.Fourier
+public import Mathlib.MeasureTheory.Measure.Haar.InnerProductSpace
+public import OSReconstruction.Wightman.Reconstruction.TranslationInvariantSchwartz
+public import OSReconstruction.Wightman.Reconstruction.SchwingerOS
+public import OSReconstruction.Wightman.SpectralCondition
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -96,20 +67,20 @@ theorem forwardTube_eq_imPreimage (d n : ℕ) [NeZero d] :
       split_ifs <;> simp [Complex.sub_im] }
 
 /-- The forward cone is open. -/
-private theorem continuous_minkowskiNormSq (d : ℕ) :
+theorem continuous_minkowskiNormSq_ForwardTubeDistributions (d : ℕ) :
     Continuous (fun η : Fin (d + 1) → ℝ => MinkowskiSpace.minkowskiNormSq d η) := by
   simp only [MinkowskiSpace.minkowskiNormSq, MinkowskiSpace.minkowskiInner]
   apply continuous_finset_sum
   intro i _
   exact ((continuous_const.mul (continuous_apply i)).mul (continuous_apply i))
 
-private theorem isOpen_inOpenForwardCone (d : ℕ) [NeZero d] :
+theorem isOpen_inOpenForwardCone (d : ℕ) [NeZero d] :
     IsOpen { η : Fin (d + 1) → ℝ | InOpenForwardCone d η } := by
   -- V₊ = { η | η 0 > 0 } ∩ { η | minkowskiNormSq d η < 0 }
   simp only [InOpenForwardCone, Set.setOf_and]
   apply IsOpen.inter
   · exact isOpen_lt continuous_const (continuous_apply 0)
-  · exact isOpen_lt (continuous_minkowskiNormSq d) continuous_const
+  · exact isOpen_lt (continuous_minkowskiNormSq_ForwardTubeDistributions d) continuous_const
 
 theorem forwardConeAbs_isOpen (d n : ℕ) [NeZero d] :
     IsOpen (ForwardConeAbs d n) := by
@@ -148,14 +119,14 @@ theorem forwardConeAbs_isOpen (d n : ℕ) [NeZero d] :
 --   while (aη₀ + bη'₀)² ≥ a²η₀² + b²η'₀² + 2abη₀η'₀ > a²‖η_sp‖² + b²‖η'_sp‖² + 2ab‖η_sp‖‖η'_sp‖
 --   ≥ ‖aη_sp + bη'_sp‖² by Cauchy-Schwarz. So minkowskiNormSq (aη+bη') < 0.
 -- Decompose minkowskiNormSq into time² and spatial² parts
-private theorem minkowskiNormSq_decomp (d : ℕ) [NeZero d] (η : Fin (d + 1) → ℝ) :
+theorem minkowskiNormSq_decomp (d : ℕ) [NeZero d] (η : Fin (d + 1) → ℝ) :
     MinkowskiSpace.minkowskiNormSq d η =
     -(η 0) ^ 2 + ∑ i : Fin d, (η (Fin.succ i)) ^ 2 := by
   simp only [MinkowskiSpace.minkowskiNormSq, MinkowskiSpace.minkowskiInner]
   rw [Fin.sum_univ_succ]; congr 1
   simp [MinkowskiSpace.metricSignature]; ring
 
-private theorem convex_inOpenForwardCone (d : ℕ) [NeZero d] :
+theorem convex_inOpenForwardCone (d : ℕ) [NeZero d] :
     Convex ℝ { η : Fin (d + 1) → ℝ | InOpenForwardCone d η } := by
   intro η hη η' hη' a b ha hb hab
   simp only [Set.mem_setOf_eq, InOpenForwardCone] at hη hη' ⊢
@@ -361,7 +332,7 @@ def flattenMeasurableEquiv (n d : ℕ) : (Fin n → Fin d → ℝ) ≃ᵐ (Fin (
     `Fin n → Fin d → ℝ` is `∏_i ∏_j λ`, and the measure on `Fin n × Fin d → ℝ`
     is `∏_{(i,j)} λ`. The curry map identifies these by associativity of
     finite products: `∏_i ∏_j aᵢⱼ = ∏_{(i,j)} aᵢⱼ`. -/
-private theorem volume_map_curry_symm (n d : ℕ) :
+theorem volume_map_curry_symm (n d : ℕ) :
     (MeasureTheory.volume : MeasureTheory.Measure (Fin n → Fin d → ℝ)).map
       (MeasurableEquiv.curry (Fin n) (Fin d) ℝ).symm =
     (MeasureTheory.volume : MeasureTheory.Measure (Fin n × Fin d → ℝ)) := by
@@ -486,7 +457,7 @@ theorem forwardTube_flatten_eq_tubeDomain (d n : ℕ) [NeZero d] :
       ext μ; split_ifs with h <;> simp [him]
 
 /-- Helper: transport DifferentiableOn through the flattening. -/
-private theorem differentiableOn_flatten {n : ℕ} {d : ℕ} [NeZero d]
+theorem differentiableOn_flatten {n : ℕ} {d : ℕ} [NeZero d]
     {F : (Fin n → Fin (d + 1) → ℂ) → ℂ}
     (hF : DifferentiableOn ℂ F (ForwardTube d n)) :
     DifferentiableOn ℂ (F ∘ (flattenCLEquiv n (d + 1)).symm)

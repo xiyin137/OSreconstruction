@@ -1,25 +1,11 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVAnchoredGeneratedCarrierCoverage
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVCompactTimeReflectedSchwingerGerm
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVAnchoredGeneratedCarrierCoverage
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVCompactTimeReflectedSchwingerGerm
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -257,7 +243,7 @@ theorem zeroAnchorShiftedStagePoint_tailAnchorCentered_right
     Complex.real_smul]
   ring
 
-private theorem tailAnchor_residual_nonnegative
+theorem tailAnchor_residual_nonnegative
     {a shift t : ℝ}
     (ha : 0 < a)
     (hshift : a ≤ shift)

@@ -1,5 +1,9 @@
-import Mathlib.Analysis.Complex.Hadamard
-import Mathlib.Analysis.Convex.Hull
+module
+
+public import Mathlib.Analysis.Complex.Hadamard
+public import Mathlib.Analysis.Convex.Hull
+
+@[expose] public section
 
 /-!
 # Horizontal Bounds and Convexity

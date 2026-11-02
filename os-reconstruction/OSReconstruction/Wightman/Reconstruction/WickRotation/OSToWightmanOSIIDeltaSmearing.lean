@@ -1,28 +1,23 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import Init
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanSpatialMomentum
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBase
-import OSReconstruction.Wightman.Reconstruction.BlockIntegral
-import OSReconstruction.Wightman.Reconstruction.HeadBlockTranslationInvariant
-import OSReconstruction.Wightman.Reconstruction.DenseCLM
-import OSReconstruction.Wightman.Reconstruction.SchwartzDensity
-import OSReconstruction.Wightman.Reconstruction.SchwingerOS
-import OSReconstruction.Wightman.Reconstruction.WickRotation.SchwingerAxioms
-import OSReconstruction.Wightman.Reconstruction.SliceIntegral
-import OSReconstruction.SCV.LaplaceHolomorphic
-import Mathlib.Analysis.Calculus.ParametricIntegral
-import Mathlib.Analysis.Normed.Operator.Basic
-import Mathlib.Analysis.SpecialFunctions.ExpDeriv
+module
 
+public import Init
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanSpatialMomentum
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBase
+public import OSReconstruction.Wightman.Reconstruction.BlockIntegral
+public import OSReconstruction.Wightman.Reconstruction.HeadBlockTranslationInvariant
+public import OSReconstruction.Wightman.Reconstruction.DenseCLM
+public import OSReconstruction.Wightman.Reconstruction.SchwartzDensity
+public import OSReconstruction.Wightman.Reconstruction.SchwingerOS
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.SchwingerAxioms
+public import OSReconstruction.Wightman.Reconstruction.SliceIntegral
+public import OSReconstruction.SCV.LaplaceHolomorphic
+public import Mathlib.Analysis.Calculus.ParametricIntegral
+public import Mathlib.Analysis.Normed.Operator.Basic
+public import Mathlib.Analysis.SpecialFunctions.ExpDeriv
 
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 

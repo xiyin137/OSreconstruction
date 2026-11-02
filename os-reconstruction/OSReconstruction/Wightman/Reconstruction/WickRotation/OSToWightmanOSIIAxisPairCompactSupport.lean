@@ -1,19 +1,14 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIAxisPairParametricBranch
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanSpatialMomentum
-import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceOrderedDensity
-import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceWitness
-import OSReconstruction.SCV.EuclideanWeylFrechet
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIAxisPairParametricBranch
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanSpatialMomentum
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceOrderedDensity
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceWitness
+public import OSReconstruction.SCV.EuclideanWeylFrechet
 
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -62,10 +57,10 @@ theorem OSIIAxisPairRotationData.mem_orderedPositive_of_margin_norm
     have hjsp := abs_le.mp (hcoord j)
     cases a.2 <;> simp only [Bool.false_eq_true, if_false, if_true] <;> nlinarith
 
-private def spatialPart (v : SpacetimeDim d) : Fin d → ℝ :=
+def spatialPart (v : SpacetimeDim d) : Fin d → ℝ :=
   fun i => v (Fin.succ i)
 
-private theorem time_spatial_decomposition (v : SpacetimeDim d) :
+theorem time_spatial_decomposition (v : SpacetimeDim d) :
     timeShiftVec d (v 0) + Fin.cons 0 (spatialPart v) = v := by
   ext μ
   refine Fin.cases ?_ ?_ μ
@@ -73,7 +68,7 @@ private theorem time_spatial_decomposition (v : SpacetimeDim d) :
   · intro i
     simp [timeShiftVec, spatialPart]
 
-private theorem translate_time_spatial (v : SpacetimeDim d)
+theorem translate_time_spatial (v : SpacetimeDim d)
     (f : SchwartzNPoint d n) :
     translateSchwartzNPoint (d := d) v f =
       translateSchwartzNPoint (d := d) (Fin.cons 0 (spatialPart v))
@@ -88,7 +83,7 @@ private theorem translate_time_spatial (v : SpacetimeDim d)
   rw [← hdec]
   ring
 
-private theorem timeShiftHilbert_single_eq
+theorem timeShiftHilbert_single_eq
     (OS : OsterwalderSchraderAxioms d)
     (f : SchwartzNPoint d n)
     (hf : tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
@@ -130,7 +125,7 @@ private theorem timeShiftHilbert_single_eq
       PositiveTimeBorchersSequence.single_toBorchersSequence,
       BorchersSequence.single, hk, ft]
 
-private theorem norm_osSpatialTranslateHilbert_eq
+theorem norm_osSpatialTranslateHilbert_eq
     (OS : OsterwalderSchraderAxioms d)
     (a : Fin d → ℝ) (x : OSHilbertSpace OS) :
     ‖osSpatialTranslateHilbert (d := d) OS a x‖ = ‖x‖ := by

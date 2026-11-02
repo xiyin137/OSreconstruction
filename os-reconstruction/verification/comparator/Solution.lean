@@ -1,5 +1,9 @@
-import ReverseBridge
-import OSReconstruction.Wightman.Reconstruction.Main
+module
+
+public import ReverseBridge
+public import OSReconstruction.Wightman.Reconstruction.Main
+
+@[expose] public section
 
 /-!
 Proofs for the standard Comparator. The independent records are equivalent to

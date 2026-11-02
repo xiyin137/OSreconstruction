@@ -1,7 +1,11 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIEuclideanWardTimeEdge
-import OSReconstruction.SCV.TotallyRealIdentity
-import Mathlib.Analysis.Calculus.FDeriv.Analytic
-import Mathlib.Analysis.Calculus.LineDeriv.IntegrationByParts
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIEuclideanWardTimeEdge
+public import OSReconstruction.SCV.TotallyRealIdentity
+public import Mathlib.Analysis.Calculus.FDeriv.Analytic
+public import Mathlib.Analysis.Calculus.LineDeriv.IntegrationByParts
+
+@[expose] public section
 
 /-!
 # Tested Ward continuation on the actual time stage
@@ -51,12 +55,12 @@ theorem differentiableOn_timeWardDefect (A : OSIITimeContinuationStage d k)
   exact (differentiableOn_timePairingPartial A _ j).add
     ((differentiable_apply j).differentiableOn.mul (A.weaklyHolomorphic _))
 
-private def realTimeEmbedCLM (k : Nat) :
+def realTimeEmbedCLM (k : Nat) :
     (Fin k -> Real) →L[Real] OSIITimeGapSpace k :=
   ContinuousLinearMap.pi fun j =>
     Complex.ofRealCLM.comp (ContinuousLinearMap.proj j)
 
-private theorem realTimeEmbedCLM_single (j : Fin k) :
+theorem realTimeEmbedCLM_single (j : Fin k) :
     realTimeEmbedCLM k (Pi.single j (1 : Real)) = Pi.single j (1 : Complex) := by
   ext i
   by_cases h : i = j <;> simp [realTimeEmbedCLM, Pi.single_apply, h]
@@ -66,7 +70,7 @@ variable {OS : OsterwalderSchraderAxioms d} {A : OSIITimeContinuationStage d k}
 
 open OSIIChapterV
 
-private theorem realTrace_hasFDerivAt
+theorem realTrace_hasFDerivAt
     (H : HasCanonicalReducedCompactStageEdges OS A)
     (chi : SchwartzMap (Section43SpatialSpace d k) Complex)
     (t : Fin k -> Real) (ht : t ∈ section43TimeStrictPositiveRegion k) :

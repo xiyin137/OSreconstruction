@@ -5,16 +5,11 @@ Copyright (c) 2025 ModularPhysics Contributors. All rights reserved.
 Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBoundaryValuesComparison
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBoundaryValuesComparison
 
-
-
-
-
-
-
-
+@[expose] public section
 
 open scoped Classical NNReal
 open BigOperators
@@ -99,7 +94,7 @@ def reducedPairDiff
         (BHW.prependBasepointReal d m 0 ξ) i μ)
 
 omit [NeZero d] in
-private noncomputable def prependBasepointRealZeroCLM
+noncomputable def prependBasepointRealZeroCLM
     (m : ℕ) :
     NPointDomain d m →L[ℝ] NPointDomain d (m + 1) :=
   ContinuousLinearMap.pi fun k =>
@@ -109,7 +104,7 @@ private noncomputable def prependBasepointRealZeroCLM
         (φ := fun _ => Fin (d + 1) → ℝ) ⟨k.val - 1, by omega⟩
 
 omit [NeZero d] in
-private theorem prependBasepointRealZeroCLM_apply
+theorem prependBasepointRealZeroCLM_apply
     (m : ℕ) (ξ : NPointDomain d m) :
     prependBasepointRealZeroCLM (d := d) m ξ =
       BHW.prependBasepointReal d m 0 ξ := by
@@ -146,7 +141,7 @@ omit [NeZero d] in
   simp [reducedPairDiffCLM, prependBasepointRealZeroCLM_apply,
     reducedPairDiff]
 
-private theorem realDiffCoordCLE_symm_prepend_reducedDiffMapReal_eq_sub_basepoint
+theorem realDiffCoordCLE_symm_prepend_reducedDiffMapReal_eq_sub_basepoint
     (m : ℕ) (x : NPointDomain d (m + 1)) :
     (BHW.realDiffCoordCLE (m + 1) d).symm
         (BHW.prependBasepointReal d m 0
@@ -202,7 +197,7 @@ def reducedSpacelikeSwapEdge
     (m : ℕ) (i j : Fin (m + 1)) : Set (NPointDomain d m) :=
   {ξ | MinkowskiSpace.IsSpacelike d (reducedPairDiff (d := d) m i j ξ)}
 
-private theorem continuous_minkowskiNormSq :
+theorem continuous_minkowskiNormSq_OSToWightmanReduced :
     Continuous (fun ζ : Fin (d + 1) → ℝ =>
       MinkowskiSpace.minkowskiNormSq d ζ) := by
   have _ : NeZero d := inferInstance
@@ -211,7 +206,7 @@ private theorem continuous_minkowskiNormSq :
     (continuous_const.mul (continuous_apply μ)).mul (continuous_apply μ))
 
 omit [NeZero d] in
-private theorem continuous_reducedPairDiff
+theorem continuous_reducedPairDiff
     (m : ℕ) (i j : Fin (m + 1)) :
     Continuous (reducedPairDiff (d := d) m i j) := by
   have hfun :
@@ -314,7 +309,7 @@ theorem isOpen_reducedSpacelikeSwapEdge
     IsOpen (reducedSpacelikeSwapEdge (d := d) m i j) := by
   have hquad : Continuous (fun ξ : NPointDomain d m =>
       MinkowskiSpace.minkowskiNormSq d (reducedPairDiff (d := d) m i j ξ)) :=
-    continuous_minkowskiNormSq (d := d).comp
+    continuous_minkowskiNormSq_OSToWightmanReduced (d := d).comp
       (continuous_reducedPairDiff (d := d) m i j)
   simpa [reducedSpacelikeSwapEdge, MinkowskiSpace.IsSpacelike] using
     isOpen_lt continuous_const hquad
@@ -376,7 +371,7 @@ theorem permOnReducedDiff_adjacentSwap_selected
           rw [hζ]
           ring
 
-private theorem minkowski_isSpacelike_neg_iff
+theorem minkowski_isSpacelike_neg_iff
     (v : MinkowskiSpace d) :
     MinkowskiSpace.IsSpacelike d (-v) ↔
       MinkowskiSpace.IsSpacelike d v := by

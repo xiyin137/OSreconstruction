@@ -5,41 +5,15 @@ Copyright (c) 2025 ModularPhysics Contributors. All rights reserved.
 Released under Apache 2.0 license.
 Authors: Michael R. Douglas, ModularPhysics Contributors
 -/
-import Mathlib.Analysis.InnerProductSpace.GramSchmidtOrtho
-import Mathlib.LinearAlgebra.Matrix.Determinant.Basic
-import Mathlib.Topology.Algebra.Polynomial
-import Mathlib.RingTheory.Polynomial.Basic
-import Mathlib.Analysis.InnerProductSpace.PiL2
+module
 
+public import Mathlib.Analysis.InnerProductSpace.GramSchmidtOrtho
+public import Mathlib.LinearAlgebra.Matrix.Determinant.Basic
+public import Mathlib.Topology.Algebra.Polynomial
+public import Mathlib.RingTheory.Polynomial.Basic
+public import Mathlib.Analysis.InnerProductSpace.PiL2
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 open scoped Classical
 noncomputable section

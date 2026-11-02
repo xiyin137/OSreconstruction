@@ -1,5 +1,9 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVISameWitnessWickPair
-import OSReconstruction.Wightman.Reconstruction.WickRotation.SchwartzNPointFourier
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVISameWitnessWickPair
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.SchwartzNPointFourier
+
+@[expose] public section
 
 /-!
 # The existing distributional spectrum condition for the native family

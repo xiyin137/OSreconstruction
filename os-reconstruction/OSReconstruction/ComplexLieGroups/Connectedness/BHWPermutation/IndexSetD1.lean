@@ -1,7 +1,11 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.Adjacency
-import OSReconstruction.ComplexLieGroups.D1OrbitSet
+module
+
+public import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.Adjacency
+public import OSReconstruction.ComplexLieGroups.D1OrbitSet
+
+@[expose] public section
 
 noncomputable section
 

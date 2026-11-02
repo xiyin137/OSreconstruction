@@ -1,20 +1,14 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import Init
-import OSReconstruction.SCV.DistributionalEOWCutoff
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVReducedMixedMovingSlice
-import Mathlib.Topology.CompactOpen
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVTargetAdaptedMovingSliceCoverage
+module
 
+public import Init
+public import OSReconstruction.SCV.DistributionalEOWCutoff
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVReducedMixedMovingSlice
+public import Mathlib.Topology.CompactOpen
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVTargetAdaptedMovingSliceCoverage
 
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 

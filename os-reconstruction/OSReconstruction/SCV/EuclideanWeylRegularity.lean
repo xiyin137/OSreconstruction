@@ -3,8 +3,12 @@ Copyright (c) 2026 ModularPhysics Contributors.
 Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
-import OSReconstruction.SCV.EuclideanWeylPoisson
-import Mathlib.Analysis.Fourier.Convolution
+module
+
+public import OSReconstruction.SCV.EuclideanWeylPoisson
+public import Mathlib.Analysis.Fourier.Convolution
+
+@[expose] public section
 
 /-!
 # Local Euclidean Weyl Representatives

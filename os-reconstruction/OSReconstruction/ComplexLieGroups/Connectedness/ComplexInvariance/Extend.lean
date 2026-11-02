@@ -1,6 +1,10 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.ComplexLieGroups.Connectedness.ComplexInvariance.Core
+module
+
+public import OSReconstruction.ComplexLieGroups.Connectedness.ComplexInvariance.Core
+
+@[expose] public section
 
 noncomputable section
 
@@ -14,7 +18,7 @@ namespace BHW
 /-- The Lorentz-invariance set used in the global clopen argument:
 `Λ ∈ lorentzInvarianceSet` iff `F (Λ·w) = F w` for every `w ∈ FT`
 with `Λ·w ∈ FT`. -/
-private def lorentzInvarianceSet (n : ℕ)
+def lorentzInvarianceSet (n : ℕ)
     (F : (Fin n → Fin (d + 1) → ℂ) → ℂ) : Set (ComplexLorentzGroup d) :=
   { Λ | ∀ w, w ∈ ForwardTube d n → complexLorentzAction Λ w ∈ ForwardTube d n →
       F (complexLorentzAction Λ w) = F w }

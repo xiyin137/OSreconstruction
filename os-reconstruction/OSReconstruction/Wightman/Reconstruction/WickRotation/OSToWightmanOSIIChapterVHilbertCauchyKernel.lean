@@ -1,26 +1,12 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.SCV.IdentityTheorem
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVMixedHilbertPairing
-import Mathlib.Analysis.InnerProductSpace.Dual
+module
 
+public import OSReconstruction.SCV.IdentityTheorem
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVMixedHilbertPairing
+public import Mathlib.Analysis.InnerProductSpace.Dual
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -33,7 +19,7 @@ variable {E F : Type*}
   [NormedAddCommGroup E] [NormedSpace ℂ E] [CompleteSpace E]
   [NormedAddCommGroup F] [NormedSpace ℂ F] [CompleteSpace F]
 
-private def hilbertToDualRealLinearIsometry
+def hilbertToDualRealLinearIsometry
     {H : Type*}
     [NormedAddCommGroup H] [InnerProductSpace ℂ H] [CompleteSpace H] :
     H →ₗᵢ[ℝ] StrongDual ℂ H where
@@ -48,14 +34,14 @@ private def hilbertToDualRealLinearIsometry
     simp only [Complex.conj_ofReal, Complex.real_smul]
   norm_map' x := (InnerProductSpace.toDual ℂ H).norm_map x
 
-private theorem star_circleMap_star
+theorem star_circleMap_star
     (c : ℂ) (R : ℝ) (θ : ℝ) :
     starRingEnd ℂ (circleMap (starRingEnd ℂ c) R θ) =
       circleMap c R (-θ) := by
   rw [circleMap, circleMap, map_add, map_mul, ← exp_conj]
   simp
 
-private theorem star_deriv_circleMap_star
+theorem star_deriv_circleMap_star
     (c : ℂ) (R : ℝ) (θ : ℝ) :
     starRingEnd ℂ (deriv (circleMap (starRingEnd ℂ c) R) θ) =
       -deriv (circleMap c R) (-θ) := by
@@ -75,7 +61,7 @@ private theorem star_deriv_circleMap_star
   rw [hcircle, hI]
   ring
 
-private theorem hilbertToDual_intervalIntegral_comp
+theorem hilbertToDual_intervalIntegral_comp
     {H : Type*}
     [NormedAddCommGroup H] [InnerProductSpace ℂ H] [CompleteSpace H]
     (f : ℝ → H) (a b : ℝ) :
@@ -96,7 +82,7 @@ private theorem hilbertToDual_intervalIntegral_comp
       (μ := volume.restrict (Set.Ioc b a)) f
   rw [hab, hba, map_sub]
 
-private theorem circleIntegral_conjugateDual
+theorem circleIntegral_conjugateDual
     {H : Type*}
     [NormedAddCommGroup H] [InnerProductSpace ℂ H] [CompleteSpace H]
     (f : ℂ → H) (c : ℂ) (R : ℝ) :
@@ -188,7 +174,7 @@ private theorem circleIntegral_conjugateDual
       intro θ hθ
       exact hperiodic.sub_eq θ
 
-private theorem iteratedCircleIntegral_conjugateDual
+theorem iteratedCircleIntegral_conjugateDual
     {H : Type*}
     [NormedAddCommGroup H] [InnerProductSpace ℂ H] [CompleteSpace H]
     (m : ℕ)

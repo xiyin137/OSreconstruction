@@ -1,17 +1,13 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVICanonicalTubeIdentification
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIOrderedProductReducedSupport
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanReducedForwardTubeControl
-import OSReconstruction.Wightman.Reconstruction.WickRotation.SchwingerAxioms
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVICanonicalTubeIdentification
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIOrderedProductReducedSupport
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanReducedForwardTubeControl
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.SchwingerAxioms
 
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 

@@ -1,22 +1,12 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import Mathlib.Topology.MetricSpace.Thickening
-import OSReconstruction.SCV.SeparatelyAnalytic
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIITimeShiftedConvolution
+module
 
+public import Mathlib.Topology.MetricSpace.Thickening
+public import OSReconstruction.SCV.SeparatelyAnalytic
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIITimeShiftedConvolution
 
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -27,7 +17,7 @@ namespace OSReconstruction
 
 variable {d k : ℕ}
 
-private theorem continuous_finsetSpatialSchwartzSeminorm
+theorem continuous_finsetSpatialSchwartzSeminorm
     (s : Finset (ℕ × ℕ)) :
     Continuous
       (fun χ =>
@@ -465,7 +455,7 @@ theorem continuousOn_osiiStageMovingSliceScalar
   intro z _
   rfl
 
-private theorem dist_osiiCoordinateUpdate_le
+theorem dist_osiiCoordinateUpdate_le
     (z : Fin k → ℂ) (i : Fin k) (w : ℂ) :
     dist (Function.update z i w) z ≤ dist w (z i) := by
   refine (dist_pi_le_iff dist_nonneg).2 ?_
@@ -475,7 +465,7 @@ private theorem dist_osiiCoordinateUpdate_le
     simp
   · simp [Function.update_of_ne hji]
 
-private theorem continuous_osiiCoordinateUpdate_prod
+theorem continuous_osiiCoordinateUpdate_prod
     (z : Fin k → ℂ) (i : Fin k) :
     Continuous
       (fun p : ℂ × (Fin k → ℝ) =>
@@ -491,7 +481,7 @@ private theorem continuous_osiiCoordinateUpdate_prod
           (fun _ : ℂ × (Fin k → ℝ) => z j))
   · exact continuous_snd
 
-private theorem continuous_osiiStageMovingSliceIntegrand_fixed
+theorem continuous_osiiStageMovingSliceIntegrand_fixed
     (A : OSIITimeContinuationStage d k)
     (ρ : SchwartzMap (Fin k → ℝ) ℂ)
     (F : SchwartzNPoint d k)

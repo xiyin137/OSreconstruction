@@ -1,6 +1,10 @@
-import OSReconstruction.Mathlib429Compat
-import OSReconstruction.Wightman.Reconstruction.SchwartzCutoff
-import OSReconstruction.Wightman.Reconstruction.TranslationInvariantSchwartz
+module
+
+public import OSReconstruction.Mathlib429Compat
+public import OSReconstruction.Wightman.Reconstruction.SchwartzCutoff
+public import OSReconstruction.Wightman.Reconstruction.TranslationInvariantSchwartz
+
+@[expose] public section
 
 /-!
 # Schwartz Density

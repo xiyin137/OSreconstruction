@@ -1,22 +1,13 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVGeneratorFullSourceProvenance
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVReducedTimeSpatialTensor
-import OSReconstruction.SCV.SchwartzFiniteSeminormBound
-import OSReconstruction.Wightman.SchwartzTensorProduct
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVGeneratorFullSourceProvenance
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVReducedTimeSpatialTensor
+public import OSReconstruction.SCV.SchwartzFiniteSeminormBound
+public import OSReconstruction.Wightman.SchwartzTensorProduct
 
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -30,7 +21,7 @@ namespace GeneratorHermiteHilbertFieldFamilyData
 variable {d k : ℕ} [NeZero d]
 variable {OS : OsterwalderSchraderAxioms d}
 
-private theorem blockwiseSpacetimeDiff_symm_time
+theorem blockwiseSpacetimeDiff_symm_time
     {n m : ℕ}
     (q : NPointDomain d (n + m)) :
     (fun c =>
@@ -50,7 +41,7 @@ private theorem blockwiseSpacetimeDiff_symm_time
       osiiAxisPairBlockwiseTimeDiffCLE_symm_apply_right]
     simp [section43ScalarDiffCLE_symm_apply, splitLast]
 
-private theorem reflectReverseLeftSpacetime_time
+theorem reflectReverseLeftSpacetime_time
     {n m : ℕ}
     (x : NPointDomain d (n + m)) :
     (fun c =>
@@ -64,7 +55,7 @@ private theorem reflectReverseLeftSpacetime_time
   · intro b
     simp
 
-private theorem section43DiffCoordRealCLE_time
+theorem section43DiffCoordRealCLE_time
     {n : ℕ}
     (x : NPointDomain d n) :
     (fun c => section43DiffCoordRealCLE d n x c 0) =
@@ -72,7 +63,7 @@ private theorem section43DiffCoordRealCLE_time
   funext c
   simp [section43ScalarDiffCLE_apply]
 
-private theorem blockGlobalSpacetime_time
+theorem blockGlobalSpacetime_time
     {n m : ℕ}
     (q : NPointDomain d (n + m)) :
     (fun c => osiiAxisPairBlockGlobalSpacetimeCLE d n m q c 0) =
@@ -91,7 +82,7 @@ private theorem blockGlobalSpacetime_time
   rw [reflectReverseLeftSpacetime_time,
     blockwiseSpacetimeDiff_symm_time]
 
-private theorem blockGlobalSpacetime_time_eq_zero
+theorem blockGlobalSpacetime_time_eq_zero
     {n m : ℕ}
     (η : Section43SpatialSpace d (n + m)) :
     (fun c =>
@@ -105,7 +96,7 @@ private theorem blockGlobalSpacetime_time_eq_zero
   rw [blockGlobalSpacetime_time]
   rw [hinput, map_zero]
 
-private theorem blockGlobalSpacetime_symm_time_eq_zero
+theorem blockGlobalSpacetime_symm_time_eq_zero
     {n m : ℕ}
     (η : Section43SpatialSpace d (n + m)) :
     (fun c =>
@@ -249,7 +240,7 @@ noncomputable def axisPairBlockGlobalSpatialCLE
         (osiiAxisPairBlockGlobalSpacetimeCLE d n m
           ((nPointTimeSpatialCLE (d := d) (n + m)).symm (0, η))) := rfl
 
-private theorem blockGlobalSpacetime_spatial_eq_zero
+theorem blockGlobalSpacetime_spatial_eq_zero
     {n m : ℕ}
     (q : NPointDomain d (n + m))
     (hq : ∀ c (j : Fin d), q c j.succ = 0)
@@ -294,7 +285,7 @@ private theorem blockGlobalSpacetime_spatial_eq_zero
   rw [section43DiffCoordRealCLE_apply]
   split_ifs <;> simp [hreflect]
 
-private theorem blockGlobalSpacetime_spatial
+theorem blockGlobalSpacetime_spatial
     {n m : ℕ}
     (q : NPointDomain d (n + m)) :
     section43QSpatial (d := d) (n := n + m)
@@ -366,7 +357,7 @@ private theorem blockGlobalSpacetime_spatial
         (section43QSpatial (d := d) (n := n + m) q) := by
           rfl
 
-private theorem globalSpacetimeDiffShift_spatial_eq_zero
+theorem globalSpacetimeDiffShift_spatial_eq_zero
     (n m : ℕ) (s t : ℝ) :
     section43QSpatial (d := d) (n := n + m)
         (osiiAxisPairGlobalSpacetimeDiffShift d n m s t) = 0 := by
@@ -378,7 +369,7 @@ private theorem globalSpacetimeDiffShift_spatial_eq_zero
     osiiAxisPairGlobalAbsoluteSpacetimeShift,
     section43DiffCoordRealCLE_apply, timeShiftVec]
 
-private theorem blockGlobalSpacetimeAffine_spatial
+theorem blockGlobalSpacetimeAffine_spatial
     {n m : ℕ}
     (s t : ℝ)
     (q : NPointDomain d (n + m)) :

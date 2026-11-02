@@ -1,6 +1,10 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIForwardTubeEuclideanCovariance
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanEuclideanLorentz
-import OSReconstruction.ComplexLieGroups.DifferenceCoordinatesReduced
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIForwardTubeEuclideanCovariance
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanEuclideanLorentz
+public import OSReconstruction.ComplexLieGroups.DifferenceCoordinatesReduced
+
+@[expose] public section
 
 /-!
 # Full Lorentz covariance of the physical tube

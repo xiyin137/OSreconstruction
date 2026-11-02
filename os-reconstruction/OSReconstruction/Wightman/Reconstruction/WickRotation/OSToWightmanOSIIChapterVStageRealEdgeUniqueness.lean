@@ -1,5 +1,9 @@
-import OSReconstruction.SCV.DistributionalRepresentationUniqueness
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVStageRealEdge
+module
+
+public import OSReconstruction.SCV.DistributionalRepresentationUniqueness
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVStageRealEdge
+
+@[expose] public section
 
 /-!
 # Uniqueness for represented Chapter V real edges

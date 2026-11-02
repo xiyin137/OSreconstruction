@@ -3,8 +3,12 @@ Copyright (c) 2025 ModularPhysics Contributors.
 Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
-import Mathlib.Analysis.Distribution.SchwartzSpace.Deriv
-import Mathlib.Analysis.Calculus.ContDiff.Bounds
+module
+
+public import Mathlib.Analysis.Distribution.SchwartzSpace.Deriv
+public import Mathlib.Analysis.Calculus.ContDiff.Bounds
+
+@[expose] public section
 
 /-!
 # Partial evaluation of Schwartz maps
@@ -27,17 +31,17 @@ variable {E₁ E₂ F : Type*}
   [NormedAddCommGroup F] [NormedSpace ℝ F]
 
 omit [NormedSpace ℝ E₁] [NormedSpace ℝ E₂] in
-private theorem norm_x_le_norm_prod (x : E₁) (y : E₂) :
+theorem norm_x_le_norm_prod (x : E₁) (y : E₂) :
     ‖x‖ ≤ ‖(x, y)‖ :=
   le_max_left _ _
 
 omit [NormedSpace ℝ E₁] [NormedSpace ℝ E₂] in
-private theorem norm_y_le_norm_prod (x : E₁) (y : E₂) :
+theorem norm_y_le_norm_prod (x : E₁) (y : E₂) :
     ‖y‖ ≤ ‖(x, y)‖ :=
   le_max_right _ _
 
 /-- Pointwise evaluation of `iteratedFDeriv` on a Schwartz difference. -/
-private theorem iteratedFDeriv_sub_schwartz
+theorem iteratedFDeriv_sub_schwartz
     (f g : SchwartzMap E₁ F) (n : ℕ) (x : E₁) :
     iteratedFDeriv ℝ n (⇑(f - g)) x =
       iteratedFDeriv ℝ n (⇑f) x - iteratedFDeriv ℝ n (⇑g) x := by

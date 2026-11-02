@@ -1,19 +1,12 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.SCV.DistributionalRepresentationUniqueness
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVInitialAnchoredPacketLocalKernel
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVInitialTimeSmearingStageLimit
+module
 
+public import OSReconstruction.SCV.DistributionalRepresentationUniqueness
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVInitialAnchoredPacketLocalKernel
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVInitialTimeSmearingStageLimit
 
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 

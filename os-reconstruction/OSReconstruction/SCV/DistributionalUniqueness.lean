@@ -5,40 +5,19 @@ Copyright (c) 2025 ModularPhysics Contributors.
 Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
-import OSReconstruction.SCV.SchwartzComplete
-import Init
-import OSReconstruction.SCV.TubeDomainExtension
-import OSReconstruction.SCV.IdentityTheorem
-import OSReconstruction.SCV.LaplaceSchwartz
-import OSReconstruction.SCV.BochnerTubeTheorem
-import Mathlib.Analysis.Distribution.SchwartzSpace.Deriv
-import Mathlib.Analysis.Calculus.BumpFunction.Convolution
-import Mathlib.Analysis.Calculus.BumpFunction.FiniteDimension
+module
 
+public import OSReconstruction.SCV.SchwartzComplete
+public import Init
+public import OSReconstruction.SCV.TubeDomainExtension
+public import OSReconstruction.SCV.IdentityTheorem
+public import OSReconstruction.SCV.LaplaceSchwartz
+public import OSReconstruction.SCV.BochnerTubeTheorem
+public import Mathlib.Analysis.Distribution.SchwartzSpace.Deriv
+public import Mathlib.Analysis.Calculus.BumpFunction.Convolution
+public import Mathlib.Analysis.Calculus.BumpFunction.FiniteDimension
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -188,7 +167,7 @@ theorem mem_support_translateSchwartz_iff (t₀ : Fin m → ℝ)
       x + t₀ ∈ Function.support (f : (Fin m → ℝ) → ℂ) := by
   simp [translateSchwartz_apply, Function.mem_support]
 
-private theorem iteratedFDeriv_sub_schwartz (f g : SchwartzMap (Fin m → ℝ) ℂ)
+theorem iteratedFDeriv_sub_schwartz' (f g : SchwartzMap (Fin m → ℝ) ℂ)
     (n : ℕ) (x : Fin m → ℝ) :
     iteratedFDeriv ℝ n (⇑(f - g)) x =
       iteratedFDeriv ℝ n (⇑f) x - iteratedFDeriv ℝ n (⇑g) x := by
@@ -273,7 +252,7 @@ theorem tendsto_translateSchwartz_nhds_of_isCompactSupport
           iteratedFDeriv ℝ n (⇑(translateSchwartz t₀ ψ)) x = H (x, t₀) := by
         change iteratedFDeriv ℝ n (fun x => ψ (x + t₀)) x = H (x, t₀)
         simpa [H] using (iteratedFDeriv_comp_add_right (f := ⇑ψ) n t₀ x)
-      rw [iteratedFDeriv_sub_schwartz, htrans_t, htrans_t₀]
+      rw [iteratedFDeriv_sub_schwartz', htrans_t, htrans_t₀]
     rw [hEq]
     have hhalf : M * (ε / (2 * M)) = ε / 2 := by
       field_simp [hMpos.ne']
@@ -303,7 +282,7 @@ theorem tendsto_translateSchwartz_nhds_of_isCompactSupport
       exact hx_not_t₀ (hsupport_deriv (by simp [Function.mem_support, hne]))
     have hEq :
         iteratedFDeriv ℝ n (⇑(translateSchwartz t ψ - translateSchwartz t₀ ψ)) x = 0 := by
-      rw [iteratedFDeriv_sub_schwartz]
+      rw [iteratedFDeriv_sub_schwartz']
       rw [show iteratedFDeriv ℝ n (⇑(translateSchwartz t ψ)) x =
             iteratedFDeriv ℝ n (⇑ψ) (x + t) by
               change iteratedFDeriv ℝ n (fun x => ψ (x + t)) x = _

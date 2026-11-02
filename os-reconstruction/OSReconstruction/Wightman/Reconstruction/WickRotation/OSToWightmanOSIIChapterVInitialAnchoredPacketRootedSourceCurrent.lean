@@ -1,22 +1,13 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.SCV.HeadFiberFubini
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVInitialAnchoredPacketRootedTimeSlice
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVCanonicalReducedSchwinger
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVDifferenceReducedSupport
+module
 
+public import OSReconstruction.SCV.HeadFiberFubini
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVInitialAnchoredPacketRootedTimeSlice
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVCanonicalReducedSchwinger
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVDifferenceReducedSupport
 
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -37,7 +28,7 @@ variable
   {A : AnchoredPacketTimeShellFamilyData (d := d) I anchor}
   {R : TripleConvolutionRootData I}
 
-private theorem reducedTimeProjection_eq_tail_orderedTime
+theorem reducedTimeProjection_eq_tail_orderedTime
     (x : NPointDomain d (k + 1)) :
     reducedTimeProjectionCLM d k x =
       Fin.tail

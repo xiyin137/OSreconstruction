@@ -5,16 +5,11 @@ Copyright (c) 2025 ModularPhysics Contributors.
 Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
-import OSReconstruction.SCV.HeadFiberAntideriv
+module
 
+public import OSReconstruction.SCV.HeadFiberAntideriv
 
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 

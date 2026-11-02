@@ -5,19 +5,13 @@ Copyright (c) 2026 ModularPhysics Contributors.
 Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
-import OSReconstruction.SCV.DistributionalEOWHolomorphic
-import OSReconstruction.SCV.DistributionalEOWApproxIdentity
-import OSReconstruction.SCV.ProductDensity
+module
 
+public import OSReconstruction.SCV.DistributionalEOWHolomorphic
+public import OSReconstruction.SCV.DistributionalEOWApproxIdentity
+public import OSReconstruction.SCV.ProductDensity
 
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 

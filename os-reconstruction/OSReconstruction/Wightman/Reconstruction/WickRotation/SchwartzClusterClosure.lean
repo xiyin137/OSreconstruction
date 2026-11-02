@@ -1,4 +1,8 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceClosure
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceClosure
+
+@[expose] public section
 
 /-!
 # Uniform Schwartz closure of spatial clustering
@@ -19,7 +23,7 @@ namespace OSReconstruction
 
 variable {d : Nat} [NeZero d]
 
-private theorem uniform_conjTensor_approximation
+theorem uniform_conjTensor_approximation
     (W : (n : Nat) -> SchwartzNPoint d n →L[Complex] Complex)
     (hherm : ∀ n (f g : SchwartzNPoint d n),
       (∀ x, g x = starRingEnd Complex (f (fun i => x (Fin.rev i)))) ->

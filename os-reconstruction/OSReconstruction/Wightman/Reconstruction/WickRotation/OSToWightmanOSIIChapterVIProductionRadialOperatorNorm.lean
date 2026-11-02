@@ -1,4 +1,8 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIProductionRadialRealEdge
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIProductionRadialRealEdge
+
+@[expose] public section
 
 /-!
 # OS II Chapter VI: production radial operator-norm Gevrey bounds

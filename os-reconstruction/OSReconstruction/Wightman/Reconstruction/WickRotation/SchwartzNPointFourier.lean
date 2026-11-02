@@ -1,4 +1,8 @@
-import OSReconstruction.Wightman.SpectralEquivalence
+module
+
+public import OSReconstruction.Wightman.SpectralEquivalence
+
+@[expose] public section
 
 /-!
 # N-point and physics Fourier normalization

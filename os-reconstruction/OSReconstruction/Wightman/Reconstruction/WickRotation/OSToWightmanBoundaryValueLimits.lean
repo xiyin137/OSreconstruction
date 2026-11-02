@@ -5,28 +5,20 @@ Copyright (c) 2025 ModularPhysics Contributors. All rights reserved.
 Released under Apache 2.0 license.
 Authors: Michael Douglas, ModularPhysics Contributors
 -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBoundaryValuesComparison
-import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43SpectralSupport
-import OSReconstruction.SCV.PaleyWienerSchwartz
-import Init
-import OSReconstruction.SCV.ConeDefs
-import OSReconstruction.SCV.DistributionalUniqueness
-import OSReconstruction.SCV.LaplaceSchwartz
-import OSReconstruction.Wightman.Reconstruction.ForwardTubeDistributions
-import OSReconstruction.Wightman.SchwartzTensorProduct
-import Mathlib.Analysis.Distribution.SchwartzSpace.Deriv
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBoundaryValuesComparison
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43SpectralSupport
+public import OSReconstruction.SCV.PaleyWienerSchwartz
+public import Init
+public import OSReconstruction.SCV.ConeDefs
+public import OSReconstruction.SCV.DistributionalUniqueness
+public import OSReconstruction.SCV.LaplaceSchwartz
+public import OSReconstruction.Wightman.Reconstruction.ForwardTubeDistributions
+public import OSReconstruction.Wightman.SchwartzTensorProduct
+public import Mathlib.Analysis.Distribution.SchwartzSpace.Deriv
 
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 open scoped Classical NNReal
 
@@ -35,7 +27,7 @@ noncomputable section
 variable {d : ℕ} [NeZero d]
 
 /-- Reindex a flattened sum that only samples the time-coordinate slots. -/
-private theorem sum_over_flat_timeSlots
+theorem sum_over_flat_timeSlots
     {n : ℕ}
     (a : Fin n → ℝ)
     (ξ : Fin (n * (d + 1)) → ℝ) :
@@ -60,7 +52,7 @@ after inserting the right-block time-shift vector into the full flattened
 `(n+m)`-point space, every dual-cone frequency still pairs nonpositively with
 that inserted translation direction. This is the exact geometry needed by the
 final full-flat spectral assembly. -/
-private theorem zeroHeadBlockShift_flatTimeShiftDirection_pairing_nonpos_of_mem_dualCone
+theorem zeroHeadBlockShift_flatTimeShiftDirection_pairing_nonpos_of_mem_dualCone
     {n m : ℕ}
     {ξ : Fin ((n + m) * (d + 1)) → ℝ}
     (hξ :
@@ -346,7 +338,7 @@ private theorem zeroHeadBlockShift_flatTimeShiftDirection_pairing_nonpos_of_mem_
 /-- Reindexing the flattened `(n+m)`-point real block into
 `n*(d+1) + m*(d+1)` identifies the first block with the first `n` spacetime
 variables. -/
-private theorem splitFirst_reindex_flatten_symm_eq
+theorem splitFirst_reindex_flatten_symm_eq
     {n m : ℕ}
     (x : Fin (n * (d + 1) + m * (d + 1)) → ℝ) :
     splitFirst n m
@@ -368,7 +360,7 @@ private theorem splitFirst_reindex_flatten_symm_eq
 /-- Reindexing the flattened `(n+m)`-point real block into
 `n*(d+1) + m*(d+1)` identifies the last block with the final `m` spacetime
 variables. -/
-private theorem splitLast_reindex_flatten_symm_eq
+theorem splitLast_reindex_flatten_symm_eq
     {n m : ℕ}
     (x : Fin (n * (d + 1) + m * (d + 1)) → ℝ) :
     splitLast n m

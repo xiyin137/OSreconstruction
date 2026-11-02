@@ -1,4 +1,8 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.BHWTranslation
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.BHWTranslation
+
+@[expose] public section
 
 /-!
 # Wick Pairing for the Actual Schwinger Constructor

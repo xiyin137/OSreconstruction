@@ -5,17 +5,13 @@ Copyright (c) 2025 ModularPhysics Contributors. All rights reserved.
 Released under Apache 2.0 license.
 Authors: Michael R. Douglas, ModularPhysics Contributors
 -/
-import OSReconstruction.SCV.DualCone
-import OSReconstruction.SCV.LaplaceSchwartz
-import Mathlib.Analysis.Distribution.SchwartzSpace.Fourier
+module
 
+public import OSReconstruction.SCV.DualCone
+public import OSReconstruction.SCV.LaplaceSchwartz
+public import Mathlib.Analysis.Distribution.SchwartzSpace.Fourier
 
-
-
-
-
-
-
+@[expose] public section
 
 open scoped Classical ComplexConjugate BigOperators
 open MeasureTheory SchwartzMap Complex

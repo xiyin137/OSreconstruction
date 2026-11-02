@@ -1,26 +1,20 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import Init
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIPositiveTimeHilbertRealEdge
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBase
-import OSReconstruction.SCV.ConnectedNeighborhood
-import OSReconstruction.SCV.TotallyRealIdentity
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIILemma51AxisPair
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanSemigroup
-import OSReconstruction.SCV.Osgood
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIMZFlatTubeEnvelope
-import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceTimeProductDensity
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIProductTensorSourceCurrent
+module
 
+public import Init
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIPositiveTimeHilbertRealEdge
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBase
+public import OSReconstruction.SCV.ConnectedNeighborhood
+public import OSReconstruction.SCV.TotallyRealIdentity
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIILemma51AxisPair
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanSemigroup
+public import OSReconstruction.SCV.Osgood
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIMZFlatTubeEnvelope
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceTimeProductDensity
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIProductTensorSourceCurrent
 
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 

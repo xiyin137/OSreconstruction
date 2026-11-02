@@ -1,17 +1,15 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import Mathlib.Topology.Connected.LocallyConnected
-import Mathlib.Topology.Separation.Regular
-import Mathlib.Analysis.Complex.Basic
-import Mathlib.Analysis.Calculus.FDeriv.Basic
-import Mathlib.Analysis.Calculus.FDeriv.Congr
-import Mathlib.Analysis.Normed.Module.Convex
+module
 
+public import Mathlib.Topology.Connected.LocallyConnected
+public import Mathlib.Topology.Separation.Regular
+public import Mathlib.Analysis.Complex.Basic
+public import Mathlib.Analysis.Calculus.FDeriv.Basic
+public import Mathlib.Analysis.Calculus.FDeriv.Congr
+public import Mathlib.Analysis.Normed.Module.Convex
 
-
-
-
-
+@[expose] public section
 
 noncomputable section
 

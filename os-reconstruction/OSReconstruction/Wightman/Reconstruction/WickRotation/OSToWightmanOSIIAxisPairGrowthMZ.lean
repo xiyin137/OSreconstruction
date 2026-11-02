@@ -1,5 +1,9 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIAxisPairMZApproximation
-import OSReconstruction.SCV.CoshDamping
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIAxisPairMZApproximation
+public import OSReconstruction.SCV.CoshDamping
+
+@[expose] public section
 
 /-!
 # Growth-admissible OS-II axis-pair MZ continuation
@@ -162,7 +166,7 @@ structure OSIIAxisPairFlatCrossCoshGrowthData
 
 namespace OSIIAxisPairFlatCrossCoshGrowthData
 
-private theorem update_strip_im
+theorem update_strip_im
     (x : osiiAxisPairIndex d → ℝ)
     (a : osiiAxisPairIndex d)
     (w : ℂ)

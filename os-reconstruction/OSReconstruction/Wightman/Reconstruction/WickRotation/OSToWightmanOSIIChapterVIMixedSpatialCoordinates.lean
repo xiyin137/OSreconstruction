@@ -1,6 +1,10 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIRealEdgeRegularizedGrowth
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIPartialConvolutionKernel
-import OSReconstruction.SCV.DistributionalEOWApproxIdentity
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIRealEdgeRegularizedGrowth
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIPartialConvolutionKernel
+public import OSReconstruction.SCV.DistributionalEOWApproxIdentity
+
+@[expose] public section
 
 /-!
 # OS II Chapter VI: mixed spatial coordinates

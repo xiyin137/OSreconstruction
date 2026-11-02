@@ -1,15 +1,11 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVInitialAnchoredPacketRootedPacketScaleRealEdge
-import OSReconstruction.SCV.LocallyUniformDistributionRepresentation
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVInitialAnchoredPacketRootedPacketScaleRealEdge
+public import OSReconstruction.SCV.LocallyUniformDistributionRepresentation
 
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 

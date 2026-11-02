@@ -1,4 +1,8 @@
-import OSReconstruction.SCV.PaleyWienerSchwartz
+module
+
+public import OSReconstruction.SCV.PaleyWienerSchwartz
+
+@[expose] public section
 
 /-!
 # Spectral damping on closed cone faces
@@ -20,10 +24,10 @@ namespace OSReconstruction
 
 variable {m : Nat}
 
-private def coneCutoff (C : Set (Fin m -> Real)) : FixedConeCutoff (DualConeFlat C) :=
+def coneCutoff (C : Set (Fin m -> Real)) : FixedConeCutoff (DualConeFlat C) :=
   (fixedConeCutoff_exists (DualConeFlat C) (dualConeFlat_closed C)).some
 
-private theorem coneCutoff_temperate (C : Set (Fin m -> Real)) :
+theorem coneCutoff_temperate (C : Set (Fin m -> Real)) :
     (fun p => ((coneCutoff C).val p : Complex)).HasTemperateGrowth := by
   have h : (coneCutoff C).val.HasTemperateGrowth := by
     refine ⟨(coneCutoff C).smooth, fun n => ?_⟩
@@ -31,24 +35,24 @@ private theorem coneCutoff_temperate (C : Set (Fin m -> Real)) :
     exact ⟨0, A, by simpa using hA⟩
   exact Function.Complex.hasTemperateGrowth_ofReal.comp h
 
-private def coneCutoffTest (C : Set (Fin m -> Real))
+def coneCutoffTest (C : Set (Fin m -> Real))
     (f : SchwartzMap (Fin m -> Real) Complex) : SchwartzMap (Fin m -> Real) Complex :=
   SchwartzMap.smulLeftCLM Complex (fun p => ((coneCutoff C).val p : Complex)) f
 
-private theorem coneCutoffTest_apply (C : Set (Fin m -> Real))
+theorem coneCutoffTest_apply (C : Set (Fin m -> Real))
     (f : SchwartzMap (Fin m -> Real) Complex) (p : Fin m -> Real) :
     coneCutoffTest C f p = ((coneCutoff C).val p : Complex) * f p := by
   exact SchwartzMap.smulLeftCLM_apply_apply (coneCutoff_temperate C) f p
 
-private theorem coneCutoff_eq_one {C : Set (Fin m -> Real)}
+theorem coneCutoff_eq_one {C : Set (Fin m -> Real)}
     {p : Fin m -> Real} (hp : p ∈ DualConeFlat C) : (coneCutoff C).val p = 1 := by
   obtain ⟨r, hr, hone⟩ := (coneCutoff C).one_on_neighborhood
   exact hone p (by simpa [Metric.infDist_zero_of_mem hp] using hr)
 
-private def conePairingCLM (y : Fin m -> Real) : (Fin m -> Real) →L[Real] Real :=
+def conePairingCLM (y : Fin m -> Real) : (Fin m -> Real) →L[Real] Real :=
   ∑ i, y i • (ContinuousLinearMap.proj (R := Real) (φ := fun _ : Fin m => Real) i)
 
-private theorem conePairingCLM_apply (y p : Fin m -> Real) :
+theorem conePairingCLM_apply (y p : Fin m -> Real) :
     conePairingCLM y p = ∑ i, y i * p i := by simp [conePairingCLM]
 
 theorem osiiConePairing_nonneg_of_mem_closure
@@ -58,7 +62,7 @@ theorem osiiConePairing_nonneg_of_mem_closure
     (isClosed_le continuous_const
       (show Continuous (fun z : Fin m -> Real => ∑ i, z i * p i) by fun_prop)) hy
 
-private theorem coneCutoff_pairing_lower_bound
+theorem coneCutoff_pairing_lower_bound
     {C : Set (Fin m -> Real)} {y : Fin m -> Real} (hy : y ∈ closure C)
     {p : Fin m -> Real} (hp : (coneCutoff C).val p ≠ 0) :
     -(2 * ‖conePairingCLM y‖) ≤ conePairingCLM y p := by
@@ -78,7 +82,7 @@ private theorem coneCutoff_pairing_lower_bound
   rw [Real.norm_eq_abs, map_sub] at hnorm
   linarith [neg_abs_le (conePairingCLM y p - conePairingCLM y q)]
 
-private theorem coneCutoffTest_support_bound
+theorem coneCutoffTest_support_bound
     {C : Set (Fin m -> Real)} {y : Fin m -> Real} (hy : y ∈ closure C)
     (f : SchwartzMap (Fin m -> Real) Complex) :
     ∃ M : Real, ∀ p ∈ Function.support (coneCutoffTest C f), -M ≤ conePairingCLM y p := by

@@ -1,8 +1,12 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightman
-import OSReconstruction.SCV.TotallyRealIdentity
-import OSReconstruction.ComplexLieGroups.Connectedness.ForwardTubeDomain
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightman
+public import OSReconstruction.SCV.TotallyRealIdentity
+public import OSReconstruction.ComplexLieGroups.Connectedness.ForwardTubeDomain
+
+@[expose] public section
 
 noncomputable section
 
@@ -60,7 +64,7 @@ def wickUnrotateComplexConfig
       _ = z k 0 := by simp
   · simp [wickRotateComplexConfig, wickRotateComplexPoint, wickUnrotateComplexConfig, hμ]
 
-private theorem continuous_wickRotateComplexPoint :
+theorem continuous_wickRotateComplexPoint :
     Continuous (wickRotateComplexPoint (d := d)) := by
   apply continuous_pi
   intro μ
@@ -71,7 +75,7 @@ private theorem continuous_wickRotateComplexPoint :
   · simpa [wickRotateComplexPoint, hμ] using
       (continuous_apply μ)
 
-private theorem differentiable_wickRotateComplexPoint :
+theorem differentiable_wickRotateComplexPoint :
     Differentiable ℂ (wickRotateComplexPoint (d := d)) := by
   apply differentiable_pi.mpr
   intro μ
@@ -82,19 +86,19 @@ private theorem differentiable_wickRotateComplexPoint :
   · have hcoord : Differentiable ℂ (fun z : Fin (d + 1) → ℂ => z μ) := differentiable_apply μ
     simpa [wickRotateComplexPoint, hμ] using hcoord
 
-private theorem continuous_wickRotateComplexConfig :
+theorem continuous_wickRotateComplexConfig :
     Continuous (wickRotateComplexConfig (n := n) (d := d)) := by
   apply continuous_pi
   intro k
   exact continuous_wickRotateComplexPoint.comp (continuous_apply k)
 
-private theorem differentiable_wickRotateComplexConfig :
+theorem differentiable_wickRotateComplexConfig :
     Differentiable ℂ (wickRotateComplexConfig (n := n) (d := d)) := by
   apply differentiable_pi.mpr
   intro k
   exact differentiable_wickRotateComplexPoint.comp (differentiable_apply k)
 
-private theorem continuous_wickUnrotateComplexConfig :
+theorem continuous_wickUnrotateComplexConfig :
     Continuous (wickUnrotateComplexConfig (n := n) (d := d)) := by
   apply continuous_pi
   intro k
@@ -111,7 +115,7 @@ private theorem continuous_wickUnrotateComplexConfig :
   · simp only [wickUnrotateComplexConfig, hμ, if_false]
     fun_prop
 
-private theorem continuous_wickRotateRealConfig :
+theorem continuous_wickRotateRealConfig :
     Continuous (fun x : NPointDomain d n => fun k => wickRotatePoint (x k)) := by
   apply continuous_pi
   intro k
@@ -180,7 +184,7 @@ private theorem continuous_wickRotateRealConfig :
     _ = ∑ ν, (↑((LorentzGroup.timeReversal (d := d)).val μ ν) : ℂ) * wickRotatePoint x ν := by
           simpa using hsum.symm
 
-private theorem wickRotateComplexConfig_real_smul
+theorem wickRotateComplexConfig_real_smul
     (a b : ℝ) (z w : Fin n → Fin (d + 1) → ℂ) :
     wickRotateComplexConfig (a • z + b • w) =
       a • wickRotateComplexConfig z + b • wickRotateComplexConfig w := by
@@ -191,7 +195,7 @@ private theorem wickRotateComplexConfig_real_smul
     ring
   · simp [wickRotateComplexConfig, wickRotateComplexPoint, hμ, Pi.add_apply, Pi.smul_apply]
 
-private theorem euclidean_forwardTube_section_nonempty :
+theorem euclidean_forwardTube_section_nonempty :
     ({x : NPointDomain d n | (fun k => wickRotatePoint (x k)) ∈ ForwardTube d n}).Nonempty := by
   let x0 : NPointDomain d n :=
     fun k μ => if μ = 0 then (k : ℝ) + 1 else 0
@@ -268,7 +272,7 @@ theorem ae_pairwise_distinct_timeCoords :
 
 /-- On the Wick-rotated real section of the forward tube, Euclidean times are
 strictly increasing. -/
-private theorem strictMono_time_of_wickRotate_mem_forwardTube
+theorem strictMono_time_of_wickRotate_mem_forwardTube
     {m : ℕ} {x : NPointDomain d (m + 1)}
     (hx : (fun k => wickRotatePoint (x k)) ∈ ForwardTube d (m + 1)) :
     StrictMono (fun k : Fin (m + 1) => x k 0) := by

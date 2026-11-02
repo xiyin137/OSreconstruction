@@ -1,21 +1,11 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVInitialAnchoredPacketRootedHolomorphicSmearing
-import OSReconstruction.SCV.TotallyRealIdentity
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVInitialAnchoredPacketRootedHolomorphicSmearing
+public import OSReconstruction.SCV.TotallyRealIdentity
 
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -36,7 +26,7 @@ variable
   {A : AnchoredPacketTimeShellFamilyData (d := d) I anchor}
   {R : TripleConvolutionRootData I}
 
-private theorem tail_timeTupleTransport_mem_strictPositive_affine
+theorem tail_timeTupleTransport_mem_strictPositive_affine
     {n : ℕ}
     (h : n = k + 1)
     (x : Fin n → ℝ)

@@ -1,19 +1,10 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVRawGeneratedLogarithmicDomains
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVRawGeneratedLogarithmicDomains
 
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -23,7 +14,7 @@ open scoped Classical
 namespace OSReconstruction
 namespace OSIIChapterV
 
-private theorem raw_argumentGeneratorPoint_smul
+theorem raw_argumentGeneratorPoint_smul_tedRecursiveAngleDomains
     {k : Nat} (i : GeneratorIndex k)
     (r : Real)
     (left : Fin i.n -> Real) (theta : Real) (right : Fin i.m -> Real) :
@@ -34,7 +25,7 @@ private theorem raw_argumentGeneratorPoint_smul
   simp only [osiiArgumentGeneratorPoint, Pi.smul_apply]
   split_ifs <;> simp
 
-private theorem raw_argumentDiagonal_smul
+theorem raw_argumentDiagonal_smul_tedRecursiveAngleDomains
     {n : Nat} (hn : 1 <= n)
     (r : Real) (x : Fin n -> Real) :
     osiiArgumentDiagonal hn (r • x) =
@@ -43,7 +34,7 @@ private theorem raw_argumentDiagonal_smul
   simp only [osiiArgumentDiagonal, Pi.smul_apply]
   split_ifs <;> simp
 
-private theorem raw_strict_bridge_smul_lt
+theorem raw_strict_bridge_smul_lt
     {r : Real} (hr0 : 0 <= r) (hr1 : r < 1) :
     |r * (Real.pi / 2)| < Real.pi / 2 := by
   calc
@@ -123,7 +114,7 @@ theorem rawStrict_mixedAnglePoint_smul_mem
                 (osiiFirstRecursiveAngleSplit s t)
                 (r • osiiMixedAnglePoint N (s + 1) (2 * (t + 1)))
                 (r * (Real.pi / 2)) (r • osiiMixedAnglePoint N s 1)
-            convert (raw_argumentGeneratorPoint_smul
+            convert (raw_argumentGeneratorPoint_smul_tedRecursiveAngleDomains
                 (osiiFirstRecursiveAngleSplit s t) r
                 (osiiMixedAnglePoint N (s + 1) (2 * (t + 1)))
                 (Real.pi / 2) (osiiMixedAnglePoint N s 1)).symm using 1 <;> rfl
@@ -148,7 +139,7 @@ theorem rawStrict_mixedAnglePoint_smul_mem
                 (osiiSecondRecursiveAngleSplit s t)
                 (r • osiiMixedAnglePoint N s 1) (r * (-(Real.pi / 2)))
                 (r • osiiMixedAnglePoint N (s + 1) (2 * (t + 1)))
-            convert (raw_argumentGeneratorPoint_smul
+            convert (raw_argumentGeneratorPoint_smul_tedRecursiveAngleDomains
                 (osiiSecondRecursiveAngleSplit s t) r
                 (osiiMixedAnglePoint N s 1) (-(Real.pi / 2))
                 (osiiMixedAnglePoint N (s + 1) (2 * (t + 1)))).symm using 1 <;> rfl
@@ -184,7 +175,7 @@ theorem rawStrict_mixedAnglePoint_smul_mem
               ((t + 1) + (s + 1)) (by omega) (N + 1)
               (r • osiiMixedAnglePoint (N + 1) (s + 1) (t + 1))
           · simp [Pi.smul_apply, osiiMixedAnglePoint]
-          · rw [raw_argumentDiagonal_smul]
+          · rw [raw_argumentDiagonal_smul_tedRecursiveAngleDomains]
             rw [← hmid_eq]
             exact hmid
 

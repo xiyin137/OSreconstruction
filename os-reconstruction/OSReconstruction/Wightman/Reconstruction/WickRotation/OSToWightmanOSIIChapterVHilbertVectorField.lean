@@ -1,20 +1,11 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.SCV.LocallyUniformLimit
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVSourceTaylor
+module
 
+public import OSReconstruction.SCV.LocallyUniformLimit
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVSourceTaylor
 
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -238,7 +229,7 @@ theorem differentiable_partialSum
   intro α hα
   exact (T.differentiable_monomial α).smul_const _
 
-private theorem norm_reflectedCauchyIncrement_le
+theorem norm_reflectedCauchyIncrement_le
     {r : ℝ} {increment : Fin k → ℂ}
     (hincrement : ∀ i, ‖increment i‖ ≤ r) :
     ∀ j, ‖reflectedCauchyIncrement increment j‖ ≤ r := by
@@ -251,7 +242,7 @@ private theorem norm_reflectedCauchyIncrement_le
     rw [reflectedCauchyIncrement_right (k := k)]
     exact hincrement i
 
-private theorem norm_reflectedCauchyIncrement_lt
+theorem norm_reflectedCauchyIncrement_lt
     {R : ℝ} {increment : Fin k → ℂ}
     (hincrement : ∀ i, ‖increment i‖ < R) :
     ∀ j, ‖reflectedCauchyIncrement increment j‖ < R := by

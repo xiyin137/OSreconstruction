@@ -1,16 +1,11 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVGeneratorSourceComparison
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVGeneratorChronologicalSource
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVGeneratorSourceComparison
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVGeneratorChronologicalSource
 
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -194,7 +189,7 @@ theorem GeneratorIndex.not_rightGlobalIndex_lt_bridgeGlobalIndex
     generatorPhysicalTimePoint t₀ ξ j.succ = ξ j := by
   simp [generatorPhysicalTimePoint]
 
-private theorem section43ScalarDiffCLE_symm_cast_succ_sub_cast_castSucc
+theorem section43ScalarDiffCLE_symm_cast_succ_sub_cast_castSucc
     {n : ℕ}
     (hn : 0 < n)
     (δ : Fin n → ℝ)
@@ -507,7 +502,7 @@ theorem generatorGlobalTimeDisplacement_chronologicalParameter
     · simp [generatorChronologicalParameter,
         GeneratorIndex.bridgeGlobalIndex_eq_toGap, hj]
 
-private theorem osiiAxisPairBlockGlobalTimeAffine_add_commonShift
+theorem osiiAxisPairBlockGlobalTimeAffine_add_commonShift
     (n m : ℕ)
     (s t : ℝ)
     (δ : Fin (n + m) → ℝ) :

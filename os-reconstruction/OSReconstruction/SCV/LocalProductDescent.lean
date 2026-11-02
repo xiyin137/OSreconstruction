@@ -5,19 +5,14 @@ Copyright (c) 2026 ModularPhysics Contributors.
 Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
-import OSReconstruction.SCV.DistributionalEOWKernelFactorization
-import OSReconstruction.SCV.DistributionalEOWSupport
-import OSReconstruction.SCV.ProductDensity
-import OSReconstruction.SCV.SchwartzExternalProduct
+module
 
+public import OSReconstruction.SCV.DistributionalEOWKernelFactorization
+public import OSReconstruction.SCV.DistributionalEOWSupport
+public import OSReconstruction.SCV.ProductDensity
+public import OSReconstruction.SCV.SchwartzExternalProduct
 
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -26,7 +21,7 @@ open Complex MeasureTheory
 namespace SCV
 
 /-- Product norm is controlled by the sum of the coordinate norms. -/
-private theorem norm_prod_le_fst_add_snd
+theorem norm_prod_le_fst_add_snd_LocalProductDescent
     {E₁ E₂ : Type*} [SeminormedAddCommGroup E₁] [SeminormedAddCommGroup E₂]
     (x : E₁ × E₂) :
     ‖x‖ ≤ ‖x.1‖ + ‖x.2‖ := by
@@ -113,7 +108,7 @@ def schwartzTensorProduct₂CLMLeft {m : ℕ}
       _ ≤ (2 : ℝ) ^ k * (‖x.1‖ ^ k + ‖x.2‖ ^ k) :=
         mul_le_mul_of_nonneg_left hmax (pow_nonneg (by norm_num) _)
   have h_pow : ‖x‖ ^ k ≤ (2 : ℝ) ^ k * (‖x.1‖ ^ k + ‖x.2‖ ^ k) :=
-    (pow_le_pow_left₀ (norm_nonneg _) (norm_prod_le_fst_add_snd x) _).trans add_pow_le
+    (pow_le_pow_left₀ (norm_nonneg _) (norm_prod_le_fst_add_snd_LocalProductDescent x) _).trans add_pow_le
   have h_term : ∀ i ∈ Finset.range (l + 1),
       ‖x‖ ^ k * (↑(l.choose i) * ‖iteratedFDeriv ℝ i φ.toFun x.1‖ *
         ‖iteratedFDeriv ℝ (l - i) ψ.toFun x.2‖) ≤
@@ -291,7 +286,7 @@ theorem continuous_schwartzPartialEval₂CLM {m : ℕ}
 
 The two source seminorms control the origin and the radial tail in the fixed
 parameter. -/
-private theorem schwartzPartialEval₂CLM_seminorm_decay_one_bound {m : ℕ}
+theorem schwartzPartialEval₂CLM_seminorm_decay_one_bound {m : ℕ}
     (k l : ℕ) :
     let μ : Measure (Fin m → ℝ) := volume
     let N := μ.integrablePower
@@ -1410,7 +1405,7 @@ theorem mixedRealFiberIntegralScalarCLM_apply {m : ℕ}
   rfl
 
 /-- Continuous linear maps agreeing on a dense set agree everywhere. -/
-private theorem continuousLinearMap_eq_of_eq_on_dense
+theorem continuousLinearMap_eq_of_eq_on_dense
     {𝕜 : Type*} [Semiring 𝕜]
     {E : Type*} [TopologicalSpace E] [AddCommMonoid E] [Module 𝕜 E]
     {F : Type*} [TopologicalSpace F] [AddCommGroup F] [Module 𝕜 F] [T2Space F]
@@ -1483,7 +1478,7 @@ theorem continuousLinearMap_apply_mixedRealFiberIntegralCLM_eq_integral {m : ℕ
   simpa [ContinuousLinearMap.comp_apply] using h.symm
 
 /-- Real parameter shear `(t,a) ↦ (t,t+a)`. -/
-private def realParamKernelLeftLinearEquiv (m : ℕ) :
+def realParamKernelLeftLinearEquiv (m : ℕ) :
     ((Fin m → ℝ) × (Fin m → ℝ)) ≃ₗ[ℝ]
       ((Fin m → ℝ) × (Fin m → ℝ)) where
   toFun := fun p => (p.1, p.1 + p.2)
@@ -1513,7 +1508,7 @@ theorem realParamKernelLeftCLE_apply {m : ℕ}
   rfl
 
 /-- Real parameter shear `(t,a) ↦ (t-a,t)`. -/
-private def realParamKernelRightLinearEquiv (m : ℕ) :
+def realParamKernelRightLinearEquiv (m : ℕ) :
     ((Fin m → ℝ) × (Fin m → ℝ)) ≃ₗ[ℝ]
       ((Fin m → ℝ) × (Fin m → ℝ)) where
   toFun := fun p => (p.1 - p.2, p.1)
@@ -1572,7 +1567,7 @@ theorem realParamKernelRight_apply {m : ℕ}
 
 /-- Local descent shear for the left parameter test:
 `((z,t),a) ↦ (z - realEmbed a, (t,a))`. -/
-private def localDescentParamTestLeftLinearEquiv (m : ℕ) :
+def localDescentParamTestLeftLinearEquiv (m : ℕ) :
     ((ComplexChartSpace m × (Fin m → ℝ)) × (Fin m → ℝ)) ≃ₗ[ℝ]
       (ComplexChartSpace m × ((Fin m → ℝ) × (Fin m → ℝ))) where
   toFun := fun p =>
@@ -1610,7 +1605,7 @@ theorem localDescentParamTestLeftCLE_apply {m : ℕ}
 
 /-- Local descent associator for the right parameter test:
 `((z,t),a) ↦ (z,(t,a))`. -/
-private def localDescentParamTestRightLinearEquiv (m : ℕ) :
+def localDescentParamTestRightLinearEquiv (m : ℕ) :
     ((ComplexChartSpace m × (Fin m → ℝ)) × (Fin m → ℝ)) ≃ₗ[ℝ]
       (ComplexChartSpace m × ((Fin m → ℝ) × (Fin m → ℝ))) where
   toFun := fun p => (p.1.1, (p.1.2, p.2))

@@ -1,18 +1,12 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIEquation621HeadMarginalApproxIdentity
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIEquation621SpatialChartMeasure
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIEquation621RootedProductTargetStageRow
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIEquation621HeadMarginalApproxIdentity
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIEquation621SpatialChartMeasure
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIEquation621RootedProductTargetStageRow
 
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -153,7 +147,7 @@ theorem section43SpatialFlat_generatorSplitGlobalSpatialPullback
     section43SpatialFlatSchwartzCLE,
     SchwartzMap.compCLMOfContinuousLinearEquiv_apply]
 
-private theorem equation621_integrateHeadBlock_eq_scv
+theorem equation621_integrateHeadBlock_eq_scv
     {head tail : Nat}
     (F : SchwartzMap (Fin (head + tail) -> Real) Complex) :
     integrateHeadBlock (m := head) (n := tail) F =
@@ -240,7 +234,7 @@ noncomputable def equation621SplitTargetScalarCLE
 
 /-- Exchange the gap and spatial-coordinate indices in a finite real
 coordinate family. -/
-private noncomputable def equation621SwapSpatialFibersCLE
+noncomputable def equation621SwapSpatialFibersCLE
     (k d : Nat) :
     (Fin k -> Fin d -> Real) ≃L[Real] (Fin d -> Fin k -> Real) :=
   ({

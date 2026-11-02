@@ -5,18 +5,13 @@ Copyright (c) 2025 ModularPhysics Contributors.
 Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
-import Mathlib.Analysis.Distribution.SchwartzSpace.Deriv
-import OSReconstruction.Mathlib429Compat
-import OSReconstruction.SCV.DistributionalEOWKernel
+module
 
+public import Mathlib.Analysis.Distribution.SchwartzSpace.Deriv
+public import OSReconstruction.Mathlib429Compat
+public import OSReconstruction.SCV.DistributionalEOWKernel
 
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -339,7 +334,7 @@ theorem prependField_seminorm_le {n : ℕ}
         Finset.sum_le_sum h_term
     _ = _ := by rw [← Finset.mul_sum]
 
-private noncomputable def prependFieldLinearMapRight {n : ℕ}
+noncomputable def prependFieldLinearMapRight {n : ℕ}
     (f : 𝓢(ℝ, ℂ)) :
     𝓢(Fin n → ℝ, ℂ) →ₗ[ℝ] 𝓢(Fin (n + 1) → ℝ, ℂ) where
   toFun := fun g => prependField f g

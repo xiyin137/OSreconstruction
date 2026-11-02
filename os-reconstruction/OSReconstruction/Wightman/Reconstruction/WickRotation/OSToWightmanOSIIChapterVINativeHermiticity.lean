@@ -1,6 +1,10 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVINativeSourcePairing
-import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceOrderedDensity
-import OSReconstruction.Wightman.Reconstruction.DenseCLM
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVINativeSourcePairing
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceOrderedDensity
+public import OSReconstruction.Wightman.Reconstruction.DenseCLM
+
+@[expose] public section
 
 /-!
 # Hermiticity from the coupled source pairing
@@ -20,7 +24,7 @@ set_option backward.isDefEq.respectTransparency false
 
 namespace OSReconstruction
 
-private theorem borchersConj_conjTensorProduct_cast
+theorem borchersConj_conjTensorProduct_cast
     {d n m : Nat} (f : SchwartzNPoint d n) (g : SchwartzNPoint d m)
     (x : NPointDomain d (n + m)) :
     (f.conjTensorProduct g).borchersConj x =
@@ -45,7 +49,7 @@ private theorem borchersConj_conjTensorProduct_cast
     simp only [Fin.val_natAdd, Fin.val_rev, Fin.val_castAdd, Fin.val_cast]
     omega
 
-private def borchersAdjointFunctional {d n : Nat}
+def borchersAdjointFunctional {d n : Nat}
     (W : SchwartzNPoint d n →L[Complex] Complex) :
     SchwartzNPoint d n →L[Complex] Complex where
   toFun f := starRingEnd Complex (W f.borchersConj)
@@ -90,7 +94,7 @@ theorem hermitian_of_nonemptyConjTensorPairing
   have h := congrArg (fun L : SchwartzNPoint d (k + 2) →L[Complex] Complex => L f) heq
   simpa [borchersAdjointFunctional] using congrArg (starRingEnd Complex) h
 
-private theorem integral_osConj {d n : Nat} [NeZero d] (f : SchwartzNPoint d n) :
+theorem integral_osConj {d n : Nat} [NeZero d] (f : SchwartzNPoint d n) :
     (∫ x, f.osConj x) = starRingEnd Complex (∫ x, f x) := by
   have hinv : Function.Involutive (timeReflectionN (d := d) (n := n)) := by
     intro x
@@ -103,7 +107,7 @@ private theorem integral_osConj {d n : Nat} [NeZero d] (f : SchwartzNPoint d n) 
     _ = _ := congrArg (starRingEnd Complex)
       (hmp.integral_comp (hmp.measurable.measurableEmbedding hinv.injective) (fun x => f x))
 
-private theorem integral_borchersConj {d n : Nat} [NeZero d] (f : SchwartzNPoint d n) :
+theorem integral_borchersConj {d n : Nat} [NeZero d] (f : SchwartzNPoint d n) :
     (∫ x, f.borchersConj x) = starRingEnd Complex (∫ x, f x) := by
   have hinv : Function.Involutive (fun x : NPointDomain d n => fun i => x (Fin.rev i)) := by
     intro x
@@ -117,7 +121,7 @@ private theorem integral_borchersConj {d n : Nat} [NeZero d] (f : SchwartzNPoint
     _ = _ := congrArg (starRingEnd Complex)
       (hmp.integral_comp (hmp.measurable.measurableEmbedding hinv.injective) (fun x => f x))
 
-private theorem onePointScalar_real_of_recovery
+theorem onePointScalar_real_of_recovery
     {d : Nat} [NeZero d] (OS : OsterwalderSchraderAxioms d) (c : Complex)
     (hrecovery : ∀ f : ZeroDiagonalSchwartz d 1, OS.S 1 f = c * ∫ x, f.1 x) :
     starRingEnd Complex c = c := by
@@ -201,7 +205,7 @@ theorem strictGeneratedFullBoundary_one_eq_kernel_integral
   simp_rw [hkernel, integral_const_mul] at hlim
   exact (tendsto_nhds_unique tendsto_const_nhds hlim).symm
 
-private theorem strictGeneratedFullBoundary_one_hermitian
+theorem strictGeneratedFullBoundary_one_hermitian
     (initial : InitialGeneratedLogarithmicStageLevelData (d := d) OS)
     (lgc : OSLinearGrowthCondition d OS) (f : SchwartzNPoint d 1) :
     initial.strictGeneratedFullBoundary lgc 1 f.borchersConj =

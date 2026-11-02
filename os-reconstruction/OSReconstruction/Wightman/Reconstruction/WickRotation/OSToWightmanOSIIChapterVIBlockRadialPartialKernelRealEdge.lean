@@ -1,68 +1,54 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIBlockRadialPartialKernelE0Source
-import Init
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIBlockRadialLocalMeanValue
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIRegularizationRadius
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIAxisPairPhysicalBlockPatch
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanReduced
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVInitialProductBasepointSource
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanReducedTestLiftSupport
-import OSReconstruction.ComplexLieGroups.AdjacentOverlapWitness
-import OSReconstruction.ComplexLieGroups.Connectedness.PermutedTube
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanTubeIdentity
-import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.IndexSetD1
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBoundaryValuesBase
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOrderedPositiveTimeTopology
-import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.EdgeDistribution
-import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SourceExtension
-import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.Adjacency
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBoundaryValues
-import Mathlib.Analysis.Normed.Module.Connected
-import Mathlib.Analysis.Calculus.ContDiff.Operations
-import Mathlib.Analysis.Calculus.Implicit
-import Mathlib.Algebra.BigOperators.Group.Finset.Basic
-import Mathlib.LinearAlgebra.Basis.VectorSpace
-import Mathlib.LinearAlgebra.Matrix.BilinearForm
-import Mathlib.LinearAlgebra.Matrix.SchurComplement
-import Mathlib.LinearAlgebra.QuadraticForm.Basic
-import OSReconstruction.SCV.IdentityTheorem
-import Mathlib.Geometry.Manifold.Algebra.LieGroup
-import Mathlib.Geometry.Manifold.Instances.UnitsOfNormedAlgebra
-import Mathlib.LinearAlgebra.Matrix.GeneralLinearGroup.Defs
-import Mathlib.LinearAlgebra.Matrix.SpecialLinearGroup
-import Mathlib.Topology.Algebra.Group.Matrix
-import Mathlib.Analysis.Complex.Basic
-import Mathlib.Analysis.Matrix.Normed
-import Mathlib.Algebra.Polynomial.Roots
-import Mathlib.LinearAlgebra.Complex.FiniteDimensional
-import Mathlib.Analysis.Normed.Group.Bounded
-import Mathlib.GroupTheory.GroupAction.MultipleTransitivity
-import Mathlib.LinearAlgebra.Matrix.Permutation
-import Mathlib.Analysis.Convex.PathConnected
-import Mathlib.Analysis.Normed.Module.FiniteDimension
-import Mathlib.Analysis.Normed.Module.Convex
-import Mathlib.Topology.MetricSpace.Thickening
-import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SourceOriented
-import OSReconstruction.SCV.EuclideanWeylOpen
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIBlockRadialPartialKernelE0Source
+public import Init
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIBlockRadialLocalMeanValue
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIRegularizationRadius
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIAxisPairPhysicalBlockPatch
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanReduced
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVInitialProductBasepointSource
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanReducedTestLiftSupport
+public import OSReconstruction.ComplexLieGroups.AdjacentOverlapWitness
+public import OSReconstruction.ComplexLieGroups.Connectedness.PermutedTube
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanTubeIdentity
+public import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.IndexSetD1
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBoundaryValuesBase
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOrderedPositiveTimeTopology
+public import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.EdgeDistribution
+public import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SourceExtension
+public import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.Adjacency
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBoundaryValues
+public import Mathlib.Analysis.Normed.Module.Connected
+public import Mathlib.Analysis.Calculus.ContDiff.Operations
+public import Mathlib.Analysis.Calculus.Implicit
+public import Mathlib.Algebra.BigOperators.Group.Finset.Basic
+public import Mathlib.LinearAlgebra.Basis.VectorSpace
+public import Mathlib.LinearAlgebra.Matrix.BilinearForm
+public import Mathlib.LinearAlgebra.Matrix.SchurComplement
+public import Mathlib.LinearAlgebra.QuadraticForm.Basic
+public import OSReconstruction.SCV.IdentityTheorem
+public import Mathlib.Geometry.Manifold.Algebra.LieGroup
+public import Mathlib.Geometry.Manifold.Instances.UnitsOfNormedAlgebra
+public import Mathlib.LinearAlgebra.Matrix.GeneralLinearGroup.Defs
+public import Mathlib.LinearAlgebra.Matrix.SpecialLinearGroup
+public import Mathlib.Topology.Algebra.Group.Matrix
+public import Mathlib.Analysis.Complex.Basic
+public import Mathlib.Analysis.Matrix.Normed
+public import Mathlib.Algebra.Polynomial.Roots
+public import Mathlib.LinearAlgebra.Complex.FiniteDimensional
+public import Mathlib.Analysis.Normed.Group.Bounded
+public import Mathlib.GroupTheory.GroupAction.MultipleTransitivity
+public import Mathlib.LinearAlgebra.Matrix.Permutation
+public import Mathlib.Analysis.Convex.PathConnected
+public import Mathlib.Analysis.Normed.Module.FiniteDimension
+public import Mathlib.Analysis.Normed.Module.Convex
+public import Mathlib.Topology.MetricSpace.Thickening
+public import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SourceOriented
+public import OSReconstruction.SCV.EuclideanWeylOpen
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -71,7 +57,7 @@ open scoped Classical
 
 namespace OSReconstruction
 
-private theorem tsupport_precomp_subset_realEdge
+theorem tsupport_precomp_subset_realEdge
     {X Y alpha : Type*}
     [TopologicalSpace X] [TopologicalSpace Y] [Zero alpha]
     {f : Y → alpha} {h : X → Y} (hh : Continuous h) :
@@ -80,7 +66,7 @@ private theorem tsupport_precomp_subset_realEdge
   intro x hx
   exact subset_closure (by simpa [Function.mem_support] using hx)
 
-private theorem normalizedSpatialBasepointCutoff_hasCompactSupport
+theorem normalizedSpatialBasepointCutoff_hasCompactSupport
     (d : Nat) :
     HasCompactSupport
       ((OSIIChapterV.normalizedSpatialBasepointCutoff d).toSchwartz :
@@ -204,7 +190,7 @@ theorem
         (continuous_osiiStep4CenteredPartialConvolutionKernelFullSource
           d k hrho center)
 
-private theorem reducedTestLift_tsupport_basepoint_mem_realEdge
+theorem reducedTestLift_tsupport_basepoint_mem_realEdge
     (d m : Nat)
     (chi : SchwartzMap (SpacetimeDim d) Complex)
     (phi : SchwartzNPoint d m)

@@ -1,5 +1,9 @@
-import WightmanBridge
-import OSReconstruction.Specification
+module
+
+public import WightmanBridge
+public import OSReconstruction.Specification
+
+@[expose] public section
 
 namespace OSReconstructionAudit
 noncomputable section

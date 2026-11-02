@@ -5,31 +5,12 @@ Copyright (c) 2025 ModularPhysics Contributors. All rights reserved.
 Released under Apache 2.0 license.
 Authors: Michael Douglas, ModularPhysics Contributors
 -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBoundaryValuesBase
-import OSReconstruction.SCV.DistributionalEOWCutoff
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBoundaryValuesBase
+public import OSReconstruction.SCV.DistributionalEOWCutoff
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 open scoped Classical NNReal
 open BigOperators Finset
@@ -76,7 +57,7 @@ theorem canonicalForwardConeDirection_mem (n : ℕ) :
 
 
 
-private theorem boundary_ray_translation_invariant_of_F_invariant
+theorem boundary_ray_translation_invariant_of_F_invariant
     (n : ℕ)
     (F_n : (Fin n → Fin (d + 1) → ℂ) → ℂ)
     (hF_inv : ∀ (a : SpacetimeDim d) (x : NPointDomain d n)
@@ -114,7 +95,7 @@ private theorem boundary_ray_translation_invariant_of_F_invariant
   ext x
   exact congrArg (fun z : ℂ => z * f x) (hF_inv a x η ε hε)
 
-private theorem bv_translation_invariance_transfer_of_F_invariant
+theorem bv_translation_invariance_transfer_of_F_invariant
     (n : ℕ)
     (W_n : SchwartzNPoint d n → ℂ)
     (F_n : (Fin n → Fin (d + 1) → ℂ) → ℂ)
@@ -387,7 +368,7 @@ theorem bv_lorentz_covariance_transfer_orthochronous_of_tube_covariance
   exact tendsto_nhds_unique hf hf_as_g
 
 omit [NeZero d] in
-private theorem locality_unflatten_flattenSchwartzNPoint
+theorem locality_unflatten_flattenSchwartzNPoint
     {n : ℕ} (f : SchwartzNPoint d n) :
     OSReconstruction.unflattenSchwartzNPoint (d := d)
       (OSReconstruction.flattenSchwartzNPoint (d := d) f) = f := by
@@ -395,12 +376,12 @@ private theorem locality_unflatten_flattenSchwartzNPoint
   simp [OSReconstruction.flattenSchwartzNPoint_apply,
     OSReconstruction.unflattenSchwartzNPoint_apply]
 
-private noncomputable def localityUnitBallBumpSchwartzNPointRadius
+noncomputable def localityUnitBallBumpSchwartzNPointRadius
     (n : ℕ) (R : ℝ) (hR : 0 < R) : SchwartzNPoint d n :=
   OSReconstruction.unflattenSchwartzNPoint (d := d)
     (OSReconstruction.unitBallBumpSchwartzPiRadius (n * (d + 1)) R hR)
 
-private noncomputable def localityBumpTruncationRadiusNPoint
+noncomputable def localityBumpTruncationRadiusNPoint
     {n : ℕ} (f : SchwartzNPoint d n) (N : ℕ) : SchwartzNPoint d n :=
   SchwartzMap.smulLeftCLM ℂ
     (localityUnitBallBumpSchwartzNPointRadius (d := d) n
@@ -408,7 +389,7 @@ private noncomputable def localityBumpTruncationRadiusNPoint
       (OSReconstruction.bumpTruncationRadiusValue_pos N)) f
 
 set_option maxHeartbeats 4000000 in
-private theorem localityBumpTruncationRadiusNPoint_eq_unflatten
+theorem localityBumpTruncationRadiusNPoint_eq_unflatten
     {n : ℕ} (f : SchwartzNPoint d n) (N : ℕ) :
     localityBumpTruncationRadiusNPoint (d := d) f N =
       OSReconstruction.unflattenSchwartzNPoint (d := d)
@@ -510,7 +491,7 @@ theorem exists_compactSupportApprox_zeroOff_npoint
       Filter.atTop (nhds f)
     simpa only [locality_unflatten_flattenSchwartzNPoint (d := d) f] using hunflat
 
-private noncomputable def localityPermuteSchwartzCLM {n : ℕ}
+noncomputable def localityPermuteSchwartzCLM {n : ℕ}
     (σ : Equiv.Perm (Fin n)) :
     SchwartzNPoint d n →L[ℂ] SchwartzNPoint d n :=
   SchwartzMap.compCLMOfContinuousLinearEquiv ℂ

@@ -1,6 +1,10 @@
-import Mathlib.Analysis.Calculus.ContDiff.Convolution
-import Mathlib.Analysis.Distribution.SchwartzSpace.Basic
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIBlockRadialPartialConvolution
+module
+
+public import Mathlib.Analysis.Calculus.ContDiff.Convolution
+public import Mathlib.Analysis.Distribution.SchwartzSpace.Basic
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIBlockRadialPartialConvolution
+
+@[expose] public section
 
 /-!
 # Schwartz slices of the OS-II block partial kernel

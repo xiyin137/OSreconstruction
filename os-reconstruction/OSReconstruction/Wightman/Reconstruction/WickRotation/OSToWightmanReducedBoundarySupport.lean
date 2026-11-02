@@ -1,17 +1,12 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanReducedFiberMarginalSchwartz
-import OSReconstruction.SCV.LocalProductDescent
-import Mathlib.Analysis.Distribution.Support
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanReducedFiberMarginalSchwartz
+public import OSReconstruction.SCV.LocalProductDescent
+public import Mathlib.Analysis.Distribution.Support
 
-
-
-
-
-
-
-
+@[expose] public section
 
 open scoped Classical NNReal Topology
 
@@ -782,7 +777,7 @@ theorem one_sub_reducedAdjacentEdgeInteriorCutoff_mul_iteratedFDeriv_support_sub
         d m i hi N hdeep)
   exact ⟨hQ_pos, lt_of_not_ge hnot_deep⟩
 
-private theorem exists_iteratedFDeriv_bound_on_compact
+theorem exists_iteratedFDeriv_bound_on_compact
     {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
     [NormedAddCommGroup F] [NormedSpace ℝ F]
     {K : Set E} (hK : IsCompact K)
@@ -1234,7 +1229,7 @@ theorem exists_reducedSpacelikeSwapEdge_publicSupport_iteratedFDeriv_norm_le_sqr
             (p + 1) := by
       exact mul_le_mul_of_nonneg_left hpow hC_nonneg
 
-private theorem collar_quadratic_pow_decay_le_inv
+theorem collar_quadratic_pow_decay_le_inv
     (N P : ℕ) {Q : ℝ} (hQ_nonneg : 0 ≤ Q)
     (hcollar : (N + 1 : ℝ) * Q ≤ 1) :
     (N + 1 : ℝ) ^ P * Q ^ (P + 1) ≤ (N + 1 : ℝ)⁻¹ := by
@@ -1254,7 +1249,7 @@ private theorem collar_quadratic_pow_decay_le_inv
   simpa [a] using
     mul_le_mul_of_nonneg_right hpow_prod (inv_nonneg.mpr ha_nonneg)
 
-private theorem collar_sqrt_quadratic_pow_decay_le_inv
+theorem collar_sqrt_quadratic_pow_decay_le_inv
     (N P : ℕ) {Q : ℝ} (hQ_pos : 0 < Q)
     (hcollar : (N + 1 : ℝ) * Q ≤ 1) :
     (N + 1 : ℝ) ^ P *
@@ -1408,7 +1403,7 @@ theorem one_sub_reducedAdjacentEdgeInteriorCutoff_iteratedFDeriv_norm_product_co
         (d := d) i hi N r' (by simpa [Function.mem_support, cut] using hcut_ne)
 
 omit [NeZero d] in
-private theorem exists_norm_pow_bound_on_tsupport_of_hasCompactSupport
+theorem exists_norm_pow_bound_on_tsupport_of_hasCompactSupport
     {m : ℕ} (φ : SchwartzNPoint d m)
     (hφ_compact : HasCompactSupport (φ : NPointDomain d m → ℂ)) (k : ℕ) :
     ∃ R : ℝ, 0 ≤ R ∧
@@ -1426,7 +1421,7 @@ private theorem exists_norm_pow_bound_on_tsupport_of_hasCompactSupport
     simpa [Real.norm_eq_abs, abs_of_nonneg hnonneg] using hnorm
   exact hleR.trans (le_max_left R 0)
 
-private theorem cutoff_error_leibniz_term_le_inv
+theorem cutoff_error_leibniz_term_le_inv
     {m : ℕ} (i : Fin (m + 1)) (hi : i.val + 1 < m + 1)
     (φ : SchwartzNPoint d m)
     (hφ_compact : HasCompactSupport (φ : NPointDomain d m → ℂ))

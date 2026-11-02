@@ -1,9 +1,13 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVInitialPhysicalLocalTestPartition
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIEuclideanRotationSource
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVISchwartzLinearAction
-import Mathlib.Analysis.Normed.Algebra.MatrixExponential
-import Mathlib.Analysis.SpecialFunctions.Exponential
-import Mathlib.MeasureTheory.Measure.Lebesgue.Basic
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVInitialPhysicalLocalTestPartition
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIEuclideanRotationSource
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVISchwartzLinearAction
+public import Mathlib.Analysis.Normed.Algebra.MatrixExponential
+public import Mathlib.Analysis.SpecialFunctions.Exponential
+public import Mathlib.MeasureTheory.Measure.Lebesgue.Basic
+
+@[expose] public section
 
 /-!
 # Original-OS Euclidean covariance of the positive-chamber current
@@ -191,7 +195,7 @@ omit [NeZero d] in
     (x : NPointDomain d k) (j : Fin k) :
     osiiDiagonalRealMatrixCLM Y x j = Y.mulVec (x j) := rfl
 
-private def realMatrixEntryCLM (mu nu : Fin (d + 1)) :
+def realMatrixEntryCLM (mu nu : Fin (d + 1)) :
     Matrix (Fin (d + 1)) (Fin (d + 1)) Real →L[Real] Real :=
   ((LinearMap.proj nu : (Fin (d + 1) -> Real) →ₗ[Real] Real).comp
     (LinearMap.proj mu : Matrix (Fin (d + 1)) (Fin (d + 1)) Real →ₗ[Real]
@@ -269,7 +273,7 @@ omit [NeZero d] in
   simp
 
 omit [NeZero d] in
-private theorem contDiff_osiiRealMatrixExp
+theorem contDiff_osiiRealMatrixExp
     (Y : Matrix (Fin (d + 1)) (Fin (d + 1)) Real) :
     ContDiff Real (⊤ : ℕ∞) (fun t : Real => NormedSpace.exp (t • Y)) := by
   have h : AnalyticOnNhd Real

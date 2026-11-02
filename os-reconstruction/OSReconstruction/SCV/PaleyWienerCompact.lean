@@ -1,4 +1,8 @@
-import OSReconstruction.SCV.PaleyWienerSchwartz
+module
+
+public import OSReconstruction.SCV.PaleyWienerSchwartz
+
+@[expose] public section
 
 noncomputable section
 

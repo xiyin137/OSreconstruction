@@ -1,18 +1,11 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVInitialAnchoredPacketRootedA0TranslatedFields
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVInitialAnchoredPacketGeneratorBridge
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVInitialAnchoredPacketRootedA0TranslatedFields
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVInitialAnchoredPacketGeneratorBridge
 
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -109,7 +102,7 @@ noncomputable def rootedRightTimeProfile
       (A.rootedRightBlockAnchor_positive i)
       (timeScale + D.commonTailStart i)).f
 
-private theorem rooted_cast_compactTimeSource_f
+theorem rooted_cast_compactTimeSource_f
     {n m : ℕ}
     (h : n = m)
     (g : Section43CompactStrictPositiveTimeSource n) :
@@ -444,7 +437,7 @@ theorem spatialHermiteGeneratorModeOfOS_positiveReal_eq_schwinger
         (ReflectedA0BlockConvergenceData.rightHeadSpatialHermiteBlock
           (d := d) i mode))
 
-private theorem rooted_cast_translateSchwartz
+theorem rooted_cast_translateSchwartz
     {n m : ℕ}
     (h : n = m)
     (u : Fin n → ℝ)
@@ -460,7 +453,7 @@ private theorem rooted_cast_translateSchwartz
   subst m
   rfl
 
-private theorem rooted_cast_fin_function_apply
+theorem rooted_cast_fin_function_apply
     {n m : ℕ}
     (h : n = m)
     (u : Fin n → ℝ)
@@ -470,7 +463,7 @@ private theorem rooted_cast_fin_function_apply
   subst m
   rfl
 
-private theorem rooted_cast_prepend_displacement
+theorem rooted_cast_prepend_displacement
     {n : ℕ}
     (hn : 0 < n)
     (u : Fin (n - 1) → ℝ) :
@@ -541,7 +534,7 @@ theorem rootedRightTranslatedTimeProfile_eq_cast_prepend
     D.rootedRightBlock_translatedTimeProfile_f i timeScale
       (i.rightRealCoordinates τ)
 
-private theorem rooted_cast_cast_symm
+theorem rooted_cast_cast_symm
     {ι : Sort*}
     {α : ι → Sort*}
     {a b : ι}
@@ -551,7 +544,7 @@ private theorem rooted_cast_cast_symm
   subst b
   rfl
 
-private theorem rooted_reindex_axisPairTwoBlockTimeSpatialSource_cast
+theorem rooted_reindex_axisPairTwoBlockTimeSpatialSource_cast
     {n n' m m' : ℕ}
     (hn : n = n')
     (hm : m = m')

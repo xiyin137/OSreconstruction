@@ -1,23 +1,14 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import Init
-import OSReconstruction.SCV.SchwartzComplete
-import OSReconstruction.SCV.LocallyUniformLimit
-import OSReconstruction.Wightman.Reconstruction.DenseCLM
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIAxisPairMZApproximation
+module
 
+public import Init
+public import OSReconstruction.SCV.SchwartzComplete
+public import OSReconstruction.SCV.LocallyUniformLimit
+public import OSReconstruction.Wightman.Reconstruction.DenseCLM
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIAxisPairMZApproximation
 
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -341,7 +332,7 @@ theorem complexifyRealSchwartz_realProductHermite
   rw [hreal']
   simp
 
-private theorem basis_growth_finset_sup_normTarget
+theorem basis_growth_finset_sup_normTarget
     {D : Type*} [NormedAddCommGroup D] [NormedSpace ℝ D]
     [FiniteDimensional ℝ D] [Nontrivial D] [MeasurableSpace D] [BorelSpace D]
     (s_idx : Finset

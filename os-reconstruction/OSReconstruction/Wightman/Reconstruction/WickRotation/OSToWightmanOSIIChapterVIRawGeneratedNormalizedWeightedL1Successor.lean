@@ -1,6 +1,10 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIEquation621PrescribedShiftAllSplits
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIRawGeneratedWeightedL1GeneratorSeeds
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIRawGeneratedNormalizedWeightedL1UnitHubAllDepthHandoff
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIEquation621PrescribedShiftAllSplits
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIRawGeneratedWeightedL1GeneratorSeeds
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIRawGeneratedNormalizedWeightedL1UnitHubAllDepthHandoff
+
+@[expose] public section
 
 /-!
 # The complete-normalized raw VI.2 successor
@@ -24,7 +28,7 @@ open StrictGeneratedScalarDepthPointedData.RecursiveSectorAdaptiveZeroBetaSelect
 open Section43ProductTimeApproximateIdentity
 open Section43ProductTimeApproximateIdentity.AnchoredPacketTimeShellFamilyData
 
-private theorem equation621RootedLeftCenter_shift_unshift
+theorem equation621RootedLeftCenter_shift_unshift
     {k : Nat} (i : GeneratorIndex k) (anchor : Fin k -> Real)
     (epsilon : Real) (z : OSIITimeGapSpace k) :
     osiiVI2Unshift (i.n - 1) epsilon
@@ -34,7 +38,7 @@ private theorem equation621RootedLeftCenter_shift_unshift
   simp [osiiVI2Unshift, osiiVI2Shift, sub_eq_add_neg,
     add_assoc, add_left_comm, add_comm]
 
-private theorem equation621RootedRightCenter_shift_unshift
+theorem equation621RootedRightCenter_shift_unshift
     {k : Nat} (i : GeneratorIndex k) (anchor : Fin k -> Real)
     (epsilon : Real) (z : OSIITimeGapSpace k) :
     osiiVI2Unshift (i.m - 1) epsilon
@@ -44,7 +48,7 @@ private theorem equation621RootedRightCenter_shift_unshift
   simp [osiiVI2Unshift, osiiVI2Shift, sub_eq_add_neg,
     add_assoc, add_left_comm, add_comm]
 
-private def prescribedShiftAnchorData
+def prescribedShiftAnchorData
     {k : Nat} {hub : Fin k -> Real} {z : OSIITimeGapSpace k}
     (C : TargetHubHalfAnchorData hub z)
     {epsilon : Real} (hepsilon : 0 <= epsilon) :
@@ -321,7 +325,7 @@ theorem generatorFlatWindowPointBound
 
 end RawStrictGeneratedVI2NormalizedWeightedL1DepthBoundData
 
-private theorem normalizedDepth_logarithmicRankTube_subset
+theorem normalizedDepth_logarithmicRankTube_subset
     (initial : InitialGeneratedLogarithmicStageLevelData (d := d) OS)
     (lgc : OSLinearGrowthCondition d OS) (t depth rank : Nat)
     {epsilon : Real} (hepsilon : 0 <= epsilon) (arity : Nat) :
@@ -341,7 +345,7 @@ private theorem normalizedDepth_logarithmicRankTube_subset
     StrictGeneratedScalarDepthPointedData.toTimeContinuationLadder,
     timeContinuationLadderOfAngleSectorCover] using h
 
-private theorem normalizedRawNextDepth_flatCoefficientTube_subset
+theorem normalizedRawNextDepth_flatCoefficientTube_subset
     (initial : InitialGeneratedLogarithmicStageLevelData (d := d) OS)
     (lgc : OSLinearGrowthCondition d OS)
     {depth rank q t n : Nat} [NeZero n]

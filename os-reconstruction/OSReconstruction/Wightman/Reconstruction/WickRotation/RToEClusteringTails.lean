@@ -1,5 +1,9 @@
-import OSReconstruction.GeneralResults.SchwartzWeightedFlatness
-import OSReconstruction.Wightman.Reconstruction.WickRotation.SchwingerTemperedness
+module
+
+public import OSReconstruction.GeneralResults.SchwartzWeightedFlatness
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.SchwingerTemperedness
+
+@[expose] public section
 
 /-!
 # Uniform Schwartz-tail control for R-to-E clustering

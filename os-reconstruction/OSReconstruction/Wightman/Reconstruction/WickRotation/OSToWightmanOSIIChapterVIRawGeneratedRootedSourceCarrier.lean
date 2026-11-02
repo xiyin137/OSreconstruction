@@ -1,20 +1,13 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVRawGeneratedRecursiveAngleDomains
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVRootedTargetHubGeometry
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIRecursiveSectorNormalizedEnvelopeHandoff
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIRecursiveSectorAdaptiveShiftHandoff
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVRawGeneratedRecursiveAngleDomains
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVRootedTargetHubGeometry
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIRecursiveSectorNormalizedEnvelopeHandoff
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIRecursiveSectorAdaptiveShiftHandoff
 
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -219,7 +212,7 @@ structure RawRecursiveAngleRadialGeneratorChartAtRank
     OSIIRawStrictGeneratedLogarithmicArgument
       .mixed radial.chart.generator.m depth radial.expandedRight
 
-private theorem firstBridge_expandedLeft_raw
+theorem firstBridge_expandedLeft_raw
     {q depth rank : Nat}
     (R : RecursiveAngleFirstBridgeRadialGeneratorChartAtRank
       q depth rank) :
@@ -247,7 +240,7 @@ private theorem firstBridge_expandedLeft_raw
           apply rawStrict_recursiveAngle_mixedBox_subset 0 depth
           exact ⟨by simpa using hleft0, fun j => Fin.elim0 j⟩
 
-private theorem firstBridge_expandedRight_raw
+theorem firstBridge_expandedRight_raw
     {q depth rank : Nat}
     (R : RecursiveAngleFirstBridgeRadialGeneratorChartAtRank
       q depth rank) :

@@ -1,6 +1,10 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIForwardTubeEuclideanIdentification
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIEuclideanWardSource
-import OSReconstruction.Wightman.Reconstruction.WickRotation.SchwingerAxioms
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIForwardTubeEuclideanIdentification
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIEuclideanWardSource
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.SchwingerAxioms
+
+@[expose] public section
 
 /-!
 # Euclidean covariance of the constructed physical tube

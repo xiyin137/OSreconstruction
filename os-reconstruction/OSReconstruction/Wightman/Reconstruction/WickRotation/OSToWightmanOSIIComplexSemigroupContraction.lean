@@ -1,26 +1,12 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanSemigroup
-import OSReconstruction.SCV.IdentityTheorem
-import Mathlib.Analysis.SpecialFunctions.ContinuousFunctionalCalculus.Rpow.Isometric
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanSemigroup
+public import OSReconstruction.SCV.IdentityTheorem
+public import Mathlib.Analysis.SpecialFunctions.ContinuousFunctionalCalculus.Rpow.Isometric
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -29,7 +15,7 @@ open scoped Classical
 
 namespace OSReconstruction
 
-private theorem eqOn_rightHalfPlane_of_positiveReal
+theorem eqOn_rightHalfPlane_of_positiveReal
     (f g : Complex -> Complex)
     (hf : DifferentiableOn Complex f {z : Complex | 0 < z.re})
     (hg : DifferentiableOn Complex g {z : Complex | 0 < z.re})
@@ -69,7 +55,7 @@ variable {d : Nat} [NeZero d]
 
 /-- On the positive real axis, the original-OS spectral continuation is the
 nonnegative functional-calculus power of its time-one contraction. -/
-private theorem originalOSHilbertComplex_ofReal_eq_nnrpow
+theorem originalOSHilbertComplex_ofReal_eq_nnrpow
     (OS : OsterwalderSchraderAxioms d)
     (t : Real) (ht : 0 < t) :
     osiiOriginalOSHilbertComplex OS (t : Complex) =
@@ -85,7 +71,7 @@ private theorem originalOSHilbertComplex_ofReal_eq_nnrpow
         (d := d) OS 1 one_pos)
       (t := t) ht)
 
-private theorem originalOSHilbertComplex_ofReal_isSelfAdjoint
+theorem originalOSHilbertComplex_ofReal_isSelfAdjoint
     (OS : OsterwalderSchraderAxioms d)
     (t : Real) (ht : 0 < t) :
     IsSelfAdjoint (osiiOriginalOSHilbertComplex OS (t : Complex)) := by
@@ -95,7 +81,7 @@ private theorem originalOSHilbertComplex_ofReal_isSelfAdjoint
       (a := osTimeShiftHilbertOfOS (d := d) OS 1 one_pos)
       (x := Real.toNNReal t)).isSelfAdjoint
 
-private theorem originalOSHilbertComplex_ofReal_add
+theorem originalOSHilbertComplex_ofReal_add
     (OS : OsterwalderSchraderAxioms d)
     (s t : Real) (hs : 0 < s) (ht : 0 < t) :
     osiiOriginalOSHilbertComplex OS ((s + t : Real) : Complex) =
@@ -160,7 +146,7 @@ theorem osiiOriginalOSHilbertComplex_adjoint
   have heq := eqOn_rightHalfPlane_of_positiveReal f g hf hg hreal hz
   simpa [f, g, T] using heq.symm
 
-private theorem originalOSHilbertComplex_add_ofReal_left
+theorem originalOSHilbertComplex_add_ofReal_left
     (OS : OsterwalderSchraderAxioms d)
     (t : Real) (ht : 0 < t)
     (z : Complex) (hz : 0 < z.re) :

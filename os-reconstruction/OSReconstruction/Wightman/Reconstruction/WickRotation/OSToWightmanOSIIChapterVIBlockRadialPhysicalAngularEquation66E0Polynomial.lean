@@ -1,4 +1,8 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIBlockRadialPhysicalAngularEquation66QuantitativeInverseScale
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIBlockRadialPhysicalAngularEquation66QuantitativeInverseScale
+
+@[expose] public section
 
 /-!
 # Reference-scale equation-(6.7) polynomial estimate

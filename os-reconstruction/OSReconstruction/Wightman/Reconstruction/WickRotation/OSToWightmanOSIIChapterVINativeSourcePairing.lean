@@ -1,17 +1,12 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIFullFrequency
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVISameWitnessWickPair
-import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceComponentKernel
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIFullFrequency
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVISameWitnessWickPair
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceComponentKernel
 
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -22,7 +17,7 @@ set_option backward.isDefEq.respectTransparency false
 
 namespace OSReconstruction
 
-private theorem fullForwardFlatCone_geometry (d n : Nat) [NeZero d] :
+theorem fullForwardFlatCone_geometry (d n : Nat) [NeZero d] :
     let C := (flattenCLEquivReal n (d + 1)) '' ForwardConeAbs d n
     IsOpen C ∧ Convex Real C ∧ IsCone C ∧ IsSalientCone C := by
   let e := flattenCLEquivReal n (d + 1)
@@ -109,7 +104,7 @@ theorem strictGeneratedFullFrequency_fourierLaplace
     ).toSpectralData.fullFrequencyDistribution_fourierLaplace
       hC_open hC_conv hC_cone hC_salient z hz |>.symm
 
-private theorem strictGeneratedWickKernel_forwardTubeLift
+theorem strictGeneratedWickKernel_forwardTubeLift
     (initial : InitialGeneratedLogarithmicStageLevelData (d := d) OS)
     (lgc : OSLinearGrowthCondition d OS) (n m : Nat) (t : Real)
     (y : NPointDomain d (n + (m + 1))) :

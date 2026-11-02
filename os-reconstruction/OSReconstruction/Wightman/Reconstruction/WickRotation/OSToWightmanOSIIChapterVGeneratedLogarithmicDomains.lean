@@ -1,28 +1,10 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVLogarithmicArgumentDomains
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVLogarithmicArgumentDomains
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -159,7 +141,7 @@ theorem eq_zero_of_stage_zero
       rw [ih hN]
       rfl
 
-private theorem mixed_head_eq_zero_aux
+theorem mixed_head_eq_zero_aux
     {kind : OSIILogarithmicArgumentKind}
     {n N : ℕ} {x : Fin n → ℝ}
     (hx : OSIIGeneratedLogarithmicArgument kind n N x) :
@@ -196,7 +178,7 @@ theorem mixed_head_eq_zero
     x ⟨0, hn⟩ = 0 :=
   mixed_head_eq_zero_aux hx hn
 
-private theorem coordinatewise_closed_aux
+theorem coordinatewise_closed_aux
     {kind : OSIILogarithmicArgumentKind}
     {n N : ℕ} {x : Fin n → ℝ}
     (hx : OSIIGeneratedLogarithmicArgument kind n N x) :
@@ -334,7 +316,7 @@ theorem scalar_hyperrectangle
     OSIIGeneratedLogarithmicArgument .scalar n N y :=
   coordinatewise_closed_aux hx y hy
 
-private theorem mixed_diagonal_mem_scalar_aux
+theorem mixed_diagonal_mem_scalar_aux
     {kind : OSIILogarithmicArgumentKind}
     {n N : ℕ} {x : Fin n → ℝ}
     (hx : OSIIGeneratedLogarithmicArgument kind n N x) :

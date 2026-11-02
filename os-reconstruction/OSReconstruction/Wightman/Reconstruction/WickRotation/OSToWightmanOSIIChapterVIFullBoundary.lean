@@ -1,27 +1,12 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIMixedBoundary
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIProductTensorSourceCurrent
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIOrderedTransport
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIMixedBoundary
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIProductTensorSourceCurrent
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIOrderedTransport
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -30,7 +15,7 @@ open scoped Classical
 
 namespace OSReconstruction
 
-private noncomputable def schwartzPartialEvalRightZeroCLM
+noncomputable def schwartzPartialEvalRightZeroCLM
     {E F : Type*}
     [NormedAddCommGroup E] [NormedSpace Real E]
     [NormedAddCommGroup F] [NormedSpace Real F] :
@@ -46,7 +31,7 @@ private noncomputable def schwartzPartialEvalRightZeroCLM
     simp [g, Prod.norm_def]
   exact SchwartzMap.compCLM (𝕜 := Complex) (g := g) hg hg_upper
 
-private noncomputable def schwartzPartialEvalLeftZeroCLM
+noncomputable def schwartzPartialEvalLeftZeroCLM
     {E F : Type*}
     [NormedAddCommGroup E] [NormedSpace Real E]
     [NormedAddCommGroup F] [NormedSpace Real F] :
@@ -65,7 +50,7 @@ private noncomputable def schwartzPartialEvalLeftZeroCLM
 /-- Positive-dimensional form of the existing complex Schwartz nuclear
 extension theorem.  Splitting the dimension as a successor avoids dependent
 casts through `(N - 1) + 1 = N`. -/
-private theorem schwartz_nuclear_extension_fin
+theorem schwartz_nuclear_extension_fin
     (N n : Nat) (hN : 0 < N)
     (Phi : ContinuousMultilinearMap Complex
       (fun _ : Fin n => SchwartzMap (Fin N -> Real) Complex) Complex) :
@@ -78,7 +63,7 @@ private theorem schwartz_nuclear_extension_fin
       simpa using schwartz_nuclear_extension N n Phi
 
 /-- Swap the two spatial blocks while leaving the two time blocks fixed. -/
-private noncomputable def blockCrossSwapCLE (n m : Nat) :
+noncomputable def blockCrossSwapCLE (n m : Nat) :
     (Fin 2 -> Fin (n + m) -> Real) ≃L[Real]
       (Fin 2 -> Fin (n + m) -> Real) := by
   let swap : (Fin 2 -> Fin (n + m) -> Real) ->
@@ -108,63 +93,63 @@ private noncomputable def blockCrossSwapCLE (n m : Nat) :
         by_cases hj : j.val < n <;> simp [swap, hj] }
   exact e.toContinuousLinearEquiv
 
-@[simp] private theorem blockCrossSwapCLE_apply
+@[simp] theorem blockCrossSwapCLE_apply
     (n m : Nat) (x : Fin 2 -> Fin (n + m) -> Real)
     (i : Fin 2) (j : Fin (n + m)) :
     blockCrossSwapCLE n m x i j =
       if j.val < n then x i j else x i.rev j := rfl
 
-private theorem blockCrossSwapCLE_zero_splitFirst
+theorem blockCrossSwapCLE_zero_splitFirst
     (n m : Nat) (x : Fin 2 -> Fin (n + m) -> Real) :
     splitFirst n m (blockCrossSwapCLE n m x 0) = splitFirst n m (x 0) := by
   ext i
   simp [splitFirst]
 
-private theorem blockCrossSwapCLE_zero_splitLast
+theorem blockCrossSwapCLE_zero_splitLast
     (n m : Nat) (x : Fin 2 -> Fin (n + m) -> Real) :
     splitLast n m (blockCrossSwapCLE n m x 0) = splitLast n m (x 1) := by
   ext i
   simp [splitLast]
 
-private theorem blockCrossSwapCLE_one_splitFirst
+theorem blockCrossSwapCLE_one_splitFirst
     (n m : Nat) (x : Fin 2 -> Fin (n + m) -> Real) :
     splitFirst n m (blockCrossSwapCLE n m x 1) = splitFirst n m (x 1) := by
   ext i
   simp [splitFirst]
 
-private theorem blockCrossSwapCLE_one_splitLast
+theorem blockCrossSwapCLE_one_splitLast
     (n m : Nat) (x : Fin 2 -> Fin (n + m) -> Real) :
     splitLast n m (blockCrossSwapCLE n m x 1) = splitLast n m (x 0) := by
   ext i
   simp [splitLast]
 
-private noncomputable def flatTimeSliceCLM (d k : Nat) :
+noncomputable def flatTimeSliceCLM (d k : Nat) :
     SchwartzMap (Fin (k + k * d) -> Real) Complex →L[Complex]
       SchwartzMap (Fin k -> Real) Complex :=
   schwartzPartialEvalRightZeroCLM.comp
     (SchwartzMap.compCLMOfContinuousLinearEquiv Complex
       (section43TimeSpatialFlatCLE d k))
 
-@[simp] private theorem flatTimeSliceCLM_apply
+@[simp] theorem flatTimeSliceCLM_apply
     (d k : Nat) (F : SchwartzMap (Fin (k + k * d) -> Real) Complex)
     (t : Fin k -> Real) :
     flatTimeSliceCLM d k F t =
       F (section43TimeSpatialFlatCLE d k (t, 0)) := rfl
 
-private noncomputable def flatSpatialSliceCLM (d k : Nat) :
+noncomputable def flatSpatialSliceCLM (d k : Nat) :
     SchwartzMap (Fin (k + k * d) -> Real) Complex →L[Complex]
       SchwartzMap (Section43SpatialSpace d k) Complex :=
   schwartzPartialEvalLeftZeroCLM.comp
     (SchwartzMap.compCLMOfContinuousLinearEquiv Complex
       (section43TimeSpatialFlatCLE d k))
 
-@[simp] private theorem flatSpatialSliceCLM_apply
+@[simp] theorem flatSpatialSliceCLM_apply
     (d k : Nat) (F : SchwartzMap (Fin (k + k * d) -> Real) Complex)
     (x : Section43SpatialSpace d k) :
     flatSpatialSliceCLM d k F x =
       F (section43TimeSpatialFlatCLE d k (0, x)) := rfl
 
-private noncomputable def blockBump (n m : Nat) :
+noncomputable def blockBump (n m : Nat) :
     SchwartzMap (Fin (n + m) -> Real) Complex :=
   SchwartzMap.tensorProduct
     (unitBallBumpSchwartzPi n)
@@ -172,7 +157,7 @@ private noncomputable def blockBump (n m : Nat) :
 
 /-- Embed one mixed block into two stabilized blocks, then cross the spatial
 coordinates. -/
-private noncomputable def blockCrossEmbeddingCLM (n m : Nat) :
+noncomputable def blockCrossEmbeddingCLM (n m : Nat) :
     SchwartzMap (Fin (n + m) -> Real) Complex →L[Complex]
       SchwartzMap (Fin 2 -> Fin (n + m) -> Real) Complex :=
   (SchwartzMap.compCLMOfContinuousLinearEquiv Complex
@@ -183,7 +168,7 @@ private noncomputable def blockCrossEmbeddingCLM (n m : Nat) :
           (Fin (n + m) -> Real))
         (blockBump n m)))
 
-private theorem blockCrossEmbeddingCLM_apply
+theorem blockCrossEmbeddingCLM_apply
     (n m : Nat) (F : SchwartzMap (Fin (n + m) -> Real) Complex)
     (x : Fin 2 -> Fin (n + m) -> Real) :
     blockCrossEmbeddingCLM n m F x =
@@ -191,7 +176,7 @@ private theorem blockCrossEmbeddingCLM_apply
         blockBump n m (blockCrossSwapCLE n m x 1) := by
   rfl
 
-private theorem blockCrossEmbeddingCLM_tensorProduct
+theorem blockCrossEmbeddingCLM_tensorProduct
     (n m : Nat)
     (phi : SchwartzMap (Fin n -> Real) Complex)
     (chi : SchwartzMap (Fin m -> Real) Complex) :
@@ -217,7 +202,7 @@ private theorem blockCrossEmbeddingCLM_tensorProduct
     blockCrossSwapCLE_one_splitLast]
   ring
 
-private theorem flatTimeSliceCLM_tensorProduct_bump
+theorem flatTimeSliceCLM_tensorProduct_bump
     (d k : Nat) (phi : SchwartzMap (Fin k -> Real) Complex) :
     flatTimeSliceCLM d k
         (SchwartzMap.tensorProduct phi (unitBallBumpSchwartzPi (k * d))) =
@@ -232,7 +217,7 @@ private theorem flatTimeSliceCLM_tensorProduct_bump
     simp
   simp [hbump]
 
-private theorem flatSpatialSliceCLM_bump_tensorProduct
+theorem flatSpatialSliceCLM_bump_tensorProduct
     (d k : Nat)
     (chi : SchwartzMap (Section43SpatialSpace d k) Complex) :
     flatSpatialSliceCLM d k
@@ -252,7 +237,7 @@ namespace OSIIFullTimeStageVladimirovGrowthData
 variable {d k : Nat} [NeZero d]
 variable {A : OSIITimeContinuationStage d k}
 
-private noncomputable def flatTimeSpatialBilinearMap
+noncomputable def flatTimeSpatialBilinearMap
     (B : SchwartzMap (Fin k -> Real) Complex →ₗ[Complex]
       SchwartzMap (Section43SpatialSpace d k) Complex →ₗ[Complex] Complex) :
     SchwartzMap (Fin (k + k * d) -> Real) Complex →ₗ[Complex]
@@ -267,7 +252,7 @@ private noncomputable def flatTimeSpatialBilinearMap
     ext K
     simp
 
-@[simp] private theorem flatTimeSpatialBilinearMap_apply
+@[simp] theorem flatTimeSpatialBilinearMap_apply
     (B : SchwartzMap (Fin k -> Real) Complex →ₗ[Complex]
       SchwartzMap (Section43SpatialSpace d k) Complex →ₗ[Complex] Complex)
     (F H : SchwartzMap (Fin (k + k * d) -> Real) Complex) :
@@ -275,7 +260,7 @@ private noncomputable def flatTimeSpatialBilinearMap
       B
         (flatTimeSliceCLM d k F) (flatSpatialSliceCLM d k H) := rfl
 
-private theorem continuous_flatTimeSpatialBilinearMap
+theorem continuous_flatTimeSpatialBilinearMap
     (B : SchwartzMap (Fin k -> Real) Complex →ₗ[Complex]
       SchwartzMap (Section43SpatialSpace d k) Complex →ₗ[Complex] Complex)
     (hB : Continuous (fun p :
@@ -291,7 +276,7 @@ private theorem continuous_flatTimeSpatialBilinearMap
       ((flatSpatialSliceCLM d k).continuous.comp continuous_snd))
 
 set_option maxHeartbeats 800000 in
-private noncomputable def flatTimeSpatialCMM
+noncomputable def flatTimeSpatialCMM
     (B : SchwartzMap (Fin k -> Real) Complex →ₗ[Complex]
       SchwartzMap (Section43SpatialSpace d k) Complex →ₗ[Complex] Complex)
     (hB : Continuous (fun p :
@@ -344,7 +329,7 @@ private noncomputable def flatTimeSpatialCMM
       flatTimeSpatialBilinearMap (d := d) (k := k) B (fs 0) (fs 1)) at hcont
     exact hcont
 
-@[simp] private theorem flatTimeSpatialCMM_apply
+@[simp] theorem flatTimeSpatialCMM_apply
     (B : SchwartzMap (Fin k -> Real) Complex →ₗ[Complex]
       SchwartzMap (Section43SpatialSpace d k) Complex →ₗ[Complex] Complex)
     (hB : Continuous (fun p :
@@ -407,13 +392,13 @@ theorem exists_flatMixedBoundary
   exists_flatTimeSpatialDistribution_of_continuousBilinearMap
     G.mixedBoundaryBilinearMap G.continuous_mixedBoundaryBilinearMap
 
-private noncomputable def timeSpatialToMixedFlatCLM (d k : Nat) [NeZero d] :
+noncomputable def timeSpatialToMixedFlatCLM (d k : Nat) [NeZero d] :
     SchwartzMap (Section43TimeSpatialSpace d k) Complex →L[Complex]
       SchwartzMap (Fin (k + k * d) -> Real) Complex :=
   SchwartzMap.compCLMOfContinuousLinearEquiv Complex
     (section43TimeSpatialFlatCLE d k).symm
 
-@[simp] private theorem timeSpatialToMixedFlatCLM_timeSpatialTensor
+@[simp] theorem timeSpatialToMixedFlatCLM_timeSpatialTensor
     (d k : Nat) [NeZero d]
     (phi : SchwartzMap (Fin k -> Real) Complex)
     (chi : SchwartzMap (Section43SpatialSpace d k) Complex) :
@@ -493,14 +478,14 @@ theorem section43TimeSpatial_clm_eq_of_eq_on_timeSpatialTensor
     hclosed.closure_subset_iff.mpr hSpan
   exact hclosure (hDense.closure_eq ▸ Set.mem_univ F)
 
-private noncomputable def nPointToMixedFlatCLM (d k : Nat) [NeZero d] :
+noncomputable def nPointToMixedFlatCLM (d k : Nat) [NeZero d] :
     SchwartzNPoint d k →L[Complex]
       SchwartzMap (Fin (k + k * d) -> Real) Complex :=
   (SchwartzMap.compCLMOfContinuousLinearEquiv Complex
       (section43TimeSpatialFlatCLE d k).symm).comp
     (nPointTimeSpatialSchwartzCLE (d := d) (n := k)).toContinuousLinearMap
 
-@[simp] private theorem nPointToMixedFlatCLM_timeSpatialTensor
+@[simp] theorem nPointToMixedFlatCLM_timeSpatialTensor
     (d k : Nat) [NeZero d]
     (phi : SchwartzMap (Fin k -> Real) Complex)
     (chi : SchwartzMap (Section43SpatialSpace d k) Complex) :

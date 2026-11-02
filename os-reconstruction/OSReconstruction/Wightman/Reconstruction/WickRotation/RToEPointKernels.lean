@@ -1,19 +1,12 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.RToEReflectedClusterClosure
-import OSReconstruction.GeneralResults.FinProductIntegral
-import Mathlib.Analysis.Calculus.BumpFunction.Normed
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.RToEReflectedClusterClosure
+public import OSReconstruction.GeneralResults.FinProductIntegral
+public import Mathlib.Analysis.Calculus.BumpFunction.Normed
 
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -155,7 +148,7 @@ theorem exists_normalized_ordered_point_bump
   rw [integral_complex_ofReal, b.integral_normed]
   norm_num
 
-private theorem integral_norm_one_of_nonnegative_real
+theorem integral_norm_one_of_nonnegative_real
     {X : Type*} [MeasurableSpace X] (μ : Measure X) (f : X → ℂ)
     (hf : Integrable f μ) (hn : ∀ x, 0 ≤ (f x).re)
     (hr : ∀ x, (f x).im = 0) (hi : ∫ x, f x ∂μ = 1) :
@@ -168,7 +161,7 @@ private theorem integral_norm_one_of_nonnegative_real
   exact congrArg Complex.re hi
 
 set_option backward.isDefEq.respectTransparency false in
-private theorem tendsto_integral_mul_shrinking_support
+theorem tendsto_integral_mul_shrinking_support
     {X ι : Type*} [PseudoMetricSpace X] [MeasurableSpace X]
     (μ : Measure X) (l : Filter ι) (f : ι → X → ℂ) (K : X → ℂ) (x : X)
     (hf : ∀ i, Integrable (f i) μ)
@@ -211,7 +204,7 @@ private theorem tendsto_integral_mul_shrinking_support
     _ < ε := by linarith
 
 set_option backward.isDefEq.respectTransparency false in
-private theorem integral_osConjTensorProduct_one
+theorem integral_osConjTensorProduct_one
     {d n m : ℕ} [NeZero d] (f : SchwartzNPoint d n) (g : SchwartzNPoint d m)
     (hf : ∫ x, f x = 1) (hg : ∫ y, g y = 1) :
     ∫ z, f.osConjTensorProduct g z = 1 := by

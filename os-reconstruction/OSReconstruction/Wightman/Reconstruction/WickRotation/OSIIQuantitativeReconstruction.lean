@@ -1,6 +1,10 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSIIQuantitativeBoundary
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSIIQuantitativeCoordinates
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVISameWitnessWickPair
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSIIQuantitativeBoundary
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSIIQuantitativeCoordinates
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVISameWitnessWickPair
+
+@[expose] public section
 
 /-!
 # Uniform growth of the native full Wightman family
@@ -119,7 +123,7 @@ theorem norm_strictGeneratedFullBoundary_succ_le
       have hQ : 0 <= osArityLinearSchwartzSeminorm d (k + 1) (L + h) f := apply_nonneg _ _
       simpa only [mul_assoc] using mul_le_mul_of_nonneg_right hcoef hQ
 
-private theorem exists_strictGeneratedOnePointBound
+theorem exists_strictGeneratedOnePointBound
     (initial : InitialGeneratedLogarithmicStageLevelData (d := d) OS)
     (lgc : OSLinearGrowthCondition d OS) :
     ∃ (r : Nat) (C : Real), 0 < C ∧ ∀ f : SchwartzNPoint d 1,

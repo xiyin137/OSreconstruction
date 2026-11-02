@@ -1,30 +1,19 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import Init
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVINormalizedEnvelopeWeightedSourceEnvelope
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVOneParticleTranslatedMixedDeltaProducer
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVStrictGeneratedRankedRootedSuccessor
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIEquation629Majorant
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIEquation621RootedGeometry
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVStrictGeneratedRankedBoundedScalarPhysicalCharts
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVStrictGeneratedRankedPointedInduction
-import OSReconstruction.SCV.BochnerTubeTheorem
-import OSReconstruction.SCV.SchwartzFiniteSeminormBound
+module
 
+public import Init
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVINormalizedEnvelopeWeightedSourceEnvelope
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVOneParticleTranslatedMixedDeltaProducer
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVStrictGeneratedRankedRootedSuccessor
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIEquation629Majorant
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIEquation621RootedGeometry
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVStrictGeneratedRankedBoundedScalarPhysicalCharts
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVStrictGeneratedRankedPointedInduction
+public import OSReconstruction.SCV.BochnerTubeTheorem
+public import OSReconstruction.SCV.SchwartzFiniteSeminormBound
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -39,7 +28,7 @@ open Section43ProductTimeApproximateIdentity.AnchoredPacketTimeShellFamilyData
 
 /-- The physical-strip intersection does not shrink a ranked
 strict-generated scalar base. -/
-private theorem rankPhysicalLogarithmicBase_eq
+theorem rankPhysicalLogarithmicBase_eq
     (m depth rank : Nat) :
     osiiPhysicalLogarithmicBase
         (osiiStrictGeneratedLogarithmicBaseAtRank m depth rank) =
@@ -49,7 +38,7 @@ private theorem rankPhysicalLogarithmicBase_eq
   exact ⟨hx, hx.toStrictGenerated.coordinate_abs_lt_pi_div_two⟩
 
 /-- Ranked logarithmic tubes are real-convex. -/
-private theorem rankLogarithmicTube_convex
+theorem rankLogarithmicTube_convex
     (m depth rank : Nat) :
     Convex Real
       (osiiLogarithmicTube
@@ -59,7 +48,7 @@ private theorem rankLogarithmicTube_convex
     (convex_osiiStrictGeneratedLogarithmicBaseAtRank m depth rank)
 
 /-- Zero belongs to every ranked logarithmic tube. -/
-private theorem zero_mem_rankLogarithmicTube
+theorem zero_mem_rankLogarithmicTube
     (m depth rank : Nat) :
     (0 : Fin m -> Complex) ∈
       osiiLogarithmicTube
@@ -71,7 +60,7 @@ private theorem zero_mem_rankLogarithmicTube
     rank m depth
 
 /-- A positive-depth positive-rank logarithmic tube is open. -/
-private theorem rankSuccessorLogarithmicTube_open
+theorem rankSuccessorLogarithmicTube_open
     (m depth rank : Nat) :
     IsOpen
       (osiiLogarithmicTube

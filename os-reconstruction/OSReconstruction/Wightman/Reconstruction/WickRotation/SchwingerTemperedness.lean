@@ -5,36 +5,24 @@ Copyright (c) 2025 ModularPhysics Contributors. All rights reserved.
 Released under Apache 2.0 license.
 Authors: Michael R. Douglas, ModularPhysics Contributors
 -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.BHWTranslation
-import OSReconstruction.Wightman.Reconstruction.WickRotation.RToEForwardTube
-import OSReconstruction.Wightman.Reconstruction.UniversalProjection
-import OSReconstruction.ComplexLieGroups.D1OrbitSet
-import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.JostWitnessGeneralSigma
-import Mathlib.MeasureTheory.Measure.Lebesgue.EqHaar
-import Init
-import OSReconstruction.SCV.ConeDefs
-import OSReconstruction.SCV.DistributionalUniqueness
-import OSReconstruction.SCV.LaplaceSchwartz
-import OSReconstruction.SCV.PaleyWienerSchwartz
-import OSReconstruction.Wightman.Reconstruction.ForwardTubeDistributions
-import OSReconstruction.Wightman.SchwartzTensorProduct
-import Mathlib.Analysis.Distribution.SchwartzSpace.Deriv
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.BHWTranslation
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.RToEForwardTube
+public import OSReconstruction.Wightman.Reconstruction.UniversalProjection
+public import OSReconstruction.ComplexLieGroups.D1OrbitSet
+public import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.JostWitnessGeneralSigma
+public import Mathlib.MeasureTheory.Measure.Lebesgue.EqHaar
+public import Init
+public import OSReconstruction.SCV.ConeDefs
+public import OSReconstruction.SCV.DistributionalUniqueness
+public import OSReconstruction.SCV.LaplaceSchwartz
+public import OSReconstruction.SCV.PaleyWienerSchwartz
+public import OSReconstruction.Wightman.Reconstruction.ForwardTubeDistributions
+public import OSReconstruction.Wightman.SchwartzTensorProduct
+public import Mathlib.Analysis.Distribution.SchwartzSpace.Deriv
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 open scoped Classical
 
@@ -90,7 +78,7 @@ theorem wickRotate_norm_le {d n : ℕ}
   exact_mod_cast this
 
 /-- A consecutive difference is controlled by twice the ambient sup norm. -/
-private theorem abs_consecutiveDiff_le_two_norm {d n : ℕ}
+theorem abs_consecutiveDiff_le_two_norm {d n : ℕ}
     (x : NPointDomain d n) (k : Fin n) (μ : Fin (d + 1)) :
     |BHW.consecutiveDiff x k μ| ≤ 2 * ‖x‖ := by
   by_cases hk : (k : ℕ) = 0
@@ -119,7 +107,7 @@ private theorem abs_consecutiveDiff_le_two_norm {d n : ℕ}
       _ = 2 * ‖x‖ := by ring
 
 /-- A perturbation of a pure time-like vector remains in the open forward cone. -/
-private theorem inOpenForwardCone_of_perturbation {d : ℕ} [NeZero d]
+theorem inOpenForwardCone_of_perturbation {d : ℕ} [NeZero d]
     (t : ℝ) (ht : 0 < t) (w : Fin (d + 1) → ℝ)
     (hw : ∀ μ, |w μ - (if μ = 0 then t else 0)| < t / (d + 2 : ℝ)) :
     InOpenForwardCone d w := by
@@ -173,7 +161,7 @@ private theorem inOpenForwardCone_of_perturbation {d : ℕ} [NeZero d]
 
 /-- Pure-time-gap configurations stay a definite distance away from the boundary of
     the absolute forward cone. -/
-private theorem infDist_forwardConeAbs_lower_bound {d n : ℕ} [NeZero d] [NeZero n]
+theorem infDist_forwardConeAbs_lower_bound {d n : ℕ} [NeZero d] [NeZero n]
     (y : NPointDomain d n) (t_min : ℝ) (ht_pos : 0 < t_min)
     (hy_time : ∀ k : Fin n, t_min ≤ BHW.consecutiveDiff y k 0)
     (hy_space : ∀ k : Fin n, ∀ μ : Fin (d + 1), μ ≠ 0 → BHW.consecutiveDiff y k μ = 0) :
@@ -238,7 +226,7 @@ private theorem infDist_forwardConeAbs_lower_bound {d n : ℕ} [NeZero d] [NeZer
   exact hu hu_mem
 
 omit [NeZero d] in
-private lemma abs_matrix_le_one {d : ℕ}
+lemma abs_matrix_le_one {d : ℕ}
     (R : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ)
     (hR : R.transpose * R = 1) (i j : Fin (d + 1)) : |R i j| ≤ 1 := by
   have hRT : R * R.transpose = 1 := mul_eq_one_comm.mpr hR
@@ -258,7 +246,7 @@ private lemma abs_matrix_le_one {d : ℕ}
 
 omit [NeZero d] in
 /-- Orthogonal matrices stretch the Pi sup norm by at most `d + 1`. -/
-private theorem norm_mulVec_le_of_orthogonal {d n : ℕ}
+theorem norm_mulVec_le_of_orthogonal {d n : ℕ}
     (R : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ) (hR : R.transpose * R = 1)
     (x : NPointDomain d n) :
     ‖fun k => R.mulVec (x k)‖ ≤ (d + 1 : ℝ) * ‖x‖ := by
@@ -285,7 +273,7 @@ private theorem norm_mulVec_le_of_orthogonal {d n : ℕ}
       simp [Finset.sum_const]
 
 omit [NeZero d] in
-private theorem collapse_vt_denominator_algebra
+theorem collapse_vt_denominator_algebra
     (C_vt F_norm z_norm x_norm δ Δ c C_z : ℝ) (N_vt q_vt : ℕ)
     (hC_pos : 0 ≤ C_vt) (hc_pos : 0 < c) (hΔ_pos : 0 < Δ) (hδ_pos : 0 < δ)
     (_hCz_pos : 0 ≤ C_z)
@@ -473,7 +461,7 @@ theorem kernel_mul_zeroDiagonal_integrable_of_ae_infDist_mul_pow_le_polynomial
       _ = C_bd * Cf * (1 + ‖x‖) ^ (-(↑(D + 1) : ℝ)) := by
           rw [Real.rpow_neg (by positivity), Real.rpow_natCast]
 
-private theorem measure_timeEq_zero {d n : ℕ} (i j : Fin n) (hij : i ≠ j) :
+theorem measure_timeEq_zero_SchwingerTemperedness {d n : ℕ} (i j : Fin n) (hij : i ≠ j) :
     MeasureTheory.volume {x : NPointDomain d n | x i 0 = x j 0} = 0 := by
   let L : NPointDomain d n →ₗ[ℝ] ℝ :=
     { toFun := fun x => x i 0 - x j 0
@@ -504,7 +492,7 @@ private theorem measure_timeEq_zero {d n : ℕ} (i j : Fin n) (hij : i ≠ j) :
   rw [hset]
   exact MeasureTheory.Measure.addHaar_submodule MeasureTheory.volume (LinearMap.ker L) hker_ne_top
 
-private theorem ae_pairwise_distinct_timeCoords {d n : ℕ} :
+theorem ae_pairwise_distinct_timeCoords_SchwingerTemperedness {d n : ℕ} :
     ∀ᵐ (x : NPointDomain d n) ∂MeasureTheory.volume,
       ∀ i j : Fin n, i ≠ j → x i 0 ≠ x j 0 := by
   have hall : ∀ᵐ (x : NPointDomain d n) ∂MeasureTheory.volume,
@@ -516,7 +504,7 @@ private theorem ae_pairwise_distinct_timeCoords {d n : ℕ} :
         (fun p _ => by
           let s : Set (NPointDomain d n) := {x | x p.1.1 0 = x p.1.2 0}
           have hs0 : MeasureTheory.volume s = 0 := by
-            simpa [s] using measure_timeEq_zero (d := d) p.1.1 p.1.2 p.2
+            simpa [s] using measure_timeEq_zero_SchwingerTemperedness (d := d) p.1.1 p.1.2 p.2
           have hsae :
               sᶜ ∈ MeasureTheory.ae
                 (MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d n)) :=
@@ -592,7 +580,7 @@ theorem bhw_euclidean_kernel_measurable {d n : ℕ} [NeZero d]
       PermutedExtendedTube d n
   have hS_open : IsOpen S := hPET_open.preimage hwick_shift_cont
   have hS_ae : ∀ᵐ (x : NPointDomain d n) ∂MeasureTheory.volume, x ∈ S := by
-    filter_upwards [ae_pairwise_distinct_timeCoords (d := d) (n := n)] with x hdist
+    filter_upwards [ae_pairwise_distinct_timeCoords_SchwingerTemperedness (d := d) (n := n)] with x hdist
     have hdistinct_sx :
         ∀ i j : Fin n, i ≠ j → shiftFn x i 0 ≠ shiftFn x j 0 := by
       intro i j hij; simp [shiftFn, aShift]; exact hdist i j hij
@@ -671,7 +659,7 @@ theorem bhw_euclidean_kernel_measurable {d n : ℕ} [NeZero d]
     configuration space gives a universal constant.
 
     Ref: Ruelle, "Statistical Mechanics", §3; Glimm-Jaffe, Ch. 6 -/
-private theorem exists_universal_time_projection (d n : ℕ) [NeZero d] :
+theorem exists_universal_time_projection (d n : ℕ) [NeZero d] :
     ∃ c : ℝ, 0 < c ∧ ∀ (x : NPointDomain d n),
       ∃ (R : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ),
         R.transpose * R = 1 ∧ R.det = 1 ∧
@@ -1041,7 +1029,7 @@ theorem wick_rotated_kernel_ae_polynomial_growth {d n : ℕ} [NeZero d]
   refine ⟨C_bd * nR ^ N, N, q, by dsimp [nR]; positivity, ?_⟩
   -- Prove the a.e. weighted bound on the BHW kernel
   filter_upwards [ae_euclidean_points_in_translatedPET (d := d) (n := n),
-    ae_pairwise_distinct_timeCoords (d := d) (n := n)] with x hx_pet hx_distinct
+    ae_pairwise_distinct_timeCoords_SchwingerTemperedness (d := d) (n := n)] with x hx_pet hx_distinct
   -- Step 1: Shift to positive times
   let A : ℝ := 1 + ∑ i : Fin n, |x i 0|
   let a : SpacetimeDim d := fun μ => if μ = 0 then A else 0
@@ -1553,7 +1541,7 @@ theorem constructedSchwinger_tempered_zeroDiagonal (Wfn : WightmanFunctions d) (
           ‖K x‖ * Metric.infDist x (CoincidenceLocus d n) ^ (q + 1) ≤
             C_bd * nR ^ N * (1 + ‖x‖) ^ N := by
       filter_upwards [ae_euclidean_points_in_translatedPET (d := d) (n := n),
-        ae_pairwise_distinct_timeCoords (d := d) (n := n)] with x hx_pet hx_distinct
+        ae_pairwise_distinct_timeCoords_SchwingerTemperedness (d := d) (n := n)] with x hx_pet hx_distinct
       let A : ℝ := 1 + ∑ i : Fin n, |x i 0|
       let a : SpacetimeDim d := fun μ => if μ = 0 then A else 0
       let xs : NPointDomain d n := fun k μ => x k μ + a μ

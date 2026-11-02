@@ -1,22 +1,12 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import Mathlib.Analysis.Complex.SqrtDeriv
-import OSReconstruction.SCV.Analyticity
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIProductionGevrey
+module
 
+public import Mathlib.Analysis.Complex.SqrtDeriv
+public import OSReconstruction.SCV.Analyticity
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIProductionGevrey
 
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 

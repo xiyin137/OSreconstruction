@@ -5,17 +5,12 @@ Copyright (c) 2026 ModularPhysics Contributors.
 Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
-import OSReconstruction.SCV.DistributionalEOWKernel
-import OSReconstruction.SCV.HeadBlockDescent
+module
 
+public import OSReconstruction.SCV.DistributionalEOWKernel
+public import OSReconstruction.SCV.HeadBlockDescent
 
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 

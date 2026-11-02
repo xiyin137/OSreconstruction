@@ -1,6 +1,10 @@
-import Mathlib.Analysis.SpecialFunctions.JapaneseBracket
-import Mathlib.Analysis.Normed.Operator.NormedSpace
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIITimeSpatialCurrying
+module
+
+public import Mathlib.Analysis.SpecialFunctions.JapaneseBracket
+public import Mathlib.Analysis.Normed.Operator.NormedSpace
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIITimeSpatialCurrying
+
+@[expose] public section
 
 /-!
 # Coupled Schwartz-source decay
