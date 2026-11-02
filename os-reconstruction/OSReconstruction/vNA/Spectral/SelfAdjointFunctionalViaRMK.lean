@@ -25,11 +25,8 @@ namespace ContinuousLinearMap
 
 variable {H : Type u} [NormedAddCommGroup H] [InnerProductSpace ℂ H] [CompleteSpace H]
 
--- Mathlib 4.29 compatibility: provide instances that typeclass synthesis can't find
+-- Mathlib 4.29 compatibility: provide an instance that typeclass synthesis can't find
 -- with the stricter backward.isDefEq.respectTransparency
-set_option backward.isDefEq.respectTransparency false in
-instance : SMulCommClass ℂ ℝ H := inferInstance
-
 set_option backward.isDefEq.respectTransparency false in
 instance : NonnegSpectrumClass ℝ (H →L[ℂ] H) :=
   CStarAlgebra.instNonnegSpectrumClass
