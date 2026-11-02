@@ -68,7 +68,7 @@ def momentumCone (d : ℕ) : Set (Point d) := { x | quadratic d x ≤ 0 ∧ x 0 
 
 def forwardDirections (d n : ℕ) (y : Config d n) : Prop :=
   ∀ k : Fin n,
-    let previous : Point d := if h : k.val = 0 then 0 else y ⟨k.val - 1, by omega⟩
+    let previous : Point d := if h : k.val = 0 then 0 else y ⟨k.val - 1, Nat.lt_of_le_of_lt (Nat.sub_le k.val 1) k.isLt⟩
     openForwardCone d (fun μ => y k μ - previous μ)
 
 /-- The absolute-coordinate tube used by this formalization: in addition to
@@ -80,7 +80,7 @@ literal tube. -/
 def forwardTube (d n : ℕ) : Set (Fin n → Fin (d + 1) → ℂ) :=
   { z | ∀ k : Fin n,
     let previous : Fin (d + 1) → ℂ :=
-      if h : k.val = 0 then 0 else z ⟨k.val - 1, by omega⟩
+      if h : k.val = 0 then 0 else z ⟨k.val - 1, Nat.lt_of_le_of_lt (Nat.sub_le k.val 1) k.isLt⟩
     openForwardCone d (fun μ => (z k μ - previous μ).im) }
 
 def translationInvariant (d : ℕ) (W : Family d) : Prop :=
@@ -131,7 +131,7 @@ theorem fourier_apply {d n : ℕ} (f : Test d n) (q : Config d n) :
 
 /-- The common-translation fiber integral, with x₀=a and xₖ=a+Σ_{j<k}ξⱼ. -/
 def reduceBasepoint (d n : ℕ) (f : Test d (n + 1)) : Config d n → ℂ :=
-  fun ξ => ∫ a : Point d, f (fun k μ => a μ + ∑ j : Fin k.val, ξ ⟨j.val, by omega⟩ μ)
+  fun ξ => ∫ a : Point d, f (fun k μ => a μ + ∑ j : Fin k.val, ξ ⟨j.val, Nat.lt_of_lt_of_le j.isLt (Nat.le_of_lt_succ k.isLt)⟩ μ)
 
 /-- A relational Schwartz wrapper avoids concealing the fiber integral's formula. -/
 def spectralSupport (d : ℕ) (W : Family d) : Prop :=
