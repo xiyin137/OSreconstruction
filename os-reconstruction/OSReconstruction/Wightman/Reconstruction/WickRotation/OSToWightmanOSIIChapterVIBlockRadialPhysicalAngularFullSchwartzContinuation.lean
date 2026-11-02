@@ -212,14 +212,14 @@ theorem exists_uniform_schwartzBound_on_compact
       Complex Complex
       (SchwartzNPoint d (k + 1))
       Complex
-      (Fin 1)
+      Unit
       _ _ _ _ _ _ (RingHom.id Complex) _ K
-      (fun _ : Fin 1 => normSeminorm Complex Complex)
+      (fun _ : Unit => normSeminorm Complex Complex)
       _ _ _ _
       (norm_withSeminorms Complex Complex)
       hsmul
       (fun w => (T w).toLinearMap)).mp hEqui
-  obtain ⟨p, hp_cont, hp_bound⟩ := hq (0 : Fin 1)
+  obtain ⟨p, hp_cont, hp_bound⟩ := hq ()
   obtain ⟨s, C, _hC, hp_dominate⟩ :=
     Seminorm.bound_of_continuous
       (schwartz_withSeminorms Complex

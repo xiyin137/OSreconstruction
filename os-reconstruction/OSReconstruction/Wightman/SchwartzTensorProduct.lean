@@ -317,7 +317,7 @@ def SchwartzMap.tensorProduct {m k : ℕ}
           (by exact_mod_cast le_top)]
       exact (ContinuousMultilinearMap.norm_compContinuousLinearMap_le _ _).trans
         (mul_le_of_le_one_right (norm_nonneg _)
-          (Finset.prod_le_one (fun _ _ => norm_nonneg _)
+          (Finset.prod_le_one₀ (fun _ _ => norm_nonneg _)
             (fun _ _ => splitFirstCLM_opNorm_le m k)))
     have hcg : ∀ j (x : Fin (m + k) → E),
         ‖iteratedFDeriv ℝ j (g.toFun ∘ splitLast m k) x‖ ≤
@@ -328,7 +328,7 @@ def SchwartzMap.tensorProduct {m k : ℕ}
           (by exact_mod_cast le_top)]
       exact (ContinuousMultilinearMap.norm_compContinuousLinearMap_le _ _).trans
         (mul_le_of_le_one_right (norm_nonneg _)
-          (Finset.prod_le_one (fun _ _ => norm_nonneg _)
+          (Finset.prod_le_one₀ (fun _ _ => norm_nonneg _)
             (fun _ _ => splitLastCLM_opNorm_le m k)))
     -- Schwartz decay constants (via Choice)
     choose Cf hCf using fun p j => f.decay' p j
@@ -536,7 +536,7 @@ private theorem seminorm_tensorProduct_le {m k : ℕ} (p l : ℕ)
         (by exact_mod_cast le_top)]
     exact (ContinuousMultilinearMap.norm_compContinuousLinearMap_le _ _).trans
       (mul_le_of_le_one_right (norm_nonneg _)
-        (Finset.prod_le_one (fun _ _ => norm_nonneg _)
+        (Finset.prod_le_one₀ (fun _ _ => norm_nonneg _)
           (fun _ _ => splitFirstCLM_opNorm_le m k)))
   have hcg : ∀ j (x : Fin (m + k) → E),
       ‖iteratedFDeriv ℝ j (g.toFun ∘ splitLast m k) x‖ ≤
@@ -547,7 +547,7 @@ private theorem seminorm_tensorProduct_le {m k : ℕ} (p l : ℕ)
         (by exact_mod_cast le_top)]
     exact (ContinuousMultilinearMap.norm_compContinuousLinearMap_le _ _).trans
       (mul_le_of_le_one_right (norm_nonneg _)
-        (Finset.prod_le_one (fun _ _ => norm_nonneg _)
+        (Finset.prod_le_one₀ (fun _ _ => norm_nonneg _)
           (fun _ _ => splitLastCLM_opNorm_le m k)))
   -- Leibniz rule
   have hLeib := norm_iteratedFDeriv_mul_le (n := l) hfs hgs x
@@ -1118,7 +1118,7 @@ def SchwartzMap.prependField {n : ℕ}
         headCLM.iteratedFDeriv_comp_right f.smooth' x (by exact_mod_cast le_top)]
       exact (ContinuousMultilinearMap.norm_compContinuousLinearMap_le _ _).trans
         (mul_le_of_le_one_right (norm_nonneg _)
-          (Finset.prod_le_one (fun _ _ => norm_nonneg _)
+          (Finset.prod_le_one₀ (fun _ _ => norm_nonneg _)
             (fun _ _ => headCLM_norm_le)))
     have hcg : ∀ j (x : Fin (n + 1) → E),
         ‖iteratedFDeriv ℝ j (g.toFun ∘ fun x => fun i => x i.succ) x‖ ≤
@@ -1129,7 +1129,7 @@ def SchwartzMap.prependField {n : ℕ}
         (tailCLM n).iteratedFDeriv_comp_right g.smooth' x (by exact_mod_cast le_top)]
       exact (ContinuousMultilinearMap.norm_compContinuousLinearMap_le _ _).trans
         (mul_le_of_le_one_right (norm_nonneg _)
-          (Finset.prod_le_one (fun _ _ => norm_nonneg _)
+          (Finset.prod_le_one₀ (fun _ _ => norm_nonneg _)
             (fun _ _ => tailCLM_opNorm_le n)))
     -- Schwartz decay constants
     choose Cf hCf using fun p j => f.decay' p j

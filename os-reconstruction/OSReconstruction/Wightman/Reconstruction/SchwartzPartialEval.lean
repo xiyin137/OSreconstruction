@@ -79,7 +79,7 @@ theorem norm_iteratedFDeriv_partialEval_le
         exact ContinuousMultilinearMap.norm_compContinuousLinearMap_le _ _
     _ ≤ ‖iteratedFDeriv ℝ l (⇑f) (x, y)‖ * 1 := by
         apply mul_le_mul_of_nonneg_left _ (norm_nonneg _)
-        apply Finset.prod_le_one (fun _ _ => norm_nonneg _)
+        apply Finset.prod_le_one₀ (fun _ _ => norm_nonneg _)
         intro _ _
         exact ContinuousLinearMap.norm_inl_le_one ℝ E₁ E₂
     _ = ‖iteratedFDeriv ℝ l (⇑f) (x, y)‖ := by
@@ -243,7 +243,7 @@ theorem norm_fderiv_iteratedFDeriv_partialEval₂_le
                 (G := _)
                 (fun _ => ContinuousLinearMap.inl ℝ E₁ E₂))
           have hone_prod : ∏ _ : Fin l, ‖ContinuousLinearMap.inl ℝ E₁ E₂‖ ≤ (1 : ℝ) := by
-            apply Finset.prod_le_one
+            apply Finset.prod_le_one₀
             · intro i hi
               exact norm_nonneg _
             · intro i hi

@@ -1454,7 +1454,7 @@ theorem section43IteratedLaplaceRaw_iteratedFDerivCandidate_hasFDerivAt
         (ContinuousMultilinearMap ℝ
           (fun _ : Fin (r + 1) => Fin n → ℝ) ℂ)
         PseudoMetricSpace.toUniformSpace.toTopologicalSpace
-        SeminormedAddGroup.toContinuousENorm
+        SeminormedAddGroup.toESeminormedAddMonoid.toContinuousENorm
         (Fin n → ℝ) _ Phi volume := by
     simpa [Phi] using
       integrable_section43IteratedLaplaceRaw_integrand_iteratedFDeriv_of_compact
@@ -1477,7 +1477,7 @@ theorem section43IteratedLaplaceRaw_iteratedFDerivCandidate_hasFDerivAt
         ((Fin n → ℝ) →L[ℝ]
           ContinuousMultilinearMap ℝ (fun _ : Fin r => Fin n → ℝ) ℂ)
         PseudoMetricSpace.toUniformSpace.toTopologicalSpace
-        SeminormedAddGroup.toContinuousENorm
+        SeminormedAddGroup.toESeminormedAddMonoid.toContinuousENorm
         (Fin n → ℝ) _ (Fderiv σ) volume := by
     refine Integrable.mono
       (f := Fderiv σ)

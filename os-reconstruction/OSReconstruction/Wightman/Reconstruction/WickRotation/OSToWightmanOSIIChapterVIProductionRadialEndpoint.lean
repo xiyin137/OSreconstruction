@@ -144,7 +144,7 @@ theorem osiiStep4ComplexBlockRadialGRealSlice_iteratedFDeriv_gevrey_bound
       ContinuousMultilinearMap.norm_compContinuousLinearMap_le _ _
     _ ≤ B * 1 := by
       apply mul_le_mul hglobal
-      · exact Finset.prod_le_one
+      · exact Finset.prod_le_one₀
           (fun _ _ => norm_nonneg _) (fun _ _ => hL)
       · positivity
       · exact hB

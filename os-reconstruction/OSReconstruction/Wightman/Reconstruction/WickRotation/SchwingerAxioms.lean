@@ -125,8 +125,7 @@ theorem wickRotatedBoundaryPairing_translation_invariant (Wfn : WightmanFunction
     filter_upwards [hP_ae, hP_shift_ae] with x hx hx_shift
     apply F_ext_translation_invariant_translated Wfn n a x hx
     convert hx_shift using 1
-    ext k μ
-    rfl
+    all_goals (ext k μ <;> try rfl)
   symm
   calc ∫ x : NPointDomain d n, K x * (f : NPointDomain d n → ℂ) (x + a')
       = ∫ x : NPointDomain d n, K (x + a') * (f : NPointDomain d n → ℂ) (x + a') := by
@@ -188,9 +187,9 @@ theorem integral_orthogonal_eq_self (R : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ)
         left_inv := fun a => by ext i j; simp [Matrix.mulVec_mulVec, hR]
         right_inv := fun a => by ext i j; simp [Matrix.mulVec_mulVec, hR'] }
       measurable_toFun :=
-        measurable_pi_lambda _ fun i => hcont_R.measurable.comp (measurable_pi_apply i)
+        Measurable.of_eval fun i => hcont_R.measurable.comp (measurable_pi_apply i)
       measurable_invFun :=
-        measurable_pi_lambda _ fun i => hcont_Rt.measurable.comp (measurable_pi_apply i) }
+        Measurable.of_eval fun i => hcont_Rt.measurable.comp (measurable_pi_apply i) }
   -- Lift volume preservation to product, then get integral equality
   have hmp : MeasureTheory.MeasurePreserving (⇑e)
       MeasureTheory.volume MeasureTheory.volume :=
@@ -259,9 +258,9 @@ private theorem measurePreserving_timeReflectionN :
         left_inv := fun a => by ext i j; simp [Matrix.mulVec_mulVec, hR]
         right_inv := fun a => by ext i j; simp [Matrix.mulVec_mulVec, hR'] }
       measurable_toFun :=
-        measurable_pi_lambda _ fun i => hcont_R.measurable.comp (measurable_pi_apply i)
+        Measurable.of_eval fun i => hcont_R.measurable.comp (measurable_pi_apply i)
       measurable_invFun :=
-        measurable_pi_lambda _ fun i => hcont_Rt.measurable.comp (measurable_pi_apply i) }
+        Measurable.of_eval fun i => hcont_Rt.measurable.comp (measurable_pi_apply i) }
   have hmp : MeasureTheory.MeasurePreserving (⇑e)
       MeasureTheory.volume MeasureTheory.volume :=
     MeasureTheory.volume_preserving_pi (fun (_ : Fin n) => hmp_factor)
@@ -1682,11 +1681,11 @@ private theorem bhw_real_hermitian_on_edge
             ext i μ
             simp [Fin.rev_rev] }
         measurable_toFun := by
-          apply measurable_pi_lambda
+          apply Measurable.of_eval
           intro i
           exact measurable_pi_apply (Fin.rev i)
         measurable_invFun := by
-          apply measurable_pi_lambda
+          apply Measurable.of_eval
           intro i
           exact measurable_pi_apply (Fin.rev i) }
     calc

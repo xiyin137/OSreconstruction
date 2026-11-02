@@ -266,7 +266,7 @@ theorem prod_le_factor_mul_pow_card {α : Type} [Fintype α] [DecidableEq α]
       simpa using (Finset.mul_prod_erase (Finset.univ : Finset α) f hp)
     _ ≤ f p * Finset.prod (Finset.univ.erase p) (fun _ => B) := by
       apply mul_le_mul_of_nonneg_left
-      · exact Finset.prod_le_prod (fun q hq => h0 q) (fun q hq => hB q)
+      · exact Finset.prod_le_prod₀ (fun q hq => h0 q) (fun q hq => hB q)
       · exact h0 p
     _ = f p * B ^ ((Finset.univ.erase p).card) := by simp
     _ ≤ f p * B ^ Fintype.card α := by
@@ -398,7 +398,7 @@ theorem exists_orthogonal_matrix_with_first_row
     have hi : (i : Fin (d + 1)) = 0 := i.2
     have hij : i = j := Subsingleton.elim _ _
     subst hij
-    simp [w, hi, hvE]
+    simp [Set.restrict, w, hi, hvE]
   obtain ⟨b, hb⟩ := Orthonormal.exists_orthonormalBasis_extension_of_card_eq (𝕜 := ℝ)
     (E := EuclideanSpace ℝ (Fin (d + 1))) (ι := Fin (d + 1)) (by simp) (v := w)
     (s := ({0} : Set (Fin (d + 1)))) hw

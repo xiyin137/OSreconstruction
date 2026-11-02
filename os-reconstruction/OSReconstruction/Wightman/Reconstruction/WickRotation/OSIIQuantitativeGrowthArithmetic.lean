@@ -25,7 +25,7 @@ theorem nat_pow_self_le_factorial_sq (n : Nat) : n ^ n <= n.factorial ^ 2 := by
   calc
     n ^ n = ∏ _ : Fin n, n := by simp
     _ <= ∏ j : Fin n, (j.val + 1) * ((Fin.rev j).val + 1) := by
-      apply Finset.prod_le_prod (fun _ _ => Nat.zero_le _)
+      apply Finset.prod_le_prod₀ (fun _ _ => Nat.zero_le _)
       intro j _
       have hj : j.val + (Fin.rev j).val + 1 = n := by simp [Fin.val_rev]; omega
       nlinarith

@@ -249,7 +249,7 @@ private lemma norm_cauchyPowerSeriesPolydisc_uniform_le {m : ℕ}
         ContinuousMultilinearMap.norm_compContinuousLinearMap_le _ _
     _ ≤ ‖ContinuousMultilinearMap.mkPiRing ℂ (Fin n) _‖ * 1 := by
         gcongr
-        apply Finset.prod_le_one (fun j _ => norm_nonneg _) (fun j _ => by
+        apply Finset.prod_le_one₀ (fun j _ => norm_nonneg _) (fun j _ => by
           apply ContinuousLinearMap.opNorm_le_bound _ zero_le_one
           intro v; simp only [ContinuousLinearMap.proj_apply, one_mul]
           exact norm_le_pi_norm v (σ j))

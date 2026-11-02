@@ -90,18 +90,14 @@ private theorem hasDerivAt_planarBoost (a : Fin d)
       Fin.cons_succ, ite_true]
     convert (((Real.hasDerivAt_cosh t).mul_const (x 0)).add
       ((Real.hasDerivAt_sinh t).mul_const (x a.succ))) using 1
-    · funext y
-      rfl
-    · ring
+    ring
   · by_cases hba : b = a
     · subst b
       simp only [osiiPlanarBoostCLE_axis, boostTangent, Fin.cons_zero,
         Fin.cons_succ, ite_true]
       convert (((Real.hasDerivAt_sinh t).mul_const (x 0)).add
         ((Real.hasDerivAt_cosh t).mul_const (x a.succ))) using 1
-      · funext y
-        rfl
-      · ring
+      ring
     · simp only [osiiPlanarBoostCLE_other a b hba, boostTangent,
         Fin.cons_succ, hba, ite_false]
       exact hasDerivAt_const t _

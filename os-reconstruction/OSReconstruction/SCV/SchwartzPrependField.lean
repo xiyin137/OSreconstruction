@@ -85,7 +85,7 @@ def prependField {n : ℕ}
         headCLM.iteratedFDeriv_comp_right f.smooth' x (by exact_mod_cast le_top)]
       exact (ContinuousMultilinearMap.norm_compContinuousLinearMap_le _ _).trans
         (mul_le_of_le_one_right (norm_nonneg _)
-          (Finset.prod_le_one (fun _ _ => norm_nonneg _)
+          (Finset.prod_le_one₀ (fun _ _ => norm_nonneg _)
             (fun _ _ => headCLM_norm_le)))
     have hcg : ∀ j (x : Fin (n + 1) → ℝ),
         ‖iteratedFDeriv ℝ j (g.toFun ∘ fun x => fun i => x i.succ) x‖ ≤
@@ -96,7 +96,7 @@ def prependField {n : ℕ}
         (tailCLM n).iteratedFDeriv_comp_right g.smooth' x (by exact_mod_cast le_top)]
       exact (ContinuousMultilinearMap.norm_compContinuousLinearMap_le _ _).trans
         (mul_le_of_le_one_right (norm_nonneg _)
-          (Finset.prod_le_one (fun _ _ => norm_nonneg _)
+          (Finset.prod_le_one₀ (fun _ _ => norm_nonneg _)
             (fun _ _ => tailCLM_opNorm_le n)))
     choose Cf hCf using fun p j => f.decay' p j
     choose Cg hCg using fun p j => g.decay' p j
@@ -231,7 +231,7 @@ theorem prependField_seminorm_le {n : ℕ}
       headCLM.iteratedFDeriv_comp_right f.smooth' x (by exact_mod_cast le_top)]
     exact (ContinuousMultilinearMap.norm_compContinuousLinearMap_le _ _).trans
       (mul_le_of_le_one_right (norm_nonneg _)
-        (Finset.prod_le_one (fun _ _ => norm_nonneg _)
+        (Finset.prod_le_one₀ (fun _ _ => norm_nonneg _)
           (fun _ _ => headCLM_norm_le)))
   have hcg : ∀ j (x : Fin (n + 1) → ℝ),
       ‖iteratedFDeriv ℝ j (g.toFun ∘ fun x => fun i => x i.succ) x‖ ≤
@@ -242,7 +242,7 @@ theorem prependField_seminorm_le {n : ℕ}
       (tailCLM n).iteratedFDeriv_comp_right g.smooth' x (by exact_mod_cast le_top)]
     exact (ContinuousMultilinearMap.norm_compContinuousLinearMap_le _ _).trans
       (mul_le_of_le_one_right (norm_nonneg _)
-        (Finset.prod_le_one (fun _ _ => norm_nonneg _)
+        (Finset.prod_le_one₀ (fun _ _ => norm_nonneg _)
           (fun _ _ => tailCLM_opNorm_le n)))
   have hLeib := norm_iteratedFDeriv_mul_le (n := l) hfs hgs x
     (WithTop.coe_le_coe.mpr (le_top (a := (l : ℕ∞))))

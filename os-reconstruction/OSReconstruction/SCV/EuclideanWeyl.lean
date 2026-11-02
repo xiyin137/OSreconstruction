@@ -401,8 +401,6 @@ theorem euclideanDiffQuotient_weighted_pointwise_bound
           ‖x‖ ^ k • K x) s
       convert (hmain0.const_smul (‖x‖ ^ k)).sub
         (hlin.const_smul (‖x‖ ^ k)) using 1
-      funext r
-      rfl
     have hsub :
         HasDerivAt
           (fun r : ℝ =>

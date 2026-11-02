@@ -661,7 +661,7 @@ theorem laplacian_norm_sq_real
           2 • (innerSL ℝ) := by
         change fderiv ℝ (⇑(2 • (innerSL ℝ (E := EuclideanSpace ℝ ι)))) x =
           2 • (innerSL ℝ)
-        simpa using ContinuousLinearMap.fderiv (𝕜 := ℝ)
+        exact ContinuousLinearMap.fderiv (𝕜 := ℝ)
           (2 • (innerSL ℝ (E := EuclideanSpace ℝ ι)))
       have hterm : ∀ i : ι,
           (iteratedFDeriv ℝ 2

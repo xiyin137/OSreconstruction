@@ -71,8 +71,6 @@ theorem exists_seminorm_translateSchwartz_sub_le_linear {m : ℕ}
       PseudoMetricSpace.toUniformSpace.toTopologicalSpace _
       hxFun (‖x‖ ^ k • (fderiv ℝ H (x + s • (t • v)) (t • v))) s
     convert hcomp.const_smul (‖x‖ ^ k) using 1
-    funext r
-    rfl
   have hxFun_bound :
       ∀ s ∈ Set.Ico (0 : ℝ) 1,
         ‖‖x‖ ^ k • (fderiv ℝ H (x + s • (t • v)) (t • v))‖ ≤ C * |t| := by
@@ -329,8 +327,6 @@ theorem exists_seminorm_diffQuotient_translateSchwartz_sub_lineDeriv_le {m : ℕ
           ‖x‖ ^ k • K x) s
       convert (hmain0.const_smul (‖x‖ ^ k)).sub
         (hlin.const_smul (‖x‖ ^ k)) using 1
-      funext r
-      rfl
     have hsub :
         HasDerivAt
           (fun r : ℝ =>

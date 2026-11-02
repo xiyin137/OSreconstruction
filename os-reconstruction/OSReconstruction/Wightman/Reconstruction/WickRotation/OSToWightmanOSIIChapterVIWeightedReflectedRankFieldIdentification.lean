@@ -202,8 +202,7 @@ theorem
     · change
         (fun a => (((0 : Fin (q + 1) -> Real) a) : Complex)) ∈ U
       convert hzeroU using 1
-      ext
-      simp
+      all_goals (ext <;> simp)
     · exact ⟨mem_of_mem_nhds
           (A.gram.anchoredAtlasRealRegion_mem_nhds
             A.sourceStage.stage A.sourceStage.germ),
@@ -347,8 +346,7 @@ theorem anchoredAtlasField_eq_holomorphicTranslationField_on_commonKernel
     · change
         (fun a => (((0 : Fin (q + 1) -> Real) a) : Complex)) ∈ U
       convert hzeroU using 1
-      ext
-      simp
+      all_goals (ext <;> simp)
     · exact ⟨mem_of_mem_nhds
           (A.gram.anchoredAtlasRealRegion_mem_nhds
             A.sourceStage.stage A.sourceStage.germ), hzeroW⟩

@@ -80,7 +80,7 @@ def schwartzTensorProduct₂CLMLeft {m : ℕ}
         φ.smooth' x (by exact_mod_cast le_top)]
     exact (ContinuousMultilinearMap.norm_compContinuousLinearMap_le _ _).trans
       (mul_le_of_le_one_right (norm_nonneg _)
-        (Finset.prod_le_one (fun _ _ => norm_nonneg _)
+        (Finset.prod_le_one₀ (fun _ _ => norm_nonneg _)
           (fun _ _ =>
             ContinuousLinearMap.norm_fst_le ℝ (ComplexChartSpace m) (Fin m → ℝ))))
   have hcg : ∀ j (x : ComplexChartSpace m × (Fin m → ℝ)),
@@ -93,7 +93,7 @@ def schwartzTensorProduct₂CLMLeft {m : ℕ}
         ψ.smooth' x (by exact_mod_cast le_top)]
     exact (ContinuousMultilinearMap.norm_compContinuousLinearMap_le _ _).trans
       (mul_le_of_le_one_right (norm_nonneg _)
-        (Finset.prod_le_one (fun _ _ => norm_nonneg _)
+        (Finset.prod_le_one₀ (fun _ _ => norm_nonneg _)
           (fun _ _ =>
             ContinuousLinearMap.norm_snd_le ℝ (ComplexChartSpace m) (Fin m → ℝ))))
   have hLeib := norm_iteratedFDeriv_mul_le (n := l) hφs hψs x

@@ -59,9 +59,8 @@ private theorem hasDerivAt_testedTaylorPolynomial
       exact Finset.sum_range_succ _ (M + 1)
     rw [hfun]
     convert ih.add hterm using 1
-    · rfl
-    · rw [neg_smul]
-      abel
+    rw [neg_smul]
+    abel
 
 /-- Taylor expansion at the regular endpoint `1`, evaluated at `0`.
 The remainder vanishes to order `M` at the endpoint that will become

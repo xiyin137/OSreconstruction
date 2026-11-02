@@ -627,7 +627,7 @@ theorem spectralSemigroupComplex_continuousOn
     exact Continuous.cfc_fun (f := fun z : HP => fun s : ℝ => specSemiFIm z.1 s) (a := A)
       hImUniform hfImSection
   rw [continuousOn_iff_continuous_restrict]
-  unfold Set.restrict
+  unfold Set.domRestrict
   unfold spectralSemigroupComplex
   exact hReOp.add (hImOp.fun_const_smul Complex.I)
 

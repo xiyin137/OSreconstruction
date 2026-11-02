@@ -1330,11 +1330,9 @@ lemma boundedParamIntegralDeriv_hasFDerivAt {m : ℕ}
           ((g x).smooth (n + 1)).differentiable_iteratedFDeriv
             (by exact_mod_cast Nat.lt_succ_self n) η |>.hasFDerivAt
         convert hbase.const_smul (f x) using 1
-        · ext η'
-          rfl
-        · simp only [F', curryL, fderiv_iteratedFDeriv, Function.comp_def]
-          ext v tail
-          rfl
+        simp only [F', curryL, fderiv_iteratedFDeriv, Function.comp_def]
+        ext v tail
+        rfl
   change HasFDerivAt (fun η => ∫ x, F η x ∂volume.restrict K)
     (∫ x, F' ξ x ∂volume.restrict K) ξ
   exact hF

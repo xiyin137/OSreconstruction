@@ -1358,11 +1358,10 @@ theorem contDiff_nat_partialFourierSpatial_fun_time
                     ((0 : EuclideanSpace ℝ (Fin n × Fin d)), m)
                     (nPointSpatialTimeSchwartzCLE (d := d) (n := n) f)))
               convert ih g using 1
-              · rfl
-              · funext t
-                simpa [g] using
-                  fderiv_partialFourierSpatial_fun_time_apply_eq_transport
-                    (d := d) (n := n) f ξ t m⟩
+              funext t
+              simpa [g] using
+                fderiv_partialFourierSpatial_fun_time_apply_eq_transport
+                  (d := d) (n := n) f ξ t m⟩
 
 theorem contDiff_partialFourierSpatial_fun_time
     (f : SchwartzNPoint d n)
@@ -1599,11 +1598,10 @@ theorem contDiff_nat_partialFourierSpatial_fun_joint
                         ((inner ℝ q.1 m.2 : ℝ) : ℂ))
                       (nPointSpatialTimeSchwartzCLE (d := d) (n := n) f)))
               convert (ih gt).add (ih gξ) using 1
-              · rfl
-              · funext p
-                simpa [gt, gξ] using
-                  fderiv_partialFourierSpatial_fun_joint_apply_eq_transportSum
-                    (d := d) (n := n) f p m⟩
+              funext p
+              simpa [gt, gξ] using
+                fderiv_partialFourierSpatial_fun_joint_apply_eq_transportSum
+                  (d := d) (n := n) f p m⟩
 
 theorem contDiff_partialFourierSpatial_fun_joint
     (f : SchwartzNPoint d n) :

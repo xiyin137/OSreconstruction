@@ -897,7 +897,7 @@ theorem section43FourierLaplaceIntegral_iteratedFDerivCandidate_hasFDerivAt_of_c
         (ContinuousMultilinearMap ℝ
           (fun _ : Fin (r + 1) => NPointDomain d n) ℂ)
         PseudoMetricSpace.toUniformSpace.toTopologicalSpace
-        SeminormedAddGroup.toContinuousENorm
+        SeminormedAddGroup.toESeminormedAddMonoid.toContinuousENorm
         (Fin n → ℝ) _ Phi volume := by
     simpa [F] using
       integrable_section43FourierLaplace_timeIntegrand_iteratedFDeriv_of_compact
@@ -920,7 +920,7 @@ theorem section43FourierLaplaceIntegral_iteratedFDerivCandidate_hasFDerivAt_of_c
         (NPointDomain d n →L[ℝ]
           ContinuousMultilinearMap ℝ (fun _ : Fin r => NPointDomain d n) ℂ)
         PseudoMetricSpace.toUniformSpace.toTopologicalSpace
-        SeminormedAddGroup.toContinuousENorm
+        SeminormedAddGroup.toESeminormedAddMonoid.toContinuousENorm
         (Fin n → ℝ) _ (Fderiv q) volume := by
     refine Integrable.mono
       (f := Fderiv q)

@@ -57,7 +57,7 @@ Operator/GNS reconstruction is not an endpoint of this package.
 
 ## Build and Verify
 
-Install Lean using elan. The toolchain is pinned to Lean 4.33.0-rc1; Lake dependency
+Install Lean using elan. The toolchain is pinned to Lean 4.35.0-rc4; Lake dependency
 revisions are pinned in `lake-manifest.json`.
 
 ```sh

@@ -209,7 +209,7 @@ theorem euclideanContinuousMultilinearMap_norm_le_coordinate_sum
       rw [norm_smul]
       apply mul_le_mul_of_nonneg_right ?_ (norm_nonneg _)
       rw [norm_prod]
-      exact Finset.prod_le_prod
+      exact Finset.prod_le_prod₀
         (fun j _ => norm_nonneg ((v j) (u j)))
         (fun j _ => euclideanNorm_apply_le_norm (v j) (u j))
     _ = M * ∏ j : Fin n, ‖v j‖ := by

@@ -56,7 +56,7 @@ def schwartzExternalProduct
           (by exact_mod_cast le_top)]
       exact (ContinuousMultilinearMap.norm_compContinuousLinearMap_le _ _).trans
         (mul_le_of_le_one_right (norm_nonneg _)
-          (Finset.prod_le_one (fun _ _ => norm_nonneg _)
+          (Finset.prod_le_one₀ (fun _ _ => norm_nonneg _)
             (fun _ _ => ContinuousLinearMap.norm_fst_le ℝ E₁ E₂)))
     have hcg : ∀ j (x : E₁ × E₂),
         ‖iteratedFDeriv ℝ j (ψ.toFun ∘ Prod.snd) x‖ ≤
@@ -68,7 +68,7 @@ def schwartzExternalProduct
           (by exact_mod_cast le_top)]
       exact (ContinuousMultilinearMap.norm_compContinuousLinearMap_le _ _).trans
         (mul_le_of_le_one_right (norm_nonneg _)
-          (Finset.prod_le_one (fun _ _ => norm_nonneg _)
+          (Finset.prod_le_one₀ (fun _ _ => norm_nonneg _)
             (fun _ _ => ContinuousLinearMap.norm_snd_le ℝ E₁ E₂)))
     have hLeib := norm_iteratedFDeriv_mul_le (n := l) hφs hψs x
       (WithTop.coe_le_coe.mpr (le_top (a := (l : ℕ∞))))
