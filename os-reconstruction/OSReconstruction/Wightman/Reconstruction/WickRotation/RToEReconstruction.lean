@@ -1,6 +1,10 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.RToEIntegralClustering
-import OSReconstruction.Wightman.Reconstruction.WickRotation.RToEWickPair
-import OSReconstruction.Wightman.Reconstruction.WickRotation.RToEReflectionPositivity
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.RToEIntegralClustering
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.RToEWickPair
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.RToEReflectionPositivity
+
+@[expose] public section
 
 /-!
 # Full R-to-E Reconstruction

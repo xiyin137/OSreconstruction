@@ -1,25 +1,10 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIAxisPairProductSourceAdapter
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIAxisPairProductSourceAdapter
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -53,7 +38,7 @@ def osiiAxisPairInverseWickBlock
   · intro j
     simp [osiiAxisPairWickBlock, osiiAxisPairInverseWickBlock]
 
-private noncomputable def osiiAxisPairWickTimeUnit : ℂˣ :=
+noncomputable def osiiAxisPairWickTimeUnit : ℂˣ :=
   Units.mk0 Complex.I (by simp)
 
 /-- Complex Wick rotation is a continuous complex-linear equivalence. -/

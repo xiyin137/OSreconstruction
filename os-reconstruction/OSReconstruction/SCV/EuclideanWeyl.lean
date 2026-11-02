@@ -5,18 +5,13 @@ Copyright (c) 2026 ModularPhysics Contributors.
 Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
-import OSReconstruction.SCV.DistributionalEOWKernel
-import Mathlib.Analysis.Calculus.FDeriv.Symmetric
+module
 
+public import OSReconstruction.SCV.DistributionalEOWKernel
+public import Mathlib.Analysis.Calculus.FDeriv.Symmetric
+public import OSReconstruction.SchwartzSeminormCompat
 
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -122,7 +117,7 @@ theorem supportsInOpen_euclideanReflectedTranslate_of_kernelSupport
       simpa [Metric.mem_closedBall, dist_eq_norm] using hyball0
     exact hx hyball
 
-private theorem iteratedFDeriv_sub_euclidean_schwartz
+theorem iteratedFDeriv_sub_euclidean_schwartz_EuclideanWeyl
     {ι : Type*} [Fintype ι]
     (f g : SchwartzMap (EuclideanSpace ℝ ι) ℂ)
     (n : ℕ) (x : EuclideanSpace ℝ ι) :
@@ -257,7 +252,7 @@ theorem euclideanDiffQuotient_iteratedFDeriv_pointwise
       exact
         (iteratedFDeriv_comp_add_right
           (f := (φ : EuclideanSpace ℝ ι → ℂ)) n (t • v) x)
-    rw [iteratedFDeriv_sub_euclidean_schwartz, hshift]
+    rw [iteratedFDeriv_sub_euclidean_schwartz_EuclideanWeyl, hshift]
   change
     iteratedFDeriv ℝ n
       (⇑(t⁻¹ • (euclideanTranslateSchwartzCLM (t • v) φ - φ)) +
@@ -443,7 +438,7 @@ theorem euclideanDiffQuotient_weighted_pointwise_bound
         simpa [K, smul_smul, mul_comm, mul_left_comm, mul_assoc] using
           (iteratedFDeriv_comp_add_right
             (f := (g : EuclideanSpace ℝ ι → ℂ)) n ((s * t) • v) x)
-      rw [iteratedFDeriv_sub_euclidean_schwartz, hshift]
+      rw [iteratedFDeriv_sub_euclidean_schwartz_EuclideanWeyl, hshift]
     have hpoint :
         ‖x‖ ^ k * ‖K (x + s • (t • v)) - K x‖ ≤ C * |s * t| := by
       calc
@@ -454,7 +449,7 @@ theorem euclideanDiffQuotient_weighted_pointwise_bound
                   rw [hiter_eq]
         _ ≤ SchwartzMap.seminorm ℝ k n
               (euclideanTranslateSchwartzCLM ((s * t) • v) g - g) := by
-              exact SchwartzMap.le_seminorm ℂ k n _ x
+              exact SchwartzMap.le_seminorm ℝ k n _ x
         _ ≤ C * |s * t| := hC (s * t) hst_abs
     calc
       ‖‖x‖ ^ k • (K (x + s • (t • v)) - K x)‖
@@ -624,7 +619,7 @@ theorem tendsto_euclideanTranslateSchwartz_nhds_of_isCompactSupport
         change iteratedFDeriv ℝ n (fun z => ψ (z + a0)) x = _
         simpa [H] using
           (iteratedFDeriv_comp_add_right (f := ⇑ψ) n a0 x)
-      rw [iteratedFDeriv_sub_euclidean_schwartz, htrans_a, htrans_a0]
+      rw [iteratedFDeriv_sub_euclidean_schwartz_EuclideanWeyl, htrans_a, htrans_a0]
     rw [hEq]
     have hhalf : M * (ε / (2 * M)) = ε / 2 := by
       field_simp [hMpos.ne']
@@ -656,7 +651,7 @@ theorem tendsto_euclideanTranslateSchwartz_nhds_of_isCompactSupport
         iteratedFDeriv ℝ n
           (⇑(euclideanTranslateSchwartzCLM a ψ -
             euclideanTranslateSchwartzCLM a0 ψ)) x = 0 := by
-      rw [iteratedFDeriv_sub_euclidean_schwartz]
+      rw [iteratedFDeriv_sub_euclidean_schwartz_EuclideanWeyl]
       rw [show iteratedFDeriv ℝ n (⇑(euclideanTranslateSchwartzCLM a ψ)) x =
             iteratedFDeriv ℝ n (⇑ψ) (x + a) by
               change iteratedFDeriv ℝ n (fun z => ψ (z + a)) x = _

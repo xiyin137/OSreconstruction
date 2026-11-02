@@ -1,4 +1,8 @@
-import OSReconstruction.Wightman.Reconstruction.ForwardTubeDistributions
+module
+
+public import OSReconstruction.Wightman.Reconstruction.ForwardTubeDistributions
+
+@[expose] public section
 
 /-!
 # Flattened n-point Schwartz coordinates

@@ -1,18 +1,13 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIBlockRadialPartialKernelSeminorm
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanE0FiniteSeminorm
-import OSReconstruction.Wightman.Reconstruction.WickRotation.BHWReduced
-import OSReconstruction.Wightman.Reconstruction.SchwingerOS
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIBlockRadialPartialKernelSeminorm
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanE0FiniteSeminorm
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.BHWReduced
+public import OSReconstruction.Wightman.Reconstruction.SchwingerOS
 
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -47,7 +42,7 @@ noncomputable def osiiStep4NPointFlatCLM (d k : Nat) :
       (finProdFinEquiv.symm (finProdFinEquiv (i, mu))).2 = x i mu
   rw [finProdFinEquiv.symm_apply_apply]
 
-private theorem reducedTestLift_tsupport_subset_local
+theorem reducedTestLift_tsupport_subset_local
     (d m : Nat)
     (chi : SchwartzMap (SpacetimeDim d) Complex)
     (phi : SchwartzNPoint d m) :

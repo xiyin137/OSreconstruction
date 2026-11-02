@@ -5,59 +5,21 @@ Copyright (c) 2025 ModularPhysics Contributors. All rights reserved.
 Released under Apache 2.0 license.
 Authors: Michael R. Douglas, ModularPhysics Contributors
 -/
-import OSReconstruction.SCV.ConeCutoffSchwartz
-import OSReconstruction.SCV.FourierLaplaceCore
-import OSReconstruction.SCV.Osgood
-import Init
-import Mathlib.Analysis.SpecialFunctions.Complex.Analytic
-import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
-import OSReconstruction.GeneralResults.SchwartzCutoffExp
-import OSReconstruction.GeneralResults.SchwartzDamping
-import OSReconstruction.GeneralResults.SchwartzFubini
-import Mathlib.MeasureTheory.Measure.Haar.InnerProductSpace
-import Mathlib.Algebra.Order.Chebyshev
+module
 
+public import OSReconstruction.SCV.ConeCutoffSchwartz
+public import OSReconstruction.SCV.FourierLaplaceCore
+public import OSReconstruction.SCV.Osgood
+public import Init
+public import Mathlib.Analysis.SpecialFunctions.Complex.Analytic
+public import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
+public import OSReconstruction.GeneralResults.SchwartzCutoffExp
+public import OSReconstruction.GeneralResults.SchwartzDamping
+public import OSReconstruction.GeneralResults.SchwartzFubini
+public import Mathlib.MeasureTheory.Measure.Haar.InnerProductSpace
+public import Mathlib.Algebra.Order.Chebyshev
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 open scoped Classical ComplexConjugate BigOperators NNReal ContDiff
 open MeasureTheory Complex
@@ -184,7 +146,7 @@ theorem update_mem_tubeDomain_of_small {m : ℕ}
 
 
 
-private lemma pairing_self_lower_bound {m : ℕ} (ξ : Fin m → ℝ) :
+lemma pairing_self_lower_bound {m : ℕ} (ξ : Fin m → ℝ) :
     ‖ξ‖ ^ 2 ≤ ((Fintype.card (Fin m) : ℝ) + 1) * ∑ i, ξ i * ξ i := by
   have hsum_nonneg : 0 ≤ ∑ i, ‖ξ i‖ := by
     exact Finset.sum_nonneg fun i _ => norm_nonneg _
@@ -218,7 +180,7 @@ For an open cone `C`, the pairing with dual-cone vectors is bounded below by a
 universal multiple of `Metric.infDist y Cᶜ`.
 
 The constant here is crude but sufficient for Vladimirov-type growth bounds. -/
-private lemma dualConeFlat_coercivity_infDist
+lemma dualConeFlat_coercivity_infDist
     {m : ℕ} {C : Set (Fin m → ℝ)}
     (hC_open : IsOpen C) (hC_cone : IsCone C) :
     ∃ c₀ > 0, ∀ (y : Fin m → ℝ) (hy : y ∈ C) (ξ : Fin m → ℝ) (hξ : ξ ∈ DualConeFlat C),
@@ -359,13 +321,13 @@ private lemma dualConeFlat_coercivity_infDist
             field_simp [show ((Fintype.card (Fin m) : ℝ) + 1) ≠ 0 by linarith]
     _ ≤ ∑ i, y i * ξ i := hmain
 
-private lemma infDist_compl_le_infDist_zero_add_norm
+lemma infDist_compl_le_infDist_zero_add_norm
     {m : ℕ} {C : Set (Fin m → ℝ)} (y : Fin m → ℝ) :
     Metric.infDist y Cᶜ ≤ Metric.infDist (0 : Fin m → ℝ) Cᶜ + ‖y‖ := by
   simpa [dist_eq_norm] using
     (Metric.infDist_le_infDist_add_dist (s := Cᶜ) (x := y) (y := (0 : Fin m → ℝ)))
 
-private lemma subsingleton_of_compl_empty
+lemma subsingleton_of_compl_empty
     {m : ℕ} {C : Set (Fin m → ℝ)} (hC_salient : IsSalientCone C)
     (hCempty : Cᶜ = (∅ : Set (Fin m → ℝ))) :
     Subsingleton (Fin m → ℝ) := by
@@ -386,7 +348,7 @@ private lemma subsingleton_of_compl_empty
     · simpa [hCuniv]
   simpa [hy₁, hy₂]
 
-private lemma radius_mul_im_norm_le_one {m : ℕ} (z : Fin m → ℂ) :
+lemma radius_mul_im_norm_le_one {m : ℕ} (z : Fin m → ℂ) :
     multiDimPsiZRadius z * ‖fun i => (z i).im‖ ≤ 1 := by
   let t : ℝ := ‖fun i => (z i).im‖
   have ht : 0 ≤ t := norm_nonneg _
@@ -399,7 +361,7 @@ private lemma radius_mul_im_norm_le_one {m : ℕ} (z : Fin m → ℂ) :
       nlinarith
 
 set_option maxHeartbeats 800000 in
-private theorem multiDimPsiZDynamic_pointwise_vladimirov
+theorem multiDimPsiZDynamic_pointwise_vladimirov
     {m : ℕ} {C : Set (Fin m → ℝ)}
     (hC_open : IsOpen C) (hC_conv : Convex ℝ C)
     (hC_cone : IsCone C) (hC_salient : IsSalientCone C)
@@ -917,13 +879,13 @@ theorem psiZRSchwartz_seminorm_vladimirovBound
     · exact pow_nonneg hdist_nn _
   exact SchwartzMap.seminorm_le_bound ℝ k n f hMnn (hpw z hz)
 
-private def multiDimPsiExpCLM {m : ℕ} (z : Fin m → ℂ) :
+def multiDimPsiExpCLM {m : ℕ} (z : Fin m → ℂ) :
     (Fin m → ℝ) →L[ℝ] ℂ :=
   ∑ i : Fin m, ((I * z i) : ℂ) •
     (Complex.ofRealCLM.comp
       (ContinuousLinearMap.proj (R := ℝ) (ι := Fin m) (φ := fun _ => ℝ) i))
 
-private lemma multiDimPsiExpCLM_apply {m : ℕ} (z : Fin m → ℂ) (ξ : Fin m → ℝ) :
+lemma multiDimPsiExpCLM_apply {m : ℕ} (z : Fin m → ℂ) (ξ : Fin m → ℝ) :
     multiDimPsiExpCLM z ξ = I * ∑ i, z i * (ξ i : ℂ) := by
   simp only [multiDimPsiExpCLM, ContinuousLinearMap.coe_sum', Finset.sum_apply,
     ContinuousLinearMap.coe_smul', Pi.smul_apply, ContinuousLinearMap.coe_comp',
@@ -933,7 +895,7 @@ private lemma multiDimPsiExpCLM_apply {m : ℕ} (z : Fin m → ℂ) (ξ : Fin m 
   simp
   ring
 
-private lemma multiDimPsiExpCLM_norm_le {m : ℕ} (z : Fin m → ℂ) :
+lemma multiDimPsiExpCLM_norm_le {m : ℕ} (z : Fin m → ℂ) :
     ‖multiDimPsiExpCLM z‖ ≤ (Fintype.card (Fin m) : ℝ) * ‖z‖ := by
   apply ContinuousLinearMap.opNorm_le_bound _ (by positivity)
   intro ξ
@@ -954,7 +916,7 @@ private lemma multiDimPsiExpCLM_norm_le {m : ℕ} (z : Fin m → ℂ) :
       simp [Finset.sum_const, Finset.card_univ, nsmul_eq_mul]
     _ = ((Fintype.card (Fin m) : ℝ) * ‖z‖) * ‖ξ‖ := by ring
 
-private lemma imag_norm_sub_le {m : ℕ} (z z₀ : Fin m → ℂ) :
+lemma imag_norm_sub_le {m : ℕ} (z z₀ : Fin m → ℂ) :
     ‖(fun i => (z i).im) - fun i => (z₀ i).im‖ ≤ ‖z - z₀‖ := by
   refine (pi_norm_le_iff_of_nonneg (norm_nonneg _)).2 ?_
   intro i
@@ -965,7 +927,7 @@ private lemma imag_norm_sub_le {m : ℕ} (z z₀ : Fin m → ℂ) :
       simpa [Real.norm_eq_abs] using Complex.abs_im_le_norm ((z - z₀) i)
     _ ≤ ‖z - z₀‖ := norm_le_pi_norm (z - z₀) i
 
-private lemma pairing_abs_le_card_sq {m : ℕ} (y ξ : Fin m → ℝ) :
+lemma pairing_abs_le_card_sq {m : ℕ} (y ξ : Fin m → ℝ) :
     |∑ i, y i * ξ i| ≤ ((Fintype.card (Fin m) : ℝ) ^ 2) * ‖y‖ * ‖ξ‖ := by
   have hy_sum :
       ∑ i, ‖y i‖ ≤ (Fintype.card (Fin m) : ℝ) * ‖y‖ := by
@@ -992,7 +954,7 @@ private lemma pairing_abs_le_card_sq {m : ℕ} (y ξ : Fin m → ℝ) :
       _ = ((Fintype.card (Fin m) : ℝ) ^ 2) * ‖y‖ * ‖ξ‖ := by ring
   simpa [Real.norm_eq_abs] using hnorm
 
-private lemma dualConeFlat_coercivity_perturb
+lemma dualConeFlat_coercivity_perturb
     {m : ℕ} {C : Set (Fin m → ℝ)} {y₀ y : Fin m → ℝ} {c₀ : ℝ}
     (hc₀ : ∀ ξ ∈ DualConeFlat C, ∑ i, y₀ i * ξ i ≥ c₀ * ‖ξ‖)
     (hy : ((Fintype.card (Fin m) : ℝ) ^ 2) * ‖y - y₀‖ ≤ c₀ / 2) :
@@ -1204,7 +1166,7 @@ theorem multiDimPsiZ_local_uniform_seminorm_bound
       (le_of_lt hB_pos) hpoint'
   simpa [multiDimPsiZ, multiDimPsiZR, χ] using hseminorm
 
-private def multiDimPsiZCoordDeriv
+def multiDimPsiZCoordDeriv
     {m : ℕ} {C : Set (Fin m → ℝ)}
     (hC_open : IsOpen C) (hC_conv : Convex ℝ C)
     (hC_cone : IsCone C) (hC_salient : IsSalientCone C)
@@ -1213,7 +1175,7 @@ private def multiDimPsiZCoordDeriv
   SchwartzMap.smulLeftCLM ℂ (fun ξ : Fin m → ℝ => I * (ξ j : ℂ))
     (multiDimPsiZ C hC_open hC_conv hC_cone hC_salient z hz)
 
-private lemma multiDimPsiZCoordDeriv_apply
+lemma multiDimPsiZCoordDeriv_apply
     {m : ℕ} {C : Set (Fin m → ℝ)}
     (hC_open : IsOpen C) (hC_conv : Convex ℝ C)
     (hC_cone : IsCone C) (hC_salient : IsSalientCone C)
@@ -1234,7 +1196,7 @@ private lemma multiDimPsiZCoordDeriv_apply
     (SchwartzMap.smulLeftCLM_apply_apply htemp
       (multiDimPsiZ C hC_open hC_conv hC_cone hC_salient z hz) ξ)
 
-private lemma multiDimPsiZ_update_apply_eq_mul_cexp
+lemma multiDimPsiZ_update_apply_eq_mul_cexp
     {m : ℕ} {C : Set (Fin m → ℝ)}
     (hC_open : IsOpen C) (hC_conv : Convex ℝ C)
     (hC_cone : IsCone C) (hC_salient : IsSalientCone C)
@@ -1271,7 +1233,7 @@ private lemma multiDimPsiZ_update_apply_eq_mul_cexp
             simp
   rw [hsum, mul_add, Complex.exp_add]
 
-private lemma multiDimPsiZ_update_sub_sub_coordDeriv_apply
+lemma multiDimPsiZ_update_sub_sub_coordDeriv_apply
     {m : ℕ} {C : Set (Fin m → ℝ)}
     (hC_open : IsOpen C) (hC_conv : Convex ℝ C)
     (hC_cone : IsCone C) (hC_salient : IsSalientCone C)
@@ -1288,7 +1250,7 @@ private lemma multiDimPsiZ_update_sub_sub_coordDeriv_apply
     multiDimPsiZCoordDeriv_apply hC_open hC_conv hC_cone hC_salient z hz j ξ]
   ring
 
-private lemma norm_iteratedFDeriv_cexp_sub_one_bound
+lemma norm_iteratedFDeriv_cexp_sub_one_bound
     {m : ℕ} (L : (Fin m → ℝ) →L[ℝ] ℂ) {c : ℝ}
     (hc : 0 ≤ c) (hL_one : ‖L‖ ≤ 1) (hL_c : ‖L‖ ≤ c)
     (i : ℕ) (ξ : Fin m → ℝ) :
@@ -1351,16 +1313,16 @@ private lemma norm_iteratedFDeriv_cexp_sub_one_bound
               positivity
             nlinarith
 
-private def expTaylorLinearRemainderQuotPW (h : ℂ) : ℝ → ℂ :=
+def expTaylorLinearRemainderQuotPW (h : ℂ) : ℝ → ℂ :=
   fun ξ => (Complex.exp (I * h * ξ) - 1 - I * h * ξ) / h
 
-private theorem iteratedDeriv_expTaylorLinearRemainderQuotPW_zero
+theorem iteratedDeriv_expTaylorLinearRemainderQuotPW_zero
     (h : ℂ) (ξ : ℝ) :
     iteratedDeriv 0 (expTaylorLinearRemainderQuotPW h) ξ =
       (Complex.exp (I * h * ξ) - 1 - I * h * ξ) / h := by
   simp [expTaylorLinearRemainderQuotPW]
 
-private theorem iteratedDeriv_expTaylorLinearRemainderQuotPW_one
+theorem iteratedDeriv_expTaylorLinearRemainderQuotPW_one
     (h : ℂ) (ξ : ℝ) :
     iteratedDeriv 1 (expTaylorLinearRemainderQuotPW h) ξ =
       I * (Complex.exp (I * h * ξ) - 1) := by
@@ -1384,7 +1346,7 @@ private theorem iteratedDeriv_expTaylorLinearRemainderQuotPW_one
   · field_simp [hh]
     simp [c, mul_assoc, mul_left_comm, mul_comm, sub_eq_add_neg]
 
-private theorem iteratedDeriv_expTaylorLinearRemainderQuotPW_succ_succ
+theorem iteratedDeriv_expTaylorLinearRemainderQuotPW_succ_succ
     (m : ℕ) (h : ℂ) (ξ : ℝ) :
     iteratedDeriv (m + 2) (expTaylorLinearRemainderQuotPW h) ξ =
       ((I * h) ^ (m + 2) / h) * Complex.exp (I * h * ξ) := by
@@ -1430,7 +1392,7 @@ private theorem iteratedDeriv_expTaylorLinearRemainderQuotPW_succ_succ
               _ = (((I * h) ^ (m + 2)) / h) * Complex.exp (c * ξ) := by rw [hscalar]
               _ = (((I * h) ^ (m + 2)) / h) * Complex.exp (I * h * ξ) := by simp [c]
 
-private theorem expTaylorLinearRemainderQuotPW_contDiff (h : ℂ) :
+theorem expTaylorLinearRemainderQuotPW_contDiff (h : ℂ) :
     ContDiff ℝ (↑(⊤ : ℕ∞)) (expTaylorLinearRemainderQuotPW h) := by
   let c : ℂ := I * h
   have hexp : ContDiff ℝ (↑(⊤ : ℕ∞)) (fun ξ : ℝ => Complex.exp ((ξ : ℂ) * c)) := by
@@ -1442,7 +1404,7 @@ private theorem expTaylorLinearRemainderQuotPW_contDiff (h : ℂ) :
   simpa [c, div_eq_mul_inv, sub_eq_add_neg, add_assoc, mul_assoc, mul_left_comm, mul_comm] using
     (contDiff_const.mul ((hexp.sub contDiff_const).sub hlin))
 
-private theorem norm_iteratedDeriv_expTaylorLinearRemainderQuotPW_le
+theorem norm_iteratedDeriv_expTaylorLinearRemainderQuotPW_le
     (i : ℕ) (h : ℂ) (hh1 : ‖h‖ ≤ 1) (ξ : ℝ) :
     ‖iteratedDeriv i (expTaylorLinearRemainderQuotPW h) ξ‖ ≤
       ‖h‖ * (i.factorial : ℝ) * (1 + |ξ|) ^ 2 * Real.exp (‖h‖ * |ξ|) := by
@@ -1553,7 +1515,7 @@ private theorem norm_iteratedDeriv_expTaylorLinearRemainderQuotPW_le
               _ = ‖h‖ * ((m + 2).factorial : ℝ) * (1 + |ξ|) ^ 2 * Real.exp (‖h‖ * |ξ|) := by
                       ring
 
-private lemma norm_iteratedFDeriv_differenceQuotient_remainder_bound
+lemma norm_iteratedFDeriv_differenceQuotient_remainder_bound
     {m : ℕ} (h : ℂ) (j : Fin m) {c : ℝ}
     (hh1 : ‖h‖ ≤ 1) (hhc : ‖h‖ ≤ c)
     (i : ℕ) (ξ : Fin m → ℝ) :
@@ -2389,7 +2351,7 @@ theorem multiDimPsiZR_eval_eq_of_support {m : ℕ}
     (psiZRSchwartz hC_open hC_cone hC_salient _ R₂ hR₂ z hz) ξ
   exact psiZRaw_eq_on_dualCone _ hR₁ hR₂ z ξ hξ_dual
 
-private theorem finset_sum_schwartzSeminorm_apply
+theorem finset_sum_schwartzSeminorm_apply
     (s : Finset (ℕ × ℕ)) (φ : SchwartzMap (Fin m → ℝ) ℂ) :
     (∑ p ∈ s, schwartzSeminormFamily ℂ (Fin m → ℝ) ℂ p) φ =
       ∑ p ∈ s, (schwartzSeminormFamily ℂ (Fin m → ℝ) ℂ p) φ := by
@@ -2399,7 +2361,7 @@ private theorem finset_sum_schwartzSeminorm_apply
   | insert a s ha ih =>
       simp [ha, Seminorm.add_apply, ih]
 
-private theorem schwartz_clm_bound_by_finset_sup_aux
+theorem schwartz_clm_bound_by_finset_sup_aux
     (T : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ) :
     ∃ (s : Finset (ℕ × ℕ)) (C : ℝ≥0), C ≠ 0 ∧
       ∀ (f : SchwartzMap (Fin m → ℝ) ℂ),
@@ -2742,7 +2704,7 @@ noncomputable def physicsFourierFlatCLM {m : ℕ} :
   simp [physicsFourierFlatCLM]
 
 -- Pointwise integral formula for the flat Fourier transform.
-private theorem fourierTransformFlat_eval
+theorem fourierTransformFlat_eval
     (f : SchwartzMap (Fin m → ℝ) ℂ) (ξ : Fin m → ℝ) :
     (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
         (EuclideanSpace.equiv (Fin m) ℝ).symm
@@ -2786,19 +2748,19 @@ private theorem fourierTransformFlat_eval
           congr 1
           simp [Finset.mul_sum, mul_assoc, mul_left_comm, mul_comm]
 
-private noncomputable def dualConeCutoff {m : ℕ} (C : Set (Fin m → ℝ)) :
+noncomputable def dualConeCutoff {m : ℕ} (C : Set (Fin m → ℝ)) :
     FixedConeCutoff (DualConeFlat C) :=
   (fixedConeCutoff_exists (DualConeFlat C) (dualConeFlat_closed C)).some
 
-private def etaPairingCLM {m : ℕ} (η : Fin m → ℝ) : (Fin m → ℝ) →L[ℝ] ℝ :=
+def etaPairingCLM {m : ℕ} (η : Fin m → ℝ) : (Fin m → ℝ) →L[ℝ] ℝ :=
   ∑ i, (η i) •
     (ContinuousLinearMap.proj (R := ℝ) (ι := Fin m) (φ := fun _ => ℝ) i)
 
-@[simp] private lemma etaPairingCLM_apply {m : ℕ} (η ξ : Fin m → ℝ) :
+@[simp] lemma etaPairingCLM_apply {m : ℕ} (η ξ : Fin m → ℝ) :
     etaPairingCLM η ξ = ∑ i, η i * ξ i := by
   simp [etaPairingCLM]
 
-private lemma dualConeCutoff_hasTemperateGrowthComplex
+lemma dualConeCutoff_hasTemperateGrowthComplex
     {m : ℕ} {C : Set (Fin m → ℝ)} :
     (fun ξ : Fin m → ℝ => ((dualConeCutoff C).val ξ : ℂ)).HasTemperateGrowth := by
   refine ⟨?_, fun n => ?_⟩
@@ -2819,7 +2781,7 @@ private lemma dualConeCutoff_hasTemperateGrowthComplex
       _ = Cn * (1 + ‖ξ‖) ^ (0 : ℕ) := by ring
 
 /-- A fixed cone cutoff is identically `1` on the dual cone itself. -/
-private lemma fixedConeCutoff_eq_one_on_dualCone
+lemma fixedConeCutoff_eq_one_on_dualCone
     {m : ℕ} {C : Set (Fin m → ℝ)}
     (χ : FixedConeCutoff (DualConeFlat C)) {ξ : Fin m → ℝ}
     (hξ : ξ ∈ DualConeFlat C) :
@@ -2847,7 +2809,7 @@ theorem multiDimPsiZExt_apply_of_mem_dualCone {m : ℕ}
 /-- The point `x + iεη` lies in the tube domain `T(C)` when `ε > 0` and `η ∈ C`.
 
     Proof: `Im(x + iεη)_j = ε * η_j`, so `Im(z) = ε • η ∈ C` by the cone property. -/
-private lemma realPlusIEpsEta_mem_tubeDomain
+lemma realPlusIEpsEta_mem_tubeDomain
     (C : Set (Fin m → ℝ)) (hC_cone : IsCone C)
     (x : Fin m → ℝ) (η : Fin m → ℝ) (hη : η ∈ C)
     (ε : ℝ) (hε : 0 < ε) :
@@ -2905,7 +2867,7 @@ theorem physicsFourierFlatCLM_integral
 /-- Pointwise identification of the Fubini-exchanged Schwartz kernel with the
 regularized physics Fourier transform. This is the remaining kernel-computation
 step in the boundary-value theorem. -/
-private theorem regularizedKernel_pointwise
+theorem regularizedKernel_pointwise
     {m : ℕ}
     (C : Set (Fin m → ℝ)) (hC_open : IsOpen C) (hC_conv : Convex ℝ C)
     (hC_cone : IsCone C) (hC_salient : IsSalientCone C)

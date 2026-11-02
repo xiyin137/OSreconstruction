@@ -1,4 +1,8 @@
-import OSReconstruction.SCV.HeadBlockIntegral
+module
+
+public import OSReconstruction.SCV.HeadBlockIntegral
+
+@[expose] public section
 
 /-!
 # Quantitative basepoint integration
@@ -25,7 +29,7 @@ theorem osiiFiberConstant_nonneg (m : Nat) : 0 <= osiiFiberConstant m := by
   exact mul_nonneg (by positivity)
     (integral_nonneg fun _ => Real.rpow_nonneg (by positivity) _)
 
-private theorem norm_pow_mul_realFiberIntegralRaw_le_zero {m n : Nat}
+theorem norm_pow_mul_realFiberIntegralRaw_le_zero {m n : Nat}
     {V : Type*} [NormedAddCommGroup V] [NormedSpace Real V] [CompleteSpace V]
     (F : SchwartzMap ((Fin n -> Real) × (Fin m -> Real)) V) (a : Nat)
     (u : Fin n -> Real) :
@@ -69,7 +73,7 @@ private theorem norm_pow_mul_realFiberIntegralRaw_le_zero {m n : Nat}
       exact Filter.Eventually.of_forall fun t => by simp [norm_smul, c]
     _ <= _ := hbound
 
-private theorem seminorm_realFiberBaseFDeriv_le {m n : Nat}
+theorem seminorm_realFiberBaseFDeriv_le {m n : Nat}
     {V : Type*} [NormedAddCommGroup V] [NormedSpace Real V] [CompleteSpace V]
     (F : SchwartzMap ((Fin n -> Real) × (Fin m -> Real)) V) (a r : Nat) :
     SchwartzMap.seminorm Real a r (SCV.realFiberBaseFDerivSchwartz F) <=

@@ -1,5 +1,9 @@
-import OSReconstruction.GeneralResults.FinProductIntegral
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIAxisPairProductSourceGeometry
+module
+
+public import OSReconstruction.GeneralResults.FinProductIntegral
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIAxisPairProductSourceGeometry
+
+@[expose] public section
 
 /-!
 # Volume preservation of the Chapter V block-global time chart
@@ -55,11 +59,11 @@ theorem integral_finCons_eq
   simp_rw [congrFun he]
   exact hmp.symm.integral_comp' F
 
-private def section43TimeAsOnePointME (n : ℕ) :
+def section43TimeAsOnePointME (n : ℕ) :
     (Fin n → ℝ) ≃ᵐ (Fin n → Fin 1 → ℝ) :=
   (section43TimeAsOnePointCLE n).toHomeomorph.toMeasurableEquiv
 
-private theorem section43TimeAsOnePointME_measurePreserving (n : ℕ) :
+theorem section43TimeAsOnePointME_measurePreserving (n : ℕ) :
     MeasurePreserving
       (section43TimeAsOnePointME n)
       (volume : Measure (Fin n → ℝ))
@@ -83,7 +87,7 @@ private theorem section43TimeAsOnePointME_measurePreserving (n : ℕ) :
     (volume : Measure (Fin n → Fin 1 → ℝ))
   exact MeasureTheory.volume_preserving_pi hcoord
 
-private def section43ScalarDiffME (n : ℕ) :
+def section43ScalarDiffME (n : ℕ) :
     (Fin n → ℝ) ≃ᵐ (Fin n → ℝ) :=
   (section43ScalarDiffCLE n).toHomeomorph.toMeasurableEquiv
 
@@ -115,7 +119,7 @@ theorem section43ScalarDiffME_measurePreserving (n : ℕ) :
       BHW.realDiffCoordCLE_apply]
 
 /-- Appending two finite real coordinate blocks preserves Lebesgue measure. -/
-private theorem finAppendCLE_measurePreserving (n m : ℕ) :
+theorem finAppendCLE_measurePreserving (n m : ℕ) :
     MeasurePreserving
       (⇑(SCV.finAppendCLE n m))
       (volume : Measure ((Fin n → ℝ) × (Fin m → ℝ)))
@@ -138,7 +142,7 @@ private theorem finAppendCLE_measurePreserving (n m : ℕ) :
 
 /-- Splitting a finite real coordinate block into two blocks preserves
 Lebesgue measure. -/
-private theorem finAppendCLE_symm_measurePreserving (n m : ℕ) :
+theorem finAppendCLE_symm_measurePreserving (n m : ℕ) :
     MeasurePreserving
       (⇑(SCV.finAppendCLE n m).symm)
       (volume : Measure (Fin (n + m) → ℝ))
@@ -152,11 +156,11 @@ private theorem finAppendCLE_symm_measurePreserving (n m : ℕ) :
     simpa [e] using finAppendCLE_measurePreserving n m
   simpa [e] using MeasurePreserving.symm e he
 
-private def axisPairBlockwiseTimeDiffME (n m : ℕ) :
+def axisPairBlockwiseTimeDiffME (n m : ℕ) :
     (Fin (n + m) → ℝ) ≃ᵐ (Fin (n + m) → ℝ) :=
   (osiiAxisPairBlockwiseTimeDiffCLE n m).toHomeomorph.toMeasurableEquiv
 
-private theorem axisPairBlockwiseTimeDiffME_measurePreserving
+theorem axisPairBlockwiseTimeDiffME_measurePreserving
     (n m : ℕ) :
     MeasurePreserving
       (axisPairBlockwiseTimeDiffME n m)
@@ -196,12 +200,12 @@ private theorem axisPairBlockwiseTimeDiffME_measurePreserving
     simp [axisPairBlockwiseTimeDiffME,
       osiiAxisPairBlockwiseTimeDiffCLE, section43ScalarDiffME]
 
-private def reflectReverseLeftTimeME (n m : ℕ) :
+def reflectReverseLeftTimeME (n m : ℕ) :
     (Fin (n + m) → ℝ) ≃ᵐ (Fin (n + m) → ℝ) :=
   (osiiAxisPairReflectReverseLeftTimeCLE n m
     ).toHomeomorph.toMeasurableEquiv
 
-private theorem reflectReverseLeftBlock_measurePreserving (n : ℕ) :
+theorem reflectReverseLeftBlock_measurePreserving (n : ℕ) :
     MeasurePreserving
       (fun x : Fin n → ℝ => fun i => -x (Fin.rev i))
       (volume : Measure (Fin n → ℝ))
@@ -235,7 +239,7 @@ private theorem reflectReverseLeftBlock_measurePreserving (n : ℕ) :
         (volume : Measure ℝ)
   simpa [Function.comp_def] using hneg.comp hrev
 
-private theorem reflectReverseLeftTimeME_measurePreserving
+theorem reflectReverseLeftTimeME_measurePreserving
     (n m : ℕ) :
     MeasurePreserving
       (reflectReverseLeftTimeME n m)
@@ -289,7 +293,7 @@ private theorem reflectReverseLeftTimeME_measurePreserving
   rw [heq]
   exact hcomp
 
-private def axisPairBlockGlobalTimeME (n m : ℕ) :
+def axisPairBlockGlobalTimeME (n m : ℕ) :
     (Fin (n + m) → ℝ) ≃ᵐ (Fin (n + m) → ℝ) :=
   (osiiAxisPairBlockGlobalTimeCLE n m
     ).toHomeomorph.toMeasurableEquiv

@@ -3,9 +3,13 @@ Copyright (c) 2026 ModularPhysics Contributors.
 Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
-import OSReconstruction.SCV.DistributionalEOWDbar
-import Mathlib.Geometry.Manifold.PartitionOfUnity
-import Mathlib.Topology.MetricSpace.Thickening
+module
+
+public import OSReconstruction.SCV.DistributionalEOWDbar
+public import Mathlib.Geometry.Manifold.PartitionOfUnity
+public import Mathlib.Topology.MetricSpace.Thickening
+
+@[expose] public section
 
 /-!
 # Smooth Cutoffs for the Local Distributional EOW Route

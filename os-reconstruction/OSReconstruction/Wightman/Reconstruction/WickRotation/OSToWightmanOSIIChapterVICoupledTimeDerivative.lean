@@ -1,5 +1,9 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVICoupledTimeSlice
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIFullBoundary
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVICoupledTimeSlice
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIFullBoundary
+
+@[expose] public section
 
 /-!
 # Tested time derivatives on coupled sources
@@ -18,7 +22,7 @@ open scoped Classical Interval
 
 namespace OSReconstruction
 
-private def schwartzIntervalIntegralCLM
+def schwartzIntervalIntegralCLM
     {E : Type*} [NormedAddCommGroup E] [NormedSpace Real E]
     (L : Real -> SchwartzMap E Complex →L[Complex] Complex)
     (a b : Real)
@@ -96,7 +100,7 @@ theorem continuousOn_coupledTimeSlice_ray
     (continuous_id.smul continuous_const).continuousOn
     (fun u hu => osiiTimePositiveCone_isCone k eta heta u hu)
 
-private theorem positive_of_mem_uIcc {a b u : Real}
+theorem positive_of_mem_uIcc {a b u : Real}
     (ha : 0 < a) (hb : 0 < b) (hu : u ∈ uIcc a b) : 0 < u :=
   (lt_min ha hb).trans_le hu.1
 

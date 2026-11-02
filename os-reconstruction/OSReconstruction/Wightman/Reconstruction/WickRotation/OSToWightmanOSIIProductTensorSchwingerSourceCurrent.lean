@@ -1,21 +1,15 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import Init
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIDeltaSmearing
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanSemigroup
-import OSReconstruction.SCV.Osgood
-import OSReconstruction.SCV.TotallyRealIdentity
-import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceTimeProduct
+module
 
+public import Init
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIDeltaSmearing
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanSemigroup
+public import OSReconstruction.SCV.Osgood
+public import OSReconstruction.SCV.TotallyRealIdentity
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceTimeProduct
 
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 

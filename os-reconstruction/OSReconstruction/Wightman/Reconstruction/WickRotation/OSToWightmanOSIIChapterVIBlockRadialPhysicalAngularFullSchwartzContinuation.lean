@@ -1,5 +1,9 @@
-import OSReconstruction.SCV.SchwartzComplete
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIBlockRadialPhysicalAngularContinuation
+module
+
+public import OSReconstruction.SCV.SchwartzComplete
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIBlockRadialPhysicalAngularContinuation
+
+@[expose] public section
 
 /-!
 # Source-linear physical angular continuation

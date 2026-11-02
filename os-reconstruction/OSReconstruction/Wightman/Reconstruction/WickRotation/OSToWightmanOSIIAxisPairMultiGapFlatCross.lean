@@ -1,21 +1,10 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIAxisPairMultiGapSourcewiseMZ
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIAxisPairMultiGapSourcewiseMZ
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -315,7 +304,7 @@ structure OSIIAxisPairMultiGapFlatCrossData
 
 namespace OSIIAxisPairMultiGapFlatCrossData
 
-private theorem ne_flattenIndex_of_ne
+theorem ne_flattenIndex_of_ne
     {p q : osiiAxisPairMultiGapIndex d k}
     (hpq : p ≠ q) :
     osiiAxisPairMultiGapFlattenIndex p ≠

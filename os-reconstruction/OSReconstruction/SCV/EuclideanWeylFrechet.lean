@@ -5,19 +5,14 @@ Copyright (c) 2026 ModularPhysics Contributors.
 Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
-import OSReconstruction.SCV.EuclideanWeyl
-import Mathlib.Analysis.Calculus.ContDiff.FiniteDimension
-import Mathlib.Analysis.Normed.Module.FiniteDimension
-import Mathlib.Topology.Algebra.Module.FiniteDimensionBilinear
+module
 
+public import OSReconstruction.SCV.EuclideanWeyl
+public import Mathlib.Analysis.Calculus.ContDiff.FiniteDimension
+public import Mathlib.Analysis.Normed.Module.FiniteDimension
+public import Mathlib.Topology.Algebra.Module.FiniteDimensionBilinear
 
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -51,7 +46,7 @@ theorem euclideanLineDerivDirectionCLM_apply
       (∂_{v} ρ : SchwartzMap (EuclideanSpace ℝ ι) ℂ) := by
   simp [euclideanLineDerivDirectionCLM]
 
-private theorem seminorm_finset_sum_le {V : Type*} [AddCommGroup V] [Module ℝ V]
+theorem seminorm_finset_sum_le {V : Type*} [AddCommGroup V] [Module ℝ V]
     (p : Seminorm ℝ V) {α : Type*} (s : Finset α) (g : α → V) :
     p (∑ i ∈ s, g i) ≤ ∑ i ∈ s, p (g i) := by
   induction s using Finset.cons_induction with
@@ -63,7 +58,7 @@ private theorem seminorm_finset_sum_le {V : Type*} [AddCommGroup V] [Module ℝ 
           map_add_le_add p _ _
         _ ≤ p (g a) + ∑ i ∈ s, p (g i) := by linarith
 
-private theorem iteratedFDeriv_sub_euclidean_schwartz
+theorem iteratedFDeriv_sub_euclidean_schwartz_EuclideanWeylFrechet
     {ι : Type*} [Fintype ι]
     (f g : SchwartzMap (EuclideanSpace ℝ ι) ℂ)
     (n : ℕ) (x : EuclideanSpace ℝ ι) :
@@ -81,7 +76,7 @@ private theorem iteratedFDeriv_sub_euclidean_schwartz
     hneg, iteratedFDeriv_neg_apply]
   simp [sub_eq_add_neg]
 
-private theorem euclidean_coord_norm_le_norm
+theorem euclidean_coord_norm_le_norm
     {ι : Type*} [Fintype ι]
     (v : EuclideanSpace ℝ ι) (i : ι) : ‖v i‖ ≤ ‖v‖ := by
   have hsq_i : ‖v i‖ ^ 2 ≤ ∑ j : ι, ‖v j‖ ^ 2 := by
@@ -91,7 +86,7 @@ private theorem euclidean_coord_norm_le_norm
     simpa [EuclideanSpace.norm_sq_eq] using hsq_i
   exact (sq_le_sq₀ (norm_nonneg _) (norm_nonneg _)).mp hsq
 
-private theorem secondLineDeriv_diagonal_expand
+theorem secondLineDeriv_diagonal_expand
     {ι : Type*} [Fintype ι]
     (φ : SchwartzMap (EuclideanSpace ℝ ι) ℂ)
     (v : EuclideanSpace ℝ ι) :
@@ -404,7 +399,7 @@ theorem exists_seminorm_translate_lineDeriv_sub_le_linear_uniform_unit
           fun z => g (z + t • v) by rfl]
       exact iteratedFDeriv_comp_add_right
         (f := (g : EuclideanSpace ℝ ι → ℂ)) n (t • v) x
-    rw [iteratedFDeriv_sub_euclidean_schwartz]
+    rw [iteratedFDeriv_sub_euclidean_schwartz_EuclideanWeylFrechet]
     rw [htrans]
   have hxFun_diff :
       hxFun 1 - hxFun 0 = ‖x‖ ^ k • (H (x + t • v) - H x) := by
@@ -620,7 +615,7 @@ theorem regularizedDistributionFDeriv_apply
         (∂_{v} ρ : SchwartzMap (EuclideanSpace ℝ ι) ℂ)) := by
   simp [regularizedDistributionFDeriv, euclideanReflectedTranslate]
 
-private theorem regularizedDistribution_remainder_eq
+theorem regularizedDistribution_remainder_eq
     {ι : Type*} [Fintype ι]
     (T : SchwartzMap (EuclideanSpace ℝ ι) ℂ →L[ℂ] ℂ)
     (ρ : SchwartzMap (EuclideanSpace ℝ ι) ℂ)
@@ -638,7 +633,7 @@ private theorem regularizedDistribution_remainder_eq
     euclideanLineDerivDirectionCLM_apply, euclideanTranslateSchwartzCLM_comp,
     norm_neg, map_add, sub_eq_add_neg, add_comm]
 
-private theorem regularizedDistribution_remainder_norm_eq
+theorem regularizedDistribution_remainder_norm_eq
     {ι : Type*} [Fintype ι]
     (T : SchwartzMap (EuclideanSpace ℝ ι) ℂ →L[ℂ] ℂ)
     (ρ : SchwartzMap (EuclideanSpace ℝ ι) ℂ)
@@ -656,7 +651,7 @@ private theorem regularizedDistribution_remainder_norm_eq
   rw [regularizedDistribution_remainder_eq T ρ x h]
   rw [norm_smul, Real.norm_eq_abs, abs_of_nonneg (inv_nonneg.mpr (norm_nonneg h))]
 
-private theorem regularizedDistribution_remainder_norm_tendsto_zero
+theorem regularizedDistribution_remainder_norm_tendsto_zero
     {ι : Type*} [Fintype ι]
     (T : SchwartzMap (EuclideanSpace ℝ ι) ℂ →L[ℂ] ℂ)
     (ρ : SchwartzMap (EuclideanSpace ℝ ι) ℂ)
@@ -704,7 +699,7 @@ private theorem regularizedDistribution_remainder_norm_tendsto_zero
   rw [← nhdsNE_sup_pure (0 : EuclideanSpace ℝ ι)]
   exact hnorm_punct.sup hnorm_pure
 
-private theorem regularizedDistribution_remainder_norm_eq_sub
+theorem regularizedDistribution_remainder_norm_eq_sub
     {ι : Type*} [Fintype ι]
     (T : SchwartzMap (EuclideanSpace ℝ ι) ℂ →L[ℂ] ℂ)
     (ρ : SchwartzMap (EuclideanSpace ℝ ι) ℂ)
@@ -727,7 +722,7 @@ private theorem regularizedDistribution_remainder_norm_eq_sub
   · congr 1
     abel_nf
 
-private theorem regularizedDistribution_remainder_norm_tendsto_at
+theorem regularizedDistribution_remainder_norm_tendsto_at
     {ι : Type*} [Fintype ι]
     (T : SchwartzMap (EuclideanSpace ℝ ι) ℂ →L[ℂ] ℂ)
     (ρ : SchwartzMap (EuclideanSpace ℝ ι) ℂ)
@@ -761,7 +756,7 @@ theorem hasFDerivAt_regularizedDistribution
   rw [hasFDerivAt_iff_tendsto]
   exact regularizedDistribution_remainder_norm_tendsto_at T ρ x
 
-private theorem contDiff_regularizedDistribution_nat
+theorem contDiff_regularizedDistribution_nat
     {ι : Type*} [Fintype ι]
     (T : SchwartzMap (EuclideanSpace ℝ ι) ℂ →L[ℂ] ℂ)
     (ρ : SchwartzMap (EuclideanSpace ℝ ι) ℂ) :
@@ -914,21 +909,21 @@ theorem iteratedFDeriv_apply_euclideanTranslateSchwartz
       rw [hfun, fderiv_apply_euclideanTranslateSchwartz_apply]
       rw [LineDeriv.iteratedLineDerivOp_succ_left]
 
-private abbrev flatToEuclidean
+abbrev flatToEuclidean
     {m : ℕ} :
     SchwartzMap (Fin m → ℝ) ℂ →L[ℂ]
       SchwartzMap (EuclideanSpace ℝ (Fin m)) ℂ :=
   SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
     (EuclideanSpace.equiv (Fin m) ℝ)
 
-private abbrev euclideanToFlat
+abbrev euclideanToFlat
     {m : ℕ} :
     SchwartzMap (EuclideanSpace ℝ (Fin m)) ℂ →L[ℂ]
       SchwartzMap (Fin m → ℝ) ℂ :=
   SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
     (EuclideanSpace.equiv (Fin m) ℝ).symm
 
-private theorem euclideanToFlat_flatToEuclidean
+theorem euclideanToFlat_flatToEuclidean
     {m : ℕ} (f : SchwartzMap (Fin m → ℝ) ℂ) :
     euclideanToFlat (flatToEuclidean f) = f := by
   ext x
@@ -937,7 +932,7 @@ private theorem euclideanToFlat_flatToEuclidean
       ((EuclideanSpace.equiv (Fin m) ℝ).symm x)) = f x
   rw [ContinuousLinearEquiv.apply_symm_apply]
 
-private theorem flatToEuclidean_translate
+theorem flatToEuclidean_translate
     {m : ℕ} (a : Fin m → ℝ)
     (f : SchwartzMap (Fin m → ℝ) ℂ) :
     flatToEuclidean (translateSchwartz a f) =
@@ -952,7 +947,7 @@ private theorem flatToEuclidean_translate
   apply congrArg f
   rw [map_add, ContinuousLinearEquiv.apply_symm_apply]
 
-private theorem flatToEuclidean_lineDeriv
+theorem flatToEuclidean_lineDeriv
     {m : ℕ} (v : Fin m → ℝ)
     (f : SchwartzMap (Fin m → ℝ) ℂ) :
     flatToEuclidean (∂_{v} f) =
@@ -965,7 +960,7 @@ private theorem flatToEuclidean_lineDeriv
     (g := EuclideanSpace.equiv (Fin m) ℝ)
     (f := f)) using 1 <;> rfl
 
-private theorem flatToEuclidean_iteratedLineDeriv
+theorem flatToEuclidean_iteratedLineDeriv
     {m N : ℕ} (u : Fin N → (Fin m → ℝ))
     (f : SchwartzMap (Fin m → ℝ) ℂ) :
     flatToEuclidean (LineDeriv.iteratedLineDerivOp u f) =

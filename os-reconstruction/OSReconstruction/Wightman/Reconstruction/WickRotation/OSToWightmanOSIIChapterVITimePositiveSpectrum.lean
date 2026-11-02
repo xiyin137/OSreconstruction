@@ -1,6 +1,10 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVITimeFourierODE
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVITimeCompactExponential
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVISchwartzSupport
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVITimeFourierODE
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVITimeCompactExponential
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVISchwartzSupport
+
+@[expose] public section
 
 /-!
 # Positive temporal spectrum from global OS growth
@@ -24,7 +28,7 @@ namespace OSIIFullTimeStageVladimirovGrowthData
 variable {d k : Nat} [NeZero d]
 variable {A : OSIITimeContinuationStage d k}
 
-private def positiveFrequencyRayCLM
+def positiveFrequencyRayCLM
     (G : OSIIFullTimeStageVladimirovGrowthData A)
     (eta : Fin k -> Real) (heta : eta ∈ osiiTimePositiveCone k)
     (chi : SchwartzMap (Section43SpatialSpace d k) Complex) (t : Real) :
@@ -34,7 +38,7 @@ private def positiveFrequencyRayCLM
       (osiiTimePositiveCone_isCone k eta heta t ht)
   else 0
 
-private theorem positiveFrequencyRayCLM_apply
+theorem positiveFrequencyRayCLM_apply
     (G : OSIIFullTimeStageVladimirovGrowthData A)
     (eta : Fin k -> Real) (heta : eta ∈ osiiTimePositiveCone k)
     (chi : SchwartzMap (Section43SpatialSpace d k) Complex)
@@ -44,7 +48,7 @@ private theorem positiveFrequencyRayCLM_apply
   rw [positiveFrequencyRayCLM, dif_pos ht]
   exact G.timeFrequencySliceCLM_smul_apply chi eta heta t ht psi
 
-private theorem hasDerivAt_positiveFrequencyRayCLM
+theorem hasDerivAt_positiveFrequencyRayCLM
     (G : OSIIFullTimeStageVladimirovGrowthData A) [NeZero k]
     (eta : Fin k -> Real) (heta : eta ∈ osiiTimePositiveCone k)
     (chi : SchwartzMap (Section43SpatialSpace d k) Complex)

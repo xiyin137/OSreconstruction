@@ -5,16 +5,12 @@ Copyright (c) 2026 ModularPhysics Contributors.
 Released under Apache 2.0 license
 Authors: ModularPhysics Contributors
 -/
-import OSReconstruction.SCV.EuclideanWeylApproxIdentity
-import OSReconstruction.SCV.DistributionalEOWRegularity
+module
 
+public import OSReconstruction.SCV.EuclideanWeylApproxIdentity
+public import OSReconstruction.SCV.DistributionalEOWRegularity
 
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 

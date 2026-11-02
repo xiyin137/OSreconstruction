@@ -1,29 +1,14 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.SCV.TranslationDifferentiation
-import OSReconstruction.SCV.EuclideanWeylFrechet
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVSourceTaylor
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIConfigurationTranslation
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOrderedPositiveTimeTopology
+module
 
+public import OSReconstruction.SCV.TranslationDifferentiation
+public import OSReconstruction.SCV.EuclideanWeylFrechet
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVSourceTaylor
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIConfigurationTranslation
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOrderedPositiveTimeTopology
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -33,27 +18,27 @@ open scoped BigOperators Classical SchwartzMap LineDeriv
 namespace OSReconstruction
 namespace OSIIChapterV
 
-private abbrev flattenSource
+abbrev flattenSource
     {d n : ℕ} :
     SchwartzNPoint d n →L[ℂ]
       SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ :=
   SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
     (flattenCLEquivReal n (d + 1)).symm
 
-private abbrev unflattenSource
+abbrev unflattenSource
     {d n : ℕ} :
     SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ →L[ℂ]
       SchwartzNPoint d n :=
   SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
     (flattenCLEquivReal n (d + 1))
 
-private abbrev unflattenSourceReal
+abbrev unflattenSourceReal
     {d n : ℕ} :
     SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ →L[ℝ]
       SchwartzNPoint d n :=
   (unflattenSource (d := d) (n := n)).restrictScalars ℝ
 
-private theorem flattenSource_translate
+theorem flattenSource_translate
     {d n : ℕ}
     (t : ℝ)
     (v : NPointDomain d n)
@@ -70,7 +55,7 @@ private theorem flattenSource_translate
   congr 1
   rw [map_add, map_smul, ContinuousLinearEquiv.symm_apply_apply]
 
-private theorem flattenSource_translate_general
+theorem flattenSource_translate_general
     {d n : ℕ}
     (a : NPointDomain d n)
     (f : SchwartzNPoint d n) :
@@ -86,20 +71,20 @@ private theorem flattenSource_translate_general
   congr 1
   rw [map_add, ContinuousLinearEquiv.symm_apply_apply]
 
-private theorem unflattenSource_flattenSource
+theorem unflattenSource_flattenSource
     {d n : ℕ}
     (f : SchwartzNPoint d n) :
     unflattenSource (flattenSource f) = f := by
   ext x
   simp [flattenSource, unflattenSource]
 
-private theorem unflattenSourceReal_flattenSource
+theorem unflattenSourceReal_flattenSource
     {d n : ℕ}
     (f : SchwartzNPoint d n) :
     unflattenSourceReal (flattenSource f) = f :=
   unflattenSource_flattenSource f
 
-private theorem flattenSource_lineDeriv
+theorem flattenSource_lineDeriv
     {d n : ℕ}
     (v : NPointDomain d n)
     (f : SchwartzNPoint d n) :
@@ -113,7 +98,7 @@ private theorem flattenSource_lineDeriv
       (g := (flattenCLEquivReal n (d + 1)).symm)
       (f := f))
 
-private theorem flattenSource_iteratedLineDeriv
+theorem flattenSource_iteratedLineDeriv
     {d n N : ℕ}
     (u : Fin N → NPointDomain d n)
     (f : SchwartzNPoint d n) :
@@ -561,7 +546,7 @@ def sourceMultiDerivative :
       rw [iteratedSourceDirection_zero,
         ih (fun i : Fin k => directions i.succ)]
 
-private theorem lineDerivOp_comm_schwartz
+theorem lineDerivOp_comm_schwartz
     {E : Type*}
     [NormedAddCommGroup E] [NormedSpace ℝ E]
     (f : SchwartzMap E ℂ)
@@ -609,7 +594,7 @@ theorem iteratedLineDerivOp_eq_foldr
       rw [ih]
       congr 2
 
-private theorem count_ofFn_eq_multiIdx
+theorem count_ofFn_eq_multiIdx
     {N k : ℕ}
     (σ : Fin N → Fin k)
     (i : Fin k) :
@@ -625,13 +610,13 @@ private theorem count_ofFn_eq_multiIdx
     true_and, Function.comp_apply, beq_iff_eq, Finset.mem_filter,
     Finset.mem_univ]
 
-private def sourceMultiIndexBlockList
+def sourceMultiIndexBlockList
     {k : ℕ}
     (α : Fin k → ℕ) :
     List (Fin k) :=
   (List.finRange k).flatMap fun i => List.replicate (α i) i
 
-@[simp] private theorem count_sourceMultiIndexBlockList
+@[simp] theorem count_sourceMultiIndexBlockList
     {k : ℕ}
     (α : Fin k → ℕ)
     (i : Fin k) :
@@ -648,7 +633,7 @@ private def sourceMultiIndexBlockList
     simp [hji]
   · simp
 
-private theorem iteratedSourceDirection_eq_foldr_replicate
+theorem iteratedSourceDirection_eq_foldr_replicate
     {E : Type*}
     [NormedAddCommGroup E] [NormedSpace ℝ E]
     (v : E)
@@ -664,7 +649,7 @@ private theorem iteratedSourceDirection_eq_foldr_replicate
       rw [iteratedSourceDirection_succ, List.replicate_succ,
         List.foldr_cons, ih]
 
-private theorem sourceMultiDerivative_eq_foldr_blockList
+theorem sourceMultiDerivative_eq_foldr_blockList
     {E : Type*}
     [NormedAddCommGroup E] [NormedSpace ℝ E]
     {k : ℕ}

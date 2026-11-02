@@ -1,18 +1,13 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVICoupledTimeDerivative
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVISingularTaylorBoundary
-import OSReconstruction.SCV.ConeCutoffSchwartz
-import Mathlib.Topology.Algebra.Module.StrongTopology
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVICoupledTimeDerivative
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVISingularTaylorBoundary
+public import OSReconstruction.SCV.ConeCutoffSchwartz
+public import Mathlib.Topology.Algebra.Module.StrongTopology
 
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -21,7 +16,7 @@ open scoped Classical Interval
 
 namespace OSReconstruction
 
-private theorem osiiTimePositiveCone_compl_isCone (k : Nat) :
+theorem osiiTimePositiveCone_compl_isCone (k : Nat) :
     IsCone (osiiTimePositiveCone k)ᶜ := by
   intro y hy t ht hty
   apply hy
@@ -104,20 +99,20 @@ theorem coupledBoundaryConstant_nonneg
   mul_nonneg (mul_nonneg (G.coupledSliceConstant_pos eta).le
     G.coupledSourceConstant_nonneg) (by positivity)
 
-private def coupledTimeJet (A : OSIITimeContinuationStage d k)
+def coupledTimeJet (A : OSIITimeContinuationStage d k)
     (eta : Fin k -> Real)
     (Phi : SchwartzMap (Section43TimeSpatialSpace d k) Complex)
     (j : Nat) (u : Real) : Complex :=
   (-I) ^ j * osiiCoupledTimeSlice A (u • eta)
     (((osiiCoupledTimeDeriv d k eta) ^ j) Phi)
 
-private theorem coupledTimeJet_zero (A : OSIITimeContinuationStage d k)
+theorem coupledTimeJet_zero (A : OSIITimeContinuationStage d k)
     (eta : Fin k -> Real)
     (Phi : SchwartzMap (Section43TimeSpatialSpace d k) Complex) (u : Real) :
     coupledTimeJet A eta Phi 0 u = osiiCoupledTimeSlice A (u • eta) Phi := by
   simp [coupledTimeJet]
 
-private theorem hasDerivAt_coupledTimeJet [NeZero d] [NeZero k]
+theorem hasDerivAt_coupledTimeJet [NeZero d] [NeZero k]
     (G : OSIIFullTimeStageVladimirovGrowthData A)
     (eta : Fin k -> Real) (heta : eta ∈ osiiTimePositiveCone k)
     (Phi : SchwartzMap (Section43TimeSpatialSpace d k) Complex)
@@ -134,7 +129,7 @@ private theorem hasDerivAt_coupledTimeJet [NeZero d] [NeZero k]
   rw [pow_succ, ← hD]
   simpa only [mul_assoc] using h
 
-private theorem sourceSeminorm_directionalPow_le
+theorem sourceSeminorm_directionalPow_le
     (G : OSIIFullTimeStageVladimirovGrowthData A)
     (eta : Fin k -> Real)
     (Phi : SchwartzMap (Section43TimeSpatialSpace d k) Complex)
@@ -172,7 +167,7 @@ private theorem sourceSeminorm_directionalPow_le
       osiiCoupledTimeDeriv, Prod.norm_def, p, l] using hderiv
   exact hderiv'.trans (mul_le_mul hdir hindices (apply_nonneg _ _) (by positivity))
 
-private theorem norm_coupledTimeJet_le
+theorem norm_coupledTimeJet_le
     (G : OSIIFullTimeStageVladimirovGrowthData A)
     (eta : Fin k -> Real) (heta : eta ∈ osiiTimePositiveCone k)
     (Phi : SchwartzMap (Section43TimeSpatialSpace d k) Complex)
@@ -205,12 +200,12 @@ private theorem norm_coupledTimeJet_le
           G.coupledSourceConstant_nonneg))
     _ = _ := by unfold coupledBoundaryConstant; ring
 
-private def coupledBoundaryValue (A : OSIITimeContinuationStage d k)
+def coupledBoundaryValue (A : OSIITimeContinuationStage d k)
     (eta : Fin k -> Real)
     (Phi : SchwartzMap (Section43TimeSpatialSpace d k) Complex) : Complex :=
   OSIIChapterVI.singularTaylorBoundaryValue (coupledTimeJet A eta Phi)
 
-private theorem tendsto_coupledBoundaryValue [NeZero d] [NeZero k]
+theorem tendsto_coupledBoundaryValue [NeZero d] [NeZero k]
     (G : OSIIFullTimeStageVladimirovGrowthData A)
     (eta : Fin k -> Real) (heta : eta ∈ osiiTimePositiveCone k)
     (Phi : SchwartzMap (Section43TimeSpatialSpace d k) Complex) :
@@ -225,7 +220,7 @@ private theorem tendsto_coupledBoundaryValue [NeZero d] [NeZero k]
     (nhdsWithin 0 (Ioi 0)) (nhds (coupledBoundaryValue A eta Phi)) at h
   simpa only [coupledTimeJet_zero] using h
 
-private theorem norm_coupledBoundaryValue_le [NeZero d] [NeZero k]
+theorem norm_coupledBoundaryValue_le [NeZero d] [NeZero k]
     (G : OSIIFullTimeStageVladimirovGrowthData A)
     (eta : Fin k -> Real) (heta : eta ∈ osiiTimePositiveCone k)
     (Phi : SchwartzMap (Section43TimeSpatialSpace d k) Complex) :
@@ -240,7 +235,7 @@ private theorem norm_coupledBoundaryValue_le [NeZero d] [NeZero k]
     (norm_coupledTimeJet_le G eta heta Phi)
   simpa only [coupledBoundaryValue, mul_assoc, mul_left_comm, mul_comm] using h
 
-private theorem exists_coupledBoundaryCLM [NeZero d] [NeZero k]
+theorem exists_coupledBoundaryCLM [NeZero d] [NeZero k]
     (G : OSIIFullTimeStageVladimirovGrowthData A)
     (eta : Fin k -> Real) (heta : eta ∈ osiiTimePositiveCone k) :
     exists W : SchwartzMap (Section43TimeSpatialSpace d k) Complex →L[Complex] Complex,
@@ -276,7 +271,7 @@ private theorem exists_coupledBoundaryCLM [NeZero d] [NeZero k]
     mul_nonneg (G.coupledBoundaryConstant_nonneg eta) (by positivity),
     norm_coupledBoundaryValue_le G eta heta⟩
 
-private theorem coupledBoundaryValue_eq_native_of_pos [NeZero d] [NeZero k]
+theorem coupledBoundaryValue_eq_native_of_pos [NeZero d] [NeZero k]
     (G : OSIIFullTimeStageVladimirovGrowthData A)
     (B : OSIIFullTimeStageTemperedBoundaryData A)
     (eta : Fin k -> Real) (heta : eta ∈ osiiTimePositiveCone k)

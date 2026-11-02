@@ -1,6 +1,10 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.RToESpatialPointClustering
-import OSReconstruction.Wightman.Reconstruction.WickRotation.RToEClusteringTails
-import Mathlib.MeasureTheory.Integral.DominatedConvergence
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.RToESpatialPointClustering
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.RToEClusteringTails
+public import Mathlib.MeasureTheory.Integral.DominatedConvergence
+
+@[expose] public section
 
 /-!
 # Full R-to-E Clustering
@@ -18,14 +22,14 @@ namespace OSReconstruction
 variable {d n m : ℕ} [NeZero d]
 set_option maxHeartbeats 800000
 
-private def kernel (Wfn : WightmanFunctions d) (x : NPointDomain d n) : ℂ :=
+def kernel_RToEIntegralClustering (Wfn : WightmanFunctions d) (x : NPointDomain d n) : ℂ :=
   F_ext_on_translatedPET_total Wfn (fun i => wickRotatePoint (x i))
 
-private def blockShift (n m : ℕ) (a : SpacetimeDim d) : NPointDomain d (n+m) :=
+def blockShift (n m : ℕ) (a : SpacetimeDim d) : NPointDomain d (n+m) :=
   Fin.append (fun _ : Fin n => 0) (fun _ : Fin m => a)
 
 omit [NeZero d] in
-private theorem append_split (z : NPointDomain d (n+m)) :
+theorem append_split (z : NPointDomain d (n+m)) :
     Fin.append (splitFirst n m z) (splitLast n m z) = z := by
   funext i
   refine Fin.addCases (fun j => ?_) (fun j => ?_) i
@@ -33,7 +37,7 @@ private theorem append_split (z : NPointDomain d (n+m)) :
   · simp [splitLast]
 
 omit [NeZero d] in
-private theorem add_blockShift (z : NPointDomain d (n+m)) (a : SpacetimeDim d) :
+theorem add_blockShift (z : NPointDomain d (n+m)) (a : SpacetimeDim d) :
     z + blockShift n m a =
       Fin.append (splitFirst n m z) (fun j => splitLast n m z j + a) := by
   funext i
@@ -42,7 +46,7 @@ private theorem add_blockShift (z : NPointDomain d (n+m)) (a : SpacetimeDim d) :
   · simp [blockShift,splitLast]
 
 omit [NeZero d] in
-private theorem norm_spatialLift (a : Fin d → ℝ) :
+theorem norm_spatialLift (a : Fin d → ℝ) :
     ‖(Fin.cons 0 a : SpacetimeDim d)‖ = ‖a‖ := by
   apply le_antisymm
   · apply (pi_norm_le_iff_of_nonneg (norm_nonneg _)).2
@@ -56,7 +60,7 @@ private theorem norm_spatialLift (a : Fin d → ℝ) :
       norm_le_pi_norm (Fin.cons 0 a : SpacetimeDim d) j.succ
 
 omit [NeZero d] in
-private theorem finAddProd_apply_split (z : NPointDomain d (n+m)) :
+theorem finAddProd_apply_split (z : NPointDomain d (n+m)) :
     MeasurableEquiv.finAddProd n m (SpacetimeDim d) z =
       (splitFirst n m z,splitLast n m z) := by
   let e := MeasurableEquiv.finAddProd n m (SpacetimeDim d)
@@ -67,7 +71,7 @@ private theorem finAddProd_apply_split (z : NPointDomain d (n+m)) :
     _ = (splitFirst n m z,splitLast n m z) := e.apply_symm_apply _
 
 omit [NeZero d] in
-private theorem integral_split_product (F : NPointDomain d n → ℂ)
+theorem integral_split_product (F : NPointDomain d n → ℂ)
     (G : NPointDomain d m → ℂ) :
     (∫ z : NPointDomain d (n+m), F (splitFirst n m z)*G (splitLast n m z)) =
       (∫ x, F x)*(∫ y, G y) := by
@@ -78,32 +82,32 @@ private theorem integral_split_product (F : NPointDomain d n → ℂ)
           (fun p => F p.1*G p.2)
     _ = _ := integral_prod_mul F G
 
-private theorem block_kernel_measurable (Wfn : WightmanFunctions d)
+theorem block_kernel_measurable (Wfn : WightmanFunctions d)
     (f : ZeroDiagonalSchwartz d n) (g : ZeroDiagonalSchwartz d m)
     (a : SpacetimeDim d) :
     AEStronglyMeasurable (fun z : NPointDomain d (n+m) =>
-      kernel Wfn (z + blockShift n m a)*(f.1.tensorProduct g.1) z) volume := by
+      kernel_RToEIntegralClustering Wfn (z + blockShift n m a)*(f.1.tensorProduct g.1) z) volume := by
   haveI : Measure.IsAddHaarMeasure (volume : Measure (NPointDomain d (n+m))) :=
     Measure.instIsAddHaarMeasureForallVolumeOfMeasurableAddOfSigmaFinite
   exact ((bhw_euclidean_kernel_measurable Wfn).comp_quasiMeasurePreserving
     (measurePreserving_add_right volume (blockShift n m a)).quasiMeasurePreserving).mul
       (f.1.tensorProduct g.1).continuous.aestronglyMeasurable
 
-private theorem bulk_integral_tendsto (Wfn : WightmanFunctions d)
+theorem bulk_integral_tendsto (Wfn : WightmanFunctions d)
     (f : ZeroDiagonalSchwartz d n) (g : ZeroDiagonalSchwartz d m) :
     ∃ L : ℝ, 0 < L ∧
       Tendsto (fun a : Fin d → ℝ =>
         ∫ z in {z : NPointDomain d (n+m) | L*(1+‖z‖) < ‖a‖},
-          kernel Wfn (z + blockShift n m (Fin.cons 0 a))*(f.1.tensorProduct g.1) z)
+          kernel_RToEIntegralClustering Wfn (z + blockShift n m (Fin.cons 0 a))*(f.1.tensorProduct g.1) z)
         (cocompact (Fin d → ℝ))
         (𝓝 (constructSchwingerFunctions Wfn n f * constructSchwingerFunctions Wfn m g)) := by
   classical
   obtain ⟨L,B,hL,hBi,hBn,hB⟩ := rToE_spatial_bulk_kernel_test_majorant Wfn f g
   let J (a : Fin d → ℝ) (z : NPointDomain d (n+m)) :=
-    kernel Wfn (z + blockShift n m (Fin.cons 0 a))*(f.1.tensorProduct g.1) z
+    kernel_RToEIntegralClustering Wfn (z + blockShift n m (Fin.cons 0 a))*(f.1.tensorProduct g.1) z
   let H (z : NPointDomain d (n+m)) :=
-    (kernel Wfn (splitFirst n m z)*f.1 (splitFirst n m z))*
-      (kernel Wfn (splitLast n m z)*g.1 (splitLast n m z))
+    (kernel_RToEIntegralClustering Wfn (splitFirst n m z)*f.1 (splitFirst n m z))*
+      (kernel_RToEIntegralClustering Wfn (splitLast n m z)*g.1 (splitLast n m z))
   let s (a : Fin d → ℝ) : Set (NPointDomain d (n+m)) := {z | L*(1+‖z‖) < ‖a‖}
   have hs (a : Fin d → ℝ) : MeasurableSet (s a) :=
     (isOpen_lt (continuous_const.mul (continuous_const.add continuous_norm)) continuous_const).measurableSet
@@ -127,7 +131,7 @@ private theorem bulk_integral_tendsto (Wfn : WightmanFunctions d)
         simpa only [append_split,norm_spatialLift] using hzs
       have hb := hB (splitFirst n m z) (splitLast n m z) hxy
         (Fin.cons 0 a) (by simp) ha
-      simpa only [J,kernel,add_blockShift,SchwartzMap.tensorProduct_apply,norm_mul,
+      simpa only [J,kernel_RToEIntegralClustering,add_blockShift,SchwartzMap.tensorProduct_apply,norm_mul,
         append_split,mul_assoc] using hb
     · rw [Set.indicator_of_notMem hzs,norm_zero]
       exact hBn z
@@ -135,12 +139,12 @@ private theorem bulk_integral_tendsto (Wfn : WightmanFunctions d)
       Tendsto (fun a : Fin d → ℝ => (s a).indicator (J a) z)
         (cocompact (Fin d → ℝ)) (𝓝 (H z)) := by
     filter_upwards [rToE_point_kernel_tendsto_spatial_ae m Wfn] with z hz
-    have hk : Tendsto (fun a : Fin d → ℝ => kernel Wfn (z + blockShift n m (Fin.cons 0 a)))
+    have hk : Tendsto (fun a : Fin d → ℝ => kernel_RToEIntegralClustering Wfn (z + blockShift n m (Fin.cons 0 a)))
         (cocompact (Fin d → ℝ))
-        (𝓝 (kernel Wfn (splitFirst n m z)*kernel Wfn (splitLast n m z))) := by
-      simpa only [kernel,add_blockShift] using hz
+        (𝓝 (kernel_RToEIntegralClustering Wfn (splitFirst n m z)*kernel_RToEIntegralClustering Wfn (splitLast n m z))) := by
+      simpa only [kernel_RToEIntegralClustering,add_blockShift] using hz
     have hJ := hk.mul (tendsto_const_nhds (x := (f.1.tensorProduct g.1) z))
-    have heq : (kernel Wfn (splitFirst n m z)*kernel Wfn (splitLast n m z))*
+    have heq : (kernel_RToEIntegralClustering Wfn (splitFirst n m z)*kernel_RToEIntegralClustering Wfn (splitLast n m z))*
         (f.1.tensorProduct g.1) z = H z := by
       dsimp [H]
       ring
@@ -155,14 +159,14 @@ private theorem bulk_integral_tendsto (Wfn : WightmanFunctions d)
     (Eventually.of_forall hmeas) (Eventually.of_forall hbound) hBi hlim
   have hfactor : (∫ z, H z) =
       constructSchwingerFunctions Wfn n f * constructSchwingerFunctions Wfn m g :=
-    integral_split_product (fun x => kernel Wfn x*f.1 x) (fun y => kernel Wfn y*g.1 y)
+    integral_split_product (fun x => kernel_RToEIntegralClustering Wfn x*f.1 x) (fun y => kernel_RToEIntegralClustering Wfn y*g.1 y)
   rw [hfactor] at hDCT
   refine ⟨L,hL,?_⟩
   simpa only [integral_indicator (hs _)] using hDCT
 
-private theorem kernel_add_const (Wfn : WightmanFunctions d)
+theorem kernel_add_const (Wfn : WightmanFunctions d)
     (z : NPointDomain d n) (hz : Function.Injective (fun i => z i 0))
-    (a : SpacetimeDim d) : kernel Wfn (z + fun _ => a) = kernel Wfn z := by
+    (a : SpacetimeDim d) : kernel_RToEIntegralClustering Wfn (z + fun _ => a) = kernel_RToEIntegralClustering Wfn z := by
   have hzt : Function.Injective (fun i : Fin n => z i 0 + a 0) := by
     intro i j hij
     exact hz (add_right_cancel hij)
@@ -170,10 +174,10 @@ private theorem kernel_add_const (Wfn : WightmanFunctions d)
     (wick_mem_translatedPET_of_time_injective z hz)
     (wick_mem_translatedPET_of_time_injective (z + fun _ => a) hzt)).symm
 
-private theorem kernel_blockShift_of_empty (Wfn : WightmanFunctions d)
+theorem kernel_blockShift_of_empty (Wfn : WightmanFunctions d)
     (hzero : n = 0 ∨ m = 0) (z : NPointDomain d (n+m))
     (hz : Function.Injective (fun i => z i 0)) (a : SpacetimeDim d) :
-    kernel Wfn (z + blockShift n m a) = kernel Wfn z := by
+    kernel_RToEIntegralClustering Wfn (z + blockShift n m a) = kernel_RToEIntegralClustering Wfn z := by
   rcases hzero with rfl | rfl
   · have hs : blockShift 0 m a = fun _ => a := by
       funext i
@@ -186,20 +190,20 @@ private theorem kernel_blockShift_of_empty (Wfn : WightmanFunctions d)
       refine Fin.addCases (fun j => ?_) (fun j => Fin.elim0 j) i
       simp only [blockShift,Fin.append_left,Pi.zero_apply]
     rw [hs]
-    apply congrArg (kernel Wfn)
+    apply congrArg (kernel_RToEIntegralClustering Wfn)
     funext i μ
     exact add_zero (z i μ)
 
-private theorem block_integral_factorizes_of_empty (Wfn : WightmanFunctions d)
+theorem block_integral_factorizes_of_empty (Wfn : WightmanFunctions d)
     (hzero : n = 0 ∨ m = 0) (f : ZeroDiagonalSchwartz d n)
     (g : ZeroDiagonalSchwartz d m) (a : SpacetimeDim d) :
     (∫ z : NPointDomain d (n+m),
-      kernel Wfn (z + blockShift n m a)*(f.1.tensorProduct g.1) z) =
+      kernel_RToEIntegralClustering Wfn (z + blockShift n m a)*(f.1.tensorProduct g.1) z) =
       constructSchwingerFunctions Wfn n f * constructSchwingerFunctions Wfn m g := by
   calc
     _ = ∫ z : NPointDomain d (n+m),
-        (kernel Wfn (splitFirst n m z)*f.1 (splitFirst n m z))*
-          (kernel Wfn (splitLast n m z)*g.1 (splitLast n m z)) := by
+        (kernel_RToEIntegralClustering Wfn (splitFirst n m z)*f.1 (splitFirst n m z))*
+          (kernel_RToEIntegralClustering Wfn (splitLast n m z)*g.1 (splitLast n m z)) := by
       apply integral_congr_ae
       filter_upwards [ae_pairwise_distinct_timeCoords (d := d) (n := n+m),
         rToE_point_kernel_tendsto_spatial_ae m Wfn] with z hz hlim
@@ -207,31 +211,31 @@ private theorem block_integral_factorizes_of_empty (Wfn : WightmanFunctions d)
         intro i j hij
         by_contra hne
         exact hz i j hne hij
-      have hk : Tendsto (fun b : Fin d → ℝ => kernel Wfn (z + blockShift n m (Fin.cons 0 b)))
+      have hk : Tendsto (fun b : Fin d → ℝ => kernel_RToEIntegralClustering Wfn (z + blockShift n m (Fin.cons 0 b)))
           (cocompact (Fin d → ℝ))
-          (𝓝 (kernel Wfn (splitFirst n m z)*kernel Wfn (splitLast n m z))) := by
-        simpa only [kernel,add_blockShift] using hlim
-      have hconst : Tendsto (fun b : Fin d → ℝ => kernel Wfn (z + blockShift n m (Fin.cons 0 b)))
-          (cocompact (Fin d → ℝ)) (𝓝 (kernel Wfn z)) :=
+          (𝓝 (kernel_RToEIntegralClustering Wfn (splitFirst n m z)*kernel_RToEIntegralClustering Wfn (splitLast n m z))) := by
+        simpa only [kernel_RToEIntegralClustering,add_blockShift] using hlim
+      have hconst : Tendsto (fun b : Fin d → ℝ => kernel_RToEIntegralClustering Wfn (z + blockShift n m (Fin.cons 0 b)))
+          (cocompact (Fin d → ℝ)) (𝓝 (kernel_RToEIntegralClustering Wfn z)) :=
         tendsto_const_nhds.congr' (Eventually.of_forall fun b =>
           (kernel_blockShift_of_empty Wfn hzero z hzt (Fin.cons 0 b)).symm)
       have hfactor := tendsto_nhds_unique hconst hk
       rw [kernel_blockShift_of_empty Wfn hzero z hzt a,hfactor,SchwartzMap.tensorProduct_apply]
       ring
     _ = _ := integral_split_product
-      (fun x => kernel Wfn x*f.1 x) (fun y => kernel Wfn y*g.1 y)
+      (fun x => kernel_RToEIntegralClustering Wfn x*f.1 x) (fun y => kernel_RToEIntegralClustering Wfn y*g.1 y)
 
-private theorem translated_block_pairing (Wfn : WightmanFunctions d)
+theorem translated_block_pairing (Wfn : WightmanFunctions d)
     (f : ZeroDiagonalSchwartz d n) (g : ZeroDiagonalSchwartz d m)
     (a : SpacetimeDim d) (g_a : ZeroDiagonalSchwartz d m)
     (hga : ∀ x, g_a.1 x = g.1 (fun i => x i - a))
     (fg_a : ZeroDiagonalSchwartz d (n+m))
     (hfg : ∀ x, fg_a.1 x = f.1 (splitFirst n m x)*g_a.1 (splitLast n m x)) :
     Integrable (fun z : NPointDomain d (n+m) =>
-      kernel Wfn (z + blockShift n m a)*(f.1.tensorProduct g.1) z) ∧
+      kernel_RToEIntegralClustering Wfn (z + blockShift n m a)*(f.1.tensorProduct g.1) z) ∧
     constructSchwingerFunctions Wfn (n+m) fg_a =
       ∫ z : NPointDomain d (n+m),
-        kernel Wfn (z + blockShift n m a)*(f.1.tensorProduct g.1) z := by
+        kernel_RToEIntegralClustering Wfn (z + blockShift n m a)*(f.1.tensorProduct g.1) z := by
   have heq (z : NPointDomain d (n+m)) :
       fg_a.1 (z + blockShift n m a) = (f.1.tensorProduct g.1) z := by
     have hl : splitFirst n m (z + blockShift n m a) = splitFirst n m z := by
@@ -246,16 +250,16 @@ private theorem translated_block_pairing (Wfn : WightmanFunctions d)
   refine ⟨?_,?_⟩
   · have hi := (measurePreserving_add_right volume (blockShift n m a)).integrable_comp_of_integrable
       (wick_rotated_kernel_mul_zeroDiagonal_integrable Wfn fg_a)
-    simpa only [Function.comp_def,heq,kernel] using hi
-  · change (∫ z, kernel Wfn z*fg_a.1 z) = _
+    simpa only [Function.comp_def,heq,kernel_RToEIntegralClustering] using hi
+  · change (∫ z, kernel_RToEIntegralClustering Wfn z*fg_a.1 z) = _
     calc
       _ = ∫ z : NPointDomain d (n+m),
-          kernel Wfn (z + blockShift n m a)*fg_a.1 (z + blockShift n m a) :=
-        (integral_add_right_eq_self (fun z => kernel Wfn z*fg_a.1 z) (blockShift n m a)).symm
+          kernel_RToEIntegralClustering Wfn (z + blockShift n m a)*fg_a.1 (z + blockShift n m a) :=
+        (integral_add_right_eq_self (fun z => kernel_RToEIntegralClustering Wfn z*fg_a.1 z) (blockShift n m a)).symm
       _ = _ := integral_congr_ae (Eventually.of_forall fun z =>
-        congrArg (fun v => kernel Wfn (z + blockShift n m a)*v) (heq z))
+        congrArg (fun v => kernel_RToEIntegralClustering Wfn (z + blockShift n m a)*v) (heq z))
 
-private theorem constructed_cluster_norm (Wfn : WightmanFunctions d)
+theorem constructed_cluster_norm (Wfn : WightmanFunctions d)
     (f : ZeroDiagonalSchwartz d n) (g : ZeroDiagonalSchwartz d m)
     (ε : ℝ) (hε : 0 < ε) :
     ∃ R : ℝ, 0 < R ∧ ∀ a : SpacetimeDim d, a 0 = 0 → R < ‖a‖ →
@@ -291,7 +295,7 @@ private theorem constructed_cluster_norm (Wfn : WightmanFunctions d)
     simpa only [Fin.cons_zero] using ha0.symm
   have hbn : ‖b‖ = ‖a‖ := (norm_spatialLift b).symm.trans (congrArg norm hcons)
   have hb := hRb (x := b) (by simpa only [Set.mem_compl_iff,Metric.mem_closedBall,dist_zero_right,hbn] using not_le.mpr hbr)
-  let J (z : NPointDomain d (n+m)) := kernel Wfn (z + blockShift n m a)*(f.1.tensorProduct g.1) z
+  let J (z : NPointDomain d (n+m)) := kernel_RToEIntegralClustering Wfn (z + blockShift n m a)*(f.1.tensorProduct g.1) z
   let s : Set (NPointDomain d (n+m)) := {z | L*(1+‖z‖) < ‖a‖}
   have hs : MeasurableSet s :=
     (isOpen_lt (continuous_const.mul (continuous_const.add continuous_norm)) continuous_const).measurableSet

@@ -1,16 +1,11 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import Mathlib.Analysis.Calculus.Taylor
-import Mathlib.Analysis.Distribution.SchwartzSpace.Deriv
+module
 
+public import Mathlib.Analysis.Calculus.Taylor
+public import Mathlib.Analysis.Distribution.SchwartzSpace.Deriv
 
-
-
-
-
-
-
-
+@[expose] public section
 
 open scoped Topology
 

@@ -5,42 +5,16 @@ Copyright (c) 2025 ModularPhysics Contributors.
 Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
-import OSReconstruction.ComplexLieGroups.BHWCore
-import OSReconstruction.ComplexLieGroups.GeodesicConvexity
-import OSReconstruction.SCV.IdentityTheorem
-import OSReconstruction.SCV.TotallyRealIdentity
-import Mathlib.MeasureTheory.Integral.DominatedConvergence
-import Mathlib.Analysis.Distribution.SchwartzSpace.Deriv
+module
 
+public import OSReconstruction.ComplexLieGroups.BHWCore
+public import OSReconstruction.ComplexLieGroups.GeodesicConvexity
+public import OSReconstruction.SCV.IdentityTheorem
+public import OSReconstruction.SCV.TotallyRealIdentity
+public import Mathlib.MeasureTheory.Integral.DominatedConvergence
+public import Mathlib.Analysis.Distribution.SchwartzSpace.Deriv
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -153,7 +127,7 @@ def consecutiveDiff (x : Fin n → Fin (d + 1) → ℝ) (k : Fin n) : Fin (d + 1
   fun μ => x k μ - if h : k.val = 0 then 0 else x ⟨k.val - 1, by omega⟩ μ
 
 /-- Continuity of a single component of consecutiveDiff in x. -/
-private lemma continuous_consecutiveDiff_component (k : Fin n) (μ : Fin (d + 1)) :
+lemma continuous_consecutiveDiff_component (k : Fin n) (μ : Fin (d + 1)) :
     Continuous (fun x : Fin n → Fin (d + 1) → ℝ => consecutiveDiff x k μ) := by
   simp only [consecutiveDiff]
   apply Continuous.sub
@@ -213,7 +187,7 @@ theorem forwardJostSet_nonempty (_hn : 1 ≤ n) (hd : 1 ≤ d) :
   rw [htime, hspat]; simp
 
 /-- A vector with |v₀| < v₁ is spacelike (needs d ≥ 1). -/
-private lemma isSpacelike_of_abs_time_lt_spatial (hd : 1 ≤ d)
+lemma isSpacelike_of_abs_time_lt_spatial (hd : 1 ≤ d)
     (v : Fin (d + 1) → ℝ) (hv : |v 0| < v ⟨1, by omega⟩) : IsSpacelike d v := by
   simp only [IsSpacelike]
   rw [Fin.sum_univ_succ]
@@ -234,7 +208,7 @@ private lemma isSpacelike_of_abs_time_lt_spatial (hd : 1 ≤ d)
   nlinarith [sq_nonneg (v ⟨1, by omega⟩ - v 0), sq_nonneg (v ⟨1, by omega⟩ + v 0)]
 
 /-- Telescoping sum: x ⟨m, _⟩ μ = Σ_{j=0}^{m} (consecutiveDiff x ⟨j, _⟩ μ). -/
-private lemma sum_consecutiveDiff (x : Fin n → Fin (d + 1) → ℝ) (μ : Fin (d + 1))
+lemma sum_consecutiveDiff (x : Fin n → Fin (d + 1) → ℝ) (μ : Fin (d + 1))
     (m : ℕ) (hm : m < n) :
     x ⟨m, hm⟩ μ = ∑ j : Fin (m + 1), consecutiveDiff x ⟨j.val, by omega⟩ μ := by
   induction m with
@@ -259,7 +233,7 @@ private lemma sum_consecutiveDiff (x : Fin n → Fin (d + 1) → ℝ) (μ : Fin 
     rw [this]; ring
 
 /-- Partial telescoping: x_b - x_a = Σ_{j=0}^{b-a-1} ζ_{j+a+1}. -/
-private lemma diff_sum_consecutiveDiff (x : Fin n → Fin (d + 1) → ℝ) (μ : Fin (d + 1))
+lemma diff_sum_consecutiveDiff (x : Fin n → Fin (d + 1) → ℝ) (μ : Fin (d + 1))
     (a b : ℕ) (ha : a < n) (hb : b < n) (hab : a < b) :
     x ⟨b, hb⟩ μ - x ⟨a, ha⟩ μ =
     ∑ j : Fin (b - a), consecutiveDiff x ⟨j.val + a + 1, by omega⟩ μ := by
@@ -369,7 +343,7 @@ theorem forwardJostSet_subset_jostSet (hd : 1 ≤ d) :
 
 -- The Wick rotation matrix: exp(-iπ/2 K₁) where K₁ is the boost generator.
 -- Entries: Λ_{0,1} = Λ_{1,0} = -i, Λ_{μ,μ} = 1 for μ ≥ 2, all others 0.
-private noncomputable def wickMatrix (d : ℕ) (hd : 1 ≤ d) :
+noncomputable def wickMatrix (d : ℕ) (hd : 1 ≤ d) :
     Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ :=
   fun μ ν =>
     if μ = (0 : Fin (d + 1)) ∧ ν = ⟨1, by omega⟩ then -Complex.I
@@ -378,7 +352,7 @@ private noncomputable def wickMatrix (d : ℕ) (hd : 1 ≤ d) :
     else 0
 
 -- Column simplification: column 0 is nonzero only at row ⟨1,_⟩
-private lemma wickMatrix_col0 (d : ℕ) (hd : 1 ≤ d) (α : Fin (d + 1)) :
+lemma wickMatrix_col0 (d : ℕ) (hd : 1 ≤ d) (α : Fin (d + 1)) :
     wickMatrix d hd α 0 = if α = ⟨1, by omega⟩ then -Complex.I else 0 := by
   unfold wickMatrix
   rw [if_neg (by intro ⟨_, h⟩; exact absurd (congr_arg Fin.val h) (by simp))]
@@ -388,7 +362,7 @@ private lemma wickMatrix_col0 (d : ℕ) (hd : 1 ≤ d) (α : Fin (d + 1)) :
     rw [if_neg (by intro ⟨h1, h2, _⟩; exact h2 h1)]
 
 -- Column simplification: column ⟨1,_⟩ is nonzero only at row 0
-private lemma wickMatrix_col1 (d : ℕ) (hd : 1 ≤ d) (α : Fin (d + 1)) :
+lemma wickMatrix_col1 (d : ℕ) (hd : 1 ≤ d) (α : Fin (d + 1)) :
     wickMatrix d hd α ⟨1, by omega⟩ = if α = 0 then -Complex.I else 0 := by
   unfold wickMatrix
   by_cases hα0 : α = 0
@@ -398,7 +372,7 @@ private lemma wickMatrix_col1 (d : ℕ) (hd : 1 ≤ d) (α : Fin (d + 1)) :
     rw [if_neg (by intro ⟨h, _, h2⟩; exact h2 h)]
 
 -- Column simplification: for μ ≥ 2, column μ is nonzero only at row μ
-private lemma wickMatrix_col_ge2 (d : ℕ) (hd : 1 ≤ d) (μ : Fin (d + 1))
+lemma wickMatrix_col_ge2 (d : ℕ) (hd : 1 ≤ d) (μ : Fin (d + 1))
     (hμ0 : μ ≠ 0) (hμ1 : μ ≠ ⟨1, by omega⟩) (α : Fin (d + 1)) :
     wickMatrix d hd α μ = if α = μ then 1 else 0 := by
   unfold wickMatrix
@@ -409,7 +383,7 @@ private lemma wickMatrix_col_ge2 (d : ℕ) (hd : 1 ≤ d) (μ : Fin (d + 1))
   · rw [if_neg (by intro ⟨h, _, _⟩; exact hαμ h), if_neg hαμ]
 
 -- Support lemma: wickMatrix nonzero implies specific row-column pattern
-private lemma wickMatrix_support (d : ℕ) (hd : 1 ≤ d) (α μ : Fin (d + 1))
+lemma wickMatrix_support (d : ℕ) (hd : 1 ≤ d) (α μ : Fin (d + 1))
     (h : wickMatrix d hd α μ ≠ 0) :
     (α = 0 ∧ μ = ⟨1, by omega⟩) ∨ (α = ⟨1, by omega⟩ ∧ μ = 0) ∨
     (α = μ ∧ α ≠ 0 ∧ α ≠ ⟨1, by omega⟩) := by
@@ -421,7 +395,7 @@ private lemma wickMatrix_support (d : ℕ) (hd : 1 ≤ d) (α μ : Fin (d + 1))
   · exact absurd rfl h
 
 -- Row lemma: row 0 is nonzero only at column ⟨1,_⟩
-private lemma wickMatrix_row0 (d : ℕ) (hd : 1 ≤ d) (ν : Fin (d + 1)) :
+lemma wickMatrix_row0 (d : ℕ) (hd : 1 ≤ d) (ν : Fin (d + 1)) :
     wickMatrix d hd 0 ν = if ν = ⟨1, by omega⟩ then -Complex.I else 0 := by
   unfold wickMatrix
   by_cases hν : ν = ⟨1, by omega⟩
@@ -431,7 +405,7 @@ private lemma wickMatrix_row0 (d : ℕ) (hd : 1 ≤ d) (ν : Fin (d + 1)) :
         if_neg (by intro ⟨_, h, _⟩; exact h rfl), if_neg hν]
 
 -- Row lemma: row ⟨1,_⟩ is nonzero only at column 0
-private lemma wickMatrix_row1 (d : ℕ) (hd : 1 ≤ d) (ν : Fin (d + 1)) :
+lemma wickMatrix_row1 (d : ℕ) (hd : 1 ≤ d) (ν : Fin (d + 1)) :
     wickMatrix d hd ⟨1, by omega⟩ ν = if ν = 0 then -Complex.I else 0 := by
   unfold wickMatrix
   by_cases hν : ν = 0
@@ -443,7 +417,7 @@ private lemma wickMatrix_row1 (d : ℕ) (hd : 1 ≤ d) (ν : Fin (d + 1)) :
         if_neg (by intro ⟨_, _, h⟩; exact h rfl), if_neg hν]
 
 -- Row lemma: for μ ≥ 2, row μ is nonzero only at column μ
-private lemma wickMatrix_row_ge2 (d : ℕ) (hd : 1 ≤ d) (μ : Fin (d + 1))
+lemma wickMatrix_row_ge2 (d : ℕ) (hd : 1 ≤ d) (μ : Fin (d + 1))
     (hμ0 : μ ≠ 0) (hμ1 : μ ≠ ⟨1, by omega⟩) (ν : Fin (d + 1)) :
     wickMatrix d hd μ ν = if ν = μ then 1 else 0 := by
   unfold wickMatrix
@@ -454,7 +428,7 @@ private lemma wickMatrix_row_ge2 (d : ℕ) (hd : 1 ≤ d) (μ : Fin (d + 1))
   · rw [if_neg (by intro ⟨h, _, _⟩; exact hνμ h.symm), if_neg hνμ]
 
 -- The Wick rotation preserves the Minkowski metric (componentwise)
-private lemma wickMatrix_metric (d : ℕ) (hd : 1 ≤ d) :
+lemma wickMatrix_metric (d : ℕ) (hd : 1 ≤ d) :
     ∀ (μ ν : Fin (d + 1)),
     ∑ α : Fin (d + 1),
       (minkowskiSignature d α : ℂ) * wickMatrix d hd α μ * wickMatrix d hd α ν =
@@ -502,7 +476,7 @@ private lemma wickMatrix_metric (d : ℕ) (hd : 1 ≤ d) :
         rw [if_neg (by intro ⟨h, _, _⟩; rw [hαμ] at h; exact hμν h)]
 
 -- The Wick rotation has determinant 1
-private lemma wickMatrix_det (d : ℕ) (hd : 1 ≤ d) :
+lemma wickMatrix_det (d : ℕ) (hd : 1 ≤ d) :
     (wickMatrix d hd).det = 1 := by
   rw [Matrix.det_apply]
   have h01 : (0 : Fin (d + 1)) ≠ ⟨1, by omega⟩ := by
@@ -566,7 +540,7 @@ private lemma wickMatrix_det (d : ℕ) (hd : 1 ≤ d) :
   rw [hprod]; simp
 
 -- The Wick rotation as a ComplexLorentzGroup element
-private noncomputable def wickCLG (d : ℕ) (hd : 1 ≤ d) : ComplexLorentzGroup d where
+noncomputable def wickCLG (d : ℕ) (hd : 1 ≤ d) : ComplexLorentzGroup d where
   val := wickMatrix d hd
   metric_preserving := wickMatrix_metric d hd
   proper := wickMatrix_det d hd
@@ -723,7 +697,7 @@ theorem extendF_holomorphicOn (n : ℕ) (F : (Fin n → Fin (d + 1) → ℂ) →
 
 
 /-- The timelike unit vector (δ, 0, ..., 0) is in the open forward cone when δ > 0. -/
-private lemma inOpenForwardCone_timelike {δ : ℝ} (hδ : 0 < δ) :
+lemma inOpenForwardCone_timelike {δ : ℝ} (hδ : 0 < δ) :
     InOpenForwardCone d (fun μ : Fin (d + 1) => if μ = (0 : Fin (d + 1)) then δ else 0) := by
   constructor
   · simp [hδ]

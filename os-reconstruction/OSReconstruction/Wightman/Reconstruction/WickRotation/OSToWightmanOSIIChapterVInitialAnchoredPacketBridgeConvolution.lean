@@ -1,20 +1,12 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVInitialAnchoredPacketTimeShell
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVInitialProductBasepointSource
-import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceTotalTimePushforward
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVInitialAnchoredPacketTimeShell
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVInitialProductBasepointSource
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceTotalTimePushforward
 
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -24,7 +16,7 @@ open scoped Classical BigOperators Convolution Pointwise Topology
 namespace OSReconstruction
 namespace OSIIChapterV
 
-private theorem section43CompactPositiveTimeSource1D_ext
+theorem section43CompactPositiveTimeSource1D_ext
     {g h : Section43CompactPositiveTimeSource1D}
     (hf : g.f = h.f) :
     g = h := by

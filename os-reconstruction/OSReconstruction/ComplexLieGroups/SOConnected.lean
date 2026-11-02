@@ -5,41 +5,18 @@ Copyright (c) 2025 ModularPhysics Contributors.
 Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
-import Mathlib.Analysis.Complex.Basic
-import Mathlib.Analysis.Normed.Algebra.MatrixExponential
-import Mathlib.Topology.Connected.PathConnected
-import Mathlib.LinearAlgebra.Matrix.Determinant.Basic
-import Mathlib.Analysis.SpecialFunctions.Complex.LogDeriv
-import Mathlib.Data.Matrix.Basis
-import Mathlib.Analysis.Complex.Polynomial.Basic
+module
 
+public import Mathlib.Analysis.Complex.Basic
+public import Mathlib.Analysis.Normed.Algebra.MatrixExponential
+public import Mathlib.Topology.Connected.PathConnected
+public import Mathlib.LinearAlgebra.Matrix.Determinant.Basic
+public import Mathlib.Analysis.SpecialFunctions.Complex.LogDeriv
+public import Mathlib.Data.Matrix.Basis
+public import Mathlib.Analysis.Complex.Polynomial.Basic
+public import Mathlib.Analysis.Matrix.Normed
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -172,7 +149,7 @@ theorem exp_det_one_skew {X : Matrix (Fin n) (Fin n) ℂ}
   exact h1_mem
 
 /-- Left multiplication is continuous. -/
-private theorem continuous_mul_left (a : SOComplex n) :
+theorem continuous_mul_left (a : SOComplex n) :
     Continuous (a * · : SOComplex n → SOComplex n) := by
   have hind : IsInducing (SOComplex.val : SOComplex n → _) := ⟨rfl⟩
   rw [hind.continuous_iff]
@@ -188,7 +165,7 @@ theorem joined_one_mul {a b : SOComplex n}
   exact ha.trans h
 
 /-- If a is joined to the identity, so is its inverse. -/
-private theorem joined_one_inv {a : SOComplex n} (ha : Joined one a) :
+theorem joined_one_inv {a : SOComplex n} (ha : Joined one a) :
     Joined one (inv a) := by
   have hinv_cont : Continuous (inv : SOComplex n → SOComplex n) := by
     have hind : IsInducing (SOComplex.val : SOComplex n → _) := ⟨rfl⟩
@@ -202,44 +179,44 @@ private theorem joined_one_inv {a : SOComplex n} (ha : Joined one a) :
 
 /-- The projection onto the 2D subspace spanned by e_i and e_j:
     P = E_{ii} + E_{jj}. -/
-private def P (i j : Fin n) : Matrix (Fin n) (Fin n) ℂ :=
+def P (i j : Fin n) : Matrix (Fin n) (Fin n) ℂ :=
   Matrix.single i i 1 + Matrix.single j j 1
 
 /-- The skew generator for rotation in the (i,j)-plane:
     Q = E_{ij} - E_{ji}. -/
-private def Q (i j : Fin n) : Matrix (Fin n) (Fin n) ℂ :=
+def Q (i j : Fin n) : Matrix (Fin n) (Fin n) ℂ :=
   Matrix.single i j 1 - Matrix.single j i 1
 
 
 
-private theorem P_sq (i j : Fin n) (hij : i ≠ j) : P i j * P i j = P i j := by
+theorem P_sq (i j : Fin n) (hij : i ≠ j) : P i j * P i j = P i j := by
   unfold P
   simp only [add_mul, mul_add, Matrix.single_mul_single_same, mul_one,
     Matrix.single_mul_single_of_ne (1 : ℂ) i i j hij (1 : ℂ),
     Matrix.single_mul_single_of_ne (1 : ℂ) j j i hij.symm (1 : ℂ)]; abel
 
-private theorem Q_sq (i j : Fin n) (hij : i ≠ j) : Q i j * Q i j = -P i j := by
+theorem Q_sq (i j : Fin n) (hij : i ≠ j) : Q i j * Q i j = -P i j := by
   unfold Q P
   simp only [sub_mul, mul_sub, Matrix.single_mul_single_same, mul_one,
     Matrix.single_mul_single_of_ne (1 : ℂ) i j i hij.symm (1 : ℂ),
     Matrix.single_mul_single_of_ne (1 : ℂ) j i j hij (1 : ℂ)]; abel
 
-private theorem PQ_eq (i j : Fin n) (hij : i ≠ j) : P i j * Q i j = Q i j := by
+theorem PQ_eq (i j : Fin n) (hij : i ≠ j) : P i j * Q i j = Q i j := by
   unfold P Q
   simp only [add_mul, mul_sub, Matrix.single_mul_single_same, mul_one,
     Matrix.single_mul_single_of_ne (1 : ℂ) i i j hij (1 : ℂ),
     Matrix.single_mul_single_of_ne (1 : ℂ) j j i hij.symm (1 : ℂ)]; abel
 
-private theorem QP_eq (i j : Fin n) (hij : i ≠ j) : Q i j * P i j = Q i j := by
+theorem QP_eq (i j : Fin n) (hij : i ≠ j) : Q i j * P i j = Q i j := by
   unfold Q P
   simp only [sub_mul, mul_add, Matrix.single_mul_single_same, mul_one,
     Matrix.single_mul_single_of_ne (1 : ℂ) i j i hij.symm (1 : ℂ),
     Matrix.single_mul_single_of_ne (1 : ℂ) j i j hij (1 : ℂ)]; abel
 
-private theorem P_transpose (i j : Fin n) : (P i j).transpose = P i j := by
+theorem P_transpose (i j : Fin n) : (P i j).transpose = P i j := by
   unfold P; simp [Matrix.transpose_add, Matrix.transpose_single]
 
-private theorem Q_transpose (i j : Fin n) : (Q i j).transpose = -Q i j := by
+theorem Q_transpose (i j : Fin n) : (Q i j).transpose = -Q i j := by
   unfold Q; simp [Matrix.transpose_sub, Matrix.transpose_single]
 
 
@@ -279,7 +256,7 @@ theorem rotMatrix_orthogonal (i j : Fin n) (hij : i ≠ j) (c s : ℂ)
 
 
 /-- Helper: c + Is ≠ 0 when c²+s²=1. -/
-private theorem csI_ne_zero (c s : ℂ) (hcs : c ^ 2 + s ^ 2 = 1) :
+theorem csI_ne_zero (c s : ℂ) (hcs : c ^ 2 + s ^ 2 = 1) :
     c + I * s ≠ 0 := by
   intro h
   have h1 : (c + I * s) * (c - I * s) = c ^ 2 + s ^ 2 := by
@@ -289,20 +266,20 @@ private theorem csI_ne_zero (c s : ℂ) (hcs : c ^ 2 + s ^ 2 = 1) :
   exact zero_ne_one h1
 
 /-- Helper: θ*I = log(c+Is) where θ = -I·log(c+Is). -/
-private theorem thetaI_eq_log (c s : ℂ) (_hw_ne : c + I * s ≠ 0) :
+theorem thetaI_eq_log (c s : ℂ) (_hw_ne : c + I * s ≠ 0) :
     (-I * Complex.log (c + I * s)) * I = Complex.log (c + I * s) := by
   have : -I * Complex.log (c + I * s) * I = -(I * I) * Complex.log (c + I * s) := by ring
   rw [this, show I * I = I ^ 2 from (sq I).symm, I_sq]; ring
 
 /-- Helper: (c+Is)⁻¹ = c - Is when c²+s²=1. -/
-private theorem csI_inv (c s : ℂ) (hcs : c ^ 2 + s ^ 2 = 1) :
+theorem csI_inv (c s : ℂ) (hcs : c ^ 2 + s ^ 2 = 1) :
     (c + I * s)⁻¹ = c - I * s := by
   rw [eq_comm, inv_eq_of_mul_eq_one_left]
   have : (c - I * s) * (c + I * s) = c ^ 2 - (I * s) ^ 2 := by ring
   rw [this, mul_pow, I_sq]; linear_combination hcs
 
 /-- cos θ = c where θ = -I·log(c+Is). -/
-private theorem cos_complex_angle (c s : ℂ) (hcs : c ^ 2 + s ^ 2 = 1)
+theorem cos_complex_angle (c s : ℂ) (hcs : c ^ 2 + s ^ 2 = 1)
     (hw_ne : c + I * s ≠ 0) :
     Complex.cos (-I * Complex.log (c + I * s)) = c := by
   set θ := -I * Complex.log (c + I * s)
@@ -314,7 +291,7 @@ private theorem cos_complex_angle (c s : ℂ) (hcs : c ^ 2 + s ^ 2 = 1)
   field_simp; ring
 
 /-- sin θ = s where θ = -I·log(c+Is). -/
-private theorem sin_complex_angle (c s : ℂ) (hcs : c ^ 2 + s ^ 2 = 1)
+theorem sin_complex_angle (c s : ℂ) (hcs : c ^ 2 + s ^ 2 = 1)
     (hw_ne : c + I * s ≠ 0) :
     Complex.sin (-I * Complex.log (c + I * s)) = s := by
   set θ := -I * Complex.log (c + I * s)
@@ -903,27 +880,27 @@ theorem first_col_sq_sum (A : SOComplex (n + 1)) :
 
 
 /-- The block diagonal matrix diag(1, B) for embedding SO(m) into SO(m+1). -/
-private def embedVal {m : ℕ} (B : Matrix (Fin m) (Fin m) ℂ) :
+def embedVal {m : ℕ} (B : Matrix (Fin m) (Fin m) ℂ) :
     Matrix (Fin (m + 1)) (Fin (m + 1)) ℂ :=
   Fin.cons (Fin.cons 1 (fun _ => 0)) (fun i => Fin.cons 0 (fun j => B i j))
 
-@[simp] private theorem embedVal_zero_zero {m : ℕ} (B : Matrix (Fin m) (Fin m) ℂ) :
+@[simp] theorem embedVal_zero_zero {m : ℕ} (B : Matrix (Fin m) (Fin m) ℂ) :
     embedVal B 0 0 = 1 := by simp [embedVal]
 
-@[simp] private theorem embedVal_zero_succ {m : ℕ} (B : Matrix (Fin m) (Fin m) ℂ) (j : Fin m) :
+@[simp] theorem embedVal_zero_succ {m : ℕ} (B : Matrix (Fin m) (Fin m) ℂ) (j : Fin m) :
     embedVal B 0 j.succ = 0 := by simp [embedVal]
 
-@[simp] private theorem embedVal_succ_succ {m : ℕ} (B : Matrix (Fin m) (Fin m) ℂ) (i j : Fin m) :
+@[simp] theorem embedVal_succ_succ {m : ℕ} (B : Matrix (Fin m) (Fin m) ℂ) (i j : Fin m) :
     embedVal B i.succ j.succ = B i j := by simp [embedVal]
 
-private theorem embedVal_transpose {m : ℕ} (B : Matrix (Fin m) (Fin m) ℂ) :
+theorem embedVal_transpose {m : ℕ} (B : Matrix (Fin m) (Fin m) ℂ) :
     (embedVal B).transpose = embedVal B.transpose := by
   ext a b
   change embedVal B b a = embedVal B.transpose a b
   refine Fin.cases ?_ (fun i => ?_) a <;> refine Fin.cases ?_ (fun j => ?_) b <;>
     simp [embedVal]
 
-private theorem embedVal_orthogonal {m : ℕ} (B : Matrix (Fin m) (Fin m) ℂ)
+theorem embedVal_orthogonal {m : ℕ} (B : Matrix (Fin m) (Fin m) ℂ)
     (hB : B.transpose * B = 1) :
     (embedVal B).transpose * embedVal B = 1 := by
   rw [embedVal_transpose]
@@ -942,11 +919,11 @@ private theorem embedVal_orthogonal {m : ℕ} (B : Matrix (Fin m) (Fin m) ℂ)
     have h := congr_fun (congr_fun hB i) j
     simpa [Matrix.mul_apply, Matrix.transpose_apply, Matrix.one_apply, Fin.succ_inj] using h
 
-private theorem embedVal_submatrix {m : ℕ} (B : Matrix (Fin m) (Fin m) ℂ) :
+theorem embedVal_submatrix {m : ℕ} (B : Matrix (Fin m) (Fin m) ℂ) :
     (embedVal B).submatrix (Fin.succAbove 0) (Fin.succAbove 0) = B := by
   ext i j; simp [Matrix.submatrix, Fin.succAbove, embedVal]
 
-private theorem embedVal_det {m : ℕ} (B : Matrix (Fin m) (Fin m) ℂ) (hB : B.det = 1) :
+theorem embedVal_det {m : ℕ} (B : Matrix (Fin m) (Fin m) ℂ) (hB : B.det = 1) :
     (embedVal B).det = 1 := by
   rw [Matrix.det_succ_row (embedVal B) 0, Fin.sum_univ_succ]
   simp only [embedVal_zero_zero, embedVal_zero_succ, Fin.val_zero,
@@ -991,12 +968,12 @@ theorem embed_joined {m : ℕ} {A : SOComplex m}
 
 
 /-- Every element of ℂ is a square (from algebraic closure). -/
-private theorem exists_sq_root (z : ℂ) : ∃ w : ℂ, w ^ 2 = z := by
+theorem exists_sq_root (z : ℂ) : ∃ w : ℂ, w ^ 2 = z := by
   obtain ⟨w, hw⟩ := IsAlgClosed.exists_eq_mul_self z; exact ⟨w, by rw [sq, hw]⟩
 
 /-- Column reduction: given A ∈ SO(n;ℂ) with n ≥ 2, there is a product of rotation elements
     R (joined to identity) such that (R * A) has first column e₀ = (1, 0, ..., 0). -/
-private theorem column_reduce {m : ℕ} (A : SOComplex (m + 2)) :
+theorem column_reduce {m : ℕ} (A : SOComplex (m + 2)) :
     ∃ R : SOComplex (m + 2), Joined one R ∧
       (∀ k : Fin (m + 2), (R.val * A.val) k 0 = if k = 0 then 1 else 0) := by
   -- Strong induction on the count of nonzero entries below position 0
@@ -1216,7 +1193,7 @@ def firstColEqE0 {m : ℕ} (A : SOComplex (m + 2)) : Prop :=
   ∀ k : Fin (m + 2), A.val k 0 = if k = 0 then 1 else 0
 
 /-- Basepoint-join criterion for preconnectedness. -/
-private theorem isPreconnected_of_joinedIn_base
+theorem isPreconnected_of_joinedIn_base
     {X : Type*} [TopologicalSpace X]
     {S : Set X} {x0 : X}
     (hx0 : x0 ∈ S)

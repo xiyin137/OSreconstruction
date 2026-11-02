@@ -5,34 +5,16 @@ Copyright (c) 2026 ModularPhysics Contributors. All rights reserved.
 Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
-import Mathlib.Analysis.Calculus.BumpFunction.InnerProduct
-import Mathlib.Analysis.Calculus.BumpFunction.Normed
-import Mathlib.Analysis.Normed.Lp.PiLp
-import Mathlib.MeasureTheory.Measure.Haar.InnerProductSpace
-import Mathlib.MeasureTheory.Measure.Haar.NormedSpace
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIPartialConvolutionKernel
+module
 
+public import Mathlib.Analysis.Calculus.BumpFunction.InnerProduct
+public import Mathlib.Analysis.Calculus.BumpFunction.Normed
+public import Mathlib.Analysis.Normed.Lp.PiLp
+public import Mathlib.MeasureTheory.Measure.Haar.InnerProductSpace
+public import Mathlib.MeasureTheory.Measure.Haar.NormedSpace
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIPartialConvolutionKernel
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -380,7 +362,7 @@ theorem osiiStep4ComplexBlockFlattenMeasurableEquiv_symm_differentiable
       Differentiable ℂ
         (fun z : Fin (k * q) → ℂ => z (finProdFinEquiv (i, mu))))
 
-private theorem osiiStep4_volume_map_complex_curry_symm (k q : ℕ) :
+theorem osiiStep4_volume_map_complex_curry_symm (k q : ℕ) :
     (volume : Measure (Fin k → Fin q → ℂ)).map
       (MeasurableEquiv.curry (Fin k) (Fin q) ℂ).symm =
         (volume : Measure (Fin k × Fin q → ℂ)) := by

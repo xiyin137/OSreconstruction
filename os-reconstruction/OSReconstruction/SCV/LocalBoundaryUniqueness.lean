@@ -1,5 +1,9 @@
-import OSReconstruction.SCV.LocalDistributionalEOW
-import OSReconstruction.SCV.LocalEOWChartEnvelope
+module
+
+public import OSReconstruction.SCV.LocalDistributionalEOW
+public import OSReconstruction.SCV.LocalEOWChartEnvelope
+
+@[expose] public section
 
 /-!
 # Local Distributional Boundary Uniqueness

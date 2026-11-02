@@ -5,16 +5,12 @@ Copyright (c) 2025 ModularPhysics Contributors.
 Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanEuclideanNearIdentity
-import OSReconstruction.ComplexLieGroups.Connectedness.ComplexInvariance.Extend
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanEuclideanNearIdentity
+public import OSReconstruction.ComplexLieGroups.Connectedness.ComplexInvariance.Extend
 
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 

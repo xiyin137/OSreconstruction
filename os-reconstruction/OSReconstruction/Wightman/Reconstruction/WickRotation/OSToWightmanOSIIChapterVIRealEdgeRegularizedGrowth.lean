@@ -1,40 +1,28 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import Init
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIRegularizationRadius
-import Mathlib.Analysis.Calculus.BumpFunction.InnerProduct
-import Mathlib.Analysis.Calculus.BumpFunction.Normed
-import Mathlib.Analysis.Complex.MeanValue
-import Mathlib.Analysis.Complex.Tietze
-import Mathlib.Analysis.SpecialFunctions.PolarCoord
-import Mathlib.LinearAlgebra.Complex.FiniteDimensional
-import Mathlib.MeasureTheory.Integral.Pi
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIComplexMeanValue
-import Mathlib.Analysis.Calculus.BumpFunction.FiniteDimension
-import Mathlib.Analysis.Calculus.BumpFunction.Convolution
-import Mathlib.Analysis.Calculus.ContDiff.Convolution
-import Mathlib.MeasureTheory.Measure.ProbabilityMeasure
-import OSReconstruction.SCV.EuclideanWeylPairing
-import OSReconstruction.SCV.SchwartzFiniteSeminormBound
-import OSReconstruction.Wightman.SchwartzTensorProduct
-import OSReconstruction.SCV.DistributionalRepresentationUniqueness
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIRegularizedLadderGrowth
+module
 
+public import Init
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIRegularizationRadius
+public import Mathlib.Analysis.Calculus.BumpFunction.InnerProduct
+public import Mathlib.Analysis.Calculus.BumpFunction.Normed
+public import Mathlib.Analysis.Complex.MeanValue
+public import Mathlib.Analysis.Complex.Tietze
+public import Mathlib.Analysis.SpecialFunctions.PolarCoord
+public import Mathlib.LinearAlgebra.Complex.FiniteDimensional
+public import Mathlib.MeasureTheory.Integral.Pi
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIComplexMeanValue
+public import Mathlib.Analysis.Calculus.BumpFunction.FiniteDimension
+public import Mathlib.Analysis.Calculus.BumpFunction.Convolution
+public import Mathlib.Analysis.Calculus.ContDiff.Convolution
+public import Mathlib.MeasureTheory.Measure.ProbabilityMeasure
+public import OSReconstruction.SCV.EuclideanWeylPairing
+public import OSReconstruction.SCV.SchwartzFiniteSeminormBound
+public import OSReconstruction.Wightman.SchwartzTensorProduct
+public import OSReconstruction.SCV.DistributionalRepresentationUniqueness
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIRegularizedLadderGrowth
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 

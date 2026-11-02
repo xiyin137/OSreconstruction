@@ -1,7 +1,11 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVICoupledBoostSource
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIWickWardRestriction
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVICoupledTimeBoundary
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIITimeDomainGeometry
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVICoupledBoostSource
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIWickWardRestriction
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVICoupledTimeBoundary
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIITimeDomainGeometry
+
+@[expose] public section
 
 /-!
 # The coupled Ward identity and its native boundary
@@ -26,7 +30,7 @@ open OSIIChapterV OSIIChapterVI
 variable {d k : Nat} [NeZero d] [NeZero k]
 variable {OS : OsterwalderSchraderAxioms d} {A : OSIITimeContinuationStage d k}
 
-private theorem wickWard_algebra (P Q x y : Complex) :
+theorem wickWard_algebra (P Q x y : Complex) :
     I * (P + (y - x * I) * Q) = I * P + x * Q + I * y * Q := by
   calc
     _ = I * P + I * y * Q - (I * I) * (x * Q) := by ring

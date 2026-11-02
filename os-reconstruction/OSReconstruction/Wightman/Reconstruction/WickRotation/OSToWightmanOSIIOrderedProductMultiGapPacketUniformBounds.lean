@@ -1,23 +1,11 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIOrderedProductMultiGapPacketGrowth
-import OSReconstruction.Wightman.Reconstruction.WickRotation.deprecated.OSFixedOrderGrowth
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIOrderedProductMultiGapPacketGrowth
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.deprecated.OSFixedOrderGrowth
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -27,7 +15,7 @@ namespace OSReconstruction
 
 variable {d n : ℕ}
 
-private theorem abs_matrix_entry_le_one_of_orthogonal
+theorem abs_matrix_entry_le_one_of_orthogonal
     (R : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ)
     (hR : R.transpose * R = 1)
     (i j : Fin (d + 1)) :

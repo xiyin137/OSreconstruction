@@ -1,7 +1,11 @@
-import OSReconstruction.SCV.HeadBlockIntegral
-import OSReconstruction.SCV.HeadFiberAntideriv
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIProductTensorSourceCurrent
-import OSReconstruction.Wightman.SpectralEquivalence
+module
+
+public import OSReconstruction.SCV.HeadBlockIntegral
+public import OSReconstruction.SCV.HeadFiberAntideriv
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIProductTensorSourceCurrent
+public import OSReconstruction.Wightman.SpectralEquivalence
+
+@[expose] public section
 
 /-!
 # OS-II Chapter V reduction of ordered time/spatial tensors
@@ -213,7 +217,7 @@ theorem section43SpatialPrependBasepoint_succ
         (ι := Fin k × Fin d) (𝕜 := ℝ) η) (i, j) := by
   simp [section43SpatialPrependBasepoint]
 
-private theorem section43SpatialPrependBasepoint_eq_flat
+theorem section43SpatialPrependBasepoint_eq_flat
     (x₀ : Fin d → ℝ)
     (η : Section43SpatialSpace d k) :
     (section43SpatialFlatCLE d (k + 1)).symm

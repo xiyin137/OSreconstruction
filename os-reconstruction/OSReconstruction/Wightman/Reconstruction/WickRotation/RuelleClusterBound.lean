@@ -5,79 +5,15 @@ Copyright (c) 2026 ModularPhysics Contributors. All rights reserved.
 Released under Apache 2.0 license.
 Authors: Michael Douglas, ModularPhysics Contributors
 -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.BHWTranslation
-import OSReconstruction.Wightman.Reconstruction.WickRotation.SchwingerAxioms
-import Init
-import OSReconstruction.GeneralResults.SchwartzFlatness
-import OSReconstruction.Wightman.Reconstruction.SchwingerOS
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.BHWTranslation
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.SchwingerAxioms
+public import Init
+public import OSReconstruction.GeneralResults.SchwartzFlatness
+public import OSReconstruction.Wightman.Reconstruction.SchwingerOS
+
+@[expose] public section
 
 open scoped Classical
 

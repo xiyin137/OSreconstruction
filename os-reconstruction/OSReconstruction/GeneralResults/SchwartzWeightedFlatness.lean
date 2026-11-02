@@ -1,7 +1,11 @@
-import OSReconstruction.GeneralResults.SchwartzFlatness
-import Mathlib.Analysis.Calculus.ContDiff.Bounds
-import Mathlib.MeasureTheory.Constructions.Pi
-import Mathlib.MeasureTheory.Measure.Lebesgue.Basic
+module
+
+public import OSReconstruction.GeneralResults.SchwartzFlatness
+public import Mathlib.Analysis.Calculus.ContDiff.Bounds
+public import Mathlib.MeasureTheory.Constructions.Pi
+public import Mathlib.MeasureTheory.Measure.Lebesgue.Basic
+
+@[expose] public section
 
 /-!
 # Uniform weighted flatness

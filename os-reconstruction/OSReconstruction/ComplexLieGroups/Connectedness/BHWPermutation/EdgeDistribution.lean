@@ -1,6 +1,10 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.PermutationFlow
+module
+
+public import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.PermutationFlow
+
+@[expose] public section
 
 noncomputable section
 

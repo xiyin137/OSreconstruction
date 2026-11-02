@@ -3,8 +3,12 @@ Copyright (c) 2025 ModularPhysics Contributors.
 Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
-import OSReconstruction.ComplexLieGroups.DifferenceCoordinatesReduced
-import OSReconstruction.ComplexLieGroups.Connectedness.PermutedTubeConnected
+module
+
+public import OSReconstruction.ComplexLieGroups.DifferenceCoordinatesReduced
+public import OSReconstruction.ComplexLieGroups.Connectedness.PermutedTubeConnected
+
+@[expose] public section
 
 noncomputable section
 

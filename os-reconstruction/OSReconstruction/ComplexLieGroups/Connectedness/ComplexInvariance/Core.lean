@@ -5,74 +5,28 @@ Copyright (c) 2025 ModularPhysics Contributors.
 Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
-import Mathlib.Analysis.Complex.CauchyIntegral
-import Mathlib.Topology.Connected.PathConnected
-import Mathlib.Topology.Algebra.Group.Quotient
-import OSReconstruction.ComplexLieGroups.GeodesicConvexity
-import OSReconstruction.ComplexLieGroups.AdjacentOverlapWitness
-import OSReconstruction.ComplexLieGroups.Connectedness.Action
-import OSReconstruction.ComplexLieGroups.Connectedness.DimensionZero
-import OSReconstruction.ComplexLieGroups.Connectedness.ForwardTubeDomain
-import OSReconstruction.ComplexLieGroups.Connectedness.OrbitSetBasic
-import OSReconstruction.ComplexLieGroups.Connectedness.OrbitSetQuotient
-import OSReconstruction.ComplexLieGroups.Connectedness.ComplexInvariance.OrbitSetN1Preconnected
-import OSReconstruction.ComplexLieGroups.Connectedness.Permutation
-import OSReconstruction.ComplexLieGroups.Connectedness.PermutedTube
-import OSReconstruction.ComplexLieGroups.Connectedness.PermutedTubeConnected
-import OSReconstruction.ComplexLieGroups.Connectedness.Topology
-import OSReconstruction.ComplexLieGroups.DifferenceCoordinatesSCV
-import OSReconstruction.ComplexLieGroups.D1OrbitSet
-import OSReconstruction.SCV.IdentityTheorem
+module
 
+public import Mathlib.Analysis.Complex.CauchyIntegral
+public import Mathlib.Topology.Connected.PathConnected
+public import Mathlib.Topology.Algebra.Group.Quotient
+public import OSReconstruction.ComplexLieGroups.GeodesicConvexity
+public import OSReconstruction.ComplexLieGroups.AdjacentOverlapWitness
+public import OSReconstruction.ComplexLieGroups.Connectedness.Action
+public import OSReconstruction.ComplexLieGroups.Connectedness.DimensionZero
+public import OSReconstruction.ComplexLieGroups.Connectedness.ForwardTubeDomain
+public import OSReconstruction.ComplexLieGroups.Connectedness.OrbitSetBasic
+public import OSReconstruction.ComplexLieGroups.Connectedness.OrbitSetQuotient
+public import OSReconstruction.ComplexLieGroups.Connectedness.ComplexInvariance.OrbitSetN1Preconnected
+public import OSReconstruction.ComplexLieGroups.Connectedness.Permutation
+public import OSReconstruction.ComplexLieGroups.Connectedness.PermutedTube
+public import OSReconstruction.ComplexLieGroups.Connectedness.PermutedTubeConnected
+public import OSReconstruction.ComplexLieGroups.Connectedness.Topology
+public import OSReconstruction.ComplexLieGroups.DifferenceCoordinatesSCV
+public import OSReconstruction.ComplexLieGroups.D1OrbitSet
+public import OSReconstruction.SCV.IdentityTheorem
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -96,7 +50,7 @@ namespace BHW
 
 /-- The one-parameter action `t ↦ exp(tX) · z` using the matrix exponential directly.
     Each entry is a power series in t, hence differentiable. -/
-private theorem differentiable_expAction
+theorem differentiable_expAction
     (X : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ) (z : Fin n → Fin (d + 1) → ℂ) :
     Differentiable ℂ (fun t : ℂ =>
       (fun k (μ : Fin (d + 1)) => ∑ ν, (exp (t • X) : Matrix _ _ ℂ) μ ν * z k ν) :
@@ -111,7 +65,7 @@ private theorem differentiable_expAction
 
 /-- Bridge lemma: the real matrix exponential maps to complex via `map ofReal`.
     Specifically, `(exp(s • Y)).map ofReal = exp((s : ℂ) • Y.map ofReal)`. -/
-private theorem exp_map_ofReal_bridge (Y : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ) (s : ℝ) :
+theorem exp_map_ofReal_bridge (Y : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ) (s : ℝ) :
     (exp (s • Y) : Matrix _ _ ℝ).map Complex.ofReal =
       (exp ((s : ℂ) • Y.map Complex.ofReal) : Matrix _ _ ℂ) := by
   -- (exp(s•Y)).map ofReal = ofRealHom.mapMatrix (exp(s•Y))
@@ -132,17 +86,17 @@ private theorem exp_map_ofReal_bridge (Y : Matrix (Fin (d + 1)) (Fin (d + 1)) �
 
 
 /-- The real part of a complex matrix (entry-wise). -/
-private def reMatrix (X : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ) :
+def reMatrix (X : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ) :
     Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ :=
   fun i j => (X i j).re
 
 /-- The imaginary part of a complex matrix (entry-wise). -/
-private def imMatrix (X : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ) :
+def imMatrix (X : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ) :
     Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ :=
   fun i j => (X i j).im
 
 /-- A complex matrix decomposes as Re(X).map ofReal + I • Im(X).map ofReal. -/
-private theorem matrix_re_im_decomp (X : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ) :
+theorem matrix_re_im_decomp (X : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ) :
     X = (reMatrix X).map Complex.ofReal + Complex.I • (imMatrix X).map Complex.ofReal := by
   ext i j
   simp only [reMatrix, imMatrix, Matrix.map_apply, Matrix.add_apply, Matrix.smul_apply,
@@ -152,7 +106,7 @@ private theorem matrix_re_im_decomp (X : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ)
 /-- If X ∈ so(1,d;ℂ) then Re(X) ∈ so(1,d;ℝ).
     Proof: Xᵀηℂ + ηℂX = 0 with ηℂ real → taking real parts gives
     Re(X)ᵀη + ηRe(X) = 0 since η = diag(±1) is real. -/
-private theorem reMatrix_isInLorentzAlgebra
+theorem reMatrix_isInLorentzAlgebra
     {X : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ}
     (hX : ComplexLorentzGroup.IsInLieAlgebra X) :
     IsInLorentzAlgebra d (reMatrix X) := by
@@ -182,7 +136,7 @@ private theorem reMatrix_isInLorentzAlgebra
 
 /-- If X ∈ so(1,d;ℂ) then Im(X) ∈ so(1,d;ℝ). Same argument as for Re(X),
     taking imaginary parts instead. -/
-private theorem imMatrix_isInLorentzAlgebra
+theorem imMatrix_isInLorentzAlgebra
     {X : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ}
     (hX : ComplexLorentzGroup.IsInLieAlgebra X) :
     IsInLorentzAlgebra d (imMatrix X) := by
@@ -207,7 +161,7 @@ private theorem imMatrix_isInLorentzAlgebra
 
 /-- The ℓ∞ operator norm of Re(X).map ofReal is bounded by the norm of X.
     Entry-wise |Re(z)| ≤ |z|, so each row sum is bounded. -/
-private theorem norm_reMatrix_map_le (X : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ) :
+theorem norm_reMatrix_map_le (X : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ) :
     ‖(reMatrix X).map Complex.ofReal‖ ≤ ‖X‖ := by
   simp only [← coe_nnnorm, NNReal.coe_le_coe]
   rw [Matrix.linfty_opNNNorm_def, Matrix.linfty_opNNNorm_def]
@@ -223,7 +177,7 @@ private theorem norm_reMatrix_map_le (X : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ
 
 /-- The ℓ∞ operator norm of Im(X).map ofReal is bounded by the norm of X.
     Entry-wise |Im(z)| ≤ |z|, so each row sum is bounded. -/
-private theorem norm_imMatrix_map_le (X : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ) :
+theorem norm_imMatrix_map_le (X : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ) :
     ‖(imMatrix X).map Complex.ofReal‖ ≤ ‖X‖ := by
   simp only [← coe_nnnorm, NNReal.coe_le_coe]
   rw [Matrix.linfty_opNNNorm_def, Matrix.linfty_opNNNorm_def]
@@ -245,7 +199,7 @@ set_option maxHeartbeats 800000 in
     Uses `hasStrictFDerivAt_exp_zero` (derivative of exp at 0 is the identity)
     + `HasStrictFDerivAt.map_nhds_eq_of_surj` (IFT: exp maps neighborhoods of 0
     onto neighborhoods of 1) + algebraic argument (log of Lorentz ∈ Lie algebra). -/
-private theorem exp_nhd_of_one (ε : ℝ) (hε : 0 < ε) :
+theorem exp_nhd_of_one (ε : ℝ) (hε : 0 < ε) :
     ∀ᶠ Λ in 𝓝 (1 : ComplexLorentzGroup d),
       ∃ (X : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ),
         ComplexLorentzGroup.IsInLieAlgebra X ∧ Λ.val = NormedSpace.exp X ∧ ‖X‖ < ε := by
@@ -363,7 +317,7 @@ private theorem exp_nhd_of_one (ε : ℝ) (hε : 0 < ε) :
     Upgrade of `single_generator_invariance` from "eventually near 0"
     to "on the whole connected domain", using the Mathlib identity theorem
     `AnalyticOnNhd.eqOn_zero_of_preconnected_of_frequently_eq_zero`. -/
-private theorem full_domain_generator_invariance (n : ℕ)
+theorem full_domain_generator_invariance (n : ℕ)
     (F : (Fin n → Fin (d + 1) → ℂ) → ℂ)
     (hF_holo : DifferentiableOn ℂ F (ForwardTube d n))
     (hF_real_inv : ∀ (Λ : RestrictedLorentzGroup d)
@@ -433,7 +387,7 @@ private theorem full_domain_generator_invariance (n : ℕ)
 set_option maxHeartbeats 400000 in
 /-- Helper: for ‖X₁‖ ≤ ‖X‖, ‖X₂‖ ≤ ‖X‖, ‖X‖ < δ/7, and s ∈ ball(0,R),
     we get ‖X₁ + s • X₂‖ < δ (when R ≤ 2). -/
-private theorem norm_affine_combination_lt
+theorem norm_affine_combination_lt
     (X₁ X₂ X : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ)
     (hX₁_le : ‖X₁‖ ≤ ‖X‖) (hX₂_le : ‖X₂‖ ≤ ‖X‖)
     {δ : ℝ} (hsmall : ‖X‖ < δ / 7) {s : ℂ} (hs : ‖s‖ < 2) :
@@ -448,7 +402,7 @@ private theorem norm_affine_combination_lt
 set_option maxHeartbeats 400000 in
 /-- Helper: for ‖s‖ < 2, ‖t‖ < 2, and ‖X‖ < δ/7:
     ‖t • (X₁ + s • X₂)‖ < δ. -/
-private theorem norm_tsmul_affine_lt
+theorem norm_tsmul_affine_lt
     (X₁ X₂ X : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ)
     (hX₁_le : ‖X₁‖ ≤ ‖X‖) (hX₂_le : ‖X₂‖ ≤ ‖X‖)
     {δ : ℝ} (hsmall : ‖X‖ < δ / 7)
@@ -473,7 +427,7 @@ set_option maxHeartbeats 800000 in
     Given δ such that exp(A)·z ∈ FT for ‖A‖ < δ, and X ∈ so(1,d;ℂ) with ‖X‖ < δ/7,
     show F(exp(X)·z) = F(z). Extracted as a separate lemma for reuse in the
     uniform version. -/
-private theorem near_identity_core (n : ℕ)
+theorem near_identity_core (n : ℕ)
     (F : (Fin n → Fin (d + 1) → ℂ) → ℂ)
     (hF_holo : DifferentiableOn ℂ F (ForwardTube d n))
     (hF_real_inv : ∀ (Λ : RestrictedLorentzGroup d)
@@ -830,7 +784,7 @@ theorem ofReal_preserves_forwardTube (R : RestrictedLorentzGroup d)
     NOTE (2026-02-25): The previous proof route used a global endpoint-to-interval
     geodesic cone lemma, which is false as stated and has been removed. A corrected
     proof must use stronger hypotheses (or a different path construction). -/
-private theorem orbitSet_onePoint_isPreconnected (w : Fin 1 → Fin (d + 1) → ℂ)
+theorem orbitSet_onePoint_isPreconnected (w : Fin 1 → Fin (d + 1) → ℂ)
     (hw : w ∈ ForwardTube d 1) :
     IsPreconnected {Λ : ComplexLorentzGroup d |
       complexLorentzAction Λ w ∈ ForwardTube d 1} := by
@@ -856,7 +810,7 @@ private theorem orbitSet_onePoint_isPreconnected (w : Fin 1 → Fin (d + 1) → 
       subst hm
       exact orbitSet_forwardTube_one_isPreconnected (m := m) w hw
 
-private lemma forwardTube_one_iff
+lemma forwardTube_one_iff
     (w : Fin 1 → Fin (d + 1) → ℂ) :
     w ∈ ForwardTube d 1 ↔ InOpenForwardCone d (fun μ => (w 0 μ).im) := by
   constructor
@@ -866,7 +820,7 @@ private lemma forwardTube_one_iff
     fin_cases k
     simpa [ForwardTube] using h
 
-private lemma forwardTube_of_affine_steps [NeZero n]
+lemma forwardTube_of_affine_steps [NeZero n]
     (v : Fin (d + 1) → ℂ) :
     (fun k : Fin n => fun μ => ((k.val + 1 : ℂ) * v μ)) ∈ ForwardTube d n ↔
       InOpenForwardCone d (fun μ => (v μ).im) := by
@@ -893,7 +847,7 @@ private lemma forwardTube_of_affine_steps [NeZero n]
         ring
       simpa [ForwardTube, hk0, hpredR, hvec]
 
-private lemma action_affine_steps
+lemma action_affine_steps
     (Λ : ComplexLorentzGroup d)
     (v : Fin (d + 1) → ℂ) :
     complexLorentzAction (n := n) Λ (fun k : Fin n => fun μ => ((k.val + 1 : ℂ) * v μ))
@@ -908,7 +862,7 @@ private lemma action_affine_steps
 
 /-- For `n > 0`, the nonempty-domain set is independent of `n` and reduces to
 the `n = 1` witness form. -/
-private lemma nonemptyDomain_eq_n1 (hn : n ≠ 0) :
+lemma nonemptyDomain_eq_n1 (hn : n ≠ 0) :
     {Λ : ComplexLorentzGroup d |
       ∃ w : Fin n → Fin (d + 1) → ℂ,
         w ∈ ForwardTube d n ∧ complexLorentzAction (n := n) Λ w ∈ ForwardTube d n}

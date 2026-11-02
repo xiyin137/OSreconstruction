@@ -1,17 +1,11 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIAxisPairCompactSupport
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIAxisPairMultiGapSemigroupPacket
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIAxisPairCompactSupport
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIAxisPairMultiGapSemigroupPacket
 
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -112,7 +106,7 @@ theorem subset_all_orientedPositive_mono
       simp at hagap ⊢ <;>
       nlinarith
 
-private theorem exists_pos_le_on_compact_of_forall_pos
+theorem exists_pos_le_on_compact_of_forall_pos_adialMultiGapCommonSlope
     {E : Type*} [TopologicalSpace E]
     {K : Set E} (hK : IsCompact K)
     {g : E -> Real} (hg : Continuous g)
@@ -159,13 +153,13 @@ theorem exists_orderedPositiveTimeRegion_margin_of_compact_subset
     | inr b =>
         cases b with
         | inl i =>
-            apply exists_pos_le_on_compact_of_forall_pos hK_compact
+            apply exists_pos_le_on_compact_of_forall_pos_adialMultiGapCommonSlope hK_compact
             · exact (continuous_apply (0 : Fin (d + 1))).comp
                 (continuous_apply i)
             · intro x hx
               exact (hK_ordered hx i).1
         | inr p =>
-            apply exists_pos_le_on_compact_of_forall_pos hK_compact
+            apply exists_pos_le_on_compact_of_forall_pos_adialMultiGapCommonSlope hK_compact
             · exact (continuous_id.matrix_elem p.1.2 0).sub
                 (continuous_id.matrix_elem p.1.1 0)
             · intro x hx

@@ -1,6 +1,10 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceWitness
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceWitness
+
+@[expose] public section
 
 noncomputable section
 
@@ -566,7 +570,7 @@ theorem contDiff_section43FourierLaplace_timeIntegrand_q
 
 /-- Differentiating a fixed old-word summand only differentiates the basic
 Fourier-Laplace integrand; the old word scalar is constant in `q`. -/
-private theorem hasFDerivAt_section43FourierLaplace_timeIntegrand_wordTerm
+theorem hasFDerivAt_section43FourierLaplace_timeIntegrand_wordTerm
     (d n r : ℕ) [NeZero d]
     (F : SchwartzNPoint d n)
     (a : Section43DerivativeWord d n r)

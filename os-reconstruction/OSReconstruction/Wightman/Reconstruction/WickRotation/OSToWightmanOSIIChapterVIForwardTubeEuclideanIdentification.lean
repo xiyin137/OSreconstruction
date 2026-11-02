@@ -1,7 +1,11 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIFlatWickMovingSlice
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIGlobalPhysicalDensityMovingSlice
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVInitialPhysicalTestDistribution
-import OSReconstruction.SCV.DistributionalRepresentationUniqueness
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIFlatWickMovingSlice
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIGlobalPhysicalDensityMovingSlice
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVInitialPhysicalTestDistribution
+public import OSReconstruction.SCV.DistributionalRepresentationUniqueness
+
+@[expose] public section
 
 /-!
 # Pointwise Euclidean identification of the physical tube

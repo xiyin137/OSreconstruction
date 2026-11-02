@@ -1,24 +1,11 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVGeneratorBranchGeometry
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVGeneratorChronologicalCoordinates
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVGeneratorBranchGeometry
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVGeneratorChronologicalCoordinates
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -145,7 +132,7 @@ theorem convex_conjugateFieldDomain
   change star (a • x + b • y) ∈ U
   simpa using hU hx hy ha hb hab
 
-private theorem exists_pos_le_one_mem_of_isOpen_zero_mem
+theorem exists_pos_le_one_mem_of_isOpen_zero_mem
     {U : Set ℝ}
     (hU_open : IsOpen U)
     (h0U : (0 : ℝ) ∈ U) :

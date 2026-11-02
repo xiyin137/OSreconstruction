@@ -1,20 +1,12 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIProductTensorSourceCurrent
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIProductTensorSchwingerSourceCurrent
-import OSReconstruction.SCV.EuclideanWeylOpen
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIProductTensorSourceCurrent
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIProductTensorSchwingerSourceCurrent
+public import OSReconstruction.SCV.EuclideanWeylOpen
 
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -133,7 +125,7 @@ noncomputable def osiiA0LocalCutoffTimeShellCLM
         (fLeft.osConjTensorProduct
           (section43OrderedPullbackTimeSpatialTensorCLM d m κ.1 φ)) := rfl
 
-private def osiiA0_timeReflectionNHomeomorph {d n : ℕ} [NeZero d] :
+def osiiA0_timeReflectionNHomeomorph {d n : ℕ} [NeZero d] :
     NPointDomain d n ≃ₜ NPointDomain d n where
   toFun := timeReflectionN d
   invFun := timeReflectionN d
@@ -174,7 +166,7 @@ private def osiiA0_timeReflectionNHomeomorph {d n : ℕ} [NeZero d] :
         (continuous_apply μ : Continuous fun y : SpacetimeDim d => y μ).comp
           (continuous_apply i : Continuous fun x : NPointDomain d n => x i)
 
-private theorem osiiA0_osConj_tsupport_subset_orderedNegative
+theorem osiiA0_osConj_tsupport_subset_orderedNegative
     [NeZero d]
     {n : ℕ} (f : SchwartzNPoint d n)
     (hf : tsupport (f : NPointDomain d n → ℂ) ⊆

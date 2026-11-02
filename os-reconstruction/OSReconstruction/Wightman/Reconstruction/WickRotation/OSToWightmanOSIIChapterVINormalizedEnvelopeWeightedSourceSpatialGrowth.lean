@@ -1,24 +1,16 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.SCV.HeadBlockDescent
-import OSReconstruction.SCV.DistributionalEOWKernel
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIAxisPairSourcewiseMZ
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVGeneratorSpatialGrowth
-import Init
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVINormalizedEnvelopeMovingSlice
-import Mathlib.Analysis.Normed.Group.SeparationQuotient
+module
 
+public import OSReconstruction.SCV.HeadBlockDescent
+public import OSReconstruction.SCV.DistributionalEOWKernel
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIAxisPairSourcewiseMZ
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVGeneratorSpatialGrowth
+public import Init
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVINormalizedEnvelopeMovingSlice
+public import Mathlib.Analysis.Normed.Group.SeparationQuotient
 
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -64,7 +56,7 @@ theorem headBlockIntegralCLM_apply
       rw [ih]
       exact SCV.integrateHeadBlock_sliceIntegral_reindex F
 
-private abbrev vi2SpatialHeadTailCast (d k : Nat) :
+abbrev vi2SpatialHeadTailCast (d k : Nat) :
     (Fin ((k + 1) * d) -> Real) ≃L[Real]
       (Fin (d + k * d) -> Real) :=
   ContinuousLinearEquiv.piCongrLeft Real

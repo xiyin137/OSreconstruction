@@ -5,75 +5,24 @@ Copyright (c) 2025 ModularPhysics Contributors.
 Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
-import OSReconstruction.SCV.TubeDomainExtension
-import Init
-import OSReconstruction.SCV.IdentityTheorem
-import OSReconstruction.SCV.LaplaceSchwartz
-import OSReconstruction.SCV.BochnerTubeTheorem
-import Mathlib.Analysis.Distribution.SchwartzSpace.Deriv
-import OSReconstruction.SCV.FourierLaplaceCore
-import Mathlib.Analysis.Asymptotics.Lemmas
-import Mathlib.Analysis.Calculus.ParametricIntegral
-import Mathlib.Analysis.Real.Pi.Bounds
-import Mathlib.Analysis.Distribution.SchwartzSpace.Fourier
-import Mathlib.Analysis.Normed.Module.HahnBanach
-import Mathlib.MeasureTheory.SpecificCodomains.Pi
+module
 
+public import OSReconstruction.SCV.TubeDomainExtension
+public import Init
+public import OSReconstruction.SCV.IdentityTheorem
+public import OSReconstruction.SCV.LaplaceSchwartz
+public import OSReconstruction.SCV.BochnerTubeTheorem
+public import Mathlib.Analysis.Distribution.SchwartzSpace.Deriv
+public import OSReconstruction.SCV.FourierLaplaceCore
+public import Mathlib.Analysis.Asymptotics.Lemmas
+public import Mathlib.Analysis.Calculus.ParametricIntegral
+public import Mathlib.Analysis.Real.Pi.Bounds
+public import Mathlib.Analysis.Distribution.SchwartzSpace.Fourier
+public import Mathlib.Analysis.Normed.Module.HahnBanach
+public import Mathlib.MeasureTheory.SpecificCodomains.Pi
+public import OSReconstruction.SchwartzSeminormCompat
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -180,18 +129,18 @@ theorem schwartz_functional_bound
   intro φ
   simpa [q, Seminorm.comp_apply, coe_normSeminorm] using hbound φ
 
-private def polyWeight (k : ℕ) (x : ℝ) : ℂ := ((1 + x^2) ^ k : ℝ)
+def polyWeight (k : ℕ) (x : ℝ) : ℂ := ((1 + x^2) ^ k : ℝ)
 
-private theorem polyWeight_hasTemperateGrowth (k : ℕ) :
+theorem polyWeight_hasTemperateGrowth (k : ℕ) :
     (polyWeight k).HasTemperateGrowth := by
   unfold polyWeight
   fun_prop
 
-private def iteratedDerivCLM : ℕ → SchwartzMap ℝ ℂ →L[ℂ] SchwartzMap ℝ ℂ
+def iteratedDerivCLM : ℕ → SchwartzMap ℝ ℂ →L[ℂ] SchwartzMap ℝ ℂ
   | 0 => ContinuousLinearMap.id ℂ _
   | n + 1 => (SchwartzMap.derivCLM ℂ ℂ).comp (iteratedDerivCLM n)
 
-private theorem iteratedDerivCLM_apply
+theorem iteratedDerivCLM_apply
     (n : ℕ) (f : SchwartzMap ℝ ℂ) (x : ℝ) :
     iteratedDerivCLM n f x = iteratedDeriv n f x := by
   induction n generalizing f x with
@@ -203,12 +152,12 @@ private theorem iteratedDerivCLM_apply
       rw [iteratedDerivCLM, ContinuousLinearMap.comp_apply, SchwartzMap.derivCLM_apply]
       rw [hg, ← iteratedDeriv_succ]
 
-private def weightedDerivToBCFCLM (k n : ℕ) : SchwartzMap ℝ ℂ →L[ℂ] ℝ →ᵇ ℂ :=
+def weightedDerivToBCFCLM (k n : ℕ) : SchwartzMap ℝ ℂ →L[ℂ] ℝ →ᵇ ℂ :=
   (SchwartzMap.toBoundedContinuousFunctionCLM ℂ ℝ ℂ).comp <|
     (SchwartzMap.smulLeftCLM ℂ (polyWeight k)).comp <|
       iteratedDerivCLM n
 
-private theorem weightedDerivToBCFCLM_apply
+theorem weightedDerivToBCFCLM_apply
     (k n : ℕ) (f : SchwartzMap ℝ ℂ) (x : ℝ) :
     weightedDerivToBCFCLM k n f x = polyWeight k x * iteratedDeriv n f x := by
   rw [weightedDerivToBCFCLM, ContinuousLinearMap.comp_apply,
@@ -217,7 +166,7 @@ private theorem weightedDerivToBCFCLM_apply
     iteratedDerivCLM_apply]
   simp [polyWeight]
 
-private theorem abs_pow_le_polyWeight (k : ℕ) (x : ℝ) :
+theorem abs_pow_le_polyWeight (k : ℕ) (x : ℝ) :
     |x| ^ k ≤ ‖polyWeight k x‖ := by
   rw [polyWeight, Complex.norm_real]
   have h1 : |x| ≤ 1 + x^2 := by
@@ -230,11 +179,11 @@ private theorem abs_pow_le_polyWeight (k : ℕ) (x : ℝ) :
       rw [Real.norm_of_nonneg]
       positivity
 
-private def probeCLM (s : Finset (ℕ × ℕ)) :
+def probeCLM (s : Finset (ℕ × ℕ)) :
     SchwartzMap ℝ ℂ →L[ℂ] ((p : ↑s.attach) → (ℝ →ᵇ ℂ)) :=
   ContinuousLinearMap.pi fun p : ↑s.attach => weightedDerivToBCFCLM p.1.1.1 p.1.1.2
 
-private theorem schwartzSeminorm_le_probe_component_norm
+theorem schwartzSeminorm_le_probe_component_norm
     (k n : ℕ) (f : SchwartzMap ℝ ℂ) :
     SchwartzMap.seminorm ℝ k n f ≤ ‖weightedDerivToBCFCLM k n f‖ := by
   refine SchwartzMap.seminorm_le_bound' (𝕜 := ℝ) k n f (norm_nonneg _) ?_
@@ -249,7 +198,7 @@ private theorem schwartzSeminorm_le_probe_component_norm
     _ ≤ ‖weightedDerivToBCFCLM k n f‖ := by
       simpa using (BoundedContinuousFunction.norm_coe_le_norm (weightedDerivToBCFCLM k n f) x)
 
-private theorem schwartzSeminorm_le_probe_norm
+theorem schwartzSeminorm_le_probe_norm
     (s : Finset (ℕ × ℕ)) (p : ↑s.attach) (f : SchwartzMap ℝ ℂ) :
     SchwartzMap.seminorm ℝ p.1.1.1 p.1.1.2 f ≤
       ‖(probeCLM s f : (↑s.attach → (ℝ →ᵇ ℂ)))‖ := by
@@ -260,7 +209,7 @@ private theorem schwartzSeminorm_le_probe_norm
       simpa [probeCLM] using
         (norm_le_pi_norm (probeCLM s f : (↑s.attach → (ℝ →ᵇ ℂ))) p)
 
-private theorem weightedDerivToBCFCLM_norm_le
+theorem weightedDerivToBCFCLM_norm_le
     (k n : ℕ) (f : SchwartzMap ℝ ℂ) :
     ‖weightedDerivToBCFCLM k n f‖ ≤
       (2 : ℝ) ^ k *
@@ -326,7 +275,7 @@ private theorem weightedDerivToBCFCLM_norm_le
               gcongr
               exact le_add_of_nonneg_left (apply_nonneg _ _)
 
-private theorem schwartzPsiZ_horizontal_diff_eq
+theorem schwartzPsiZ_horizontal_diff_eq
     (x η h : ℝ) (hη : 0 < η)
     (hh_im : ‖(h : ℂ)‖ ≤ η / 2) (hh1 : ‖(h : ℂ)‖ ≤ 1) :
     schwartzPsiZ (((x + h : ℝ) : ℂ) + η * I) (by simpa using hη) -
@@ -347,7 +296,7 @@ private theorem schwartzPsiZ_horizontal_diff_eq
     SchwartzMap.smulLeftCLM_apply_apply htemp, smul_eq_mul] using
     (psiZ_sub_sub_deriv_eq_smul_remainder ((x : ℂ) + η * I) (h : ℂ) ξ)
 
-private theorem tendsto_weightedDerivToBCFCLM_schwartzPsiZ_horizontal_diff_zero
+theorem tendsto_weightedDerivToBCFCLM_schwartzPsiZ_horizontal_diff_zero
     (η x : ℝ) (hη : 0 < η) (k n : ℕ) :
     Tendsto
       (fun h : ℝ =>
@@ -484,13 +433,13 @@ private theorem tendsto_weightedDerivToBCFCLM_schwartzPsiZ_horizontal_diff_zero
     exact lt_of_le_of_lt hnorm_le hδfrac
   simpa [Real.dist_eq, abs_of_nonneg (norm_nonneg _)] using lt_of_le_of_lt hmain hsmall
 
-private def horizontalSchwartzPsi (η : ℝ) (hη : 0 < η) (x : ℝ) : SchwartzMap ℝ ℂ :=
+def horizontalSchwartzPsi (η : ℝ) (hη : 0 < η) (x : ℝ) : SchwartzMap ℝ ℂ :=
   schwartzPsiZ ((x : ℂ) + η * I) (by simpa using hη)
 
-private def scaledHorizontalSchwartzPsi (η : ℝ) (hη : 0 < η) (x : ℝ) : SchwartzMap ℝ ℂ :=
+def scaledHorizontalSchwartzPsi (η : ℝ) (hη : 0 < η) (x : ℝ) : SchwartzMap ℝ ℂ :=
   horizontalSchwartzPsi (2 * Real.pi * η) (by positivity) (2 * Real.pi * x)
 
-private theorem tendsto_weightedDerivToBCFCLM_horizontalSchwartzPsi_diff_zero
+theorem tendsto_weightedDerivToBCFCLM_horizontalSchwartzPsi_diff_zero
     (η x : ℝ) (hη : 0 < η) (k n : ℕ) :
     Tendsto
       (fun h : ℝ =>
@@ -501,7 +450,7 @@ private theorem tendsto_weightedDerivToBCFCLM_horizontalSchwartzPsi_diff_zero
     tendsto_weightedDerivToBCFCLM_schwartzPsiZ_horizontal_diff_zero η x hη k n
 
 set_option maxHeartbeats 800000 in
-private theorem continuous_weightedDerivToBCFCLM_schwartzPsiZ_horizontal
+theorem continuous_weightedDerivToBCFCLM_schwartzPsiZ_horizontal
     (η : ℝ) (hη : 0 < η) (k n : ℕ) :
     Continuous (fun x : ℝ =>
       weightedDerivToBCFCLM k n (horizontalSchwartzPsi η hη x)) := by
@@ -525,7 +474,7 @@ private theorem continuous_weightedDerivToBCFCLM_schwartzPsiZ_horizontal
   have hmain := hδ hy'
   simpa [dist_eq_norm, sub_eq_add_neg, add_comm, add_left_comm, add_assoc] using hmain
 
-private theorem weightedDerivToBCFCLM_schwartzPsiZ_horizontal_growth
+theorem weightedDerivToBCFCLM_schwartzPsiZ_horizontal_growth
     (η : ℝ) (hη : 0 < η) (k n : ℕ) :
     ∃ D : ℝ, 0 ≤ D ∧ ∀ x : ℝ,
       ‖weightedDerivToBCFCLM k n
@@ -549,7 +498,7 @@ private theorem weightedDerivToBCFCLM_schwartzPsiZ_horizontal_growth
           · exact hD2 x
     _ = ((2 : ℝ) ^ k * (D0 + D2)) * (1 + |x|) ^ n := by ring
 
-private theorem one_add_abs_two_pi_mul_rpow_le (n : ℕ) (x : ℝ) :
+theorem one_add_abs_two_pi_mul_rpow_le (n : ℕ) (x : ℝ) :
     (1 + |2 * Real.pi * x|) ^ n ≤ (2 * Real.pi) ^ n * (1 + |x|) ^ n := by
   have hbase : 1 + |2 * Real.pi * x| ≤ (2 * Real.pi) * (1 + |x|) := by
     rw [abs_mul, abs_of_pos (show (0 : ℝ) < 2 * Real.pi by positivity)]
@@ -559,7 +508,7 @@ private theorem one_add_abs_two_pi_mul_rpow_le (n : ℕ) (x : ℝ) :
       exact pow_le_pow_left₀ (by positivity) hbase n
     _ = (2 * Real.pi) ^ n * (1 + |x|) ^ n := by rw [mul_pow]
 
-private theorem continuous_weightedDerivToBCFCLM_scaledHorizontal
+theorem continuous_weightedDerivToBCFCLM_scaledHorizontal
     (η : ℝ) (hη : 0 < η) (k n : ℕ) :
     Continuous (fun x : ℝ =>
       weightedDerivToBCFCLM k n (scaledHorizontalSchwartzPsi η hη x)) := by
@@ -572,7 +521,7 @@ private theorem continuous_weightedDerivToBCFCLM_scaledHorizontal
       (2 * Real.pi * η) (by positivity) k n).comp
       (continuous_const.mul continuous_id)
 
-private theorem weightedDerivToBCFCLM_scaledHorizontal_growth
+theorem weightedDerivToBCFCLM_scaledHorizontal_growth
     (η : ℝ) (hη : 0 < η) (k n : ℕ) :
     ∃ D : ℝ, 0 ≤ D ∧ ∀ x : ℝ,
       ‖weightedDerivToBCFCLM k n
@@ -591,7 +540,7 @@ private theorem weightedDerivToBCFCLM_scaledHorizontal_growth
           exact one_add_abs_two_pi_mul_rpow_le n x
     _ = (D0 * (2 * Real.pi) ^ n) * (1 + |x|) ^ n := by ring
 
-private theorem integrable_one_add_abs_rpow_mul_norm
+theorem integrable_one_add_abs_rpow_mul_norm
     (φ : SchwartzMap ℝ ℂ) (n : ℕ) :
     Integrable (fun x : ℝ => (1 + |x|) ^ n * ‖φ x‖) := by
   have h_norm_int : Integrable (fun x : ℝ => ‖φ x‖) :=
@@ -628,12 +577,12 @@ private theorem integrable_one_add_abs_rpow_mul_norm
       φ.continuous.norm).aestronglyMeasurable)
     (Filter.Eventually.of_forall h_bound)
 
-private def stepAProbeFamily
+def stepAProbeFamily
     (s : Finset (ℕ × ℕ)) (η : ℝ) (hη : 0 < η) (φ : SchwartzMap ℝ ℂ) :
     ℝ → ((p : ↑s.attach) → (ℝ →ᵇ ℂ)) :=
   fun x => probeCLM s (φ x • scaledHorizontalSchwartzPsi η hη x)
 
-private theorem continuous_stepAProbeFamily_component
+theorem continuous_stepAProbeFamily_component
     (s : Finset (ℕ × ℕ)) (η : ℝ) (hη : 0 < η) (φ : SchwartzMap ℝ ℂ)
     (p : ↑s.attach) :
     Continuous (fun x : ℝ => stepAProbeFamily s η hη φ x p) := by
@@ -653,7 +602,7 @@ private theorem continuous_stepAProbeFamily_component
         (scaledHorizontalSchwartzPsi η hη x))
   exact hφ.smul hψ
 
-private theorem integrable_stepAProbeFamily_component
+theorem integrable_stepAProbeFamily_component
     (s : Finset (ℕ × ℕ)) (η : ℝ) (hη : 0 < η) (φ : SchwartzMap ℝ ℂ)
     (p : ↑s.attach) :
     Integrable (fun x : ℝ => stepAProbeFamily s η hη φ x p) := by
@@ -673,12 +622,12 @@ private theorem integrable_stepAProbeFamily_component
           exact hD x
     _ = D * ((1 + |x|) ^ p.1.1.2 * ‖φ x‖) := by ring
 
-private theorem integrable_stepAProbeFamily
+theorem integrable_stepAProbeFamily
     (s : Finset (ℕ × ℕ)) (η : ℝ) (hη : 0 < η) (φ : SchwartzMap ℝ ℂ) :
     Integrable (stepAProbeFamily s η hη φ) := by
   exact Integrable.of_eval fun p => integrable_stepAProbeFamily_component s η hη φ p
 
-private theorem schwartzFunctional_bound_by_probeNorm
+theorem schwartzFunctional_bound_by_probeNorm
     (T : SchwartzMap ℝ ℂ →L[ℂ] ℂ) :
     ∃ s : Finset (ℕ × ℕ), ∃ C : NNReal, C ≠ 0 ∧
       ∀ f : SchwartzMap ℝ ℂ,
@@ -715,8 +664,7 @@ private theorem schwartzFunctional_bound_by_probeNorm
               refine Finset.sum_le_sum ?_
               intro a ha
               let p : ↑s.attach := ⟨⟨a, ha⟩, by simp⟩
-              change SchwartzMap.seminorm ℝ a.1 a.2 f ≤
-                ‖(probeCLM s f : (↑s.attach → (ℝ →ᵇ ℂ)))‖
+              rw [SchwartzMap.schwartzSeminormFamily_apply', SchwartzMap.seminorm_eq_real]
               simpa [p] using schwartzSeminorm_le_probe_norm s p f
       _ = s.card * ‖(probeCLM s f : (↑s.attach → (ℝ →ᵇ ℂ)))‖ := by
             simp
@@ -741,7 +689,7 @@ private theorem schwartzFunctional_bound_by_probeNorm
       norm_num
       ring
 
-private noncomputable def rangeLiftLinear
+noncomputable def rangeLiftLinear
     (T : SchwartzMap ℝ ℂ →L[ℂ] ℂ)
     (s : Finset (ℕ × ℕ))
     (hker : LinearMap.ker (probeCLM s).toLinearMap ≤ LinearMap.ker T.toLinearMap) :
@@ -749,7 +697,7 @@ private noncomputable def rangeLiftLinear
   ((LinearMap.ker (probeCLM s).toLinearMap).liftQ T.toLinearMap hker).comp
     ((probeCLM s).toLinearMap.quotKerEquivRange.symm.toLinearMap)
 
-private theorem rangeLiftLinear_apply
+theorem rangeLiftLinear_apply
     (T : SchwartzMap ℝ ℂ →L[ℂ] ℂ)
     (s : Finset (ℕ × ℕ))
     (hker : LinearMap.ker (probeCLM s).toLinearMap ≤ LinearMap.ker T.toLinearMap)
@@ -769,7 +717,7 @@ private theorem rangeLiftLinear_apply
   rw [hsymm]
   simp
 
-private theorem rangeLiftLinear_bound
+theorem rangeLiftLinear_bound
     (T : SchwartzMap ℝ ℂ →L[ℂ] ℂ)
     (s : Finset (ℕ × ℕ))
     (C : NNReal)
@@ -790,7 +738,7 @@ probes landing in a Banach space. This is the replacement for the unavailable
 Bochner integral on `SchwartzMap ℝ ℂ`: Step A of `paley_wiener_half_line` can instead
 be performed after passing through this finite probe space and using ordinary Banach-valued
 integration there. -/
-private theorem exists_probe_factorization
+theorem exists_probe_factorization
     (T : SchwartzMap ℝ ℂ →L[ℂ] ℂ) :
     ∃ s : Finset (ℕ × ℕ), ∃ G : ((p : ↑s.attach) → (ℝ →ᵇ ℂ)) →L[ℂ] ℂ,
       T = G.comp (probeCLM s) := by
@@ -898,7 +846,8 @@ theorem schwartz_functional_horizontal_growth
               have hpN : p.2 ≤ N := Finset.le_sup hp
               calc
                 schwartzSeminormFamily ℂ ℝ ℂ p ψx
-                    ≤ D p * u ^ p.2 := hD_bound p x
+                    ≤ D p * u ^ p.2 := by
+                      simpa only [SchwartzMap.schwartzSeminormFamily_apply', SchwartzMap.seminorm_eq_real] using hD_bound p x
                 _ ≤ D p * u ^ N := by
                       refine mul_le_mul_of_nonneg_left ?_ (hD_nonneg p)
                       exact pow_le_pow_right₀ hu_ge_one hpN
@@ -995,7 +944,7 @@ theorem fourierLaplaceExt_remainder_bound
       _ ≤ ∑ p ∈ s, D p * ‖h‖ := by
             refine Finset.sum_le_sum ?_
             intro p hp
-            exact hD_bound p h hh_im hh1
+            simpa only [SchwartzMap.schwartzSeminormFamily_apply', SchwartzMap.seminorm_eq_real] using hD_bound p h hh_im hh1
       _ = Dsum * ‖h‖ := by
             simp [Dsum, Finset.sum_mul]
   calc
@@ -1123,10 +1072,10 @@ theorem fourierLaplaceExt_differentiableOn
 
 
 
-private def expDampingFactor (η : ℝ) : ℝ → ℂ :=
+def expDampingFactor (η : ℝ) : ℝ → ℂ :=
   fun ξ => Complex.exp (-(η : ℂ) * ξ) - 1
 
-private theorem expDampingFactor_exp_contDiff (η : ℝ) :
+theorem expDampingFactor_exp_contDiff (η : ℝ) :
     ContDiff ℝ (↑(⊤ : ℕ∞)) (fun t : ℝ => Complex.exp (-(η : ℂ) * t)) := by
   let c : ℂ := -(η : ℂ)
   change ContDiff ℝ (↑(⊤ : ℕ∞))
@@ -1135,12 +1084,12 @@ private theorem expDampingFactor_exp_contDiff (η : ℝ) :
     (contDiff_const.mul Complex.ofRealCLM.contDiff :
       ContDiff ℝ (↑(⊤ : ℕ∞)) (fun t : ℝ => c * t))
 
-private theorem expDampingFactor_contDiff (η : ℝ) :
+theorem expDampingFactor_contDiff (η : ℝ) :
     ContDiff ℝ (↑(⊤ : ℕ∞)) (expDampingFactor η) := by
   unfold expDampingFactor
   simpa using (expDampingFactor_exp_contDiff η).sub contDiff_const
 
-private theorem norm_expDampingFactor_le_two_mul_eta_on_Icc
+theorem norm_expDampingFactor_le_two_mul_eta_on_Icc
     {η ξ : ℝ} (hη_pos : 0 < η) (hη_le : η ≤ 1) (hξ : ξ ∈ Set.Icc (-1 : ℝ) 0) :
     ‖expDampingFactor η ξ‖ ≤ 2 * η := by
   rcases hξ with ⟨hξ_lo, hξ_hi⟩
@@ -1177,7 +1126,7 @@ private theorem norm_expDampingFactor_le_two_mul_eta_on_Icc
                   exact hξ_abs_le_one
             _ = η := by ring
 
-private theorem iteratedDeriv_expDampingFactor_succ_eq (m : ℕ) (η : ℝ) (ξ : ℝ) :
+theorem iteratedDeriv_expDampingFactor_succ_eq (m : ℕ) (η : ℝ) (ξ : ℝ) :
     iteratedDeriv (m + 1) (expDampingFactor η) ξ =
       (-(η : ℂ)) ^ (m + 1) * Complex.exp (-(η : ℂ) * ξ) := by
   have hExpAt : ContDiffAt ℝ (m + 1) (fun t : ℝ => Complex.exp (-(η : ℂ) * t)) ξ := by
@@ -1200,7 +1149,7 @@ private theorem iteratedDeriv_expDampingFactor_succ_eq (m : ℕ) (η : ℝ) (ξ 
           simp [iteratedDeriv_const]
     _ = _ := by simp
 
-private theorem norm_iteratedDeriv_expDampingFactor_succ_le_eta_of_nonneg
+theorem norm_iteratedDeriv_expDampingFactor_succ_le_eta_of_nonneg
     (m : ℕ) {η ξ : ℝ} (hη_pos : 0 < η) (hη_le : η ≤ 1) (hξ_nonneg : 0 ≤ ξ) :
     ‖iteratedDeriv (m + 1) (expDampingFactor η) ξ‖ ≤ η := by
   rw [iteratedDeriv_expDampingFactor_succ_eq m η ξ, norm_mul, norm_pow]
@@ -1226,13 +1175,13 @@ private theorem norm_iteratedDeriv_expDampingFactor_succ_le_eta_of_nonneg
     _ = η ^ (m + 1) := by ring
     _ ≤ η := hpow
 
-private theorem norm_iteratedDeriv_expDampingFactor_le_eta_of_pos
+theorem norm_iteratedDeriv_expDampingFactor_le_eta_of_pos
     {j : ℕ} (hj : 0 < j) {η ξ : ℝ} (hη_pos : 0 < η) (hη_le : η ≤ 1) (hξ_nonneg : 0 ≤ ξ) :
     ‖iteratedDeriv j (expDampingFactor η) ξ‖ ≤ η := by
   rcases Nat.exists_eq_succ_of_ne_zero (Nat.ne_of_gt hj) with ⟨m, rfl⟩
   exact norm_iteratedDeriv_expDampingFactor_succ_le_eta_of_nonneg m hη_pos hη_le hξ_nonneg
 
-private theorem norm_iteratedDeriv_expDampingFactor_le_const_mul_eta_on_Icc
+theorem norm_iteratedDeriv_expDampingFactor_le_const_mul_eta_on_Icc
     (j : ℕ) :
     ∃ D : ℝ, 0 ≤ D ∧ ∀ (η : ℝ), 0 < η → η ≤ 1 → ∀ ξ ∈ Set.Icc (-1 : ℝ) 0,
       ‖iteratedDeriv j (expDampingFactor η) ξ‖ ≤ D * η := by
@@ -1270,7 +1219,7 @@ private theorem norm_iteratedDeriv_expDampingFactor_le_const_mul_eta_on_Icc
           gcongr
         _ = Real.exp 1 * η := by ring
 
-private theorem norm_expDampingFactor_le_eta_mul_abs_of_nonneg
+theorem norm_expDampingFactor_le_eta_mul_abs_of_nonneg
     {η ξ : ℝ} (hη_nonneg : 0 ≤ η) (hξ_nonneg : 0 ≤ ξ) :
     ‖expDampingFactor η ξ‖ ≤ η * ξ := by
   have hcast : Complex.exp (-(η : ℂ) * ξ) = (Real.exp (-(η * ξ)) : ℂ) := by
@@ -1292,7 +1241,7 @@ private theorem norm_expDampingFactor_le_eta_mul_abs_of_nonneg
     _ = 1 - Real.exp (-(η * ξ)) := habs
     _ ≤ η * ξ := haux
 
-private theorem expDamping_mul_iterated_bound_on_Icc
+theorem expDamping_mul_iterated_bound_on_Icc
     (ψ : SchwartzMap ℝ ℂ) (n : ℕ) :
     ∃ C : ℝ, 0 ≤ C ∧ ∀ η : ℝ, 0 < η → η ≤ 1 → ∀ ξ ∈ Set.Icc (-1 : ℝ) 0,
       ‖iteratedDeriv n (fun t : ℝ => expDampingFactor η t * ψ t) ξ‖ ≤ C * η := by
@@ -1377,7 +1326,7 @@ private theorem expDamping_mul_iterated_bound_on_Icc
             dsimp [C]
             rw [← Finset.sum_mul]
 
-private theorem expDamping_mul_iterated_weighted_bound_on_Ici
+theorem expDamping_mul_iterated_weighted_bound_on_Ici
     (ψ : SchwartzMap ℝ ℂ) (k n : ℕ) :
     ∃ C : ℝ, 0 ≤ C ∧ ∀ η : ℝ, 0 < η → η ≤ 1 → ∀ ξ : ℝ, 0 ≤ ξ →
       |ξ| ^ k * ‖iteratedDeriv n (fun t : ℝ => expDampingFactor η t * ψ t) ξ‖ ≤ C * η := by
@@ -1463,7 +1412,7 @@ private theorem expDamping_mul_iterated_weighted_bound_on_Ici
             rw [← Finset.sum_mul]
 
 /-- Global general-`n` pointwise `O(η)` estimate for the damped cutoff kernel. -/
-private theorem expDamping_mul_leftTailCutoff_iterated_pointwise_bound
+theorem expDamping_mul_leftTailCutoff_iterated_pointwise_bound
     (ψ : SchwartzMap ℝ ℂ)
     (hψ_left : ∀ ξ ≤ -1, ψ ξ = 0)
     (k n : ℕ) :
@@ -1514,10 +1463,10 @@ private theorem expDamping_mul_leftTailCutoff_iterated_pointwise_bound
               dsimp [C]
               nlinarith [hCpos_nonneg, hη_pos]
 
-private def cutoffSchwartz (ψ : SchwartzMap ℝ ℂ) : SchwartzMap ℝ ℂ :=
+def cutoffSchwartz (ψ : SchwartzMap ℝ ℂ) : SchwartzMap ℝ ℂ :=
   SchwartzMap.smulLeftCLM ℂ (fun ξ : ℝ => (smoothCutoff ξ : ℂ)) ψ
 
-private theorem cutoffSchwartz_left
+theorem cutoffSchwartz_left
     (ψ : SchwartzMap ℝ ℂ) :
     ∀ ξ ≤ -1, cutoffSchwartz ψ ξ = 0 := by
   intro ξ hξ
@@ -1527,7 +1476,7 @@ private theorem cutoffSchwartz_left
   rw [smoothCutoff_zero_of_le_neg_one hξ]
   simp
 
-private theorem cutoffSchwartz_eqOn_nonneg
+theorem cutoffSchwartz_eqOn_nonneg
     (ψ : SchwartzMap ℝ ℂ) :
     Set.EqOn (cutoffSchwartz ψ) ψ (Set.Ici 0) := by
   intro ξ hξ
@@ -1538,7 +1487,7 @@ private theorem cutoffSchwartz_eqOn_nonneg
   rw [smoothCutoff_one_of_nonneg hξ_nonneg]
   simp
 
-private def expDampingMulLeftTailCutoffSchwartz
+def expDampingMulLeftTailCutoffSchwartz
     (η : ℝ) (hη_pos : 0 < η) (hη_le : η ≤ 1)
     (ψ : SchwartzMap ℝ ℂ) (hψ_left : ∀ ξ ≤ -1, ψ ξ = 0) : SchwartzMap ℝ ℂ where
   toFun := fun ξ => expDampingFactor η ξ * ψ ξ
@@ -1550,7 +1499,7 @@ private def expDampingMulLeftTailCutoffSchwartz
     rw [norm_iteratedFDeriv_eq_norm_iteratedDeriv]
     exact hC η hη_pos hη_le ξ
 
-private theorem seminorm_expDampingMulLeftTailCutoffSchwartz_le
+theorem seminorm_expDampingMulLeftTailCutoffSchwartz_le
     (ψ : SchwartzMap ℝ ℂ) (hψ_left : ∀ ξ ≤ -1, ψ ξ = 0)
     (k n : ℕ) :
     ∃ C : ℝ, 0 ≤ C ∧ ∀ η : ℝ, ∀ hη_pos : 0 < η, ∀ hη_le : η ≤ 1,
@@ -1568,7 +1517,7 @@ private theorem seminorm_expDampingMulLeftTailCutoffSchwartz_le
       ‖iteratedDeriv n (fun t : ℝ => expDampingFactor η t * ψ t) ξ‖ ≤ C * η
   exact hC η hη_pos hη_le ξ
 
-private theorem seminorm_expDampingCutoffSchwartz_le
+theorem seminorm_expDampingCutoffSchwartz_le
     (ψ : SchwartzMap ℝ ℂ) (k n : ℕ) :
     ∃ C : ℝ, 0 ≤ C ∧ ∀ η : ℝ, ∀ hη_pos : 0 < η, ∀ hη_le : η ≤ 1,
       SchwartzMap.seminorm ℝ k n
@@ -1578,7 +1527,7 @@ private theorem seminorm_expDampingCutoffSchwartz_le
     seminorm_expDampingMulLeftTailCutoffSchwartz_le
       (ψ := cutoffSchwartz ψ) (hψ_left := cutoffSchwartz_left ψ) k n
 
-private theorem finset_sum_schwartzSeminorm_apply
+theorem finset_sum_schwartzSeminorm_apply
     (s : Finset (ℕ × ℕ)) (φ : SchwartzMap ℝ ℂ) :
     (∑ p ∈ s, schwartzSeminormFamily ℂ ℝ ℂ p) φ =
       ∑ p ∈ s, (schwartzSeminormFamily ℂ ℝ ℂ p) φ := by
@@ -1588,7 +1537,7 @@ private theorem finset_sum_schwartzSeminorm_apply
   | insert a s ha ih =>
       simp [ha, Seminorm.add_apply, ih]
 
-private theorem clm_bound_of_seminorm_O_eta
+theorem clm_bound_of_seminorm_O_eta
     (T : SchwartzMap ℝ ℂ →L[ℂ] ℂ)
     (f : ∀ η : ℝ, 0 < η → η ≤ 1 → SchwartzMap ℝ ℂ)
     (hsemi : ∀ p : ℕ × ℕ, ∃ D : ℝ, 0 ≤ D ∧ ∀ η : ℝ, ∀ hη_pos : 0 < η, ∀ hη_le : η ≤ 1,
@@ -1620,8 +1569,7 @@ private theorem clm_bound_of_seminorm_O_eta
         _ = ∑ p ∈ s, (schwartzSeminormFamily ℂ ℝ ℂ p) (f η hη_pos hη_le) := by
               simpa using finset_sum_schwartzSeminorm_apply s (f η hη_pos hη_le)
         _ = ∑ p ∈ s, SchwartzMap.seminorm ℝ p.1 p.2 (f η hη_pos hη_le) := by
-              unfold schwartzSeminormFamily
-              rfl
+              simp only [SchwartzMap.schwartzSeminormFamily_apply', SchwartzMap.seminorm_eq_real]
         _ ≤ ∑ p ∈ s, D p * η := by
               refine Finset.sum_le_sum ?_
               intro p hp
@@ -1639,7 +1587,7 @@ private theorem clm_bound_of_seminorm_O_eta
             dsimp [C]
             ring
 
-private theorem clm_bound_of_expDampingCutoff_O_eta
+theorem clm_bound_of_expDampingCutoff_O_eta
     (T : SchwartzMap ℝ ℂ →L[ℂ] ℂ)
     (ψ : SchwartzMap ℝ ℂ) :
     ∃ C : ℝ, 0 ≤ C ∧ ∀ η : ℝ, ∀ hη_pos : 0 < η, ∀ hη_le : η ≤ 1,
@@ -1652,7 +1600,7 @@ private theorem clm_bound_of_expDampingCutoff_O_eta
   intro p
   simpa using seminorm_expDampingCutoffSchwartz_le (ψ := ψ) p.1 p.2
 
-private theorem clm_bound_of_fourier_expDampingCutoff_O_eta
+theorem clm_bound_of_fourier_expDampingCutoff_O_eta
     (T : SchwartzMap ℝ ℂ →L[ℂ] ℂ)
     (ψ : SchwartzMap ℝ ℂ) :
     ∃ C : ℝ, 0 ≤ C ∧ ∀ η : ℝ, ∀ hη_pos : 0 < η, ∀ hη_le : η ≤ 1,
@@ -1663,7 +1611,7 @@ private theorem clm_bound_of_fourier_expDampingCutoff_O_eta
     clm_bound_of_expDampingCutoff_O_eta
       (T := T.comp (SchwartzMap.fourierTransformCLM ℂ)) ψ
 
-private theorem tendsto_fourier_expDampingCutoff_zero
+theorem tendsto_fourier_expDampingCutoff_zero
     (T : SchwartzMap ℝ ℂ →L[ℂ] ℂ)
     (ψ : SchwartzMap ℝ ℂ) :
     Tendsto
@@ -1704,7 +1652,7 @@ private theorem tendsto_fourier_expDampingCutoff_zero
           Tendsto (fun η : ℝ => C * η) (nhdsWithin 0 (Ioi 0)) (nhds (C * 0)))
   exact squeeze_zero_norm' hbound hCη
 
-private theorem fourier_pairing_cutoffSchwartz_eq
+theorem fourier_pairing_cutoffSchwartz_eq
     (T : SchwartzMap ℝ ℂ →L[ℂ] ℂ)
     (hT_supp : HasOneSidedFourierSupport T)
     (ψ : SchwartzMap ℝ ℂ) :
@@ -1713,7 +1661,7 @@ private theorem fourier_pairing_cutoffSchwartz_eq
   fourier_pairing_eq_of_eqOn_nonneg T hT_supp (cutoffSchwartz_eqOn_nonneg ψ)
 
 set_option backward.isDefEq.respectTransparency false in
-private theorem fourierInv_eq_cexp_integral
+theorem fourierInv_eq_cexp_integral
     (φ : SchwartzMap ℝ ℂ) (ξ : ℝ) :
     FourierTransform.fourierInv φ ξ =
       ∫ x : ℝ, Complex.exp (2 * Real.pi * Complex.I * ξ * x) * φ x := by
@@ -1730,7 +1678,7 @@ private theorem fourierInv_eq_cexp_integral
   ring
 
 set_option backward.isDefEq.respectTransparency false in
-private theorem psiZ_pairing_formula
+theorem psiZ_pairing_formula
     (φ : SchwartzMap ℝ ℂ) (η ξ : ℝ) :
     ∫ x : ℝ, psiZ ((2 * Real.pi : ℂ) * (x + η * Complex.I)) ξ * φ x =
       smoothCutoff ξ * Complex.exp (-(2 * Real.pi * η : ℂ) * ξ) *
@@ -1788,11 +1736,11 @@ private theorem psiZ_pairing_formula
       (fun (x : ℝ) => Complex.exp (2 * Real.pi * Complex.I * ξ * x) * φ x)]
   ring
 
-private def stepAScalarDerivIntegrand
+def stepAScalarDerivIntegrand
     (η : ℝ) (hη : 0 < η) (φ : SchwartzMap ℝ ℂ) (n : ℕ) (ξ x : ℝ) : ℂ :=
   iteratedDeriv n (scaledHorizontalSchwartzPsi η hη x) ξ * φ x
 
-private theorem continuous_stepAScalarDerivIntegrand
+theorem continuous_stepAScalarDerivIntegrand
     (η : ℝ) (hη : 0 < η) (φ : SchwartzMap ℝ ℂ) (n : ℕ) (ξ : ℝ) :
     Continuous (fun x : ℝ => stepAScalarDerivIntegrand η hη φ n ξ x) := by
   have hbcf : Continuous (fun x : ℝ =>
@@ -1813,7 +1761,7 @@ private theorem continuous_stepAScalarDerivIntegrand
     ((fun x : ℝ => iteratedDeriv n (scaledHorizontalSchwartzPsi η hη x) ξ) * ⇑φ)
   exact hpsi.mul φ.continuous
 
-private theorem integrable_stepAScalarDerivIntegrand
+theorem integrable_stepAScalarDerivIntegrand
     (η : ℝ) (hη : 0 < η) (φ : SchwartzMap ℝ ℂ) (n : ℕ) (ξ : ℝ) :
     Integrable (fun x : ℝ => stepAScalarDerivIntegrand η hη φ n ξ x) := by
   obtain ⟨D, hD_nonneg, hD⟩ :=
@@ -1841,7 +1789,7 @@ private theorem integrable_stepAScalarDerivIntegrand
     ((continuous_stepAScalarDerivIntegrand η hη φ n ξ).aestronglyMeasurable)
     (Filter.Eventually.of_forall hbound)
 
-private theorem hasDerivAt_stepAScalarDerivIntegrand
+theorem hasDerivAt_stepAScalarDerivIntegrand
     (η : ℝ) (hη : 0 < η) (φ : SchwartzMap ℝ ℂ) (n : ℕ) (x ξ : ℝ) :
     HasDerivAt
       (fun t : ℝ => stepAScalarDerivIntegrand η hη φ n t x)
@@ -1856,11 +1804,11 @@ private theorem hasDerivAt_stepAScalarDerivIntegrand
       ((hcont.differentiable_iteratedDeriv' n ξ).hasDerivAt)
   simpa [stepAScalarDerivIntegrand] using hpsi.mul_const (φ x)
 
-private def stepAScalarDerivIntegral
+def stepAScalarDerivIntegral
     (η : ℝ) (hη : 0 < η) (φ : SchwartzMap ℝ ℂ) (n : ℕ) (ξ : ℝ) : ℂ :=
   ∫ x : ℝ, stepAScalarDerivIntegrand η hη φ n ξ x
 
-private theorem hasDerivAt_stepAScalarDerivIntegral
+theorem hasDerivAt_stepAScalarDerivIntegral
     (η : ℝ) (hη : 0 < η) (φ : SchwartzMap ℝ ℂ) (n : ℕ) (ξ : ℝ) :
     HasDerivAt
       (stepAScalarDerivIntegral η hη φ n)
@@ -1914,7 +1862,7 @@ private theorem hasDerivAt_stepAScalarDerivIntegral
   exact (hasDerivAt_integral_of_dominated_loc_of_deriv_le hs hF_meas hF_int
     hF'_meas h_bound bound_integrable h_diff).2
 
-private theorem hasDerivAt_iteratedDeriv_stepAScalarIntegral
+theorem hasDerivAt_iteratedDeriv_stepAScalarIntegral
     (η : ℝ) (hη : 0 < η) (φ : SchwartzMap ℝ ℂ) (n : ℕ) (ξ : ℝ) :
     HasDerivAt
       (iteratedDeriv n (stepAScalarDerivIntegral η hη φ 0))
@@ -1932,7 +1880,7 @@ private theorem hasDerivAt_iteratedDeriv_stepAScalarIntegral
       rw [EventuallyEq.hasDerivAt_iff hEq]
       simpa using hasDerivAt_stepAScalarDerivIntegral η hη φ (n + 1) ξ
 
-private theorem iteratedDeriv_stepAScalarIntegral_eq
+theorem iteratedDeriv_stepAScalarIntegral_eq
     (η : ℝ) (hη : 0 < η) (φ : SchwartzMap ℝ ℂ) (n : ℕ) (ξ : ℝ) :
     iteratedDeriv n (stepAScalarDerivIntegral η hη φ 0) ξ =
       stepAScalarDerivIntegral η hη φ n ξ := by
@@ -1943,14 +1891,14 @@ private theorem iteratedDeriv_stepAScalarIntegral_eq
       rw [iteratedDeriv_succ]
       simpa using (hasDerivAt_iteratedDeriv_stepAScalarIntegral η hη φ n ξ).deriv
 
-private def stepAKernel
+def stepAKernel
     (η : ℝ) (hη_pos : 0 < η) (hη_le : η ≤ 1)
     (ψ : SchwartzMap ℝ ℂ) : SchwartzMap ℝ ℂ :=
   cutoffSchwartz ψ +
     expDampingMulLeftTailCutoffSchwartz η hη_pos hη_le
       (cutoffSchwartz ψ) (cutoffSchwartz_left ψ)
 
-private theorem stepAKernel_eq
+theorem stepAKernel_eq
     (η : ℝ) (hη_pos : 0 < η) (hη_le : η ≤ 1)
     (ψ : SchwartzMap ℝ ℂ) (ξ : ℝ) :
     stepAKernel η hη_pos hη_le ψ ξ =
@@ -1963,7 +1911,7 @@ private theorem stepAKernel_eq
   simp [expDampingFactor]
   ring
 
-private theorem stepAScalarDerivIntegral_eq_iteratedDeriv_stepAKernel
+theorem stepAScalarDerivIntegral_eq_iteratedDeriv_stepAKernel
     (η : ℝ) (hη_pos : 0 < η) (hη_le : 2 * Real.pi * η ≤ 1)
     (φ : SchwartzMap ℝ ℂ) (n : ℕ) (ξ : ℝ) :
     stepAScalarDerivIntegral η hη_pos φ n ξ =
@@ -1985,7 +1933,7 @@ private theorem stepAScalarDerivIntegral_eq_iteratedDeriv_stepAKernel
               stepAKernel_eq, mul_add, mul_assoc, add_comm, add_left_comm, add_assoc] using hpair
 
 set_option backward.isDefEq.respectTransparency false in
-private theorem integral_stepAProbeFamily_eq_probe_stepAKernel
+theorem integral_stepAProbeFamily_eq_probe_stepAKernel
     (s : Finset (ℕ × ℕ)) (η : ℝ) (hη_pos : 0 < η) (hη_le : 2 * Real.pi * η ≤ 1)
     (φ : SchwartzMap ℝ ℂ) :
     (∫ x : ℝ, stepAProbeFamily s η hη_pos φ x) =

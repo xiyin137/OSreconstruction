@@ -1,14 +1,18 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43Codomain
-import OSReconstruction.SCV.PartialFourierSpatial
-import OSReconstruction.SCV.FourierSupportCone
-import OSReconstruction.SCV.PaleyWienerSchwartz
-import OSReconstruction.ComplexLieGroups.DifferenceCoordinatesReduced
-import OSReconstruction.Wightman.Reconstruction.ForwardTubeDistributions
-import Mathlib.MeasureTheory.Integral.Prod
-import Mathlib.MeasureTheory.Constructions.Pi
-import Mathlib.Data.Fin.Rev
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43Codomain
+public import OSReconstruction.SCV.PartialFourierSpatial
+public import OSReconstruction.SCV.FourierSupportCone
+public import OSReconstruction.SCV.PaleyWienerSchwartz
+public import OSReconstruction.ComplexLieGroups.DifferenceCoordinatesReduced
+public import OSReconstruction.Wightman.Reconstruction.ForwardTubeDistributions
+public import Mathlib.MeasureTheory.Integral.Prod
+public import Mathlib.MeasureTheory.Constructions.Pi
+public import Mathlib.Data.Fin.Rev
+
+@[expose] public section
 
 noncomputable section
 
@@ -85,7 +89,7 @@ theorem tsupport_section43DiffPullback_subset_positiveOrthant (d n : ℕ) [NeZer
       exact Fin.mk_lt_mk.mpr (by omega)
     exact (((hord ⟨k.val - 1, by omega⟩).2 k hprev_lt).le)
 
-private theorem section43_inOpenForwardCone_timeAxis (d : ℕ) [NeZero d]
+theorem section43_inOpenForwardCone_timeAxis (d : ℕ) [NeZero d]
     {a : ℝ} (ha : 0 < a) :
     InOpenForwardCone d
       (fun μ : Fin (d + 1) => if μ = (0 : Fin (d + 1)) then a else 0) := by
@@ -95,7 +99,7 @@ private theorem section43_inOpenForwardCone_timeAxis (d : ℕ) [NeZero d]
   simp
   nlinarith [sq_pos_of_pos ha]
 
-private theorem section43DiffCoordRealCLE_symm_mem_forwardConeAbs
+theorem section43DiffCoordRealCLE_symm_mem_forwardConeAbs
     (d n : ℕ) [NeZero d]
     {δ : NPointDomain d n}
     (hδ : ∀ k : Fin n, InOpenForwardCone d (δ k)) :
@@ -127,11 +131,11 @@ private theorem section43DiffCoordRealCLE_symm_mem_forwardConeAbs
   rw [hcoord]
   exact hδ k
 
-private def section43TimeAxisDifference (d n : ℕ) [NeZero d]
+def section43TimeAxisDifference (d n : ℕ) [NeZero d]
     (j : Fin n) (R : ℝ) : NPointDomain d n :=
   fun k μ => if μ = 0 then if k = j then R else 1 else 0
 
-private theorem section43TimeAxisDifference_mem_forwardConeAbs
+theorem section43TimeAxisDifference_mem_forwardConeAbs
     (d n : ℕ) [NeZero d]
     (j : Fin n) {R : ℝ} (hR : 0 < R) :
     (section43DiffCoordRealCLE d n).symm
@@ -170,7 +174,7 @@ noncomputable def section43PointReverseCLE (d n : ℕ) [NeZero d] :
     (section43PointReverseCLE d n).symm x k = x (Fin.rev k) := by
   rfl
 
-private theorem section43_fin_rev_prefix_sum_eq_tail_sum
+theorem section43_fin_rev_prefix_sum_eq_tail_sum
     {n : ℕ} {A : Type*} [AddCommMonoid A]
     (f : Fin n → A) (j : Fin n) :
     (∑ l : Fin ((Fin.rev j).val + 1),
@@ -204,7 +208,7 @@ private theorem section43_fin_rev_prefix_sum_eq_tail_sum
   · intro _l _hl
     rfl
 
-private theorem section43_fin_prefix_sum_eq_lower_sum
+theorem section43_fin_prefix_sum_eq_lower_sum
     {n : ℕ} {A : Type*} [AddCommMonoid A]
     (f : Fin n → A) (k : Fin n) :
     (∑ l : Fin (k.val + 1), f ⟨l.val, by omega⟩) =
@@ -230,7 +234,7 @@ private theorem section43_fin_prefix_sum_eq_lower_sum
   · intro _l _hl
     rfl
 
-private theorem section43_fin_prefix_mul_eq_sum_tail
+theorem section43_fin_prefix_mul_eq_sum_tail
     {n : ℕ} (a b : Fin n → ℝ) :
     (∑ k : Fin n, (∑ l : Fin (k.val + 1), a ⟨l.val, by omega⟩) * b k) =
       ∑ j : Fin n, a j * ∑ k : Fin n, if j.val ≤ k.val then b k else 0 := by
@@ -416,7 +420,7 @@ noncomputable def section43CumulativeTailMomentumCLE (d n : ℕ) [NeZero d] :
       ring
     · simp [hμ, hsucc]
 
-private theorem section43TimeAxisDifference_pairing_eq_sum_tail
+theorem section43TimeAxisDifference_pairing_eq_sum_tail
     (d n : ℕ) [NeZero d]
     (ξ : Fin (n * (d + 1)) → ℝ) (j : Fin n) (R : ℝ) :
     (∑ i : Fin (n * (d + 1)),

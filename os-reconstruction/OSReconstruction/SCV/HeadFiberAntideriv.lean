@@ -5,26 +5,22 @@ Copyright (c) 2025 ModularPhysics Contributors.
 Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
-import OSReconstruction.SCV.SchwartzPrependField
-import OSReconstruction.SCV.HeadBlockIntegral
-import Mathlib.Analysis.Calculus.MeanValue
-import Mathlib.Analysis.Calculus.ParametricIntegral
-import Mathlib.Analysis.Asymptotics.Lemmas
-import Mathlib.Analysis.Calculus.ContDiff.FiniteDimension
-import Mathlib.Analysis.SpecialFunctions.JapaneseBracket
-import Mathlib.Analysis.SpecialFunctions.ImproperIntegrals
-import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
-import Mathlib.MeasureTheory.Integral.IntegralEqImproper
-import Mathlib.MeasureTheory.Integral.Prod
+module
 
+public import OSReconstruction.SCV.SchwartzPrependField
+public import OSReconstruction.SCV.HeadBlockIntegral
+public import Mathlib.Analysis.Calculus.MeanValue
+public import Mathlib.Analysis.Calculus.ParametricIntegral
+public import Mathlib.Analysis.Asymptotics.Lemmas
+public import Mathlib.Analysis.Calculus.ContDiff.FiniteDimension
+public import Mathlib.Analysis.SpecialFunctions.JapaneseBracket
+public import Mathlib.Analysis.SpecialFunctions.ImproperIntegrals
+public import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
+public import Mathlib.MeasureTheory.Integral.IntegralEqImproper
+public import Mathlib.MeasureTheory.Integral.Prod
+public import OSReconstruction.SchwartzSeminormCompat
 
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -924,7 +920,7 @@ theorem decay_sliceIntegralRaw {n : ℕ}
               exact hC y
         _ = C' := by rfl
 
-private theorem exists_seminorm_bound_fderivCLM
+theorem exists_seminorm_bound_fderivCLM
     {n : ℕ}
     {V : Type*} [NormedAddCommGroup V] [NormedSpace ℂ V] [NormedSpace ℝ V]
     [SMulCommClass ℝ ℂ V] [CompleteSpace V]
@@ -1000,7 +996,7 @@ theorem exists_seminorm_bound_sliceIntegralRaw_deriv
               | @insert a s ha ih =>
                   simp only [Finset.sup_insert, Seminorm.sup_apply]
                   rw [ih]
-                  rfl
+                  simp only [SchwartzMap.schwartzSeminormFamily_apply', SchwartzMap.seminorm_eq_real]
   | succ m ih =>
       obtain ⟨s0, C0, hC0, hIH⟩ :=
         ih (V := (Fin (n + 1) → ℝ) →L[ℝ] V)

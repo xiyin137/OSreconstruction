@@ -3,11 +3,15 @@ Copyright (c) 2026 ModularPhysics Contributors. All rights reserved.
 Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
-import OSReconstruction.SCV.Osgood
-import OSReconstruction.SCV.TotallyRealIdentity
-import Mathlib.Analysis.Complex.Schwarz
-import Mathlib.Topology.MetricSpace.Equicontinuity
-import Mathlib.Topology.UniformSpace.Ascoli
+module
+
+public import OSReconstruction.SCV.Osgood
+public import OSReconstruction.SCV.TotallyRealIdentity
+public import Mathlib.Analysis.Complex.Schwarz
+public import Mathlib.Topology.MetricSpace.Equicontinuity
+public import Mathlib.Topology.UniformSpace.Ascoli
+
+@[expose] public section
 
 /-!
 # Locally Uniform Limits in Finite-Dimensional Complex Space

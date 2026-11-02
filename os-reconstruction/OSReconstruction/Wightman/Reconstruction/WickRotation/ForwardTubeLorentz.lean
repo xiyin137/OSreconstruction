@@ -5,52 +5,48 @@ Copyright (c) 2025 ModularPhysics Contributors. All rights reserved.
 Released under Apache 2.0 license.
 Authors: Michael Douglas, ModularPhysics Contributors
 -/
-import Init
-import OSReconstruction.Wightman.Reconstruction.Core
-import OSReconstruction.Wightman.Reconstruction.DenseCLM
-import Mathlib.Analysis.Calculus.FDeriv.Basic
-import Mathlib.Analysis.Calculus.FDeriv.Comp
-import Mathlib.Analysis.Calculus.FDeriv.Prod
-import Mathlib.Analysis.Distribution.SchwartzSpace.Basic
-import Mathlib.Analysis.Distribution.SchwartzSpace.Deriv
-import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
-import Mathlib.MeasureTheory.Integral.IntegralEqImproper
-import Mathlib.MeasureTheory.Measure.Lebesgue.Integral
-import OSReconstruction.Mathlib429Compat
-import OSReconstruction.Wightman.Reconstruction.SchwartzPartialEval
-import OSReconstruction.Wightman.Reconstruction.SliceIntegral
-import OSReconstruction.Wightman.Reconstruction.HeadTranslationInvariant
-import OSReconstruction.Wightman.Reconstruction.HeadBlockTranslationInvariant
-import OSReconstruction.Wightman.Reconstruction.SchwartzDensity
-import OSReconstruction.Wightman.Reconstruction.BlockIntegral
-import OSReconstruction.Wightman.Reconstruction.SchwartzCutoff
-import Mathlib.Analysis.Complex.Basic
-import Mathlib.Topology.ContinuousMap.StoneWeierstrass
-import Mathlib.Topology.UrysohnsLemma
-import Mathlib.Analysis.Fourier.FourierTransform
-import Mathlib.Analysis.Distribution.SchwartzSpace.Fourier
-import Mathlib.MeasureTheory.Measure.Haar.InnerProductSpace
-import OSReconstruction.Wightman.Reconstruction.TranslationInvariantSchwartz
-import OSReconstruction.Wightman.Reconstruction.SchwingerOS
-import OSReconstruction.Wightman.Reconstruction.AnalyticContinuation
-import OSReconstruction.Wightman.Reconstruction.ForwardTubeDistributions
-import Mathlib.Analysis.SpecialFunctions.Trigonometric.Basic
-import Mathlib.Topology.Order.Basic
-import Mathlib.Order.Filter.Basic
-import OSReconstruction.GeneralResults.FinProductIntegral
-import OSReconstruction.SCV.ConeDefs
-import OSReconstruction.SCV.DistributionalUniqueness
-import OSReconstruction.SCV.LaplaceSchwartz
-import OSReconstruction.SCV.PaleyWienerSchwartz
-import OSReconstruction.Wightman.SchwartzTensorProduct
+module
 
+public import Init
+public import OSReconstruction.Wightman.Reconstruction.Core
+public import OSReconstruction.Wightman.Reconstruction.DenseCLM
+public import Mathlib.Analysis.Calculus.FDeriv.Basic
+public import Mathlib.Analysis.Calculus.FDeriv.Comp
+public import Mathlib.Analysis.Calculus.FDeriv.Prod
+public import Mathlib.Analysis.Distribution.SchwartzSpace.Basic
+public import Mathlib.Analysis.Distribution.SchwartzSpace.Deriv
+public import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
+public import Mathlib.MeasureTheory.Integral.IntegralEqImproper
+public import Mathlib.MeasureTheory.Measure.Lebesgue.Integral
+public import OSReconstruction.Mathlib429Compat
+public import OSReconstruction.Wightman.Reconstruction.SchwartzPartialEval
+public import OSReconstruction.Wightman.Reconstruction.SliceIntegral
+public import OSReconstruction.Wightman.Reconstruction.HeadTranslationInvariant
+public import OSReconstruction.Wightman.Reconstruction.HeadBlockTranslationInvariant
+public import OSReconstruction.Wightman.Reconstruction.SchwartzDensity
+public import OSReconstruction.Wightman.Reconstruction.BlockIntegral
+public import OSReconstruction.Wightman.Reconstruction.SchwartzCutoff
+public import Mathlib.Analysis.Complex.Basic
+public import Mathlib.Topology.ContinuousMap.StoneWeierstrass
+public import Mathlib.Topology.UrysohnsLemma
+public import Mathlib.Analysis.Fourier.FourierTransform
+public import Mathlib.Analysis.Distribution.SchwartzSpace.Fourier
+public import Mathlib.MeasureTheory.Measure.Haar.InnerProductSpace
+public import OSReconstruction.Wightman.Reconstruction.TranslationInvariantSchwartz
+public import OSReconstruction.Wightman.Reconstruction.SchwingerOS
+public import OSReconstruction.Wightman.Reconstruction.AnalyticContinuation
+public import OSReconstruction.Wightman.Reconstruction.ForwardTubeDistributions
+public import Mathlib.Analysis.SpecialFunctions.Trigonometric.Basic
+public import Mathlib.Topology.Order.Basic
+public import Mathlib.Order.Filter.Basic
+public import OSReconstruction.GeneralResults.FinProductIntegral
+public import OSReconstruction.SCV.ConeDefs
+public import OSReconstruction.SCV.DistributionalUniqueness
+public import OSReconstruction.SCV.LaplaceSchwartz
+public import OSReconstruction.SCV.PaleyWienerSchwartz
+public import OSReconstruction.Wightman.SchwartzTensorProduct
 
-
-
-
-
-
-
+@[expose] public section
 
 open scoped Classical
 
@@ -1136,7 +1132,7 @@ theorem translatedPET_perm_iff {d n : ℕ} [NeZero d]
 
 /-- The coincident-time hyperplane `{x : x i 0 = x j 0}` is Haar-null for
     `i ≠ j`. -/
-private theorem measure_timeEq_zero_local {d n : ℕ} (i j : Fin n) (hij : i ≠ j) :
+theorem measure_timeEq_zero_local {d n : ℕ} (i j : Fin n) (hij : i ≠ j) :
     MeasureTheory.volume
       {x : NPointDomain d n | x i 0 = x j 0} = 0 := by
   let L : NPointDomain d n →ₗ[ℝ] ℝ :=
@@ -1161,7 +1157,7 @@ private theorem measure_timeEq_zero_local {d n : ℕ} (i j : Fin n) (hij : i ≠
 
 /-- The set of configurations with at least one pair of coincident times is a
     finite union of hyperplanes, hence Haar-null. -/
-private theorem measure_timeCoinc_zero {d n : ℕ} [NeZero d] :
+theorem measure_timeCoinc_zero {d n : ℕ} [NeZero d] :
     MeasureTheory.volume
       {x : NPointDomain d n | ∃ i j : Fin n, i ≠ j ∧ x i 0 = x j 0} = 0 := by
   classical

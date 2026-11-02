@@ -1,4 +1,8 @@
-import Mathlib
+module
+
+public import Mathlib
+
+@[expose] public section
 
 noncomputable section
 
@@ -14,7 +18,7 @@ variable [NormedAddCommGroup F] [NormedSpace ℝ F] [FiniteDimensional ℝ F]
 variable [NormedAddCommGroup G] [NormedSpace ℝ G]
 
 omit [FiniteDimensional ℝ E] [NormedSpace ℝ F] [FiniteDimensional ℝ F] in
-private lemma segment_secondFiber_mem_ball
+lemma segment_secondFiber_mem_ball
     (p h : E × F) {z : E} {δ : ℝ}
     (hz : z ∈ segment ℝ p.1 (p.1 + h.1))
     (hδ : ‖h‖ < δ) :

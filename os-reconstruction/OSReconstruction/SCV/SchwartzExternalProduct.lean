@@ -3,7 +3,14 @@ Copyright (c) 2026 ModularPhysics Contributors.
 Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
-import Mathlib.Analysis.Distribution.SchwartzSpace.Deriv
+module
+
+public import Mathlib.Analysis.Distribution.SchwartzSpace.Deriv
+public import Mathlib.Analysis.Normed.Lp.ProdLp
+public import Mathlib.Analysis.Calculus.ContDiff.Bounds
+public import Mathlib.Analysis.Normed.Operator.Prod
+
+@[expose] public section
 
 /-!
 # External Products of Schwartz Functions
@@ -21,7 +28,7 @@ open Complex
 namespace SCV
 
 /-- Product norm is controlled by the sum of the coordinate norms. -/
-private theorem norm_prod_le_fst_add_snd
+theorem norm_prod_le_fst_add_snd_SchwartzExternalProduct
     {E₁ E₂ : Type*} [SeminormedAddCommGroup E₁] [SeminormedAddCommGroup E₂]
     (x : E₁ × E₂) :
     ‖x‖ ≤ ‖x.1‖ + ‖x.2‖ := by
@@ -87,7 +94,7 @@ def schwartzExternalProduct
         _ ≤ 2 ^ p * (‖x.1‖ ^ p + ‖x.2‖ ^ p) :=
           mul_le_mul_of_nonneg_left hmax (pow_nonneg (by norm_num) _)
     have h_pow : ‖x‖ ^ p ≤ 2 ^ p * (‖x.1‖ ^ p + ‖x.2‖ ^ p) :=
-      (pow_le_pow_left₀ (norm_nonneg _) (norm_prod_le_fst_add_snd x) _).trans add_pow_le
+      (pow_le_pow_left₀ (norm_nonneg _) (norm_prod_le_fst_add_snd_SchwartzExternalProduct x) _).trans add_pow_le
     have h_term : ∀ i ∈ Finset.range (l + 1),
         ‖x‖ ^ p * (↑(l.choose i) * ‖iteratedFDeriv ℝ i φ.toFun x.1‖ *
           ‖iteratedFDeriv ℝ (l - i) ψ.toFun x.2‖) ≤

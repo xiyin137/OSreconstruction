@@ -1,18 +1,12 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIBlockRadialDifferenceTimeProjection
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIBlockRadialChronologicalCover
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVUniformCompactTimeAnchoredSeed
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIBlockRadialDifferenceTimeProjection
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIBlockRadialChronologicalCover
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVUniformCompactTimeAnchoredSeed
 
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -88,7 +82,7 @@ theorem osiiStep4RadialEndpointCommonCarrier_isCompact
         d k rho center)).image
       OSIIChapterV.continuous_reducedTestLiftReconstruction
 
-private theorem reducedTestLift_tsupport_basepoint_mem_endpointCarrier
+theorem reducedTestLift_tsupport_basepoint_mem_endpointCarrier
     (d m : Nat)
     (chi : SchwartzMap (SpacetimeDim d) Complex)
     (phi : SchwartzNPoint d m)
@@ -225,7 +219,7 @@ theorem osiiStep4RadialEndpointCommonCarrier_ordered
   intro i j hij
   exact hmono hij
 
-private theorem endpointCarrier_time_pos
+theorem endpointCarrier_time_pos
     (d : Nat) {rho : Real} (hrho : 0 < rho)
     (endpointCenter x : SpacetimeDim d)
     (hEndpointCenter : rho / 4 <= endpointCenter 0)

@@ -1,18 +1,13 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import Init
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIProductionRadialFixedMajorant
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIBlockRadialSelectedBlockMZUniform
-import OSReconstruction.Wightman.Reconstruction.WickRotation.deprecated.OSFixedOrderGrowth
+module
 
+public import Init
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIProductionRadialFixedMajorant
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIBlockRadialSelectedBlockMZUniform
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.deprecated.OSFixedOrderGrowth
 
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 

@@ -1,17 +1,13 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVInitialAnchoredPacketCarrierRegularity
-import OSReconstruction.SCV.LocalEOWPairingCLM
-import OSReconstruction.SCV.LocalProductRecovery
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVInitialAnchoredPacketCarrierRegularity
+public import OSReconstruction.SCV.LocalEOWPairingCLM
+public import OSReconstruction.SCV.LocalProductRecovery
+public import OSReconstruction.SchwartzSeminormCompat
 
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -240,8 +236,7 @@ theorem LocalKernelWindowData.localRecenteredDistributionOfOS_uniform_schwartz_b
         have ha_eq :
             (schwartzSeminormFamily ℝ (Fin k → ℝ) ℂ a) ψ =
               (schwartzSeminormFamily ℂ (Fin k → ℝ) ℂ a) ψ := by
-          cases a
-          rfl
+          simp only [SchwartzMap.schwartzSeminormFamily_apply', SchwartzMap.seminorm_eq_real]
         simp [Finset.sup_insert, ih, ha_eq]
   refine ⟨s, (Cnn : ℝ), NNReal.coe_nonneg Cnn, ?_⟩
   intro level z hz ψ

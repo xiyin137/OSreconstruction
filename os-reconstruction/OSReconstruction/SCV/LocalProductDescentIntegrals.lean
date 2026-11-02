@@ -3,7 +3,11 @@ Copyright (c) 2026 ModularPhysics Contributors.
 Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
-import OSReconstruction.SCV.LocalProductDescent
+module
+
+public import OSReconstruction.SCV.LocalProductDescent
+
+@[expose] public section
 
 /-!
 # Integral identities for local product-kernel descent

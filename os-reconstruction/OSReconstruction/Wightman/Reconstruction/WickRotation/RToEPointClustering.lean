@@ -1,5 +1,9 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.RToEPointBounds
-import OSReconstruction.Wightman.Reconstruction.WickRotation.RToETimeClustering
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.RToEPointBounds
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.RToETimeClustering
+
+@[expose] public section
 
 /-!
 # Reflected Point Clustering Uniform in Time
@@ -23,49 +27,49 @@ variable {d : ℕ} [NeZero d]
 set_option backward.isDefEq.respectTransparency true
 set_option maxHeartbeats 800000
 
-private def spaceShift {n : ℕ} (a : Fin d → ℝ)
+def spaceShift {n : ℕ} (a : Fin d → ℝ)
     (f : euclideanPositiveTimeSubmodule (d := d) n) :
     euclideanPositiveTimeSubmodule (d := d) n :=
   ⟨translateSchwartzNPoint (Fin.cons 0 a) f.1,
     translateSchwartzNPoint_preserves_ordered_positive_tsupport_spatial
       (Fin.cons 0 a) (by simp) f.1 f.2⟩
 
-private def timeSpacePair (Wfn : WightmanFunctions d) {n m : ℕ}
+def timeSpacePair_RToEPointClustering (Wfn : WightmanFunctions d) {n m : ℕ}
     (f : euclideanPositiveTimeSubmodule (d := d) n)
     (g : euclideanPositiveTimeSubmodule (d := d) m)
     (s t : ℝ≥0) (a : Fin d → ℝ) : ℂ :=
   rToEReflectedPairing Wfn (osiiOriginalOSNonnegativeTimeShiftSource f s)
     (spaceShift a (osiiOriginalOSNonnegativeTimeShiftSource g t))
 
-private theorem timeSpacePair_apply (Wfn : WightmanFunctions d) {n m : ℕ}
+theorem timeSpacePair_apply (Wfn : WightmanFunctions d) {n m : ℕ}
     (f : euclideanPositiveTimeSubmodule (d := d) n)
     (g : euclideanPositiveTimeSubmodule (d := d) m)
     (s t : ℝ≥0) (a : Fin d → ℝ) :
-    timeSpacePair Wfn f g s t a = wickRotatedBoundaryPairing Wfn (n + m)
+    timeSpacePair_RToEPointClustering Wfn f g s t a = wickRotatedBoundaryPairing Wfn (n + m)
       ((timeShiftSchwartzNPoint s f.1).osConjTensorProduct
         (translateSchwartzNPoint (Fin.cons 0 a) (timeShiftSchwartzNPoint t g.1))) := rfl
 
 attribute [local irreducible] rToEReflectedPairing
 
-private theorem timeSpacePair_sub_left (Wfn : WightmanFunctions d) {n m : ℕ}
+theorem timeSpacePair_sub_left (Wfn : WightmanFunctions d) {n m : ℕ}
     (f f' : euclideanPositiveTimeSubmodule (d := d) n)
     (g : euclideanPositiveTimeSubmodule (d := d) m)
     (s t : ℝ≥0) (a : Fin d → ℝ) :
-    timeSpacePair Wfn (f - f') g s t a =
-      timeSpacePair Wfn f g s t a - timeSpacePair Wfn f' g s t a := by
+    timeSpacePair_RToEPointClustering Wfn (f - f') g s t a =
+      timeSpacePair_RToEPointClustering Wfn f g s t a - timeSpacePair_RToEPointClustering Wfn f' g s t a := by
   have hsub : osiiOriginalOSNonnegativeTimeShiftSource (f - f') s =
       osiiOriginalOSNonnegativeTimeShiftSource f s -
         osiiOriginalOSNonnegativeTimeShiftSource f' s := by
     apply Subtype.ext
     exact map_sub (timeShiftSchwartzNPoint (d := d) s) f.1 f'.1
-  simp only [timeSpacePair, hsub, rToEReflectedPairing_sub_left]
+  simp only [timeSpacePair_RToEPointClustering, hsub, rToEReflectedPairing_sub_left]
 
-private theorem timeSpacePair_sub_right (Wfn : WightmanFunctions d) {n m : ℕ}
+theorem timeSpacePair_sub_right (Wfn : WightmanFunctions d) {n m : ℕ}
     (f : euclideanPositiveTimeSubmodule (d := d) n)
     (g g' : euclideanPositiveTimeSubmodule (d := d) m)
     (s t : ℝ≥0) (a : Fin d → ℝ) :
-    timeSpacePair Wfn f (g - g') s t a =
-      timeSpacePair Wfn f g s t a - timeSpacePair Wfn f g' s t a := by
+    timeSpacePair_RToEPointClustering Wfn f (g - g') s t a =
+      timeSpacePair_RToEPointClustering Wfn f g s t a - timeSpacePair_RToEPointClustering Wfn f g' s t a := by
   have hsub : spaceShift a (osiiOriginalOSNonnegativeTimeShiftSource (g - g') t) =
       spaceShift a (osiiOriginalOSNonnegativeTimeShiftSource g t) -
         spaceShift a (osiiOriginalOSNonnegativeTimeShiftSource g' t) := by
@@ -73,18 +77,18 @@ private theorem timeSpacePair_sub_right (Wfn : WightmanFunctions d) {n m : ℕ}
     change translateSchwartzNPoint (Fin.cons 0 a) (timeShiftSchwartzNPoint t (g.1 - g'.1)) = _
     rw [map_sub, map_sub]
     rfl
-  simp only [timeSpacePair, hsub, rToEReflectedPairing_sub_right]
+  simp only [timeSpacePair_RToEPointClustering, hsub, rToEReflectedPairing_sub_right]
 
-private theorem timeSpacePair_bound (Wfn : WightmanFunctions d) {n m : ℕ}
+theorem timeSpacePair_bound (Wfn : WightmanFunctions d) {n m : ℕ}
     (f : euclideanPositiveTimeSubmodule (d := d) n)
     (g : euclideanPositiveTimeSubmodule (d := d) m)
     (s t : ℝ≥0) (a : Fin d → ℝ) :
-    ‖timeSpacePair Wfn f g s t a‖ ^ 2 ≤
+    ‖timeSpacePair_RToEPointClustering Wfn f g s t a‖ ^ 2 ≤
       ‖rToEReflectedPairing Wfn f f‖ * ‖rToEReflectedPairing Wfn g g‖ := by
   rw [timeSpacePair_apply]
   exact rToE_reflected_timeSpaceShift_pairing_bound Wfn f g s t s.2 t.2 a
 
-private theorem timeSpacePair_uniform_error (Wfn : WightmanFunctions d) (n m : ℕ)
+theorem timeSpacePair_uniform_error (Wfn : WightmanFunctions d) (n m : ℕ)
     (C : ℝ) (hC : 0 < C) (ε : ℝ) (hε : 0 < ε) :
     ∃ δ : ℝ, 0 < δ ∧
       ∀ (f f' : euclideanPositiveTimeSubmodule (d := d) n)
@@ -94,13 +98,13 @@ private theorem timeSpacePair_uniform_error (Wfn : WightmanFunctions d) (n m : �
         ‖rToEReflectedPairing Wfn (f - f') (f - f')‖ < δ →
         ‖rToEReflectedPairing Wfn (g - g') (g - g')‖ < δ →
         ∀ (s t : ℝ≥0) (a : Fin d → ℝ),
-          ‖timeSpacePair Wfn f g s t a - timeSpacePair Wfn f' g' s t a‖ < ε := by
+          ‖timeSpacePair_RToEPointClustering Wfn f g s t a - timeSpacePair_RToEPointClustering Wfn f' g' s t a‖ < ε := by
   let δ := (ε / 2) ^ 2 / C
   have hδ : 0 < δ := div_pos (sq_pos_of_pos (by linarith)) hC
   have hδC : δ * C = (ε / 2) ^ 2 := div_mul_cancel₀ _ (ne_of_gt hC)
   refine ⟨δ, hδ, fun f f' g g' hg hf' hdf hdg s t a => ?_⟩
-  let L := timeSpacePair Wfn (f - f') g s t a
-  let H := timeSpacePair Wfn f' (g - g') s t a
+  let L := timeSpacePair_RToEPointClustering Wfn (f - f') g s t a
+  let H := timeSpacePair_RToEPointClustering Wfn f' (g - g') s t a
   have hL := timeSpacePair_bound Wfn (f - f') g s t a
   have hH := timeSpacePair_bound Wfn f' (g - g') s t a
   have hsmall (x b : ℝ) (hx0 : 0 ≤ x) (hx : x < δ) (hb : b ≤ C) :
@@ -117,7 +121,7 @@ private theorem timeSpacePair_uniform_error (Wfn : WightmanFunctions d) (n m : �
   have hHn : ‖H‖ < ε / 2 := by
     change ‖H‖ ^ 2 ≤ _ at hH
     nlinarith [norm_nonneg H]
-  have heq : timeSpacePair Wfn f g s t a - timeSpacePair Wfn f' g' s t a = L + H := by
+  have heq : timeSpacePair_RToEPointClustering Wfn f g s t a - timeSpacePair_RToEPointClustering Wfn f' g' s t a = L + H := by
     dsimp only [L, H]
     rw [timeSpacePair_sub_left, timeSpacePair_sub_right]
     ring
@@ -172,17 +176,17 @@ theorem rToE_translated_reflected_pairing_uniform_point_approximation
     rw [← prod_atTop_atTop_eq]
     exact tendsto_snd
   have htail : ∀ᶠ p : ℕ × ℕ in atTop, ∀ (s t : ℝ≥0) (a : Fin d → ℝ),
-      ‖timeSpacePair Wfn (f p.1) (g p.1) s t a -
-        timeSpacePair Wfn (f p.2) (g p.2) s t a‖ < ε / 2 := by
+      ‖timeSpacePair_RToEPointClustering Wfn (f p.1) (g p.1) s t a -
+        timeSpacePair_RToEPointClustering Wfn (f p.2) (g p.2) s t a‖ < ε / 2 := by
     filter_upwards [hdf, hdg, hfst.eventually hbg, hsnd.eventually hbf] with p hf hg hg0 hf0
     exact herr (f p.1) (f p.2) (g p.1) (g p.2) hg0.le hf0.le hf hg
   obtain ⟨N, hN⟩ := eventually_atTop.mp htail
   refine ⟨max N.1 N.2, fun i hi s t a => ?_⟩
   have hlim := rToE_translated_reflected_pairing_point_limit atTop Wfn x y hx hy f g
     hfn hgn hfr hgr hfi hgi hfs hgs s t s.2 t.2 a
-  have hdist := ((tendsto_const_nhds (x := timeSpacePair Wfn (f i) (g i) s t a)).sub hlim).norm
+  have hdist := ((tendsto_const_nhds (x := timeSpacePair_RToEPointClustering Wfn (f i) (g i) s t a)).sub hlim).norm
   have hle := le_of_tendsto hdist (show ∀ᶠ j : ℕ in atTop,
-      ‖timeSpacePair Wfn (f i) (g i) s t a - wickRotatedBoundaryPairing Wfn (n + m)
+      ‖timeSpacePair_RToEPointClustering Wfn (f i) (g i) s t a - wickRotatedBoundaryPairing Wfn (n + m)
         ((timeShiftSchwartzNPoint s (f j).1).osConjTensorProduct
           (translateSchwartzNPoint (Fin.cons 0 a) (timeShiftSchwartzNPoint t (g j).1)))‖ ≤ ε / 2 from by
     filter_upwards [eventually_ge_atTop (max N.1 N.2)] with j hj
@@ -240,22 +244,22 @@ theorem rToE_reflected_point_kernel_cluster_uniform_time
   rw [norm_sub_rev A B] at hnorm
   exact hnorm.trans_lt (by linarith)
 
-private def pointPair {n m : ℕ} (Wfn : WightmanFunctions d)
+def pointPair {n m : ℕ} (Wfn : WightmanFunctions d)
     (x : NPointDomain d n) (y : NPointDomain d m) : ℂ :=
   F_ext_on_translatedPET_total Wfn
     (fun j => wickRotatePoint (Fin.append (timeReflectionN d x) y j))
 
-private def pointDifference {n : ℕ} (Wfn : WightmanFunctions d)
+def pointDifference {n : ℕ} (Wfn : WightmanFunctions d)
     (x x' : NPointDomain d n) : ℂ :=
   pointPair Wfn x x - pointPair Wfn x' x -
     (pointPair Wfn x x' - pointPair Wfn x' x')
 
-private def pointTimePair {n m : ℕ} (Wfn : WightmanFunctions d)
+def pointTimePair {n m : ℕ} (Wfn : WightmanFunctions d)
     (x : NPointDomain d n) (y : NPointDomain d m) (s t : ℝ≥0) (a : Fin d → ℝ) : ℂ :=
   pointPair Wfn (x + fun _ => timeShiftVec d s)
     ((y + fun _ => timeShiftVec d t) + fun _ => Fin.cons 0 a)
 
-private theorem pointTimePair_uniform_error (Wfn : WightmanFunctions d) (n m : ℕ)
+theorem pointTimePair_uniform_error (Wfn : WightmanFunctions d) (n m : ℕ)
     (C : ℝ) (hC : 0 < C) (ε : ℝ) (hε : 0 < ε) :
     ∃ δ : ℝ, 0 < δ ∧ ∀ (x x' : NPointDomain d n) (y y' : NPointDomain d m),
       x ∈ OrderedPositiveTimeRegion d n → x' ∈ OrderedPositiveTimeRegion d n →
@@ -295,7 +299,7 @@ private theorem pointTimePair_uniform_error (Wfn : WightmanFunctions d) (n m : �
     simpa only [pointDifference, pointPair, rToEReflectedPairing_sub_right,
       rToEReflectedPairing_sub_left] using (hww.sub hzw).sub (hwz.sub hzz)
   have htail : ∀ᶠ i in atTop,
-      ‖timeSpacePair Wfn (u i) (w i) s t a - timeSpacePair Wfn (v i) (z i) s t a‖ < ε / 2 := by
+      ‖timeSpacePair_RToEPointClustering Wfn (u i) (w i) s t a - timeSpacePair_RToEPointClustering Wfn (v i) (z i) s t a‖ < ε / 2 := by
     filter_upwards [hdu.norm.eventually (gt_mem_nhds hdx),
       hdw.norm.eventually (gt_mem_nhds hdy),
       hww.norm.eventually (gt_mem_nhds hyC), hvv.norm.eventually (gt_mem_nhds hxC)]
@@ -309,12 +313,12 @@ private theorem pointTimePair_uniform_error (Wfn : WightmanFunctions d) (n m : �
     (htail.mono fun i hi => by simpa only [timeSpacePair_apply] using hi.le)
   exact hle.trans_lt (by linarith)
 
-private def pointProduct {n m : ℕ} (Wfn : WightmanFunctions d)
+def pointProduct {n m : ℕ} (Wfn : WightmanFunctions d)
     (p : NPointDomain d n × NPointDomain d m) : ℂ :=
   starRingEnd ℂ (F_ext_on_translatedPET_total Wfn (fun j => wickRotatePoint (p.1 j))) *
     F_ext_on_translatedPET_total Wfn (fun j => wickRotatePoint (p.2 j))
 
-private theorem continuousAt_pointPair {n m : ℕ} (Wfn : WightmanFunctions d)
+theorem continuousAt_pointPair {n m : ℕ} (Wfn : WightmanFunctions d)
     (x : NPointDomain d n) (y : NPointDomain d m)
     (hx : x ∈ OrderedPositiveTimeRegion d n) (hy : y ∈ OrderedPositiveTimeRegion d m) :
     ContinuousAt (fun p : NPointDomain d n × NPointDomain d m => pointPair Wfn p.1 p.2) (x,y) := by
@@ -336,7 +340,7 @@ private theorem continuousAt_pointPair {n m : ℕ} (Wfn : WightmanFunctions d)
       (f := fun p : NPointDomain d n × NPointDomain d m =>
         Fin.append (timeReflectionN d p.1) p.2) (x := (x,y)) hmap.continuousAt
 
-private theorem continuousAt_pointDifference {n : ℕ} (Wfn : WightmanFunctions d)
+theorem continuousAt_pointDifference {n : ℕ} (Wfn : WightmanFunctions d)
     (x : NPointDomain d n) (hx : x ∈ OrderedPositiveTimeRegion d n) :
     ContinuousAt (fun y => pointDifference Wfn y x) x := by
   have hp := continuousAt_pointPair Wfn x x hx hx
@@ -347,7 +351,7 @@ private theorem continuousAt_pointDifference {n : ℕ} (Wfn : WightmanFunctions 
     (hp.comp (f := fun y => (x,y)) hl.continuousAt)).sub
     ((hp.comp (f := fun y => (y,x)) hr.continuousAt).sub continuousAt_const)
 
-private theorem continuousAt_pointProduct {n m : ℕ} (Wfn : WightmanFunctions d)
+theorem continuousAt_pointProduct {n m : ℕ} (Wfn : WightmanFunctions d)
     (x : NPointDomain d n) (y : NPointDomain d m)
     (hx : x ∈ OrderedPositiveTimeRegion d n) (hy : y ∈ OrderedPositiveTimeRegion d m) :
     ContinuousAt (pointProduct Wfn) (x,y) := by
@@ -365,7 +369,7 @@ private theorem continuousAt_pointProduct {n m : ℕ} (Wfn : WightmanFunctions d
       (x := (x,y)) continuous_snd.continuousAt
   exact (Complex.continuous_conj.continuousAt.comp hxc).mul hyc
 
-private theorem point_cluster_neighborhood {n m : ℕ} (Wfn : WightmanFunctions d)
+theorem point_cluster_neighborhood {n m : ℕ} (Wfn : WightmanFunctions d)
     (p : NPointDomain d n × NPointDomain d m)
     (hp : p.1 ∈ OrderedPositiveTimeRegion d n ∧ p.2 ∈ OrderedPositiveTimeRegion d m)
     (ε : ℝ) (hε : 0 < ε) :

@@ -1,6 +1,10 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSIIQuantitativeFiber
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIUniformSchwartzDegree
-import OSReconstruction.SCV.PartialFourierSpatial
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSIIQuantitativeFiber
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIUniformSchwartzDegree
+public import OSReconstruction.SCV.PartialFourierSpatial
+
+@[expose] public section
 
 /-!
 # Quantitative coordinates for OS II

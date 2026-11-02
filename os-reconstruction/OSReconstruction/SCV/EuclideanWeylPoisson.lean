@@ -5,21 +5,16 @@ Copyright (c) 2026 ModularPhysics Contributors.
 Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
-import OSReconstruction.SCV.EuclideanWeylBump
-import Mathlib.Analysis.Calculus.FDeriv.Mul
-import Mathlib.Analysis.InnerProductSpace.Calculus
-import Mathlib.Analysis.InnerProductSpace.Laplacian
-import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
-import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
+module
 
+public import OSReconstruction.SCV.EuclideanWeylBump
+public import Mathlib.Analysis.Calculus.FDeriv.Mul
+public import Mathlib.Analysis.InnerProductSpace.Calculus
+public import Mathlib.Analysis.InnerProductSpace.Laplacian
+public import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
+public import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
 
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -921,7 +916,7 @@ theorem fderiv_complex_coord_div_norm_basisFun
   rw [hcomplex_has.fderiv]
   simp [fderiv_coord_div_norm_basisFun hx i]
 
-private theorem real_smul_smul_complex_mul (r s : ℝ) (z : ℂ) :
+theorem real_smul_smul_complex_mul (r s : ℝ) (z : ℂ) :
     r • s • z = z * (s : ℂ) * (r : ℂ) := by
   rw [Complex.real_smul (x := s) (z := z)]
   rw [Complex.real_smul (x := r) (z := (s : ℂ) * z)]

@@ -1,20 +1,11 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanSemigroup
-import OSReconstruction.Wightman.Reconstruction.WickRotation.EuclideanPositiveTime
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanSemigroup
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.EuclideanPositiveTime
 
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -27,7 +18,7 @@ variable {d : ℕ} [NeZero d]
 
 set_option synthInstance.maxHeartbeats 200000
 
-private theorem osPreHilbert_coe_add
+theorem osPreHilbert_coe_add
     (OS : OsterwalderSchraderAxioms d)
     (x y : OSPreHilbertSpace OS) :
     (((OSPreHilbertSpace.instAdd OS).add x y :
@@ -39,7 +30,7 @@ private theorem osPreHilbert_coe_add
     OSPreHilbertSpace.instNormedAddCommGroup OS
   exact UniformSpace.Completion.coe_add x y
 
-private theorem osPreHilbert_coe_smul
+theorem osPreHilbert_coe_smul
     (OS : OsterwalderSchraderAxioms d) (c : ℂ)
     (x : OSPreHilbertSpace OS) :
     (((OSPreHilbertSpace.instSMul OS).smul c x :
@@ -55,7 +46,7 @@ private theorem osPreHilbert_coe_smul
     OSPreHilbertSpace.instInnerProductSpace OS
   exact UniformSpace.Completion.coe_smul c x
 
-private noncomputable def osiiPositiveTimeSingleVectorLinear
+noncomputable def osiiPositiveTimeSingleVectorLinear
     (OS : OsterwalderSchraderAxioms d) (n : ℕ) :
     euclideanPositiveTimeSubmodule (d := d) n →ₗ[ℂ] OSHilbertSpace OS where
   toFun f :=
@@ -111,7 +102,7 @@ private noncomputable def osiiPositiveTimeSingleVectorLinear
     exact hcoe.trans
       (osPreHilbert_coe_smul OS c (⟦Ff⟧ : OSPreHilbertSpace OS))
 
-private theorem osiiPositiveTimeSingleVectorLinear_norm_sq
+theorem osiiPositiveTimeSingleVectorLinear_norm_sq
     (OS : OsterwalderSchraderAxioms d) (n : ℕ)
     (f : euclideanPositiveTimeSubmodule (d := d) n) :
     ‖osiiPositiveTimeSingleVectorLinear OS n f‖ ^ 2 =
@@ -139,7 +130,7 @@ private theorem osiiPositiveTimeSingleVectorLinear_norm_sq
     exact OSInnerProduct_single_single (d := d) OS.S OS.E0_linear n n f.1 f.1
   exact congrArg Complex.re hinner
 
-private theorem continuous_osiiPositiveTimeSingleVectorLinear
+theorem continuous_osiiPositiveTimeSingleVectorLinear
     (OS : OsterwalderSchraderAxioms d) (n : ℕ) :
     Continuous (osiiPositiveTimeSingleVectorLinear OS n) := by
   rw [continuous_iff_seqContinuous]

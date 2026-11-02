@@ -1,7 +1,11 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVINativePositivity
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVINativeCovariance
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanClusterSection43
-import OSReconstruction.Wightman.Reconstruction.WickRotation.SchwartzClusterClosure
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVINativePositivity
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVINativeCovariance
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanClusterSection43
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.SchwartzClusterClosure
+
+@[expose] public section
 
 /-!
 # Native clustering from the original Euclidean cluster axiom
@@ -87,7 +91,7 @@ theorem strictGeneratedFullBoundary_sourceFactor
   rw [← hreal] at h
   exact (starRingEnd Complex).injective h
 
-private theorem strictGeneratedFullBoundary_cluster_source
+theorem strictGeneratedFullBoundary_cluster_source
     (initial : InitialGeneratedLogarithmicStageLevelData (d := d) OS)
     (lgc : OSLinearGrowthCondition d OS) (n m : Nat) (hm : 0 < m)
     (phi : SchwartzNPoint d n) (psi : SchwartzNPoint d m)

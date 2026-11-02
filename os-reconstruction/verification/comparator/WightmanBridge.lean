@@ -1,5 +1,9 @@
-import Definitions
-import OSReconstruction.Specification.Wightman
+module
+
+public import Definitions
+public import OSReconstruction.Specification.Wightman
+
+@[expose] public section
 
 noncomputable section
 open MeasureTheory Complex Filter Set Topology Matrix

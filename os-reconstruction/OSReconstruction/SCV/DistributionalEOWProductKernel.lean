@@ -5,16 +5,11 @@ Copyright (c) 2026 ModularPhysics Contributors.
 Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
-import OSReconstruction.SCV.DistributionalEOWKernelFactorization
+module
 
+public import OSReconstruction.SCV.DistributionalEOWKernelFactorization
 
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 

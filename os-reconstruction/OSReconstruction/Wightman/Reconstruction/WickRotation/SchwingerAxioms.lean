@@ -5,23 +5,16 @@ Copyright (c) 2025 ModularPhysics Contributors. All rights reserved.
 Released under Apache 2.0 license.
 Authors: Michael Douglas, ModularPhysics Contributors
 -/
-import OSReconstruction.Mathlib429Compat
-import OSReconstruction.Wightman.Reconstruction.WickRotation.ForwardTubeLorentz
-import OSReconstruction.Wightman.Reconstruction.WickRotation.SchwingerTemperedness
-import OSReconstruction.ComplexLieGroups.D1OrbitSet
-import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.JostWitnessGeneralSigma
-import Mathlib.MeasureTheory.Measure.Lebesgue.EqHaar
+module
 
+public import OSReconstruction.Mathlib429Compat
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.ForwardTubeLorentz
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.SchwingerTemperedness
+public import OSReconstruction.ComplexLieGroups.D1OrbitSet
+public import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.JostWitnessGeneralSigma
+public import Mathlib.MeasureTheory.Measure.Lebesgue.EqHaar
 
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 open scoped Classical
 
@@ -197,7 +190,7 @@ theorem integral_orthogonal_eq_self (R : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ)
   exact hmp.integral_comp' h
 
 omit [NeZero d] in
-private theorem measurePreserving_timeReflectionN :
+theorem measurePreserving_timeReflectionN :
     MeasureTheory.MeasurePreserving (timeReflectionN d : NPointDomain d n → NPointDomain d n)
       MeasureTheory.volume MeasureTheory.volume := by
   let R : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ :=
@@ -270,7 +263,7 @@ private theorem measurePreserving_timeReflectionN :
   simpa [hTR] using hmp
 
 omit [NeZero d] in
-private theorem measurePreserving_revPerm :
+theorem measurePreserving_revPerm :
     MeasureTheory.MeasurePreserving
       (fun x : NPointDomain d n => fun i => x (Fin.rev i))
       MeasureTheory.volume MeasureTheory.volume := by
@@ -367,24 +360,24 @@ theorem wickRotatePoint_timeReflection (x : Fin (d + 1) → ℝ) (μ : Fin (d + 
 /-- Reverse the point order and conjugate each complex coordinate. This is the
     complex-geometric involution underlying Wightman Hermiticity on Euclidean
     Wick points. -/
-private def hermitianReverse {d n : ℕ} :
+def hermitianReverse {d n : ℕ} :
     (Fin n → Fin (d + 1) → ℂ) → (Fin n → Fin (d + 1) → ℂ) :=
   fun z k μ => starRingEnd ℂ (z (Fin.rev k) μ)
 
-private def oneFin (d : ℕ) [NeZero d] : Fin (d + 1) :=
+def oneFin (d : ℕ) [NeZero d] : Fin (d + 1) :=
   ⟨1, Nat.succ_lt_succ (NeZero.pos d)⟩
 
-private theorem zero_ne_oneFin (d : ℕ) [NeZero d] :
+theorem zero_ne_oneFin (d : ℕ) [NeZero d] :
     (0 : Fin (d + 1)) ≠ oneFin d := by
   intro h
   have := congrArg Fin.val h
   simp [oneFin] at this
 
-private def hermitianTwistMatrix (d : ℕ) [NeZero d] :
+def hermitianTwistMatrix (d : ℕ) [NeZero d] :
     Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ :=
   Matrix.diagonal (fun μ => if μ = (0 : Fin (d + 1)) ∨ μ = oneFin d then (-1 : ℝ) else 1)
 
-private theorem hermitianTwistMatrix_orthogonal (d : ℕ) [NeZero d] :
+theorem hermitianTwistMatrix_orthogonal (d : ℕ) [NeZero d] :
     (hermitianTwistMatrix d).transpose * hermitianTwistMatrix d = 1 := by
   ext i j
   by_cases hij : i = j
@@ -398,7 +391,7 @@ private theorem hermitianTwistMatrix_orthogonal (d : ℕ) [NeZero d] :
       · simp [hermitianTwistMatrix, hi0, hi1]
   · simp [hermitianTwistMatrix, hij]
 
-private theorem hermitianTwistMatrix_det (d : ℕ) [NeZero d] :
+theorem hermitianTwistMatrix_det (d : ℕ) [NeZero d] :
     (hermitianTwistMatrix d).det = 1 := by
   classical
   let e1 : Fin (d + 1) := oneFin d
@@ -432,11 +425,11 @@ private theorem hermitianTwistMatrix_det (d : ℕ) [NeZero d] :
   rw [hneg0, hnege1, hprod]
   ring
 
-private noncomputable def hermitianTwistCLG (d : ℕ) [NeZero d] : ComplexLorentzGroup d :=
+noncomputable def hermitianTwistCLG (d : ℕ) [NeZero d] : ComplexLorentzGroup d :=
   ComplexLorentzGroup.ofEuclidean (hermitianTwistMatrix d)
     (hermitianTwistMatrix_det d) (hermitianTwistMatrix_orthogonal d)
 
-private theorem hermitianTwistCLG_val {d : ℕ} [NeZero d] (μ ν : Fin (d + 1)) :
+theorem hermitianTwistCLG_val {d : ℕ} [NeZero d] (μ ν : Fin (d + 1)) :
     (hermitianTwistCLG d).val μ ν =
       if μ = ν then (if μ = 0 ∨ μ = oneFin d then (-1 : ℂ) else 1) else 0 := by
   by_cases hμν : μ = ν
@@ -476,31 +469,31 @@ private theorem hermitianTwistCLG_val {d : ℕ} [NeZero d] (μ ν : Fin (d + 1))
       · simp [hermitianTwistCLG, ComplexLorentzGroup.ofEuclidean, hermitianTwistMatrix,
         oneFin, hμν, hμ0, hν0]
 
-private theorem complexLorentzAction_hermitianTwistCLG {d n : ℕ} [NeZero d]
+theorem complexLorentzAction_hermitianTwistCLG {d n : ℕ} [NeZero d]
     (z : Fin n → Fin (d + 1) → ℂ) (k : Fin n) (μ : Fin (d + 1)) :
     BHW.complexLorentzAction (hermitianTwistCLG d) z k μ =
       (if μ = 0 ∨ μ = oneFin d then (-1 : ℂ) else 1) * z k μ := by
   simp [BHW.complexLorentzAction, BHW.complexLorentzVectorAction, hermitianTwistCLG_val]
 
-private def spatialFlipOne {d : ℕ} [NeZero d]
+def spatialFlipOne {d : ℕ} [NeZero d]
     (x : Fin (d + 1) → ℝ) : Fin (d + 1) → ℝ :=
   fun μ => if μ = oneFin d then -x μ else x μ
 
-private def hermitianTwistReal {d : ℕ} [NeZero d]
+def hermitianTwistReal {d : ℕ} [NeZero d]
     (x : Fin (d + 1) → ℝ) : Fin (d + 1) → ℝ :=
   timeReflection d (spatialFlipOne x)
 
-private def hermitianTwistRealN {d n : ℕ} [NeZero d]
+def hermitianTwistRealN {d n : ℕ} [NeZero d]
     (x : NPointDomain d n) : NPointDomain d n :=
   fun k => hermitianTwistReal (x k)
 
 /-- The honest PET overlap for Euclidean Hermiticity: points whose conjugate-reverse
     image also lies in the permuted extended tube. -/
-private def hermitianReverseOverlap {d n : ℕ} [NeZero d] :
+def hermitianReverseOverlap {d n : ℕ} [NeZero d] :
     Set (Fin n → Fin (d + 1) → ℂ) :=
   { z | z ∈ PermutedExtendedTube d n ∧ hermitianReverse z ∈ PermutedExtendedTube d n }
 
-private theorem continuous_hermitianReverse {d n : ℕ} :
+theorem continuous_hermitianReverse {d n : ℕ} :
     Continuous (hermitianReverse (d := d) (n := n)) := by
   refine continuous_pi ?_
   intro k
@@ -510,13 +503,13 @@ private theorem continuous_hermitianReverse {d n : ℕ} :
     (continuous_apply μ).comp ((continuous_apply (Fin.rev k)).comp continuous_id)
   simpa [hermitianReverse] using hcoord.star
 
-private theorem isOpen_hermitianReverseOverlap {d n : ℕ} [NeZero d] :
+theorem isOpen_hermitianReverseOverlap {d n : ℕ} [NeZero d] :
     IsOpen (hermitianReverseOverlap (d := d) (n := n)) := by
   have hPET_open : IsOpen (PermutedExtendedTube d n) :=
     BHW_permutedExtendedTube_eq (d := d) (n := n) ▸ BHW.isOpen_permutedExtendedTube
   exact hPET_open.inter (hPET_open.preimage (continuous_hermitianReverse (d := d) (n := n)))
 
-private theorem hermitianReverse_wickRotate {d n : ℕ}
+theorem hermitianReverse_wickRotate {d n : ℕ}
     (x : NPointDomain d n) :
     hermitianReverse (fun k => wickRotatePoint (x k)) =
       (fun k => wickRotatePoint (timeReflection d (x (Fin.rev k)))) := by
@@ -526,10 +519,10 @@ private theorem hermitianReverse_wickRotate {d n : ℕ}
 /-- In `d = 1`, the mixed slice with real time and imaginary space coordinates.
     It interacts cleanly with `hermitianReverse`, but is later shown not to lie
     in the permuted extended tube for any nonempty configuration. -/
-private def mixedWickPoint (x : SpacetimeDim 1) : Fin (1 + 1) → ℂ :=
+def mixedWickPoint (x : SpacetimeDim 1) : Fin (1 + 1) → ℂ :=
   fun μ => if μ = 0 then (x 0 : ℂ) else (x 1 : ℂ) * Complex.I
 
-private theorem bhw_inOpenForwardCone_one_iff_pm
+theorem bhw_inOpenForwardCone_one_iff_pm
     (η : Fin (1 + 1) → ℝ) :
     BHW.InOpenForwardCone 1 η ↔ (η 0 + η 1 > 0 ∧ η 0 - η 1 > 0) := by
   rw [BHW.inOpenForwardCone_iff_timePos_gapPos]
@@ -544,24 +537,24 @@ private theorem bhw_inOpenForwardCone_one_iff_pm
       nlinarith [hplus, hminus]
     simpa using hgap
 
-private theorem rapidityElementD1_val_zero_zero (θ : ℂ) :
+theorem rapidityElementD1_val_zero_zero (θ : ℂ) :
     (BHW.rapidityElementD1 θ).val 0 0 = Complex.cosh θ := by
   rfl
 
-private theorem rapidityElementD1_val_zero_one (θ : ℂ) :
+theorem rapidityElementD1_val_zero_one (θ : ℂ) :
     (BHW.rapidityElementD1 θ).val 0 1 = Complex.sinh θ := by
   rfl
 
-private theorem rapidityElementD1_val_one_zero (θ : ℂ) :
+theorem rapidityElementD1_val_one_zero (θ : ℂ) :
     (BHW.rapidityElementD1 θ).val 1 0 = Complex.sinh θ := by
   rfl
 
-private theorem rapidityElementD1_val_one_one (θ : ℂ) :
+theorem rapidityElementD1_val_one_one (θ : ℂ) :
     (BHW.rapidityElementD1 θ).val 1 1 = Complex.cosh θ := by
   rfl
 
 /-- In `d = 1`, the rapidity element `θ = π i` acts as `-Id`. -/
-private theorem complexLorentzAction_rapidityElementD1_pi_I
+theorem complexLorentzAction_rapidityElementD1_pi_I
     {n : ℕ} (z : Fin n → Fin (1 + 1) → ℂ) :
     BHW.complexLorentzAction (BHW.rapidityElementD1 ((Real.pi : ℂ) * Complex.I)) z =
       fun k μ => -(z k μ) := by
@@ -576,7 +569,7 @@ private theorem complexLorentzAction_rapidityElementD1_pi_I
 /-- In `d = 1`, the pointwise involution `z ↦ -conj(z)` preserves the forward
     tube because it leaves the imaginary parts of the light-cone coordinates
     unchanged. -/
-private theorem neg_star_mem_forwardTube_d1
+theorem neg_star_mem_forwardTube_d1
     {n : ℕ} {z : Fin n → Fin (1 + 1) → ℂ}
     (hz : z ∈ BHW.ForwardTube 1 n) :
     (fun k μ => -starRingEnd ℂ (z k μ)) ∈ BHW.ForwardTube 1 n := by
@@ -604,7 +597,7 @@ private theorem neg_star_mem_forwardTube_d1
     permuted extended tube. Concretely, after reversing the index order and
     applying the Lorentz element `-Id = rapidityElementD1(π i)`, one lands back
     in the forward tube via the map `z ↦ -conj z`. -/
-private theorem hermitianReverse_mem_permutedExtendedTube_of_mem_forwardTube_d1
+theorem hermitianReverse_mem_permutedExtendedTube_of_mem_forwardTube_d1
     {n : ℕ} {z : Fin n → Fin (1 + 1) → ℂ}
     (hz : z ∈ BHW.ForwardTube 1 n) :
     hermitianReverse z ∈ BHW.PermutedExtendedTube 1 n := by
@@ -620,7 +613,7 @@ private theorem hermitianReverse_mem_permutedExtendedTube_of_mem_forwardTube_d1
 
 /-- Consequently, in `d = 1` the forward tube is contained in the Hermitian
     reverse overlap domain. -/
-private theorem forwardTube_subset_hermitianReverseOverlap_d1
+theorem forwardTube_subset_hermitianReverseOverlap_d1
     {n : ℕ} :
     BHW.ForwardTube 1 n ⊆ hermitianReverseOverlap (d := 1) (n := n) := by
   intro z hz
@@ -630,17 +623,17 @@ private theorem forwardTube_subset_hermitianReverseOverlap_d1
   · simpa [BHW_permutedExtendedTube_eq (d := 1) (n := n)] using
       hermitianReverse_mem_permutedExtendedTube_of_mem_forwardTube_d1 (n := n) hz
 
-private def complexLorentzActionVec
+def complexLorentzActionVec
     (Λ : ComplexLorentzGroup 1) (ξ : Fin (1 + 1) → ℂ) : Fin (1 + 1) → ℂ :=
   fun μ => ∑ ν, Λ.val μ ν * ξ ν
 
-private def lightConePlus (ξ : Fin (1 + 1) → ℂ) : ℂ :=
+def lightConePlus (ξ : Fin (1 + 1) → ℂ) : ℂ :=
   ξ 0 + ξ 1
 
-private def lightConeMinus (ξ : Fin (1 + 1) → ℂ) : ℂ :=
+def lightConeMinus (ξ : Fin (1 + 1) → ℂ) : ℂ :=
   ξ 0 - ξ 1
 
-private theorem diffCoordFun_complexLorentzAction
+theorem diffCoordFun_complexLorentzAction
     {n : ℕ} (Λ : ComplexLorentzGroup 1)
     (z : Fin n → Fin (1 + 1) → ℂ) :
     BHW.diffCoordFun n 1 (BHW.complexLorentzAction Λ z) =
@@ -652,21 +645,21 @@ private theorem diffCoordFun_complexLorentzAction
   · simp [BHW.diffCoordFun, BHW.complexLorentzAction,
       BHW.complexLorentzVectorAction, hk, mul_sub, Finset.sum_sub_distrib]
 
-private theorem diffCoordFun_realEmbed_im_zero
+theorem diffCoordFun_realEmbed_im_zero
     {n : ℕ} (x : NPointDomain 1 n) (k : Fin n) (μ : Fin (1 + 1)) :
     (BHW.diffCoordFun n 1 (BHW.realEmbed x) k μ).im = 0 := by
   by_cases hk : k.val = 0
   · simp [BHW.diffCoordFun, BHW.realEmbed, hk]
   · simp [BHW.diffCoordFun, BHW.realEmbed, hk]
 
-private theorem diffCoordFun_realEmbed_re_eq_consecutiveDiff
+theorem diffCoordFun_realEmbed_re_eq_consecutiveDiff
     {n : ℕ} (x : NPointDomain 1 n) (k : Fin n) (μ : Fin (1 + 1)) :
     (BHW.diffCoordFun n 1 (BHW.realEmbed x) k μ).re = BHW.consecutiveDiff x k μ := by
   by_cases hk : k.val = 0
   · simp [BHW.diffCoordFun, BHW.realEmbed, BHW.consecutiveDiff, hk]
   · simp [BHW.diffCoordFun, BHW.realEmbed, BHW.consecutiveDiff, hk]
 
-private theorem lightConePlus_rapidity
+theorem lightConePlus_rapidity
     (θ : ℂ) (ξ : Fin (1 + 1) → ℂ) :
     lightConePlus (complexLorentzActionVec (BHW.rapidityElementD1 θ) ξ) =
       Complex.exp θ * lightConePlus ξ := by
@@ -679,7 +672,7 @@ private theorem lightConePlus_rapidity
         = (Complex.cosh θ + Complex.sinh θ) * (ξ 0 + ξ 1) := by ring
     _ = Complex.exp θ * (ξ 0 + ξ 1) := by rw [Complex.cosh_add_sinh]
 
-private theorem lightConeMinus_rapidity
+theorem lightConeMinus_rapidity
     (θ : ℂ) (ξ : Fin (1 + 1) → ℂ) :
     lightConeMinus (complexLorentzActionVec (BHW.rapidityElementD1 θ) ξ) =
       Complex.exp (-θ) * lightConeMinus ξ := by
@@ -692,7 +685,7 @@ private theorem lightConeMinus_rapidity
         = (Complex.cosh θ - Complex.sinh θ) * (ξ 0 - ξ 1) := by ring
     _ = Complex.exp (-θ) * (ξ 0 - ξ 1) := by rw [Complex.cosh_sub_sinh]
 
-private theorem lightConePlus_real_mul_sin_of_real_output
+theorem lightConePlus_real_mul_sin_of_real_output
     (ξ : Fin (1 + 1) → ℂ) (a b : ℝ)
     (hreal0 :
       (complexLorentzActionVec
@@ -757,7 +750,7 @@ private theorem lightConePlus_real_mul_sin_of_real_output
           (Real.cos b ^ 2 + Real.sin b ^ 2) := hStep
     _ = -Real.exp a * (lightConePlus ξ).im := by rw [hsq]; ring
 
-private theorem lightConeMinus_real_mul_sin_of_real_output
+theorem lightConeMinus_real_mul_sin_of_real_output
     (ξ : Fin (1 + 1) → ℂ) (a b : ℝ)
     (hreal0 :
       (complexLorentzActionVec
@@ -823,7 +816,7 @@ private theorem lightConeMinus_real_mul_sin_of_real_output
           (Real.cos b ^ 2 + Real.sin b ^ 2) := hStep
     _ = Real.exp (-a) * (lightConeMinus ξ).im := by rw [hsq]; ring
 
-private theorem realExtendedTube_d1_consecutiveDiff_mul_sin_sign
+theorem realExtendedTube_d1_consecutiveDiff_mul_sin_sign
     {n : ℕ} {x : NPointDomain 1 n}
     (hx : BHW.realEmbed x ∈ BHW.ExtendedTube 1 n) :
     ∃ b : ℝ, ∀ k : Fin n,
@@ -905,7 +898,7 @@ private theorem realExtendedTube_d1_consecutiveDiff_mul_sin_sign
   · nlinarith [hplus_mul, hξ_plus, Real.exp_pos a]
   · nlinarith [hminus_mul, hξ_minus, Real.exp_pos (-a)]
 
-private theorem realExtendedTube_d1_point_mul_sin_sign_of_consecutive
+theorem realExtendedTube_d1_point_mul_sin_sign_of_consecutive
     {n : ℕ} {x : NPointDomain 1 n} {b : ℝ}
     (hb : ∀ k : Fin n,
       (BHW.consecutiveDiff x k 0 + BHW.consecutiveDiff x k 1) * Real.sin b < 0 ∧
@@ -946,7 +939,7 @@ private theorem realExtendedTube_d1_point_mul_sin_sign_of_consecutive
         · nlinarith [hprev.2, hdiff.2, hminus_eq]
   exact hpoint k.val k.isLt
 
-private theorem positive_mul_of_two_negative_products
+theorem positive_mul_of_two_negative_products
     {u s t : ℝ} (hs : u * s < 0) (ht : u * t < 0) :
     0 < s * t := by
   by_cases hu : 0 < u
@@ -962,7 +955,7 @@ private theorem positive_mul_of_two_negative_products
     have ht' : 0 < t := by nlinarith
     nlinarith
 
-private theorem negative_mul_of_negative_and_positive_products
+theorem negative_mul_of_negative_and_positive_products
     {u s t : ℝ} (hs : u * s < 0) (ht : 0 < u * t) :
     s * t < 0 := by
   by_cases hu : 0 < u
@@ -978,7 +971,7 @@ private theorem negative_mul_of_negative_and_positive_products
     have ht' : t < 0 := by nlinarith
     nlinarith
 
-private theorem consecutiveDiff_rev_one_eq_neg_last
+theorem consecutiveDiff_rev_one_eq_neg_last
     {n : ℕ} (hn : 2 ≤ n) (x : NPointDomain 1 n) (μ : Fin (1 + 1)) :
     BHW.consecutiveDiff (fun k => x (Fin.rev k)) ⟨1, by omega⟩ μ =
       -BHW.consecutiveDiff x ⟨n - 1, by omega⟩ μ := by
@@ -1006,14 +999,14 @@ private theorem consecutiveDiff_rev_one_eq_neg_last
             _ = -BHW.consecutiveDiff x last μ := by
                   simp [BHW.consecutiveDiff, last, hn1, hidx]
 
-private theorem hermitianReverse_realEmbed {d n : ℕ}
+theorem hermitianReverse_realEmbed {d n : ℕ}
     (x : NPointDomain d n) :
     hermitianReverse (BHW.realEmbed x) =
       BHW.realEmbed (fun k => x (Fin.rev k)) := by
   ext k μ
   simp [hermitianReverse, BHW.realEmbed]
 
-private theorem hermitianTwistCLG_hermitianReverse_wickRotate {d n : ℕ} [NeZero d]
+theorem hermitianTwistCLG_hermitianReverse_wickRotate {d n : ℕ} [NeZero d]
     (x : NPointDomain d n) :
     BHW.complexLorentzAction (hermitianTwistCLG d)
         (hermitianReverse (fun k => wickRotatePoint (x k))) =
@@ -1034,7 +1027,7 @@ private theorem hermitianTwistCLG_hermitianReverse_wickRotate {d n : ℕ} [NeZer
 
 /-- If `F` is holomorphic on PET, then its conjugate-reverse partner
     `z ↦ conj(F(conj-rev z))` is holomorphic on the reflected overlap domain. -/
-private theorem differentiableOn_hermitianReverse_partner {d n : ℕ} [NeZero d]
+theorem differentiableOn_hermitianReverse_partner {d n : ℕ} [NeZero d]
     {F : (Fin n → Fin (d + 1) → ℂ) → ℂ}
     (hF : DifferentiableOn ℂ F (PermutedExtendedTube d n)) :
     DifferentiableOn ℂ (fun z => starRingEnd ℂ (F (hermitianReverse z)))
@@ -1068,7 +1061,7 @@ private theorem differentiableOn_hermitianReverse_partner {d n : ℕ} [NeZero d]
     {z | star z ∈ ρ ⁻¹' PermutedExtendedTube d n} z
   exact hstarstar.differentiableWithinAt
 
-private theorem measure_timeEq_zero {d n : ℕ} (i j : Fin n) (hij : i ≠ j) :
+theorem measure_timeEq_zero_SchwingerAxioms {d n : ℕ} (i j : Fin n) (hij : i ≠ j) :
     MeasureTheory.volume {x : NPointDomain d n | x i 0 = x j 0} = 0 := by
   let L : NPointDomain d n →ₗ[ℝ] ℝ :=
     { toFun := fun x => x i 0 - x j 0
@@ -1099,7 +1092,7 @@ private theorem measure_timeEq_zero {d n : ℕ} (i j : Fin n) (hij : i ≠ j) :
   rw [hset]
   exact MeasureTheory.Measure.addHaar_submodule MeasureTheory.volume (LinearMap.ker L) hker_ne_top
 
-private theorem ae_pairwise_distinct_timeCoords {d n : ℕ} :
+theorem ae_pairwise_distinct_timeCoords_SchwingerAxioms {d n : ℕ} :
     ∀ᵐ (x : NPointDomain d n) ∂MeasureTheory.volume,
       ∀ i j : Fin n, i ≠ j → x i 0 ≠ x j 0 := by
   have hall : ∀ᵐ (x : NPointDomain d n) ∂MeasureTheory.volume,
@@ -1111,7 +1104,7 @@ private theorem ae_pairwise_distinct_timeCoords {d n : ℕ} :
         (fun p _ => by
           let s : Set (NPointDomain d n) := {x | x p.1.1 0 = x p.1.2 0}
           have hs0 : MeasureTheory.volume s = 0 := by
-            simpa [s] using measure_timeEq_zero (d := d) p.1.1 p.1.2 p.2
+            simpa [s] using measure_timeEq_zero_SchwingerAxioms (d := d) p.1.1 p.1.2 p.2
           have hsae :
               sᶜ ∈ MeasureTheory.ae
                 (MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d n)) :=
@@ -1121,7 +1114,7 @@ private theorem ae_pairwise_distinct_timeCoords {d n : ℕ} :
   filter_upwards [hall] with x hx i j hij
   exact hx ⟨⟨i, j⟩, hij⟩
 
-private theorem euclidean_distinct_in_BHW_permutedForwardTube {d n : ℕ} [NeZero d]
+theorem euclidean_distinct_in_BHW_permutedForwardTube {d n : ℕ} [NeZero d]
     (xs : NPointDomain d n)
     (hdistinct : ∀ i j : Fin n, i ≠ j → xs i 0 ≠ xs j 0)
     (hpos : ∀ i : Fin n, xs i 0 > 0) :
@@ -1144,7 +1137,7 @@ private theorem euclidean_distinct_in_BHW_permutedForwardTube {d n : ℕ} [NeZer
   refine ⟨π, ?_⟩
   simpa [BHW_permutedForwardTube_eq (d := d) (n := n) π, PermutedForwardTube] using hfwd
 
-private theorem euclidean_distinct_twisted_reverse_in_BHW_permutedForwardTube {d n : ℕ}
+theorem euclidean_distinct_twisted_reverse_in_BHW_permutedForwardTube {d n : ℕ}
     [NeZero d] (xs : NPointDomain d n)
     (hdistinct : ∀ i j : Fin n, i ≠ j → xs i 0 ≠ xs j 0)
     (hpos : ∀ i : Fin n, xs i 0 > 0) :
@@ -1169,12 +1162,12 @@ private theorem euclidean_distinct_twisted_reverse_in_BHW_permutedForwardTube {d
 
 /-- The real ET-overlap relevant for Hermiticity: both `x` and its reversed
     configuration lie in the ordinary extended tube. -/
-private def hermitianRealOverlap {d n : ℕ} [NeZero d] :
+def hermitianRealOverlap {d n : ℕ} [NeZero d] :
     Set (NPointDomain d n) :=
   { x | BHW.realEmbed x ∈ BHW.ExtendedTube d n ∧
       BHW.realEmbed (fun k => x (Fin.rev k)) ∈ BHW.ExtendedTube d n }
 
-private theorem continuous_realEmbed {d n : ℕ} :
+theorem continuous_realEmbed {d n : ℕ} :
     Continuous (BHW.realEmbed : NPointDomain d n → (Fin n → Fin (d + 1) → ℂ)) := by
   apply continuous_pi
   intro k
@@ -1182,7 +1175,7 @@ private theorem continuous_realEmbed {d n : ℕ} :
   intro μ
   exact Complex.continuous_ofReal.comp ((continuous_apply μ).comp (continuous_apply k))
 
-private theorem continuous_realEmbed_rev {d n : ℕ} :
+theorem continuous_realEmbed_rev {d n : ℕ} :
     Continuous
       (fun x : NPointDomain d n => BHW.realEmbed (fun k => x (Fin.rev k))) := by
   apply continuous_pi
@@ -1191,7 +1184,7 @@ private theorem continuous_realEmbed_rev {d n : ℕ} :
   intro μ
   exact Complex.continuous_ofReal.comp ((continuous_apply μ).comp (continuous_apply (Fin.rev k)))
 
-private theorem isOpen_hermitianRealOverlap {d n : ℕ} [NeZero d] :
+theorem isOpen_hermitianRealOverlap {d n : ℕ} [NeZero d] :
     IsOpen (hermitianRealOverlap (d := d) (n := n)) := by
   have h1 : IsOpen {x : NPointDomain d n | BHW.realEmbed x ∈ BHW.ExtendedTube d n} :=
     BHW.isOpen_extendedTube.preimage (continuous_realEmbed (d := d) (n := n))
@@ -1204,13 +1197,13 @@ private theorem isOpen_hermitianRealOverlap {d n : ℕ} [NeZero d] :
         BHW.realEmbed (fun k => x (Fin.rev k)) ∈ BHW.ExtendedTube d n})
   exact h1.inter h2
 
-private theorem mem_hermitianRealOverlap_rev {d n : ℕ} [NeZero d]
+theorem mem_hermitianRealOverlap_rev {d n : ℕ} [NeZero d]
     {x : NPointDomain d n} (hx : x ∈ hermitianRealOverlap (d := d) (n := n)) :
     (fun k => x (Fin.rev k)) ∈ hermitianRealOverlap (d := d) (n := n) := by
   refine ⟨hx.2, ?_⟩
   simpa [hermitianRealOverlap, BHW.realEmbed, Fin.rev_rev] using hx.1
 
-private theorem hermitianRealOverlap_eq_empty_d1_of_two_le
+theorem hermitianRealOverlap_eq_empty_d1_of_two_le
     {n : ℕ} (hn : 2 ≤ n) :
     hermitianRealOverlap (d := 1) (n := n) = ∅ := by
   haveI : NeZero n := ⟨by omega⟩
@@ -1250,7 +1243,7 @@ private theorem hermitianRealOverlap_eq_empty_d1_of_two_le
     exact negative_mul_of_negative_and_positive_products (hbDiff last).1 hlastDiff_c
   nlinarith
 
-private theorem realEmbed_mem_hermitianReverseOverlap_of_mem_hermitianRealOverlap
+theorem realEmbed_mem_hermitianReverseOverlap_of_mem_hermitianRealOverlap
     {d n : ℕ} [NeZero d] {x : NPointDomain d n}
     (hx : x ∈ hermitianRealOverlap (d := d) (n := n)) :
     BHW.realEmbed x ∈ hermitianReverseOverlap (d := d) (n := n) := by
@@ -1261,7 +1254,7 @@ private theorem realEmbed_mem_hermitianReverseOverlap_of_mem_hermitianRealOverla
       BHW_permutedExtendedTube_eq (d := d) (n := n)] using
       BHW.extendedTube_subset_permutedExtendedTube hx.2
 
-private theorem imDiff_realEmbed_eq_zero {d n : ℕ}
+theorem imDiff_realEmbed_eq_zero {d n : ℕ}
     (x : NPointDomain d n) (k : Fin n) :
     BHW.imDiff (BHW.realEmbed x) k = 0 := by
   ext μ
@@ -1269,14 +1262,14 @@ private theorem imDiff_realEmbed_eq_zero {d n : ℕ}
   · simp [BHW.imDiff, BHW.realEmbed, hk]
   · simp [BHW.imDiff, BHW.realEmbed, hk]
 
-private theorem permutedForwardTube_subset_permutedExtendedTube_BHW
+theorem permutedForwardTube_subset_permutedExtendedTube_BHW
     {d n : ℕ} (π : Equiv.Perm (Fin n)) :
     BHW.PermutedForwardTube d n π ⊆ BHW.PermutedExtendedTube d n := by
   intro z hz
   refine Set.mem_iUnion.mpr ⟨π, ?_⟩
   exact ⟨1, z, hz, (BHW.complexLorentzAction_one z).symm⟩
 
-private theorem smul_add_realEmbed_mem_permutedForwardTube_BHW
+theorem smul_add_realEmbed_mem_permutedForwardTube_BHW
     {d n : ℕ} {π : Equiv.Perm (Fin n)}
     {z : Fin n → Fin (d + 1) → ℂ}
     (hz : z ∈ BHW.PermutedForwardTube d n π)
@@ -1300,14 +1293,14 @@ private theorem smul_add_realEmbed_mem_permutedForwardTube_BHW
   rw [BHW.imDiff_linear zπ (BHW.realEmbed xπ) t (1 - t) k, hzero, smul_zero, add_zero]
   exact BHW.inOpenForwardCone_smul_pos (hη := hzπ k) ht
 
-private theorem hermitianReverse_smul_add_realEmbed {d n : ℕ}
+theorem hermitianReverse_smul_add_realEmbed {d n : ℕ}
     (x : NPointDomain d n) (z : Fin n → Fin (d + 1) → ℂ) (t : ℝ) :
     hermitianReverse (t • z + (1 - t) • BHW.realEmbed x) =
       t • hermitianReverse z + (1 - t) • BHW.realEmbed (fun k => x (Fin.rev k)) := by
   ext k μ
   simp [hermitianReverse, BHW.realEmbed]
 
-private theorem hermitianTwistCLG_hermitianReverse_smul_add_realEmbed {d n : ℕ} [NeZero d]
+theorem hermitianTwistCLG_hermitianReverse_smul_add_realEmbed {d n : ℕ} [NeZero d]
     (x : NPointDomain d n) (z : Fin n → Fin (d + 1) → ℂ) (t : ℝ) :
     BHW.complexLorentzAction (hermitianTwistCLG d)
         (hermitianReverse (t • z + (1 - t) • BHW.realEmbed x)) =
@@ -1333,7 +1326,7 @@ private theorem hermitianTwistCLG_hermitianReverse_smul_add_realEmbed {d n : ℕ
         BHW.complexLorentzAction, BHW.complexLorentzVectorAction, hermitianTwistCLG_val,
         hermitianTwistReal, spatialFlipOne, oneFin, timeReflection, hμ0, hμ1']
 
-private theorem joinedIn_hermitianReverseOverlap_of_dual_permutedForwardTube_twist
+theorem joinedIn_hermitianReverseOverlap_of_dual_permutedForwardTube_twist
     {d n : ℕ} [NeZero d] {π σ : Equiv.Perm (Fin n)}
     {z : Fin n → Fin (d + 1) → ℂ}
     (hzπ : z ∈ BHW.PermutedForwardTube d n π)
@@ -1383,7 +1376,7 @@ private theorem joinedIn_hermitianReverseOverlap_of_dual_permutedForwardTube_twi
           simpa [BHW.complexLorentzAction_inv] using this
         simpa [γ, BHW_permutedExtendedTube_eq (d := d) (n := n)] using hγPET
 
-private theorem eq_zero_on_hermitianReverseOverlap_of_dual_permutedForwardTube_twist
+theorem eq_zero_on_hermitianReverseOverlap_of_dual_permutedForwardTube_twist
     {d n : ℕ} [NeZero d]
     {H : (Fin n → Fin (d + 1) → ℂ) → ℂ}
     (hH_holo : DifferentiableOn ℂ H (hermitianReverseOverlap (d := d) (n := n)))
@@ -1450,7 +1443,7 @@ private theorem eq_zero_on_hermitianReverseOverlap_of_dual_permutedForwardTube_t
     hC_open hC_conn hH_holo_C hV'_open hV'_ne hV'_sub hH_real' z
       (mem_connectedComponentIn hzD)
 
-private theorem bhw_inOpenForwardCone_iff_wightman {d : ℕ} [NeZero d]
+theorem bhw_inOpenForwardCone_iff_wightman {d : ℕ} [NeZero d]
     (η : Fin (d + 1) → ℝ) :
     BHW.InOpenForwardCone d η ↔ _root_.InOpenForwardCone d η := by
   unfold BHW.InOpenForwardCone _root_.InOpenForwardCone
@@ -1473,7 +1466,7 @@ private theorem bhw_inOpenForwardCone_iff_wightman {d : ℕ} [NeZero d]
 
 /-- The chosen BHW extension restricts on the ordinary extended tube to the
     canonical `extendF` extension from the forward tube. -/
-private theorem W_analytic_BHW_eq_extendF_on_extendedTube
+theorem W_analytic_BHW_eq_extendF_on_extendedTube
     (Wfn : WightmanFunctions d) (n : ℕ) :
     ∀ z ∈ BHW.ExtendedTube d n,
       (W_analytic_BHW Wfn n).val z =
@@ -1520,7 +1513,7 @@ private theorem W_analytic_BHW_eq_extendF_on_extendedTube
   intro z hz
   exact hEqOn hz
 
-private theorem bhw_real_hermitian_on_edge
+theorem bhw_real_hermitian_on_edge
     (Wfn : WightmanFunctions d) (n : ℕ) :
     ∀ x ∈ hermitianRealOverlap (d := d) (n := n),
       starRingEnd ℂ ((W_analytic_BHW Wfn n).val
@@ -1719,7 +1712,7 @@ private theorem bhw_real_hermitian_on_edge
           exact W_analytic_BHW_eq_extendF_on_extendedTube (Wfn := Wfn) (n := n)
             (BHW.realEmbed x) hx_ET
 
-private theorem hermitianRealOverlap_nonempty_of_two_le
+theorem hermitianRealOverlap_nonempty_of_two_le
     {d n : ℕ} [NeZero d] (hd : 2 ≤ d) :
     (hermitianRealOverlap (d := d) (n := n)).Nonempty := by
   rcases JostWitnessGeneralSigma.jostWitness_exists (d := d) (n := n) hd Fin.revPerm with
@@ -1842,19 +1835,19 @@ theorem wickRotatedBoundaryPairing_symmetric (Wfn : WightmanFunctions d)
         integral_perm_eq_self σ
           (fun x => K x * (f : NPointDomain d n → ℂ) x)
 
-private abbrev permuteSchwartz (σ : Equiv.Perm (Fin n)) (f : SchwartzNPoint d n) :
+abbrev permuteSchwartz (σ : Equiv.Perm (Fin n)) (f : SchwartzNPoint d n) :
     SchwartzNPoint d n :=
   SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
     ((LinearEquiv.funCongrLeft ℝ (SpacetimeDim d) σ).toContinuousLinearEquiv) f
 
 omit [NeZero d] in
-@[simp] private theorem permuteSchwartz_apply (σ : Equiv.Perm (Fin n))
+@[simp] theorem permuteSchwartz_apply (σ : Equiv.Perm (Fin n))
     (f : SchwartzNPoint d n) (x : NPointDomain d n) :
     permuteSchwartz σ f x = f (fun i => x (σ i)) := by
   rfl
 
 omit [NeZero d] in
-private theorem permute_support_jost (σ : Equiv.Perm (Fin n)) (f : SchwartzNPoint d n)
+theorem permute_support_jost (σ : Equiv.Perm (Fin n)) (f : SchwartzNPoint d n)
     (hf : ∀ x : NPointDomain d n, f x ≠ 0 → x ∈ BHW.JostSet d n) :
     ∀ x : NPointDomain d n, permuteSchwartz σ f x ≠ 0 → x ∈ BHW.JostSet d n := by
   intro x hx
@@ -1862,7 +1855,7 @@ private theorem permute_support_jost (σ : Equiv.Perm (Fin n)) (f : SchwartzNPoi
   simpa using (BHW.jostSet_permutation_invariant (d := d) (n := n) σ.symm hy)
 
 omit [NeZero d] in
-private theorem areSpacelikeSeparated_of_jost_pair (x y : SpacetimeDim d)
+theorem areSpacelikeSeparated_of_jost_pair (x y : SpacetimeDim d)
     (h : BHW.IsSpacelike d (fun μ => x μ - y μ)) :
     MinkowskiSpace.AreSpacelikeSeparated d x y := by
   unfold MinkowskiSpace.AreSpacelikeSeparated MinkowskiSpace.IsSpacelike
@@ -1893,7 +1886,7 @@ private theorem areSpacelikeSeparated_of_jost_pair (x y : SpacetimeDim d)
   rw [hs, ht]
   simpa [BHW.IsSpacelike, LorentzLieGroup.minkowskiSignature, sq] using h
 
-private theorem wightman_perm_invariant_on_jost_support (Wfn : WightmanFunctions d)
+theorem wightman_perm_invariant_on_jost_support (Wfn : WightmanFunctions d)
     (n : ℕ) (f : SchwartzNPoint d n)
     (hf : ∀ x : NPointDomain d n, f x ≠ 0 → x ∈ BHW.JostSet d n)
     (σ : Equiv.Perm (Fin n)) :
@@ -1929,7 +1922,7 @@ private theorem wightman_perm_invariant_on_jost_support (Wfn : WightmanFunctions
       _ = Wfn.W n gτ := hswap0.symm
       _ = Wfn.W n f := hτ
 
-private theorem wightman_reverse_invariant_on_jost_support (Wfn : WightmanFunctions d)
+theorem wightman_reverse_invariant_on_jost_support (Wfn : WightmanFunctions d)
     (n : ℕ) (f : SchwartzNPoint d n)
     (hf : ∀ x : NPointDomain d n, f x ≠ 0 → x ∈ BHW.JostSet d n) :
     Wfn.W n f.reverse = Wfn.W n f := by
@@ -1947,7 +1940,7 @@ private theorem wightman_reverse_invariant_on_jost_support (Wfn : WightmanFuncti
     `wightman_real_on_jost_support`). Combined with Hermiticity and reversal
     invariance, `conj(W_n(conj φ)) = W_n(φ)` for all φ, which forces
     `conj(extendF(x)) = extendF(x)` by distributional uniqueness. -/
-private theorem extendF_real_on_forwardJostSet
+theorem extendF_real_on_forwardJostSet
     (Wfn : WightmanFunctions d) (n : ℕ) (hd : 1 ≤ d) :
     ∀ x ∈ BHW.ForwardJostSet d n hd,
       starRingEnd ℂ (BHW.extendF (Wfn.spectrum_condition n).choose (BHW.realEmbed x)) =
@@ -2099,7 +2092,7 @@ private theorem extendF_real_on_forwardJostSet
     reverse overlap domain `D`. The first PET membership comes from Jost's
     lemma; the second uses the permuted extended tube's closure under
     index permutation. -/
-private theorem forwardJostSet_realEmbed_in_hermitianReverseOverlap_d1
+theorem forwardJostSet_realEmbed_in_hermitianReverseOverlap_d1
     {n : ℕ} {x : NPointDomain 1 n}
     (hx : x ∈ BHW.ForwardJostSet 1 n (by omega)) :
     BHW.realEmbed x ∈ hermitianReverseOverlap (d := 1) (n := n) := by
@@ -2134,7 +2127,7 @@ private theorem forwardJostSet_realEmbed_in_hermitianReverseOverlap_d1
     using the forward Jost set as the totally-real anchor instead of the
     (empty) `hermitianRealOverlap`. This is the d = 1 analogue of
     `eq_zero_on_hermitianReverseOverlap_of_dual_permutedForwardTube_twist`. -/
-private theorem eq_zero_hermitianReverseOverlap_d1_forwardJost
+theorem eq_zero_hermitianReverseOverlap_d1_forwardJost
     (Wfn : WightmanFunctions 1) {n : ℕ} (hn : 1 ≤ n)
     {H : (Fin n → Fin (1 + 1) → ℂ) → ℂ}
     (hH_holo : DifferentiableOn ℂ H (hermitianReverseOverlap (d := 1) (n := n)))
@@ -2330,7 +2323,7 @@ theorem bhw_euclidean_reality_ae (Wfn : WightmanFunctions d) (n : ℕ) :
             (fun k => wickRotatePoint (timeReflection d (x (Fin.rev k)))) := by
     intro hV_ne
     rcases hV_ne with ⟨x0, hx0⟩
-    filter_upwards [hwick_overlap, ae_pairwise_distinct_timeCoords (d := d) (n := n)]
+    filter_upwards [hwick_overlap, ae_pairwise_distinct_timeCoords_SchwingerAxioms (d := d) (n := n)]
       with x hxT hdistinct
     let A : ℝ := 1 + ∑ i : Fin n, |x i 0|
     let a : SpacetimeDim d := fun μ => if μ = 0 then A else 0
@@ -2442,7 +2435,7 @@ theorem bhw_euclidean_reality_ae (Wfn : WightmanFunctions d) (n : ℕ) :
       -- The key new input is `eq_zero_hermitianReverseOverlap_d1_forwardJost`
       -- which shows H = 0 on permuted forward tube points via a distributional
       -- Schwarz reflection argument on the forward Jost set.
-      filter_upwards [hwick_overlap, ae_pairwise_distinct_timeCoords (d := 1) (n := n)]
+      filter_upwards [hwick_overlap, ae_pairwise_distinct_timeCoords_SchwingerAxioms (d := 1) (n := n)]
         with x hxT hdistinct
       let A : ℝ := 1 + ∑ i : Fin n, |x i 0|
       let a : SpacetimeDim 1 := fun μ => if μ = 0 then A else 0

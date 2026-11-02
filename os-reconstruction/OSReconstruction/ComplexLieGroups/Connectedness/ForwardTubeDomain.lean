@@ -1,6 +1,10 @@
-import OSReconstruction.ComplexLieGroups.Connectedness.OrbitSetBasic
-import OSReconstruction.ComplexLieGroups.GeodesicConvexity
-import OSReconstruction.Wightman.Spacetime.MinkowskiGeometry
+module
+
+public import OSReconstruction.ComplexLieGroups.Connectedness.OrbitSetBasic
+public import OSReconstruction.ComplexLieGroups.GeodesicConvexity
+public import OSReconstruction.Wightman.Spacetime.MinkowskiGeometry
+
+@[expose] public section
 
 noncomputable section
 
@@ -94,22 +98,22 @@ theorem isOpen_d_lambda (Λ : ComplexLorentzGroup d) :
 /-! ### Real-Lorentz preservation infrastructure -/
 
 /-- Complex difference vector associated to `imDiff`. -/
-private def diffVec (z : Fin n → Fin (d + 1) → ℂ) (k : Fin n) : Fin (d + 1) → ℂ :=
+def diffVec_ForwardTubeDomain (z : Fin n → Fin (d + 1) → ℂ) (k : Fin n) : Fin (d + 1) → ℂ :=
   fun ν => z k ν - (if h : k.val = 0 then 0 else z ⟨k.val - 1, by omega⟩) ν
 
-/-- `imDiff` is the imaginary part of `diffVec`. -/
-private lemma imDiff_eq_im_diffVec (z : Fin n → Fin (d + 1) → ℂ) (k : Fin n) :
-    imDiff z k = fun μ => (diffVec z k μ).im := by
+/-- `imDiff` is the imaginary part of `diffVec_ForwardTubeDomain`. -/
+lemma imDiff_eq_im_diffVec (z : Fin n → Fin (d + 1) → ℂ) (k : Fin n) :
+    imDiff z k = fun μ => (diffVec_ForwardTubeDomain z k μ).im := by
   ext μ
-  simp [imDiff, diffVec]
+  simp [imDiff, diffVec_ForwardTubeDomain]
 
 /-- The Lorentz action commutes with taking successive differences. -/
-private lemma diffVec_action (Λ : ComplexLorentzGroup d)
+lemma diffVec_action_ForwardTubeDomain (Λ : ComplexLorentzGroup d)
     (z : Fin n → Fin (d + 1) → ℂ) (k : Fin n) :
-    diffVec (complexLorentzAction Λ z) k =
-    fun μ => ∑ ν, Λ.val μ ν * diffVec z k ν := by
+    diffVec_ForwardTubeDomain (complexLorentzAction Λ z) k =
+    fun μ => ∑ ν, Λ.val μ ν * diffVec_ForwardTubeDomain z k ν := by
   ext μ
-  simp only [diffVec, complexLorentzAction, complexLorentzVectorAction]
+  simp only [diffVec_ForwardTubeDomain, complexLorentzAction, complexLorentzVectorAction]
   by_cases hk : k.val = 0
   · simp [hk, sub_zero]
   · simp only [hk, ↓reduceDIte, complexLorentzVectorAction]
@@ -126,11 +130,11 @@ theorem ofReal_preserves_forwardTube_base (R : RestrictedLorentzGroup d)
     complexLorentzAction (ComplexLorentzGroup.ofReal R) z ∈ ForwardTube d n := by
   intro k
   show InOpenForwardCone d (imDiff (complexLorentzAction (ComplexLorentzGroup.ofReal R) z) k)
-  rw [imDiff_eq_im_diffVec, diffVec_action]
-  have h_im : (fun μ => (∑ ν, (ComplexLorentzGroup.ofReal R).val μ ν * diffVec z k ν).im) =
-      (fun μ => ∑ ν, R.val.val μ ν * (diffVec z k ν).im) := by
+  rw [imDiff_eq_im_diffVec, diffVec_action_ForwardTubeDomain]
+  have h_im : (fun μ => (∑ ν, (ComplexLorentzGroup.ofReal R).val μ ν * diffVec_ForwardTubeDomain z k ν).im) =
+      (fun μ => ∑ ν, R.val.val μ ν * (diffVec_ForwardTubeDomain z k ν).im) := by
     ext μ
-    exact ofReal_im_action R (diffVec z k) μ
+    exact ofReal_im_action R (diffVec_ForwardTubeDomain z k) μ
   rw [h_im]
   have hk : InOpenForwardCone d (imDiff z k) := hz k
   rw [imDiff_eq_im_diffVec] at hk

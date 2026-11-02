@@ -1,6 +1,10 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43WickRotateFourierLaplaceBridge
-import OSReconstruction.Wightman.Reconstruction.SchwartzNPointFlatten
-import OSReconstruction.Wightman.SpectralEquivalence
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43WickRotateFourierLaplaceBridge
+public import OSReconstruction.Wightman.Reconstruction.SchwartzNPointFlatten
+public import OSReconstruction.Wightman.SpectralEquivalence
+
+@[expose] public section
 
 /-!
 # Fourier transform of the basepoint reduction

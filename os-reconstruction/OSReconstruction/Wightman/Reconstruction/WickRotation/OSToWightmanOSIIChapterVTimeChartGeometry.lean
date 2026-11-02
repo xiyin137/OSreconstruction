@@ -1,5 +1,9 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVTimeChart
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIAxisPairProductSourceGeometry
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVTimeChart
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIAxisPairProductSourceGeometry
+
+@[expose] public section
 
 /-!
 # OS-II Chapter V Reflected Time-Chart Geometry
@@ -86,7 +90,7 @@ def reflectedBlockTimeDisplacement
 
 /-- Successive cumulative coordinates recover the corresponding nonzeroth
 difference coordinate. -/
-private theorem section43ScalarDiffCLE_symm_succ_sub_castSucc
+theorem section43ScalarDiffCLE_symm_succ_sub_castSucc
     {k : ℕ}
     (δ : Fin (k + 1) → ℝ)
     (i : Fin k) :

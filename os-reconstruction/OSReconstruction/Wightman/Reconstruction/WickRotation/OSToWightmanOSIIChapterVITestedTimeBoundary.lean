@@ -1,7 +1,11 @@
-import OSReconstruction.SCV.TubeBoundaryValueExistence
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIRegularizationRadius
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVITestedTaylor
-import Mathlib.Analysis.LocallyConvex.Barrelled
+module
+
+public import OSReconstruction.SCV.TubeBoundaryValueExistence
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIRegularizationRadius
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVITestedTaylor
+public import Mathlib.Analysis.LocallyConvex.Barrelled
+
+@[expose] public section
 
 /-!
 # Tested boundary values on the positive time tube
@@ -20,38 +24,38 @@ open scoped BigOperators Interval Classical
 namespace OSReconstruction
 namespace OSIITestedTimeBoundary
 
-private def tubePoint {k : Nat} (x y : Fin k -> Real) : Fin k -> Complex :=
+def tubePoint {k : Nat} (x y : Fin k -> Real) : Fin k -> Complex :=
   fun i => (x i : Complex) + (y i : Complex) * I
 
-private def unitDirection (k : Nat) : Fin k -> Real := fun _ => 1
+def unitDirection (k : Nat) : Fin k -> Real := fun _ => 1
 
-private def imaginaryTranslate {k : Nat}
+def imaginaryTranslate {k : Nat}
     (F : (Fin k -> Complex) -> Complex) (a : Fin k -> Real) :
     (Fin k -> Complex) -> Complex :=
   fun z => F (z + fun i => (a i : Complex) * I)
 
-private abbrev RegulatedGrowth {k : Nat}
+abbrev RegulatedGrowth {k : Nat}
     (F : (Fin k -> Complex) -> Complex) (C : Real) (N M : Nat) : Prop :=
   forall z, z ∈ SCV.TubeDomain (osiiTimePositiveCone k) ->
     ‖F z‖ <= C * (1 + ‖z‖) ^ N *
       (1 + (Metric.infDist (fun i => (z i).im)
         (osiiTimePositiveCone k)ᶜ)⁻¹) ^ M
 
-private theorem unitDirection_mem (k : Nat) :
+theorem unitDirection_mem (k : Nat) :
     unitDirection k ∈ osiiTimePositiveCone k := by
   intro i
   exact zero_lt_one
 
-private theorem norm_unitDirection_le (k : Nat) :
+theorem norm_unitDirection_le (k : Nat) :
     ‖unitDirection k‖ <= 1 := by
   exact (pi_norm_le_iff_of_nonneg zero_le_one).2 (by intro i; simp [unitDirection])
 
-private theorem tubePoint_mem {k : Nat} (x : Fin k -> Real)
+theorem tubePoint_mem {k : Nat} (x : Fin k -> Real)
     {y : Fin k -> Real} (hy : y ∈ osiiTimePositiveCone k) :
     tubePoint x y ∈ SCV.TubeDomain (osiiTimePositiveCone k) := by
   simpa [tubePoint, SCV.TubeDomain] using hy
 
-private theorem norm_tubePoint_le {k : Nat} (x y : Fin k -> Real) :
+theorem norm_tubePoint_le {k : Nat} (x y : Fin k -> Real) :
     ‖tubePoint x y‖ <= ‖x‖ + ‖y‖ := by
   apply (pi_norm_le_iff_of_nonneg (by positivity)).2
   intro i
@@ -61,7 +65,7 @@ private theorem norm_tubePoint_le {k : Nat} (x y : Fin k -> Real) :
     _ = ‖x i‖ + ‖y i‖ := by simp
     _ <= ‖x‖ + ‖y‖ := add_le_add (norm_le_pi_norm x i) (norm_le_pi_norm y i)
 
-private theorem positiveCone_margin_pos {k : Nat} [NeZero k]
+theorem positiveCone_margin_pos {k : Nat} [NeZero k]
     {y : Fin k -> Real} (hy : y ∈ osiiTimePositiveCone k) :
     0 < Metric.infDist y (osiiTimePositiveCone k)ᶜ := by
   apply ((osiiTimePositiveCone_open k).isClosed_compl.notMem_iff_infDist_pos
@@ -69,14 +73,14 @@ private theorem positiveCone_margin_pos {k : Nat} [NeZero k]
       (Nat.pos_of_ne_zero (NeZero.ne k)))).1
   simpa using hy
 
-private theorem positiveCone_margin_le_coordinate {k : Nat}
+theorem positiveCone_margin_le_coordinate {k : Nat}
     {y : Fin k -> Real} (hy : y ∈ osiiTimePositiveCone k) (i : Fin k) :
     Metric.infDist y (osiiTimePositiveCone k)ᶜ <= y i := by
   simpa [osiiTimeBoundaryDistance, osiiPositiveRealTimeEmbed] using
     osiiTimeBoundaryDistance_le_re
       ((osiiPositiveRealTimeEmbed_mem_rightHalfPlane_iff y).2 hy) i
 
-private theorem positiveCone_le_margin {k : Nat} [NeZero k]
+theorem positiveCone_le_margin {k : Nat} [NeZero k]
     {y : Fin k -> Real} {r : Real} (hy : forall i, r <= y i) :
     r <= Metric.infDist y (osiiTimePositiveCone k)ᶜ := by
   refine (Metric.le_infDist (osiiTimePositiveCone_compl_nonempty
@@ -92,7 +96,7 @@ private theorem positiveCone_le_margin {k : Nat} [NeZero k]
     _ = dist (y i) (v i) := (Real.dist_eq _ _).symm
     _ <= dist y v := dist_le_pi_dist y v i
 
-private theorem tubeSlice_imaginaryTranslate {k : Nat}
+theorem tubeSlice_imaginaryTranslate {k : Nat}
     (F : (Fin k -> Complex) -> Complex) (a y : Fin k -> Real)
     (phi : SchwartzMap (Fin k -> Real) Complex) :
     tubeSlice (imaginaryTranslate F a) y phi = tubeSlice F (y + a) phi := by
@@ -110,7 +114,7 @@ private theorem tubeSlice_imaginaryTranslate {k : Nat}
     ring
   rw [hpoint]
 
-private theorem imaginaryTranslate_holomorphic {k : Nat}
+theorem imaginaryTranslate_holomorphic {k : Nat}
     {F : (Fin k -> Complex) -> Complex}
     (hF : DifferentiableOn Complex F (SCV.TubeDomain (osiiTimePositiveCone k)))
     {a : Fin k -> Real} (ha : a ∈ osiiTimePositiveCone k) :
@@ -122,13 +126,13 @@ private theorem imaginaryTranslate_holomorphic {k : Nat}
   intro i
   simpa using add_pos (hz i) (ha i)
 
-private theorem norm_imaginaryEmbedding_le {k : Nat} (a : Fin k -> Real) :
+theorem norm_imaginaryEmbedding_le {k : Nat} (a : Fin k -> Real) :
     ‖(fun i => (a i : Complex) * I)‖ <= ‖a‖ := by
   apply (pi_norm_le_iff_of_nonneg (norm_nonneg a)).2
   intro i
   simpa using norm_le_pi_norm a i
 
-private theorem exists_imaginaryTranslate_polynomialGrowth
+theorem exists_imaginaryTranslate_polynomialGrowth
     {k : Nat} [NeZero k]
     {F : (Fin k -> Complex) -> Complex} {C : Real} {N M : Nat}
     (hC : 0 < C) (hgrowth : RegulatedGrowth F C N M)
@@ -175,7 +179,7 @@ private theorem exists_imaginaryTranslate_polynomialGrowth
       rw [mul_pow]
       ring
 
-private theorem hasDerivAt_shiftedTubeSlice
+theorem hasDerivAt_shiftedTubeSlice
     {k : Nat} [NeZero k]
     {F : (Fin k -> Complex) -> Complex} {C : Real} {N M : Nat}
     (hF : DifferentiableOn Complex F (SCV.TubeDomain (osiiTimePositiveCone k)))
@@ -213,7 +217,7 @@ private theorem hasDerivAt_shiftedTubeSlice
   have hcomp := hderiv.comp_add_const s delta
   simpa only [heq] using hcomp
 
-private theorem positiveOffset_mem {k : Nat}
+theorem positiveOffset_mem {k : Nat}
     {y : Fin k -> Real} (hy : y ∈ osiiTimePositiveCone k)
     {s : Real} (hs : 0 <= s) :
     y + s • unitDirection k ∈ osiiTimePositiveCone k := by
@@ -221,7 +225,7 @@ private theorem positiveOffset_mem {k : Nat}
   change 0 < y i + s * 1
   simpa using add_pos_of_pos_of_nonneg (hy i) hs
 
-private theorem norm_smallHeight_le {k : Nat}
+theorem norm_smallHeight_le {k : Nat}
     (eta : Fin k -> Real) {epsilon s : Real}
     (hepsilon : 0 <= epsilon) (hepsilon_one : epsilon <= 1)
     (hs : 0 <= s) :
@@ -237,14 +241,14 @@ private theorem norm_smallHeight_le {k : Nat}
       exact norm_unitDirection_le k
     _ = ‖eta‖ + s := by ring
 
-private theorem smallHeight_coordinate_ge {k : Nat}
+theorem smallHeight_coordinate_ge {k : Nat}
     {eta : Fin k -> Real} (heta : eta ∈ osiiTimePositiveCone k)
     {epsilon : Real} (hepsilon : 0 <= epsilon) (s : Real) (i : Fin k) :
     s <= (epsilon • eta + s • unitDirection k) i := by
   change s <= epsilon * eta i + s * 1
   nlinarith [heta i]
 
-private theorem norm_at_height_le
+theorem norm_at_height_le
     {k : Nat} [NeZero k]
     {F : (Fin k -> Complex) -> Complex} {C : Real} {N M : Nat}
     (hC : 0 < C) (hgrowth : RegulatedGrowth F C N M)
@@ -273,7 +277,7 @@ private theorem norm_at_height_le
       rw [mul_pow]
       ring
 
-private theorem continuous_sliceIntegrand {k : Nat}
+theorem continuous_sliceIntegrand {k : Nat}
     {F : (Fin k -> Complex) -> Complex}
     (hF : DifferentiableOn Complex F (SCV.TubeDomain (osiiTimePositiveCone k)))
     {y : Fin k -> Real} (hy : y ∈ osiiTimePositiveCone k) :
@@ -285,7 +289,7 @@ private theorem continuous_sliceIntegrand {k : Nat}
     hF.continuousOn.comp hpoint.continuousOn (fun x _ => tubePoint_mem x hy)
   simpa using hcomp
 
-private theorem norm_tubeSlice_le_of_heightBounds
+theorem norm_tubeSlice_le_of_heightBounds
     {k : Nat} [NeZero k]
     {F : (Fin k -> Complex) -> Complex} {C : Real} {N M : Nat}
     (hC : 0 < C) (hgrowth : RegulatedGrowth F C N M)
@@ -310,7 +314,7 @@ private theorem norm_tubeSlice_le_of_heightBounds
     _ = K * ∫ x : Fin k -> Real, (1 + ‖x‖) ^ N * ‖phi x‖ :=
       integral_const_mul _ _
 
-private theorem tendsto_tubeSlice_at_positiveHeight
+theorem tendsto_tubeSlice_at_positiveHeight
     {k : Nat} [NeZero k]
     {F : (Fin k -> Complex) -> Complex} {C : Real} {N M : Nat}
     (hF : DifferentiableOn Complex F (SCV.TubeDomain (osiiTimePositiveCone k)))
@@ -367,27 +371,27 @@ private theorem tendsto_tubeSlice_at_positiveHeight
         (hpoint.tendsto (0 : Real)).mono_left nhdsWithin_le_nhds
     exact (hFc.tendsto.comp hpointLimit).mul_const (phi x)
 
-private def sliceJet {k : Nat}
+def sliceJet {k : Nat}
     (F : (Fin k -> Complex) -> Complex)
     (phi : SchwartzMap (Fin k -> Real) Complex)
     (j : Nat) (y : Fin k -> Real) : Complex :=
   (-I) ^ j * tubeSlice F y
     (((directionalDerivSchwartz (unitDirection k)) ^ j) phi)
 
-private theorem sliceJet_zero {k : Nat}
+theorem sliceJet_zero {k : Nat}
     (F : (Fin k -> Complex) -> Complex)
     (phi : SchwartzMap (Fin k -> Real) Complex) (y : Fin k -> Real) :
     sliceJet F phi 0 y = tubeSlice F y phi := by
   simp [sliceJet]
 
-private theorem norm_sliceJet {k : Nat}
+theorem norm_sliceJet {k : Nat}
     (F : (Fin k -> Complex) -> Complex)
     (phi : SchwartzMap (Fin k -> Real) Complex) (j : Nat) (y : Fin k -> Real) :
     ‖sliceJet F phi j y‖ = ‖tubeSlice F y
       (((directionalDerivSchwartz (unitDirection k)) ^ j) phi)‖ := by
   simp [sliceJet, norm_pow]
 
-private theorem hasDerivAt_sliceJet
+theorem hasDerivAt_sliceJet
     {k : Nat} [NeZero k]
     {F : (Fin k -> Complex) -> Complex} {C : Real} {N M : Nat}
     (hF : DifferentiableOn Complex F (SCV.TubeDomain (osiiTimePositiveCone k)))
@@ -410,7 +414,7 @@ private theorem hasDerivAt_sliceJet
   rw [hscalar, ← hD]
   simpa only [mul_assoc] using hderiv
 
-private theorem tubeSlice_eq_testedExpansion
+theorem tubeSlice_eq_testedExpansion
     {k : Nat} [NeZero k]
     {F : (Fin k -> Complex) -> Complex} {C : Real} {N M : Nat}
     (hF : DifferentiableOn Complex F (SCV.TubeDomain (osiiTimePositiveCone k)))
@@ -428,7 +432,7 @@ private theorem tubeSlice_eq_testedExpansion
     (fun j s hs => hasDerivAt_sliceJet hF hC hgrowth hy hs.1 phi j)
   simpa only [zero_smul, add_zero, one_smul, sliceJet_zero] using h
 
-private def testedBoundaryValue {k : Nat}
+def testedBoundaryValue {k : Nat}
     (F : (Fin k -> Complex) -> Complex) (M : Nat)
     (phi : SchwartzMap (Fin k -> Real) Complex) : Complex :=
   (∑ j ∈ Finset.range (M + 1),
@@ -436,7 +440,7 @@ private def testedBoundaryValue {k : Nat}
   (M.factorial : Real)⁻¹ • ∫ s in (0 : Real)..1,
     (-s) ^ M • sliceJet F phi (M + 1) (s • unitDirection k)
 
-private theorem tendsto_sliceJet_at_positiveHeight
+theorem tendsto_sliceJet_at_positiveHeight
     {k : Nat} [NeZero k]
     {F : (Fin k -> Complex) -> Complex} {C : Real} {N M : Nat}
     (hF : DifferentiableOn Complex F (SCV.TubeDomain (osiiTimePositiveCone k)))
@@ -452,7 +456,7 @@ private theorem tendsto_sliceJet_at_positiveHeight
   (tendsto_tubeSlice_at_positiveHeight hF hC hgrowth heta hs _
     ).const_mul ((-I : Complex) ^ j)
 
-private theorem weightedRemainder_norm_le
+theorem weightedRemainder_norm_le
     {k : Nat} [NeZero k]
     {F : (Fin k -> Complex) -> Complex} {C : Real} {N M : Nat}
     (hC : 0 < C) (hgrowth : RegulatedGrowth F C N M)
@@ -492,7 +496,7 @@ private theorem weightedRemainder_norm_le
       mul_le_mul_of_nonneg_left hcancel (by positivity)
     _ = C * (1 + (‖eta‖ + 1)) ^ N * 2 ^ M * p := by ring
 
-private theorem tendsto_weightedRemainder
+theorem tendsto_weightedRemainder
     {k : Nat} [NeZero k]
     {F : (Fin k -> Complex) -> Complex} {C : Real} {N M : Nat}
     (hF : DifferentiableOn Complex F (SCV.TubeDomain (osiiTimePositiveCone k)))
@@ -536,7 +540,7 @@ private theorem tendsto_weightedRemainder
       (tendsto_sliceJet_at_positiveHeight hF hC hgrowth heta
         (by simpa using hs.1) phi (M + 1)).const_smul ((-s) ^ M)
 
-private theorem tendsto_testedBoundaryValue
+theorem tendsto_testedBoundaryValue
     {k : Nat} [NeZero k]
     {F : (Fin k -> Complex) -> Complex} {C : Real} {N M : Nat}
     (hF : DifferentiableOn Complex F (SCV.TubeDomain (osiiTimePositiveCone k)))
@@ -568,7 +572,7 @@ private theorem tendsto_testedBoundaryValue
     ((osiiTimePositiveCone_isCone k) eta heta epsilon hepsilon) phi).symm
 
 set_option backward.isDefEq.respectTransparency false in
-private theorem exists_temperedBoundary_pos
+theorem exists_temperedBoundary_pos
     {k : Nat} [NeZero k]
     {F : (Fin k -> Complex) -> Complex} {C : Real} {N M : Nat}
     (hF : DifferentiableOn Complex F (SCV.TubeDomain (osiiTimePositiveCone k)))

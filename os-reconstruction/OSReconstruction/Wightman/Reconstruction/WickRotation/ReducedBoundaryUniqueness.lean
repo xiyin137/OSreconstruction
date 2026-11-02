@@ -1,5 +1,9 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.BHWReducedInput
-import OSReconstruction.SCV.TubeBoundaryUniqueness
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.BHWReducedInput
+public import OSReconstruction.SCV.TubeBoundaryUniqueness
+
+@[expose] public section
 
 noncomputable section
 

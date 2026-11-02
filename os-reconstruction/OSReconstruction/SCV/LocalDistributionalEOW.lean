@@ -5,18 +5,14 @@ Copyright (c) 2026 ModularPhysics Contributors.
 Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
-import OSReconstruction.SCV.DistributionalEOWKernelRecovery
-import Init
-import OSReconstruction.SCV.LocalContinuousEOW
-import OSReconstruction.SCV.DistributionalEOWSupport
+module
 
+public import OSReconstruction.SCV.DistributionalEOWKernelRecovery
+public import Init
+public import OSReconstruction.SCV.LocalContinuousEOW
+public import OSReconstruction.SCV.DistributionalEOWSupport
 
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 

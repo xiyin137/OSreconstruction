@@ -1,28 +1,22 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import Init
-import Mathlib.Geometry.Manifold.Algebra.LieGroup
-import Mathlib.Geometry.Manifold.Instances.UnitsOfNormedAlgebra
-import Mathlib.LinearAlgebra.Matrix.GeneralLinearGroup.Defs
-import Mathlib.LinearAlgebra.Matrix.SpecialLinearGroup
-import Mathlib.Topology.Algebra.Group.Matrix
-import Mathlib.Analysis.Complex.Basic
-import Mathlib.Analysis.Matrix.Normed
-import Mathlib.Analysis.Normed.Module.Connected
-import Mathlib.Algebra.Polynomial.Roots
-import Mathlib.LinearAlgebra.Complex.FiniteDimensional
-import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.IndexSetD1
-import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SourceExtension
+module
 
+public import Init
+public import Mathlib.Geometry.Manifold.Algebra.LieGroup
+public import Mathlib.Geometry.Manifold.Instances.UnitsOfNormedAlgebra
+public import Mathlib.LinearAlgebra.Matrix.GeneralLinearGroup.Defs
+public import Mathlib.LinearAlgebra.Matrix.SpecialLinearGroup
+public import Mathlib.Topology.Algebra.Group.Matrix
+public import Mathlib.Analysis.Complex.Basic
+public import Mathlib.Analysis.Matrix.Normed
+public import Mathlib.Analysis.Normed.Module.Connected
+public import Mathlib.Algebra.Polynomial.Roots
+public import Mathlib.LinearAlgebra.Complex.FiniteDimensional
+public import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.IndexSetD1
+public import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SourceExtension
 
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 

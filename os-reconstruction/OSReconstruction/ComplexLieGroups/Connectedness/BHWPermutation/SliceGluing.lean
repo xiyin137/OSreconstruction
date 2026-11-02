@@ -1,6 +1,10 @@
-import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.PermutationBoundary
-import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.LorentzSliceBoundary
-import OSReconstruction.SCV.LocalBoundaryUniqueness
+module
+
+public import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.PermutationBoundary
+public import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.LorentzSliceBoundary
+public import OSReconstruction.SCV.LocalBoundaryUniqueness
+
+@[expose] public section
 
 /-!
 # Permutation Gluing Through Fixed Lorentz Slices
@@ -19,7 +23,7 @@ namespace BHW.PermutationBoundary
 
 variable {d n : ℕ} [NeZero d]
 
-private theorem forwardTube_eq_root : BHW.ForwardTube d n = _root_.ForwardTube d n := by
+theorem forwardTube_eq_root : BHW.ForwardTube d n = _root_.ForwardTube d n := by
   ext z
   simp only [BHW.ForwardTube, _root_.ForwardTube, Set.mem_setOf_eq]
   exact forall_congr' fun k => bhw_inOpenForwardCone_iff_wightman _

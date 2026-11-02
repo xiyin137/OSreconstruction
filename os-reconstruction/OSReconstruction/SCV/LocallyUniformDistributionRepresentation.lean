@@ -3,9 +3,13 @@ Copyright (c) 2026 ModularPhysics Contributors. All rights reserved.
 Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
-import OSReconstruction.SCV.EuclideanWeylOpen
-import OSReconstruction.SCV.LocallyUniformLimit
-import OSReconstruction.SCV.DistributionalUniqueness
+module
+
+public import OSReconstruction.SCV.EuclideanWeylOpen
+public import OSReconstruction.SCV.LocallyUniformLimit
+public import OSReconstruction.SCV.DistributionalUniqueness
+
+@[expose] public section
 
 /-!
 # Locally Uniform Limits and Distributional Pairings

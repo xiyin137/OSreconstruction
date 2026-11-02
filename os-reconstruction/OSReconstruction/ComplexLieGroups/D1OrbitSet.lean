@@ -1,7 +1,11 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.ComplexLieGroups.BHWCore
-import Mathlib.Analysis.SpecialFunctions.Trigonometric.Arctan
+module
+
+public import OSReconstruction.ComplexLieGroups.BHWCore
+public import Mathlib.Analysis.SpecialFunctions.Trigonometric.Arctan
+
+@[expose] public section
 
 noncomputable section
 
@@ -9,35 +13,35 @@ open Complex Matrix LorentzLieGroup
 
 namespace BHW
 
-private abbrev ForwardTube (d n : ℕ) : Set (Fin n → Fin (d + 1) → ℂ) :=
+abbrev ForwardTube_D1OrbitSet (d n : ℕ) : Set (Fin n → Fin (d + 1) → ℂ) :=
   BHWCore.ForwardTube d n
 
-private abbrev complexLorentzAction
+abbrev complexLorentzAction_D1OrbitSet
     {d n : ℕ} (Λ : ComplexLorentzGroup d) (z : Fin n → Fin (d + 1) → ℂ) :
     Fin n → Fin (d + 1) → ℂ :=
   BHWCore.complexLorentzAction (d := d) (n := n) Λ z
 
-private theorem complexLorentzAction_mul {d n : ℕ}
+theorem complexLorentzAction_mul_D1OrbitSet {d n : ℕ}
     (Λ₁ Λ₂ : ComplexLorentzGroup d) (z : Fin n → Fin (d + 1) → ℂ) :
-    complexLorentzAction (Λ₁ * Λ₂) z =
-      complexLorentzAction Λ₁ (complexLorentzAction Λ₂ z) := by
-  simpa [complexLorentzAction] using
+    complexLorentzAction_D1OrbitSet (Λ₁ * Λ₂) z =
+      complexLorentzAction_D1OrbitSet Λ₁ (complexLorentzAction_D1OrbitSet Λ₂ z) := by
+  simpa [complexLorentzAction_D1OrbitSet] using
     (BHWCore.complexLorentzAction_mul (d := d) (n := n) Λ₁ Λ₂ z)
 
-private theorem complexLorentzAction_one {d n : ℕ}
+theorem complexLorentzAction_one_D1OrbitSet {d n : ℕ}
     (z : Fin n → Fin (d + 1) → ℂ) :
-    complexLorentzAction (1 : ComplexLorentzGroup d) z = z := by
-  simpa [complexLorentzAction] using
+    complexLorentzAction_D1OrbitSet (1 : ComplexLorentzGroup d) z = z := by
+  simpa [complexLorentzAction_D1OrbitSet] using
     (BHWCore.complexLorentzAction_one (d := d) (n := n) z)
 
-private def orbitSet {n : ℕ} (w : Fin n → Fin (1 + 1) → ℂ) :
+def orbitSet_D1OrbitSet {n : ℕ} (w : Fin n → Fin (1 + 1) → ℂ) :
     Set (ComplexLorentzGroup 1) :=
-  {Λ | complexLorentzAction Λ w ∈ ForwardTube 1 n}
+  {Λ | complexLorentzAction_D1OrbitSet Λ w ∈ ForwardTube_D1OrbitSet 1 n}
 
-private abbrev i0 : Fin (1 + 1) := 0
-private abbrev i1 : Fin (1 + 1) := 1
+abbrev i0 : Fin (1 + 1) := 0
+abbrev i1 : Fin (1 + 1) := 1
 
-private theorem sinusoidal_positivity {A B b : ℝ} (hA : 0 < A)
+theorem sinusoidal_positivity {A B b : ℝ} (hA : 0 < A)
     (hend : 0 < A * Real.cos b + B * Real.sin b) (hb : |b| < Real.pi)
     {t : ℝ} (ht0 : 0 ≤ t) (ht1 : t ≤ 1) :
     0 < A * Real.cos (b * t) + B * Real.sin (b * t) := by
@@ -115,7 +119,7 @@ private theorem sinusoidal_positivity {A B b : ℝ} (hA : 0 < A)
     · linarith [mul_nonpos_of_nonpos_of_nonneg (le_of_lt (not_le.mp hb_nn)) ht0]
   exact mul_pos hC_pos (Real.sin_pos_of_pos_of_lt_pi hbt_pos hbt_lt)
 
-private theorem inOpenForwardCone_one_iff_pm (η : Fin (1 + 1) → ℝ) :
+theorem inOpenForwardCone_one_iff_pm (η : Fin (1 + 1) → ℝ) :
     InOpenForwardCone 1 η ↔
       (η 0 + η 1 > 0 ∧ η 0 - η 1 > 0) := by
   constructor
@@ -132,24 +136,24 @@ private theorem inOpenForwardCone_one_iff_pm (η : Fin (1 + 1) → ℝ) :
       nlinarith [hpm.1, hpm.2]
     simpa [minkowskiSignature] using hq
 
-private theorem d1_metric_eq_00 (Λ : ComplexLorentzGroup 1) :
+theorem d1_metric_eq_00 (Λ : ComplexLorentzGroup 1) :
     (-1 : ℂ) * Λ.val i0 i0 * Λ.val i0 i0 + Λ.val i1 i0 * Λ.val i1 i0 = (-1 : ℂ) := by
   simpa [i0, i1, minkowskiSignature] using Λ.metric_preserving i0 i0
 
-private theorem d1_eta_transpose_eta_eq (Λ : ComplexLorentzGroup 1) :
+theorem d1_eta_transpose_eta_eq (Λ : ComplexLorentzGroup 1) :
     ComplexLorentzGroup.ηℂ * Λ.val.transpose * ComplexLorentzGroup.ηℂ =
       !![Λ.val i0 i0, -Λ.val i1 i0; -Λ.val i0 i1, Λ.val i1 i1] := by
   ext i j
   fin_cases i <;> fin_cases j <;> simp [ComplexLorentzGroup.ηℂ, minkowskiSignature]
 
-private theorem d1_inv_eq_adjugate_fin_two (Λ : ComplexLorentzGroup 1) :
+theorem d1_inv_eq_adjugate_fin_two (Λ : ComplexLorentzGroup 1) :
     Λ.val⁻¹ = !![Λ.val i1 i1, -Λ.val i0 i1; -Λ.val i1 i0, Λ.val i0 i0] := by
   rw [Matrix.inv_def]
   have hdet : Λ.val.det = (1 : ℂ) := Λ.proper
   rw [hdet, Ring.inverse_one, one_smul]
   simpa using (Matrix.adjugate_fin_two Λ.val)
 
-private theorem d1_entries_pairing (Λ : ComplexLorentzGroup 1) :
+theorem d1_entries_pairing (Λ : ComplexLorentzGroup 1) :
     Λ.val i0 i0 = Λ.val i1 i1 ∧ Λ.val i0 i1 = Λ.val i1 i0 := by
   have h_left_inv : (ComplexLorentzGroup.ηℂ * Λ.val.transpose * ComplexLorentzGroup.ηℂ) * Λ.val =
       (1 : Matrix (Fin (1 + 1)) (Fin (1 + 1)) ℂ) := by
@@ -172,7 +176,7 @@ private theorem d1_entries_pairing (Λ : ComplexLorentzGroup 1) :
     simpa [i0, i1] using congr_fun (congr_fun h_inv_eta 0) 1
   exact ⟨h00, h01⟩
 
-private theorem d1_hyperbola_relation (Λ : ComplexLorentzGroup 1) :
+theorem d1_hyperbola_relation (Λ : ComplexLorentzGroup 1) :
     Λ.val i0 i0 * Λ.val i0 i0 - Λ.val i0 i1 * Λ.val i0 i1 = (1 : ℂ) := by
   rcases d1_entries_pairing Λ with ⟨_hdiag, hoff⟩
   let a : ℂ := Λ.val i0 i0
@@ -185,14 +189,14 @@ private theorem d1_hyperbola_relation (Λ : ComplexLorentzGroup 1) :
     _ = -(-1 : ℂ) := by rw [h00']
     _ = (1 : ℂ) := by norm_num
 
-private theorem d1_matrix_normal_form (Λ : ComplexLorentzGroup 1) :
+theorem d1_matrix_normal_form (Λ : ComplexLorentzGroup 1) :
     ∃ a b : ℂ, Λ.val = !![a, b; b, a] ∧ a * a - b * b = (1 : ℂ) := by
   refine ⟨Λ.val i0 i0, Λ.val i0 i1, ?_, d1_hyperbola_relation Λ⟩
   rcases d1_entries_pairing Λ with ⟨hdiag, hoff⟩
   ext i j
   fin_cases i <;> fin_cases j <;> simp [i0, i1, hdiag, hoff]
 
-private theorem d1_exists_rapidity (Λ : ComplexLorentzGroup 1) :
+theorem d1_exists_rapidity (Λ : ComplexLorentzGroup 1) :
     ∃ θ : ℂ, Λ.val =
       !![Complex.cosh θ, Complex.sinh θ; Complex.sinh θ, Complex.cosh θ] := by
   rcases d1_matrix_normal_form Λ with ⟨a, b, hmat, hrel⟩
@@ -249,10 +253,10 @@ private theorem d1_exists_rapidity (Λ : ComplexLorentzGroup 1) :
   ext i j
   fin_cases i <;> fin_cases j <;> simp [h_cosh, h_sinh]
 
-private def rapidityMatrix (θ : ℂ) : Matrix (Fin (1 + 1)) (Fin (1 + 1)) ℂ :=
+def rapidityMatrix (θ : ℂ) : Matrix (Fin (1 + 1)) (Fin (1 + 1)) ℂ :=
   !![Complex.cosh θ, Complex.sinh θ; Complex.sinh θ, Complex.cosh θ]
 
-private theorem imag_rapidity_plus_formula (b t : ℝ) (ξ : Fin (1 + 1) → ℂ) :
+theorem imag_rapidity_plus_formula (b t : ℝ) (ξ : Fin (1 + 1) → ℂ) :
     (∑ ν, rapidityMatrix (((b * t : ℝ) : ℂ) * Complex.I) 0 ν * ξ ν).im +
       (∑ ν, rapidityMatrix (((b * t : ℝ) : ℂ) * Complex.I) 1 ν * ξ ν).im =
       ((ξ 0).im + (ξ 1).im) * Real.cos (b * t) +
@@ -269,7 +273,7 @@ private theorem imag_rapidity_plus_formula (b t : ℝ) (ξ : Fin (1 + 1) → ℂ
     hcos_re, hcos_im, hsin_re, hsin_im]
   ring
 
-private theorem imag_rapidity_minus_formula (b t : ℝ) (ξ : Fin (1 + 1) → ℂ) :
+theorem imag_rapidity_minus_formula (b t : ℝ) (ξ : Fin (1 + 1) → ℂ) :
     (∑ ν, rapidityMatrix (((b * t : ℝ) : ℂ) * Complex.I) 0 ν * ξ ν).im -
       (∑ ν, rapidityMatrix (((b * t : ℝ) : ℂ) * Complex.I) 1 ν * ξ ν).im =
       ((ξ 0).im - (ξ 1).im) * Real.cos (b * t) +
@@ -286,7 +290,7 @@ private theorem imag_rapidity_minus_formula (b t : ℝ) (ξ : Fin (1 + 1) → �
     hcos_re, hcos_im, hsin_re, hsin_im]
   ring
 
-private theorem pureImag_rapidity_preserves_cone_segment
+theorem pureImag_rapidity_preserves_cone_segment
     (b : ℝ) (ξ : Fin (1 + 1) → ℂ)
     (h0 : InOpenForwardCone 1 (fun μ => (ξ μ).im))
     (h1 : InOpenForwardCone 1
@@ -346,7 +350,7 @@ private theorem pureImag_rapidity_preserves_cone_segment
     (fun μ => (∑ ν, rapidityMatrix (((b * t : ℝ) : ℂ) * Complex.I) μ ν * ξ ν).im)).2
       ⟨hplus_t, hminus_t⟩
 
-private theorem rapidityMatrix_metric (θ : ℂ) :
+theorem rapidityMatrix_metric (θ : ℂ) :
     ∀ (μ ν : Fin (1 + 1)),
       ∑ α : Fin (1 + 1),
         (minkowskiSignature 1 α : ℂ) * rapidityMatrix θ α μ * rapidityMatrix θ α ν =
@@ -370,36 +374,36 @@ private theorem rapidityMatrix_metric (θ : ℂ) :
           = Complex.cosh θ * Complex.cosh θ - Complex.sinh θ * Complex.sinh θ := by ring
       _ = (1 : ℂ) := hcs
 
-private theorem rapidityMatrix_det (θ : ℂ) :
+theorem rapidityMatrix_det (θ : ℂ) :
     (rapidityMatrix θ).det = (1 : ℂ) := by
   have hcs : Complex.cosh θ * Complex.cosh θ - Complex.sinh θ * Complex.sinh θ = (1 : ℂ) := by
     simpa [pow_two] using (Complex.cosh_sq_sub_sinh_sq (x := θ))
   simpa [rapidityMatrix, Matrix.det_fin_two] using hcs
 
-private def rapidityElement (θ : ℂ) : ComplexLorentzGroup 1 where
+def rapidityElement (θ : ℂ) : ComplexLorentzGroup 1 where
   val := rapidityMatrix θ
   metric_preserving := rapidityMatrix_metric θ
   proper := rapidityMatrix_det θ
 
-private theorem rapidityMatrix_mul (x y : ℂ) :
+theorem rapidityMatrix_mul (x y : ℂ) :
     rapidityMatrix (x + y) = rapidityMatrix x * rapidityMatrix y := by
   ext i j
   fin_cases i <;> fin_cases j <;>
     simp [rapidityMatrix, Complex.cosh_add, Complex.sinh_add] <;> ring
 
-private theorem rapidityElement_mul (x y : ℂ) :
+theorem rapidityElement_mul (x y : ℂ) :
     rapidityElement (x + y) = rapidityElement x * rapidityElement y := by
   apply ComplexLorentzGroup.ext
   simp [rapidityElement, rapidityMatrix_mul]
 
-private theorem d1_exists_rapidityElement (Λ : ComplexLorentzGroup 1) :
+theorem d1_exists_rapidityElement (Λ : ComplexLorentzGroup 1) :
     ∃ θ : ℂ, Λ = rapidityElement θ := by
   rcases d1_exists_rapidity Λ with ⟨θ, hθ⟩
   refine ⟨θ, ?_⟩
   apply ComplexLorentzGroup.ext
   simpa [rapidityElement, rapidityMatrix] using hθ
 
-private theorem rapidityMatrix_add_two_pi_I_int (θ : ℂ) (m : ℤ) :
+theorem rapidityMatrix_add_two_pi_I_int (θ : ℂ) (m : ℤ) :
     rapidityMatrix (θ + (m : ℂ) * (2 * Real.pi) * Complex.I) = rapidityMatrix θ := by
   have hcosh_period :
       Complex.cosh ((m : ℂ) * (2 * Real.pi) * Complex.I) = (1 : ℂ) := by
@@ -448,12 +452,12 @@ private theorem rapidityMatrix_add_two_pi_I_int (θ : ℂ) (m : ℤ) :
                 rw [Complex.cosh_add]
       _ = Complex.cosh θ := by simp [hcosh_period, hsinh_period]
 
-private theorem rapidityElement_add_two_pi_I_int (θ : ℂ) (m : ℤ) :
+theorem rapidityElement_add_two_pi_I_int (θ : ℂ) (m : ℤ) :
     rapidityElement (θ + (m : ℂ) * (2 * Real.pi) * Complex.I) = rapidityElement θ := by
   apply ComplexLorentzGroup.ext
   exact rapidityMatrix_add_two_pi_I_int θ m
 
-private theorem d1_exists_rapidityElement_principal_im (Λ : ComplexLorentzGroup 1) :
+theorem d1_exists_rapidityElement_principal_im (Λ : ComplexLorentzGroup 1) :
     ∃ a b : ℝ, b ∈ Set.Ioc (-Real.pi) Real.pi ∧
       Λ = rapidityElement ((a : ℂ) + (b : ℂ) * Complex.I) := by
   rcases d1_exists_rapidityElement Λ with ⟨θ, hθΛ⟩
@@ -483,44 +487,44 @@ private theorem d1_exists_rapidityElement_principal_im (Λ : ComplexLorentzGroup
   rw [hθΛ, hθ_repr]
   simpa using (rapidityElement_add_two_pi_I_int ((a : ℂ) + (b : ℂ) * Complex.I) k)
 
-private theorem rapidityMatrix_pi_I :
+theorem rapidityMatrix_pi_I :
     rapidityMatrix ((Real.pi : ℂ) * Complex.I) = !![(-1 : ℂ), 0; 0, (-1 : ℂ)] := by
   ext i j
   fin_cases i <;> fin_cases j <;>
     simp [rapidityMatrix, Complex.cosh_mul_I, Complex.sinh_mul_I, Complex.cos_pi, Complex.sin_pi]
 
-private theorem complexLorentzAction_rapidity_pi_I
+theorem complexLorentzAction_rapidity_pi_I
     (z : Fin n → Fin (1 + 1) → ℂ) :
-    complexLorentzAction (rapidityElement ((Real.pi : ℂ) * Complex.I)) z =
+    complexLorentzAction_D1OrbitSet (rapidityElement ((Real.pi : ℂ) * Complex.I)) z =
       fun k μ => -(z k μ) := by
   ext k μ
   fin_cases μ <;>
-    simp [complexLorentzAction, BHWCore.complexLorentzAction, rapidityElement, rapidityMatrix_pi_I]
+    simp [complexLorentzAction_D1OrbitSet, BHWCore.complexLorentzAction, rapidityElement, rapidityMatrix_pi_I]
 
-private theorem neg_not_mem_forwardTube_d1 [NeZero n]
-    (z : Fin n → Fin (1 + 1) → ℂ) (hz : z ∈ ForwardTube 1 n) :
-    (fun k μ => -(z k μ)) ∉ ForwardTube 1 n := by
+theorem neg_not_mem_forwardTube_d1 [NeZero n]
+    (z : Fin n → Fin (1 + 1) → ℂ) (hz : z ∈ ForwardTube_D1OrbitSet 1 n) :
+    (fun k μ => -(z k μ)) ∉ ForwardTube_D1OrbitSet 1 n := by
   intro hneg
   let k0 : Fin n := ⟨0, Nat.pos_of_ne_zero (NeZero.ne n)⟩
   have hz0 : InOpenForwardCone 1 (fun μ => (z k0 μ).im) := by
-    simpa [ForwardTube, k0]
+    simpa [ForwardTube_D1OrbitSet, k0]
       using (hz k0)
   have hneg0 : InOpenForwardCone 1 (fun μ => (-(z k0 μ)).im) := by
-    simpa [ForwardTube, k0]
+    simpa [ForwardTube_D1OrbitSet, k0]
       using (hneg k0)
   have hneg0' : InOpenForwardCone 1 (fun μ => -(z k0 μ).im) := by
     simpa [Complex.neg_im] using hneg0
   linarith [hz0.1, hneg0'.1]
 
-private def diffVec (z : Fin n → Fin (1 + 1) → ℂ) (k : Fin n) : Fin (1 + 1) → ℂ :=
+def diffVec_D1OrbitSet (z : Fin n → Fin (1 + 1) → ℂ) (k : Fin n) : Fin (1 + 1) → ℂ :=
   fun ν => z k ν - (if h : k.val = 0 then 0 else z ⟨k.val - 1, by omega⟩) ν
 
-private lemma diffVec_action (Λ : ComplexLorentzGroup 1)
+lemma diffVec_action_D1OrbitSet (Λ : ComplexLorentzGroup 1)
     (z : Fin n → Fin (1 + 1) → ℂ) (k : Fin n) :
-    diffVec (complexLorentzAction Λ z) k =
-      fun μ => ∑ ν, Λ.val μ ν * diffVec z k ν := by
+    diffVec_D1OrbitSet (complexLorentzAction_D1OrbitSet Λ z) k =
+      fun μ => ∑ ν, Λ.val μ ν * diffVec_D1OrbitSet z k ν := by
   ext μ
-  simp only [diffVec, complexLorentzAction, BHWCore.complexLorentzAction]
+  simp only [diffVec_D1OrbitSet, complexLorentzAction_D1OrbitSet, BHWCore.complexLorentzAction]
   by_cases hk : k.val = 0
   · simp [hk, sub_zero]
   · simp only [hk, ↓reduceDIte, BHWCore.complexLorentzAction]
@@ -529,24 +533,24 @@ private lemma diffVec_action (Λ : ComplexLorentzGroup 1)
     ext ν
     ring
 
-private theorem pureImag_rapidity_preserves_forwardTube_segment
+theorem pureImag_rapidity_preserves_forwardTube_segment
     (b : ℝ) (w : Fin n → Fin (1 + 1) → ℂ)
-    (hw : w ∈ ForwardTube 1 n)
-    (h1 : complexLorentzAction (rapidityElement ((b : ℂ) * Complex.I)) w ∈ ForwardTube 1 n)
+    (hw : w ∈ ForwardTube_D1OrbitSet 1 n)
+    (h1 : complexLorentzAction_D1OrbitSet (rapidityElement ((b : ℂ) * Complex.I)) w ∈ ForwardTube_D1OrbitSet 1 n)
     (hb : |b| < Real.pi)
     {t : ℝ} (ht0 : 0 ≤ t) (ht1 : t ≤ 1) :
-    complexLorentzAction (rapidityElement (((b * t : ℝ) : ℂ) * Complex.I)) w ∈ ForwardTube 1 n := by
+    complexLorentzAction_D1OrbitSet (rapidityElement (((b * t : ℝ) : ℂ) * Complex.I)) w ∈ ForwardTube_D1OrbitSet 1 n := by
   intro k
-  let ξ : Fin (1 + 1) → ℂ := diffVec w k
+  let ξ : Fin (1 + 1) → ℂ := diffVec_D1OrbitSet w k
   have h0_cone : InOpenForwardCone 1 (fun μ => (ξ μ).im) := by
-    simpa [ForwardTube, diffVec, ξ] using hw k
+    simpa [ForwardTube_D1OrbitSet, diffVec_D1OrbitSet, ξ] using hw k
   have h1_cone : InOpenForwardCone 1
       (fun μ => (∑ ν, rapidityMatrix ((b : ℂ) * Complex.I) μ ν * ξ ν).im) := by
     have hk1 : InOpenForwardCone 1
         (fun μ =>
-          (diffVec (complexLorentzAction (rapidityElement ((b : ℂ) * Complex.I)) w) k μ).im) := by
-      simpa [ForwardTube, diffVec] using h1 k
-    rw [diffVec_action] at hk1
+          (diffVec_D1OrbitSet (complexLorentzAction_D1OrbitSet (rapidityElement ((b : ℂ) * Complex.I)) w) k μ).im) := by
+      simpa [ForwardTube_D1OrbitSet, diffVec_D1OrbitSet] using h1 k
+    rw [diffVec_action_D1OrbitSet] at hk1
     simpa [rapidityElement, ξ] using hk1
   have hseg :
       InOpenForwardCone 1
@@ -554,29 +558,29 @@ private theorem pureImag_rapidity_preserves_forwardTube_segment
     pureImag_rapidity_preserves_cone_segment b ξ h0_cone h1_cone hb ht0 ht1
   show InOpenForwardCone 1
     (fun μ =>
-      (diffVec (complexLorentzAction (rapidityElement (((b * t : ℝ) : ℂ) * Complex.I)) w) k μ).im)
-  rw [diffVec_action]
+      (diffVec_D1OrbitSet (complexLorentzAction_D1OrbitSet (rapidityElement (((b * t : ℝ) : ℂ) * Complex.I)) w) k μ).im)
+  rw [diffVec_action_D1OrbitSet]
   simpa [rapidityElement, ξ] using hseg
 
-private theorem ofReal_preserves_forwardTube_d1 (R : RestrictedLorentzGroup 1)
-    (z : Fin n → Fin (1 + 1) → ℂ) (hz : z ∈ ForwardTube 1 n) :
-    complexLorentzAction (ComplexLorentzGroup.ofReal R) z ∈ ForwardTube 1 n := by
+theorem ofReal_preserves_forwardTube_d1 (R : RestrictedLorentzGroup 1)
+    (z : Fin n → Fin (1 + 1) → ℂ) (hz : z ∈ ForwardTube_D1OrbitSet 1 n) :
+    complexLorentzAction_D1OrbitSet (ComplexLorentzGroup.ofReal R) z ∈ ForwardTube_D1OrbitSet 1 n := by
   intro k
   show InOpenForwardCone 1
-    (fun μ => (diffVec (complexLorentzAction (ComplexLorentzGroup.ofReal R) z) k μ).im)
-  rw [diffVec_action]
+    (fun μ => (diffVec_D1OrbitSet (complexLorentzAction_D1OrbitSet (ComplexLorentzGroup.ofReal R) z) k μ).im)
+  rw [diffVec_action_D1OrbitSet]
   have h_im :
       (fun μ =>
-        (∑ ν, (ComplexLorentzGroup.ofReal R).val μ ν * diffVec z k ν).im) =
-      (fun μ => ∑ ν, R.val.val μ ν * (diffVec z k ν).im) := by
+        (∑ ν, (ComplexLorentzGroup.ofReal R).val μ ν * diffVec_D1OrbitSet z k ν).im) =
+      (fun μ => ∑ ν, R.val.val μ ν * (diffVec_D1OrbitSet z k ν).im) := by
     ext μ
-    exact ofReal_im_action R (diffVec z k) μ
+    exact ofReal_im_action R (diffVec_D1OrbitSet z k) μ
   rw [h_im]
-  have hk : InOpenForwardCone 1 (fun μ => (diffVec z k μ).im) := by
-    simpa [ForwardTube, diffVec] using hz k
+  have hk : InOpenForwardCone 1 (fun μ => (diffVec_D1OrbitSet z k μ).im) := by
+    simpa [ForwardTube_D1OrbitSet, diffVec_D1OrbitSet] using hz k
   exact real_lorentz_preserves_forwardCone R _ hk
 
-private theorem ofReal_boost_eq_rapidity (a : ℝ) :
+theorem ofReal_boost_eq_rapidity (a : ℝ) :
     (ComplexLorentzGroup.ofReal (LorentzLieGroup.boostElement 1 (0 : Fin 1) a)).val =
       rapidityMatrix (a : ℂ) := by
   ext i j
@@ -594,9 +598,9 @@ private theorem ofReal_boost_eq_rapidity (a : ℝ) :
       Complex.cosh (a : ℂ)
     simp [LorentzLieGroup.boostElement, LorentzLieGroup.planarBoost, Complex.ofReal_cosh]
 
-private theorem rapidityElement_real_preserves_forwardTube (a : ℝ)
-    (z : Fin n → Fin (1 + 1) → ℂ) (hz : z ∈ ForwardTube 1 n) :
-    complexLorentzAction (rapidityElement (a : ℂ)) z ∈ ForwardTube 1 n := by
+theorem rapidityElement_real_preserves_forwardTube (a : ℝ)
+    (z : Fin n → Fin (1 + 1) → ℂ) (hz : z ∈ ForwardTube_D1OrbitSet 1 n) :
+    complexLorentzAction_D1OrbitSet (rapidityElement (a : ℂ)) z ∈ ForwardTube_D1OrbitSet 1 n := by
   have hgroup : rapidityElement (a : ℂ) =
       ComplexLorentzGroup.ofReal (LorentzLieGroup.boostElement 1 (0 : Fin 1) a) := by
     apply ComplexLorentzGroup.ext
@@ -604,66 +608,66 @@ private theorem rapidityElement_real_preserves_forwardTube (a : ℝ)
   rw [hgroup]
   exact ofReal_preserves_forwardTube_d1 (LorentzLieGroup.boostElement 1 (0 : Fin 1) a) z hz
 
-private theorem rapidityElement_zero : rapidityElement (0 : ℂ) = 1 := by
+theorem rapidityElement_zero : rapidityElement (0 : ℂ) = 1 := by
   apply ComplexLorentzGroup.ext
   ext i j
   fin_cases i <;> fin_cases j <;> simp [rapidityElement, rapidityMatrix]
 
-private theorem rapidityElement_re_add_piI_not_orbit [NeZero n]
-    (a : ℝ) (w : Fin n → Fin (1 + 1) → ℂ) (hw : w ∈ ForwardTube 1 n) :
-    complexLorentzAction
-      (rapidityElement ((a : ℂ) + (Real.pi : ℂ) * Complex.I)) w ∉ ForwardTube 1 n := by
+theorem rapidityElement_re_add_piI_not_orbit [NeZero n]
+    (a : ℝ) (w : Fin n → Fin (1 + 1) → ℂ) (hw : w ∈ ForwardTube_D1OrbitSet 1 n) :
+    complexLorentzAction_D1OrbitSet
+      (rapidityElement ((a : ℂ) + (Real.pi : ℂ) * Complex.I)) w ∉ ForwardTube_D1OrbitSet 1 n := by
   intro hFT
   have hsplit :
       rapidityElement ((a : ℂ) + (Real.pi : ℂ) * Complex.I) =
         rapidityElement (a : ℂ) * rapidityElement ((Real.pi : ℂ) * Complex.I) := by
     simpa using rapidityElement_mul (x := (a : ℂ)) (y := (Real.pi : ℂ) * Complex.I)
   have haction :
-      complexLorentzAction
+      complexLorentzAction_D1OrbitSet
         (rapidityElement ((a : ℂ) + (Real.pi : ℂ) * Complex.I)) w =
-      complexLorentzAction (rapidityElement (a : ℂ)) (fun k μ => -(w k μ)) := by
+      complexLorentzAction_D1OrbitSet (rapidityElement (a : ℂ)) (fun k μ => -(w k μ)) := by
     calc
-      complexLorentzAction
+      complexLorentzAction_D1OrbitSet
           (rapidityElement ((a : ℂ) + (Real.pi : ℂ) * Complex.I)) w
-          = complexLorentzAction
+          = complexLorentzAction_D1OrbitSet
               (rapidityElement (a : ℂ) * rapidityElement ((Real.pi : ℂ) * Complex.I)) w := by
                 rw [hsplit]
-      _ = complexLorentzAction (rapidityElement (a : ℂ))
-            (complexLorentzAction (rapidityElement ((Real.pi : ℂ) * Complex.I)) w) := by
-              rw [complexLorentzAction_mul]
-      _ = complexLorentzAction (rapidityElement (a : ℂ)) (fun k μ => -(w k μ)) := by
+      _ = complexLorentzAction_D1OrbitSet (rapidityElement (a : ℂ))
+            (complexLorentzAction_D1OrbitSet (rapidityElement ((Real.pi : ℂ) * Complex.I)) w) := by
+              rw [complexLorentzAction_mul_D1OrbitSet]
+      _ = complexLorentzAction_D1OrbitSet (rapidityElement (a : ℂ)) (fun k μ => -(w k μ)) := by
             simp [complexLorentzAction_rapidity_pi_I]
-  have hFT' : complexLorentzAction (rapidityElement (a : ℂ))
-      (fun k μ => -(w k μ)) ∈ ForwardTube 1 n := by
+  have hFT' : complexLorentzAction_D1OrbitSet (rapidityElement (a : ℂ))
+      (fun k μ => -(w k μ)) ∈ ForwardTube_D1OrbitSet 1 n := by
     simpa [haction] using hFT
-  have hnegFT : (fun k μ => -(w k μ)) ∈ ForwardTube 1 n := by
+  have hnegFT : (fun k μ => -(w k μ)) ∈ ForwardTube_D1OrbitSet 1 n := by
     have hback := rapidityElement_real_preserves_forwardTube (-a)
-      (complexLorentzAction (rapidityElement (a : ℂ)) (fun k μ => -(w k μ))) hFT'
+      (complexLorentzAction_D1OrbitSet (rapidityElement (a : ℂ)) (fun k μ => -(w k μ))) hFT'
     have hmul :
         rapidityElement (((-a : ℝ) : ℂ)) * rapidityElement (a : ℂ) =
           rapidityElement (0 : ℂ) := by
       simpa using
         (rapidityElement_mul (x := (((-a : ℝ) : ℂ))) (y := (a : ℂ))).symm
-    rw [← complexLorentzAction_mul, hmul, rapidityElement_zero, complexLorentzAction_one] at hback
+    rw [← complexLorentzAction_mul_D1OrbitSet, hmul, rapidityElement_zero, complexLorentzAction_one_D1OrbitSet] at hback
     exact hback
   exact neg_not_mem_forwardTube_d1 w hw hnegFT
 
-private theorem d1_exists_rapidityElement_principal_im_strict [NeZero n]
+theorem d1_exists_rapidityElement_principal_im_strict [NeZero n]
     (Λ : ComplexLorentzGroup 1)
     (w : Fin n → Fin (1 + 1) → ℂ)
-    (hw : w ∈ ForwardTube 1 n)
-    (hΛw : complexLorentzAction Λ w ∈ ForwardTube 1 n) :
+    (hw : w ∈ ForwardTube_D1OrbitSet 1 n)
+    (hΛw : complexLorentzAction_D1OrbitSet Λ w ∈ ForwardTube_D1OrbitSet 1 n) :
     ∃ a b : ℝ, |b| < Real.pi ∧
       Λ = rapidityElement ((a : ℂ) + (b : ℂ) * Complex.I) := by
   rcases d1_exists_rapidityElement_principal_im Λ with ⟨a, b, hbIoc, hrepr⟩
-  have hact : complexLorentzAction (rapidityElement ((a : ℂ) + (b : ℂ) * Complex.I)) w ∈
-      ForwardTube 1 n := by
+  have hact : complexLorentzAction_D1OrbitSet (rapidityElement ((a : ℂ) + (b : ℂ) * Complex.I)) w ∈
+      ForwardTube_D1OrbitSet 1 n := by
     simpa [hrepr] using hΛw
   have hb_ne_pi : b ≠ Real.pi := by
     intro hbpi
     have hactPi :
-        complexLorentzAction (rapidityElement ((a : ℂ) + (Real.pi : ℂ) * Complex.I)) w ∈
-          ForwardTube 1 n := by
+        complexLorentzAction_D1OrbitSet (rapidityElement ((a : ℂ) + (Real.pi : ℂ) * Complex.I)) w ∈
+          ForwardTube_D1OrbitSet 1 n := by
       simpa [hbpi] using hact
     exact (rapidityElement_re_add_piI_not_orbit (n := n) a w hw) hactPi
   have hb_lt_pi : b < Real.pi := lt_of_le_of_ne hbIoc.2 hb_ne_pi
@@ -671,7 +675,7 @@ private theorem d1_exists_rapidityElement_principal_im_strict [NeZero n]
     exact abs_lt.mpr ⟨hbIoc.1, hb_lt_pi⟩
   exact ⟨a, b, hb_abs_lt, hrepr⟩
 
-private theorem continuous_rapidityElement_pureImag (b : ℝ) :
+theorem continuous_rapidityElement_pureImag (b : ℝ) :
     Continuous (fun t : unitInterval =>
       rapidityElement (((b * (t : ℝ) : ℝ) : ℂ) * Complex.I)) := by
   have hind : Topology.IsInducing
@@ -700,7 +704,7 @@ private theorem continuous_rapidityElement_pureImag (b : ℝ) :
       fun t : unitInterval => (((b * (t : ℝ) : ℝ) : ℂ) * Complex.I))
     exact Complex.continuous_cosh.comp harg_cont
 
-private theorem continuous_rapidityElement_realImag (a b : ℝ) :
+theorem continuous_rapidityElement_realImag (a b : ℝ) :
     Continuous (fun t : unitInterval =>
       rapidityElement ((((a * (t : ℝ) : ℝ) : ℂ) + (b : ℂ) * Complex.I))) := by
   have hind : Topology.IsInducing
@@ -729,12 +733,12 @@ private theorem continuous_rapidityElement_realImag (a b : ℝ) :
       fun t : unitInterval => (((a * (t : ℝ) : ℝ) : ℂ) + (b : ℂ) * Complex.I))
     exact Complex.continuous_cosh.comp harg_cont
 
-private theorem joinedIn_orbitSet_one_rapidityImag [NeZero n]
-    (w : Fin n → Fin (1 + 1) → ℂ) (hw : w ∈ ForwardTube 1 n)
+theorem joinedIn_orbitSet_one_rapidityImag [NeZero n]
+    (w : Fin n → Fin (1 + 1) → ℂ) (hw : w ∈ ForwardTube_D1OrbitSet 1 n)
     (b : ℝ)
-    (h1 : complexLorentzAction (rapidityElement ((b : ℂ) * Complex.I)) w ∈ ForwardTube 1 n)
+    (h1 : complexLorentzAction_D1OrbitSet (rapidityElement ((b : ℂ) * Complex.I)) w ∈ ForwardTube_D1OrbitSet 1 n)
     (hb : |b| < Real.pi) :
-    JoinedIn (orbitSet (n := n) w)
+    JoinedIn (orbitSet_D1OrbitSet (n := n) w)
       (1 : ComplexLorentzGroup 1) (rapidityElement ((b : ℂ) * Complex.I)) := by
   refine ⟨
     { toFun := fun t => rapidityElement (((b * (t : ℝ) : ℝ) : ℂ) * Complex.I)
@@ -747,10 +751,10 @@ private theorem joinedIn_orbitSet_one_rapidityImag [NeZero n]
   intro t
   exact pureImag_rapidity_preserves_forwardTube_segment b w hw h1 hb t.2.1 t.2.2
 
-private theorem joinedIn_orbitSet_rapidityImag_to_realImag [NeZero n]
+theorem joinedIn_orbitSet_rapidityImag_to_realImag [NeZero n]
     (w : Fin n → Fin (1 + 1) → ℂ) (a b : ℝ)
-    (hB : complexLorentzAction (rapidityElement ((b : ℂ) * Complex.I)) w ∈ ForwardTube 1 n) :
-    JoinedIn (orbitSet (n := n) w)
+    (hB : complexLorentzAction_D1OrbitSet (rapidityElement ((b : ℂ) * Complex.I)) w ∈ ForwardTube_D1OrbitSet 1 n) :
+    JoinedIn (orbitSet_D1OrbitSet (n := n) w)
       (rapidityElement ((b : ℂ) * Complex.I))
       (rapidityElement ((a : ℂ) + (b : ℂ) * Complex.I)) := by
   refine ⟨
@@ -763,12 +767,12 @@ private theorem joinedIn_orbitSet_rapidityImag_to_realImag [NeZero n]
     ?_⟩
   intro t
   have hreal :
-      complexLorentzAction
+      complexLorentzAction_D1OrbitSet
         (rapidityElement (((a * (t : ℝ) : ℝ) : ℂ)))
-        (complexLorentzAction (rapidityElement ((b : ℂ) * Complex.I)) w) ∈
-      ForwardTube 1 n := by
+        (complexLorentzAction_D1OrbitSet (rapidityElement ((b : ℂ) * Complex.I)) w) ∈
+      ForwardTube_D1OrbitSet 1 n := by
     exact rapidityElement_real_preserves_forwardTube ((a * (t : ℝ) : ℝ))
-      (complexLorentzAction (rapidityElement ((b : ℂ) * Complex.I)) w) hB
+      (complexLorentzAction_D1OrbitSet (rapidityElement ((b : ℂ) * Complex.I)) w) hB
   have hdecomp :
       rapidityElement ((((a * (t : ℝ) : ℝ) : ℂ) + (b : ℂ) * Complex.I)) =
         rapidityElement (((a * (t : ℝ) : ℝ) : ℂ)) *
@@ -776,13 +780,13 @@ private theorem joinedIn_orbitSet_rapidityImag_to_realImag [NeZero n]
     simpa using
       (rapidityElement_mul
         (x := (((a * (t : ℝ) : ℝ) : ℂ))) (y := (b : ℂ) * Complex.I))
-  show rapidityElement ((((a * (t : ℝ) : ℝ) : ℂ) + (b : ℂ) * Complex.I)) ∈ orbitSet w
-  show complexLorentzAction (rapidityElement ((((a * (t : ℝ) : ℝ) : ℂ) + (b : ℂ) * Complex.I))) w ∈
-      ForwardTube 1 n
-  rw [hdecomp, complexLorentzAction_mul]
+  show rapidityElement ((((a * (t : ℝ) : ℝ) : ℂ) + (b : ℂ) * Complex.I)) ∈ orbitSet_D1OrbitSet w
+  show complexLorentzAction_D1OrbitSet (rapidityElement ((((a * (t : ℝ) : ℝ) : ℂ) + (b : ℂ) * Complex.I))) w ∈
+      ForwardTube_D1OrbitSet 1 n
+  rw [hdecomp, complexLorentzAction_mul_D1OrbitSet]
   exact hreal
 
-private theorem rapidityElement_cancel_real (a b : ℝ) :
+theorem rapidityElement_cancel_real (a b : ℝ) :
     rapidityElement (((-a : ℝ) : ℂ)) * rapidityElement ((a : ℂ) + (b : ℂ) * Complex.I) =
       rapidityElement ((b : ℂ) * Complex.I) := by
   calc
@@ -797,18 +801,18 @@ private theorem rapidityElement_cancel_real (a b : ℝ) :
         simp
       rw [hsum]
 
-private theorem d1_joinedIn_orbitSet_one_to_any [NeZero n]
-    (w : Fin n → Fin (1 + 1) → ℂ) (hw : w ∈ ForwardTube 1 n)
+theorem d1_joinedIn_orbitSet_one_to_any [NeZero n]
+    (w : Fin n → Fin (1 + 1) → ℂ) (hw : w ∈ ForwardTube_D1OrbitSet 1 n)
     {Λ : ComplexLorentzGroup 1}
-    (hΛ : Λ ∈ orbitSet (n := n) w) :
-    JoinedIn (orbitSet (n := n) w) (1 : ComplexLorentzGroup 1) Λ := by
+    (hΛ : Λ ∈ orbitSet_D1OrbitSet (n := n) w) :
+    JoinedIn (orbitSet_D1OrbitSet (n := n) w) (1 : ComplexLorentzGroup 1) Λ := by
   rcases d1_exists_rapidityElement_principal_im_strict (n := n) Λ w hw hΛ with
     ⟨a, b, hb, hrepr⟩
   have hback :
-      complexLorentzAction (rapidityElement (((-a : ℝ) : ℂ)))
-        (complexLorentzAction Λ w) ∈ ForwardTube 1 n := by
+      complexLorentzAction_D1OrbitSet (rapidityElement (((-a : ℝ) : ℂ)))
+        (complexLorentzAction_D1OrbitSet Λ w) ∈ ForwardTube_D1OrbitSet 1 n := by
     exact rapidityElement_real_preserves_forwardTube (-a)
-      (complexLorentzAction Λ w) hΛ
+      (complexLorentzAction_D1OrbitSet Λ w) hΛ
   have hcancel :
       rapidityElement (((-a : ℝ) : ℂ)) * Λ = rapidityElement ((b : ℂ) * Complex.I) := by
     calc
@@ -819,28 +823,28 @@ private theorem d1_joinedIn_orbitSet_one_to_any [NeZero n]
       _ = rapidityElement ((b : ℂ) * Complex.I) :=
         rapidityElement_cancel_real a b
   have hB :
-      complexLorentzAction (rapidityElement ((b : ℂ) * Complex.I)) w ∈ ForwardTube 1 n := by
+      complexLorentzAction_D1OrbitSet (rapidityElement ((b : ℂ) * Complex.I)) w ∈ ForwardTube_D1OrbitSet 1 n := by
     have hback' :
-        complexLorentzAction (rapidityElement (((-a : ℝ) : ℂ)) * Λ) w ∈ ForwardTube 1 n := by
-      simpa [complexLorentzAction_mul] using hback
+        complexLorentzAction_D1OrbitSet (rapidityElement (((-a : ℝ) : ℂ)) * Λ) w ∈ ForwardTube_D1OrbitSet 1 n := by
+      simpa [complexLorentzAction_mul_D1OrbitSet] using hback
     rw [hcancel] at hback'
     exact hback'
   have hjoin1 :
-      JoinedIn (orbitSet (n := n) w)
+      JoinedIn (orbitSet_D1OrbitSet (n := n) w)
         (1 : ComplexLorentzGroup 1) (rapidityElement ((b : ℂ) * Complex.I)) := by
     exact joinedIn_orbitSet_one_rapidityImag (n := n) w hw b hB hb
   have hjoin2 :
-      JoinedIn (orbitSet (n := n) w)
+      JoinedIn (orbitSet_D1OrbitSet (n := n) w)
         (rapidityElement ((b : ℂ) * Complex.I))
         (rapidityElement ((a : ℂ) + (b : ℂ) * Complex.I)) := by
     exact joinedIn_orbitSet_rapidityImag_to_realImag (n := n) w a b hB
   have hjoin2' :
-      JoinedIn (orbitSet (n := n) w)
+      JoinedIn (orbitSet_D1OrbitSet (n := n) w)
         (rapidityElement ((b : ℂ) * Complex.I)) Λ := by
     simpa [hrepr] using hjoin2
   exact hjoin1.trans hjoin2'
 
-private theorem isPreconnected_of_joinedIn_base
+theorem isPreconnected_of_joinedIn_base_D1OrbitSet
     {X : Type*} [TopologicalSpace X]
     {S : Set X} {x0 : X}
     (hx0 : x0 ∈ S)
@@ -857,12 +861,12 @@ private theorem isPreconnected_of_joinedIn_base
       exact (h_joined_subtype x).symm.trans (h_joined_subtype y)
   exact (isPreconnected_iff_preconnectedSpace).2 (inferInstance : PreconnectedSpace S)
 
-private theorem d1_orbitSet_isPreconnected [NeZero n]
-    (w : Fin n → Fin (1 + 1) → ℂ) (hw : w ∈ ForwardTube 1 n) :
-    IsPreconnected (orbitSet (n := n) w) := by
-  have h_one : (1 : ComplexLorentzGroup 1) ∈ orbitSet (n := n) w := by
-    simpa [orbitSet, complexLorentzAction_one] using hw
-  refine isPreconnected_of_joinedIn_base (S := orbitSet (n := n) w)
+theorem d1_orbitSet_isPreconnected [NeZero n]
+    (w : Fin n → Fin (1 + 1) → ℂ) (hw : w ∈ ForwardTube_D1OrbitSet 1 n) :
+    IsPreconnected (orbitSet_D1OrbitSet (n := n) w) := by
+  have h_one : (1 : ComplexLorentzGroup 1) ∈ orbitSet_D1OrbitSet (n := n) w := by
+    simpa [orbitSet_D1OrbitSet, complexLorentzAction_one_D1OrbitSet] using hw
+  refine isPreconnected_of_joinedIn_base_D1OrbitSet (S := orbitSet_D1OrbitSet (n := n) w)
     (x0 := (1 : ComplexLorentzGroup 1)) h_one ?_
   intro Λ hΛ
   exact d1_joinedIn_orbitSet_one_to_any (n := n) w hw hΛ
@@ -884,27 +888,27 @@ theorem orbitSet_isPreconnected_d1
     (w : Fin n → Fin (1 + 1) → ℂ) (hw : w ∈ BHWCore.ForwardTube 1 n) :
     IsPreconnected {Λ : ComplexLorentzGroup 1 |
       BHWCore.complexLorentzAction (d := 1) (n := n) Λ w ∈ BHWCore.ForwardTube 1 n} := by
-  have hw' : w ∈ ForwardTube 1 n := by
-    simpa [ForwardTube] using hw
-  have hpre : IsPreconnected (orbitSet (n := n) w) := by
+  have hw' : w ∈ ForwardTube_D1OrbitSet 1 n := by
+    simpa [ForwardTube_D1OrbitSet] using hw
+  have hpre : IsPreconnected (orbitSet_D1OrbitSet (n := n) w) := by
     by_cases hn : n = 0
     · subst hn
-      have hft0 : ∀ z : Fin 0 → Fin (1 + 1) → ℂ, z ∈ ForwardTube 1 0 := by
+      have hft0 : ∀ z : Fin 0 → Fin (1 + 1) → ℂ, z ∈ ForwardTube_D1OrbitSet 1 0 := by
         intro z k
         exact (Fin.elim0 k)
-      have h_orbit_univ : orbitSet (n := 0) w = Set.univ := by
+      have h_orbit_univ : orbitSet_D1OrbitSet (n := 0) w = Set.univ := by
         ext Λ
         constructor
         · intro _
           trivial
         · intro _
-          exact hft0 (complexLorentzAction Λ w)
+          exact hft0 (complexLorentzAction_D1OrbitSet Λ w)
       haveI : PathConnectedSpace (ComplexLorentzGroup 1) :=
         pathConnectedSpace_iff_univ.mpr ComplexLorentzGroup.isPathConnected
       simpa [h_orbit_univ] using
         (PreconnectedSpace.isPreconnected_univ (α := ComplexLorentzGroup 1))
     · haveI : NeZero n := ⟨hn⟩
       exact d1_orbitSet_isPreconnected (n := n) w hw'
-  simpa [orbitSet, ForwardTube, complexLorentzAction, BHWCore.complexLorentzAction] using hpre
+  simpa [orbitSet_D1OrbitSet, ForwardTube_D1OrbitSet, complexLorentzAction_D1OrbitSet, BHWCore.complexLorentzAction] using hpre
 
 end BHW

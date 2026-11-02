@@ -1,35 +1,25 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import Mathlib.Algebra.Polynomial.Roots
-import Mathlib.Analysis.Calculus.FDeriv.Mul
-import Mathlib.Analysis.Normed.Module.FiniteDimension
-import Mathlib.LinearAlgebra.Dimension.StrongRankCondition
-import Mathlib.LinearAlgebra.Matrix.Polynomial
-import Mathlib.LinearAlgebra.Matrix.Rank
-import Mathlib.RingTheory.MatrixPolynomialAlgebra
-import Init
-import OSReconstruction.ComplexLieGroups.Connectedness.ComplexInvariance.Core
-import OSReconstruction.ComplexLieGroups.Connectedness.ComplexInvariance.OrbitSetN1Geometry
-import OSReconstruction.ComplexLieGroups.Connectedness.ComplexInvariance.OrbitSetN1Preconnected
-import OSReconstruction.ComplexLieGroups.Connectedness.ComplexInvariance.Extend
-import OSReconstruction.ComplexLieGroups.Connectedness.PermutedTubeConnected
-import OSReconstruction.ComplexLieGroups.Connectedness.PermutedTube
-import OSReconstruction.ComplexLieGroups.JostPoints
-import OSReconstruction.SCV.DistributionalUniqueness
+module
 
+public import Mathlib.Algebra.Polynomial.Roots
+public import Mathlib.Analysis.Calculus.FDeriv.Mul
+public import Mathlib.Analysis.Normed.Module.FiniteDimension
+public import Mathlib.LinearAlgebra.Dimension.StrongRankCondition
+public import Mathlib.LinearAlgebra.Matrix.Polynomial
+public import Mathlib.LinearAlgebra.Matrix.Rank
+public import Mathlib.RingTheory.MatrixPolynomialAlgebra
+public import Init
+public import OSReconstruction.ComplexLieGroups.Connectedness.ComplexInvariance.Core
+public import OSReconstruction.ComplexLieGroups.Connectedness.ComplexInvariance.OrbitSetN1Geometry
+public import OSReconstruction.ComplexLieGroups.Connectedness.ComplexInvariance.OrbitSetN1Preconnected
+public import OSReconstruction.ComplexLieGroups.Connectedness.ComplexInvariance.Extend
+public import OSReconstruction.ComplexLieGroups.Connectedness.PermutedTubeConnected
+public import OSReconstruction.ComplexLieGroups.Connectedness.PermutedTube
+public import OSReconstruction.ComplexLieGroups.JostPoints
+public import OSReconstruction.SCV.DistributionalUniqueness
 
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 

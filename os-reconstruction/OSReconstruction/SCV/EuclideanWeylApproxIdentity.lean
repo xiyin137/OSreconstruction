@@ -5,16 +5,12 @@ Copyright (c) 2026 ModularPhysics Contributors.
 Released under Apache 2.0 license
 Authors: ModularPhysics Contributors
 -/
-import OSReconstruction.SCV.EuclideanWeylPairing
-import Mathlib.Analysis.Calculus.MeanValue
+module
 
+public import OSReconstruction.SCV.EuclideanWeylPairing
+public import Mathlib.Analysis.Calculus.MeanValue
 
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 

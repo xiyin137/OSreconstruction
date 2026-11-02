@@ -1,5 +1,9 @@
-import Mathlib.Analysis.Normed.Module.ContinuousInverse
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVStrictScalarSeedCoefficientFullRank
+module
+
+public import Mathlib.Analysis.Normed.Module.ContinuousInverse
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVStrictScalarSeedCoefficientFullRank
+
+@[expose] public section
 
 /-!
 # Target-adapted linear sections of strict coefficient charts

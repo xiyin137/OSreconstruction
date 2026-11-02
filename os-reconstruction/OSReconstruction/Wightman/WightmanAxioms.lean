@@ -5,60 +5,22 @@ Copyright (c) 2025 ModularPhysics Contributors. All rights reserved.
 Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
-import Mathlib.Analysis.Distribution.SchwartzSpace.Deriv
-import Mathlib.Analysis.Distribution.TemperedDistribution
-import Mathlib.Analysis.SpecialFunctions.Complex.Analytic
-import GeneralResults.NuclearExtensionComplex
-import GeneralResults.SeparatelyContMultilinear
-import OSReconstruction.SCV.SchwartzComplete
-import Init
-import OSReconstruction.Wightman.Spacetime.Metric
-import OSReconstruction.Wightman.Groups.Lorentz
-import OSReconstruction.Wightman.Groups.Poincare
-import OSReconstruction.Wightman.OperatorDistribution
-import OSReconstruction.Wightman.SchwartzTensorProduct
+module
 
+public import Mathlib.Analysis.Distribution.SchwartzSpace.Deriv
+public import Mathlib.Analysis.Distribution.TemperedDistribution
+public import Mathlib.Analysis.SpecialFunctions.Complex.Analytic
+public import GeneralResults.NuclearExtensionComplex
+public import GeneralResults.SeparatelyContMultilinear
+public import OSReconstruction.SCV.SchwartzComplete
+public import Init
+public import OSReconstruction.Wightman.Spacetime.Metric
+public import OSReconstruction.Wightman.Groups.Lorentz
+public import OSReconstruction.Wightman.Groups.Poincare
+public import OSReconstruction.Wightman.OperatorDistribution
+public import OSReconstruction.Wightman.SchwartzTensorProduct
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 

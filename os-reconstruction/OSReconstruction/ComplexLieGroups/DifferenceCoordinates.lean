@@ -5,35 +5,12 @@ Copyright (c) 2025 ModularPhysics Contributors.
 Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
-import OSReconstruction.ComplexLieGroups.BHWCore
-import Mathlib.Logic.Equiv.Fin.Basic
+module
 
+public import OSReconstruction.ComplexLieGroups.BHWCore
+public import Mathlib.Logic.Equiv.Fin.Basic
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -67,7 +44,7 @@ def partialSumFun (n d : ℕ) (ξ : Fin n → Fin (d + 1) → ℂ) :
 
 
 /-- Key telescoping: the partial sum of differences equals the original value. -/
-private lemma partialSum_diffCoord_val (n d : ℕ) (z : Fin n → Fin (d + 1) → ℂ)
+lemma partialSum_diffCoord_val (n d : ℕ) (z : Fin n → Fin (d + 1) → ℂ)
     (m : ℕ) (hm : m < n) (μ : Fin (d + 1)) :
     (∑ j : Fin (m + 1), diffCoordFun n d z ⟨j.val, by omega⟩ μ) = z ⟨m, hm⟩ μ := by
   induction m with
@@ -257,7 +234,7 @@ theorem mem_productForwardCone_iff_flat_im (n d : ℕ)
 
 /-- The forward tube condition at index k is equivalent to the InOpenForwardCone
     condition on the k-th difference coordinate. -/
-private lemma forwardTube_cond_iff_diffCoord (n d : ℕ)
+lemma forwardTube_cond_iff_diffCoord (n d : ℕ)
     (z : Fin n → Fin (d + 1) → ℂ) (k : Fin n) :
     InOpenForwardCone d
       (fun μ => (z k μ - (if h : k.val = 0 then 0 else z ⟨k.val - 1, by omega⟩) μ).im) ↔
@@ -279,7 +256,7 @@ theorem forwardTube_eq_diffCoord_preimage (n d : ℕ) [NeZero d] :
          fun hξ k => (forwardTube_cond_iff_diffCoord n d z k).mpr (hξ k)⟩
 
 /-- The open forward cone is an open set. -/
-private theorem isOpen_inOpenForwardCone :
+theorem isOpen_inOpenForwardCone :
     IsOpen {η : Fin (d + 1) → ℝ | InOpenForwardCone d η} :=
   IsOpen.inter
     (isOpen_lt continuous_const (continuous_apply 0))
@@ -371,7 +348,7 @@ theorem productForwardConeReal_nonempty (n d : ℕ) [NeZero d] :
   · rw [minkowski_sum_decomp]
     simp [Fin.succ_ne_zero]
 
-private theorem continuous_unflattenCfgReal (n d : ℕ) :
+theorem continuous_unflattenCfgReal (n d : ℕ) :
     Continuous (unflattenCfgReal n d :
       (Fin (n * (d + 1)) → ℝ) → Fin n → Fin (d + 1) → ℝ) := by
   apply continuous_pi; intro k

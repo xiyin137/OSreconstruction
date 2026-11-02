@@ -1,25 +1,12 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVSourceIndexedContinuationChain
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVGeneratedLogarithmicDomains
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIILemma51CoordinateEstimate
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVSourceIndexedContinuationChain
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVGeneratedLogarithmicDomains
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIILemma51CoordinateEstimate
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -241,7 +228,7 @@ theorem abs_argumentVector_reflectedCauchyShiftedStagePoint_le
         abs_arg_add_ofReal_le
           (hz i) (hτ (Fin.natAdd m i.succ)).le
 
-private theorem generatedLogarithmicArgument_reindex
+theorem generatedLogarithmicArgument_reindex
     {kind : OSIILogarithmicArgumentKind}
     {n n' N : ℕ}
     (h : n = n')

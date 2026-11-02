@@ -1,4 +1,8 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIForwardTubeSupport
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIForwardTubeSupport
+
+@[expose] public section
 
 /-!
 # Constructing a physical forward-tube realization from genuine spectrum
@@ -20,7 +24,7 @@ namespace OSReconstruction.OSIIReducedForwardTubeSpectralData
 
 variable {d k : Nat} [NeZero d]
 
-private theorem norm_real_add_imag_le {m : Nat} (x y : Fin m -> Real) :
+theorem norm_real_add_imag_le {m : Nat} (x y : Fin m -> Real) :
     ‖fun i => (x i : Complex) + (y i : Complex) * I‖ ≤ ‖x‖ + ‖y‖ := by
   apply (pi_norm_le_iff_of_nonneg (add_nonneg (norm_nonneg x) (norm_nonneg y))).mpr
   intro i

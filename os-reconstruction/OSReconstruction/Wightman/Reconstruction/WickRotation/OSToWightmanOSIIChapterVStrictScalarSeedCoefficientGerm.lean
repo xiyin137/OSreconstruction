@@ -1,19 +1,11 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.SCV.StripCompactificationLocalInverse
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVStrictScalarSeedCoefficientMZTarget
+module
 
+public import OSReconstruction.SCV.StripCompactificationLocalInverse
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVStrictScalarSeedCoefficientMZTarget
 
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 

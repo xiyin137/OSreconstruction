@@ -1,6 +1,10 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIFullFrequency
-import OSReconstruction.Wightman.Reconstruction.WickRotation.ReducedSpectralGeometry
-import OSReconstruction.Wightman.Reconstruction.WickRotation.SchwartzNPointFourier
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIFullFrequency
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.ReducedSpectralGeometry
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.SchwartzNPointFourier
+
+@[expose] public section
 
 /-!
 # R-to-E spectral support from the distributional spectrum condition

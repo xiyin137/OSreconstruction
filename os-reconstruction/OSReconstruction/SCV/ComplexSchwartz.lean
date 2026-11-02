@@ -5,19 +5,14 @@ Copyright (c) 2026 ModularPhysics Contributors.
 Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
-import Mathlib.Analysis.Complex.OperatorNorm
-import Mathlib.Analysis.Distribution.SchwartzSpace.Basic
-import Mathlib.Topology.Algebra.Module.Equiv
+module
 
+public import Mathlib.Analysis.Complex.OperatorNorm
+public import Mathlib.Analysis.Distribution.SchwartzSpace.Basic
+public import Mathlib.Topology.Algebra.Module.Equiv
+public import Mathlib.Analysis.Calculus.ContDiff.Bounds
 
-
-
-
-
-
-
-
-
+@[expose] public section
 
 open scoped SchwartzMap
 

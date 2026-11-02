@@ -1,6 +1,10 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVBlockGlobalTimeMeasure
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVGeneratorGlobalProfile
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIReducedBVTComparison
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVBlockGlobalTimeMeasure
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVGeneratorGlobalProfile
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIReducedBVTComparison
+
+@[expose] public section
 
 /-!
 # Volume preservation of the reflected spatial chart
@@ -77,7 +81,7 @@ theorem axisPairBlockGlobalSpatialScalarZeroHead_succ
         ⟨c.val + 1, by omega⟩ = x c := by
   simp [axisPairBlockGlobalSpatialScalarZeroHead]
 
-private theorem section43ScalarDiffCLE_symm_succ_sub_castSucc_spatial
+theorem section43ScalarDiffCLE_symm_succ_sub_castSucc_spatial
     {r : Nat}
     (delta : Fin (r + 1) -> Real)
     (i : Fin r) :
@@ -405,7 +409,7 @@ theorem axisPairBlockGlobalSpatialScalarCLE_measurePreserving
   rw [axisPairBlockGlobalSpatialScalarCLE_eq_time_conjugate]
   exact htime.trans hconjugate
 
-private theorem blockwiseSpacetimeDiff_symm_spatial
+theorem blockwiseSpacetimeDiff_symm_spatial
     (d n m : Nat)
     (q : NPointDomain d (n + m))
     (mu : Fin d) :
@@ -426,7 +430,7 @@ private theorem blockwiseSpacetimeDiff_symm_spatial
       osiiAxisPairBlockwiseTimeDiffCLE_symm_apply_right]
     simp [section43ScalarDiffCLE_symm_apply, splitLast]
 
-private theorem reflectReverseLeftSpacetime_spatial
+theorem reflectReverseLeftSpacetime_spatial
     (d n m : Nat)
     (x : NPointDomain d (n + m))
     (mu : Fin d) :
@@ -441,7 +445,7 @@ private theorem reflectReverseLeftSpacetime_spatial
   · intro b
     simp
 
-private theorem section43DiffCoordRealCLE_spatial
+theorem section43DiffCoordRealCLE_spatial
     (d n : Nat)
     (x : NPointDomain d n)
     (mu : Fin d) :
@@ -450,7 +454,7 @@ private theorem section43DiffCoordRealCLE_spatial
   funext c
   simp [section43ScalarDiffCLE_apply]
 
-private theorem blockGlobalSpacetime_spatial_component
+theorem blockGlobalSpacetime_spatial_component
     (d n m : Nat)
     (q : NPointDomain d (n + m))
     (mu : Fin d) :
@@ -469,7 +473,7 @@ private theorem blockGlobalSpacetime_spatial_component
     blockwiseSpacetimeDiff_symm_spatial]
   rfl
 
-private theorem volume_map_curry_symm
+theorem volume_map_curry_symm
     (alpha beta : Type*) [Fintype alpha] [Fintype beta] :
     (volume : Measure (alpha -> beta -> Real)).map
         (MeasurableEquiv.curry alpha beta Real).symm =
@@ -492,7 +496,7 @@ private theorem volume_map_curry_symm
   simp_rw [volume_pi_pi]
   rw [← Finset.prod_product', ← Finset.univ_product_univ]
 
-private theorem curry_measurePreserving
+theorem curry_measurePreserving
     (alpha beta : Type*) [Fintype alpha] [Fintype beta] :
     MeasurePreserving
       (MeasurableEquiv.curry alpha beta Real)

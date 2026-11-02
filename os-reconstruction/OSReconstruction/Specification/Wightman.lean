@@ -5,16 +5,12 @@ Copyright (c) 2025 ModularPhysics Contributors. All rights reserved.
 Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
-import OSReconstruction.Wightman.SpectralCondition
-import OSReconstruction.Wightman.SchwartzTensorProduct
+module
 
+public import OSReconstruction.Wightman.SpectralCondition
+public import OSReconstruction.Wightman.SchwartzTensorProduct
 
-
-
-
-
-
-
+@[expose] public section
 
 set_option backward.isDefEq.respectTransparency false
 noncomputable section

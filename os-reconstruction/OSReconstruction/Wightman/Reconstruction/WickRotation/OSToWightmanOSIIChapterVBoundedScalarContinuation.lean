@@ -1,5 +1,9 @@
-import OSReconstruction.SCV.ConnectedNeighborhood
-import Mathlib.Analysis.Calculus.FDeriv.Const
+module
+
+public import OSReconstruction.SCV.ConnectedNeighborhood
+public import Mathlib.Analysis.Calculus.FDeriv.Const
+
+@[expose] public section
 
 /-!
 # Bounded scalar continuation data

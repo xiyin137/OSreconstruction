@@ -1,16 +1,11 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVINativePartialBoundary
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanReducedBoundarySupport
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVINativePartialBoundary
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanReducedBoundarySupport
 
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -170,7 +165,7 @@ namespace OSIIChapterV.InitialGeneratedLogarithmicStageLevelData
 
 variable {OS : OsterwalderSchraderAxioms d}
 
-private def spectatorPairing
+def spectatorPairing
     (initial : InitialGeneratedLogarithmicStageLevelData (d := d) OS)
     (lgc : OSLinearGrowthCondition d OS) (j : Fin k) (u : Real) (phi : SchwartzNPoint d k) : Complex :=
   initial.strictGeneratedClosedFacePairing lgc k
@@ -178,7 +173,7 @@ private def spectatorPairing
     (osiiFlatten_mem_closure_productCone (osiiAdjacentSpectatorHeight_mem_closure j)) u
     (flattenSchwartzNPoint (d := d) phi)
 
-private theorem spectatorPairing_tendsto
+theorem spectatorPairing_tendsto
     (initial : InitialGeneratedLogarithmicStageLevelData (d := d) OS)
     (lgc : OSLinearGrowthCondition d OS) (j : Fin k) (phi : SchwartzNPoint d k) :
     Tendsto (fun u => spectatorPairing initial lgc j u phi) (𝓝[>] (0 : Real))
@@ -193,7 +188,7 @@ private theorem spectatorPairing_tendsto
       (osiiFlatten_mem_closure_productCone (osiiAdjacentSpectatorHeight_mem_closure j))
       (flattenSchwartzNPoint (d := d) phi)
 
-private theorem spectatorPairing_eq_integral
+theorem spectatorPairing_eq_integral
     (initial : InitialGeneratedLogarithmicStageLevelData (d := d) OS)
     (lgc : OSLinearGrowthCondition d OS) (j : Fin k)
     (phi : SchwartzNPoint d k) (hcompact : HasCompactSupport (phi : _ -> Complex))

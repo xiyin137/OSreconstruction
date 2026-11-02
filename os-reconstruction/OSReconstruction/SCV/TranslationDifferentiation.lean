@@ -1,7 +1,12 @@
-import OSReconstruction.SCV.DistributionalEOWKernel
-import Mathlib.Analysis.Analytic.IteratedFDeriv
-import Mathlib.Analysis.Calculus.MeanValue
-import Mathlib.Analysis.Calculus.FDeriv.Symmetric
+module
+
+public import OSReconstruction.SCV.DistributionalEOWKernel
+public import Mathlib.Analysis.Analytic.IteratedFDeriv
+public import Mathlib.Analysis.Calculus.MeanValue
+public import Mathlib.Analysis.Calculus.FDeriv.Symmetric
+public import OSReconstruction.SchwartzSeminormCompat
+
+@[expose] public section
 
 /-!
 # Translation Differentiation on Schwartz Space
@@ -379,7 +384,7 @@ theorem exists_seminorm_diffQuotient_translateSchwartz_sub_lineDeriv_le {m : ℕ
                 ‖iteratedFDeriv ℝ n (⇑(translateSchwartz ((s * t) • v) g - g)) x‖ := by
                   rw [hiter_eq]
         _ ≤ SchwartzMap.seminorm ℝ k n (translateSchwartz ((s * t) • v) g - g) := by
-              exact SchwartzMap.le_seminorm ℂ k n _ x
+              exact SchwartzMap.le_seminorm ℝ k n _ x
         _ ≤ C * |s * t| := hC (s * t) hst_abs
     calc
       ‖‖x‖ ^ k • (K (x + s • (t • v)) - K x)‖

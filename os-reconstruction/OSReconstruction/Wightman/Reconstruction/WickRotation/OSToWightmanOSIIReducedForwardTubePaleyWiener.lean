@@ -1,33 +1,12 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.ComplexLieGroups.DifferenceCoordinatesSCV
-import OSReconstruction.SCV.PaleyWienerSchwartz
-import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceTransform
+module
 
+public import OSReconstruction.ComplexLieGroups.DifferenceCoordinatesSCV
+public import OSReconstruction.SCV.PaleyWienerSchwartz
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceTransform
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -154,7 +133,7 @@ theorem osiiProductForwardConeReal_salient (d m : Nat) :
     rw [hmu_eq]
     exact hspatial j i
 
-private theorem continuous_osiiUnflattenCfgReal (d m : Nat) :
+theorem continuous_osiiUnflattenCfgReal (d m : Nat) :
     Continuous
       (BHW.unflattenCfgReal m d :
         OSIIReducedForwardFlatRealSpace d m ->
@@ -234,7 +213,7 @@ theorem osiiReducedForwardTube_iff_flattenCfg_mem
   rw [BHW.mem_tubeDomain_flatProductForwardConeReal]
   exact BHW.mem_productForwardCone_iff_flat_im m d z
 
-private theorem differentiable_osiiFlattenCfg (d m : Nat) :
+theorem differentiable_osiiFlattenCfg (d m : Nat) :
     Differentiable Complex
       (BHW.flattenCfg m d :
         (Fin m -> Fin (d + 1) -> Complex) ->

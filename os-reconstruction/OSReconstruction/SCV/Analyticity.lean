@@ -5,39 +5,15 @@ Copyright (c) 2025 ModularPhysics Contributors.
 Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
-import Mathlib.Analysis.Complex.CauchyIntegral
-import Mathlib.Analysis.Analytic.Constructions
-import Mathlib.Analysis.Analytic.Linear
-import Mathlib.Analysis.Analytic.IteratedFDeriv
-import OSReconstruction.SCV.IteratedCauchyIntegral
+module
 
+public import Mathlib.Analysis.Complex.CauchyIntegral
+public import Mathlib.Analysis.Analytic.Constructions
+public import Mathlib.Analysis.Analytic.Linear
+public import Mathlib.Analysis.Analytic.IteratedFDeriv
+public import OSReconstruction.SCV.IteratedCauchyIntegral
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -51,7 +27,7 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℂ E] [CompleteSpace E
 
 omit [CompleteSpace E] in
 /-- On the trivial space `Fin 0 → ℂ`, every function is analytic. -/
-private lemma analyticAt_fin_zero (f : (Fin 0 → ℂ) → E) (z : Fin 0 → ℂ) :
+lemma analyticAt_fin_zero (f : (Fin 0 → ℂ) → E) (z : Fin 0 → ℂ) :
     AnalyticAt ℂ f z := by
   have : f = fun _ => f z := funext (fun w => congr_arg f (funext (fun i => Fin.elim0 i)))
   rw [this]; exact analyticAt_const
@@ -173,7 +149,7 @@ theorem norm_cauchyCoeffPolydisc_le {m : ℕ} (f : (Fin m → ℂ) → E)
 
 
 /-- Every point of an open set in `ℂᵐ` is contained in a closed polydisc inside the set. -/
-private lemma exists_uniform_polydisc_subset {k : ℕ} {U : Set (Fin k → ℂ)}
+lemma exists_uniform_polydisc_subset {k : ℕ} {U : Set (Fin k → ℂ)}
     (hU : IsOpen U) {z : Fin k → ℂ} (hz : z ∈ U) :
     ∃ R > 0, closedPolydisc z (fun _ => R) ⊆ U := by
   obtain ⟨ε, hε, hεU⟩ := Metric.isOpen_iff.mp hU z hz
@@ -184,7 +160,7 @@ private lemma exists_uniform_polydisc_subset {k : ℕ} {U : Set (Fin k → ℂ)}
 
 omit [CompleteSpace E] in
 /-- Joint differentiability on an open set implies separate differentiability. -/
-private lemma separateDiffAt_of_diffOn {k : ℕ} {f : (Fin k → ℂ) → E}
+lemma separateDiffAt_of_diffOn {k : ℕ} {f : (Fin k → ℂ) → E}
     {U : Set (Fin k → ℂ)} (hU : IsOpen U) (hf : DifferentiableOn ℂ f U)
     {w : Fin k → ℂ} (hw : w ∈ U) (i : Fin k) :
     DifferentiableAt ℂ (fun t => f (Function.update w i t)) (w i) := by
@@ -201,7 +177,7 @@ private lemma separateDiffAt_of_diffOn {k : ℕ} {f : (Fin k → ℂ) → E}
 
 /-- The factorial product `∏ (αᵢ!)` is bounded by `n!` when `∑ αᵢ = n`.
     This is equivalent to the multinomial coefficient being at least 1. -/
-private lemma prod_factorial_multiIdx_le {n d : ℕ} (σ : Fin n → Fin d) :
+lemma prod_factorial_multiIdx_le {n d : ℕ} (σ : Fin n → Fin d) :
     (∏ i : Fin d, (multiIdx σ i).factorial : ℕ) ≤ n.factorial := by
   have h_dvd := Nat.prod_factorial_dvd_factorial_sum Finset.univ (fun i => multiIdx σ i)
   rw [multiIdx_sum σ] at h_dvd
@@ -220,7 +196,7 @@ omit [CompleteSpace E] in
     - The weight `∏(αᵢ!)/n! ≤ 1` (from `prod_factorial_multiIdx_le`)
     - The Cauchy estimate: `‖a_α‖ ≤ M / R^n` (from `norm_cauchyCoeffPolydisc_le`)
     - Cardinality: `|{σ : Fin n → Fin d}| = d^n` -/
-private lemma norm_cauchyPowerSeriesPolydisc_uniform_le {m : ℕ}
+lemma norm_cauchyPowerSeriesPolydisc_uniform_le {m : ℕ}
     (f : (Fin (m + 1) → ℂ) → E) (z : Fin (m + 1) → ℂ) (R : ℝ) (hR : 0 < R)
     (M : ℝ) (hM : 0 ≤ M)
     (hf_bound : ∀ w ∈ distinguishedBoundary z (fun _ => R), ‖f w‖ ≤ M) (n : ℕ) :
@@ -271,7 +247,7 @@ end NormBound
 
 
 /-- The product `∏ j, y (σ j)` equals the multi-index monomial `∏ i, y i ^ (multiIdx σ i)`. -/
-private lemma prod_eq_multiIdx_pow {n d : ℕ} (σ : Fin n → Fin d) (y : Fin d → ℂ) :
+lemma prod_eq_multiIdx_pow {n d : ℕ} (σ : Fin n → Fin d) (y : Fin d → ℂ) :
     ∏ j : Fin n, y (σ j) = ∏ i : Fin d, y i ^ multiIdx σ i := by
   simp_rw [multiIdx]
   rw [← Finset.prod_fiberwise_of_maps_to (t := Finset.univ)
@@ -283,7 +259,7 @@ private lemma prod_eq_multiIdx_pow {n d : ℕ} (σ : Fin n → Fin d) (y : Fin d
 
 
 /-- The multi-index of `Fin.cons i σ'` updates the count at `i`. -/
-private lemma multiIdx_cons_eq {n d : ℕ} (i : Fin d) (σ' : Fin n → Fin d) :
+lemma multiIdx_cons_eq {n d : ℕ} (i : Fin d) (σ' : Fin n → Fin d) :
     multiIdx (Fin.cons i σ') = Function.update (multiIdx σ') i (multiIdx σ' i + 1) := by
   ext j; simp only [multiIdx, Finset.card_filter]
   by_cases h : j = i
@@ -293,13 +269,13 @@ private lemma multiIdx_cons_eq {n d : ℕ} (i : Fin d) (σ' : Fin n → Fin d) :
     simp only [Fin.cons_zero, Fin.cons_succ, Ne.symm h, ite_false]; simp [multiIdx]
 
 /-- If `σ 0 = i`, then `multiIdx σ i ≥ 1`. -/
-private lemma multiIdx_pos_at_zero {n d : ℕ} (σ : Fin (n + 1) → Fin d) :
+lemma multiIdx_pos_at_zero {n d : ℕ} (σ : Fin (n + 1) → Fin d) :
     1 ≤ multiIdx σ (σ 0) :=
   Finset.card_pos.mpr ⟨0, Finset.mem_filter.mpr ⟨Finset.mem_univ _, rfl⟩⟩
 
 /-- Taking `Fin.tail` of `σ` with `multiIdx σ = α` and `σ 0 = i` gives
     `multiIdx (tail σ) = update α i (α i - 1)`. -/
-private lemma tail_in_fiber {n d : ℕ} (α : Fin d → ℕ) (i : Fin d)
+lemma tail_in_fiber {n d : ℕ} (α : Fin d → ℕ) (i : Fin d)
     (σ : Fin (n + 1) → Fin d) (hα : multiIdx σ = α) (h0 : σ 0 = i) :
     multiIdx (Fin.tail σ) = Function.update α i (α i - 1) := by
   have hk : multiIdx (Fin.cons (σ 0) (Fin.tail σ)) = α := by rwa [Fin.cons_self_tail]
@@ -312,7 +288,7 @@ private lemma tail_in_fiber {n d : ℕ} (α : Fin d → ℕ) (i : Fin d)
 
 /-- Bijection between `{σ | multiIdx σ = α, σ 0 = i}` and
     `{σ' | multiIdx σ' = update α i (α i - 1)}` via `Fin.tail`/`Fin.cons`. -/
-private lemma card_fiber_cons {n d : ℕ} (α : Fin d → ℕ) (i : Fin d) (hi : 1 ≤ α i) :
+lemma card_fiber_cons {n d : ℕ} (α : Fin d → ℕ) (i : Fin d) (hi : 1 ≤ α i) :
     ((univ.filter (fun σ : Fin (n + 1) → Fin d => multiIdx σ = α)).filter
       (fun σ => σ 0 = i)).card =
     (univ.filter (fun σ' : Fin n → Fin d =>
@@ -337,7 +313,7 @@ private lemma card_fiber_cons {n d : ℕ} (α : Fin d → ℕ) (i : Fin d) (hi :
     · exact funext (fun j => by simp [Fin.tail, Fin.cons_succ])
 
 /-- Sum of an updated multi-index decreases by 1. -/
-private lemma sum_update_pred {d n : ℕ} (α : Fin d → ℕ) (i : Fin d) (hi : 1 ≤ α i)
+lemma sum_update_pred {d n : ℕ} (α : Fin d → ℕ) (i : Fin d) (hi : 1 ≤ α i)
     (hα : ∑ j, α j = n + 1) :
     ∑ j, Function.update α i (α i - 1) j = n := by
   have h1 := Finset.sum_update_of_mem (Finset.mem_univ i) α (α i - 1)
@@ -345,7 +321,7 @@ private lemma sum_update_pred {d n : ℕ} (α : Fin d → ℕ) (i : Fin d) (hi :
   rw [Finset.sdiff_singleton_eq_erase] at *; omega
 
 /-- Factoring out `α i` from the product of factorials after an update. -/
-private lemma prod_factorial_update_mul {d : ℕ} (α : Fin d → ℕ) (i : Fin d) (hi : 1 ≤ α i) :
+lemma prod_factorial_update_mul {d : ℕ} (α : Fin d → ℕ) (i : Fin d) (hi : 1 ≤ α i) :
     α i * ∏ j : Fin d, (Function.update α i (α i - 1) j).factorial =
     ∏ j : Fin d, (α j).factorial := by
   have h1 : ∏ j, (Function.update α i (α i - 1) j).factorial =
@@ -358,7 +334,7 @@ private lemma prod_factorial_update_mul {d : ℕ} (α : Fin d → ℕ) (i : Fin 
     Finset.mul_prod_erase _ (fun j => (α j).factorial) (Finset.mem_univ i)]
 
 /-- Each term in the fiber decomposition: for `σ 0 = i`, the fiber contributes `α i * n!`. -/
-private lemma fiber_term_eq {n d : ℕ}
+lemma fiber_term_eq {n d : ℕ}
     (ih : ∀ (α : Fin d → ℕ), ∑ j, α j = n →
       (univ.filter (fun σ : Fin n → Fin d => multiIdx σ = α)).card *
         ∏ j, (α j).factorial = n.factorial)
@@ -383,7 +359,7 @@ set_option maxHeartbeats 800000 in
 /-- **Multinomial identity for fiber cardinality.**
     `|{σ : Fin n → Fin d | multiIdx σ = α}| * ∏ (α_i!) = n!`
     when `∑ α_i = n`. This is the key combinatorial fact for the diagonal identity. -/
-private theorem card_fiber_mul_prod_factorial {d : ℕ} :
+theorem card_fiber_mul_prod_factorial {d : ℕ} :
     ∀ (n : ℕ) (α : Fin d → ℕ) (_hα : ∑ i, α i = n),
     (univ.filter (fun σ : Fin n → Fin d => multiIdx σ = α)).card *
       ∏ i, (α i).factorial = n.factorial := by
@@ -415,7 +391,7 @@ private theorem card_fiber_mul_prod_factorial {d : ℕ} :
     rw [Finset.sum_congr rfl h_terms, ← Finset.sum_mul, hα, Nat.factorial_succ]
 
 /-- A finite sequence realizing a prescribed multi-index. -/
-private lemma exists_multiIdx_eq
+lemma exists_multiIdx_eq
     {d : ℕ}
     (α : Fin d → ℕ) :
     ∃ σ : Fin (∑ i, α i) → Fin d, multiIdx σ = α := by
@@ -445,7 +421,7 @@ noncomputable def multiIndexEnumeration
     multiIdx (multiIndexEnumeration α) = α :=
   Classical.choose_spec (exists_multiIdx_eq α)
 
-private lemma multiIdx_comp_perm
+lemma multiIdx_comp_perm
     {d n : ℕ}
     (σ : Fin n → Fin d)
     (ρ : Equiv.Perm (Fin n)) :
@@ -467,7 +443,7 @@ private lemma multiIdx_comp_perm
   rw [← hmap, Finset.card_map]
 
 omit [CompleteSpace E] in
-private lemma cauchyPowerSeriesPolydisc_coordinateDirections
+lemma cauchyPowerSeriesPolydisc_coordinateDirections
     {d n : ℕ}
     (f : (Fin d → ℂ) → E)
     (z : Fin d → ℂ)
@@ -498,7 +474,7 @@ private lemma cauchyPowerSeriesPolydisc_coordinateDirections
 
 /-- If a closed polydisc of radius R is inside an open set, there exists a slightly larger
     closed polydisc that is still inside the open set. -/
-private lemma exists_larger_polydisc_in_open {k : ℕ} {z : Fin k → ℂ} {R : ℝ}
+lemma exists_larger_polydisc_in_open {k : ℕ} {z : Fin k → ℂ} {R : ℝ}
     {U : Set (Fin k → ℂ)} (hU : IsOpen U) (hRU : closedPolydisc z (fun _ => R) ⊆ U)
     (hR : 0 < R) :
     ∃ Rw > R, closedPolydisc z (fun _ => Rw) ⊆ U := by
@@ -543,7 +519,7 @@ private lemma exists_larger_polydisc_in_open {k : ℕ} {z : Fin k → ℂ} {R : 
 set_option maxHeartbeats 800000 in
 /-- Summability of the multi-index geometric product: if each `q i ∈ [0, 1)`, then
     `∑_{α : Fin n → ℕ} ∏ i, q i ^ α i` converges. -/
-private lemma summable_geometric_piNat : ∀ (n : ℕ) (q : Fin n → ℝ),
+lemma summable_geometric_piNat : ∀ (n : ℕ) (q : Fin n → ℝ),
     (∀ i, 0 ≤ q i) → (∀ i, q i < 1) →
     Summable (fun α : Fin n → ℕ => ∏ i : Fin n, q i ^ α i) := by
   intro n; induction n with
@@ -580,7 +556,7 @@ set_option maxHeartbeats 1600000 in
     The hypotheses require `f` to be separately differentiable and continuous on a
     closed polydisc of radius `Rw > R` (the "working radius"), providing room for the
     Leibniz integral rule in the inductive step. -/
-private lemma hasSum_multiIdx_cauchyCoeff :
+lemma hasSum_multiIdx_cauchyCoeff :
     ∀ (m : ℕ) (f : (Fin (m + 1) → ℂ) → E) (z : Fin (m + 1) → ℂ) (R Rw : ℝ) (hR : 0 < R)
     (hRw : R < Rw)
     (hf_sep : ∀ w ∈ closedPolydisc z (fun _ => Rw),
@@ -1064,7 +1040,7 @@ set_option maxHeartbeats 400000 in
 omit [CompleteSpace E] in
 /-- On the diagonal, the Cauchy power series equals the sum over multi-indices
     of the given total degree (using `Finset.Nat.antidiagonalTuple`). -/
-private lemma cauchyPowerSeriesPolydisc_diag_eq {m : ℕ}
+lemma cauchyPowerSeriesPolydisc_diag_eq {m : ℕ}
     (f : (Fin (m + 1) → ℂ) → E) (z : Fin (m + 1) → ℂ) (r : Fin (m + 1) → ℝ)
     (y : Fin (m + 1) → ℂ) (n : ℕ) :
     cauchyPowerSeriesPolydisc f z r n (fun _ => y) =
@@ -1119,7 +1095,7 @@ theorem cauchyPowerSeriesPolydisc_apply_diag {m : ℕ}
     Exchanging summation and iterated integration (justified by dominated convergence
     with the geometric series bound) and regrouping by total degree `|α| = n` gives
     `f(z+y) = ∑_n p_n(y,...,y)` where `p = cauchyPowerSeriesPolydisc`. -/
-private lemma hasSum_cauchyPowerSeriesPolydisc_diag {m : ℕ}
+lemma hasSum_cauchyPowerSeriesPolydisc_diag {m : ℕ}
     (f : (Fin (m + 1) → ℂ) → E) (z : Fin (m + 1) → ℂ) (R Rw : ℝ) (hR : 0 < R)
     (hRw : R < Rw)
     (hf_sep : ∀ w ∈ closedPolydisc z (fun _ => Rw),
@@ -1198,7 +1174,7 @@ theorem hasSum_cauchyPowerSeriesPolydisc_diag_of_differentiableOn
     1. **Norm bound** `‖p_n‖ ≤ (m+1)^n · M / R^n` → the series has radius ≥ `R/(2(m+2))`.
     2. **Cauchy integral expansion**: expand the kernel as a product of geometric series,
        exchange summation with iterated integration, and regroup by total degree. -/
-private lemma hasFPowerSeriesAt_cauchyPowerSeriesPolydisc {m : ℕ}
+lemma hasFPowerSeriesAt_cauchyPowerSeriesPolydisc {m : ℕ}
     {f : (Fin (m + 1) → ℂ) → E} {z : Fin (m + 1) → ℂ} {R : ℝ} (hR : 0 < R)
     {U : Set (Fin (m + 1) → ℂ)} (hU : IsOpen U)
     (hRU : closedPolydisc z (fun _ => R) ⊆ U)

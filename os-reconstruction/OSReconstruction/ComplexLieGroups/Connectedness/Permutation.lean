@@ -1,4 +1,8 @@
-import Mathlib.GroupTheory.Perm.Fin
+module
+
+public import Mathlib.GroupTheory.Perm.Fin
+
+@[expose] public section
 
 namespace BHW
 

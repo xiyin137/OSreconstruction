@@ -1,26 +1,10 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVGeneratedLogarithmicDomains
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVGeneratedLogarithmicDomains
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -157,7 +141,7 @@ theorem coordinate_abs_lt_pi_div_two
       intro i
       exact ih i.succ
 
-private theorem argumentGeneratorPoint_smul
+theorem argumentGeneratorPoint_smul
     {k : Nat} (i : GeneratorIndex k)
     (r : Real)
     (left : Fin i.n -> Real) (theta : Real) (right : Fin i.m -> Real) :
@@ -168,7 +152,7 @@ private theorem argumentGeneratorPoint_smul
   simp only [osiiArgumentGeneratorPoint, Pi.smul_apply]
   split_ifs <;> simp
 
-private theorem argumentDiagonal_smul
+theorem argumentDiagonal_smul
     {n : Nat} (hn : 1 <= n)
     (r : Real) (x : Fin n -> Real) :
     osiiArgumentDiagonal hn (r • x) =

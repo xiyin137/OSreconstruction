@@ -1,6 +1,10 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceWitness
-import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceTimeProduct
-import OSReconstruction.Wightman.SpectralEquivalence
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceWitness
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceTimeProduct
+public import OSReconstruction.Wightman.SpectralEquivalence
+
+@[expose] public section
 
 /-!
 # Chapter V Reduced Support Core

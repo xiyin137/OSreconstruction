@@ -1,5 +1,9 @@
-import Mathlib.Analysis.Complex.OperatorNorm
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIProductionRadialOperatorNorm
+module
+
+public import Mathlib.Analysis.Complex.OperatorNorm
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIProductionRadialOperatorNorm
+
+@[expose] public section
 
 /-!
 # OS II Chapter VI: global normalized production radial Gevrey bounds

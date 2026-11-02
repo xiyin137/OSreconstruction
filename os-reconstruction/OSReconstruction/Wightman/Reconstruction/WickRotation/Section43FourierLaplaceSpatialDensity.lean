@@ -1,18 +1,13 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.SchwartzDensity
-import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceTimeProductDensity
-import Init
-import OSReconstruction.SCV.SchwartzComplete
+module
 
+public import OSReconstruction.Wightman.Reconstruction.SchwartzDensity
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceTimeProductDensity
+public import Init
+public import OSReconstruction.SCV.SchwartzComplete
 
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 

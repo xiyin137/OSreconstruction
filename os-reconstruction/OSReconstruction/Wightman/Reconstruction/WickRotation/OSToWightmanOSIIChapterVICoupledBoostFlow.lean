@@ -1,16 +1,12 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVICoupledBoostSource
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVISchwartzLinearFlow
-import OSReconstruction.ComplexLieGroups.LorentzLieGroup
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVICoupledBoostSource
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVISchwartzLinearFlow
+public import OSReconstruction.ComplexLieGroups.LorentzLieGroup
 
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -75,11 +71,11 @@ theorem osiiPlanarBoostCLE_other (a b : Fin d) (hba : b ≠ a) (t : Real)
       · rw [osiiPlanarBoostCLE_other a b hba, osiiPlanarBoostCLE_other a b hba]
   exact congrFun ((osiiPlanarBoostCLE d a t).symm_apply_eq.mpr h.symm) mu
 
-private def boostTangent (a : Fin d) (x : Fin (d + 1) -> Real) :
+def boostTangent (a : Fin d) (x : Fin (d + 1) -> Real) :
     Fin (d + 1) -> Real :=
   Fin.cons (x a.succ) (fun b => if b = a then x 0 else 0)
 
-private theorem hasDerivAt_planarBoost (a : Fin d)
+theorem hasDerivAt_planarBoost (a : Fin d)
     (x : Fin (d + 1) -> Real) (t : Real) :
     HasDerivAt (fun u => osiiPlanarBoostCLE d a u x)
       (osiiPlanarBoostCLE d a t (boostTangent a x)) t := by
@@ -185,7 +181,7 @@ omit [NeZero d] in
   · simp [osiiSpatialAxisCLM, hba]
 
 omit [NeZero d] in
-private theorem boostTangent_timeSpatial (a : Fin d)
+theorem boostTangent_timeSpatial (a : Fin d)
     (p : Section43TimeSpatialSpace d k) (j : Fin k) :
     (nPointTimeSpatialCLE (d := d) k).symm (osiiCoupledBoostGenerator d k a p) j =
       boostTangent a ((nPointTimeSpatialCLE (d := d) k).symm p j) := by

@@ -1,6 +1,10 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43SpectralSupport
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43SpectralSupport
+
+@[expose] public section
 
 noncomputable section
 
@@ -251,13 +255,13 @@ theorem physicsFourierFlatCLM_borchersConj_apply
 
 /-- Split a flat finite-dimensional coordinate block into its first and last
 flat coordinate blocks. -/
-private def section43FlatProductSplitMeasurableEquiv (a b : ℕ) :
+def section43FlatProductSplitMeasurableEquiv (a b : ℕ) :
     (Fin (a + b) → ℝ) ≃ᵐ ((Fin a → ℝ) × (Fin b → ℝ)) :=
   ((MeasurableEquiv.piCongrLeft (fun _ : Fin (a + b) => ℝ)
     (finSumFinEquiv : Fin a ⊕ Fin b ≃ Fin (a + b))).symm).trans
       (MeasurableEquiv.sumPiEquivProdPi (fun _ : Fin a ⊕ Fin b => ℝ))
 
-private theorem section43FlatProductSplitMeasurableEquiv_measurePreserving
+theorem section43FlatProductSplitMeasurableEquiv_measurePreserving
     (a b : ℕ) :
     MeasureTheory.MeasurePreserving
       (section43FlatProductSplitMeasurableEquiv a b)
@@ -280,7 +284,7 @@ private theorem section43FlatProductSplitMeasurableEquiv_measurePreserving
       (fun _ : Fin a ⊕ Fin b => ℝ)
   exact he2.comp (he1.symm e1)
 
-private theorem section43FlatProductSplitMeasurableEquiv_fst_apply
+theorem section43FlatProductSplitMeasurableEquiv_fst_apply
     (a b : ℕ) (x : Fin (a + b) → ℝ) (i : Fin a) :
     (section43FlatProductSplitMeasurableEquiv a b x).1 i = x (Fin.castAdd b i) := by
   rw [section43FlatProductSplitMeasurableEquiv]
@@ -297,7 +301,7 @@ private theorem section43FlatProductSplitMeasurableEquiv_fst_apply
   rw [← h]
   simp [finSumFinEquiv_apply_left]
 
-private theorem section43FlatProductSplitMeasurableEquiv_snd_apply
+theorem section43FlatProductSplitMeasurableEquiv_snd_apply
     (a b : ℕ) (x : Fin (a + b) → ℝ) (j : Fin b) :
     (section43FlatProductSplitMeasurableEquiv a b x).2 j = x (Fin.natAdd a j) := by
   rw [section43FlatProductSplitMeasurableEquiv]
@@ -314,19 +318,19 @@ private theorem section43FlatProductSplitMeasurableEquiv_snd_apply
   rw [← h]
   simp [finSumFinEquiv_apply_right]
 
-private theorem section43FlatProductSplitMeasurableEquiv_fst_eq_splitFirst
+theorem section43FlatProductSplitMeasurableEquiv_fst_eq_splitFirst
     (a b : ℕ) (x : Fin (a + b) → ℝ) :
     (section43FlatProductSplitMeasurableEquiv a b x).1 = splitFirst a b x := by
   ext i
   exact section43FlatProductSplitMeasurableEquiv_fst_apply a b x i
 
-private theorem section43FlatProductSplitMeasurableEquiv_snd_eq_splitLast
+theorem section43FlatProductSplitMeasurableEquiv_snd_eq_splitLast
     (a b : ℕ) (x : Fin (a + b) → ℝ) :
     (section43FlatProductSplitMeasurableEquiv a b x).2 = splitLast a b x := by
   ext i
   exact section43FlatProductSplitMeasurableEquiv_snd_apply a b x i
 
-private theorem splitFirst_castFinCLE_symm_eq_section43SplitLeftFlat
+theorem splitFirst_castFinCLE_symm_eq_section43SplitLeftFlat
     (d n r : ℕ) [NeZero d]
     (ξ : Fin ((n + r) * (d + 1)) → ℝ) :
     splitFirst (n * (d + 1)) (r * (d + 1))
@@ -341,7 +345,7 @@ private theorem splitFirst_castFinCLE_symm_eq_section43SplitLeftFlat
   apply Fin.ext
   simp [finProdFinEquiv]
 
-private theorem splitLast_castFinCLE_symm_eq_section43SplitRightFlat
+theorem splitLast_castFinCLE_symm_eq_section43SplitRightFlat
     (d n r : ℕ) [NeZero d]
     (ξ : Fin ((n + r) * (d + 1)) → ℝ) :
     splitLast (n * (d + 1)) (r * (d + 1))
@@ -357,7 +361,7 @@ private theorem splitLast_castFinCLE_symm_eq_section43SplitRightFlat
   simp [finProdFinEquiv]
   ring
 
-private theorem section43_fullFlat_pair_eq_splitFlat_pair
+theorem section43_fullFlat_pair_eq_splitFlat_pair
     (d n r : ℕ) [NeZero d]
     (x ξ : Fin ((n + r) * (d + 1)) → ℝ) :
     (∑ a : Fin ((n + r) * (d + 1)), (x a : ℂ) * (ξ a : ℂ)) =
@@ -408,7 +412,7 @@ private theorem section43_fullFlat_pair_eq_splitFlat_pair
               ring
             rw [hidx]
 
-private def section43FullFlatProductSplitMeasurableEquiv
+def section43FullFlatProductSplitMeasurableEquiv
     (d n r : ℕ) [NeZero d] :
     (Fin ((n + r) * (d + 1)) → ℝ) ≃ᵐ
       ((Fin (n * (d + 1)) → ℝ) × (Fin (r * (d + 1)) → ℝ)) :=
@@ -419,7 +423,7 @@ private def section43FullFlatProductSplitMeasurableEquiv
     (section43FlatProductSplitMeasurableEquiv
       (n * (d + 1)) (r * (d + 1)))
 
-private theorem section43FullFlatProductSplitMeasurableEquiv_measurePreserving
+theorem section43FullFlatProductSplitMeasurableEquiv_measurePreserving
     (d n r : ℕ) [NeZero d] :
     MeasureTheory.MeasurePreserving
       (section43FullFlatProductSplitMeasurableEquiv d n r)
@@ -437,7 +441,7 @@ private theorem section43FullFlatProductSplitMeasurableEquiv_measurePreserving
     (n * (d + 1)) (r * (d + 1))
   exact he2.comp (he1.symm e1)
 
-private theorem section43FullFlatProductSplitMeasurableEquiv_fst_apply
+theorem section43FullFlatProductSplitMeasurableEquiv_fst_apply
     (d n r : ℕ) [NeZero d]
     (x : Fin ((n + r) * (d + 1)) → ℝ) :
     (section43FullFlatProductSplitMeasurableEquiv d n r x).1 =
@@ -449,7 +453,7 @@ private theorem section43FullFlatProductSplitMeasurableEquiv_fst_apply
   rw [section43FlatProductSplitMeasurableEquiv_fst_eq_splitFirst]
   exact splitFirst_castFinCLE_symm_eq_section43SplitLeftFlat d n r x
 
-private theorem section43FullFlatProductSplitMeasurableEquiv_snd_apply
+theorem section43FullFlatProductSplitMeasurableEquiv_snd_apply
     (d n r : ℕ) [NeZero d]
     (x : Fin ((n + r) * (d + 1)) → ℝ) :
     (section43FullFlatProductSplitMeasurableEquiv d n r x).2 =
@@ -1362,7 +1366,7 @@ theorem section43OS24KernelWitness_succRight_eqOn_spectralRegion
     (d := d) (n := n) (m := m) (φ := φ) (ψ := ψ) hq0]
   rfl
 
-private theorem exists_section43OS24Kernel_succRight
+theorem exists_section43OS24Kernel_succRight
     (d n m : ℕ) [NeZero d]
     (φ : SchwartzNPoint d n) (ψ : SchwartzNPoint d (m + 1))
     (t : ℝ) (ht : 0 < t) :
@@ -1404,7 +1408,7 @@ theorem section43OS24Kernel_succRight_apply_of_mem_spectralRegion
   section43OS24Kernel_succRight_eqOn_spectralRegion d n m φ ψ ht hξ
 
 /-- Reindex the right split tail sum into the corresponding full tail sum. -/
-private theorem section43_splitRight_tail_sum_eq_full_tail
+theorem section43_splitRight_tail_sum_eq_full_tail
     {d n r : ℕ} [NeZero d]
     (ξ : Fin ((n + r) * (d + 1)) → ℝ)
     (j : Fin r) (μ : Fin (d + 1)) :
@@ -1483,7 +1487,7 @@ theorem section43SplitRightFlat_eq_cumulativeTail_rightTail
 
 /-- Reindex the negative reversed left split tail as the negative missing
 prefix of the full frequency. -/
-private theorem section43_negRev_left_tail_sum_eq_neg_prefix
+theorem section43_negRev_left_tail_sum_eq_neg_prefix
     {d n r : ℕ} [NeZero d]
     (ξ : Fin ((n + r) * (d + 1)) → ℝ)
     (j : Fin n) (μ : Fin (d + 1)) :
@@ -1538,7 +1542,7 @@ private theorem section43_negRev_left_tail_sum_eq_neg_prefix
 
 /-- Under total momentum zero, the full tail equals the negative missing
 prefix. -/
-private theorem section43_full_tail_sum_eq_neg_prefix_of_totalMomentum
+theorem section43_full_tail_sum_eq_neg_prefix_of_totalMomentum
     {d n r : ℕ} [NeZero d]
     (ξ : Fin ((n + r) * (d + 1)) → ℝ)
     (hξ_total : section43TotalMomentumFlat d (n + r) ξ = 0)
@@ -1577,7 +1581,7 @@ private theorem section43_full_tail_sum_eq_neg_prefix_of_totalMomentum
   linarith
 
 /-- Combine left reversal reindexing with total momentum zero. -/
-private theorem section43_negRev_left_tail_sum_eq_full_tail_of_totalMomentum
+theorem section43_negRev_left_tail_sum_eq_full_tail_of_totalMomentum
     {d n r : ℕ} [NeZero d]
     (ξ : Fin ((n + r) * (d + 1)) → ℝ)
     (hξ_total : section43TotalMomentumFlat d (n + r) ξ = 0)

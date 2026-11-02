@@ -1,7 +1,11 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.ComplexLieGroups.Connectedness.ComplexInvariance.StabilizerI0
-import OSReconstruction.ComplexLieGroups.Connectedness.OrbitSetQuotient
+module
+
+public import OSReconstruction.ComplexLieGroups.Connectedness.ComplexInvariance.StabilizerI0
+public import OSReconstruction.ComplexLieGroups.Connectedness.OrbitSetQuotient
+
+@[expose] public section
 
 noncomputable section
 
@@ -31,7 +35,7 @@ abbrev quadricConeSet_wScalarE0 (c : ℂ) : Set (Fin (m + 2) → ℂ) :=
     minkowskiColQuadric (m := m) v = (-1 : ℂ) ∧
     InOpenForwardCone (m + 1) (fun μ => (c * v μ).im)}
 
-private lemma minkowskiColQuadric_eq_complexMinkowskiQuadratic
+lemma minkowskiColQuadric_eq_complexMinkowskiQuadratic
     (v : Fin (m + 2) → ℂ) :
     minkowskiColQuadric (m := m) v =
       MinkowskiSpace.complexMinkowskiQuadratic (m + 1) v := by

@@ -1,22 +1,11 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.ReducedExtendedTube
-import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SliceGluing
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.ReducedExtendedTube
+public import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SliceGluing
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 

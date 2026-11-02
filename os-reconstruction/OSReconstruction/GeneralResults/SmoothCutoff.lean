@@ -3,9 +3,13 @@ Copyright (c) 2025 ModularPhysics Contributors. All rights reserved.
 Released under Apache 2.0 license.
 Authors: Michael R. Douglas, ModularPhysics Contributors
 -/
-import Mathlib.Analysis.Calculus.BumpFunction.Convolution
-import Mathlib.Analysis.Calculus.BumpFunction.FiniteDimension
-import Mathlib.Topology.MetricSpace.HausdorffDistance
+module
+
+public import Mathlib.Analysis.Calculus.BumpFunction.Convolution
+public import Mathlib.Analysis.Calculus.BumpFunction.FiniteDimension
+public import Mathlib.Topology.MetricSpace.HausdorffDistance
+
+@[expose] public section
 
 /-!
 # Smooth Cutoff Functions via Convolution Mollifier
@@ -37,7 +41,7 @@ noncomputable section
 variable {m : ℕ}
 
 set_option linter.unusedVariables false in
-private lemma convolution_left_iteratedFDeriv_bounded :
+lemma convolution_left_iteratedFDeriv_bounded :
     ∀ k : ℕ,
     ∀ {X : Type*} [NormedAddCommGroup X] [NormedSpace ℝ X] [CompleteSpace X]
       (L : X →L[ℝ] ℝ →L[ℝ] X) (hL : ‖L‖ ≤ 1)

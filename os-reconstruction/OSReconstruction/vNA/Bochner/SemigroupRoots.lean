@@ -1,7 +1,11 @@
-import OSReconstruction.vNA.Bochner.CfcInfrastructure
-import Mathlib.Analysis.CStarAlgebra.ContinuousFunctionalCalculus.Continuity
-import Mathlib.Analysis.SpecialFunctions.Pow.Continuity
-import Mathlib.Topology.UniformSpace.HeineCantor
+module
+
+public import OSReconstruction.vNA.Bochner.CfcInfrastructure
+public import Mathlib.Analysis.CStarAlgebra.ContinuousFunctionalCalculus.Continuity
+public import Mathlib.Analysis.SpecialFunctions.Pow.Continuity
+public import Mathlib.Topology.UniformSpace.HeineCantor
+
+@[expose] public section
 
 noncomputable section
 

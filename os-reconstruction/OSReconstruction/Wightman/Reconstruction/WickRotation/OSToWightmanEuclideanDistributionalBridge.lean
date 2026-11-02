@@ -5,16 +5,12 @@ Copyright (c) 2025 ModularPhysics Contributors.
 Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
-import OSReconstruction.ComplexLieGroups.Connectedness.ComplexInvariance.Extend
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanTubeIdentity
+module
 
+public import OSReconstruction.ComplexLieGroups.Connectedness.ComplexInvariance.Extend
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanTubeIdentity
 
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -80,7 +76,7 @@ theorem exp_wick_conjugation
   rw [← hW, ← hWinv]
   exact NormedSpace.exp_units_conj Wunit (s • Y.map Complex.ofReal)
 
-private theorem exp_map_ofReal_bridge
+theorem exp_map_ofReal_bridge
     (Y : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ) (s : ℝ) :
     (NormedSpace.exp (s • Y) : Matrix _ _ ℝ).map Complex.ofReal =
       NormedSpace.exp ((s : ℂ) • Y.map Complex.ofReal) := by
@@ -97,7 +93,7 @@ private theorem exp_map_ofReal_bridge
   change Complex.ofRealHom.mapMatrix (NormedSpace.exp (s • Y)) = _
   rw [h1, h2]
 
-private theorem exp_real_orthogonal
+theorem exp_real_orthogonal
     (Y : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ)
     (hY : Y.transpose + Y = 0) (s : ℝ) :
     (NormedSpace.exp (s • Y) : Matrix _ _ ℝ).transpose * NormedSpace.exp (s • Y) = 1 := by
@@ -111,7 +107,7 @@ private theorem exp_real_orthogonal
   exact Matrix.nonsing_inv_mul _
     ((Matrix.isUnit_iff_isUnit_det _).mp (Matrix.isUnit_exp (s • Y)))
 
-private theorem exp_real_det_one_skew
+theorem exp_real_det_one_skew
     (Y : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ)
     (hY : Y.transpose + Y = 0) (s : ℝ) :
     (NormedSpace.exp (s • Y) : Matrix _ _ ℝ).det = 1 := by
@@ -155,7 +151,7 @@ theorem ofEuclidean_exp_eq_exp_wick
     _ = NormedSpace.exp ((s : ℂ) • (wickW * Y.map Complex.ofReal * wickWinv)) :=
           (exp_wick_conjugation Y (s : ℂ)).symm
 
-private theorem exp_wick_action_eq_ofEuclidean_action
+theorem exp_wick_action_eq_ofEuclidean_action
     {n : ℕ}
     (Y : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ)
     (hY : Y.transpose + Y = 0) (s : ℝ)
@@ -177,7 +173,7 @@ private theorem exp_wick_action_eq_ofEuclidean_action
           (exp_real_det_one_skew Y hY s) (exp_real_orthogonal Y hY s)) μ) ν).symm)
 
 /-- The one-parameter action `t ↦ exp(tX) · z` is differentiable in `t`. -/
-private theorem differentiable_expAction_local
+theorem differentiable_expAction_local
     {n : ℕ}
     (X : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ) (z : Fin n → Fin (d + 1) → ℂ) :
     Differentiable ℂ (fun t : ℂ =>
@@ -463,7 +459,7 @@ def wickRePreimage (X : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ) :
     let w_ν : ℂ := if ν = (0 : Fin (d + 1)) then Complex.I else 1
     (w_inv_μ * X μ ν * w_ν).re
 
-private theorem wickRePart_preimage_skew_aux
+theorem wickRePart_preimage_skew_aux
     (X : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ)
     (hX : ComplexLorentzGroup.IsInLieAlgebra X) :
     (wickRePreimage X).transpose + wickRePreimage X =
@@ -515,7 +511,7 @@ theorem wickRePart_eq_wick_conjugation_preimage
     mul_ite, ite_mul, mul_zero, zero_mul,
     Finset.sum_ite_eq, Finset.sum_ite_eq', Finset.mem_univ, if_true]
 
-private theorem norm_wickRePart_le
+theorem norm_wickRePart_le
     (X : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ) :
     ‖wickRePart X‖ ≤ ‖X‖ := by
   simp only [← coe_nnnorm, NNReal.coe_le_coe]
@@ -545,7 +541,7 @@ private theorem norm_wickRePart_le
       exact NNReal.coe_le_coe.mp
         (by simpa [Real.norm_eq_abs] using Complex.abs_re_le_norm (X i j))
 
-private theorem norm_wickImPart_le
+theorem norm_wickImPart_le
     (X : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ) :
     ‖wickRePart ((-Complex.I) • X)‖ ≤ ‖X‖ := by
   calc
@@ -554,7 +550,7 @@ private theorem norm_wickImPart_le
     _ = ‖(-Complex.I : ℂ)‖ * ‖X‖ := norm_smul _ _
     _ = ‖X‖ := by simp
 
-private theorem norm_affine_combination_lt_euclidean
+theorem norm_affine_combination_lt_euclidean
     (X₁ X₂ X : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ)
     (hX₁_le : ‖X₁‖ ≤ ‖X‖) (hX₂_le : ‖X₂‖ ≤ ‖X‖)
     {δ : ℝ} (hsmall : ‖X‖ < δ / 7) {s : ℂ} (hs : ‖s‖ < 2) :
@@ -567,7 +563,7 @@ private theorem norm_affine_combination_lt_euclidean
     _ = 3 * ‖X‖ := by ring
     _ < δ := by nlinarith [norm_nonneg X]
 
-private theorem norm_tsmul_affine_lt_euclidean
+theorem norm_tsmul_affine_lt_euclidean
     (X₁ X₂ X : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ)
     (hX₁_le : ‖X₁‖ ≤ ‖X‖) (hX₂_le : ‖X₂‖ ≤ ‖X‖)
     {δ : ℝ} (hsmall : ‖X‖ < δ / 7)
@@ -588,7 +584,7 @@ private theorem norm_tsmul_affine_lt_euclidean
     _ = 6 * ‖X‖ := by ring
     _ < δ := by nlinarith [norm_nonneg X]
 
-private theorem smul_isInLieAlgebra
+theorem smul_isInLieAlgebra
     (c : ℂ) {X : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ}
     (hX : ComplexLorentzGroup.IsInLieAlgebra X) :
     ComplexLorentzGroup.IsInLieAlgebra (c • X) := by
@@ -613,7 +609,7 @@ theorem wick_decomposition
       apply Complex.ext <;> simp [wickRePart, hμ]
     · apply Complex.ext <;> simp [wickRePart, hμ, hν]
 
-private theorem wick_conjugation_add_smul
+theorem wick_conjugation_add_smul
     (Y₁ Y₂ : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ) (s : ℝ) :
     wickW * (Y₁ + s • Y₂).map Complex.ofReal * wickWinv =
       wickW * Y₁.map Complex.ofReal * wickWinv +

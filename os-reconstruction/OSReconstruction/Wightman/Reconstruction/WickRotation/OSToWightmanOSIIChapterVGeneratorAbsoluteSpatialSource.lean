@@ -1,4 +1,8 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVGeneratorSourceComparison
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVGeneratorSourceComparison
+
+@[expose] public section
 
 /-!
 # OS-II Chapter V absolute-spatial generator source
@@ -29,7 +33,7 @@ namespace OSIIChapterV
 
 variable {d : ℕ} [NeZero d]
 
-private theorem twoBlockProductSchwartz_apply_split
+theorem twoBlockProductSchwartz_apply_split
     (n m : ℕ)
     (η₁ : SchwartzMap (Fin n → ℝ) ℂ)
     (η₂ : SchwartzMap (Fin m → ℝ) ℂ)
@@ -47,7 +51,7 @@ private theorem twoBlockProductSchwartz_apply_split
   rw [hx]
   simp [SCV.twoBlockProductSchwartz_apply]
 
-private theorem twoBlockProductSchwartz_tsupport_subset
+theorem twoBlockProductSchwartz_tsupport_subset
     (n m : ℕ)
     (η₁ : SchwartzMap (Fin n → ℝ) ℂ)
     (η₂ : SchwartzMap (Fin m → ℝ) ℂ) :

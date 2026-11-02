@@ -5,36 +5,15 @@ Copyright (c) 2025 ModularPhysics Contributors. All rights reserved.
 Released under Apache 2.0 license.
 Authors: Michael R. Douglas, ModularPhysics Contributors
 -/
-import OSReconstruction.Mathlib429Compat
-import Mathlib.Analysis.Distribution.SchwartzSpace.Deriv
-import Mathlib.Analysis.Calculus.IteratedDeriv.Defs
-import Mathlib.Analysis.Calculus.ContDiff.RestrictScalars
+module
 
+public import OSReconstruction.Mathlib429Compat
+public import Mathlib.Analysis.Distribution.SchwartzSpace.Deriv
+public import Mathlib.Analysis.Calculus.IteratedDeriv.Defs
+public import Mathlib.Analysis.Calculus.ContDiff.RestrictScalars
+public import Mathlib.Analysis.Calculus.ContDiff.Bounds
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 open scoped Classical ComplexConjugate BigOperators NNReal ContDiff
 open MeasureTheory Complex
@@ -45,7 +24,7 @@ variable {m : ℕ}
 
 
 /-- `x^k * exp(-c*x)` is bounded on `[0, ∞)` for `c > 0`. -/
-private lemma pow_mul_exp_neg_bounded (k : ℕ) (c : ℝ) (hc : 0 < c) :
+lemma pow_mul_exp_neg_bounded (k : ℕ) (c : ℝ) (hc : 0 < c) :
     ∃ M : ℝ, 0 < M ∧ ∀ x : ℝ, 0 ≤ x → x ^ k * Real.exp (-c * x) ≤ M := by
   have htend : Filter.Tendsto (fun x : ℝ => x ^ k * Real.exp (-c * x))
       Filter.atTop (nhds 0) := by
@@ -84,7 +63,7 @@ private lemma pow_mul_exp_neg_bounded (k : ℕ) (c : ℝ) (hc : 0 < c) :
       _ ≤ max M₀ 1 + 1 := le_add_of_nonneg_right one_pos.le
 
 /-- `x^k * exp(-c*x)` is bounded by a constant times `c^{-k}`, uniformly in `c > 0`. -/
-private lemma pow_mul_exp_neg_bounded_explicit (k : ℕ) :
+lemma pow_mul_exp_neg_bounded_explicit (k : ℕ) :
     ∃ M : ℝ, 0 < M ∧
       ∀ c : ℝ, 0 < c → ∀ x : ℝ, 0 ≤ x →
         x ^ k * Real.exp (-c * x) ≤ M * c⁻¹ ^ k := by
@@ -116,7 +95,7 @@ private lemma pow_mul_exp_neg_bounded_explicit (k : ℕ) :
     _ = M * c⁻¹ ^ k := by ring
 
 /-- Uniform derivative bound from per-order bounds. -/
-private lemma extract_max_deriv_bound {χ : (Fin m → ℝ) → ℝ}
+lemma extract_max_deriv_bound {χ : (Fin m → ℝ) → ℝ}
     (hχ : ∀ j : ℕ, ∃ C_j : ℝ, ∀ ξ : Fin m → ℝ, ‖iteratedFDeriv ℝ j χ ξ‖ ≤ C_j) (n : ℕ) :
     ∃ C : ℝ, 0 < C ∧ ∀ j ≤ n, ∀ ξ : Fin m → ℝ, ‖iteratedFDeriv ℝ j χ ξ‖ ≤ C := by
   choose C hC using hχ
@@ -130,7 +109,7 @@ private lemma extract_max_deriv_bound {χ : (Fin m → ℝ) → ℝ}
     _ ≤ _ := le_add_of_nonneg_right one_pos.le
 
 /-- For a CLM `L`, `‖iteratedFDeriv ℝ i L ξ‖ ≤ ‖L‖^i` for `i ≥ 1`. -/
-private lemma clm_iteratedFDeriv_norm_le (L : (Fin m → ℝ) →L[ℝ] ℂ) (ξ : Fin m → ℝ)
+lemma clm_iteratedFDeriv_norm_le (L : (Fin m → ℝ) →L[ℝ] ℂ) (ξ : Fin m → ℝ)
     (i : ℕ) (hi : 1 ≤ i) : ‖iteratedFDeriv ℝ i (L : (Fin m → ℝ) → ℂ) ξ‖ ≤ ‖L‖ ^ i := by
   rcases i with _ | i; · omega
   rcases i with _ | i
@@ -149,7 +128,7 @@ private lemma clm_iteratedFDeriv_norm_le (L : (Fin m → ℝ) →L[ℝ] ℂ) (ξ
 /-- `‖iteratedFDeriv ℝ i cexp z‖ ≤ ‖cexp z‖`. The n-th derivative of exp at z
 is the multilinear map `(h₁,...,hₙ) ↦ exp(z) · h₁ · ... · hₙ`, which has
 operator norm `‖exp(z)‖` by submultiplicativity in `ℂ`. -/
-private lemma norm_iteratedFDeriv_cexp_le (z : ℂ) (i : ℕ) :
+lemma norm_iteratedFDeriv_cexp_le (z : ℂ) (i : ℕ) :
     ‖iteratedFDeriv ℝ i cexp z‖ ≤ ‖cexp z‖ := by
   have hiter_deriv : iteratedDeriv i (Complex.exp) z = cexp z := by
     rw [iteratedDeriv_eq_iterate]
@@ -166,7 +145,7 @@ private lemma norm_iteratedFDeriv_cexp_le (z : ℂ) (i : ℕ) :
     ContinuousMultilinearMap.norm_restrictScalars, hComplex_norm]
 
 /-- `‖D^n[cexp ∘ L](ξ)‖ ≤ n! · ‖cexp(Lξ)‖ · ‖L‖^n` by Faa di Bruno. -/
-private lemma norm_iteratedFDeriv_cexp_comp_clm
+lemma norm_iteratedFDeriv_cexp_comp_clm
     (L : (Fin m → ℝ) →L[ℝ] ℂ) (ξ : Fin m → ℝ) (n : ℕ) :
     ‖iteratedFDeriv ℝ n (fun x => cexp (L x)) ξ‖ ≤
       n.factorial * ‖cexp (L ξ)‖ * ‖L‖ ^ n := by
@@ -176,13 +155,13 @@ private lemma norm_iteratedFDeriv_cexp_comp_clm
     (fun i hi _ => clm_iteratedFDeriv_norm_le L ξ i hi)
 
 /-- If `f = 0` near `ξ`, then `iteratedFDeriv ℝ n f ξ = 0`. -/
-private lemma iteratedFDeriv_eq_zero_of_eventuallyEq_zero
+lemma iteratedFDeriv_eq_zero_of_eventuallyEq_zero_SchwartzCutoffExp
     {f : (Fin m → ℝ) → ℂ} {ξ : Fin m → ℝ}
     (h : f =ᶠ[nhds ξ] 0) (n : ℕ) : iteratedFDeriv ℝ n f ξ = 0 := by
   rw [(h.iteratedFDeriv ℝ n).eq_of_nhds]; simp
 
 /-- On closure(supp χ), affine decay `Re(L ξ) ≤ A - c‖ξ‖` extends by continuity. -/
-private lemma affineDecay_on_closure_support (χ : (Fin m → ℝ) → ℝ)
+lemma affineDecay_on_closure_support (χ : (Fin m → ℝ) → ℝ)
     (L : (Fin m → ℝ) →L[ℝ] ℂ) (A c : ℝ)
     (hd : ∀ ξ : Fin m → ℝ, χ ξ ≠ 0 → (L ξ).re ≤ A - c * ‖ξ‖)
     (ξ : Fin m → ℝ) (hξ : ξ ∈ closure (Function.support χ)) :
@@ -192,7 +171,7 @@ private lemma affineDecay_on_closure_support (χ : (Fin m → ℝ) → ℝ)
       (continuous_const.sub (continuous_const.mul continuous_norm))) hξ
 
 /-- Outside closure(supp χ), the product `χ · g` vanishes nearby. -/
-private lemma product_zero_outside_closure (χ : (Fin m → ℝ) → ℝ)
+lemma product_zero_outside_closure (χ : (Fin m → ℝ) → ℝ)
     (g : (Fin m → ℝ) → ℂ) (ξ : Fin m → ℝ)
     (hξ : ξ ∉ closure (Function.support χ)) :
     (fun x => (χ x : ℂ) * g x) =ᶠ[nhds ξ] 0 := by
@@ -233,7 +212,7 @@ theorem product_zero_outside_closure_support
     (fun x => (χ x : ℂ) * g x) =ᶠ[nhds ξ] 0 :=
   product_zero_outside_closure χ g ξ hξ
 
-private lemma pow_mul_one_add_sq_exp_neg_bounded (k : ℕ) (c : ℝ) (hc : 0 < c) :
+lemma pow_mul_one_add_sq_exp_neg_bounded (k : ℕ) (c : ℝ) (hc : 0 < c) :
     ∃ M : ℝ, 0 < M ∧
       ∀ x : ℝ, 0 ≤ x →
         x ^ k * (1 + x) ^ 2 * Real.exp (-(c / 2) * x) ≤ M := by
@@ -521,7 +500,7 @@ theorem schwartz_seminorm_cutoff_exp_mul_G_bound_affine_uniform
           gcongr
           linarith
   · have h0 : iteratedFDeriv ℝ n (fun ξ => (χ ξ : ℂ) * (cexp (L ξ) * G ξ)) ξ = 0 :=
-      iteratedFDeriv_eq_zero_of_eventuallyEq_zero
+      iteratedFDeriv_eq_zero_of_eventuallyEq_zero_SchwartzCutoffExp
         (product_zero_outside_closure_support χ (fun x => cexp (L x) * G x) ξ hξ) n
     simp [h0]
     positivity
@@ -646,7 +625,7 @@ theorem schwartz_seminorm_cutoff_exp_bound_affine_uniform
           gcongr
           linarith
   · have h0 : iteratedFDeriv ℝ n (fun ξ => (χ ξ : ℂ) * cexp (L ξ)) ξ = 0 :=
-      iteratedFDeriv_eq_zero_of_eventuallyEq_zero
+      iteratedFDeriv_eq_zero_of_eventuallyEq_zero_SchwartzCutoffExp
         (product_zero_outside_closure χ (fun x => cexp (L x)) ξ hξ) n
     simp [h0]
     exact mul_nonneg (by positivity) (pow_nonneg (by linarith [norm_nonneg L]) _)

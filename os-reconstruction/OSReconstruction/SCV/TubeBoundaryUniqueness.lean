@@ -1,4 +1,8 @@
-import OSReconstruction.SCV.LocalBoundaryUniqueness
+module
+
+public import OSReconstruction.SCV.LocalBoundaryUniqueness
+
+@[expose] public section
 
 noncomputable section
 

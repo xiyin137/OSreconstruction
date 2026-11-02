@@ -1,23 +1,12 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVRootedArbitrarySpatialCandidate
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIEquation621ProductSpatialApproxIdentity
-import OSReconstruction.SCV.DistributionalRepresentationUniqueness
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVRootedArbitrarySpatialCandidate
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIEquation621ProductSpatialApproxIdentity
+public import OSReconstruction.SCV.DistributionalRepresentationUniqueness
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -38,7 +27,7 @@ variable
   {A : AnchoredPacketTimeShellFamilyData (d := d) I anchor}
   {R : TripleConvolutionRootData I}
 
-private theorem cast_cast_symm
+theorem cast_cast_symm
     {ι : Sort*}
     {α : ι -> Sort*}
     {a b : ι}
@@ -48,7 +37,7 @@ private theorem cast_cast_symm
   subst b
   rfl
 
-private theorem reindex_axisPairTwoBlockTimeSpatialSource_cast
+theorem reindex_axisPairTwoBlockTimeSpatialSource_cast
     {n n' m m' : Nat}
     (hn : n = n')
     (hm : m = m')

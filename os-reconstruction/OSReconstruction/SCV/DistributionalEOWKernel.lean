@@ -5,19 +5,13 @@ Copyright (c) 2026 ModularPhysics Contributors.
 Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
-import OSReconstruction.SCV.DistributionalUniqueness
-import OSReconstruction.SCV.SchwartzPartialEval
-import Mathlib.Analysis.Distribution.SchwartzSpace.Deriv
+module
 
+public import OSReconstruction.SCV.DistributionalUniqueness
+public import OSReconstruction.SCV.SchwartzPartialEval
+public import Mathlib.Analysis.Distribution.SchwartzSpace.Deriv
 
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -139,7 +133,7 @@ theorem complexTranslateSchwartzCLM_apply {m : ℕ}
     complexTranslateSchwartzCLM a φ = complexTranslateSchwartz a φ := rfl
 
 /-- Product norm is controlled by the sum of the coordinate norms. -/
-private theorem norm_prod_le_fst_add_snd
+theorem norm_prod_le_fst_add_snd_DistributionalEOWKernel
     {E₁ E₂ : Type*} [SeminormedAddCommGroup E₁] [SeminormedAddCommGroup E₂]
     (x : E₁ × E₂) :
     ‖x‖ ≤ ‖x.1‖ + ‖x.2‖ := by
@@ -152,7 +146,7 @@ private theorem norm_prod_le_fst_add_snd
 This is kept private in the theorem-2 kernel substrate so the public surface
 stays the mixed `ComplexChartSpace m × (Fin m → ℝ)` tensor product needed by
 the Streater-Wightman argument. -/
-private def schwartzTensorProductRaw
+def schwartzTensorProductRaw
     {E₁ E₂ : Type*}
     [NormedAddCommGroup E₁] [NormedSpace ℝ E₁]
     [NormedAddCommGroup E₂] [NormedSpace ℝ E₂]
@@ -209,7 +203,7 @@ private def schwartzTensorProductRaw
         _ ≤ 2 ^ p * (‖x.1‖ ^ p + ‖x.2‖ ^ p) :=
           mul_le_mul_of_nonneg_left hmax (pow_nonneg (by norm_num) _)
     have h_pow : ‖x‖ ^ p ≤ 2 ^ p * (‖x.1‖ ^ p + ‖x.2‖ ^ p) :=
-      (pow_le_pow_left₀ (norm_nonneg _) (norm_prod_le_fst_add_snd x) _).trans add_pow_le
+      (pow_le_pow_left₀ (norm_nonneg _) (norm_prod_le_fst_add_snd_DistributionalEOWKernel x) _).trans add_pow_le
     have h_term : ∀ i ∈ Finset.range (l + 1),
         ‖x‖ ^ p * (↑(l.choose i) * ‖iteratedFDeriv ℝ i φ.toFun x.1‖ *
           ‖iteratedFDeriv ℝ (l - i) ψ.toFun x.2‖) ≤
@@ -434,17 +428,17 @@ theorem SchwartzMap.exists_schwartzCLM_finsetSeminormBound_between
   simpa [pE, pF, NNReal.smul_def] using h
 
 /-- The real embedding as a continuous real-linear map. -/
-private def realEmbedCLM {m : ℕ} : (Fin m → ℝ) →L[ℝ] ComplexChartSpace m :=
+def realEmbedCLM {m : ℕ} : (Fin m → ℝ) →L[ℝ] ComplexChartSpace m :=
   ContinuousLinearMap.pi fun i => Complex.ofRealCLM.comp (ContinuousLinearMap.proj i)
 
-private theorem realEmbedCLM_apply {m : ℕ} (t : Fin m → ℝ) :
+theorem realEmbedCLM_apply {m : ℕ} (t : Fin m → ℝ) :
     realEmbedCLM t = realEmbed t := by
   ext i
   simp [realEmbedCLM, realEmbed]
 
 /-- The product-space shear that turns the external tensor product into the
 real-direction convolution test. -/
-private def realConvolutionShearLinearEquiv (m : ℕ) :
+def realConvolutionShearLinearEquiv (m : ℕ) :
     (ComplexChartSpace m × (Fin m → ℝ)) ≃ₗ[ℝ]
       (ComplexChartSpace m × (Fin m → ℝ)) where
   toFun := fun p => (p.1 - realEmbedCLM p.2, p.2)
@@ -853,13 +847,13 @@ theorem realConvolutionTest_apply {m : ℕ}
     realConvolutionTest φ ψ z = ∫ t : Fin m → ℝ, φ (z - realEmbed t) * ψ t := by
   simp [realConvolutionTest]
 
-private def realBlockUncurryLinearEquiv (n d : ℕ) (𝕜 : Type*) [CommSemiring 𝕜] :
+def realBlockUncurryLinearEquiv (n d : ℕ) (𝕜 : Type*) [CommSemiring 𝕜] :
     (Fin n → Fin d → 𝕜) ≃ₗ[𝕜] (Fin n × Fin d → 𝕜) :=
   { (Equiv.curry (Fin n) (Fin d) 𝕜).symm with
     map_add' := fun _ _ => rfl
     map_smul' := fun _ _ => rfl }
 
-private def realBlockFlattenLinearEquiv (n d : ℕ) (𝕜 : Type*) [CommSemiring 𝕜] :
+def realBlockFlattenLinearEquiv (n d : ℕ) (𝕜 : Type*) [CommSemiring 𝕜] :
     (Fin n → Fin d → 𝕜) ≃ₗ[𝕜] (Fin (n * d) → 𝕜) :=
   (realBlockUncurryLinearEquiv n d 𝕜).trans
     (LinearEquiv.funCongrLeft 𝕜 𝕜 finProdFinEquiv.symm)
@@ -916,7 +910,7 @@ theorem complexChartRealFlattenCLE_apply_im {m : ℕ}
     complexChartRealFlattenCLE m z (finProdFinEquiv (i, (1 : Fin 2))) = (z i).im := by
   simp [complexChartRealFlattenCLE, complexChartRealBlockCLE]
 
-private def finAppendLinearEquiv (m n : ℕ) :
+def finAppendLinearEquiv (m n : ℕ) :
     ((Fin m → ℝ) × (Fin n → ℝ)) ≃ₗ[ℝ] (Fin (m + n) → ℝ) :=
   { Fin.appendEquiv m n with
     map_add' := by

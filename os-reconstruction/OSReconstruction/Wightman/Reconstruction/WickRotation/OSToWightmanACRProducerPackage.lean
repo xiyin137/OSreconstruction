@@ -1,29 +1,25 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.SchwingerTemperedness
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBase
-import Init
-import OSReconstruction.SCV.ConnectedNeighborhood
-import OSReconstruction.SCV.TotallyRealIdentity
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIProductTensorSourceCurrent
-import OSReconstruction.SCV.DistributionalEOWKernel
-import OSReconstruction.SCV.DistributionalEOWKernelRecovery
-import OSReconstruction.Wightman.Reconstruction.DenseCLM
-import OSReconstruction.SCV.ConeDefs
-import OSReconstruction.SCV.DistributionalUniqueness
-import OSReconstruction.SCV.LaplaceSchwartz
-import OSReconstruction.SCV.PaleyWienerSchwartz
-import OSReconstruction.Wightman.Reconstruction.ForwardTubeDistributions
-import OSReconstruction.Wightman.SchwartzTensorProduct
-import Mathlib.Analysis.Distribution.SchwartzSpace.Deriv
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.SchwingerTemperedness
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBase
+public import Init
+public import OSReconstruction.SCV.ConnectedNeighborhood
+public import OSReconstruction.SCV.TotallyRealIdentity
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIProductTensorSourceCurrent
+public import OSReconstruction.SCV.DistributionalEOWKernel
+public import OSReconstruction.SCV.DistributionalEOWKernelRecovery
+public import OSReconstruction.Wightman.Reconstruction.DenseCLM
+public import OSReconstruction.SCV.ConeDefs
+public import OSReconstruction.SCV.DistributionalUniqueness
+public import OSReconstruction.SCV.LaplaceSchwartz
+public import OSReconstruction.SCV.PaleyWienerSchwartz
+public import OSReconstruction.Wightman.Reconstruction.ForwardTubeDistributions
+public import OSReconstruction.Wightman.SchwartzTensorProduct
+public import Mathlib.Analysis.Distribution.SchwartzSpace.Deriv
 
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 

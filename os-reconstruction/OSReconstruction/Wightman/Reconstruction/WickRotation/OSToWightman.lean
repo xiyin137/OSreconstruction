@@ -5,53 +5,49 @@ Copyright (c) 2025 ModularPhysics Contributors. All rights reserved.
 Released under Apache 2.0 license.
 Authors: Michael Douglas, ModularPhysics Contributors
 -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBase
-import Init
-import OSReconstruction.Wightman.Reconstruction.WickRotation.BHWReduced
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanE0FiniteSeminorm
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanACRProducerPackage
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanReducedForwardTubeControl
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIAxisPairPhysicalBlockPatch
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVCanonicalMovingSliceCutoff
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIOrderedProductReducedSupport
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIFlatWickMovingSlice
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIOrderedProductSourceNormalization
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIForwardTubeTimeSliceIdentification
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIA0LocalSchwinger
-import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43WickRotateFourierLaplaceBridge
-import OSReconstruction.SCV.DistributionalRepresentationGluing
-import OSReconstruction.SCV.EuclideanWeylOpen
-import OSReconstruction.SCV.ConnectedNeighborhood
-import OSReconstruction.SCV.TotallyRealIdentity
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIILemma51AxisPair
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanSemigroup
-import OSReconstruction.SCV.Osgood
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIMZFlatTubeEnvelope
-import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceTimeProductDensity
-import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43SpectralFactorization
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIProductTensorSchwingerSourceCurrent
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIFixedWindowSelectors
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIAxisPairProductSourceBranchLimit
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIOrderedProductNeighborhood
-import Mathlib.Analysis.Calculus.BumpFunction.FiniteDimension
-import Mathlib.Analysis.Calculus.BumpFunction.Convolution
-import Mathlib.Analysis.Calculus.ContDiff.Convolution
-import Mathlib.Analysis.Complex.MeanValue
-import Mathlib.MeasureTheory.Measure.ProbabilityMeasure
-import OSReconstruction.SCV.EuclideanWeylPairing
-import OSReconstruction.SCV.SchwartzFiniteSeminormBound
-import OSReconstruction.Wightman.SchwartzTensorProduct
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIProductTensorSourceCurrent
-import OSReconstruction.Wightman.Reconstruction.DenseCLM
-import OSReconstruction.SCV.DistributionalEOWCutoff
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBase
+public import Init
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.BHWReduced
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanE0FiniteSeminorm
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanACRProducerPackage
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanReducedForwardTubeControl
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIAxisPairPhysicalBlockPatch
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVCanonicalMovingSliceCutoff
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIOrderedProductReducedSupport
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIFlatWickMovingSlice
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIOrderedProductSourceNormalization
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIForwardTubeTimeSliceIdentification
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIA0LocalSchwinger
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43WickRotateFourierLaplaceBridge
+public import OSReconstruction.SCV.DistributionalRepresentationGluing
+public import OSReconstruction.SCV.EuclideanWeylOpen
+public import OSReconstruction.SCV.ConnectedNeighborhood
+public import OSReconstruction.SCV.TotallyRealIdentity
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIILemma51AxisPair
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanSemigroup
+public import OSReconstruction.SCV.Osgood
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIMZFlatTubeEnvelope
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceTimeProductDensity
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43SpectralFactorization
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIProductTensorSchwingerSourceCurrent
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIFixedWindowSelectors
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIAxisPairProductSourceBranchLimit
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIOrderedProductNeighborhood
+public import Mathlib.Analysis.Calculus.BumpFunction.FiniteDimension
+public import Mathlib.Analysis.Calculus.BumpFunction.Convolution
+public import Mathlib.Analysis.Calculus.ContDiff.Convolution
+public import Mathlib.Analysis.Complex.MeanValue
+public import Mathlib.MeasureTheory.Measure.ProbabilityMeasure
+public import OSReconstruction.SCV.EuclideanWeylPairing
+public import OSReconstruction.SCV.SchwartzFiniteSeminormBound
+public import OSReconstruction.Wightman.SchwartzTensorProduct
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIProductTensorSourceCurrent
+public import OSReconstruction.Wightman.Reconstruction.DenseCLM
+public import OSReconstruction.SCV.DistributionalEOWCutoff
 
-
-
-
-
-
-
+@[expose] public section
 
 set_option backward.isDefEq.respectTransparency false
 
@@ -76,7 +72,7 @@ inputs:
 This helper packages the purely topological last mile once those two pieces are
 available. -/
 
-private theorem VanishesToInfiniteOrderOnCoincidence.smulLeft_of_hasTemperateGrowth
+theorem VanishesToInfiniteOrderOnCoincidence.smulLeft_of_hasTemperateGrowth
     {d : ℕ} [NeZero d] {n : ℕ} {ψ : NPointDomain d n → ℂ} {f : SchwartzNPoint d n}
     (hψ : ψ.HasTemperateGrowth) (hf : VanishesToInfiniteOrderOnCoincidence f) :
     VanishesToInfiniteOrderOnCoincidence (SchwartzMap.smulLeftCLM ℂ ψ f) := by
@@ -120,7 +116,7 @@ private theorem VanishesToInfiniteOrderOnCoincidence.smulLeft_of_hasTemperateGro
     · exact hnonneg
   exact norm_eq_zero.mp hzero_norm
 
-private theorem VanishesToInfiniteOrderOnCoincidence.smulLeft_schwartzNPoint
+theorem VanishesToInfiniteOrderOnCoincidence.smulLeft_schwartzNPoint
     {d : ℕ} [NeZero d] {n : ℕ} {ψ f : SchwartzNPoint d n}
     (hf : VanishesToInfiniteOrderOnCoincidence f) :
     VanishesToInfiniteOrderOnCoincidence (SchwartzMap.smulLeftCLM ℂ ψ f) :=
@@ -128,7 +124,7 @@ private theorem VanishesToInfiniteOrderOnCoincidence.smulLeft_schwartzNPoint
     (ψ.hasTemperateGrowth) hf
 
 omit [NeZero d] in
-private theorem productTensor_cutoff_productTensor
+theorem productTensor_cutoff_productTensor
     {d k : ℕ}
     (χs fs : Fin k → SchwartzSpacetime d) :
     SchwartzMap.smulLeftCLM ℂ (SchwartzMap.productTensor χs)
@@ -153,7 +149,7 @@ private theorem productTensor_cutoff_productTensor
     simp [smul_eq_mul]
   simp [SchwartzMap.productTensor_apply, hfactor, smul_eq_mul, Finset.prod_mul_distrib]
 
-private theorem exists_finite_schwartz_partitionOfUnity_on_compact_openCover
+theorem exists_finite_schwartz_partitionOfUnity_on_compact_openCover
     {α E : Type*} [Fintype α]
     [NormedAddCommGroup E] [NormedSpace ℝ E]
     [FiniteDimensional ℝ E]
@@ -191,10 +187,10 @@ private theorem exists_finite_schwartz_partitionOfUnity_on_compact_openCover
   intro i
   exact (hχ_sub i).trans Set.inter_subset_left
 
-private def pairCollisionSq {d : ℕ} (k : ℕ) (i j : Fin k) (x : NPointDomain d k) : ℝ :=
+def pairCollisionSq {d : ℕ} (k : ℕ) (i j : Fin k) (x : NPointDomain d k) : ℝ :=
   ∑ μ : Fin (d + 1), (x i μ - x j μ) * (x i μ - x j μ)
 
-private theorem coordinate_hasTemperateGrowth
+theorem coordinate_hasTemperateGrowth
     {d : ℕ} {k : ℕ} (i : Fin k) (μ : Fin (d + 1)) :
     (fun x : NPointDomain d k => x i μ).HasTemperateGrowth := by
   let πi : NPointDomain d k →L[ℝ] SpacetimeDim d :=
@@ -204,7 +200,7 @@ private theorem coordinate_hasTemperateGrowth
   change (⇑πμ ∘ ⇑πi).HasTemperateGrowth
   exact πμ.hasTemperateGrowth.comp πi.hasTemperateGrowth
 
-private theorem pairCollisionSq_hasTemperateGrowth
+theorem pairCollisionSq_hasTemperateGrowth
     {d : ℕ} {k : ℕ} (i j : Fin k) :
     (fun x : NPointDomain d k => pairCollisionSq (d := d) k i j x).HasTemperateGrowth := by
   have hterm :
@@ -222,11 +218,11 @@ private theorem pairCollisionSq_hasTemperateGrowth
   simpa [pairCollisionSq] using
     Function.HasTemperateGrowth.sum (s := (Finset.univ : Finset (Fin (d + 1)))) hterm
 
-private def pairCollisionFarFactor
+def pairCollisionFarFactor
     {d k : ℕ} (r : ℝ) (i j : Fin k) (x : NPointDomain d k) : ℂ :=
   (SCV.smoothCutoff ((r * r)⁻¹ * pairCollisionSq (d := d) k i j x - 2) : ℂ)
 
-private theorem pairCollisionFarFactor_hasTemperateGrowth
+theorem pairCollisionFarFactor_hasTemperateGrowth
     {d k : ℕ} (r : ℝ) (i j : Fin k) :
     (pairCollisionFarFactor (d := d) r i j).HasTemperateGrowth := by
   have hsq := pairCollisionSq_hasTemperateGrowth (d := d) (k := k) i j
@@ -242,10 +238,10 @@ private theorem pairCollisionFarFactor_hasTemperateGrowth
       (SCV.smoothCutoff ((r * r)⁻¹ * pairCollisionSq (d := d) k i j x - 2) : ℂ))
   exact SCV.smoothCutoff_complex_hasTemperateGrowth.comp harg
 
-private abbrev collisionPairIndex (k : ℕ) :=
+abbrev collisionPairIndex (k : ℕ) :=
   {p : Fin k × Fin k // p.1 ≠ p.2}
 
-private theorem hasTemperateGrowth_finset_prod_complex
+theorem hasTemperateGrowth_finset_prod_complex
     {ι E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
     {s : Finset ι} {f : ι → E → ℂ}
     (hf : ∀ i ∈ s, (f i).HasTemperateGrowth) :
@@ -266,12 +262,12 @@ private theorem hasTemperateGrowth_finset_prod_complex
     change (f a * fun x : E => s.prod (fun i => f i x)).HasTemperateGrowth
     exact hfa.mul hfs
 
-private def collisionFarCutoff {d k : ℕ} (r : ℝ) : NPointDomain d k → ℂ :=
+def collisionFarCutoff {d k : ℕ} (r : ℝ) : NPointDomain d k → ℂ :=
   fun x =>
     (Finset.univ : Finset (collisionPairIndex k)).prod
       (fun p => pairCollisionFarFactor (d := d) r p.1.1 p.1.2 x)
 
-private theorem collisionFarCutoff_hasTemperateGrowth
+theorem collisionFarCutoff_hasTemperateGrowth
     {d k : ℕ} (r : ℝ) :
     (collisionFarCutoff (d := d) (k := k) r).HasTemperateGrowth := by
   classical
@@ -283,19 +279,19 @@ private theorem collisionFarCutoff_hasTemperateGrowth
     (f := fun p x => pairCollisionFarFactor (d := d) r p.1.1 p.1.2 x)
     (fun p _hp => pairCollisionFarFactor_hasTemperateGrowth (d := d) r p.1.1 p.1.2)
 
-private def collisionFarPart
+def collisionFarPart
     {d : ℕ} [NeZero d] {k : ℕ} (r : ℝ)
     (F : ZeroDiagonalSchwartz d k) : ZeroDiagonalSchwartz d k :=
   ⟨SchwartzMap.smulLeftCLM ℂ (collisionFarCutoff (d := d) (k := k) r) F.1,
     VanishesToInfiniteOrderOnCoincidence.smulLeft_of_hasTemperateGrowth
       (collisionFarCutoff_hasTemperateGrowth (d := d) (k := k) r) F.2⟩
 
-private noncomputable def unitBallBumpSchwartzNPointRadius
+noncomputable def unitBallBumpSchwartzNPointRadius_OSToWightman
     {d : ℕ} [NeZero d] (n : ℕ) (R : ℝ) (hR : 0 < R) : SchwartzNPoint d n :=
   OSReconstruction.unflattenSchwartzNPoint (d := d)
     (OSReconstruction.unitBallBumpSchwartzPiRadius (n * (d + 1)) R hR)
 
-private theorem unflatten_flattenSchwartzNPoint_local
+theorem unflatten_flattenSchwartzNPoint_local_OSToWightman
     {d : ℕ} [NeZero d] {n : ℕ} (f : SchwartzNPoint d n) :
     OSReconstruction.unflattenSchwartzNPoint (d := d)
       (OSReconstruction.flattenSchwartzNPoint (d := d) f) = f := by
@@ -303,52 +299,52 @@ private theorem unflatten_flattenSchwartzNPoint_local
   simp [OSReconstruction.flattenSchwartzNPoint_apply,
     OSReconstruction.unflattenSchwartzNPoint_apply]
 
-private noncomputable def bumpTruncationRadiusNPoint
+noncomputable def bumpTruncationRadiusNPoint_OSToWightman
     {d : ℕ} [NeZero d] {n : ℕ}
     (f : SchwartzNPoint d n) (N : ℕ) : SchwartzNPoint d n :=
   SchwartzMap.smulLeftCLM ℂ
-    (unitBallBumpSchwartzNPointRadius (d := d) n
+    (unitBallBumpSchwartzNPointRadius_OSToWightman (d := d) n
       (OSReconstruction.bumpTruncationRadiusValue N)
       (OSReconstruction.bumpTruncationRadiusValue_pos N)) f
 
-private theorem bumpTruncationRadiusNPoint_eq_unflatten
+theorem bumpTruncationRadiusNPoint_eq_unflatten_OSToWightman
     {d : ℕ} [NeZero d] {n : ℕ}
     (f : SchwartzNPoint d n) (N : ℕ) :
-    bumpTruncationRadiusNPoint (d := d) f N =
+    bumpTruncationRadiusNPoint_OSToWightman (d := d) f N =
       OSReconstruction.unflattenSchwartzNPoint (d := d)
         (OSReconstruction.bumpTruncationRadius
           (OSReconstruction.flattenSchwartzNPoint (d := d) f) N) := by
   ext x
-  rw [bumpTruncationRadiusNPoint]
+  rw [bumpTruncationRadiusNPoint_OSToWightman]
   rw [SchwartzMap.smulLeftCLM_apply_apply
-    (g := ((unitBallBumpSchwartzNPointRadius (d := d) n
+    (g := ((unitBallBumpSchwartzNPointRadius_OSToWightman (d := d) n
       (OSReconstruction.bumpTruncationRadiusValue N)
       (OSReconstruction.bumpTruncationRadiusValue_pos N) : SchwartzNPoint d n) :
         NPointDomain d n → ℂ))
-    (unitBallBumpSchwartzNPointRadius (d := d) n
+    (unitBallBumpSchwartzNPointRadius_OSToWightman (d := d) n
       (OSReconstruction.bumpTruncationRadiusValue N)
       (OSReconstruction.bumpTruncationRadiusValue_pos N)).hasTemperateGrowth
     f x]
-  rw [unitBallBumpSchwartzNPointRadius, OSReconstruction.unflattenSchwartzNPoint_apply]
+  rw [unitBallBumpSchwartzNPointRadius_OSToWightman, OSReconstruction.unflattenSchwartzNPoint_apply]
   rw [OSReconstruction.unflattenSchwartzNPoint_apply]
   rw [OSReconstruction.bumpTruncationRadius]
   rw [SchwartzMap.smulLeftCLM_apply_apply (by fun_prop)]
   simp [OSReconstruction.flattenSchwartzNPoint_apply, smul_eq_mul]
 
-private theorem dense_hasCompactSupport_zeroDiagonal
+theorem dense_hasCompactSupport_zeroDiagonal
     {d : ℕ} [NeZero d] (k : ℕ) :
     Dense {F : ZeroDiagonalSchwartz d k |
       HasCompactSupport ((F : ZeroDiagonalSchwartz d k).1 : NPointDomain d k → ℂ)} := by
   intro F
   let v : ℕ → SchwartzNPoint d k := fun n =>
-    bumpTruncationRadiusNPoint (d := d) F.1 n
+    bumpTruncationRadiusNPoint_OSToWightman (d := d) F.1 n
   have hv_vanish :
       ∀ n, VanishesToInfiniteOrderOnCoincidence (v n) := by
     intro n
-    simpa [v, bumpTruncationRadiusNPoint] using
+    simpa [v, bumpTruncationRadiusNPoint_OSToWightman] using
       (VanishesToInfiniteOrderOnCoincidence.smulLeft_schwartzNPoint
         (d := d) F.2
-          (ψ := unitBallBumpSchwartzNPointRadius (d := d) k
+          (ψ := unitBallBumpSchwartzNPointRadius_OSToWightman (d := d) k
             (OSReconstruction.bumpTruncationRadiusValue n)
             (OSReconstruction.bumpTruncationRadiusValue_pos n)))
   let u : ℕ → ZeroDiagonalSchwartz d k := fun n => ⟨v n, hv_vanish n⟩
@@ -370,9 +366,9 @@ private theorem dense_hasCompactSupport_zeroDiagonal
     have hv_compact :
         HasCompactSupport ((v n : SchwartzNPoint d k) : NPointDomain d k → ℂ) := by
       simpa [v] using
-        (show HasCompactSupport ((bumpTruncationRadiusNPoint (d := d) F.1 n :
+        (show HasCompactSupport ((bumpTruncationRadiusNPoint_OSToWightman (d := d) F.1 n :
             SchwartzNPoint d k) : NPointDomain d k → ℂ) from by
-          rw [bumpTruncationRadiusNPoint_eq_unflatten (d := d)]
+          rw [bumpTruncationRadiusNPoint_eq_unflatten_OSToWightman (d := d)]
           convert hflat_compact.comp_homeomorph
             (flattenCLEquivReal k (d + 1)).toHomeomorph using 1 <;> rfl)
     simpa [u] using hv_compact
@@ -393,14 +389,14 @@ private theorem dense_hasCompactSupport_zeroDiagonal
                 (OSReconstruction.bumpTruncationRadius
                   (OSReconstruction.flattenSchwartzNPoint (d := d) F.1) n) := by
         funext n
-        simpa [v] using bumpTruncationRadiusNPoint_eq_unflatten (d := d) F.1 n
+        simpa [v] using bumpTruncationRadiusNPoint_eq_unflatten_OSToWightman (d := d) F.1 n
       rw [hrew]
       change Filter.Tendsto
         ((⇑(OSReconstruction.unflattenSchwartzNPoint (d := d))) ∘
           fun n => OSReconstruction.bumpTruncationRadius
             (OSReconstruction.flattenSchwartzNPoint (d := d) F.1) n)
         Filter.atTop (nhds F.1)
-      simpa [unflatten_flattenSchwartzNPoint_local (d := d) F.1] using hunflat
+      simpa [unflatten_flattenSchwartzNPoint_local_OSToWightman (d := d) F.1] using hunflat
     simpa [u] using hv_tendsto
   exact isClosed_closure.mem_of_tendsto hu_tendsto
     (Filter.Eventually.of_forall fun n => subset_closure (hu_mem n))
@@ -413,11 +409,11 @@ private theorem dense_hasCompactSupport_zeroDiagonal
 
 
 
-private abbrev proofideas_spacetimeUnitBallBumpRadius
+abbrev proofideas_spacetimeUnitBallBumpRadius
     (R : ℝ) (hR : 0 < R) : SchwartzSpacetime d :=
   OSReconstruction.unitBallBumpSchwartzPiRadius (d + 1) R hR
 
-private theorem proofideas_unitBallBumpSchwartzPi_zero_of_two_le_norm {m : ℕ}
+theorem proofideas_unitBallBumpSchwartzPi_zero_of_two_le_norm {m : ℕ}
     {x : Fin m → ℝ} (hx : 2 ≤ ‖x‖) :
     OSReconstruction.unitBallBumpSchwartzPi m x = 0 := by
   let b : ContDiffBump (0 : Fin m → ℝ) := ⟨1, 2, zero_lt_one, one_lt_two⟩
@@ -437,7 +433,7 @@ private theorem proofideas_unitBallBumpSchwartzPi_zero_of_two_le_norm {m : ℕ}
   have hdist : 2 ≤ dist x 0 := by simpa [dist_eq_norm] using hx
   exact b.zero_of_le_dist hdist
 
-private theorem proofideas_spacetimeUnitBallBumpRadius_zero_of_two_mul_le_norm
+theorem proofideas_spacetimeUnitBallBumpRadius_zero_of_two_mul_le_norm
     {R : ℝ} (hR : 0 < R) {x : SpacetimeDim d}
     (hx : 2 * R ≤ ‖x‖) :
     proofideas_spacetimeUnitBallBumpRadius (d := d) R hR x = 0 := by
@@ -447,18 +443,18 @@ private theorem proofideas_spacetimeUnitBallBumpRadius_zero_of_two_mul_le_norm
   rw [le_inv_mul_iff₀ hR]
   simpa [two_mul, mul_comm, mul_left_comm, mul_assoc] using hx
 
-private abbrev proofideas_pairDiffCLM {k : ℕ} (i j : Fin k) :
+abbrev proofideas_pairDiffCLM {k : ℕ} (i j : Fin k) :
     NPointDomain d k →L[ℝ] SpacetimeDim d :=
   ContinuousLinearMap.proj (R := ℝ) (ι := Fin k) (φ := fun _ => SpacetimeDim d) i -
     ContinuousLinearMap.proj (R := ℝ) (ι := Fin k) (φ := fun _ => SpacetimeDim d) j
 
-private theorem proofideas_pairDiffCLM_apply {k : ℕ} (i j : Fin k)
+theorem proofideas_pairDiffCLM_apply {k : ℕ} (i j : Fin k)
     (x : NPointDomain d k) :
     proofideas_pairDiffCLM (d := d) i j x = x i - x j := by
   ext μ
   rfl
 
-private theorem proofideas_pairDiffCLM_opNorm_le_two {k : ℕ} (i j : Fin k) :
+theorem proofideas_pairDiffCLM_opNorm_le_two {k : ℕ} (i j : Fin k) :
     ‖proofideas_pairDiffCLM (d := d) i j‖ ≤ (2 : ℝ) := by
   refine ContinuousLinearMap.opNorm_le_bound _ (by norm_num) ?_
   intro x
@@ -471,7 +467,7 @@ private theorem proofideas_pairDiffCLM_opNorm_le_two {k : ℕ} (i j : Fin k) :
     _ = 2 * ‖x‖ := by ring
 
 set_option maxHeartbeats 800000 in
-private theorem proofideas_exists_iteratedFDeriv_spacetimeUnitBallBumpRadius_bound
+theorem proofideas_exists_iteratedFDeriv_spacetimeUnitBallBumpRadius_bound
     (n : ℕ) :
     ∃ C : ℝ, 0 ≤ C ∧
       ∀ (δ : ℝ) (hδ : 0 < δ) (x : SpacetimeDim d),
@@ -536,7 +532,7 @@ private theorem proofideas_exists_iteratedFDeriv_spacetimeUnitBallBumpRadius_bou
     _ ≤ C * (δ⁻¹) ^ n := by
             gcongr
 
-private theorem proofideas_exists_iteratedFDeriv_pairSmallCutoff_bound
+theorem proofideas_exists_iteratedFDeriv_pairSmallCutoff_bound
     {k : ℕ} (i j : Fin k) (n : ℕ) :
     ∃ C : ℝ, 0 ≤ C ∧
       ∀ (δ : ℝ) (hδ : 0 < δ) (x : NPointDomain d k),
@@ -591,7 +587,7 @@ private theorem proofideas_exists_iteratedFDeriv_pairSmallCutoff_bound
     _ = (C * (2 : ℝ) ^ n) * (δ⁻¹) ^ n := by
           simp [mul_assoc, mul_left_comm, mul_comm]
 
-private theorem proofideas_pairSmallCutoff_support_pair_norm_le
+theorem proofideas_pairSmallCutoff_support_pair_norm_le
     {k : ℕ} {δ : ℝ} (hδ : 0 < δ) (i j : Fin k) :
     Function.support
         (fun x : NPointDomain d k =>
@@ -608,7 +604,7 @@ private theorem proofideas_pairSmallCutoff_support_pair_norm_le
     exact proofideas_spacetimeUnitBallBumpRadius_zero_of_two_mul_le_norm (d := d) hδ hnorm
   exact hx (by simpa [Function.mem_support] using hzero)
 
-private theorem proofideas_iteratedFDeriv_lineDeriv_eq_snoc_npoint {k n : ℕ}
+theorem proofideas_iteratedFDeriv_lineDeriv_eq_snoc_npoint {k n : ℕ}
     (f : SchwartzNPoint d k)
     (v x : NPointDomain d k)
     (u : Fin n → NPointDomain d k) :
@@ -624,7 +620,7 @@ private theorem proofideas_iteratedFDeriv_lineDeriv_eq_snoc_npoint {k n : ℕ}
     SchwartzMap.iteratedLineDerivOp_eq_iteratedFDeriv
       (f := (∂_{v} f : SchwartzNPoint d k)) (m := u) (x := x)] using hsucc_apply.symm
 
-private theorem proofideas_lineDerivOp_comm_npoint {k : ℕ}
+theorem proofideas_lineDerivOp_comm_npoint {k : ℕ}
     (f : SchwartzNPoint d k)
     (v w : NPointDomain d k) :
     ∂_{v} ((∂_{w} f : SchwartzNPoint d k)) =
@@ -649,7 +645,7 @@ private theorem proofideas_lineDerivOp_comm_npoint {k : ℕ}
     _ = (∂_{w} ((∂_{v} f : SchwartzNPoint d k))) x := by
       simp [LineDeriv.iteratedLineDerivOp_succ_left]
 
-private theorem proofideas_lineDerivOp_iterated_comm_npoint {k n : ℕ}
+theorem proofideas_lineDerivOp_iterated_comm_npoint {k n : ℕ}
     (f : SchwartzNPoint d k)
     (v : NPointDomain d k) (u : Fin n → NPointDomain d k) :
     ∂_{v} (∂^{u} f) = ∂^{u} (∂_{v} f) := by
@@ -664,7 +660,7 @@ private theorem proofideas_lineDerivOp_iterated_comm_npoint {k n : ℕ}
       congr 1
       exact proofideas_lineDerivOp_comm_npoint f v (u (Fin.last n))
 
-private theorem proofideas_fderiv_iteratedFDeriv_eq_iteratedFDeriv_lineDeriv_npoint
+theorem proofideas_fderiv_iteratedFDeriv_eq_iteratedFDeriv_lineDeriv_npoint
     {k n : ℕ}
     (f : SchwartzNPoint d k)
     (v x : NPointDomain d k) :
@@ -691,7 +687,7 @@ private theorem proofideas_fderiv_iteratedFDeriv_eq_iteratedFDeriv_lineDeriv_npo
               (SchwartzMap.iteratedLineDerivOp_eq_iteratedFDeriv
                 (f := (∂_{v} f : SchwartzNPoint d k)) (m := u) (x := x))
 
-private theorem proofideas_seminorm_zero_lineDeriv_le_npoint {k : ℕ}
+theorem proofideas_seminorm_zero_lineDeriv_le_npoint {k : ℕ}
     (f : SchwartzNPoint d k) (v : NPointDomain d k) (n : ℕ) :
     SchwartzMap.seminorm ℝ 0 n (LineDeriv.lineDerivOp v f : SchwartzNPoint d k) ≤
       ‖v‖ * SchwartzMap.seminorm ℝ 0 (n + 1) f := by
@@ -716,11 +712,11 @@ private theorem proofideas_seminorm_zero_lineDeriv_le_npoint {k : ℕ}
           rw [norm_fderiv_iteratedFDeriv]
     _ ≤ (SchwartzMap.seminorm ℝ 0 (n + 1) f) * ‖v‖ := by
           gcongr
-          exact SchwartzMap.norm_iteratedFDeriv_le_seminorm ℂ f (n + 1) x
+          exact SchwartzMap.norm_iteratedFDeriv_le_seminorm ℝ f (n + 1) x
     _ = ‖v‖ * SchwartzMap.seminorm ℝ 0 (n + 1) f := by
           ring
 
-private theorem proofideas_iteratedLineDeriv_seminorm_zero_le_npoint {k : ℕ}
+theorem proofideas_iteratedLineDeriv_seminorm_zero_le_npoint {k : ℕ}
     (f : SchwartzNPoint d k) (j n : ℕ) :
     ∀ u : Fin j → NPointDomain d k,
       SchwartzMap.seminorm ℝ 0 n (LineDeriv.iteratedLineDerivOp u f : SchwartzNPoint d k) ≤
@@ -747,17 +743,17 @@ private theorem proofideas_iteratedLineDeriv_seminorm_zero_le_npoint {k : ℕ}
               rw [htail]
               ring
 
-private theorem proofideas_norm_iteratedFDeriv_iteratedLineDeriv_le_npoint {k : ℕ}
+theorem proofideas_norm_iteratedFDeriv_iteratedLineDeriv_le_npoint {k : ℕ}
     (f : SchwartzNPoint d k) (j n : ℕ) :
     ∀ (u : Fin j → NPointDomain d k) (x : NPointDomain d k),
       ‖iteratedFDeriv ℝ n ((LineDeriv.iteratedLineDerivOp u f : SchwartzNPoint d k) :
           NPointDomain d k → ℂ) x‖ ≤
         (∏ i, ‖u i‖) * SchwartzMap.seminorm ℝ 0 (n + j) f := by
   intro u x
-  exact le_trans (SchwartzMap.norm_iteratedFDeriv_le_seminorm ℂ (∂^{u} f) n x)
+  exact le_trans (SchwartzMap.norm_iteratedFDeriv_le_seminorm ℝ (∂^{u} f) n x)
     (proofideas_iteratedLineDeriv_seminorm_zero_le_npoint (f := f) (j := j) (n := n) u)
 
-private theorem proofideas_iteratedLineDeriv_preserves_zeroDiagonal {k j : ℕ}
+theorem proofideas_iteratedLineDeriv_preserves_zeroDiagonal {k j : ℕ}
     (f : SchwartzNPoint d k)
     (hf : VanishesToInfiniteOrderOnCoincidence f)
     (u : Fin j → NPointDomain d k) :
@@ -787,18 +783,18 @@ private theorem proofideas_iteratedLineDeriv_preserves_zeroDiagonal {k j : ℕ}
             (f := f) (v := u (Fin.last j)) (x := y) (u := w)).trans hzero_apply
       exact ih (f := LineDeriv.lineDerivOp (u (Fin.last j)) f) hline (Fin.init u)
 
-private def proofideas_coincidenceCollapse {k : ℕ} (i j : Fin k) (x : NPointDomain d k) :
+def proofideas_coincidenceCollapse {k : ℕ} (i j : Fin k) (x : NPointDomain d k) :
     NPointDomain d k :=
   fun q => if q = i ∨ q = j then midpoint ℝ (x i) (x j) else x q
 
-private theorem proofideas_coincidenceCollapse_mem_CoincidenceLocus {k : ℕ}
+theorem proofideas_coincidenceCollapse_mem_CoincidenceLocus {k : ℕ}
     (x : NPointDomain d k) (i j : Fin k) (hij : i ≠ j) :
     proofideas_coincidenceCollapse (d := d) i j x ∈ CoincidenceLocus d k := by
   refine ⟨i, j, hij, ?_⟩
   ext μ
   simp [proofideas_coincidenceCollapse, hij]
 
-private theorem proofideas_norm_sub_coincidenceCollapse_le_pairDifference {k : ℕ}
+theorem proofideas_norm_sub_coincidenceCollapse_le_pairDifference {k : ℕ}
     (x : NPointDomain d k) (i j : Fin k) (hij : i ≠ j) :
     ‖x - proofideas_coincidenceCollapse (d := d) i j x‖ ≤ ‖x i - x j‖ := by
   change ↑(Finset.univ.sup fun q => ‖(x - proofideas_coincidenceCollapse (d := d) i j x) q‖₊) ≤
@@ -843,7 +839,7 @@ private theorem proofideas_norm_sub_coincidenceCollapse_le_pairDifference {k : �
   exact_mod_cast hdistNN
 
 set_option maxHeartbeats 600000 in
-private theorem proofideas_exists_iteratedLineDeriv_pair_flat_bound
+theorem proofideas_exists_iteratedLineDeriv_pair_flat_bound
     {k : ℕ}
     (f : SchwartzNPoint d k)
     (hf : VanishesToInfiniteOrderOnCoincidence f)
@@ -985,7 +981,7 @@ private theorem proofideas_exists_iteratedLineDeriv_pair_flat_bound
     _ ≤ (A / (((Nat.factorial m : ℕ) : ℝ))) * ‖x a - x b‖ ^ (m + 1) * ∏ i, ‖u i‖ := by
           gcongr
 
-private theorem proofideas_exists_iteratedFDeriv_pair_flat_bound
+theorem proofideas_exists_iteratedFDeriv_pair_flat_bound
     {k : ℕ}
     (f : SchwartzNPoint d k)
     (hf : VanishesToInfiniteOrderOnCoincidence f)
@@ -1005,7 +1001,7 @@ private theorem proofideas_exists_iteratedFDeriv_pair_flat_bound
   simpa [SchwartzMap.iteratedLineDerivOp_eq_iteratedFDeriv, mul_assoc, mul_left_comm, mul_comm]
     using hC u x
 
-private theorem proofideas_pair_power_factor_le
+theorem proofideas_pair_power_factor_le
     {k M q : ℕ} {δ : ℝ}
     (hδ : 0 < δ) (hδ_le : δ ≤ 1)
     {x : NPointDomain d k} {a b : Fin k} (hx : ‖x a - x b‖ ≤ 2 * δ)
@@ -1038,7 +1034,7 @@ private theorem proofideas_pair_power_factor_le
     _ = (2 : ℝ) ^ (M + 1) * δ := by rw [hcancel]
 
 set_option maxHeartbeats 1000000 in
-private theorem proofideas_pairSmallCutoff_seminorm_le_linear
+theorem proofideas_pairSmallCutoff_seminorm_le_linear
     {k : ℕ}
     (F : ZeroDiagonalSchwartz d k)
     (hF_compact : HasCompactSupport ((F.1 : SchwartzNPoint d k) : NPointDomain d k → ℂ))
@@ -1268,7 +1264,7 @@ private theorem proofideas_pairSmallCutoff_seminorm_le_linear
   simpa [fδ, ηδ] using
     SchwartzMap.seminorm_le_bound ℝ N M fδ (by positivity) hbound
 
-private def proofideas_pairNearPart
+def proofideas_pairNearPart
     {k : ℕ} (δ : ℝ) (hδ : 0 < δ)
     (F : ZeroDiagonalSchwartz d k) (a b : Fin k) :
     ZeroDiagonalSchwartz d k :=
@@ -1280,7 +1276,7 @@ private def proofideas_pairNearPart
       fun_prop
     exact VanishesToInfiniteOrderOnCoincidence.smulLeft_of_hasTemperateGrowth (d := d) hη F.2⟩
 
-private theorem proofideas_pairNearPart_tendsto_zero
+theorem proofideas_pairNearPart_tendsto_zero
     {k : ℕ}
     (F : ZeroDiagonalSchwartz d k)
     (hF_compact : HasCompactSupport ((F.1 : SchwartzNPoint d k) : NPointDomain d k → ℂ))
@@ -1359,7 +1355,7 @@ private theorem proofideas_pairNearPart_tendsto_zero
         field_simp [show Bnd ≠ 0 by positivity]
   exact lt_of_le_of_lt (le_trans hsemi_le (le_trans hscale hfrac_mono)) hsmall
 
-private theorem proofideas_spacetimeUnitBallBumpRadius_one_of_norm_le
+theorem proofideas_spacetimeUnitBallBumpRadius_one_of_norm_le
     {R : ℝ} (hR : 0 < R) {x : SpacetimeDim d}
     (hx : ‖x‖ ≤ R) :
     proofideas_spacetimeUnitBallBumpRadius (d := d) R hR x = 1 := by
@@ -1367,7 +1363,7 @@ private theorem proofideas_spacetimeUnitBallBumpRadius_one_of_norm_le
   apply OSReconstruction.unitBallBumpSchwartzPiRadius_one_of_mem_closedBall (m := d + 1) hR
   simpa [Metric.mem_closedBall, dist_eq_norm] using hx
 
-private def proofideas_pairFarPart
+def proofideas_pairFarPart
     {k : ℕ} (δ : ℝ) (hδ : 0 < δ)
     (F : ZeroDiagonalSchwartz d k) (a b : Fin k) :
     ZeroDiagonalSchwartz d k :=
@@ -1380,7 +1376,7 @@ private def proofideas_pairFarPart
       fun_prop
     exact VanishesToInfiniteOrderOnCoincidence.smulLeft_of_hasTemperateGrowth (d := d) hφ F.2⟩
 
-private theorem proofideas_pairFarPart_support_pair_norm_ge
+theorem proofideas_pairFarPart_support_pair_norm_ge
     {k : ℕ} {δ : ℝ} (hδ : 0 < δ)
     (F : ZeroDiagonalSchwartz d k) (a b : Fin k) :
     Function.support
@@ -1407,7 +1403,7 @@ private theorem proofideas_pairFarPart_support_pair_norm_ge
     simp [φδ, hη_one]
   exact hx hzero
 
-private theorem proofideas_pairFarPart_tsupport_pair_norm_ge
+theorem proofideas_pairFarPart_tsupport_pair_norm_ge
     {k : ℕ} {δ : ℝ} (hδ : 0 < δ)
     (F : ZeroDiagonalSchwartz d k) (a b : Fin k) :
     tsupport
@@ -1423,7 +1419,7 @@ private theorem proofideas_pairFarPart_tsupport_pair_norm_ge
         ((proofideas_pairDiffCLM (d := d) a b).continuous.norm)
     simpa [proofideas_pairDiffCLM_apply] using hclosed_raw
 
-private theorem proofideas_pairFarPart_tsupport_disjoint_pair_diagonal
+theorem proofideas_pairFarPart_tsupport_disjoint_pair_diagonal
     {k : ℕ} {δ : ℝ} (hδ : 0 < δ)
     (F : ZeroDiagonalSchwartz d k) (a b : Fin k) :
     Disjoint
@@ -1439,7 +1435,7 @@ private theorem proofideas_pairFarPart_tsupport_disjoint_pair_diagonal
   have hzero : ‖x a - x b‖ = 0 := by simp [hEq']
   linarith
 
-private theorem proofideas_pairFarPart_hasCompactSupport
+theorem proofideas_pairFarPart_hasCompactSupport
     {k : ℕ} {δ : ℝ} (hδ : 0 < δ)
     (F : ZeroDiagonalSchwartz d k)
     (hF_compact : HasCompactSupport ((F.1 : SchwartzNPoint d k) : NPointDomain d k → ℂ))
@@ -1466,7 +1462,7 @@ private theorem proofideas_pairFarPart_hasCompactSupport
     (SchwartzMap.tsupport_smulLeftCLM_subset
       (g := φδ) (f := F.1) hx_ts).1
 
-private theorem proofideas_pairFarPart_tsupport_subset_original
+theorem proofideas_pairFarPart_tsupport_subset_original
     {k : ℕ} {δ : ℝ} (hδ : 0 < δ)
     (F : ZeroDiagonalSchwartz d k) (a b : Fin k) :
     tsupport
@@ -1486,7 +1482,7 @@ private theorem proofideas_pairFarPart_tsupport_subset_original
     (SchwartzMap.tsupport_smulLeftCLM_subset
       (g := φδ) (f := F.1) hx).1
 
-private theorem proofideas_pairFarPart_add_pairNearPart
+theorem proofideas_pairFarPart_add_pairNearPart
     {k : ℕ} {δ : ℝ} (hδ : 0 < δ)
     (F : ZeroDiagonalSchwartz d k) (a b : Fin k) :
     proofideas_pairFarPart (d := d) δ hδ F a b +
@@ -1509,7 +1505,7 @@ private theorem proofideas_pairFarPart_add_pairNearPart
   simp only [φδ, smul_eq_mul]
   ring
 
-private theorem proofideas_pairFarPart_tendsto
+theorem proofideas_pairFarPart_tendsto
     {k : ℕ}
     (F : ZeroDiagonalSchwartz d k)
     (hF_compact : HasCompactSupport ((F.1 : SchwartzNPoint d k) : NPointDomain d k → ℂ))
@@ -1556,7 +1552,7 @@ private theorem proofideas_pairFarPart_tendsto
   simpa [far]
     using hval_tendsto
 
-private theorem compactlySupported_zeroDiagonal_subset_closure_of_coincidenceFree
+theorem compactlySupported_zeroDiagonal_subset_closure_of_coincidenceFree
     {d : ℕ} [NeZero d]
     (k : ℕ)
     (B : Submodule ℂ (ZeroDiagonalSchwartz d k))
@@ -1654,19 +1650,19 @@ private theorem compactlySupported_zeroDiagonal_subset_closure_of_coincidenceFre
 
 /-- The physically useful dense generators: compact product sources carrying
 one proper Euclidean rotation and one strict support ordering. -/
-private def orderedCompactProductTensorSet
+def orderedCompactProductTensorSet
     {d : ℕ} [NeZero d] (k : ℕ) :
     Set (ZeroDiagonalSchwartz d k) :=
   {f |
     ∃ P : OSReconstruction.OSIIOrderedCompactProductSource d k,
       f = ⟨SchwartzMap.productTensor P.factors, P.vanishes⟩}
 
-private def orderedCompactProductTensorSubmodule
+def orderedCompactProductTensorSubmodule
     {d : ℕ} [NeZero d] (k : ℕ) :
     Submodule ℂ (ZeroDiagonalSchwartz d k) :=
   Submodule.span ℂ (orderedCompactProductTensorSet (d := d) k)
 
-private theorem ordered_cutoff_productTensor_mem_submodule
+theorem ordered_cutoff_productTensor_mem_submodule
     {d : ℕ} [NeZero d] {k : ℕ}
     {x : NPointDomain d k}
     (P : OSReconstruction.OSIIOrderedProductNeighborhood x)
@@ -1718,7 +1714,7 @@ private theorem ordered_cutoff_productTensor_mem_submodule
   refine ⟨Q.vanishes, ?_⟩
   exact Submodule.subset_span ⟨Q, rfl⟩
 
-private theorem ordered_product_cutoff_fixed_mem_closure
+theorem ordered_product_cutoff_fixed_mem_closure
     {d : ℕ} [NeZero d] {k : ℕ}
     {x : NPointDomain d k}
     (P : OSReconstruction.OSIIOrderedProductNeighborhood x)
@@ -1825,7 +1821,7 @@ private theorem ordered_product_cutoff_fixed_mem_closure
         (by simpa [coeZ] using hfull)
   simpa [B] using hsub
 
-private theorem ordered_product_box_supported_mem_closure
+theorem ordered_product_box_supported_mem_closure
     {d : ℕ} [NeZero d] {k : ℕ}
     {x₀ : NPointDomain d k}
     (P : OSReconstruction.OSIIOrderedProductNeighborhood x₀)
@@ -1887,7 +1883,7 @@ private theorem ordered_product_box_supported_mem_closure
     ordered_product_cutoff_fixed_mem_closure
       P χs hχ_compact hχ_sub F hfix
 
-private theorem finite_ordered_product_box_cover_mem_closure
+theorem finite_ordered_product_box_cover_mem_closure
     {d : ℕ} [NeZero d] {k : ℕ} {α : Type*} [Fintype α]
     (F : ZeroDiagonalSchwartz d k)
     (hF_comp : HasCompactSupport (F.1 : NPointDomain d k → ℂ))
@@ -1974,7 +1970,7 @@ private theorem finite_ordered_product_box_cover_mem_closure
   rw [hdecomp]
   simpa [B, Submodule.topologicalClosure_coe] using hsum
 
-private theorem ordered_coincidence_free_compactSupport_mem_closure
+theorem ordered_coincidence_free_compactSupport_mem_closure
     {d : ℕ} [NeZero d] {k : ℕ}
     (F : ZeroDiagonalSchwartz d k)
     (hF_comp : HasCompactSupport (F.1 : NPointDomain d k → ℂ))
@@ -2039,7 +2035,7 @@ private theorem ordered_coincidence_free_compactSupport_mem_closure
     finite_ordered_product_box_cover_mem_closure
       (d := d) (k := k) F hF_comp V hV_open hcover Q hV_box
 
-private theorem compactlySupported_zeroDiagonal_subset_closure_orderedCompactProductTensorSubmodule
+theorem compactlySupported_zeroDiagonal_subset_closure_orderedCompactProductTensorSubmodule
     {d : ℕ} [NeZero d]
     (k : ℕ) :
     {F : ZeroDiagonalSchwartz d k |
@@ -2057,7 +2053,7 @@ private theorem compactlySupported_zeroDiagonal_subset_closure_orderedCompactPro
     ordered_coincidence_free_compactSupport_mem_closure
       (d := d) (k := k) F hF_comp hF_disj
 
-private theorem orderedCompactProductTensorSubmodule_dense_zeroDiagonal
+theorem orderedCompactProductTensorSubmodule_dense_zeroDiagonal
     {d : ℕ} [NeZero d]
     (k : ℕ) :
     Dense
@@ -2143,7 +2139,7 @@ def xiShift {k d : ℕ} (j : Fin k) (r : Fin (d + 1))
   fun i μ => if j.val ≤ i.val ∧ μ = r then z i μ + t else z i μ
 
 /-- Shifting a cumulative-difference slice by zero does nothing. -/
-private theorem xiShift_zero {k d : ℕ}
+theorem xiShift_zero {k d : ℕ}
     (j : Fin k) (r : Fin (d + 1))
     (z : Fin k → Fin (d + 1) → ℂ) :
     xiShift j r z 0 = z := by
@@ -2153,7 +2149,7 @@ private theorem xiShift_zero {k d : ℕ}
   · simp [xiShift, h]
 
 /-- Successive ξ-shifts in the same cumulative-difference coordinate add. -/
-private theorem xiShift_add_same {k d : ℕ}
+theorem xiShift_add_same {k d : ℕ}
     (j : Fin k) (r : Fin (d + 1))
     (z : Fin k → Fin (d + 1) → ℂ) (s t : ℂ) :
     xiShift j r (xiShift j r z s) t = xiShift j r z (s + t) := by
@@ -2166,7 +2162,7 @@ private theorem xiShift_add_same {k d : ℕ}
 the `(j,r)` difference variable is translated by `t`, and all other difference
 coordinates stay fixed. This is the concrete bookkeeping fact behind the
 one-variable slice picture used in analytic continuation. -/
-private theorem toDiffFlat_xiShift_eq_update {k d : ℕ}
+theorem toDiffFlat_xiShift_eq_update {k d : ℕ}
     (j : Fin k) (r : Fin (d + 1))
     (z : Fin k → Fin (d + 1) → ℂ) (t : ℂ) :
     BHW.toDiffFlat k d (xiShift j r z t) =
@@ -2246,7 +2242,7 @@ private theorem toDiffFlat_xiShift_eq_update {k d : ℕ}
 /-- Inverse-chart form of `toDiffFlat_xiShift_eq_update`: updating exactly the
 flattened difference coordinate `(j,r)` by `+ t` reconstructs the configuration
 obtained from `xiShift j r` by the same increment. -/
-private theorem fromDiffFlat_update_eq_xiShift {k d : ℕ}
+theorem fromDiffFlat_update_eq_xiShift {k d : ℕ}
     (j : Fin k) (r : Fin (d + 1))
     (u : Fin (k * (d + 1)) → ℂ) (t : ℂ) :
     BHW.fromDiffFlat k d
@@ -2265,7 +2261,7 @@ private theorem fromDiffFlat_update_eq_xiShift {k d : ℕ}
 
 /-- Tail Euclidean time shift starting at index `j`: points with index `i ≥ j`
 are shifted by the real time vector `timeShiftVec d t`, earlier points are fixed. -/
-private def tailTimeShiftConfig {d k : ℕ} (j : Fin k) (t : ℝ)
+def tailTimeShiftConfig {d k : ℕ} (j : Fin k) (t : ℝ)
     (x : NPointDomain d k) : NPointDomain d k :=
   fun i => if j.val ≤ i.val then x i + timeShiftVec d t else x i
 
@@ -2273,7 +2269,7 @@ private def tailTimeShiftConfig {d k : ℕ} (j : Fin k) (t : ℝ)
 A positive tail shift of the right block corresponds to a negative time shift on
 the right Schwartz factor. This fixes the sign convention needed when a flat
 coordinate update by `+ t * I` is converted back to the OS semigroup picture. -/
-private theorem osConjTensorProduct_tailTimeShift_eq_timeShift {n m : ℕ}
+theorem osConjTensorProduct_tailTimeShift_eq_timeShift {n m : ℕ}
     (f : SchwartzNPoint d n) (g : SchwartzNPoint d m) (hm : 0 < m) (t : ℝ)
     (x : NPointDomain d (n + m)) :
     (f.osConjTensorProduct g)
@@ -2302,7 +2298,7 @@ time shift on the right Schwartz factor is evaluation of the unshifted tensor
 product on the configuration with the right block shifted by `- timeShiftVec d t`.
 Written with `tailTimeShiftConfig`, this is the form that matches a flat update
 by `- t * I`. -/
-private theorem osConjTensorProduct_timeShift_eq_tailTimeShift {n m : ℕ}
+theorem osConjTensorProduct_timeShift_eq_tailTimeShift {n m : ℕ}
     (f : SchwartzNPoint d n) (g : SchwartzNPoint d m) (hm : 0 < m) (t : ℝ)
     (x : NPointDomain d (n + m)) :
     (f.osConjTensorProduct (timeShiftSchwartzNPoint (d := d) t g)) x =
@@ -2315,7 +2311,7 @@ private theorem osConjTensorProduct_timeShift_eq_tailTimeShift {n m : ℕ}
 /-- Tail translation of the right block preserves Lebesgue measure on configuration
 space. This is the change-of-variables ingredient for converting the sign-correct
 flat-update slice picture back to the Euclidean integral. -/
-private theorem rightBlockTailShift_measurePreserving {n m : ℕ}
+theorem rightBlockTailShift_measurePreserving {n m : ℕ}
     (hm : 0 < m) (t : ℝ) :
     MeasureTheory.MeasurePreserving
       (tailTimeShiftConfig (d := d) ⟨n, Nat.lt_add_of_pos_right hm⟩ t)
@@ -2340,7 +2336,7 @@ private theorem rightBlockTailShift_measurePreserving {n m : ℕ}
 /-- The right-block tail shift is a measurable equivalence, with inverse given by
 shifting the same tail by `-t`. This packages the change of variables needed in
 the Euclidean integral form of the slice identity. -/
-private def rightBlockTailShiftMeasurableEquiv {n m : ℕ}
+def rightBlockTailShiftMeasurableEquiv {n m : ℕ}
     (hm : 0 < m) (t : ℝ) :
     NPointDomain d (n + m) ≃ᵐ NPointDomain d (n + m) where
   toEquiv :=
@@ -2382,7 +2378,7 @@ private def rightBlockTailShiftMeasurableEquiv {n m : ℕ}
 /-- Change of variables under the right-block tail shift. Combined with the
 sign-correct pointwise bridge lemmas above, this is the generic integral shell
 needed for the remaining `schwinger_continuation_base_step` slice theorem. -/
-private theorem integral_comp_rightBlockTailShift {n m : ℕ}
+theorem integral_comp_rightBlockTailShift {n m : ℕ}
     (hm : 0 < m) (t : ℝ)
     {e : NPointDomain d (n + m) → ℂ} :
     ∫ x, e (tailTimeShiftConfig (d := d) ⟨n, Nat.lt_add_of_pos_right hm⟩ t x) =
@@ -2400,7 +2396,7 @@ private theorem integral_comp_rightBlockTailShift {n m : ℕ}
 /-- On Wick-rotated Euclidean configurations, the complex ξ-shift in the time
 difference coordinate `(j,0)` is exactly the Wick rotation of a real tail time
 shift on the underlying Euclidean configuration. -/
-private theorem xiShift_wickRotate_eq_tailTimeShift {d k : ℕ}
+theorem xiShift_wickRotate_eq_tailTimeShift {d k : ℕ}
     (j : Fin k) (x : NPointDomain d k) (t : ℝ) :
     xiShift j 0 (fun i => wickRotatePoint (x i)) ((t : ℂ) * Complex.I) =
       fun i => wickRotatePoint (tailTimeShiftConfig (d := d) j t x i) := by
@@ -2420,7 +2416,7 @@ private theorem xiShift_wickRotate_eq_tailTimeShift {d k : ℕ}
 update by `+ t I` in the `(j,0)` coordinate is exactly the Wick-rotated tail
 time shift on Euclidean configurations. This is the coordinate bridge from flat
 slice updates back to the OS semigroup picture. -/
-private theorem toDiffFlat_wickRotate_tailTimeShift_eq_update {d k : ℕ}
+theorem toDiffFlat_wickRotate_tailTimeShift_eq_update {d k : ℕ}
     (j : Fin k) (x : NPointDomain d k) (t : ℝ) :
     BHW.toDiffFlat k d (fun i => wickRotatePoint (tailTimeShiftConfig (d := d) j t x i)) =
       Function.update
@@ -2437,7 +2433,7 @@ private theorem toDiffFlat_wickRotate_tailTimeShift_eq_update {d k : ℕ}
 shifting the Euclidean tail by `-t` corresponds to updating the flattened time
 difference coordinate by `- t * I`. This is the form aligned with the positive
 OS semigroup parameter in `timeShiftSchwartzNPoint t`. -/
-private theorem toDiffFlat_wickRotate_tailTimeShift_eq_update_sub {d k : ℕ}
+theorem toDiffFlat_wickRotate_tailTimeShift_eq_update_sub {d k : ℕ}
     (j : Fin k) (x : NPointDomain d k) (t : ℝ) :
     BHW.toDiffFlat k d (fun i => wickRotatePoint (tailTimeShiftConfig (d := d) j (-t) x i)) =
       Function.update
@@ -2453,7 +2449,7 @@ time shift on the right Schwartz factor is converted into a flat update by
 `- t * I` in the split time-difference coordinate, with the intervening tail
 translation absorbed by `integral_comp_rightBlockTailShift`. This is the core
 integral shell for the remaining `schwinger_continuation_base_step` assembly. -/
-private theorem simpleTensor_flatUpdate_integral_eq {n m : ℕ}
+theorem simpleTensor_flatUpdate_integral_eq {n m : ℕ}
     (hm : 0 < m)
     (f : SchwartzNPoint d n) (g : SchwartzNPoint d m) (t : ℝ)
     (Φ : (Fin ((n + m) * (d + 1)) → ℂ) → ℂ) :
@@ -2508,7 +2504,7 @@ private theorem simpleTensor_flatUpdate_integral_eq {n m : ℕ}
 
 /-- Configuration-space form of `simpleTensor_flatUpdate_integral_eq`: composing
 the flat update with `fromDiffFlat` yields the same Euclidean slice identity. -/
-private theorem simpleTensor_fromDiffFlatUpdate_integral_eq {n m : ℕ}
+theorem simpleTensor_fromDiffFlatUpdate_integral_eq {n m : ℕ}
     (hm : 0 < m)
     (f : SchwartzNPoint d n) (g : SchwartzNPoint d m) (t : ℝ)
     (Ψ : (Fin (n + m) → Fin (d + 1) → ℂ) → ℂ) :
@@ -2530,7 +2526,7 @@ private theorem simpleTensor_fromDiffFlatUpdate_integral_eq {n m : ℕ}
 /-- Integrated ξ-shift form of the simple-tensor slice identity. A flat update by
 `- t * I` in the split time-difference coordinate is exactly the same Euclidean
 integral as the positive right-factor time shift. -/
-private theorem simpleTensor_xiShift_integral_eq {n m : ℕ}
+theorem simpleTensor_xiShift_integral_eq {n m : ℕ}
     (hm : 0 < m)
     (f : SchwartzNPoint d n) (g : SchwartzNPoint d m) (t : ℝ)
     (Ψ : (Fin (n + m) → Fin (d + 1) → ℂ) → ℂ) :

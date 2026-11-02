@@ -1,16 +1,20 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.Adjacency
-import Init
-import OSReconstruction.ComplexLieGroups.JostPoints
-import OSReconstruction.ComplexLieGroups.Connectedness.ComplexInvariance.Extend
-import OSReconstruction.SCV.DistributionalUniqueness
-import OSReconstruction.Wightman.Reconstruction.ForwardTubeDistributions
-import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.PermutationBoundary
-import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SliceGluing
-import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.IndexSetD1
-import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.JostWitnessGeneralSigma
-import OSReconstruction.ComplexLieGroups.D1OrbitSet
+module
+
+public import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.Adjacency
+public import Init
+public import OSReconstruction.ComplexLieGroups.JostPoints
+public import OSReconstruction.ComplexLieGroups.Connectedness.ComplexInvariance.Extend
+public import OSReconstruction.SCV.DistributionalUniqueness
+public import OSReconstruction.Wightman.Reconstruction.ForwardTubeDistributions
+public import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.PermutationBoundary
+public import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SliceGluing
+public import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.IndexSetD1
+public import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.JostWitnessGeneralSigma
+public import OSReconstruction.ComplexLieGroups.D1OrbitSet
+
+@[expose] public section
 
 set_option backward.isDefEq.respectTransparency false
 
@@ -42,7 +46,7 @@ open PermutationBoundary
     and is complex-Lorentz invariant on `U_σ`.
 
     This packages the exact extension data needed in EOW chain arguments. -/
-private theorem permutation_extension_from_invariance (n : ℕ)
+theorem permutation_extension_from_invariance (n : ℕ)
     (F : (Fin n → Fin (d + 1) → ℂ) → ℂ)
     (hF_holo : DifferentiableOn ℂ F (ForwardTube d n))
     (hF_lorentz : ∀ (Λ : RestrictedLorentzGroup d)
@@ -173,7 +177,7 @@ private theorem permutation_extension_from_invariance (n : ℕ)
 
 /-- If `extendF` is permutation-invariant on the extended-tube overlap for `τ`,
     then `F` satisfies the corresponding forward-tube permutation invariance. -/
-private theorem permutation_invariance_from_extendF_on_extendedTube (n : ℕ)
+theorem permutation_invariance_from_extendF_on_extendedTube (n : ℕ)
     (F : (Fin n → Fin (d + 1) → ℂ) → ℂ)
     (hF_holo : DifferentiableOn ℂ F (ForwardTube d n))
     (hF_real_inv : ∀ (Λ : RestrictedLorentzGroup d)
@@ -221,7 +225,7 @@ private theorem permutation_invariance_from_extendF_on_extendedTube (n : ℕ)
 
 /-- Reduced form of `iterated_eow_permutation_extension`: it is enough to prove
     permutation invariance of `extendF` on the extended-tube overlap for each `σ`. -/
-private theorem iterated_eow_permutation_extension_of_extendF_perm (n : ℕ)
+theorem iterated_eow_permutation_extension_of_extendF_perm (n : ℕ)
     (F : (Fin n → Fin (d + 1) → ℂ) → ℂ)
     (hF_holo : DifferentiableOn ℂ F (ForwardTube d n))
     (hF_lorentz : ∀ (Λ : RestrictedLorentzGroup d)
@@ -256,7 +260,7 @@ private theorem iterated_eow_permutation_extension_of_extendF_perm (n : ℕ)
 /-- Permutation extension from local boundary matching and fixed-Lorentz
 slice propagation. This preserves the original extension contract in every
 positive spatial dimension without the seed-connectedness admission. -/
-private theorem iterated_eow_permutation_extension [NeZero d] (n : ℕ)
+theorem iterated_eow_permutation_extension [NeZero d] (n : ℕ)
     (F : (Fin n → Fin (d + 1) → ℂ) → ℂ)
     (hF_holo : DifferentiableOn ℂ F (ForwardTube d n))
     (hF_lorentz : ∀ (Λ : RestrictedLorentzGroup d)
@@ -292,7 +296,7 @@ private theorem iterated_eow_permutation_extension [NeZero d] (n : ℕ)
 /-- Any extension data of the shape produced by
     `iterated_eow_permutation_extension` yields the corresponding
     permutation-invariance statement. -/
-private theorem permInvariance_of_extensionData (n : ℕ)
+theorem permInvariance_of_extensionData (n : ℕ)
     (F : (Fin n → Fin (d + 1) → ℂ) → ℂ)
     (τ : Equiv.Perm (Fin n))
     (U_τ : Set (Fin n → Fin (d + 1) → ℂ))
@@ -334,7 +338,7 @@ private theorem permInvariance_of_extensionData (n : ℕ)
     2. By Lorentz-perm commutation: Γ·(swap·(σ·w)) = swap·(Γ·(σ·w))
     3. Since swap·(Γ·(σ·w)) ∈ FT, Γ·(σ·w) ∈ swap·FT ⊆ U_{swap·σ}
     4. The Lorentz-invariant extension F_{swap·σ} bridges the gap -/
-private theorem eow_chain_adj_swap [NeZero d] (n : ℕ)
+theorem eow_chain_adj_swap [NeZero d] (n : ℕ)
     (F : (Fin n → Fin (d + 1) → ℂ) → ℂ)
     (hF_holo : DifferentiableOn ℂ F (ForwardTube d n))
     (hF_lorentz : ∀ (Λ : RestrictedLorentzGroup d)
@@ -369,7 +373,7 @@ private theorem eow_chain_adj_swap [NeZero d] (n : ℕ)
   exact permInvariance_of_extensionData n F τ U_τ F_τ hFT_sub hτFT_sub
     hF_τ_eq_F hF_τ_inv hF_τ_eq_Fτ hw h
 
-private theorem F_permutation_invariance [NeZero d] (n : ℕ)
+theorem F_permutation_invariance [NeZero d] (n : ℕ)
     (F : (Fin n → Fin (d + 1) → ℂ) → ℂ)
     (hF_holo : DifferentiableOn ℂ F (ForwardTube d n))
     (hF_lorentz : ∀ (Λ : RestrictedLorentzGroup d)
@@ -433,7 +437,7 @@ private theorem F_permutation_invariance [NeZero d] (n : ℕ)
     From Λ₁·(π₁·w₁) = Λ₂·(π₂·w₂), applying Λ₁⁻¹ and using the commutation:
     w₁ = (Λ₁⁻¹Λ₂)·((π₂π₁⁻¹)·w₂), then `F_permutation_invariance` gives
     F(w₁) = F(w₂). -/
-private theorem fullExtendF_well_defined [NeZero d] (n : ℕ)
+theorem fullExtendF_well_defined [NeZero d] (n : ℕ)
     (F : (Fin n → Fin (d + 1) → ℂ) → ℂ)
     (hF_holo : DifferentiableOn ℂ F (ForwardTube d n))
     (hF_lorentz : ∀ (Λ : RestrictedLorentzGroup d)

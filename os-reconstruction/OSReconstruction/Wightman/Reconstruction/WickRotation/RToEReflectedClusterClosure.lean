@@ -1,14 +1,10 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.RToEClustering
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.RToEClustering
 
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -34,7 +30,7 @@ def rToESchwingerCLM (Wfn : WightmanFunctions d) (n : ℕ) :
       map_smul' := (constructedZeroDiagonalSchwinger_linear Wfn n).map_smul }
   cont := constructedSchwinger_tempered_zeroDiagonal Wfn n
 
-private def reflectedTensor {n m : ℕ}
+def reflectedTensor {n m : ℕ}
     (f : euclideanPositiveTimeSubmodule (d := d) n)
     (g : euclideanPositiveTimeSubmodule (d := d) m) :
     ZeroDiagonalSchwartz d (n + m) :=
@@ -63,7 +59,7 @@ theorem continuous_rToEReflectedPairing (Wfn : WightmanFunctions d) (n m : ℕ) 
     ((continuous_subtype_val.comp continuous_fst).prodMk
       (continuous_subtype_val.comp continuous_snd))
 
-private theorem ordered_compact_approximation {n : ℕ}
+theorem ordered_compact_approximation {n : ℕ}
     (f : euclideanPositiveTimeSubmodule (d := d) n) :
     ∃ u : ℕ → euclideanPositiveTimeSubmodule (d := d) n,
       (∀ k, HasCompactSupport ((u k).1 : NPointDomain d n → ℂ)) ∧
@@ -76,7 +72,7 @@ private theorem ordered_compact_approximation {n : ℕ}
   simpa [U, F, PositiveTimeBorchersSequence.single] using
     tendsto_compactApproxPositiveTimeBorchers_component F n
 
-private theorem wightman_sharp_bound (Wfn : WightmanFunctions d)
+theorem wightman_sharp_bound (Wfn : WightmanFunctions d)
     (F G : BorchersSequence d) :
     ‖WightmanInnerProduct d Wfn.W F G‖ ^ 2 ≤
       (WightmanInnerProduct d Wfn.W F F).re *
@@ -109,7 +105,7 @@ private theorem wightman_sharp_bound (Wfn : WightmanFunctions d)
   · have hwpos : 0 < ‖w‖ ^ 2 := sq_pos_of_pos (lt_of_le_of_ne (norm_nonneg w) (Ne.symm hw))
     nlinarith
 
-private theorem compact_reflected_pairing_bound
+theorem compact_reflected_pairing_bound
     (Wfn : WightmanFunctions d) {n m : ℕ}
     (f : euclideanPositiveTimeSubmodule (d := d) n)
     (g : euclideanPositiveTimeSubmodule (d := d) m)
@@ -157,16 +153,16 @@ theorem rToE_reflected_pairing_bound (Wfn : WightmanFunctions d) {n m : ℕ}
   have h := rToE_reflected_pairing_cauchy_schwarz Wfn f g
   nlinarith [sq_nonneg ‖rToEReflectedPairing Wfn f g‖]
 
-private def spatialTranslate {n : ℕ} (a : Fin d → ℝ)
+def spatialTranslate_EReflectedClusterClosure {n : ℕ} (a : Fin d → ℝ)
     (f : euclideanPositiveTimeSubmodule (d := d) n) :
     euclideanPositiveTimeSubmodule (d := d) n :=
   ⟨translateSchwartzNPoint (Fin.cons 0 a) f.1,
     translateSchwartzNPoint_preserves_ordered_positive_tsupport_spatial
       (Fin.cons 0 a) (by simp) f.1 f.2⟩
 
-private theorem reflected_pairing_translate_self (Wfn : WightmanFunctions d)
+theorem reflected_pairing_translate_self (Wfn : WightmanFunctions d)
     {n : ℕ} (a : Fin d → ℝ) (f : euclideanPositiveTimeSubmodule (d := d) n) :
-    rToEReflectedPairing Wfn (spatialTranslate a f) (spatialTranslate a f) =
+    rToEReflectedPairing Wfn (spatialTranslate_EReflectedClusterClosure a f) (spatialTranslate_EReflectedClusterClosure a f) =
       rToEReflectedPairing Wfn f f := by
   symm
   apply wickRotatedBoundaryPairing_translation_invariant Wfn (n + n)
@@ -215,13 +211,13 @@ theorem rToEReflectedPairing_sub_right (Wfn : WightmanFunctions d) {n m : ℕ}
       SchwartzMap.tensorProduct_apply, mul_sub]
   exact (congrArg (rToESchwingerCLM Wfn (n + m)) ht).trans (map_sub _ _ _)
 
-private theorem spatialTranslate_sub {n : ℕ} (a : Fin d → ℝ)
+theorem spatialTranslate_sub {n : ℕ} (a : Fin d → ℝ)
     (g h : euclideanPositiveTimeSubmodule (d := d) n) :
-    spatialTranslate a (g - h) = spatialTranslate a g - spatialTranslate a h := by
+    spatialTranslate_EReflectedClusterClosure a (g - h) = spatialTranslate_EReflectedClusterClosure a g - spatialTranslate_EReflectedClusterClosure a h := by
   apply Subtype.ext
   exact map_sub _ _ _
 
-private theorem pairing_zero (Wfn : WightmanFunctions d) (n : ℕ) :
+theorem pairing_zero (Wfn : WightmanFunctions d) (n : ℕ) :
     rToEReflectedPairing Wfn (0 : euclideanPositiveTimeSubmodule (d := d) n)
       (0 : euclideanPositiveTimeSubmodule (d := d) n) = 0 := by
   have ht : reflectedTensor (0 : euclideanPositiveTimeSubmodule (d := d) n)
@@ -235,7 +231,7 @@ attribute [local irreducible] rToEReflectedPairing
 
 set_option backward.isDefEq.respectTransparency true in
 /-- Approximation of reflected pairings is uniform over all spatial shifts. -/
-private theorem rToE_reflected_pairing_uniform_approximation
+theorem rToE_reflected_pairing_uniform_approximation
     (Wfn : WightmanFunctions d) {n m : ℕ}
     (u : ℕ → euclideanPositiveTimeSubmodule (d := d) n)
     (v : ℕ → euclideanPositiveTimeSubmodule (d := d) m)
@@ -244,8 +240,8 @@ private theorem rToE_reflected_pairing_uniform_approximation
     (hu : Tendsto u atTop (𝓝 f)) (hv : Tendsto v atTop (𝓝 g))
     {ε : ℝ} (hε : 0 < ε) :
     ∀ᶠ k in atTop, ∀ a : Fin d → ℝ,
-      ‖rToEReflectedPairing Wfn f (spatialTranslate a g) -
-        rToEReflectedPairing Wfn (u k) (spatialTranslate a (v k))‖ < ε := by
+      ‖rToEReflectedPairing Wfn f (spatialTranslate_EReflectedClusterClosure a g) -
+        rToEReflectedPairing Wfn (u k) (spatialTranslate_EReflectedClusterClosure a (v k))‖ < ε := by
   let Q n (f : euclideanPositiveTimeSubmodule (d := d) n) :=
     (rToEReflectedPairing Wfn f f).re
   have hQ n : Continuous (Q n) := by
@@ -284,27 +280,27 @@ private theorem rToE_reflected_pairing_uniform_approximation
   filter_upwards [hA.eventually (gt_mem_nhds hsmall), hB.eventually (gt_mem_nhds hsmall)]
     with k hkA hkB
   intro a
-  have hleft := rToE_reflected_pairing_bound Wfn (f - u k) (spatialTranslate a g)
-  have hright := rToE_reflected_pairing_bound Wfn (u k) (spatialTranslate a (g - v k))
+  have hleft := rToE_reflected_pairing_bound Wfn (f - u k) (spatialTranslate_EReflectedClusterClosure a g)
+  have hright := rToE_reflected_pairing_bound Wfn (u k) (spatialTranslate_EReflectedClusterClosure a (g - v k))
   rw [reflected_pairing_translate_self] at hleft hright
-  have hleft' : ‖rToEReflectedPairing Wfn (f - u k) (spatialTranslate a g)‖ < ε / 2 := by
+  have hleft' : ‖rToEReflectedPairing Wfn (f - u k) (spatialTranslate_EReflectedClusterClosure a g)‖ < ε / 2 := by
     change 2 * (rToEReflectedPairing Wfn (f - u k) (f - u k)).re *
       (rToEReflectedPairing Wfn g g).re < _ at hkA
-    nlinarith [norm_nonneg (rToEReflectedPairing Wfn (f - u k) (spatialTranslate a g))]
-  have hright' : ‖rToEReflectedPairing Wfn (u k) (spatialTranslate a (g - v k))‖ < ε / 2 := by
+    nlinarith [norm_nonneg (rToEReflectedPairing Wfn (f - u k) (spatialTranslate_EReflectedClusterClosure a g))]
+  have hright' : ‖rToEReflectedPairing Wfn (u k) (spatialTranslate_EReflectedClusterClosure a (g - v k))‖ < ε / 2 := by
     change 2 * (rToEReflectedPairing Wfn (u k) (u k)).re *
       (rToEReflectedPairing Wfn (g - v k) (g - v k)).re < _ at hkB
-    nlinarith [norm_nonneg (rToEReflectedPairing Wfn (u k) (spatialTranslate a (g - v k)))]
-  have heq : rToEReflectedPairing Wfn f (spatialTranslate a g) -
-      rToEReflectedPairing Wfn (u k) (spatialTranslate a (v k)) =
-      rToEReflectedPairing Wfn (f - u k) (spatialTranslate a g) +
-        rToEReflectedPairing Wfn (u k) (spatialTranslate a (g - v k)) := by
+    nlinarith [norm_nonneg (rToEReflectedPairing Wfn (u k) (spatialTranslate_EReflectedClusterClosure a (g - v k)))]
+  have heq : rToEReflectedPairing Wfn f (spatialTranslate_EReflectedClusterClosure a g) -
+      rToEReflectedPairing Wfn (u k) (spatialTranslate_EReflectedClusterClosure a (v k)) =
+      rToEReflectedPairing Wfn (f - u k) (spatialTranslate_EReflectedClusterClosure a g) +
+        rToEReflectedPairing Wfn (u k) (spatialTranslate_EReflectedClusterClosure a (g - v k)) := by
     rw [rToEReflectedPairing_sub_left, spatialTranslate_sub, rToEReflectedPairing_sub_right]
     ring
   rw [heq]
   exact (norm_add_le _ _).trans_lt (by linarith)
 
-private theorem continuous_ordered_scalar (Wfn : WightmanFunctions d) (n : ℕ) :
+theorem continuous_ordered_scalar (Wfn : WightmanFunctions d) (n : ℕ) :
     Continuous (fun f : euclideanPositiveTimeSubmodule (d := d) n =>
       wickRotatedBoundaryPairing Wfn n f.1) := by
   let lift : euclideanPositiveTimeSubmodule (d := d) n → ZeroDiagonalSchwartz d n :=
@@ -343,17 +339,17 @@ theorem rToE_reflected_cluster (Wfn : WightmanFunctions d) {n m : ℕ}
     rToE_compact_reflected_cluster Wfn (u k) (v k) (hu k) (hv k) (ε / 3) (by linarith)
   refine ⟨R, hR, ?_⟩
   intro a ha
-  let X := rToEReflectedPairing Wfn f (spatialTranslate a g)
-  let Y := rToEReflectedPairing Wfn (u k) (spatialTranslate a (v k))
+  let X := rToEReflectedPairing Wfn f (spatialTranslate_EReflectedClusterClosure a g)
+  let Y := rToEReflectedPairing Wfn (u k) (spatialTranslate_EReflectedClusterClosure a (v k))
   have hX : X = wickRotatedBoundaryPairing Wfn (n + m)
       (f.1.osConjTensorProduct (translateSchwartzNPoint (Fin.cons 0 a) g.1)) := by
-    simpa only [X, spatialTranslate] using
-      rToEReflectedPairing_apply Wfn f (spatialTranslate a g)
+    simpa only [X, spatialTranslate_EReflectedClusterClosure] using
+      rToEReflectedPairing_apply Wfn f (spatialTranslate_EReflectedClusterClosure a g)
   rw [← hX]
   change ‖X - P f g‖ < ε
   have hxy : ‖X - Y‖ < ε / 3 := hkapp a
   have hyp : ‖Y - P (u k) (v k)‖ < ε / 3 := by
-    simpa only [Y, P, rToEReflectedPairing_apply, spatialTranslate] using hcluster a ha
+    simpa only [Y, P, rToEReflectedPairing_apply, spatialTranslate_EReflectedClusterClosure] using hcluster a ha
   have hpp : ‖P (u k) (v k) - P f g‖ < ε / 3 := by
     simpa only [dist_eq_norm] using hkfac
   have h1 := dist_triangle X Y (P f g)

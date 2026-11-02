@@ -1,17 +1,12 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIRawGeneratedNormalizedGrowth
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIFullBoundary
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVICoupledTimeBoundary
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIRawGeneratedNormalizedGrowth
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIFullBoundary
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVICoupledTimeBoundary
 
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -20,12 +15,12 @@ open scoped Classical
 
 namespace OSReconstruction
 
-private def zeroGapSpatialUnit (d : Nat) :
+def zeroGapSpatialUnit (d : Nat) :
     SchwartzMap (Section43SpatialSpace d 0) Complex :=
   (section43SpatialFlatSchwartzCLE d 0).symm
     (unitBallBumpSchwartzPi (0 * d))
 
-private theorem zeroGapSpatialUnit_apply (d : Nat)
+theorem zeroGapSpatialUnit_apply (d : Nat)
     (x : Section43SpatialSpace d 0) : zeroGapSpatialUnit d x = 1 := by
   rw [zeroGapSpatialUnit, section43SpatialFlatSchwartzCLE_symm_apply]
   apply unitBallBumpSchwartzPi_one_of_mem_closedBall
@@ -35,18 +30,18 @@ private theorem zeroGapSpatialUnit_apply (d : Nat)
     omega
   simp [hzero]
 
-private theorem zeroGapSpatial_eq_smul_unit {d : Nat}
+theorem zeroGapSpatial_eq_smul_unit {d : Nat}
     (chi : SchwartzMap (Section43SpatialSpace d 0) Complex) :
     chi = chi 0 • zeroGapSpatialUnit d := by
   ext x
   rw [SchwartzMap.smul_apply, zeroGapSpatialUnit_apply]
   simpa [smul_eq_mul] using congrArg chi (Subsingleton.elim x 0)
 
-private def zeroGapNPointEvalCLM (d : Nat) : SchwartzNPoint d 0 →L[Complex] Complex :=
+def zeroGapNPointEvalCLM (d : Nat) : SchwartzNPoint d 0 →L[Complex] Complex :=
   (BoundedContinuousFunction.evalCLM Complex (0 : NPointDomain d 0)).comp
     (SchwartzMap.toBoundedContinuousFunctionCLM Complex (NPointDomain d 0) Complex)
 
-private theorem zeroGapBoundaryPairing
+theorem zeroGapBoundaryPairing
     {d : Nat} [NeZero d] (A : OSIITimeContinuationStage d 0)
     (eta : Fin 0 -> Real) (epsilon : Real)
     (phi : SchwartzMap (Fin 0 -> Real) Complex)

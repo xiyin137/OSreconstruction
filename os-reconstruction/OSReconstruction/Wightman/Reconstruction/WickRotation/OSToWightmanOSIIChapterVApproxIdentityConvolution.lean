@@ -1,12 +1,16 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVGeneratorTimeSmearingRealEdge
-import OSReconstruction.SCV.DistributionalUniqueness
-import OSReconstruction.SCV.EuclideanWeylApproxIdentity
-import Mathlib.Analysis.Calculus.ContDiff.Convolution
-import Mathlib.Analysis.Fourier.Convolution
-import Mathlib.Analysis.Normed.Module.Multilinear.Basic
-import Mathlib.Analysis.Normed.Operator.NormedSpace
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVGeneratorTimeSmearingRealEdge
+public import OSReconstruction.SCV.DistributionalUniqueness
+public import OSReconstruction.SCV.EuclideanWeylApproxIdentity
+public import Mathlib.Analysis.Calculus.ContDiff.Convolution
+public import Mathlib.Analysis.Fourier.Convolution
+public import Mathlib.Analysis.Normed.Module.Multilinear.Basic
+public import Mathlib.Analysis.Normed.Operator.NormedSpace
+
+@[expose] public section
 
 noncomputable section
 
@@ -86,7 +90,7 @@ theorem convolutionTest_apply
   rw [convolutionTest]
   simp [MeasureTheory.convolution]
 
-private theorem test_L1_norm_eq_one
+theorem test_L1_norm_eq_one
     (I : SchwartzTimeApproximateIdentity n)
     (N : ℕ) :
     ∫ x : Fin n → ℝ, ‖I.test N x‖ = 1 := by
@@ -100,7 +104,7 @@ private theorem test_L1_norm_eq_one
   have h := congrArg Complex.re (I.integral_one N)
   simpa using h
 
-private theorem lineDeriv_convolution_eq_convolution_lineDeriv
+theorem lineDeriv_convolution_eq_convolution_lineDeriv
     (φ h : SchwartzMap (Fin n → ℝ) ℂ)
     (hcompact : HasCompactSupport (h : (Fin n → ℝ) → ℂ))
     (x v : Fin n → ℝ) :
@@ -158,7 +162,7 @@ private theorem lineDeriv_convolution_eq_convolution_lineDeriv
   rw [hconv_apply]
   simp [MeasureTheory.convolution, SchwartzMap.lineDerivOp_apply_eq_fderiv]
 
-private theorem convolutionTest_iteratedLineDeriv_eq
+theorem convolutionTest_iteratedLineDeriv_eq
     (I : SchwartzTimeApproximateIdentity n)
     (N : ℕ)
     (h : SchwartzMap (Fin n → ℝ) ℂ)
@@ -218,7 +222,7 @@ private theorem convolutionTest_iteratedLineDeriv_eq
         lineDeriv_convolution_eq_convolution_lineDeriv
           (I.test N) htail htail_compact x (u 0)
 
-private theorem iteratedFDeriv_convolutionTest_sub_apply_eq_integral
+theorem iteratedFDeriv_convolutionTest_sub_apply_eq_integral
     (I : SchwartzTimeApproximateIdentity n)
     (N : ℕ)
     (h : SchwartzMap (Fin n → ℝ) ℂ)

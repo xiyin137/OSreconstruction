@@ -1,20 +1,13 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIFrequencyReduction
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanACRProducerPackage
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIForwardTubeSupport
-import OSReconstruction.Wightman.SpectralEquivalence
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIFrequencyReduction
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanACRProducerPackage
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIForwardTubeSupport
+public import OSReconstruction.Wightman.SpectralEquivalence
 
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 

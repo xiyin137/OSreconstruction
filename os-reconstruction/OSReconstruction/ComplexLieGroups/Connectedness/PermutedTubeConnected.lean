@@ -1,8 +1,12 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.ComplexLieGroups.AdjacentOverlapWitness
-import OSReconstruction.ComplexLieGroups.Connectedness.PermutedTube
-import OSReconstruction.ComplexLieGroups.Connectedness.Permutation
+module
+
+public import OSReconstruction.ComplexLieGroups.AdjacentOverlapWitness
+public import OSReconstruction.ComplexLieGroups.Connectedness.PermutedTube
+public import OSReconstruction.ComplexLieGroups.Connectedness.Permutation
+
+@[expose] public section
 
 noncomputable section
 
@@ -12,12 +16,12 @@ namespace BHW
 
 variable {d n : ℕ}
 
-private def lorentzPermSector (π : Equiv.Perm (Fin n)) :
+def lorentzPermSector (π : Equiv.Perm (Fin n)) :
     Set (Fin n → Fin (d + 1) → ℂ) :=
   {z | ∃ (Λ : ComplexLorentzGroup d) (w : Fin n → Fin (d + 1) → ℂ),
       w ∈ PermutedForwardTube d n π ∧ z = complexLorentzAction Λ w}
 
-private theorem mem_lorentzPermSector_iff_perm_mem_extendedTube
+theorem mem_lorentzPermSector_iff_perm_mem_extendedTube
     (π : Equiv.Perm (Fin n)) (z : Fin n → Fin (d + 1) → ℂ) :
     z ∈ lorentzPermSector (d := d) (n := n) π ↔
       (fun k => z (π k)) ∈ ExtendedTube d n := by
@@ -39,7 +43,7 @@ private theorem mem_lorentzPermSector_iff_perm_mem_extendedTube
       rw [hz_at_inv]
       simp [complexLorentzAction]
 
-private theorem adjacent_overlap_reduction_right
+theorem adjacent_overlap_reduction_right
     (π : Equiv.Perm (Fin n)) (i : Fin n) (hi : i.val + 1 < n) :
     (lorentzPermSector (d := d) (n := n) π ∩
       lorentzPermSector (d := d) (n := n) (π * Equiv.swap i ⟨i.val + 1, hi⟩)).Nonempty ↔
@@ -64,7 +68,7 @@ private theorem adjacent_overlap_reduction_right
       simpa [Equiv.Perm.mul_apply] using hx2
 
 /-- **Each Lorentz-permutation sector is preconnected.** -/
-private theorem lorentzPermSector_isPreconnected (π : Equiv.Perm (Fin n)) :
+theorem lorentzPermSector_isPreconnected (π : Equiv.Perm (Fin n)) :
     IsPreconnected
       ({z | ∃ (Λ : ComplexLorentzGroup d) (w : Fin n → Fin (d + 1) → ℂ),
         w ∈ PermutedForwardTube d n π ∧ z = complexLorentzAction Λ w} :
@@ -114,10 +118,10 @@ private theorem lorentzPermSector_isPreconnected (π : Equiv.Perm (Fin n)) :
       exact ⟨p.1, p.2, hw, rfl⟩
   exact (isPreconnected_univ.prod hPFT_pre).image _ hcont.continuousOn
 
-private theorem extendedTube_eq_core :
+theorem extendedTube_eq_core :
     ExtendedTube d n = BHWCore.ExtendedTube d n := rfl
 
-private theorem adjacent_sectors_overlap_right [NeZero d] (π : Equiv.Perm (Fin n))
+theorem adjacent_sectors_overlap_right [NeZero d] (π : Equiv.Perm (Fin n))
     (i : Fin n) (hi : i.val + 1 < n) :
     (lorentzPermSector (d := d) (n := n) π ∩
       lorentzPermSector (d := d) (n := n) (π * Equiv.swap i ⟨i.val + 1, hi⟩)).Nonempty := by

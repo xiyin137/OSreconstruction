@@ -5,53 +5,16 @@ Copyright (c) 2025 ModularPhysics Contributors. All rights reserved.
 Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
-import Mathlib.Analysis.Complex.CauchyIntegral
-import Mathlib.Analysis.Complex.AbsMax
-import Mathlib.Analysis.Complex.RemovableSingularity
-import Mathlib.Analysis.Complex.HasPrimitives
-import Mathlib.Analysis.Analytic.IsolatedZeros
-import Mathlib.Topology.Connected.Basic
+module
 
+public import Mathlib.Analysis.Complex.CauchyIntegral
+public import Mathlib.Analysis.Complex.AbsMax
+public import Mathlib.Analysis.Complex.RemovableSingularity
+public import Mathlib.Analysis.Complex.HasPrimitives
+public import Mathlib.Analysis.Analytic.IsolatedZeros
+public import Mathlib.Topology.Connected.Basic
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 

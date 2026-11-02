@@ -1,18 +1,11 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIAxisPairProductSourceAdapter
-import OSReconstruction.SCV.ProductDensity
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIAxisPairProductSourceAdapter
+public import OSReconstruction.SCV.ProductDensity
 
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -21,19 +14,19 @@ open scoped Classical NNReal BigOperators
 
 namespace OSReconstruction
 
-@[simp] private theorem finAppendCLE_symm_fst_apply
+@[simp] theorem finAppendCLE_symm_fst_apply
     (n m : ℕ) (x : Fin (n + m) → ℝ) (i : Fin n) :
     ((SCV.finAppendCLE n m).symm x).1 i = splitFirst n m x i := by
   have h := congrFun (SCV.finAppendCLE_append_symm x) (Fin.castAdd m i)
   simpa [splitFirst, Fin.append_left] using h
 
-@[simp] private theorem finAppendCLE_symm_snd_apply
+@[simp] theorem finAppendCLE_symm_snd_apply
     (n m : ℕ) (x : Fin (n + m) → ℝ) (j : Fin m) :
     ((SCV.finAppendCLE n m).symm x).2 j = splitLast n m x j := by
   have h := congrFun (SCV.finAppendCLE_append_symm x) (Fin.natAdd n j)
   simpa [splitLast, Fin.append_right] using h
 
-private theorem twoBlockProductSchwartz_apply_split
+theorem twoBlockProductSchwartz_apply_split
     (n m : ℕ)
     (η₁ : SchwartzMap (Fin n → ℝ) ℂ)
     (η₂ : SchwartzMap (Fin m → ℝ) ℂ)

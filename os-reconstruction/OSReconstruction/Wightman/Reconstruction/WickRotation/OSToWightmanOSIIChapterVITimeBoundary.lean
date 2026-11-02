@@ -1,21 +1,10 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVITestedTimeBoundary
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVITestedTimeBoundary
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -28,7 +17,7 @@ variable {d k : Nat} [NeZero d]
 variable {A : OSIITimeContinuationStage d k}
 
 omit [NeZero d] in
-private theorem rotatedTubeScalar_slice_eq_minkowskiTimeApproach
+theorem rotatedTubeScalar_slice_eq_minkowskiTimeApproach
     (chi : SchwartzMap (Section43SpatialSpace d k) Complex)
     (eta t : Fin k -> Real) (epsilon : Real) :
     A.rotatedTubeScalar chi
@@ -43,7 +32,7 @@ private theorem rotatedTubeScalar_slice_eq_minkowskiTimeApproach
   rw [Complex.I_sq]
   ring
 
-private theorem tubeSlice_eq_osiiFullTimeBoundaryPairing
+theorem tubeSlice_eq_osiiFullTimeBoundaryPairing
     (chi : SchwartzMap (Section43SpatialSpace d k) Complex)
     (eta : Fin k -> Real)
     (phi : SchwartzMap (Fin k -> Real) Complex)

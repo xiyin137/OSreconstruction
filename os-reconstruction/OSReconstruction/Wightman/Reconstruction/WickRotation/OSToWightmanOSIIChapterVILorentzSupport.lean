@@ -1,21 +1,11 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVICanonicalFrequencyTransport
-import OSReconstruction.Wightman.Reconstruction.WickRotation.ReducedSpectralGeometry
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVICanonicalFrequencyTransport
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.ReducedSpectralGeometry
 
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 

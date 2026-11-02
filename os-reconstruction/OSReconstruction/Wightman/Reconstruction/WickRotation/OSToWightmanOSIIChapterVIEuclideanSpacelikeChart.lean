@@ -1,5 +1,9 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIEuclideanHolomorphicGluing
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIEuclideanWardSource
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIEuclideanHolomorphicGluing
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIEuclideanWardSource
+
+@[expose] public section
 
 /-!
 # Mixed spacelike points in the native holomorphic domain
@@ -28,7 +32,7 @@ def osiiWickConjugatedMatrix
   osiiAxisPairWickBlockCLE
     ((R.map Complex.ofReal).mulVec ((osiiAxisPairWickBlockCLE (d := d)).symm z))
 
-private theorem wickConjugatedMatrix_im
+theorem wickConjugatedMatrix_im
     (R : Matrix (Fin (d + 1)) (Fin (d + 1)) Real)
     (z : Fin (d + 1) -> Complex) (mu : Fin (d + 1)) :
     (osiiWickConjugatedMatrix R z mu).im =
@@ -44,7 +48,7 @@ private theorem wickConjugatedMatrix_im
     osiiWickConjugatedMatrix 1 z = z := by
   simp [osiiWickConjugatedMatrix]
 
-private theorem hasDerivAt_wickConjugatedMatrix_im
+theorem hasDerivAt_wickConjugatedMatrix_im
     (Y : Matrix (Fin (d + 1)) (Fin (d + 1)) Real)
     (z : Fin (d + 1) -> Complex) :
     HasDerivAt
@@ -67,19 +71,19 @@ private theorem hasDerivAt_wickConjugatedMatrix_im
     intro nu _
     exact (hentry mu nu).mul_const _
 
-private def spacelikeRotationGenerator (v : Fin (d + 1) -> Real) :
+def spacelikeRotationGenerator (v : Fin (d + 1) -> Real) :
     Matrix (Fin (d + 1)) (Fin (d + 1)) Real :=
   fun mu nu => if mu = 0 then (if nu = 0 then 0 else v nu)
     else if nu = 0 then -v mu else 0
 
 omit [NeZero d] in
-private theorem spacelikeRotationGenerator_skew (v : Fin (d + 1) -> Real) :
+theorem spacelikeRotationGenerator_skew (v : Fin (d + 1) -> Real) :
     (spacelikeRotationGenerator v).transpose = -spacelikeRotationGenerator v := by
   ext mu nu
   by_cases hmu : mu = 0 <;> by_cases hnu : nu = 0 <;>
     simp [spacelikeRotationGenerator, Matrix.transpose_apply, hmu, hnu]
 
-private theorem spacelikeRotationGenerator_im (v : Fin (d + 1) -> Real) :
+theorem spacelikeRotationGenerator_im (v : Fin (d + 1) -> Real) :
     (fun mu => (osiiWickConjugatedMatrix (spacelikeRotationGenerator v)
       (fun nu => (v nu : Complex)) mu).im) =
       Fin.cases (∑ a : Fin d, v a.succ ^ 2) (fun a => v 0 * v a.succ) := by
@@ -91,7 +95,7 @@ private theorem spacelikeRotationGenerator_im (v : Fin (d + 1) -> Real) :
   · simp [Matrix.mulVec, dotProduct, spacelikeRotationGenerator,
       osiiAxisPairInverseWickBlock, mul_comm]
 
-private theorem spacelikeRotationGenerator_future
+theorem spacelikeRotationGenerator_future
     (v : Fin (d + 1) -> Real) (hv : MinkowskiSpace.IsSpacelike d v) :
     InOpenForwardCone d (fun mu => (osiiWickConjugatedMatrix
       (spacelikeRotationGenerator v) (fun nu => (v nu : Complex)) mu).im) := by
@@ -106,7 +110,7 @@ private theorem spacelikeRotationGenerator_future
     Fin.cases_zero, Fin.cases_succ, mul_pow, ← Finset.mul_sum]
   nlinarith [mul_lt_mul_of_pos_right hv' hpos]
 
-private theorem isOpen_forwardCone : IsOpen {v | InOpenForwardCone d v} := by
+theorem isOpen_forwardCone : IsOpen {v | InOpenForwardCone d v} := by
   have hq : Continuous (MinkowskiSpace.minkowskiNormSq d) := by
     have h : Continuous (fun v : Fin (d + 1) -> Real =>
         -(v 0)^2 + ∑ a : Fin d, (v a.succ)^2) := by fun_prop
@@ -116,7 +120,7 @@ private theorem isOpen_forwardCone : IsOpen {v | InOpenForwardCone d v} := by
   exact (isOpen_lt continuous_const (continuous_apply 0)).inter
     (isOpen_lt hq continuous_const)
 
-private theorem eventually_forward_of_deriv
+theorem eventually_forward_of_deriv
     {f : Real -> Fin (d + 1) -> Real} {v : Fin (d + 1) -> Real}
     (hf : HasDerivAt f v 0) (hzero : f 0 = 0) (hv : InOpenForwardCone d v) :
     ∀ᶠ t in 𝓝[>] (0 : Real), InOpenForwardCone d (f t) := by

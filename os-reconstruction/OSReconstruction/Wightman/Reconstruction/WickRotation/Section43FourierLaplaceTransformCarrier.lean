@@ -1,8 +1,12 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceComponentKernel
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBoundaryValuesComparison
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanSpatialMomentum
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceComponentKernel
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBoundaryValuesComparison
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanSpatialMomentum
+
+@[expose] public section
 
 noncomputable section
 

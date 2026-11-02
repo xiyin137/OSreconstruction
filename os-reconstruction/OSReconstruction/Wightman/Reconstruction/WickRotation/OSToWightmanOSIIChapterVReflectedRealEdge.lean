@@ -1,21 +1,11 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVRealEdgeCauchy
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIA0LocalSchwinger
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVRealEdgeCauchy
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIA0LocalSchwinger
 
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -25,7 +15,7 @@ open scoped BigOperators Classical SchwartzMap LineDeriv ContDiff
 namespace OSReconstruction
 namespace OSIIChapterV
 
-private theorem timeReflectionN_add
+theorem timeReflectionN_add
     {d n : ℕ}
     (x y : NPointDomain d n) :
     timeReflectionN d (x + y) =
@@ -37,7 +27,7 @@ private theorem timeReflectionN_add
     ring
   · simp [timeReflectionN, timeReflection, hμ]
 
-private theorem timeReflectionN_smul
+theorem timeReflectionN_smul
     {d n : ℕ}
     (t : ℝ)
     (x : NPointDomain d n) :
@@ -49,7 +39,7 @@ private theorem timeReflectionN_smul
     simp [timeReflectionN, timeReflection]
   · simp [timeReflectionN, timeReflection, hμ]
 
-private theorem timeReflectionN_involutive
+theorem timeReflectionN_involutive
     {d n : ℕ}
     (x : NPointDomain d n) :
     timeReflectionN d (timeReflectionN d x) = x := by
@@ -360,7 +350,7 @@ noncomputable def osConjTensorProductLeftRCLM
       f.osConjTensorProduct g :=
   rfl
 
-private noncomputable def schwartzEvalRCLM
+noncomputable def schwartzEvalRCLM
     {E : Type*}
     [NormedAddCommGroup E] [NormedSpace ℝ E]
     (x : E) :
@@ -368,7 +358,7 @@ private noncomputable def schwartzEvalRCLM
   ((BoundedContinuousFunction.evalCLM ℂ x).comp
     (SchwartzMap.toBoundedContinuousFunctionCLM ℂ E ℂ)).restrictScalars ℝ
 
-@[simp] private theorem schwartzEvalRCLM_apply
+@[simp] theorem schwartzEvalRCLM_apply
     {E : Type*}
     [NormedAddCommGroup E] [NormedSpace ℝ E]
     (x : E)

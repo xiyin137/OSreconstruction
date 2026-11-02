@@ -1,24 +1,11 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.SCV.HeadBlockDescent
-import OSReconstruction.SCV.LocalProductDescent
+module
 
+public import OSReconstruction.SCV.HeadBlockDescent
+public import OSReconstruction.SCV.LocalProductDescent
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -42,7 +29,7 @@ theorem headTailProductSchwartzCLM_apply
     headTailProductSchwartzCLM n F (t, y) = F (Fin.cons t y) := by
   rfl
 
-private theorem headPartialEval_seminorm_decay_one_bound
+theorem headPartialEval_seminorm_decay_one_bound
     {n : ℕ}
     (k l : ℕ) :
     let N := (volume : Measure ℝ).integrablePower

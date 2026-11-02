@@ -5,23 +5,17 @@ Copyright (c) 2025 ModularPhysics Contributors. All rights reserved.
 Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.BHWReduced
-import OSReconstruction.Wightman.Reconstruction.WickRotation.BHWTranslationCore
-import OSReconstruction.ComplexLieGroups.Connectedness.ReducedPermutedTube
-import OSReconstruction.Bridge.AxiomBridge
-import Mathlib.LinearAlgebra.Charpoly.Basic
-import Mathlib.LinearAlgebra.Eigenspace.Zero
-import Mathlib.MeasureTheory.Measure.Lebesgue.EqHaar
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.BHWReduced
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.BHWTranslationCore
+public import OSReconstruction.ComplexLieGroups.Connectedness.ReducedPermutedTube
+public import OSReconstruction.Bridge.AxiomBridge
+public import Mathlib.LinearAlgebra.Charpoly.Basic
+public import Mathlib.LinearAlgebra.Eigenspace.Zero
+public import Mathlib.MeasureTheory.Measure.Lebesgue.EqHaar
 
-
-
-
-
-
-
-
-
+@[expose] public section
 
 set_option backward.isDefEq.respectTransparency false
 
@@ -326,7 +320,7 @@ structure AbsoluteForwardTubeInput
   boundary_values :
     HasAbsoluteBoundaryValues (d := d) m Wabs toFun
 
-private theorem bhwForwardTube_eq_rootForwardTube {d n : ℕ} [NeZero d] :
+theorem bhwForwardTube_eq_rootForwardTube {d n : ℕ} [NeZero d] :
     ForwardTube d n = _root_.ForwardTube d n := by
   ext z
   simp only [ForwardTube]
@@ -383,7 +377,7 @@ structure ReducedForwardTubePreInput (d m : ℕ) [NeZero d] where
   real_lorentz_invariant :
     IsReducedRealLorentzInvariantOnTube (d := d) (m := m) toFun
 
-private theorem safeSection_differentiable (d m : ℕ) :
+theorem safeSection_differentiable (d m : ℕ) :
     Differentiable ℂ (fun η : ReducedNPointConfig d m => safeSection d m η) := by
   change Differentiable ℂ
     (fun η : ReducedNPointConfig d m =>
@@ -880,14 +874,14 @@ def route1ReducedInputOfBoundary
 
 /-- Backward shift on `Fin n`-indexed tuples: sends index `k` to the value at
     index `k - 1`, with index `0` mapping to `0`. -/
-private def backwardShiftLM (n d : ℕ) :
+def backwardShiftLM (n d : ℕ) :
     (Fin n → Fin (d + 1) → ℝ) →ₗ[ℝ] (Fin n → Fin (d + 1) → ℝ) where
   toFun x k μ := if k.val = 0 then 0 else x ⟨k.val - 1, by omega⟩ μ
   map_add' x y := by ext k μ; simp only [Pi.add_apply]; split_ifs <;> simp
   map_smul' r x := by
     ext k μ; simp only [Pi.smul_apply, RingHom.id_apply, smul_eq_mul]; split_ifs <;> simp
 
-private theorem realDiffCoord_eq_id_sub_backwardShift (n d : ℕ) :
+theorem realDiffCoord_eq_id_sub_backwardShift (n d : ℕ) :
     (realDiffCoordLinearEquiv n d).toLinearMap = LinearMap.id - backwardShiftLM n d := by
   apply LinearMap.ext; intro x; funext k μ
   simp only [LinearEquiv.coe_toLinearMap, LinearMap.sub_apply, LinearMap.id_apply,
@@ -896,7 +890,7 @@ private theorem realDiffCoord_eq_id_sub_backwardShift (n d : ℕ) :
   simp only [realDiffCoordFun]
   by_cases hk : k.val = 0 <;> simp [hk]
 
-private theorem backwardShiftLM_pow_apply (n d : ℕ) :
+theorem backwardShiftLM_pow_apply (n d : ℕ) :
     ∀ (m : ℕ) (x : Fin n → Fin (d + 1) → ℝ) (k : Fin n) (μ : Fin (d + 1)),
     (backwardShiftLM n d ^ m) x k μ =
       if k.val < m then 0 else x ⟨k.val - m, by omega⟩ μ := by
@@ -918,14 +912,14 @@ private theorem backwardShiftLM_pow_apply (n d : ℕ) :
       · simp only [hkm1, ↓reduceIte, show ¬(k.val < m + 1) from by omega,
           show k.val - m - 1 = k.val - (m + 1) from by omega]
 
-private theorem backwardShiftLM_isNilpotent (n d : ℕ) :
+theorem backwardShiftLM_isNilpotent (n d : ℕ) :
     IsNilpotent (backwardShiftLM n d) := by
   refine ⟨n, ?_⟩
   apply LinearMap.ext; intro x; funext k μ
   simp only [LinearMap.zero_apply, Pi.zero_apply]
   rw [backwardShiftLM_pow_apply, if_pos k.isLt]
 
-private theorem realDiffCoord_det_eq_one (n d : ℕ) :
+theorem realDiffCoord_det_eq_one (n d : ℕ) :
     LinearMap.det (realDiffCoordLinearEquiv n d).toLinearMap = 1 := by
   rw [realDiffCoord_eq_id_sub_backwardShift]
   have h_alg : LinearMap.id - backwardShiftLM n d =

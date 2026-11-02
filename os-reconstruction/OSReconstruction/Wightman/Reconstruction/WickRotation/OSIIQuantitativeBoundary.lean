@@ -1,5 +1,9 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSIIQuantitativeDecay
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVICanonicalTimeBoundary
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSIIQuantitativeDecay
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVICanonicalTimeBoundary
+
+@[expose] public section
 
 /-!
 # Uniform constants for the native OS II boundary

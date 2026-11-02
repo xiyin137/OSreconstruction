@@ -1,17 +1,11 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVInitialAnchoredPacketRootedAffineSourceCurrent
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVInitialPositiveProductBasepointFamily
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVInitialAnchoredPacketRootedAffineSourceCurrent
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVInitialPositiveProductBasepointFamily
 
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -32,7 +26,7 @@ variable
   {A : AnchoredPacketTimeShellFamilyData (d := d) I anchor}
   {R : TripleConvolutionRootData I}
 
-private theorem continuous_generatorChronologicalParameter_bridge
+theorem continuous_generatorChronologicalParameter_bridge
     (i : GeneratorIndex k) :
     Continuous
       (fun ξ : Fin k → ℝ =>
@@ -309,7 +303,7 @@ theorem
               (timeScale + D.commonTailStart i) F).1)) :=
       hhead F
 
-private theorem
+theorem
     eventually_spatialHermiteGeneratorAffineRootSmearingLimit_eq_translatedReducedTensor_of_commonCurrent
     (D : RootedA0BlockContinuousTranslationData OS A R)
     (L : SchwartzNPoint d k →L[ℂ] ℂ)

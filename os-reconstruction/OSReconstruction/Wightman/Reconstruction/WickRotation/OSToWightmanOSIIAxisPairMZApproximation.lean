@@ -1,21 +1,15 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIAxisPairMZUniqueness
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIMZFlatTubeEnvelope
-import OSReconstruction.SCV.LocallyUniformLimit
-import OSReconstruction.SCV.GaussianRegularization
-import Mathlib.Topology.MetricSpace.Equicontinuity
-import Mathlib.Topology.UniformSpace.Ascoli
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIAxisPairMZUniqueness
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIMZFlatTubeEnvelope
+public import OSReconstruction.SCV.LocallyUniformLimit
+public import OSReconstruction.SCV.GaussianRegularization
+public import Mathlib.Topology.MetricSpace.Equicontinuity
+public import Mathlib.Topology.UniformSpace.Ascoli
 
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 

@@ -1,5 +1,9 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIITimeParametricContinuation
-import Mathlib.Analysis.Convex.PathConnected
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIITimeParametricContinuation
+public import Mathlib.Analysis.Convex.PathConnected
+
+@[expose] public section
 
 /-!
 # Geometry of the OS-II time domain

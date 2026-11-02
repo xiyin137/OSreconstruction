@@ -1,16 +1,11 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIAxisPairParametricBranch
-import OSReconstruction.SCV.TotallyRealIdentity
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIAxisPairParametricBranch
+public import OSReconstruction.SCV.TotallyRealIdentity
 
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -117,7 +112,7 @@ theorem eqOn_osiiAxisPairOpenStrip_of_differentiableOn_of_real
   exact hreal t
 
 omit [NeZero d] in
-private theorem osiiAxisPair_logCoordinateLine_mem
+theorem osiiAxisPair_logCoordinateLine_mem
     (x : osiiAxisPairIndex d → ℝ)
     (a : osiiAxisPairIndex d)
     {w : ℂ} (hw : w ∈ osiiAxisPairOpenStrip) :
@@ -139,7 +134,7 @@ private theorem osiiAxisPair_logCoordinateLine_mem
     _ < Real.pi / 2 := hw
 
 omit [NeZero d] in
-private theorem osiiAxisPair_logCoordinateLine_differentiable
+theorem osiiAxisPair_logCoordinateLine_differentiable
     (x : osiiAxisPairIndex d → ℝ)
     (a : osiiAxisPairIndex d) :
     Differentiable ℂ
@@ -153,7 +148,7 @@ private theorem osiiAxisPair_logCoordinateLine_differentiable
   · simp [Function.update, hba]
 
 omit [NeZero d] in
-private theorem osiiAxisPair_logCoordinateLine_real
+theorem osiiAxisPair_logCoordinateLine_real
     (x : osiiAxisPairIndex d → ℝ)
     (a : osiiAxisPairIndex d)
     (t : ℝ) :

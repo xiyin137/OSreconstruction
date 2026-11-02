@@ -3,7 +3,12 @@ Copyright (c) 2026 ModularPhysics Contributors.
 Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
-import OSReconstruction.SCV.EuclideanWeylRegularity
+module
+
+public import OSReconstruction.SCV.EuclideanWeylRegularity
+public import OSReconstruction.SchwartzSeminormCompat
+
+@[expose] public section
 
 /-!
 # Euclidean Weyl Probe Infrastructure
@@ -393,9 +398,7 @@ theorem euclideanSchwartzFunctional_bound_by_probeNorm
         refine Finset.sum_le_sum ?_
         intro a ha
         let p : ↑s.attach := ⟨⟨a, ha⟩, by simp⟩
-        change SchwartzMap.seminorm ℝ a.1 a.2 f ≤
-          (Fintype.card (Fin a.2 → ι) : ℝ) *
-            ‖(euclideanProbeCLM s f : EuclideanProbeSpace (ι := ι) s)‖
+        rw [SchwartzMap.schwartzSeminormFamily_apply', SchwartzMap.seminorm_eq_real]
         simpa [p] using euclideanSchwartzSeminorm_le_probeNorm s p f
       _ = D * ‖(euclideanProbeCLM s f : EuclideanProbeSpace (ι := ι) s)‖ := by
         dsimp [D]
@@ -412,7 +415,7 @@ theorem euclideanSchwartzFunctional_bound_by_probeNorm
     _ = C * ‖(euclideanProbeCLM s f : EuclideanProbeSpace (ι := ι) s)‖ := by
       ring
 
-private noncomputable def euclideanRangeLiftLinear
+noncomputable def euclideanRangeLiftLinear
     {ι : Type*} [Fintype ι]
     (T : SchwartzMap (EuclideanSpace ℝ ι) ℂ →L[ℂ] ℂ)
     (s : Finset (ℕ × ℕ))
@@ -424,7 +427,7 @@ private noncomputable def euclideanRangeLiftLinear
     hker).comp
     ((euclideanProbeCLM (ι := ι) s).toLinearMap.quotKerEquivRange.symm.toLinearMap)
 
-private theorem euclideanRangeLiftLinear_apply
+theorem euclideanRangeLiftLinear_apply
     {ι : Type*} [Fintype ι]
     (T : SchwartzMap (EuclideanSpace ℝ ι) ℂ →L[ℂ] ℂ)
     (s : Finset (ℕ × ℕ))
@@ -453,7 +456,7 @@ private theorem euclideanRangeLiftLinear_apply
   rw [hsymm]
   simp
 
-private theorem euclideanRangeLiftLinear_bound
+theorem euclideanRangeLiftLinear_bound
     {ι : Type*} [Fintype ι]
     (T : SchwartzMap (EuclideanSpace ℝ ι) ℂ →L[ℂ] ℂ)
     (s : Finset (ℕ × ℕ))

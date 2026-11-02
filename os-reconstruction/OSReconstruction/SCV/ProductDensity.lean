@@ -5,19 +5,14 @@ Copyright (c) 2026 ModularPhysics Contributors.
 Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
-import GeneralResults.SchwartzProducts
-import OSReconstruction.SCV.ComplexSchwartz
-import OSReconstruction.SCV.DistributionalEOWProductKernel
-import OSReconstruction.SCV.SchwartzExternalProduct
+module
 
+public import GeneralResults.SchwartzProducts
+public import OSReconstruction.SCV.ComplexSchwartz
+public import OSReconstruction.SCV.DistributionalEOWProductKernel
+public import OSReconstruction.SCV.SchwartzExternalProduct
 
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 

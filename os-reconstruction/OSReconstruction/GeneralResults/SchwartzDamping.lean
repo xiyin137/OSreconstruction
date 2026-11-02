@@ -5,11 +5,15 @@ Copyright (c) 2026 ModularPhysics Contributors. All rights reserved.
 Released under Apache 2.0 license.
 Authors: Michael R. Douglas, ModularPhysics Contributors
 -/
-import Mathlib.Analysis.Distribution.SchwartzSpace.Basic
-import Mathlib.Analysis.SpecialFunctions.ExpDeriv
-import Mathlib.Analysis.LocallyConvex.WithSeminorms
-import Mathlib.Analysis.Calculus.ContDiff.Bounds
-import OSReconstruction.GeneralResults.SchwartzCutoffExp
+module
+
+public import Mathlib.Analysis.Distribution.SchwartzSpace.Basic
+public import Mathlib.Analysis.SpecialFunctions.ExpDeriv
+public import Mathlib.Analysis.LocallyConvex.WithSeminorms
+public import Mathlib.Analysis.Calculus.ContDiff.Bounds
+public import OSReconstruction.GeneralResults.SchwartzCutoffExp
+
+@[expose] public section
 
 /-!
 # Schwartz Exponential Damping Convergence
@@ -54,7 +58,7 @@ variable {m : ℕ}
 /-! ### Auxiliary lemmas -/
 
 /-- The function `ξ ↦ exp(-ε * L(ξ)) * h(ξ)` is smooth for any fixed ε and smooth h. -/
-private lemma smooth_exp_mul_schwartz
+lemma smooth_exp_mul_schwartz
     (h : SchwartzMap (Fin m → ℝ) ℂ) (L : (Fin m → ℝ) →L[ℝ] ℝ) (ε : ℝ) :
     ContDiff ℝ ∞ (fun ξ => exp (-(ε : ℂ) * (L ξ : ℂ)) * h ξ) := by
   apply ContDiff.mul
@@ -64,7 +68,7 @@ private lemma smooth_exp_mul_schwartz
   · exact h.smooth'
 
 /-- On closure(supp h), L is bounded below by -M (by continuity). -/
-private lemma L_bounded_below_on_closure_support
+lemma L_bounded_below_on_closure_support
     (h : SchwartzMap (Fin m → ℝ) ℂ) (L : (Fin m → ℝ) →L[ℝ] ℝ)
     (M : ℝ) (hsupp : ∀ ξ, ξ ∈ Function.support (⇑h) → -M ≤ L ξ) :
     ∀ ξ, ξ ∈ closure (Function.support (⇑h)) → -M ≤ L ξ := by
@@ -74,7 +78,7 @@ private lemma L_bounded_below_on_closure_support
   exact hsupp x hx
 
 /-- Outside closure(supp h), the product `exp(-εL)·h` vanishes in a neighborhood. -/
-private lemma expL_mul_h_eventuallyEq_zero
+lemma expL_mul_h_eventuallyEq_zero
     (h : SchwartzMap (Fin m → ℝ) ℂ) (L : (Fin m → ℝ) →L[ℝ] ℝ) (ε : ℝ)
     (ξ : Fin m → ℝ) (hξ : ξ ∉ closure (Function.support (⇑h))) :
     (fun x => exp (-(ε : ℂ) * (L x : ℂ)) * h x) =ᶠ[nhds ξ] 0 := by
@@ -88,7 +92,7 @@ private lemma expL_mul_h_eventuallyEq_zero
       simp [this]⟩
 
 /-- If f = 0 in a neighborhood of ξ, then iteratedFDeriv f ξ = 0. -/
-private lemma iteratedFDeriv_eq_zero_of_eventuallyEq_zero
+lemma iteratedFDeriv_eq_zero_of_eventuallyEq_zero_SchwartzDamping
     {f : (Fin m → ℝ) → ℂ} {ξ : Fin m → ℝ}
     (hf : f =ᶠ[nhds ξ] 0) (n : ℕ) : iteratedFDeriv ℝ n f ξ = 0 := by
   rw [(hf.iteratedFDeriv ℝ n).eq_of_nhds]; simp
@@ -106,7 +110,7 @@ private lemma iteratedFDeriv_eq_zero_of_eventuallyEq_zero
 
 
 
-private lemma decay_exp_mul_schwartz
+lemma decay_exp_mul_schwartz
     (h : SchwartzMap (Fin m → ℝ) ℂ) (L : (Fin m → ℝ) →L[ℝ] ℝ) (ε : ℝ) (hε : 0 ≤ ε)
     (M : ℝ) (hM : 0 ≤ M) (hsupp : ∀ ξ, ξ ∈ Function.support (⇑h) → -M ≤ L ξ) :
     ∀ k n : ℕ, ∃ C : ℝ,
@@ -200,14 +204,14 @@ private lemma decay_exp_mul_schwartz
       apply hzero.congr
       filter_upwards with x
       simp [L', ContinuousLinearMap.smul_apply, ContinuousLinearMap.comp_apply, smul_eq_mul]
-    rw [iteratedFDeriv_eq_zero_of_eventuallyEq_zero hfun_eq' n]
+    rw [iteratedFDeriv_eq_zero_of_eventuallyEq_zero_SchwartzDamping hfun_eq' n]
     simp
 
 /-! ### Construction of the Schwartz family h_ε -/
 
 /-- For ε ≥ 0, the function `ξ ↦ exp(-εL(ξ)) · h(ξ)` is Schwartz,
 provided L ≥ -M on supp(h). -/
-private def expDampingSchwartzPos
+def expDampingSchwartzPos
     (h : SchwartzMap (Fin m → ℝ) ℂ) (L : (Fin m → ℝ) →L[ℝ] ℝ)
     (M : ℝ) (hM : 0 ≤ M) (hsupp : ∀ ξ, ξ ∈ Function.support (⇑h) → -M ≤ L ξ)
     (ε : ℝ) (hε : 0 ≤ ε) :
@@ -217,13 +221,13 @@ private def expDampingSchwartzPos
   decay' := decay_exp_mul_schwartz h L ε hε M hM hsupp
 
 /-- The family h_ε: equals exp(-εL)·h for ε ≥ 0, equals h for ε < 0. -/
-private def expDampingSchwartz
+def expDampingSchwartz
     (h : SchwartzMap (Fin m → ℝ) ℂ) (L : (Fin m → ℝ) →L[ℝ] ℝ)
     (M : ℝ) (hM : 0 ≤ M) (hsupp : ∀ ξ, ξ ∈ Function.support (⇑h) → -M ≤ L ξ) :
     ℝ → SchwartzMap (Fin m → ℝ) ℂ :=
   fun ε => if hε : 0 ≤ ε then expDampingSchwartzPos h L M hM hsupp ε hε else h
 
-private lemma expDampingSchwartz_apply_pos
+lemma expDampingSchwartz_apply_pos
     (h : SchwartzMap (Fin m → ℝ) ℂ) (L : (Fin m → ℝ) →L[ℝ] ℝ)
     (M : ℝ) (hM : 0 ≤ M) (hsupp : ∀ ξ, ξ ∈ Function.support (⇑h) → -M ≤ L ξ)
     {ε : ℝ} (hε : 0 < ε) (ξ : Fin m → ℝ) :
@@ -234,7 +238,7 @@ private lemma expDampingSchwartz_apply_pos
 
 /-- For `-M ≤ r` and `0 < ε ≤ 1`, we have `‖cexp((-ε * r : ℝ) : ℂ) - 1‖ ≤ ε * (|r| + M * exp M)`.
 This is the key pointwise bound used in the convergence proof. -/
-private lemma norm_cexp_neg_eps_mul_sub_one_le
+lemma norm_cexp_neg_eps_mul_sub_one_le
     {r M ε : ℝ} (hM : 0 ≤ M) (hr : -M ≤ r) (hε : 0 < ε) (hε1 : ε ≤ 1) :
     ‖cexp (((-ε * r : ℝ) : ℂ)) - 1‖ ≤ ε * (|r| + M * Real.exp M) := by
   have hconv : cexp (((-ε * r : ℝ) : ℂ)) = ((Real.exp (-ε * r) : ℝ) : ℂ) :=
@@ -316,7 +320,7 @@ On closure(supp h), the bound on the j=0 Leibniz term uses:
 - L(ξ) ≥ 0: `|exp(-εL(ξ)) - 1| = 1 - exp(-εL(ξ)) ≤ εL(ξ) ≤ ε‖L₀‖·‖ξ‖`
 - -M ≤ L(ξ) < 0: `|exp(-εL(ξ)) - 1| ≤ εM·exp(M)` (using `e^x - 1 ≤ xe^x`)
 The j ≥ 1 terms carry `‖L'‖^j = (ε‖L₀‖)^j ≤ ε·‖L₀‖^j` for ε ≤ 1. -/
-private lemma seminorm_expDamping_sub_le
+lemma seminorm_expDamping_sub_le
     (h : SchwartzMap (Fin m → ℝ) ℂ) (L : (Fin m → ℝ) →L[ℝ] ℝ)
     (M : ℝ) (hM : 0 ≤ M) (hsupp : ∀ ξ, ξ ∈ Function.support (⇑h) → -M ≤ L ξ)
     (k n : ℕ) :
@@ -532,7 +536,7 @@ private lemma seminorm_expDamping_sub_le
           have : h x = 0 := by
             by_contra hne; exact hx (subset_closure (Function.mem_support.mpr hne))
           simp [this]⟩
-    rw [iteratedFDeriv_eq_zero_of_eventuallyEq_zero hzero n, norm_zero, mul_zero]
+    rw [iteratedFDeriv_eq_zero_of_eventuallyEq_zero_SchwartzDamping hzero n, norm_zero, mul_zero]
     positivity
 
 /-! ### Convergence in Schwartz topology -/
@@ -558,7 +562,7 @@ By Leibniz on `D^n[(exp(-εL)-1)·h]`:
   involves ε^j for j ≥ 1 and (εL')^j exp(-εL) is O(ε))
 
 Total: seminorm(k,n)(h_ε - h) ≤ ε · (explicit polynomial in ‖L‖, M, seminorms of h). -/
-private lemma tendsto_expDampingSchwartz
+lemma tendsto_expDampingSchwartz
     (h : SchwartzMap (Fin m → ℝ) ℂ) (L : (Fin m → ℝ) →L[ℝ] ℝ)
     (M : ℝ) (hM : 0 ≤ M) (hsupp : ∀ ξ, ξ ∈ Function.support (⇑h) → -M ≤ L ξ) :
     Tendsto (expDampingSchwartz h L M hM hsupp) (nhdsWithin 0 (Set.Ioi 0)) (nhds h) := by

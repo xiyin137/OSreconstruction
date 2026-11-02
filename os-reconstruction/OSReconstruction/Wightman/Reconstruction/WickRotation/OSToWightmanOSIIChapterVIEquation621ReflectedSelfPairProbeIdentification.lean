@@ -1,16 +1,11 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIEquation621ProductSpatialSelfPairApproxIdentity
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIEquation621GeneratorSpatialSplit
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIEquation621ProductSpatialSelfPairApproxIdentity
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIEquation621GeneratorSpatialSplit
 
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -21,7 +16,7 @@ namespace OSReconstruction
 namespace OSIIChapterV
 namespace Section43ProductTimeApproximateIdentity
 
-private theorem section43ScalarDiffCLE_symm_succ_sub_castSucc_spatial
+theorem section43ScalarDiffCLE_symm_succ_sub_castSucc_spatial
     {r : Nat}
     (delta : Fin (r + 1) -> Real)
     (i : Fin r) :

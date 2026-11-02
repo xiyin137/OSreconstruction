@@ -1,22 +1,14 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.SCV.DistributionalRepresentationUniqueness
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVStageWideReflectedGramCommonRealEdge
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVGeneratorRadialStageExtension
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVGeneratorStageAffineTranslation
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVRootedStageSuccessor
+module
 
+public import OSReconstruction.SCV.DistributionalRepresentationUniqueness
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVStageWideReflectedGramCommonRealEdge
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVGeneratorRadialStageExtension
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVGeneratorStageAffineTranslation
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVRootedStageSuccessor
 
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -110,9 +102,8 @@ noncomputable def toStageExtensionDataOfConvexAtlas
       S depth P A R H.toContinuousTranslationData
   let recenteredAtlas :=
     (atlas.recenter anchor).restrictRealRegion
-      (by
-        intro u hu
-        exact edge_subset_atlas u hu)
+      (show X.edge.realRegion ⊆ {τ | τ + anchor ∈ U} from
+        fun u hu => edge_subset_atlas u hu)
   exact
     T.diagonal.toStageExtensionDataOfRadialConvexAtlas
       X.edge.toDiagonal F
@@ -227,9 +218,8 @@ noncomputable def toStageExtensionDataOfConvexAtlas
       S depth P A R H.toContinuousTranslationData
   let recenteredAtlas :=
     (atlas.recenter anchor).restrictRealRegion
-      (by
-        intro u hu
-        exact edge_subset_atlas u hu)
+      (show X.edge.realRegion ⊆ {τ | τ + anchor ∈ U} from
+        fun u hu => edge_subset_atlas u hu)
   exact
     T.diagonal.toStageExtensionDataOfRadialConvexAtlas
       X.edge.toDiagonal F

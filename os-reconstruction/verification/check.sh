@@ -9,7 +9,7 @@ case "${1:-full}" in
   contracts)
     ruby verification/source_check.rb
     lake build OSReconstruction.Wightman.Reconstruction.Main Challenge Solution
-    lake env lean verification/Contracts.lean
+    lake env lean --run verification/Contracts.lean
     ;;
   comparator)
     shift
@@ -19,7 +19,7 @@ case "${1:-full}" in
     ruby verification/source_check.rb
     lake build
     lake build Challenge Solution
-    lake env lean verification/Contracts.lean
+    lake env lean --run verification/Contracts.lean
     ;;
   *)
     printf 'Usage: bash verification/check.sh quick|contracts|full|comparator [--development]\n' >&2

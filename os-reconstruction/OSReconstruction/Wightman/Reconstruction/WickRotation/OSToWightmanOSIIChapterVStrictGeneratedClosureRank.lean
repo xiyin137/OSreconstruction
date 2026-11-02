@@ -1,27 +1,10 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVStrictGeneratedLogarithmicDomains
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVStrictGeneratedLogarithmicDomains
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -410,7 +393,7 @@ theorem scalar_zero_mem
       rank .scalar n N (0 : Fin n -> Real) :=
   (scalarZero n N).mono (Nat.zero_le rank)
 
-private theorem rank_zero_shape_aux
+theorem rank_zero_shape_aux
     {rank : Nat} {kind : OSIILogarithmicArgumentKind}
     {n N : Nat} {x : Fin n -> Real}
     (hx :
@@ -471,7 +454,7 @@ theorem scalar_eq_zero_of_rank_zero
     x = 0 :=
   rank_zero_shape_aux hx rfl
 
-private theorem coordinatewise_closed_aux
+theorem coordinatewise_closed_aux
     {rank : Nat} {kind : OSIILogarithmicArgumentKind}
     {n N : Nat} {x : Fin n -> Real}
     (hx :
@@ -632,7 +615,7 @@ theorem scalar_hyperrectangle
       rank .scalar n N y :=
   coordinatewise_closed_aux hx y hy
 
-private theorem mixed_diagonal_mem_scalar_aux
+theorem mixed_diagonal_mem_scalar_aux
     {rank : Nat} {kind : OSIILogarithmicArgumentKind}
     {n N : Nat} {x : Fin n -> Real}
     (hx :

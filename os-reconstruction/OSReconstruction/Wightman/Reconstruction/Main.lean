@@ -1,7 +1,11 @@
-import OSReconstruction.Specification
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanReconstruction
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSIIQuantitativeEndpoint
-import OSReconstruction.Wightman.Reconstruction.WickRotation.RToEReconstruction
+module
+
+public import OSReconstruction.Specification
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanReconstruction
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSIIQuantitativeEndpoint
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.RToEReconstruction
+
+@[expose] public section
 
 /-!
 # OS reconstruction theorems

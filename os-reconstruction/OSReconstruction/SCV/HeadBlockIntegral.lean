@@ -1,15 +1,10 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.SCV.TranslationDifferentiation
+module
 
+public import OSReconstruction.SCV.TranslationDifferentiation
 
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 

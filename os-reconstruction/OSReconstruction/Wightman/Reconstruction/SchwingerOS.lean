@@ -1,20 +1,15 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Mathlib429Compat
-import OSReconstruction.Specification
-import OSReconstruction.Wightman.Reconstruction.TranslationInvariantSchwartz
-import Mathlib.Analysis.Convolution
-import Mathlib.Analysis.Calculus.ContDiff.Convolution
-import Mathlib.Analysis.LocallyConvex.WithSeminorms
+module
 
+public import OSReconstruction.Mathlib429Compat
+public import OSReconstruction.Specification
+public import OSReconstruction.Wightman.Reconstruction.TranslationInvariantSchwartz
+public import Mathlib.Analysis.Convolution
+public import Mathlib.Analysis.Calculus.ContDiff.Convolution
+public import Mathlib.Analysis.LocallyConvex.WithSeminorms
 
-
-
-
-
-
-
-
+@[expose] public section
 
 set_option backward.isDefEq.respectTransparency false
 
@@ -329,7 +324,7 @@ end PositiveTimeBorchersSequence
     OS involution to `g.osConjTensorProduct f` swaps the two tensor blocks and
     yields `f.osConjTensorProduct g` after the canonical `n + m = m + n`
     reindexing. -/
-private theorem osConjTP_eq_osConj_osConjTP {d n m : ℕ} [NeZero d]
+theorem osConjTP_eq_osConj_osConjTP {d n m : ℕ} [NeZero d]
     (f : SchwartzNPoint d m) (g : SchwartzNPoint d n)
     (x : NPointDomain d (n + m)) :
     ((g.osConjTensorProduct f).osConj) x =
@@ -768,14 +763,14 @@ theorem OsterwalderSchraderAxioms.productTensorSchwingerMLM_apply
     proof uses only the corrected OS reality condition together with
     permutation symmetry to swap the tensor blocks after applying the OS
     involution. -/
-private theorem cast_zeroDiagonalSchwartz_apply {d k₁ k₂ : ℕ}
+theorem cast_zeroDiagonalSchwartz_apply {d k₁ k₂ : ℕ}
     (hk : k₁ = k₂) (f : ZeroDiagonalSchwartz d k₁) (x : NPointDomain d k₂) :
     (cast (congrArg (ZeroDiagonalSchwartz d) hk) f).1 x =
       f.1 (fun i => x (Fin.cast hk i)) := by
   cases hk
   rfl
 
-private theorem S_eq_of_cast {d : ℕ}
+theorem S_eq_of_cast {d : ℕ}
     (S : (k : ℕ) → ZeroDiagonalSchwartz d k → ℂ)
     (k₁ k₂ : ℕ) (hk : k₁ = k₂)
     (f : ZeroDiagonalSchwartz d k₁) (g : ZeroDiagonalSchwartz d k₂)
@@ -788,7 +783,7 @@ private theorem S_eq_of_cast {d : ℕ}
     simpa using hfg x
   simpa [hfg']
 
-private def blockSwapPerm (m n : ℕ) : Equiv.Perm (Fin (n + m)) where
+def blockSwapPerm (m n : ℕ) : Equiv.Perm (Fin (n + m)) where
   toFun := fun i =>
     (finAddFlip : Fin (m + n) ≃ Fin (n + m)) (Fin.cast (Nat.add_comm m n).symm i)
   invFun := fun i =>
@@ -801,7 +796,7 @@ private def blockSwapPerm (m n : ℕ) : Equiv.Perm (Fin (n + m)) where
     intro i
     simp
 
-@[simp] private theorem blockSwapPerm_cast_eq_finAddFlip {m n : ℕ}
+@[simp] theorem blockSwapPerm_cast_eq_finAddFlip {m n : ℕ}
     (i : Fin (m + n)) :
     blockSwapPerm m n (Fin.cast (Nat.add_comm m n) i) =
       (finAddFlip : Fin (m + n) ≃ Fin (n + m)) i := by
@@ -1025,7 +1020,7 @@ theorem osInner_nonneg_self (OS : OsterwalderSchraderAxioms d)
     0 ≤ (osInner OS F F).re :=
   OS.E2_reflection_positive (F : BorchersSequence d) F.ordered_tsupport
 
-private theorem osInner_quadratic_re (OS : OsterwalderSchraderAxioms d)
+theorem osInner_quadratic_re (OS : OsterwalderSchraderAxioms d)
     (X Y : PositiveTimeBorchersSequence d) (t : ℝ) :
     (osInner OS (X + (↑t : ℂ) • Y) (X + (↑t : ℂ) • Y)).re =
     (osInner OS X X).re +

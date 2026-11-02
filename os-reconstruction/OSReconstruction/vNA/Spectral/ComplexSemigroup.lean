@@ -5,41 +5,11 @@ Copyright (c) 2025 ModularPhysics Contributors. All rights reserved.
 Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
-import OSReconstruction.vNA.Spectral.SelfAdjointFunctionalViaRMK
+module
 
+public import OSReconstruction.vNA.Spectral.SelfAdjointFunctionalViaRMK
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 open MeasureTheory Complex Set Filter InnerProductSpace
 open scoped Topology
@@ -64,12 +34,12 @@ variable {H : Type*} [NormedAddCommGroup H] [InnerProductSpace ℂ H] [CompleteS
 
 /-- Real part of complex power: Re(λ^z) = exp(Re(z) · log λ) · cos(Im(z) · log λ)
 for λ > 0, extended to 0 at λ ≤ 0. -/
-private def specSemiFRe (z : ℂ) (u : ℝ) : ℝ :=
+def specSemiFRe (z : ℂ) (u : ℝ) : ℝ :=
   if u ≤ 0 then 0 else Real.exp (z.re * Real.log u) * Real.cos (z.im * Real.log u)
 
 /-- Imaginary part of complex power: Im(λ^z) = exp(Re(z) · log λ) · sin(Im(z) · log λ)
 for λ > 0, extended to 0 at λ ≤ 0. -/
-private def specSemiFIm (z : ℂ) (u : ℝ) : ℝ :=
+def specSemiFIm (z : ℂ) (u : ℝ) : ℝ :=
   if u ≤ 0 then 0 else Real.exp (z.re * Real.log u) * Real.sin (z.im * Real.log u)
 
 /-- The complex semigroup extension: for each `z`, the operator `T(z) : H →L[ℂ] H`
@@ -93,7 +63,7 @@ def spectralSemigroupComplex
 /-- The polarization identity for a continuous linear map on a complex Hilbert space:
 `⟨x, Ay⟩ = (1/4)(⟨x+y, A(x+y)⟩ - ⟨x-y, A(x-y)⟩ - I⟨x+iy, A(x+iy)⟩ + I⟨x-iy, A(x-iy)⟩)`.
 -/
-private theorem inner_polarization_clm (T : H →L[ℂ] H) (x y : H) :
+theorem inner_polarization_clm (T : H →L[ℂ] H) (x y : H) :
     (1 / 4 : ℂ) * (@inner ℂ H _ (x + y) (T (x + y)) - @inner ℂ H _ (x - y) (T (x - y))
       - Complex.I * @inner ℂ H _ (x + Complex.I • y) (T (x + Complex.I • y))
       + Complex.I * @inner ℂ H _ (x - Complex.I • y) (T (x - Complex.I • y))) =
@@ -121,7 +91,7 @@ private theorem inner_polarization_clm (T : H →L[ℂ] H) (x y : H) :
 
 /-- Full complex inner product for CFC of a real function on a self-adjoint operator:
 since `cfc g A` is self-adjoint, `⟨v, cfc(g,A)v⟩` is real and equals `(∫ g dμ_v : ℂ)`. -/
-private theorem inner_cfc_eq_ofReal_integral
+theorem inner_cfc_eq_ofReal_integral
     (A : H →L[ℂ] H) (hA : IsSelfAdjoint A) (v : H)
     (g : ℝ → ℝ) (hg : ContinuousOn g (spectrum ℝ A)) :
     @inner ℂ H _ v ((cfc g A) v) =
@@ -137,7 +107,7 @@ private theorem inner_cfc_eq_ofReal_integral
     (μ := selfAdjointSpectralMeasureDiagonal A hA v)).symm
 
 /-- Pointwise identity: `fRe(z,s) + I·fIm(z,s) = exp(z·log s)` for `s > 0`. -/
-private theorem specSemiF_combined_eq_exp (z : ℂ) (s : ℝ) (hs : 0 < s) :
+theorem specSemiF_combined_eq_exp (z : ℂ) (s : ℝ) (hs : 0 < s) :
     (↑(specSemiFRe z s) : ℂ) + Complex.I * ↑(specSemiFIm z s) =
       Complex.exp (z * ↑(Real.log s)) := by
   simp only [specSemiFRe, specSemiFIm, if_neg (not_le.mpr hs)]
@@ -147,7 +117,7 @@ private theorem specSemiF_combined_eq_exp (z : ℂ) (s : ℝ) (hs : 0 < s) :
   push_cast; ring
 
 /-- At `s ≤ 0`, both `fRe` and `fIm` vanish. -/
-private theorem specSemiF_combined_eq_zero (z : ℂ) (s : ℝ) (hs : s ≤ 0) :
+theorem specSemiF_combined_eq_zero (z : ℂ) (s : ℝ) (hs : s ≤ 0) :
     (↑(specSemiFRe z s) : ℂ) + Complex.I * ↑(specSemiFIm z s) = 0 := by
   simp only [specSemiFRe, specSemiFIm, if_pos hs, Complex.ofReal_zero, mul_zero, add_zero]
 
@@ -155,7 +125,7 @@ private theorem specSemiF_combined_eq_zero (z : ℂ) (s : ℝ) (hs : s ≤ 0) :
 
 On `(0, ∞)`, the function is `exp(Re(z)·log s)·cos(Im(z)·log s)` (smooth).
 At `s = 0`, the value is `0` and `|f(s)| ≤ s^{Re(z)} → 0` since `Re(z) > 0`. -/
-private theorem specSemiFRe_continuousOn_Ici (z : ℂ) (hz : 0 < z.re) :
+theorem specSemiFRe_continuousOn_Ici (z : ℂ) (hz : 0 < z.re) :
     ContinuousOn (specSemiFRe z) (Set.Ici 0) := by
   intro s hs
   rcases eq_or_lt_of_le (Set.mem_Ici.mp hs) with rfl | hs_pos
@@ -194,7 +164,7 @@ private theorem specSemiFRe_continuousOn_Ici (z : ℂ) (hz : 0 < z.re) :
     simp [specSemiFRe, not_le.mpr (Set.mem_Ioi.mp hu)]
 
 /-- Continuity of `specSemiFIm z` on `[0, ∞)` when `Re(z) > 0`. -/
-private theorem specSemiFIm_continuousOn_Ici (z : ℂ) (hz : 0 < z.re) :
+theorem specSemiFIm_continuousOn_Ici (z : ℂ) (hz : 0 < z.re) :
     ContinuousOn (specSemiFIm z) (Set.Ici 0) := by
   intro s hs
   rcases eq_or_lt_of_le (Set.mem_Ici.mp hs) with rfl | hs_pos
@@ -232,7 +202,7 @@ private theorem specSemiFIm_continuousOn_Ici (z : ℂ) (hz : 0 < z.re) :
 
 /-- The complex-valued change-of-variables for the Laplace bridge:
 `∫ exp(z · log s) d(μ.restrict(Ioi 0)) = ∫ exp(-(z·u)) d(laplaceMeasurePos μ)`. -/
-private theorem complex_laplace_change_of_var
+theorem complex_laplace_change_of_var
     (μ : Measure ℝ) [IsFiniteMeasure μ] (z : ℂ) :
     ∫ s, Complex.exp (z * ↑(Real.log s)) ∂(μ.restrict (Set.Ioi 0)) =
       ∫ u, Complex.exp (-(z * ↑u)) ∂(BochnerLaplaceBridge.laplaceMeasurePos μ) := by
@@ -249,19 +219,19 @@ private theorem complex_laplace_change_of_var
   congr 1
   simp [BochnerLaplaceBridge.negLogMap]
 
-private theorem specSemiFRe_measurable (z : ℂ) : Measurable (specSemiFRe z) := by
+theorem specSemiFRe_measurable (z : ℂ) : Measurable (specSemiFRe z) := by
   unfold specSemiFRe
   exact Measurable.ite measurableSet_Iic measurable_const
     ((Real.measurable_exp.comp (measurable_const.mul Real.measurable_log)).mul
      (Real.measurable_cos.comp (measurable_const.mul Real.measurable_log)))
 
-private theorem specSemiFIm_measurable (z : ℂ) : Measurable (specSemiFIm z) := by
+theorem specSemiFIm_measurable (z : ℂ) : Measurable (specSemiFIm z) := by
   unfold specSemiFIm
   exact Measurable.ite measurableSet_Iic measurable_const
     ((Real.measurable_exp.comp (measurable_const.mul Real.measurable_log)).mul
      (Real.measurable_sin.comp (measurable_const.mul Real.measurable_log)))
 
-private theorem combined_integral_eq_laplace
+theorem combined_integral_eq_laplace
     (A : H →L[ℂ] H) (hA : IsSelfAdjoint A)
     (hspec : spectrum ℝ A ⊆ Set.Icc 0 1)
     (v : H) (z : ℂ) (hz : 0 < z.re) :
@@ -318,7 +288,7 @@ private theorem combined_integral_eq_laplace
 /-- Diagonal identity: `⟨v, T(z)v⟩ = selfAdjointSpectralLaplaceDiagonal A hA v z`.
 
 This is the core identity connecting the CFC definition to the spectral Laplace. -/
-private theorem spectralSemigroupComplex_inner_diag_eq
+theorem spectralSemigroupComplex_inner_diag_eq
     (A : H →L[ℂ] H) (hA : IsSelfAdjoint A)
     (hA_nonneg : 0 ≤ A)
     (hspec : spectrum ℝ A ⊆ Set.Icc 0 1)
@@ -402,7 +372,7 @@ theorem spectralSemigroupComplex_differentiableOn
 
 
 
-private theorem continuous_specSemiFRe_uncurry
+theorem continuous_specSemiFRe_uncurry
     (A : H →L[ℂ] H) (hspec : spectrum ℝ A ⊆ Set.Icc 0 1) :
     Continuous (fun p : {z : ℂ // 0 < z.re} × spectrum ℝ A =>
       specSemiFRe p.1.1 p.2.1) := by
@@ -485,7 +455,7 @@ private theorem continuous_specSemiFRe_uncurry
       filter_upwards [hq_pos] with q hq
       simp [specSemiFRe, not_le.mpr hq]
 
-private theorem continuous_specSemiFIm_uncurry
+theorem continuous_specSemiFIm_uncurry
     (A : H →L[ℂ] H) (hspec : spectrum ℝ A ⊆ Set.Icc 0 1) :
     Continuous (fun p : {z : ℂ // 0 < z.re} × spectrum ℝ A =>
       specSemiFIm p.1.1 p.2.1) := by

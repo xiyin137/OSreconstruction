@@ -1,25 +1,11 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVGeneratorOpenFieldScales
-import OSReconstruction.SCV.TotallyRealIdentity
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVGeneratorOpenFieldScales
+public import OSReconstruction.SCV.TotallyRealIdentity
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -130,7 +116,7 @@ def ofBlocks
   leftField_realEdge i := (left i).field_realEdge
   rightField_realEdge i := (right i).field_realEdge
 
-private theorem tendsto_leftRealCoordinates_zero
+theorem tendsto_leftRealCoordinates_zero
     (i : GeneratorIndex k) :
     Tendsto i.leftRealCoordinates (𝓝 0) (𝓝 0) := by
   have hcontinuous : Continuous i.leftRealCoordinates := by
@@ -143,7 +129,7 @@ private theorem tendsto_leftRealCoordinates_zero
   rw [← hzero]
   exact hcontinuous.continuousAt
 
-private theorem tendsto_rightRealCoordinates_zero
+theorem tendsto_rightRealCoordinates_zero
     (i : GeneratorIndex k) :
     Tendsto i.rightRealCoordinates (𝓝 0) (𝓝 0) := by
   have hcontinuous : Continuous i.rightRealCoordinates := by
@@ -185,7 +171,7 @@ theorem simultaneousRealAutomaticSet_mem_nhds
       (E.rightRealRegion_mem_nhds i)] with τ hleft hright
   exact ⟨hleft, hright⟩
 
-private theorem open_inter_strictPositive_nonempty
+theorem open_inter_strictPositive_nonempty
     (V : Set (Fin k → ℝ))
     (hVopen : IsOpen V)
     (h0V : (0 : Fin k → ℝ) ∈ V) :

@@ -1,8 +1,13 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.RToEReflectedClusterClosure
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIOrderedProductMultiGapPacketGrowth
-import OSReconstruction.SCV.MultipleReflection
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.RToEReflectedClusterClosure
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIOrderedProductMultiGapPacketGrowth
+public import OSReconstruction.SCV.MultipleReflection
+public import OSReconstruction.SchwartzSeminormCompat
+
+@[expose] public section
 
 /-!
 # Uniform Reflected Time-Shift Bounds
@@ -36,7 +41,7 @@ local instance (n : ℕ) : AddCommGroup (ZeroDiagonalSchwartz d n) :=
   inferInstanceAs (AddCommGroup ↥(zeroDiagonalSubmodule d n))
 
 omit [NeZero d] in
-private theorem zeroDiagonalCLM_finite_bound {n : ℕ}
+theorem zeroDiagonalCLM_finite_bound {n : ℕ}
     (L : ZeroDiagonalSchwartz d n →L[ℂ] ℂ) :
     ∃ r : ℕ, ∃ C : ℝ, 0 ≤ C ∧ ∀ f : ZeroDiagonalSchwartz d n,
       ‖L f‖ ≤ C * (Finset.Iic (r, r)).sup
@@ -55,14 +60,15 @@ private theorem zeroDiagonalCLM_finite_bound {n : ℕ}
     apply Seminorm.finset_sup_apply_le (apply_nonneg _ _)
     intro j hj
     have hjr := Finset.le_sup (f := fun j : ℕ × ℕ => max j.1 j.2) hj
-    change SchwartzMap.seminorm ℝ j.1 j.2 f.1 ≤ _
+    simp only [p, SeminormFamily.comp_apply, Seminorm.comp_apply, Submodule.subtype_apply,
+      SchwartzMap.schwartzSeminormFamily_apply', SchwartzMap.seminorm_eq_real]
     apply Seminorm.le_finset_sup_apply
       (p := schwartzSeminormFamily ℝ (NPointDomain d n) ℂ) (i := j)
     exact Finset.mem_Iic.mpr
       ⟨(le_max_left _ _).trans hjr, (le_max_right _ _).trans hjr⟩
   exact (hbound f).trans (mul_le_mul_of_nonneg_left hsmall C.2)
 
-private theorem zeroDiagonalCLM_translate_polynomial_bound {n : ℕ}
+theorem zeroDiagonalCLM_translate_polynomial_bound {n : ℕ}
     (L : ZeroDiagonalSchwartz d n →L[ℂ] ℂ)
     (f : SchwartzNPoint d n) (v : NPointDomain d n) :
     ∃ r : ℕ, ∃ C : ℝ, 0 ≤ C ∧ ∀ t : ℝ, 1 ≤ t →
@@ -88,12 +94,12 @@ private theorem zeroDiagonalCLM_translate_polynomial_bound {n : ℕ}
     _ = (C * 2 ^ r * (1 + ‖v‖) ^ r * Q f) * t ^ r := by rw [mul_pow]; ring
 
 omit [NeZero d] in
-private theorem timeShift_zero {n : ℕ} (f : SchwartzNPoint d n) :
+theorem timeShift_zero {n : ℕ} (f : SchwartzNPoint d n) :
     timeShiftSchwartzNPoint (d := d) 0 f = f := by
   ext x
   simp
 
-private def orderedTimeShift {n : ℕ} (t : ℝ) (ht : 0 ≤ t)
+def orderedTimeShift {n : ℕ} (t : ℝ) (ht : 0 ≤ t)
     (f : euclideanPositiveTimeSubmodule (d := d) n) :
     euclideanPositiveTimeSubmodule (d := d) n :=
   ⟨timeShiftSchwartzNPoint (d := d) t f.1, by
@@ -101,7 +107,7 @@ private def orderedTimeShift {n : ℕ} (t : ℝ) (ht : 0 ≤ t)
     · simpa only [timeShift_zero] using f.2
     · exact timeShiftSchwartzNPoint_preserves_ordered_positive_tsupport t ht' f.1 f.2⟩
 
-private theorem reflected_timeShift_pairing (Wfn : WightmanFunctions d) {n m : ℕ}
+theorem reflected_timeShift_pairing (Wfn : WightmanFunctions d) {n m : ℕ}
     (f : SchwartzNPoint d n) (g : SchwartzNPoint d m) (s t : ℝ) :
     wickRotatedBoundaryPairing Wfn (n + m)
       ((timeShiftSchwartzNPoint (d := d) s f).osConjTensorProduct
@@ -131,26 +137,26 @@ private theorem reflected_timeShift_pairing (Wfn : WightmanFunctions d) {n m : �
       ring
     · simp [splitLast, timeShiftVec, hμ]
 
-private def shiftedSelf (Wfn : WightmanFunctions d) {n : ℕ}
+def shiftedSelf (Wfn : WightmanFunctions d) {n : ℕ}
     (f : euclideanPositiveTimeSubmodule (d := d) n) (t : ℝ) : ℂ :=
   wickRotatedBoundaryPairing Wfn (n + n)
     ((timeShiftSchwartzNPoint (d := d) t f.1).osConjTensorProduct
       (timeShiftSchwartzNPoint (d := d) t f.1))
 
-private theorem shiftedSelf_eq (Wfn : WightmanFunctions d) {n : ℕ}
+theorem shiftedSelf_eq (Wfn : WightmanFunctions d) {n : ℕ}
     (f : euclideanPositiveTimeSubmodule (d := d) n) (t : ℝ) :
     shiftedSelf Wfn f t = wickRotatedBoundaryPairing Wfn (n + n)
       (f.1.osConjTensorProduct (timeShiftSchwartzNPoint (d := d) (2 * t) f.1)) := by
   simpa only [shiftedSelf, two_mul] using reflected_timeShift_pairing Wfn f.1 f.1 t t
 
-private theorem re_mul_le_norm (p q : ℂ) : p.re * q.re ≤ ‖p‖ * ‖q‖ := by
+theorem re_mul_le_norm (p q : ℂ) : p.re * q.re ≤ ‖p‖ * ‖q‖ := by
   calc
     p.re * q.re ≤ |p.re * q.re| := le_abs_self _
     _ = |p.re| * |q.re| := abs_mul _ _
     _ ≤ ‖p‖ * ‖q‖ := mul_le_mul (Complex.abs_re_le_norm p)
       (Complex.abs_re_le_norm q) (abs_nonneg _) (norm_nonneg _)
 
-private theorem shiftedSelf_doubling (Wfn : WightmanFunctions d) {n : ℕ}
+theorem shiftedSelf_doubling (Wfn : WightmanFunctions d) {n : ℕ}
     (f : euclideanPositiveTimeSubmodule (d := d) n) (t : ℝ) (ht : 0 < t) :
     ‖shiftedSelf Wfn f t‖ ^ 2 ≤
       ‖shiftedSelf Wfn f 0‖ * ‖shiftedSelf Wfn f (2 * t)‖ := by
@@ -167,7 +173,7 @@ private theorem shiftedSelf_doubling (Wfn : WightmanFunctions d) {n : ℕ}
   rw [hff, hgg] at hnorm
   nlinarith
 
-private theorem shiftedSelf_polynomial (Wfn : WightmanFunctions d) {n : ℕ}
+theorem shiftedSelf_polynomial (Wfn : WightmanFunctions d) {n : ℕ}
     (f : euclideanPositiveTimeSubmodule (d := d) n) :
     ∃ r : ℕ, ∃ C : ℝ, 0 ≤ C ∧ ∀ t : ℝ, 1 ≤ t →
       ‖shiftedSelf Wfn f t‖ ≤ C * t ^ r := by
@@ -200,7 +206,7 @@ private theorem shiftedSelf_polynomial (Wfn : WightmanFunctions d) {n : ℕ}
   have h := hbound t ht P hP
   rwa [shiftedSelf_eq Wfn f t]
 
-private theorem shiftedSelf_uniform_bound (Wfn : WightmanFunctions d) {n : ℕ}
+theorem shiftedSelf_uniform_bound (Wfn : WightmanFunctions d) {n : ℕ}
     (f : euclideanPositiveTimeSubmodule (d := d) n) (t : ℝ) (ht : 0 ≤ t) :
     ‖shiftedSelf Wfn f t‖ ≤ ‖shiftedSelf Wfn f 0‖ := by
   by_cases ht0 : t = 0
@@ -229,7 +235,7 @@ theorem rToE_reflected_timeShift_self_bound (Wfn : WightmanFunctions d) {n : ℕ
   simpa only [shiftedSelf, timeShift_zero, rToEReflectedPairing_apply] using
     shiftedSelf_uniform_bound Wfn f t ht
 
-private theorem reflected_spatialTranslate_self (Wfn : WightmanFunctions d) {n : ℕ}
+theorem reflected_spatialTranslate_self (Wfn : WightmanFunctions d) {n : ℕ}
     (f : SchwartzNPoint d n) (a : Fin d → ℝ) :
     wickRotatedBoundaryPairing Wfn (n + n)
       ((translateSchwartzNPoint (Fin.cons 0 a) f).osConjTensorProduct
@@ -283,7 +289,7 @@ theorem rToE_reflected_timeSpaceShift_pairing_bound (Wfn : WightmanFunctions d) 
   exact (hfg.trans hn).trans
     (mul_le_mul hf hg (norm_nonneg _) (norm_nonneg _))
 
-private theorem reflected_self_nonneg (Wfn : WightmanFunctions d) {n : ℕ}
+theorem reflected_self_nonneg (Wfn : WightmanFunctions d) {n : ℕ}
     (f : euclideanPositiveTimeSubmodule (d := d) n) :
     0 ≤ (rToEReflectedPairing Wfn f f).re := by
   let F := PositiveTimeBorchersSequence.single n f.1 f.2
@@ -297,7 +303,7 @@ private theorem reflected_self_nonneg (Wfn : WightmanFunctions d) {n : ℕ}
     ZeroDiagonalSchwartz.coe_ofClassical_of_vanishes _ hv,
     rToEReflectedPairing_apply] using h
 
-private theorem reflected_self_norm (Wfn : WightmanFunctions d) {n : ℕ}
+theorem reflected_self_norm (Wfn : WightmanFunctions d) {n : ℕ}
     (f : euclideanPositiveTimeSubmodule (d := d) n) :
     rToEReflectedPairing Wfn f f = (‖rToEReflectedPairing Wfn f f‖ : ℂ) := by
   let z := rToEReflectedPairing Wfn f f
@@ -314,7 +320,7 @@ private theorem reflected_self_norm (Wfn : WightmanFunctions d) {n : ℕ}
   rw [hreal, Complex.norm_of_nonneg hre]
 
 omit [NeZero d] in
-private theorem timeShift_add {n : ℕ} (s t : ℝ) (f : SchwartzNPoint d n) :
+theorem timeShift_add {n : ℕ} (s t : ℝ) (f : SchwartzNPoint d n) :
     timeShiftSchwartzNPoint (d := d) s (timeShiftSchwartzNPoint (d := d) t f) =
       timeShiftSchwartzNPoint (d := d) (s + t) f := by
   ext x
@@ -327,7 +333,7 @@ private theorem timeShift_add {n : ℕ} (s t : ℝ) (f : SchwartzNPoint d n) :
     ring
   · simp [timeShiftVec, hμ]
 
-private theorem shiftedSelf_antitone (Wfn : WightmanFunctions d) {n : ℕ}
+theorem shiftedSelf_antitone (Wfn : WightmanFunctions d) {n : ℕ}
     (f : euclideanPositiveTimeSubmodule (d := d) n) :
     Antitone (fun t : ℝ≥0 => ‖shiftedSelf Wfn f t‖) := by
   intro s t hst
@@ -336,12 +342,12 @@ private theorem shiftedSelf_antitone (Wfn : WightmanFunctions d) {n : ℕ}
   simpa only [orderedTimeShift, timeShift_add, sub_add_cancel,
     rToEReflectedPairing_apply, shiftedSelf] using h
 
-private theorem shiftedSelf_norm_eq (Wfn : WightmanFunctions d) {n : ℕ}
+theorem shiftedSelf_norm_eq (Wfn : WightmanFunctions d) {n : ℕ}
     (f : euclideanPositiveTimeSubmodule (d := d) n) (t : ℝ) (ht : 0 ≤ t) :
     shiftedSelf Wfn f t = (‖shiftedSelf Wfn f t‖ : ℂ) :=
   reflected_self_norm Wfn (orderedTimeShift t ht f)
 
-private theorem reflected_sub_self (Wfn : WightmanFunctions d) {n : ℕ}
+theorem reflected_sub_self (Wfn : WightmanFunctions d) {n : ℕ}
     (f g : euclideanPositiveTimeSubmodule (d := d) n) :
     rToEReflectedPairing Wfn (f - g) (f - g) =
       rToEReflectedPairing Wfn f f - rToEReflectedPairing Wfn f g -
@@ -364,7 +370,7 @@ private theorem reflected_sub_self (Wfn : WightmanFunctions d) {n : ℕ}
   rw [hK, map_add, map_sub, map_sub]
   rfl
 
-private theorem reflected_timeShift_midpoint (Wfn : WightmanFunctions d) {n : ℕ}
+theorem reflected_timeShift_midpoint (Wfn : WightmanFunctions d) {n : ℕ}
     (f : euclideanPositiveTimeSubmodule (d := d) n) (s t : ℝ)
     (hs : 0 ≤ s) (ht : 0 ≤ t) :
     rToEReflectedPairing Wfn (orderedTimeShift s hs f) (orderedTimeShift t ht f) =
@@ -375,7 +381,7 @@ private theorem reflected_timeShift_midpoint (Wfn : WightmanFunctions d) {n : �
   rw [reflected_timeShift_pairing, shiftedSelf_eq,
     show 2 * ((s + t) / 2) = s + t by ring]
 
-private theorem reflected_timeShift_distance (Wfn : WightmanFunctions d) {n : ℕ}
+theorem reflected_timeShift_distance (Wfn : WightmanFunctions d) {n : ℕ}
     (f : euclideanPositiveTimeSubmodule (d := d) n) (s t : ℝ)
     (hs : 0 ≤ s) (ht : 0 ≤ t) :
     ‖rToEReflectedPairing Wfn

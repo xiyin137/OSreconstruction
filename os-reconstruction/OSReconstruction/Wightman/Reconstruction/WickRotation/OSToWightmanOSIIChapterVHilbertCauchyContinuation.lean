@@ -1,31 +1,13 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVHilbertVectorField
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVHilbertCauchyKernel
-import OSReconstruction.SCV.IdentityTheorem
-import OSReconstruction.SCV.ConnectedNeighborhood
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVHilbertVectorField
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVHilbertCauchyKernel
+public import OSReconstruction.SCV.IdentityTheorem
+public import OSReconstruction.SCV.ConnectedNeighborhood
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -168,7 +150,7 @@ theorem inner_homogeneousTerm_eq_scalarGram
 
 end ReflectedCauchyCompatibility
 
-private theorem norm_reflectedCauchyIncrement_le
+theorem norm_reflectedCauchyIncrement_le
     {r : ℝ} {increment : Fin k → ℂ}
     (hincrement : ∀ i, ‖increment i‖ ≤ r) :
     ∀ j, ‖reflectedCauchyIncrement increment j‖ ≤ r := by
@@ -181,7 +163,7 @@ private theorem norm_reflectedCauchyIncrement_le
     rw [reflectedCauchyIncrement_right]
     exact hincrement i
 
-private theorem norm_reflectedCauchyIncrement_lt
+theorem norm_reflectedCauchyIncrement_lt
     {R : ℝ} {increment : Fin k → ℂ}
     (hincrement : ∀ i, ‖increment i‖ < R) :
     ∀ j, ‖reflectedCauchyIncrement increment j‖ < R := by

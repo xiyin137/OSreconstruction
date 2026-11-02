@@ -1,23 +1,13 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import Mathlib.Geometry.Manifold.PartitionOfUnity
-import OSReconstruction.SCV.EuclideanWeylOpen
-import Init
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVInitialPhysicalTestDistribution
+module
 
+public import Mathlib.Geometry.Manifold.PartitionOfUnity
+public import OSReconstruction.SCV.EuclideanWeylOpen
+public import Init
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVInitialPhysicalTestDistribution
 
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 

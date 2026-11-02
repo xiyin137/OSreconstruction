@@ -5,52 +5,22 @@ Copyright (c) 2025 ModularPhysics Contributors. All rights reserved.
 Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
-import Mathlib.Analysis.Complex.CauchyIntegral
-import Mathlib.LinearAlgebra.Complex.FiniteDimensional
-import Mathlib.Analysis.Complex.Liouville
-import Mathlib.Analysis.Complex.LocallyUniformLimit
-import Mathlib.Analysis.Complex.RemovableSingularity
-import Mathlib.Analysis.Complex.HasPrimitives
-import Mathlib.Analysis.Analytic.IsolatedZeros
-import Mathlib.Analysis.Calculus.FDeriv.Prod
-import Mathlib.Analysis.Calculus.FDeriv.Comp
-import Mathlib.MeasureTheory.Integral.Bochner.Basic
-import Mathlib.Analysis.Calculus.ParametricIntervalIntegral
-import Mathlib.MeasureTheory.Integral.DominatedConvergence
+module
 
+public import Mathlib.Analysis.Complex.CauchyIntegral
+public import Mathlib.LinearAlgebra.Complex.FiniteDimensional
+public import Mathlib.Analysis.Complex.Liouville
+public import Mathlib.Analysis.Complex.LocallyUniformLimit
+public import Mathlib.Analysis.Complex.RemovableSingularity
+public import Mathlib.Analysis.Complex.HasPrimitives
+public import Mathlib.Analysis.Analytic.IsolatedZeros
+public import Mathlib.Analysis.Calculus.FDeriv.Prod
+public import Mathlib.Analysis.Calculus.FDeriv.Comp
+public import Mathlib.MeasureTheory.Integral.Bochner.Basic
+public import Mathlib.Analysis.Calculus.ParametricIntervalIntegral
+public import Mathlib.MeasureTheory.Integral.DominatedConvergence
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -166,7 +136,7 @@ lemma continuousAt_deriv_of_continuousOn [CompleteSpace E]
 
 set_option maxHeartbeats 400000 in
 /-- Helper 1: p 1 applied to h equals deriv * h for Cauchy power series. -/
-private lemma cauchyPowerSeries_one_eq_deriv_mul (z₀ : ℂ) (ρ : ℝ) (hρ : 0 < ρ)
+lemma cauchyPowerSeries_one_eq_deriv_mul (z₀ : ℂ) (ρ : ℝ) (hρ : 0 < ρ)
     (g : ℂ → ℂ) (hg : DifferentiableOn ℂ g (Metric.closedBall z₀ ρ)) (h : ℂ) :
     (cauchyPowerSeries g z₀ ρ 1) (fun _ => h) = deriv g z₀ * h := by
   set R : NNReal := ⟨ρ, hρ.le⟩
@@ -183,7 +153,7 @@ private lemma cauchyPowerSeries_one_eq_deriv_mul (z₀ : ℂ) (ρ : ℝ) (hρ : 
   rw [h_smul, hd, smul_eq_mul, mul_comm]
 
 /-- Helper 2: Geometric tail bound Σ_{n≥0} M·r^(n+2) ≤ 2M·r² for r < 1/2. -/
-private lemma tsum_geometric_tail_le (M r : ℝ) (hM : 0 ≤ M)
+lemma tsum_geometric_tail_le (M r : ℝ) (hM : 0 ≤ M)
     (hr : 0 ≤ r) (hr2 : r < 1 / 2) :
     ∑' n, M * r ^ (n + 2) ≤ 2 * M * r ^ 2 := by
   have hr1 : r < 1 := by linarith
@@ -200,7 +170,7 @@ private lemma tsum_geometric_tail_le (M r : ℝ) (hM : 0 ≤ M)
 
 set_option maxHeartbeats 800000 in
 /-- Helper 3: Cauchy coefficient bound ‖p(n)(fun _ => h)‖ ≤ M * (‖h‖/ρ)^n. -/
-private lemma cauchyPowerSeries_coeff_bound (z₀ : ℂ) (ρ : ℝ) (hρ : 0 < ρ)
+lemma cauchyPowerSeries_coeff_bound (z₀ : ℂ) (ρ : ℝ) (hρ : 0 < ρ)
     (g : ℂ → ℂ) (hg : DifferentiableOn ℂ g (Metric.closedBall z₀ ρ))
     (M : ℝ) (hM : ∀ w ∈ Metric.closedBall z₀ ρ, ‖g w‖ ≤ M) (n : ℕ) (h : ℂ) :
     ‖(cauchyPowerSeries g z₀ ρ n) (fun _ => h)‖ ≤ M * (‖h‖ / ρ) ^ n := by
@@ -248,7 +218,7 @@ private lemma cauchyPowerSeries_coeff_bound (z₀ : ℂ) (ρ : ℝ) (hρ : 0 < �
 
 set_option maxHeartbeats 800000 in
 /-- Helper 4: Taylor remainder equals power series tail. -/
-private lemma taylor_remainder_eq_tsum (z₀ : ℂ) (ρ : ℝ) (hρ : 0 < ρ)
+lemma taylor_remainder_eq_tsum (z₀ : ℂ) (ρ : ℝ) (hρ : 0 < ρ)
     (g : ℂ → ℂ) (hg : DifferentiableOn ℂ g (Metric.closedBall z₀ ρ))
     (h : ℂ) (hh : ‖h‖ < ρ) :
     g (z₀ + h) - g z₀ - deriv g z₀ * h =
@@ -283,7 +253,7 @@ private lemma taylor_remainder_eq_tsum (z₀ : ℂ) (ρ : ℝ) (hρ : 0 < ρ)
 
 set_option maxHeartbeats 400000 in
 /-- Helper 5: The tail of the Cauchy power series is summable. -/
-private lemma taylor_tail_summable (z₀ : ℂ) (ρ : ℝ) (hρ : 0 < ρ)
+lemma taylor_tail_summable (z₀ : ℂ) (ρ : ℝ) (hρ : 0 < ρ)
     (g : ℂ → ℂ) (hg : DifferentiableOn ℂ g (Metric.closedBall z₀ ρ))
     (h : ℂ) (hh : ‖h‖ < ρ) :
     Summable (fun n => (cauchyPowerSeries g z₀ ρ (n + 2)) (fun _ => h)) := by
@@ -303,7 +273,7 @@ private lemma taylor_tail_summable (z₀ : ℂ) (ρ : ℝ) (hρ : 0 < ρ)
 set_option maxHeartbeats 800000 in
 /-- Helper 6: Norm of tail tsum bounded by geometric series.
     Combines coefficient bound + summability + geometric tail. -/
-private lemma taylor_tail_norm_le (z₀ : ℂ) (ρ : ℝ) (hρ : 0 < ρ)
+lemma taylor_tail_norm_le (z₀ : ℂ) (ρ : ℝ) (hρ : 0 < ρ)
     (g : ℂ → ℂ) (hg : DifferentiableOn ℂ g (Metric.closedBall z₀ ρ))
     (M : ℝ) (hM : ∀ w ∈ Metric.closedBall z₀ ρ, ‖g w‖ ≤ M)
     (h : ℂ) (hh : ‖h‖ < ρ / 2) :
@@ -345,7 +315,7 @@ private lemma taylor_tail_norm_le (z₀ : ℂ) (ρ : ℝ) (hρ : 0 < ρ)
   linarith
 
 /-- Taylor remainder bound: ‖g(z₀+h) - g(z₀) - g'(z₀)·h‖ ≤ 4M/ρ² · ‖h‖² for ‖h‖ < ρ/2. -/
-private lemma taylor_remainder_single {z₀ : ℂ} {ρ : ℝ} (hρ : 0 < ρ)
+lemma taylor_remainder_single {z₀ : ℂ} {ρ : ℝ} (hρ : 0 < ρ)
     {g : ℂ → ℂ} (hg : DifferentiableOn ℂ g (Metric.closedBall z₀ ρ))
     {M : ℝ} (hM : ∀ w ∈ Metric.closedBall z₀ ρ, ‖g w‖ ≤ M)
     {h : ℂ} (hh : ‖h‖ < ρ / 2) :
@@ -358,7 +328,7 @@ omit [NormedSpace ℂ E] in
     Uses the generalized tube lemma: closedBall z₀ ρ × {x₀} is compact, and f is
     bounded on this set. By ContinuousOn, the preimage of {‖·‖ < M₀+1} relative to
     the domain contains this compact set. The tube lemma then gives a uniform δ. -/
-private lemma uniform_bound_near_point [CompleteSpace E]
+lemma uniform_bound_near_point [CompleteSpace E]
     {z₀ : ℂ} {ρ : ℝ} (hρ : 0 < ρ)
     {V : Set E} (_hV : IsOpen V)
     (f : ℂ × E → ℂ)

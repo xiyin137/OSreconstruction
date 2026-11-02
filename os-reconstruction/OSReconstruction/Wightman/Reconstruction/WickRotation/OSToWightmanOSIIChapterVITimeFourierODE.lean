@@ -1,7 +1,11 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVICoupledTimeBoundary
-import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceTransform
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVICoupledTimeBoundary
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceTransform
+
+@[expose] public section
 
 set_option backward.isDefEq.respectTransparency false
 
@@ -81,7 +85,7 @@ def osiiFullTimeFrequencyPairing {d k : Nat} [NeZero d]
     (chi : SchwartzMap (Section43SpatialSpace d k) Complex) : Complex :=
   osiiFullTimeBoundaryPairing A eta t (physicsFourierFlatInvCLM psi) chi
 
-private theorem osiiFullTimeBoundaryPairing_smul {d k : Nat} [NeZero d]
+theorem osiiFullTimeBoundaryPairing_smul {d k : Nat} [NeZero d]
     (A : OSIITimeContinuationStage d k) (eta : Fin k -> Real) (t : Real)
     (c : Complex) (phi : SchwartzMap (Fin k -> Real) Complex)
     (chi : SchwartzMap (Section43SpatialSpace d k) Complex) :
@@ -91,14 +95,14 @@ private theorem osiiFullTimeBoundaryPairing_smul {d k : Nat} [NeZero d]
     mul_left_comm _ c]
   exact MeasureTheory.integral_const_mul c _
 
-private def timeFrequencyTensorCLM (d k : Nat) [NeZero d]
+def timeFrequencyTensorCLM (d k : Nat) [NeZero d]
     (chi : SchwartzMap (Section43SpatialSpace d k) Complex) :
     SchwartzMap (Fin k -> Real) Complex →L[Complex]
       SchwartzMap (Section43TimeSpatialSpace d k) Complex :=
   (nPointTimeSpatialSchwartzCLE (d := d) (n := k)).toContinuousLinearMap.comp
     ((section43TimeSpatialTensorCLM d k chi).comp physicsFourierFlatInvCLM)
 
-private theorem timeFrequencyTensorCLM_apply {d k : Nat} [NeZero d]
+theorem timeFrequencyTensorCLM_apply {d k : Nat} [NeZero d]
     (chi : SchwartzMap (Section43SpatialSpace d k) Complex)
     (psi : SchwartzMap (Fin k -> Real) Complex) :
     timeFrequencyTensorCLM d k chi psi =

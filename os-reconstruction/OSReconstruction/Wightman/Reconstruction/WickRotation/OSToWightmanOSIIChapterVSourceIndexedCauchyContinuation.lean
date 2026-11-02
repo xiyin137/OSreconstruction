@@ -1,24 +1,11 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVSourceIndexedReflectedGram
-import Mathlib.Topology.MetricSpace.Thickening
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVSourceIndexedReflectedGram
+public import Mathlib.Topology.MetricSpace.Thickening
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -139,7 +126,7 @@ theorem exists_uniform_reflected_closedPolydisc_along_segment
 
 /-- The scalar Cauchy package for one source is obtained from its diagonal
 prescribed scalar continuation on the common reflected polydisc. -/
-private theorem exists_diagonalScalarData
+theorem exists_diagonalScalarData
     (D : SourceIndexedComplexCenteredHilbertCauchyData
       H ι k scalar P)
     (a : ι) :
@@ -493,7 +480,7 @@ theorem center_mem_successorDomain
     D.center ∈ D.successorDomain :=
   SCV.center_mem_polydisc (fun _ => D.scalarRadius_pos)
 
-private theorem exists_sourceIncrementField
+theorem exists_sourceIncrementField
     (D : SourceIndexedComplexCenteredHilbertCauchyData
       H ι k scalar P)
     (a : ι) :

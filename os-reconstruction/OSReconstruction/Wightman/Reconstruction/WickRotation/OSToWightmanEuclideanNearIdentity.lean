@@ -3,7 +3,11 @@ Copyright (c) 2025 ModularPhysics Contributors.
 Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanEuclideanDistributionalBridge
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanEuclideanDistributionalBridge
+
+@[expose] public section
 
 /-!
 # Euclidean Near-Identity Bridge
@@ -25,7 +29,7 @@ namespace Task4Bridge
 open Task3Bridge
 
 /-- Exponential neighborhood lemma for the distributional Euclidean bridge. -/
-private theorem exp_nhd_of_one_euclidean (ε : ℝ) (hε : 0 < ε) :
+theorem exp_nhd_of_one_euclidean (ε : ℝ) (hε : 0 < ε) :
     ∀ᶠ Λ in 𝓝 (1 : ComplexLorentzGroup d),
       ∃ (X : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ),
         ComplexLorentzGroup.IsInLieAlgebra X ∧ Λ.val = NormedSpace.exp X ∧ ‖X‖ < ε := by

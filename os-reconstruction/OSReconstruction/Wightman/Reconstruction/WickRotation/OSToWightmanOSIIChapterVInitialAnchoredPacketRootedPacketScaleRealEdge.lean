@@ -1,21 +1,12 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVInitialAnchoredPacketRootedAffinePositiveHeadBridge
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVApproxIdentityConvolution
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVGeneratorChronologicalCoordinates
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVInitialAnchoredPacketRootedAffinePositiveHeadBridge
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVApproxIdentityConvolution
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVGeneratorChronologicalCoordinates
 
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -476,7 +467,7 @@ variable
   {A : AnchoredPacketTimeShellFamilyData (d := d) I anchor}
   {R : TripleConvolutionRootData I}
 
-private theorem cast_mem_section43TimeStrictPositiveRegion
+theorem cast_mem_section43TimeStrictPositiveRegion
     {n m : ℕ}
     (e : n = m)
     (τ : Fin n → ℝ)
@@ -486,7 +477,7 @@ private theorem cast_mem_section43TimeStrictPositiveRegion
   subst m
   exact hτ
 
-private theorem cast_translatedSource_f
+theorem cast_translatedSource_f
     {n m : ℕ}
     (e : n = m)
     (J : Section43ProductTimeApproximateIdentity n)

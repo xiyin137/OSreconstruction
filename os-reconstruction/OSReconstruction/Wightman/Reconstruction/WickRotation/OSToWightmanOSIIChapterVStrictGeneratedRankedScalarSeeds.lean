@@ -1,25 +1,13 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import Mathlib.Analysis.Convex.Caratheodory
-import Mathlib.LinearAlgebra.AffineSpace.FiniteDimensional
-import OSReconstruction.SCV.GaussianSolidShift
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVStrictGeneratedClosureRank
+module
 
+public import Mathlib.Analysis.Convex.Caratheodory
+public import Mathlib.LinearAlgebra.AffineSpace.FiniteDimensional
+public import OSReconstruction.SCV.GaussianSolidShift
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVStrictGeneratedClosureRank
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -31,7 +19,7 @@ namespace OSIIChapterV
 
 namespace OSIIStrictGeneratedLogarithmicArgumentAtRank
 
-private theorem argumentGeneratorPoint_smul_ranked
+theorem argumentGeneratorPoint_smul_ranked
     {k : Nat} (i : GeneratorIndex k)
     (r : Real)
     (left : Fin i.n -> Real) (theta : Real) (right : Fin i.m -> Real) :
@@ -42,7 +30,7 @@ private theorem argumentGeneratorPoint_smul_ranked
   simp only [osiiArgumentGeneratorPoint, Pi.smul_apply]
   split_ifs <;> simp
 
-private theorem argumentDiagonal_smul_ranked
+theorem argumentDiagonal_smul_ranked
     {n : Nat} (hn : 1 <= n)
     (r : Real) (x : Fin n -> Real) :
     osiiArgumentDiagonal hn (r • x) =
@@ -80,7 +68,7 @@ theorem smul_of_nonneg_le_one
         (mul_le_mul_of_nonneg_right hr1 (abs_nonneg (x i))
           ).trans_eq (one_mul _)
 
-private theorem exists_one_lt_mul_lt_ranked
+theorem exists_one_lt_mul_lt_ranked
     {a b : Real} (ha : 0 <= a) (hab : a < b) :
     ∃ q : Real, 1 < q ∧ q * a < b := by
   by_cases ha0 : a = 0
@@ -96,7 +84,7 @@ private theorem exists_one_lt_mul_lt_ranked
       dsimp [q]
       linarith
 
-private theorem rescale_ranked_expansion
+theorem rescale_ranked_expansion
     {rank : Nat} {kind : OSIILogarithmicArgumentKind}
     {n N : Nat} {x : Fin n -> Real}
     {q Q : Real}
@@ -431,7 +419,7 @@ theorem coordinatewiseShrink
 
 end OSIIStrictGeneratedScalarRankSuccessorSeed
 
-private theorem
+theorem
     rankedScalar_mem_convexHull_successorSeed_aux
     {currentRank : Nat}
     {kind : OSIILogarithmicArgumentKind}

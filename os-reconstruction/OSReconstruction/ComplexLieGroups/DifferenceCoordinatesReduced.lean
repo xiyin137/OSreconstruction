@@ -5,28 +5,13 @@ Copyright (c) 2025 ModularPhysics Contributors.
 Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
-import OSReconstruction.ComplexLieGroups.DifferenceCoordinates
-import OSReconstruction.ComplexLieGroups.Connectedness.Action
-import OSReconstruction.ComplexLieGroups.Connectedness.PermutedTube
+module
 
+public import OSReconstruction.ComplexLieGroups.DifferenceCoordinates
+public import OSReconstruction.ComplexLieGroups.Connectedness.Action
+public import OSReconstruction.ComplexLieGroups.Connectedness.PermutedTube
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -217,7 +202,7 @@ theorem mem_forwardTube_iff_basepoint_and_reducedDiff [NeZero d] [NeZero n]
         simpa [reducedDiffMap_apply] using hj
     simpa [forwardTube_eq_diffCoord_preimage (n := n) (d := d)] using hfull
 
-private lemma reducedDiffSection_reducedDiffMap_val (n d : ℕ)
+lemma reducedDiffSection_reducedDiffMap_val (n d : ℕ)
     (z : Fin n → Fin (d + 1) → ℂ) (m : ℕ) (hm : m < n) (μ : Fin (d + 1)) :
     let fin0 : Fin n := ⟨0, by omega⟩
     reducedDiffSection n d (reducedDiffMap n d z) ⟨m, hm⟩ μ =
@@ -420,7 +405,7 @@ def realPartialSumFun (n d : ℕ) (ξ : Fin n → Fin (d + 1) → ℝ) :
     Fin n → Fin (d + 1) → ℝ :=
   fun k μ => ∑ j : Fin (k.val + 1), ξ ⟨j.val, by omega⟩ μ
 
-private lemma realPartialSum_diffCoord_val (n d : ℕ)
+lemma realPartialSum_diffCoord_val (n d : ℕ)
     (x : Fin n → Fin (d + 1) → ℝ) (m : ℕ) (hm : m < n) (μ : Fin (d + 1)) :
     (∑ j : Fin (m + 1), realDiffCoordFun n d x ⟨j.val, by omega⟩ μ) =
       x ⟨m, hm⟩ μ := by

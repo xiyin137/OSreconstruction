@@ -1,24 +1,14 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.Core
-import OSReconstruction.Wightman.Reconstruction.SliceIntegral
-import Mathlib.MeasureTheory.Constructions.Pi
-import Mathlib.MeasureTheory.Integral.Pi
-import Mathlib.MeasureTheory.Integral.Bochner.Basic
+module
 
+public import OSReconstruction.Wightman.Reconstruction.Core
+public import OSReconstruction.Wightman.Reconstruction.SliceIntegral
+public import Mathlib.MeasureTheory.Constructions.Pi
+public import Mathlib.MeasureTheory.Integral.Pi
+public import Mathlib.MeasureTheory.Integral.Bochner.Basic
 
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -28,29 +18,29 @@ namespace OSReconstruction
 
 variable {d : ℕ}
 
-private def uncurryLinearEquivBlock (n d : ℕ) (𝕜 : Type*) [CommSemiring 𝕜] :
+def uncurryLinearEquivBlock (n d : ℕ) (𝕜 : Type*) [CommSemiring 𝕜] :
     (Fin n → Fin d → 𝕜) ≃ₗ[𝕜] (Fin n × Fin d → 𝕜) :=
   { (Equiv.curry (Fin n) (Fin d) 𝕜).symm with
     map_add' := fun _ _ => rfl
     map_smul' := fun _ _ => rfl }
 
-private def flattenLinearEquivBlock (n d : ℕ) (𝕜 : Type*) [CommSemiring 𝕜] :
+def flattenLinearEquivBlock (n d : ℕ) (𝕜 : Type*) [CommSemiring 𝕜] :
     (Fin n → Fin d → 𝕜) ≃ₗ[𝕜] (Fin (n * d) → 𝕜) :=
   (uncurryLinearEquivBlock n d 𝕜).trans
     (LinearEquiv.funCongrLeft 𝕜 𝕜 finProdFinEquiv.symm)
 
 /-- The real flattening equivalence used by block integration. This is kept
 local to avoid importing the heavier forward-tube distribution layer. -/
-private def flattenCLEquivRealBlock (n d : ℕ) :
+def flattenCLEquivRealBlock (n d : ℕ) :
     (Fin n → Fin d → ℝ) ≃L[ℝ] (Fin (n * d) → ℝ) :=
   (flattenLinearEquivBlock n d ℝ).toContinuousLinearEquiv
 
-@[simp] private theorem flattenCLEquivRealBlock_apply (n d : ℕ)
+@[simp] theorem flattenCLEquivRealBlock_apply (n d : ℕ)
     (f : Fin n → Fin d → ℝ) (k : Fin (n * d)) :
     flattenCLEquivRealBlock n d f k =
       f (finProdFinEquiv.symm k).1 (finProdFinEquiv.symm k).2 := rfl
 
-@[simp] private theorem flattenCLEquivRealBlock_symm_apply (n d : ℕ)
+@[simp] theorem flattenCLEquivRealBlock_symm_apply (n d : ℕ)
     (w : Fin (n * d) → ℝ) (i : Fin n) (j : Fin d) :
     (flattenCLEquivRealBlock n d).symm w i j = w (finProdFinEquiv (i, j)) := rfl
 
@@ -344,7 +334,7 @@ theorem integral_integrateHeadBlock :
             (MeasureTheory.volume : MeasureTheory.Measure (Fin ((m + 1) + n) → ℝ))) F := by
               simpa [F'] using integral_reindexSchwartzFin (Nat.succ_add m n) F
 
-private theorem splitFirst_castFinCLE_succ_add_symm_cons {m n : ℕ}
+theorem splitFirst_castFinCLE_succ_add_symm_cons {m n : ℕ}
     (t : ℝ) (x : Fin (m + n) → ℝ) :
     splitFirst (m + 1) n ((castFinCLE (Nat.succ_add m n)).symm (Fin.cons t x)) =
       Fin.cons t (splitFirst m n x) := by
@@ -362,7 +352,7 @@ private theorem splitFirst_castFinCLE_succ_add_symm_cons {m n : ℕ}
           simp
     simp [splitFirst, hcast]
 
-private theorem splitLast_castFinCLE_succ_add_symm_cons {m n : ℕ}
+theorem splitLast_castFinCLE_succ_add_symm_cons {m n : ℕ}
     (t : ℝ) (x : Fin (m + n) → ℝ) :
     splitLast (m + 1) n ((castFinCLE (Nat.succ_add m n)).symm (Fin.cons t x)) =
       splitLast m n x := by
@@ -374,13 +364,13 @@ private theorem splitLast_castFinCLE_succ_add_symm_cons {m n : ℕ}
         omega
   simp [splitLast, hcast]
 
-private theorem splitFirst_castFinCLE_zero_add_symm {n : ℕ}
+theorem splitFirst_castFinCLE_zero_add_symm {n : ℕ}
     (x : Fin n → ℝ) :
     splitFirst 0 n ((castFinCLE (Nat.zero_add n)).symm x) = default := by
   ext i
   exact Fin.elim0 i
 
-private theorem splitLast_castFinCLE_zero_add_symm {n : ℕ}
+theorem splitLast_castFinCLE_zero_add_symm {n : ℕ}
     (x : Fin n → ℝ) :
     splitLast 0 n ((castFinCLE (Nat.zero_add n)).symm x) = x := by
   ext j
@@ -575,7 +565,7 @@ def zeroTailBlockShift : {m n : ℕ} -> (Fin m → ℝ) -> Fin (m + n) → ℝ
       rw [zeroTailBlockShift, splitLast_castFinCLE_succ_add_symm_cons]
       simpa using ihm (fun i => a i.succ)
 
-private theorem reindex_translate_zeroHeadBlockShift_succ {m n : ℕ}
+theorem reindex_translate_zeroHeadBlockShift_succ {m n : ℕ}
     (a : Fin n → ℝ) (F : SchwartzMap (Fin ((m + 1) + n) → ℝ) ℂ) :
     reindexSchwartzFin (Nat.succ_add m n)
         (SCV.translateSchwartz (zeroHeadBlockShift (m := m + 1) (n := n) a) F) =
@@ -586,7 +576,7 @@ private theorem reindex_translate_zeroHeadBlockShift_succ {m n : ℕ}
     SCV.translateSchwartz_apply, reindexSchwartzFin_apply]
   congr 1
 
-private theorem reindex_translate_zeroTailBlockShift_succ {m n : ℕ}
+theorem reindex_translate_zeroTailBlockShift_succ {m n : ℕ}
     (a : Fin (m + 1) → ℝ) (F : SchwartzMap (Fin ((m + 1) + n) → ℝ) ℂ) :
     reindexSchwartzFin (Nat.succ_add m n)
         (SCV.translateSchwartz (zeroTailBlockShift (m := m + 1) (n := n) a) F) =

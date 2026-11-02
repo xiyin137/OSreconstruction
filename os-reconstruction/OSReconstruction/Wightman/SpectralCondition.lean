@@ -5,20 +5,16 @@ Copyright (c) 2025 ModularPhysics Contributors. All rights reserved.
 Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
-import OSReconstruction.Wightman.WightmanAxioms
-import OSReconstruction.Wightman.Spacetime.MinkowskiGeometry
-import Mathlib.Analysis.Calculus.ParametricIntegral
-import Mathlib.Analysis.Distribution.SchwartzSpace.Fourier
-import Mathlib.MeasureTheory.Measure.Haar.InnerProductSpace
-import Mathlib.Analysis.SpecialFunctions.JapaneseBracket
+module
 
+public import OSReconstruction.Wightman.WightmanAxioms
+public import OSReconstruction.Wightman.Spacetime.MinkowskiGeometry
+public import Mathlib.Analysis.Calculus.ParametricIntegral
+public import Mathlib.Analysis.Distribution.SchwartzSpace.Fourier
+public import Mathlib.MeasureTheory.Measure.Haar.InnerProductSpace
+public import Mathlib.Analysis.SpecialFunctions.JapaneseBracket
 
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -100,7 +96,7 @@ omit [NeZero d] in
     The composition of a Schwartz function with the affine embedding
     `a ↦ (a, a+ξ₁, …)` is rapidly decreasing (since `‖embedding(a)‖ ≥ ‖a‖`),
     hence integrable on `ℝ^{d+1}`. -/
-private theorem diffVarReduction_integrable (n : ℕ)
+theorem diffVarReduction_integrable (n : ℕ)
     (f : SchwartzNPointSpace d (n + 1)) (ξ : NPointSpacetime d n) :
     Integrable (fun a : Fin (d + 1) → ℝ =>
       f (fun k μ => a μ + diffVarSection d n ξ k μ)) := by
@@ -143,7 +139,7 @@ private theorem diffVarReduction_integrable (n : ℕ)
 /-- The fiber integral of a Schwartz function is smooth in ξ.
     Follows from differentiation under the integral sign with
     dominated convergence (the integrand is uniformly Schwartz in a). -/
-private theorem diffVarReduction_contDiff (n : ℕ)
+theorem diffVarReduction_contDiff (n : ℕ)
     (f : SchwartzNPointSpace d (n + 1)) :
     ContDiff ℝ (↑(⊤ : ℕ∞)) (fun ξ : NPointSpacetime d n => ∫ a : Fin (d + 1) → ℝ,
       f (fun k μ => a μ + diffVarSection d n ξ k μ)) := by
@@ -309,7 +305,7 @@ set_option maxHeartbeats 800000
      Follows from dominated convergence: the polynomial weight
      `(1+‖ξ‖)^k` passes inside the integral, and the integrand
      remains uniformly integrable by Schwartz decay of f. -/
-private theorem diffVarReduction_decay (n : ℕ)
+theorem diffVarReduction_decay (n : ℕ)
     (f : SchwartzNPointSpace d (n + 1)) :
     ∀ (k m : ℕ), ∃ (C : ℝ), ∀ (ξ : NPointSpacetime d n),
       ‖ξ‖ ^ k * ‖iteratedFDeriv ℝ m (fun ξ' : NPointSpacetime d n =>
@@ -686,7 +682,7 @@ set_option maxHeartbeats 200000
 set_option maxHeartbeats 800000 in
 set_option backward.isDefEq.respectTransparency false in
 /-- Continuity of the fiber-integral map in the Schwartz topology. -/
-private theorem diffVarReduction_cont (n : ℕ) :
+theorem diffVarReduction_cont (n : ℕ) :
     Continuous (fun f : SchwartzNPointSpace d (n + 1) =>
       (⟨fun ξ => ∫ a : Fin (d + 1) → ℝ,
           f (fun k μ => a μ + diffVarSection d n ξ k μ),

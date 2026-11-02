@@ -1,4 +1,8 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIEuclideanWardTimeEdge
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIEuclideanWardTimeEdge
+
+@[expose] public section
 
 /-!
 # Lorentz generators on coupled time/spatial Schwartz sources
@@ -18,7 +22,7 @@ namespace OSReconstruction
 
 variable {d k : Nat}
 
-private theorem tensor_apply
+theorem tensor_apply
     (phi : SchwartzMap (Fin k -> Real) Complex)
     (chi : SchwartzMap (Section43SpatialSpace d k) Complex)
     (p : Section43TimeSpatialSpace d k) :
@@ -64,7 +68,7 @@ def osiiCoupledSpatialDeriv (d k : Nat) (v : Section43SpatialSpace d k) :
     (SchwartzMap (Section43TimeSpatialSpace d k) Complex)
     ((0 : Fin k -> Real), v)
 
-private theorem fderiv_timeSpatialTensor_apply
+theorem fderiv_timeSpatialTensor_apply
     (phi : SchwartzMap (Fin k -> Real) Complex)
     (chi : SchwartzMap (Section43SpatialSpace d k) Complex)
     (p v : Section43TimeSpatialSpace d k) :

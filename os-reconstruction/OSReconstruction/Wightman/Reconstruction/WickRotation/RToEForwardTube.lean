@@ -1,6 +1,10 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.RToESpectralSupport
-import OSReconstruction.Wightman.Reconstruction.WickRotation.ForwardTubeLorentz
-import OSReconstruction.SCV.FourierLaplaceRepresentation
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.RToESpectralSupport
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.ForwardTubeLorentz
+public import OSReconstruction.SCV.FourierLaplaceRepresentation
+
+@[expose] public section
 
 /-!
 # The Wightman forward tube from its actual spectral distribution

@@ -1,5 +1,9 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIBlockRadialPhysicalAngularEquation66OSBuiltMixedSpatialDensity
-import OSReconstruction.SCV.DistributionalRepresentationUniqueness
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIBlockRadialPhysicalAngularEquation66OSBuiltMixedSpatialDensity
+public import OSReconstruction.SCV.DistributionalRepresentationUniqueness
+
+@[expose] public section
 
 /-!
 # OS-built equation-(6.6) spatial density atlas

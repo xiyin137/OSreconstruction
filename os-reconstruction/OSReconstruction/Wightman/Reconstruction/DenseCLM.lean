@@ -1,24 +1,14 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import Mathlib
-import OSReconstruction.Wightman.WightmanAxioms
-import Init
-import OSReconstruction.Wightman.Reconstruction.SchwingerOS
-import OSReconstruction.Wightman.Reconstruction.BlockIntegral
+module
 
+public import Mathlib
+public import OSReconstruction.Wightman.WightmanAxioms
+public import Init
+public import OSReconstruction.Wightman.Reconstruction.SchwingerOS
+public import OSReconstruction.Wightman.Reconstruction.BlockIntegral
 
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 

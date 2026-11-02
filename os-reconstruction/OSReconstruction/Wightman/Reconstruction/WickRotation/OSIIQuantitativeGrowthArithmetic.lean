@@ -1,5 +1,9 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSIIQuantitativeDecay
-import Mathlib.Data.Nat.Factorial.BigOperators
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSIIQuantitativeDecay
+public import Mathlib.Data.Nat.Factorial.BigOperators
+
+@[expose] public section
 
 /-!
 # Uniform arithmetic for OS II seminorm conventions

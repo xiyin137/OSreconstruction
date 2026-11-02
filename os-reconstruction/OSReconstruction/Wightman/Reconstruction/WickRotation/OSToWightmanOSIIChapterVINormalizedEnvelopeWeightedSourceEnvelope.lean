@@ -1,17 +1,12 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import Init
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVINormalizedEnvelopeWeightedSourceSpatialGrowth
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVStrictGeneratedRankedVacuumTail
+module
 
+public import Init
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVINormalizedEnvelopeWeightedSourceSpatialGrowth
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVStrictGeneratedRankedVacuumTail
 
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -215,7 +210,7 @@ premises of `ofCompactRadialHullWithCenters`, retaining the reflected-center
 inclusion needed by selected rooted charts.  Positive translated cutoff
 support keeps every reflected radial orbit in the same ranked scalar
 argument carrier. -/
-private theorem continuous_reflectedCauchyCenter'
+theorem continuous_reflectedCauchyCenter'
     {q : Nat} :
     Continuous
       (reflectedCauchyCenter :

@@ -3,9 +3,13 @@ Copyright (c) 2025 ModularPhysics Contributors. All rights reserved.
 Released under Apache 2.0 license.
 Authors: Michael R. Douglas, ModularPhysics Contributors
 -/
-import Mathlib.Topology.Basic
-import Mathlib.Topology.Algebra.Module.Basic
-import Mathlib.Analysis.SpecialFunctions.Complex.Analytic
+module
+
+public import Mathlib.Topology.Basic
+public import Mathlib.Topology.Algebra.Module.Basic
+public import Mathlib.Analysis.SpecialFunctions.Complex.Analytic
+
+@[expose] public section
 
 /-!
 # Cone Definitions and Tube Domains

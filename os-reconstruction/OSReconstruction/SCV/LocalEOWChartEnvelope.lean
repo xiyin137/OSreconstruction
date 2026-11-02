@@ -5,20 +5,14 @@ Copyright (c) 2026 ModularPhysics Contributors.
 Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
-import Init
-import OSReconstruction.SCV.LocalContinuousEOW
-import OSReconstruction.SCV.DistributionalEOWSupport
-import Mathlib.Topology.MetricSpace.Thickening
+module
 
+public import Init
+public import OSReconstruction.SCV.LocalContinuousEOW
+public import OSReconstruction.SCV.DistributionalEOWSupport
+public import Mathlib.Topology.MetricSpace.Thickening
 
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 

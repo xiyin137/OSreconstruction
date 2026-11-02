@@ -1,19 +1,14 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.SCV.EuclideanWeylOpen
-import OSReconstruction.SCV.ConnectedNeighborhood
-import Init
-import OSReconstruction.SCV.LocalContinuousEOW
-import OSReconstruction.SCV.DistributionalEOWSupport
+module
 
+public import OSReconstruction.SCV.EuclideanWeylOpen
+public import OSReconstruction.SCV.ConnectedNeighborhood
+public import Init
+public import OSReconstruction.SCV.LocalContinuousEOW
+public import OSReconstruction.SCV.DistributionalEOWSupport
 
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 

@@ -1,5 +1,9 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIFrequencyReduction
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIReducedForwardTubePaleyWiener
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIFrequencyReduction
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIReducedForwardTubePaleyWiener
+
+@[expose] public section
 
 /-!
 # The full spectral functional of the native reduced boundary
@@ -21,7 +25,7 @@ namespace OSReconstruction
 
 variable {d k : Nat} [NeZero d]
 
-private def prependZeroMomentumCLM (d k : Nat) :
+def prependZeroMomentumCLM (d k : Nat) :
     NPointDomain d k →L[Real] NPointDomain d (k + 1) :=
   ContinuousLinearMap.pi fun i =>
     Fin.cases 0 (fun j => ContinuousLinearMap.proj j) i

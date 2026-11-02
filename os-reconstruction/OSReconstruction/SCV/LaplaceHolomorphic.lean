@@ -1,9 +1,13 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import Mathlib.Analysis.SpecialFunctions.Complex.Analytic
-import Mathlib.Analysis.SpecialFunctions.ExpDeriv
-import Mathlib.Probability.Moments.ComplexMGF
-import OSReconstruction.SCV.Osgood
+module
+
+public import Mathlib.Analysis.SpecialFunctions.Complex.Analytic
+public import Mathlib.Analysis.SpecialFunctions.ExpDeriv
+public import Mathlib.Probability.Moments.ComplexMGF
+public import OSReconstruction.SCV.Osgood
+
+@[expose] public section
 
 /-
 Copyright (c) 2026 ModularPhysics Contributors.
@@ -35,7 +39,7 @@ noncomputable section
 
 namespace SCV
 
-private theorem integrable_exp_mul_of_lt_zero_of_nonnegSupport
+theorem integrable_exp_mul_of_lt_zero_of_nonnegSupport
     (μ : Measure ℝ) [IsFiniteMeasure μ]
     (hsupp : μ (Set.Iio 0) = 0) {x : ℝ} (hx : x < 0) :
     Integrable (fun t : ℝ => Real.exp (x * t)) μ := by
@@ -53,7 +57,7 @@ private theorem integrable_exp_mul_of_lt_zero_of_nonnegSupport
   have hexp : Real.exp (x * t) ≤ 1 := Real.exp_le_one_iff.mpr hxt
   simpa [Real.norm_eq_abs, abs_of_nonneg (Real.exp_nonneg _)] using hexp
 
-private theorem neg_mem_interior_integrableExpSet_id_of_nonnegSupport
+theorem neg_mem_interior_integrableExpSet_id_of_nonnegSupport
     (μ : Measure ℝ) [IsFiniteMeasure μ]
     (hsupp : μ (Set.Iio 0) = 0) {x : ℝ} (hx : x < 0) :
     x ∈ interior (ProbabilityTheory.integrableExpSet id μ) := by

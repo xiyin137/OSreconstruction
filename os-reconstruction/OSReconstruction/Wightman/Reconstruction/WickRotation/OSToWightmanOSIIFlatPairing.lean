@@ -1,5 +1,9 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBase
-import OSReconstruction.SCV.EuclideanWeylOpen
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBase
+public import OSReconstruction.SCV.EuclideanWeylOpen
+
+@[expose] public section
 
 /-!
 # Flat-coordinate distribution pairings

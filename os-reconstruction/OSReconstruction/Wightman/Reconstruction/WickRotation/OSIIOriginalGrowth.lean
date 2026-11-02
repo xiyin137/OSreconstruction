@@ -1,9 +1,13 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Specification
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSIIOriginalSeminorm
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSIIQuantitativeCoordinates
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSIIQuantitativeGrowthArithmetic
+module
+
+public import OSReconstruction.Specification
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSIIOriginalSeminorm
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSIIQuantitativeCoordinates
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSIIQuantitativeGrowthArithmetic
+
+@[expose] public section
 
 /-!
 # The original OS II growth conventions

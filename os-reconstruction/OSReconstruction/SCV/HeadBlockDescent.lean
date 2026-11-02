@@ -5,17 +5,13 @@ Copyright (c) 2025 ModularPhysics Contributors.
 Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
-import OSReconstruction.SCV.HeadFiberAntiderivDecay
-import OSReconstruction.SCV.SchwartzPartialEval
-import Mathlib.Analysis.Calculus.BumpFunction.Normed
+module
 
+public import OSReconstruction.SCV.HeadFiberAntiderivDecay
+public import OSReconstruction.SCV.SchwartzPartialEval
+public import Mathlib.Analysis.Calculus.BumpFunction.Normed
 
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 

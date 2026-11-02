@@ -1,8 +1,12 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import Mathlib.Analysis.Distribution.SchwartzSpace.Deriv
-import Mathlib.Analysis.Calculus.ContDiff.Bounds
-import OSReconstruction.Wightman.Reconstruction.Core
+module
+
+public import Mathlib.Analysis.Distribution.SchwartzSpace.Deriv
+public import Mathlib.Analysis.Calculus.ContDiff.Bounds
+public import OSReconstruction.Wightman.Reconstruction.Core
+
+@[expose] public section
 
 noncomputable section
 
@@ -17,12 +21,12 @@ variable {E₁ E₂ F : Type*}
   [NormedAddCommGroup F] [NormedSpace ℝ F]
 
 omit [NormedSpace ℝ E₁] [NormedSpace ℝ E₂] in
-private theorem norm_x_le_norm_prod (x : E₁) (y : E₂) :
+theorem norm_x_le_norm_prod (x : E₁) (y : E₂) :
     ‖x‖ ≤ ‖(x, y)‖ :=
   le_max_left _ _
 
 /-- Pointwise evaluation of `iteratedFDeriv` on a Schwartz difference. -/
-private theorem iteratedFDeriv_sub_schwartz (f g : SchwartzMap E₁ F) (n : ℕ) (x : E₁) :
+theorem iteratedFDeriv_sub_schwartz (f g : SchwartzMap E₁ F) (n : ℕ) (x : E₁) :
     iteratedFDeriv ℝ n (⇑(f - g)) x =
       iteratedFDeriv ℝ n (⇑f) x - iteratedFDeriv ℝ n (⇑g) x := by
   have hf : ContDiff ℝ n (⇑f) := f.smooth n

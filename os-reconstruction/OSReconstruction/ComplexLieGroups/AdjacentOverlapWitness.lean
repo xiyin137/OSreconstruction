@@ -1,7 +1,11 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.ComplexLieGroups.BHWCore
-import OSReconstruction.ComplexLieGroups.JostPoints
+module
+
+public import OSReconstruction.ComplexLieGroups.BHWCore
+public import OSReconstruction.ComplexLieGroups.JostPoints
+
+@[expose] public section
 
 noncomputable section
 set_option linter.unusedSimpArgs false
@@ -36,10 +40,10 @@ def figure24RotateAdjacentConfig
         ((3 / 5 : ℝ) : ℂ) * z k (BHW.figure24Axis2 (d := d) hd)
     else z k μ
 
-private def e1 (hd : 2 ≤ d) : Fin (d + 1) := ⟨1, by omega⟩
-private def e2 (hd : 2 ≤ d) : Fin (d + 1) := ⟨2, by omega⟩
+def e1 (hd : 2 ≤ d) : Fin (d + 1) := ⟨1, by omega⟩
+def e2 (hd : 2 ≤ d) : Fin (d + 1) := ⟨2, by omega⟩
 
-private def swapWitnessReal (hd : 2 ≤ d) (i : Fin n) (hi : i.val + 1 < n) :
+def swapWitnessReal (hd : 2 ≤ d) (i : Fin n) (hi : i.val + 1 < n) :
     Fin n → Fin (d + 1) → ℝ :=
   fun k μ =>
     if μ = 0 then 0
@@ -47,7 +51,7 @@ private def swapWitnessReal (hd : 2 ≤ d) (i : Fin n) (hi : i.val + 1 < n) :
     else if μ = e2 hd then if k = ⟨i.val + 1, hi⟩ then 1 else 0
     else 0
 
-private lemma swapWitnessReal_mem_forwardJostSet (hd : 2 ≤ d) (i : Fin n) (hi : i.val + 1 < n) :
+lemma swapWitnessReal_mem_forwardJostSet (hd : 2 ≤ d) (i : Fin n) (hi : i.val + 1 < n) :
     swapWitnessReal (d := d) (n := n) hd i hi ∈
       ForwardJostSet d n (Nat.succ_le_of_lt (Nat.lt_of_lt_of_le (Nat.zero_lt_succ _) hd)) := by
   intro k
@@ -73,14 +77,14 @@ private lemma swapWitnessReal_mem_forwardJostSet (hd : 2 ≤ d) (i : Fin n) (hi 
   rw [htime, hspat]
   norm_num
 
-private lemma swapWitnessReal_mem_extendedTube (hd : 2 ≤ d) (i : Fin n) (hi : i.val + 1 < n) :
+lemma swapWitnessReal_mem_extendedTube (hd : 2 ≤ d) (i : Fin n) (hi : i.val + 1 < n) :
     realEmbed (swapWitnessReal (d := d) (n := n) hd i hi) ∈ ExtendedTube d n := by
   have hd1 : 1 ≤ d := Nat.succ_le_of_lt (Nat.lt_of_lt_of_le (Nat.zero_lt_succ _) hd)
   exact forwardJostSet_subset_extendedTube hd1
     (swapWitnessReal (d := d) (n := n) hd i hi)
     (swapWitnessReal_mem_forwardJostSet (d := d) (n := n) hd i hi)
 
-private lemma swapWitnessReal_swapped_time_zero (hd : 2 ≤ d)
+lemma swapWitnessReal_swapped_time_zero (hd : 2 ≤ d)
     (i : Fin n) (hi : i.val + 1 < n) (k : Fin n) :
     consecutiveDiff
       (fun j => swapWitnessReal (d := d) (n := n) hd i hi
@@ -93,24 +97,24 @@ private lemma swapWitnessReal_swapped_time_zero (hd : 2 ≤ d)
   · simp [consecutiveDiff, swapWitnessReal, hk]
   · simp [consecutiveDiff, swapWitnessReal, hk]
 
-private def swapWitnessRealSwapped (hd : 2 ≤ d)
+def swapWitnessRealSwapped (hd : 2 ≤ d)
     (i : Fin n) (hi : i.val + 1 < n) : Fin n → Fin (d + 1) → ℝ :=
   fun j => swapWitnessReal (d := d) (n := n) hd i hi
     (Equiv.swap i ⟨i.val + 1, hi⟩ j)
 
-private lemma e1_ne_zero (hd : 2 ≤ d) : e1 hd ≠ (0 : Fin (d + 1)) := by
+lemma e1_ne_zero (hd : 2 ≤ d) : e1 hd ≠ (0 : Fin (d + 1)) := by
   intro h
   simp [e1, Fin.ext_iff] at h
 
-private lemma e2_ne_zero (hd : 2 ≤ d) : e2 hd ≠ (0 : Fin (d + 1)) := by
+lemma e2_ne_zero (hd : 2 ≤ d) : e2 hd ≠ (0 : Fin (d + 1)) := by
   intro h
   simp [e2, Fin.ext_iff] at h
 
-private lemma e2_ne_e1 (hd : 2 ≤ d) : e2 hd ≠ e1 hd := by
+lemma e2_ne_e1 (hd : 2 ≤ d) : e2 hd ≠ e1 hd := by
   intro h
   simp [e1, e2, Fin.ext_iff] at h
 
-private lemma swapWitnessRealSwapped_diff_e1_at_i
+lemma swapWitnessRealSwapped_diff_e1_at_i
     (hd : 2 ≤ d) (i : Fin n) (hi : i.val + 1 < n) :
     consecutiveDiff (swapWitnessRealSwapped (d := d) (n := n) hd i hi) i (e1 hd) = 2 := by
   let ip1 : Fin n := ⟨i.val + 1, hi⟩
@@ -140,7 +144,7 @@ private lemma swapWitnessRealSwapped_diff_e1_at_i
       hswap_im1, hcast]
     ring
 
-private lemma swapWitnessRealSwapped_diff_e2_at_i
+lemma swapWitnessRealSwapped_diff_e2_at_i
     (hd : 2 ≤ d) (i : Fin n) (hi : i.val + 1 < n) :
     consecutiveDiff (swapWitnessRealSwapped (d := d) (n := n) hd i hi) i (e2 hd) = 1 := by
   let ip1 : Fin n := ⟨i.val + 1, hi⟩
@@ -171,7 +175,7 @@ private lemma swapWitnessRealSwapped_diff_e2_at_i
     simp [consecutiveDiff, swapWitnessRealSwapped, swapWitnessReal, e1, e2, ip1, im1, hi0,
       hswap_im1, e2_ne_zero, e2_ne_e1, hi_ne_ip1, him1_ne_ip1']
 
-private lemma swapWitnessRealSwapped_diff_e1_at_ip1
+lemma swapWitnessRealSwapped_diff_e1_at_ip1
     (hd : 2 ≤ d) (i : Fin n) (hi : i.val + 1 < n) :
     consecutiveDiff (swapWitnessRealSwapped (d := d) (n := n) hd i hi)
       ⟨i.val + 1, hi⟩ (e1 hd) = -1 := by
@@ -190,7 +194,7 @@ private lemma swapWitnessRealSwapped_diff_e1_at_ip1
   simp [consecutiveDiff, swapWitnessRealSwapped, swapWitnessReal, e1, e2, ip1, hip1_ne0, hprev,
     e1_ne_zero, hi_ne_ip1]
 
-private lemma swapWitnessRealSwapped_diff_e2_at_ip1
+lemma swapWitnessRealSwapped_diff_e2_at_ip1
     (hd : 2 ≤ d) (i : Fin n) (hi : i.val + 1 < n) :
     consecutiveDiff (swapWitnessRealSwapped (d := d) (n := n) hd i hi)
       ⟨i.val + 1, hi⟩ (e2 hd) = -1 := by
@@ -210,7 +214,7 @@ private lemma swapWitnessRealSwapped_diff_e2_at_ip1
     e2_ne_zero, e2_ne_e1, hi_ne_ip1]
 
 end BHW
-private noncomputable def spatialRotMatrix12 (d : ℕ) (_hd : 2 ≤ d) (a b : ℝ)
+noncomputable def spatialRotMatrix12 (d : ℕ) (_hd : 2 ≤ d) (a b : ℝ)
     (_hab : 0 < a ^ 2 + b ^ 2) : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ :=
   let r := Real.sqrt (a ^ 2 + b ^ 2)
   fun μ ν =>
@@ -222,7 +226,7 @@ private noncomputable def spatialRotMatrix12 (d : ℕ) (_hd : 2 ≤ d) (a b : �
     else 0
 
 -- Row simplification lemmas for the spatial rotation matrix.
-private lemma spatialRot12_row0 (d : ℕ) (hd : 2 ≤ d) (a b : ℝ)
+lemma spatialRot12_row0 (d : ℕ) (hd : 2 ≤ d) (a b : ℝ)
     (hab : 0 < a ^ 2 + b ^ 2) (ν : Fin (d + 1)) :
     spatialRotMatrix12 d hd a b hab 0 ν = if ν = 0 then 1 else 0 := by
   simp only [spatialRotMatrix12]
@@ -235,7 +239,7 @@ private lemma spatialRot12_row0 (d : ℕ) (hd : 2 ≤ d) (a b : ℝ)
   · subst hν0; simp
   · rw [if_neg (Ne.symm hν0), if_neg hν0]
 
-private lemma spatialRot12_row1 (d : ℕ) (hd : 2 ≤ d) (a b : ℝ)
+lemma spatialRot12_row1 (d : ℕ) (hd : 2 ≤ d) (a b : ℝ)
     (hab : 0 < a ^ 2 + b ^ 2) (ν : Fin (d + 1)) :
     spatialRotMatrix12 d hd a b hab ⟨1, by omega⟩ ν =
       if ν = ⟨1, by omega⟩ then ((a / Real.sqrt (a ^ 2 + b ^ 2) : ℝ) : ℂ)
@@ -253,7 +257,7 @@ private lemma spatialRot12_row1 (d : ℕ) (hd : 2 ≤ d) (a b : ℝ)
       simp only [hν1, hν2, ↓reduceIte]
       rw [if_neg (by intro h; exact hν1 (Fin.ext (by have := congr_arg Fin.val h; omega)))]
 
-private lemma spatialRot12_row2 (d : ℕ) (hd : 2 ≤ d) (a b : ℝ)
+lemma spatialRot12_row2 (d : ℕ) (hd : 2 ≤ d) (a b : ℝ)
     (hab : 0 < a ^ 2 + b ^ 2) (ν : Fin (d + 1)) :
     spatialRotMatrix12 d hd a b hab ⟨2, by omega⟩ ν =
       if ν = ⟨1, by omega⟩ then -((b / Real.sqrt (a ^ 2 + b ^ 2) : ℝ) : ℂ)
@@ -271,7 +275,7 @@ private lemma spatialRot12_row2 (d : ℕ) (hd : 2 ≤ d) (a b : ℝ)
       simp only [hν1, hν2, ↓reduceIte]
       rw [if_neg (by intro h; exact hν2 (Fin.ext (by have := congr_arg Fin.val h; omega)))]
 
-private lemma spatialRot12_row_ge3 (d : ℕ) (hd : 2 ≤ d) (a b : ℝ)
+lemma spatialRot12_row_ge3 (d : ℕ) (hd : 2 ≤ d) (a b : ℝ)
     (hab : 0 < a ^ 2 + b ^ 2) (μ : Fin (d + 1))
     (hμ0 : μ ≠ 0) (hμ1 : μ ≠ ⟨1, by omega⟩) (hμ2 : μ ≠ ⟨2, by omega⟩)
     (ν : Fin (d + 1)) :
@@ -286,7 +290,7 @@ private lemma spatialRot12_row_ge3 (d : ℕ) (hd : 2 ≤ d) (a b : ℝ)
   · rw [if_neg (by intro h; exact hνμ h.symm), if_neg hνμ]
 
 -- The spatial rotation preserves the Minkowski metric.
-private lemma spatialRotMatrix12_metric (d : ℕ) (hd : 2 ≤ d) (a b : ℝ)
+lemma spatialRotMatrix12_metric (d : ℕ) (hd : 2 ≤ d) (a b : ℝ)
     (hab : 0 < a ^ 2 + b ^ 2) :
     ∀ (μ ν : Fin (d + 1)),
     ∑ α : Fin (d + 1),
@@ -486,7 +490,7 @@ private lemma spatialRotMatrix12_metric (d : ℕ) (hd : 2 ≤ d) (a b : ℝ)
 -- the family M(t) for t ∈ [0,1] where M(0)=I and M(1)=M is continuous
 -- with det(M(t))² = 1, so det is constant = det(I) = 1.
 -- We implement this via the matrix equation approach and the intermediate value theorem.
-private lemma spatialRotMatrix12_det (d : ℕ) (hd : 2 ≤ d) (a b : ℝ)
+lemma spatialRotMatrix12_det (d : ℕ) (hd : 2 ≤ d) (a b : ℝ)
     (hab : 0 < a ^ 2 + b ^ 2) :
     (spatialRotMatrix12 d hd a b hab).det = 1 := by
   obtain ⟨d', rfl⟩ : ∃ d', d = d' + 2 := ⟨d - 2, by omega⟩
@@ -656,7 +660,7 @@ private lemma spatialRotMatrix12_det (d : ℕ) (hd : 2 ≤ d) (a b : ℝ)
   simpa using hcs
 
 -- The spatial rotation as a ComplexLorentzGroup element.
-private noncomputable def spatialRotCLG12 (d : ℕ) (hd : 2 ≤ d) (a b : ℝ)
+noncomputable def spatialRotCLG12 (d : ℕ) (hd : 2 ≤ d) (a b : ℝ)
     (hab : 0 < a ^ 2 + b ^ 2) : ComplexLorentzGroup d where
   val := spatialRotMatrix12 d hd a b hab
   metric_preserving := spatialRotMatrix12_metric d hd a b hab
@@ -667,7 +671,7 @@ private noncomputable def spatialRotCLG12 (d : ℕ) (hd : 2 ≤ d) (a b : ℝ)
 -- (R·v)_1 = c * v_1 + s * v_2  where c = a/r, s = b/r
 -- (R·v)_2 = -s * v_1 + c * v_2
 -- (R·v)_μ = v_μ  for μ ≥ 3
-private lemma spatial_rotation_e12_plane (hd : 2 ≤ d) (a b : ℝ) (hab : 0 < a ^ 2 + b ^ 2) :
+lemma spatial_rotation_e12_plane (hd : 2 ≤ d) (a b : ℝ) (hab : 0 < a ^ 2 + b ^ 2) :
     ∃ (R : ComplexLorentzGroup d),
       let r : ℝ := Real.sqrt (a ^ 2 + b ^ 2)
       ∀ (v : Fin (d + 1) → ℂ),
@@ -734,19 +738,19 @@ private lemma spatial_rotation_e12_plane (hd : 2 ≤ d) (a b : ℝ) (hab : 0 < a
 
 namespace BHW
 
-private lemma swapWitnessRealSwapped_apply_e1
+lemma swapWitnessRealSwapped_apply_e1
     (hd : 2 ≤ d) (i : Fin n) (hi : i.val + 1 < n) (k : Fin n) :
     swapWitnessRealSwapped (d := d) (n := n) hd i hi k (e1 hd) =
       ((Equiv.swap i ⟨i.val + 1, hi⟩ k : Fin n) : ℝ) + 1 := by
   simp [swapWitnessRealSwapped, swapWitnessReal, e1, e2, e1_ne_zero, e2_ne_e1]
 
-private lemma swapWitnessRealSwapped_apply_e2
+lemma swapWitnessRealSwapped_apply_e2
     (hd : 2 ≤ d) (i : Fin n) (hi : i.val + 1 < n) (k : Fin n) :
     swapWitnessRealSwapped (d := d) (n := n) hd i hi k (e2 hd) =
       if Equiv.swap i ⟨i.val + 1, hi⟩ k = ⟨i.val + 1, hi⟩ then 1 else 0 := by
   simp [swapWitnessRealSwapped, swapWitnessReal, e1, e2, e2_ne_zero, e2_ne_e1]
 
-private lemma swapWitnessRealSwapped_diff_e1_other_pos
+lemma swapWitnessRealSwapped_diff_e1_other_pos
     (hd : 2 ≤ d) (i : Fin n) (hi : i.val + 1 < n)
     (k : Fin n) (hk_i : k ≠ i) (hk_ip1 : k ≠ ⟨i.val + 1, hi⟩) :
     0 < consecutiveDiff (swapWitnessRealSwapped (d := d) (n := n) hd i hi) k (e1 hd) := by
@@ -813,7 +817,7 @@ private lemma swapWitnessRealSwapped_diff_e1_other_pos
         simp [consecutiveDiff, swapWitnessRealSwapped_apply_e1, hk0, hk_eq, hkm1_eq]
       linarith [hdiff, hcast]
 
-private lemma swapWitnessRealSwapped_diff_e2_other
+lemma swapWitnessRealSwapped_diff_e2_other
     (hd : 2 ≤ d) (i : Fin n) (hi : i.val + 1 < n)
     (k : Fin n) (hk_i : k ≠ i) (hk_ip1 : k ≠ ⟨i.val + 1, hi⟩) :
     consecutiveDiff (swapWitnessRealSwapped (d := d) (n := n) hd i hi) k (e2 hd) = 0 := by
@@ -882,7 +886,7 @@ private lemma swapWitnessRealSwapped_diff_e2_other
       rw [if_neg hfalse1, if_neg hfalse2] at hdiff
       simpa using hdiff
 
-private def swapWitnessRealSwappedRot
+def swapWitnessRealSwappedRot
     (hd : 2 ≤ d) (i : Fin n) (hi : i.val + 1 < n) :
     Fin n → Fin (d + 1) → ℝ :=
   fun k μ =>
@@ -895,13 +899,13 @@ private def swapWitnessRealSwappedRot
       (3 / 5 : ℝ) * swapWitnessRealSwapped (d := d) (n := n) hd i hi k (e2 hd)
     else swapWitnessRealSwapped (d := d) (n := n) hd i hi k μ
 
-private lemma swapWitnessRealSwappedRot_diff_time
+lemma swapWitnessRealSwappedRot_diff_time
     (hd : 2 ≤ d) (i : Fin n) (hi : i.val + 1 < n) (k : Fin n) :
     consecutiveDiff (swapWitnessRealSwappedRot (d := d) (n := n) hd i hi) k 0 = 0 := by
   simpa [consecutiveDiff, swapWitnessRealSwappedRot, swapWitnessRealSwapped] using
     (swapWitnessReal_swapped_time_zero (d := d) (n := n) hd i hi k)
 
-private lemma swapWitnessRealSwappedRot_diff_e1
+lemma swapWitnessRealSwappedRot_diff_e1
     (hd : 2 ≤ d) (i : Fin n) (hi : i.val + 1 < n) (k : Fin n) :
     consecutiveDiff (swapWitnessRealSwappedRot (d := d) (n := n) hd i hi) k (e1 hd) =
       (3 / 5 : ℝ) * consecutiveDiff (swapWitnessRealSwapped (d := d) (n := n) hd i hi) k (e1 hd) +
@@ -914,7 +918,7 @@ private lemma swapWitnessRealSwappedRot_diff_e1
       e2_ne_e1]
     ring
 
-private lemma swapWitnessRealSwappedRot_mem_forwardJostSet
+lemma swapWitnessRealSwappedRot_mem_forwardJostSet
     (hd : 2 ≤ d) (i : Fin n) (hi : i.val + 1 < n) :
     swapWitnessRealSwappedRot (d := d) (n := n) hd i hi ∈
       ForwardJostSet d n (Nat.succ_le_of_lt (Nat.lt_of_lt_of_le (Nat.zero_lt_succ _) hd)) := by
@@ -949,7 +953,7 @@ private lemma swapWitnessRealSwappedRot_mem_forwardJostSet
   rw [htime]
   simpa using hspat
 
-private lemma realEmbed_swapWitnessRealSwapped_eq_action_rot
+lemma realEmbed_swapWitnessRealSwapped_eq_action_rot
     (hd : 2 ≤ d) (i : Fin n) (hi : i.val + 1 < n) :
     ∃ (R : ComplexLorentzGroup d),
       realEmbed (swapWitnessRealSwapped (d := d) (n := n) hd i hi) =
@@ -1089,7 +1093,7 @@ private lemma realEmbed_swapWitnessRealSwapped_eq_action_rot
             ∑ ν, R.val μ ν * ↑(swapWitnessRealSwappedRot (d := d) (n := n) hd i hi k ν)
         exact hsum.symm
 
-private lemma swapWitnessRealSwapped_mem_extendedTube
+lemma swapWitnessRealSwapped_mem_extendedTube
     (hd : 2 ≤ d) (i : Fin n) (hi : i.val + 1 < n) :
     realEmbed (swapWitnessRealSwapped (d := d) (n := n) hd i hi) ∈ ExtendedTube d n := by
   have hd1 : 1 ≤ d := Nat.succ_le_of_lt (Nat.lt_of_lt_of_le (Nat.zero_lt_succ _) hd)
@@ -1127,20 +1131,20 @@ theorem adjacent_overlap_witness_exists
 
 
 
-private def cdiff2 {n : ℕ} (z : Fin n → Fin 2 → ℂ) (k : Fin n) : Fin 2 → ℂ :=
+def cdiff2 {n : ℕ} (z : Fin n → Fin 2 → ℂ) (k : Fin n) : Fin 2 → ℂ :=
   fun μ => z k μ - ((if h : k.val = 0 then (0 : Fin 2 → ℂ) else z ⟨k.val - 1, by omega⟩) μ)
 
-private def swapIdx2 {n : ℕ} (i : Fin n) (hi : i.val + 1 < n) : Equiv.Perm (Fin n) :=
+def swapIdx2 {n : ℕ} (i : Fin n) (hi : i.val + 1 < n) : Equiv.Perm (Fin n) :=
   Equiv.swap i ⟨i.val + 1, hi⟩
 
-private def d1WitnessX {n : ℕ} (i : Fin n) (hi : i.val + 1 < n) :
+def d1WitnessX {n : ℕ} (i : Fin n) (hi : i.val + 1 < n) :
     Fin n → Fin 2 → ℂ :=
   let σ := swapIdx2 i hi
   fun k μ =>
     if μ = 0 then (2 : ℂ) * Complex.I * ((k : ℂ) + 1)
     else (-2 : ℂ) * (((σ k : Fin n) : ℂ) + 1)
 
-private lemma d1WitnessX_cdiff_time {n : ℕ} (i : Fin n) (hi : i.val + 1 < n) (k : Fin n) :
+lemma d1WitnessX_cdiff_time {n : ℕ} (i : Fin n) (hi : i.val + 1 < n) (k : Fin n) :
     cdiff2 (d1WitnessX i hi) k 0 = (2 : ℂ) * Complex.I := by
   by_cases hk0 : k.val = 0
   · simp [cdiff2, d1WitnessX, hk0, swapIdx2]
@@ -1152,13 +1156,13 @@ private lemma d1WitnessX_cdiff_time {n : ℕ} (i : Fin n) (hi : i.val + 1 < n) (
     rw [hcast]
     ring
 
-private lemma d1WitnessX_cdiff_space_im {n : ℕ} (i : Fin n) (hi : i.val + 1 < n) (k : Fin n) :
+lemma d1WitnessX_cdiff_space_im {n : ℕ} (i : Fin n) (hi : i.val + 1 < n) (k : Fin n) :
     (cdiff2 (d1WitnessX i hi) k 1).im = 0 := by
   by_cases hk0 : k.val = 0
   · simp [cdiff2, d1WitnessX, hk0, swapIdx2]
   · simp [cdiff2, d1WitnessX, hk0, swapIdx2]
 
-private lemma d1WitnessX_mem_forwardTube {n : ℕ} (i : Fin n) (hi : i.val + 1 < n) :
+lemma d1WitnessX_mem_forwardTube {n : ℕ} (i : Fin n) (hi : i.val + 1 < n) :
     d1WitnessX i hi ∈ BHWCore.ForwardTube 1 n := by
   intro k
   simpa [BHWCore.ForwardTube, cdiff2] using
@@ -1174,14 +1178,14 @@ private lemma d1WitnessX_mem_forwardTube {n : ℕ} (i : Fin n) (hi : i.val + 1 <
         norm_num [minkowskiSignature]
     )
 
-private def swappedX {n : ℕ} (i : Fin n) (hi : i.val + 1 < n) : Fin n → Fin 2 → ℂ :=
+def swappedX {n : ℕ} (i : Fin n) (hi : i.val + 1 < n) : Fin n → Fin 2 → ℂ :=
   fun k => d1WitnessX i hi (swapIdx2 i hi k)
 
-private lemma swappedX_space_value {n : ℕ} (i : Fin n) (hi : i.val + 1 < n) (k : Fin n) :
+lemma swappedX_space_value {n : ℕ} (i : Fin n) (hi : i.val + 1 < n) (k : Fin n) :
     swappedX i hi k 1 = (-2 : ℂ) * ((k : ℂ) + 1) := by
   simp [swappedX, d1WitnessX, swapIdx2]
 
-private lemma swappedX_cdiff_space {n : ℕ} (i : Fin n) (hi : i.val + 1 < n) (k : Fin n) :
+lemma swappedX_cdiff_space {n : ℕ} (i : Fin n) (hi : i.val + 1 < n) (k : Fin n) :
     cdiff2 (swappedX i hi) k 1 = (-2 : ℂ) := by
   by_cases hk0 : k.val = 0
   · simp [cdiff2, swappedX_space_value, hk0]
@@ -1193,13 +1197,13 @@ private lemma swappedX_cdiff_space {n : ℕ} (i : Fin n) (hi : i.val + 1 < n) (k
     rw [hcast]
     ring
 
-private lemma swappedX_cdiff_time_re {n : ℕ} (i : Fin n) (hi : i.val + 1 < n) (k : Fin n) :
+lemma swappedX_cdiff_time_re {n : ℕ} (i : Fin n) (hi : i.val + 1 < n) (k : Fin n) :
     (cdiff2 (swappedX i hi) k 0).re = 0 := by
   by_cases hk0 : k.val = 0
   · simp [cdiff2, swappedX, d1WitnessX, hk0, swapIdx2]
   · simp [cdiff2, swappedX, d1WitnessX, hk0, swapIdx2]
 
-private def wickPlus1 : ComplexLorentzGroup 1 where
+def wickPlus1 : ComplexLorentzGroup 1 where
   val := fun μ ν =>
     if μ = 0 ∧ ν = (1 : Fin 2) then Complex.I
     else if μ = (1 : Fin 2) ∧ ν = 0 then Complex.I
@@ -1215,24 +1219,24 @@ private def wickPlus1 : ComplexLorentzGroup 1 where
       else 0))
     simp [Complex.I_mul_I]
 
-private def liftByWick {n : ℕ} (z : Fin n → Fin 2 → ℂ) : Fin n → Fin 2 → ℂ :=
+def liftByWick {n : ℕ} (z : Fin n → Fin 2 → ℂ) : Fin n → Fin 2 → ℂ :=
   fun k μ => if μ = 0 then -Complex.I * z k 1 else -Complex.I * z k 0
 
-private lemma liftByWick_cdiff_time {n : ℕ} (z : Fin n → Fin 2 → ℂ) (k : Fin n) :
+lemma liftByWick_cdiff_time {n : ℕ} (z : Fin n → Fin 2 → ℂ) (k : Fin n) :
     cdiff2 (liftByWick z) k 0 = -Complex.I * cdiff2 z k 1 := by
   by_cases hk0 : k.val = 0
   · simp [cdiff2, liftByWick, hk0]
   · simp [cdiff2, liftByWick, hk0]
     ring
 
-private lemma liftByWick_cdiff_space {n : ℕ} (z : Fin n → Fin 2 → ℂ) (k : Fin n) :
+lemma liftByWick_cdiff_space {n : ℕ} (z : Fin n → Fin 2 → ℂ) (k : Fin n) :
     cdiff2 (liftByWick z) k 1 = -Complex.I * cdiff2 z k 0 := by
   by_cases hk0 : k.val = 0
   · simp [cdiff2, liftByWick, hk0]
   · simp [cdiff2, liftByWick, hk0]
     ring
 
-private lemma wickPlus1_action_liftByWick {n : ℕ} (z : Fin n → Fin 2 → ℂ) :
+lemma wickPlus1_action_liftByWick {n : ℕ} (z : Fin n → Fin 2 → ℂ) :
     BHWCore.complexLorentzAction wickPlus1 (liftByWick z) = z := by
   ext k μ
   fin_cases μ
@@ -1243,7 +1247,7 @@ private lemma wickPlus1_action_liftByWick {n : ℕ} (z : Fin n → Fin 2 → ℂ
     rw [← mul_assoc, Complex.I_mul_I]
     simp
 
-private lemma liftByWick_swapped_mem_forwardTube {n : ℕ} (i : Fin n) (hi : i.val + 1 < n) :
+lemma liftByWick_swapped_mem_forwardTube {n : ℕ} (i : Fin n) (hi : i.val + 1 < n) :
     liftByWick (swappedX i hi) ∈ BHWCore.ForwardTube 1 n := by
   intro k
   simpa [BHWCore.ForwardTube, cdiff2] using

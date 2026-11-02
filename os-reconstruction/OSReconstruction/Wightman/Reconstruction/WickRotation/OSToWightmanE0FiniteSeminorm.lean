@@ -1,5 +1,9 @@
-import OSReconstruction.Wightman.Reconstruction.SchwingerOS
-import Mathlib.Analysis.LocallyConvex.WithSeminorms
+module
+
+public import OSReconstruction.Wightman.Reconstruction.SchwingerOS
+public import Mathlib.Analysis.LocallyConvex.WithSeminorms
+
+@[expose] public section
 
 set_option backward.isDefEq.respectTransparency false
 

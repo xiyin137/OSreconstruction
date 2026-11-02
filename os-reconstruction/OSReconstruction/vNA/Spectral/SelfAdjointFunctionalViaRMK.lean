@@ -1,24 +1,17 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import Mathlib.Analysis.CStarAlgebra.ContinuousFunctionalCalculus.Unital
-import Mathlib.Analysis.CStarAlgebra.ContinuousFunctionalCalculus.Order
-import Mathlib.Analysis.CStarAlgebra.ContinuousLinearMap
-import Mathlib.Analysis.InnerProductSpace.StarOrder
-import Mathlib.MeasureTheory.Integral.RieszMarkovKakutani.Real
-import Mathlib.Topology.ContinuousMap.CompactlySupported
-import OSReconstruction.SCV.LaplaceHolomorphic
-import OSReconstruction.vNA.Bochner.LaplaceBridge
+module
 
+public import Mathlib.Analysis.CStarAlgebra.ContinuousFunctionalCalculus.Unital
+public import Mathlib.Analysis.CStarAlgebra.ContinuousFunctionalCalculus.Order
+public import Mathlib.Analysis.CStarAlgebra.ContinuousLinearMap
+public import Mathlib.Analysis.InnerProductSpace.StarOrder
+public import Mathlib.MeasureTheory.Integral.RieszMarkovKakutani.Real
+public import Mathlib.Topology.ContinuousMap.CompactlySupported
+public import OSReconstruction.SCV.LaplaceHolomorphic
+public import OSReconstruction.vNA.Bochner.LaplaceBridge
 
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -32,18 +25,15 @@ namespace ContinuousLinearMap
 
 variable {H : Type u} [NormedAddCommGroup H] [InnerProductSpace ℂ H] [CompleteSpace H]
 
--- Mathlib 4.29 compatibility: provide instances that typeclass synthesis can't find
+-- Mathlib 4.29 compatibility: provide an instance that typeclass synthesis can't find
 -- with the stricter backward.isDefEq.respectTransparency
 set_option backward.isDefEq.respectTransparency false in
-private instance : SMulCommClass ℂ ℝ H := inferInstance
-
-set_option backward.isDefEq.respectTransparency false in
-private instance : NonnegSpectrumClass ℝ (H →L[ℂ] H) :=
+instance : NonnegSpectrumClass ℝ (H →L[ℂ] H) :=
   CStarAlgebra.instNonnegSpectrumClass
 
 omit [CompleteSpace H] in
 /-- The polarization identity for a continuous linear map on a complex Hilbert space. -/
-private theorem inner_polarization_clm_local (A : H →L[ℂ] H) (x y : H) :
+theorem inner_polarization_clm_local (A : H →L[ℂ] H) (x y : H) :
     (1 / 4 : ℂ) * (@inner ℂ H _ (x + y) (A (x + y)) - @inner ℂ H _ (x - y) (A (x - y))
       - Complex.I * @inner ℂ H _ (x + Complex.I • y) (A (x + Complex.I • y))
       + Complex.I * @inner ℂ H _ (x - Complex.I • y) (A (x - Complex.I • y))) =

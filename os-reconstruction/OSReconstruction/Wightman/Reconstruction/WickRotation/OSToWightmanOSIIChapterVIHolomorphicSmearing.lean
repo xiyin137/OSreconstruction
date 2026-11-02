@@ -1,5 +1,9 @@
-import OSReconstruction.SCV.SeparatelyAnalytic
-import Mathlib.Analysis.Calculus.ParametricIntegral
+module
+
+public import OSReconstruction.SCV.SeparatelyAnalytic
+public import Mathlib.Analysis.Calculus.ParametricIntegral
+
+@[expose] public section
 
 /-!
 # Holomorphic smearing under local integrable domination

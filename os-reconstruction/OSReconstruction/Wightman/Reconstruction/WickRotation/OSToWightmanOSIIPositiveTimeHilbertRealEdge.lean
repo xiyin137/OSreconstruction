@@ -1,18 +1,13 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIPositiveTimeHilbertSource
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIComplexSemigroupContraction
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanSpatialMomentum
-import OSReconstruction.SCV.EuclideanWeylFrechet
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIPositiveTimeHilbertSource
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIComplexSemigroupContraction
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanSpatialMomentum
+public import OSReconstruction.SCV.EuclideanWeylFrechet
 
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -23,7 +18,7 @@ namespace OSReconstruction
 
 variable {d : ℕ} [NeZero d]
 
-private theorem continuousAt_euclideanTranslateSchwartz_zero
+theorem continuousAt_euclideanTranslateSchwartz_zero
     {ι : Type*} [Fintype ι]
     (φ : SchwartzMap (EuclideanSpace ℝ ι) ℂ) :
     ContinuousAt
@@ -87,7 +82,7 @@ private theorem continuousAt_euclideanTranslateSchwartz_zero
       change SchwartzMap.seminorm ℝ p.1 p.2 (L h) < ε / 2 at hLh
       linarith)
 
-private theorem continuous_euclideanTranslateSchwartz
+theorem continuous_euclideanTranslateSchwartz
     {ι : Type*} [Fintype ι]
     (φ : SchwartzMap (EuclideanSpace ℝ ι) ℂ) :
     Continuous
@@ -115,7 +110,7 @@ private theorem continuous_euclideanTranslateSchwartz
   congr 2
   abel
 
-private theorem continuous_translateSchwartz_fin
+theorem continuous_translateSchwartz_fin
     {m : ℕ}
     (φ : SchwartzMap (Fin m → ℝ) ℂ) :
     Continuous (fun a : Fin m → ℝ => SCV.translateSchwartz a φ) := by
@@ -389,7 +384,7 @@ theorem osiiOriginalOSHilbertComplex_ofReal_eq_nnrpow
         (d := d) OS 1 one_pos)
       (t := t) ht)
 
-private theorem denseRange_osiiPositiveRatCast :
+theorem denseRange_osiiPositiveRatCast :
     DenseRange
       (fun q : {q : Rat // 0 < (q : Real)} =>
         (⟨(q : Real), q.2⟩ : {t : Real // 0 < t})) := by
@@ -418,7 +413,7 @@ private theorem denseRange_osiiPositiveRatCast :
     constructor <;>
       linarith [le_max_right (x / 2) (x - epsilon)])
 
-private theorem osiiPositiveRat_as_nat_fraction
+theorem osiiPositiveRat_as_nat_fraction
     (q : Rat) (hq : 0 < (q : Real)) :
     ∃ (p m : Nat), 0 < p ∧ 0 < m ∧
       (q : Real) = (p : Real) / (m : Real) := by

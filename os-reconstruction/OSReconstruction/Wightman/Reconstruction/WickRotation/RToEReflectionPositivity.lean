@@ -1,28 +1,13 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceClosure
-import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceOrderedDensity
-import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43OS24KernelSafeFubini
-import OSReconstruction.Wightman.Reconstruction.WickRotation.SchwingerTemperedness
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceClosure
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceOrderedDensity
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43OS24KernelSafeFubini
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.SchwingerTemperedness
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -344,7 +329,7 @@ theorem rToE_section43OS24Kernel_pairing_eq_constructSchwinger_succRight
             (d := d) Wfn (Nat.succ_pos m) f.1 f.2 g.1 g.2 t ht).symm
 
 omit [NeZero d] in
-private theorem rToE_hasCompactSupport_flattenSchwartzNPoint {n : ℕ}
+theorem rToE_hasCompactSupport_flattenSchwartzNPoint {n : ℕ}
     (f : SchwartzNPoint d n)
     (hf : HasCompactSupport ((f : SchwartzNPoint d n) : NPointDomain d n → ℂ)) :
     HasCompactSupport
@@ -360,7 +345,7 @@ private theorem rToE_hasCompactSupport_flattenSchwartzNPoint {n : ℕ}
   exact hf.comp_homeomorph ((flattenCLEquivReal n (d + 1)).symm.toHomeomorph)
 
 omit [NeZero d] in
-private theorem rToE_timeShiftSchwartzNPoint_eq_unflatten_translate {n : ℕ}
+theorem rToE_timeShiftSchwartzNPoint_eq_unflatten_translate {n : ℕ}
     (t : ℝ) (f : SchwartzNPoint d n) :
     timeShiftSchwartzNPoint (d := d) t f =
       unflattenSchwartzNPoint (d := d)
@@ -378,7 +363,7 @@ private theorem rToE_timeShiftSchwartzNPoint_eq_unflatten_translate {n : ℕ}
   · simp [flatTimeShiftDirection, timeShiftVec, hμ, sub_eq_add_neg]
 
 omit [NeZero d] in
-private theorem rToE_tendsto_timeShiftSchwartzNPoint_nhds_of_isCompactSupport {n : ℕ}
+theorem rToE_tendsto_timeShiftSchwartzNPoint_nhds_of_isCompactSupport {n : ℕ}
     (f : SchwartzNPoint d n)
     (hf : HasCompactSupport ((f : SchwartzNPoint d n) : NPointDomain d n → ℂ))
     (t₀ : ℝ) :
@@ -598,7 +583,7 @@ theorem compactOrderedSupport_constructSchwinger_cross_eq_wightman_frequency_pai
   exact tendsto_nhds_unique hIT_to_S hIT
 
 omit [NeZero d] in
-private noncomputable def rToE_schwartzConstOne_zero :
+noncomputable def rToE_schwartzConstOne_zero :
     SchwartzNPoint d 0 :=
   ⟨fun _ => 1, contDiff_const, fun k n =>
     ⟨‖iteratedFDeriv ℝ n (fun _ : NPointDomain d 0 => (1 : ℂ)) 0‖, fun x => by
@@ -609,18 +594,18 @@ private noncomputable def rToE_schwartzConstOne_zero :
         exact norm_nonneg _⟩⟩
 
 omit [NeZero d] in
-@[simp] private theorem rToE_schwartzConstOne_zero_apply
+@[simp] theorem rToE_schwartzConstOne_zero_apply
     (x : NPointDomain d 0) :
     rToE_schwartzConstOne_zero (d := d) x = 1 := rfl
 
 omit [NeZero d] in
-private theorem rToE_volume_nPointDomain_zero_eq_dirac :
+theorem rToE_volume_nPointDomain_zero_eq_dirac :
     (MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d 0)) =
       MeasureTheory.Measure.dirac 0 := by
   rw [MeasureTheory.volume_pi, MeasureTheory.Measure.pi_of_empty
     (x := (0 : NPointDomain d 0))]
 
-private theorem rToE_permutedExtendedTube_zero_mem
+theorem rToE_permutedExtendedTube_zero_mem
     (z : Fin 0 → Fin (d + 1) → ℂ) :
     z ∈ PermutedExtendedTube d 0 := by
   rw [PermutedExtendedTube]
@@ -631,13 +616,13 @@ private theorem rToE_permutedExtendedTube_zero_mem
   · ext k
     exact Fin.elim0 k
 
-private theorem rToE_forwardTube_zero_mem
+theorem rToE_forwardTube_zero_mem
     (z : Fin 0 → Fin (d + 1) → ℂ) :
     z ∈ ForwardTube d 0 := by
   intro k
   exact Fin.elim0 k
 
-private theorem rToE_F_ext_on_translatedPET_total_zero_eq_one
+theorem rToE_F_ext_on_translatedPET_total_zero_eq_one
     (Wfn : WightmanFunctions d)
     (z : Fin 0 → Fin (d + 1) → ℂ) :
     F_ext_on_translatedPET_total Wfn z = 1 := by
@@ -759,7 +744,7 @@ theorem compactOrderedSupport_constructSchwinger_zero_degree_from_evals
         rw [hfirst, hlast, hreflect, hφ, hψ]
     _ = Wfn.W 0 (φ.conjTensorProduct ψ) := hW.symm
 
-private theorem rToE_osConjTP_eq_osConj_osConjTP {n m : ℕ}
+theorem rToE_osConjTP_eq_osConj_osConjTP {n m : ℕ}
     (f : SchwartzNPoint d m) (g : SchwartzNPoint d n)
     (x : NPointDomain d (n + m)) :
     ((g.osConjTensorProduct f).osConj) x =
@@ -789,7 +774,7 @@ private theorem rToE_osConjTP_eq_osConj_osConjTP {n m : ℕ}
   rw [mul_comm]
   rw [hfarg, hgarg]
 
-private theorem rToE_wickRotatedBoundaryPairing_eq_of_cast
+theorem rToE_wickRotatedBoundaryPairing_eq_of_cast
     (Wfn : WightmanFunctions d)
     (k₁ k₂ : ℕ) (hk : k₁ = k₂)
     (f : SchwartzNPoint d k₁) (g : SchwartzNPoint d k₂)
@@ -802,14 +787,14 @@ private theorem rToE_wickRotatedBoundaryPairing_eq_of_cast
   exact hfg x
 
 omit [NeZero d] in
-private theorem rToE_cast_schwartz_apply {k₁ k₂ : ℕ}
+theorem rToE_cast_schwartz_apply {k₁ k₂ : ℕ}
     (hk : k₁ = k₂) (f : SchwartzNPoint d k₁) (x : NPointDomain d k₂) :
     (cast (congrArg (SchwartzNPoint d) hk) f) x =
       f (fun i => x (Fin.cast hk i)) := by
   cases hk
   rfl
 
-private def rToE_blockSwapPerm (m n : ℕ) : Equiv.Perm (Fin (n + m)) where
+def rToE_blockSwapPerm (m n : ℕ) : Equiv.Perm (Fin (n + m)) where
   toFun := fun i =>
     (finAddFlip : Fin (m + n) ≃ Fin (n + m)) (Fin.cast (Nat.add_comm m n).symm i)
   invFun := fun i =>
@@ -822,7 +807,7 @@ private def rToE_blockSwapPerm (m n : ℕ) : Equiv.Perm (Fin (n + m)) where
     intro i
     simp
 
-@[simp] private theorem rToE_blockSwapPerm_cast_eq_finAddFlip {m n : ℕ}
+@[simp] theorem rToE_blockSwapPerm_cast_eq_finAddFlip {m n : ℕ}
     (i : Fin (m + n)) :
     rToE_blockSwapPerm m n (Fin.cast (Nat.add_comm m n) i) =
       (finAddFlip : Fin (m + n) ≃ Fin (n + m)) i := by

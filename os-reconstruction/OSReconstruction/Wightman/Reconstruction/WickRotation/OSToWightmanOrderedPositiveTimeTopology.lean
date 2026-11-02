@@ -1,4 +1,8 @@
-import OSReconstruction.Wightman.Reconstruction.Core
+module
+
+public import OSReconstruction.Wightman.Reconstruction.Core
+
+@[expose] public section
 
 /-!
 # Ordered positive-time topology

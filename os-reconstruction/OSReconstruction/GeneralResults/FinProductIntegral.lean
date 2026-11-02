@@ -5,30 +5,13 @@ Copyright (c) 2026 ModularPhysics Contributors. All rights reserved.
 Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
-import Mathlib.MeasureTheory.Integral.Prod
-import Mathlib.MeasureTheory.Constructions.Pi
-import Mathlib.Logic.Equiv.Fin.Basic
+module
 
+public import Mathlib.MeasureTheory.Integral.Prod
+public import Mathlib.MeasureTheory.Constructions.Pi
+public import Mathlib.Logic.Equiv.Fin.Basic
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 

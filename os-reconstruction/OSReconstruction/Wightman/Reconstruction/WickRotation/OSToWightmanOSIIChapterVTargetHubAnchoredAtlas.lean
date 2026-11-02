@@ -1,23 +1,12 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVTargetHubMovingSliceCoverage
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVUniversalCompactCarrierAnchoredAtlas
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVGeneratorRadialDomain
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVTargetHubMovingSliceCoverage
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVUniversalCompactCarrierAnchoredAtlas
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVGeneratorRadialDomain
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -57,7 +46,7 @@ variable
   {anchor hub : Fin ((q + 1) + 1) → ℝ}
   {z : Fin (q + 1) → ℂ}
 
-private theorem mul_mem_unitInterval
+theorem mul_mem_unitInterval
     {a b : ℝ}
     (ha : a ∈ Set.Icc (0 : ℝ) 1)
     (hb : b ∈ Set.Icc (0 : ℝ) 1) :
@@ -70,7 +59,7 @@ private theorem mul_mem_unitInterval
       _ = b := one_mul b
       _ ≤ 1 := hb.2
 
-private theorem lineMap_zero_targetHubBoxPoint
+theorem lineMap_zero_targetHubBoxPoint
     (u v t : ℝ) :
     AffineMap.lineMap
         (0 : Fin (q + 1) → ℂ)
@@ -82,7 +71,7 @@ private theorem lineMap_zero_targetHubBoxPoint
     tailAnchorTargetHubBoxPoint_apply]
   ring
 
-private theorem lineMap_centeredHub_centeredTarget
+theorem lineMap_centeredHub_centeredTarget
     (t : ℝ) :
     AffineMap.lineMap
         (tailAnchorCenteredHubPoint anchor hub)

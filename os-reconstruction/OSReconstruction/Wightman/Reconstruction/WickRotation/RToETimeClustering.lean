@@ -1,20 +1,10 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.RToETimeShiftBounds
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.RToETimeShiftBounds
 
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 open scoped Topology NNReal
@@ -72,21 +62,21 @@ theorem rToE_reflected_timeShift_finite_approximation (Wfn : WightmanFunctions d
     exact ht
   · exact ⟨⟨T, hT⟩, Finset.mem_insert_self _ _, htail s T (le_of_not_ge hs) le_rfl⟩
 
-private def spatialTranslate {n : ℕ} (a : Fin d → ℝ)
+def spatialTranslate_RToETimeClustering {n : ℕ} (a : Fin d → ℝ)
     (f : euclideanPositiveTimeSubmodule (d := d) n) :
     euclideanPositiveTimeSubmodule (d := d) n :=
   ⟨translateSchwartzNPoint (Fin.cons 0 a) f.1,
     translateSchwartzNPoint_preserves_ordered_positive_tsupport_spatial
       (Fin.cons 0 a) (by simp) f.1 f.2⟩
 
-private def timeSpacePair (Wfn : WightmanFunctions d) {n m : ℕ}
+def timeSpacePair_RToETimeClustering (Wfn : WightmanFunctions d) {n m : ℕ}
     (f : euclideanPositiveTimeSubmodule (d := d) n)
     (g : euclideanPositiveTimeSubmodule (d := d) m)
     (s t : ℝ≥0) (a : Fin d → ℝ) : ℂ :=
   rToEReflectedPairing Wfn (osiiOriginalOSNonnegativeTimeShiftSource f s)
-    (spatialTranslate a (osiiOriginalOSNonnegativeTimeShiftSource g t))
+    (spatialTranslate_RToETimeClustering a (osiiOriginalOSNonnegativeTimeShiftSource g t))
 
-private theorem scalar_timeShift (Wfn : WightmanFunctions d) {n : ℕ}
+theorem scalar_timeShift (Wfn : WightmanFunctions d) {n : ℕ}
     (f : SchwartzNPoint d n) (t : ℝ) :
     wickRotatedBoundaryPairing Wfn n (timeShiftSchwartzNPoint (d := d) t f) =
       wickRotatedBoundaryPairing Wfn n f := by
@@ -96,20 +86,20 @@ private theorem scalar_timeShift (Wfn : WightmanFunctions d) {n : ℕ}
   change (timeShiftSchwartzNPoint (d := d) t f) x = f (fun i => x i + -timeShiftVec d t)
   simp only [timeShiftSchwartzNPoint_apply, sub_eq_add_neg]
 
-private theorem timeSpacePair_cluster (Wfn : WightmanFunctions d) {n m : ℕ}
+theorem timeSpacePair_cluster (Wfn : WightmanFunctions d) {n m : ℕ}
     (f : euclideanPositiveTimeSubmodule (d := d) n)
     (g : euclideanPositiveTimeSubmodule (d := d) m)
     (s t : ℝ≥0) (ε : ℝ) (hε : 0 < ε) :
     ∃ R : ℝ, 0 < R ∧ ∀ a : Fin d → ℝ, (∑ i, (a i)^2) > R^2 →
-      ‖timeSpacePair Wfn f g s t a -
+      ‖timeSpacePair_RToETimeClustering Wfn f g s t a -
         starRingEnd ℂ (wickRotatedBoundaryPairing Wfn n f.1) *
           wickRotatedBoundaryPairing Wfn m g.1‖ < ε := by
-  simpa only [timeSpacePair, rToEReflectedPairing_apply, spatialTranslate,
+  simpa only [timeSpacePair_RToETimeClustering, rToEReflectedPairing_apply, spatialTranslate_RToETimeClustering,
     osiiOriginalOSNonnegativeTimeShiftSource, scalar_timeShift] using
     rToE_reflected_cluster Wfn (osiiOriginalOSNonnegativeTimeShiftSource f s)
       (osiiOriginalOSNonnegativeTimeShiftSource g t) ε hε
 
-private theorem timeSpacePair_uniform_approximation (Wfn : WightmanFunctions d) {n m : ℕ}
+theorem timeSpacePair_uniform_approximation (Wfn : WightmanFunctions d) {n m : ℕ}
     (f : euclideanPositiveTimeSubmodule (d := d) n)
     (g : euclideanPositiveTimeSubmodule (d := d) m) (ε : ℝ) (hε : 0 < ε) :
     ∃ δ : ℝ, 0 < δ ∧ ∀ s s' t t' : ℝ≥0,
@@ -124,7 +114,7 @@ private theorem timeSpacePair_uniform_approximation (Wfn : WightmanFunctions d) 
         (osiiOriginalOSNonnegativeTimeShiftSource g t -
           osiiOriginalOSNonnegativeTimeShiftSource g t')‖ < δ →
       ∀ a : Fin d → ℝ,
-        ‖timeSpacePair Wfn f g s t a - timeSpacePair Wfn f g s' t' a‖ < ε := by
+        ‖timeSpacePair_RToETimeClustering Wfn f g s t a - timeSpacePair_RToETimeClustering Wfn f g s' t' a‖ < ε := by
   let C := ‖rToEReflectedPairing Wfn f f‖ + ‖rToEReflectedPairing Wfn g g‖ + 1
   have hC : 0 < C := by dsimp [C]; positivity
   let δ := (ε / 2) ^ 2 / C
@@ -137,8 +127,8 @@ private theorem timeSpacePair_uniform_approximation (Wfn : WightmanFunctions d) 
   let gt' := osiiOriginalOSNonnegativeTimeShiftSource g t'
   let df := fs - fs'
   let dg := gt - gt'
-  let L := rToEReflectedPairing Wfn df (spatialTranslate a gt)
-  let H := rToEReflectedPairing Wfn fs' (spatialTranslate a dg)
+  let L := rToEReflectedPairing Wfn df (spatialTranslate_RToETimeClustering a gt)
+  let H := rToEReflectedPairing Wfn fs' (spatialTranslate_RToETimeClustering a dg)
   have hL : ‖L‖ ^ 2 ≤
       ‖rToEReflectedPairing Wfn df df‖ * ‖rToEReflectedPairing Wfn g g‖ := by
     have hbound := rToE_reflected_timeSpaceShift_pairing_bound Wfn df g 0 t
@@ -147,7 +137,7 @@ private theorem timeSpacePair_uniform_approximation (Wfn : WightmanFunctions d) 
     dsimp only [L]
     rw [rToEReflectedPairing_apply]
     set_option backward.isDefEq.respectTransparency false in
-      simpa only [spatialTranslate, gt, osiiOriginalOSNonnegativeTimeShiftSource] using hbound
+      simpa only [spatialTranslate_RToETimeClustering, gt, osiiOriginalOSNonnegativeTimeShiftSource] using hbound
   have hH : ‖H‖ ^ 2 ≤
       ‖rToEReflectedPairing Wfn f f‖ * ‖rToEReflectedPairing Wfn dg dg‖ := by
     have hbound := rToE_reflected_timeSpaceShift_pairing_bound Wfn f dg s' 0 s'.2
@@ -156,7 +146,7 @@ private theorem timeSpacePair_uniform_approximation (Wfn : WightmanFunctions d) 
     dsimp only [H]
     rw [rToEReflectedPairing_apply]
     set_option backward.isDefEq.respectTransparency false in
-      simpa only [spatialTranslate, fs', osiiOriginalOSNonnegativeTimeShiftSource] using hbound
+      simpa only [spatialTranslate_RToETimeClustering, fs', osiiOriginalOSNonnegativeTimeShiftSource] using hbound
   have hsmall (x b : ℝ) (hx0 : 0 ≤ x) (hx : x < δ) (hb : b ≤ C) :
       x * b < (ε / 2) ^ 2 := by
     calc
@@ -175,12 +165,12 @@ private theorem timeSpacePair_uniform_approximation (Wfn : WightmanFunctions d) 
   have hHn : ‖H‖ < ε / 2 := by
     change ‖rToEReflectedPairing Wfn dg dg‖ * _ < _ at hHg
     nlinarith [norm_nonneg H]
-  have hsub : spatialTranslate a (gt - gt') =
-      spatialTranslate a gt - spatialTranslate a gt' := by
+  have hsub : spatialTranslate_RToETimeClustering a (gt - gt') =
+      spatialTranslate_RToETimeClustering a gt - spatialTranslate_RToETimeClustering a gt' := by
     apply Subtype.ext
     exact map_sub _ _ _
-  have heq : timeSpacePair Wfn f g s t a - timeSpacePair Wfn f g s' t' a = L + H := by
-    dsimp only [timeSpacePair, L, H, df, dg]
+  have heq : timeSpacePair_RToETimeClustering Wfn f g s t a - timeSpacePair_RToETimeClustering Wfn f g s' t' a = L + H := by
+    dsimp only [timeSpacePair_RToETimeClustering, L, H, df, dg]
     rw [rToEReflectedPairing_sub_left, hsub, rToEReflectedPairing_sub_right]
     dsimp only [fs, fs', gt, gt']
     ring
@@ -245,13 +235,13 @@ theorem rToE_reflected_cluster_uniform_time (Wfn : WightmanFunctions d) {n m : �
   have hfar := hc (s', t') a hsep
   let z := starRingEnd ℂ (wickRotatedBoundaryPairing Wfn n f.1) *
     wickRotatedBoundaryPairing Wfn m g.1
-  have htriangle := dist_triangle (timeSpacePair Wfn f g ss tt a)
-    (timeSpacePair Wfn f g s' t' a) z
+  have htriangle := dist_triangle (timeSpacePair_RToETimeClustering Wfn f g ss tt a)
+    (timeSpacePair_RToETimeClustering Wfn f g s' t' a) z
   simp only [dist_eq_norm] at htriangle
-  have hfinal : ‖timeSpacePair Wfn f g ss tt a - z‖ < ε := by
+  have hfinal : ‖timeSpacePair_RToETimeClustering Wfn f g ss tt a - z‖ < ε := by
     dsimp [z] at htriangle ⊢
     linarith
-  simpa only [timeSpacePair, rToEReflectedPairing_apply, spatialTranslate,
+  simpa only [timeSpacePair_RToETimeClustering, rToEReflectedPairing_apply, spatialTranslate_RToETimeClustering,
     osiiOriginalOSNonnegativeTimeShiftSource, ss, tt, z] using hfinal
 
 end OSReconstruction

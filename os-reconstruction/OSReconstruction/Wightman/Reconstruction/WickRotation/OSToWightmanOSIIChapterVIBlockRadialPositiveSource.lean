@@ -1,28 +1,14 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIBlockRadialPartialKernelSourceFactorization
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIBlockRadialPartialKernelE0Source
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIPositiveTimeHilbertSource
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanReducedFiberMarginalSchwartz
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanReducedTestLiftSupport
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIBlockRadialPartialKernelSourceFactorization
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIBlockRadialPartialKernelE0Source
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIPositiveTimeHilbertSource
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanReducedFiberMarginalSchwartz
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanReducedTestLiftSupport
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -209,7 +195,7 @@ noncomputable def
             (BHW.reducedDiffMapReal (k + 1) d x) := by
   simp [osiiStep4RadialEndpointLiftedCenteredPartialConvolutionKernelFullSource]
 
-private theorem tsupport_precomp_subset_positiveSource
+theorem tsupport_precomp_subset_positiveSource
     {X Y alpha : Type*}
     [TopologicalSpace X] [TopologicalSpace Y] [Zero alpha]
     {f : Y -> alpha} {h : X -> Y} (hh : Continuous h) :
@@ -218,7 +204,7 @@ private theorem tsupport_precomp_subset_positiveSource
   intro x hx
   exact subset_closure (by simpa [Function.mem_support] using hx)
 
-private theorem reducedTestLift_tsupport_basepoint_mem_positiveSource
+theorem reducedTestLift_tsupport_basepoint_mem_positiveSource
     (d m : Nat)
     (chi : SchwartzMap (SpacetimeDim d) Complex)
     (phi : SchwartzNPoint d m)

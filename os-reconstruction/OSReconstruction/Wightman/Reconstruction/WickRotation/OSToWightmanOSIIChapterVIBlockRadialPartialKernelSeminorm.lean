@@ -1,9 +1,13 @@
-import OSReconstruction.Mathlib429Compat
-import OSReconstruction.SCV.HeadBlockIntegral
-import OSReconstruction.SCV.SchwartzFiniteSeminormBound
-import OSReconstruction.Wightman.Reconstruction.SchwartzPartialEval
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIBlockRadialPartialKernelFullSource
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIBlockRadialSupremumBound
+module
+
+public import OSReconstruction.Mathlib429Compat
+public import OSReconstruction.SCV.HeadBlockIntegral
+public import OSReconstruction.SCV.SchwartzFiniteSeminormBound
+public import OSReconstruction.Wightman.Reconstruction.SchwartzPartialEval
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIBlockRadialPartialKernelFullSource
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIBlockRadialSupremumBound
+
+@[expose] public section
 
 /-!
 # Uniform seminorm bounds for the OS-II block partial kernel
@@ -27,45 +31,45 @@ open scoped Classical
 
 namespace OSReconstruction
 
-private theorem osiiStep4_sixteen_pos : (0 : Real) < 16 := by
+theorem osiiStep4_sixteen_pos : (0 : Real) < 16 := by
   norm_num
 
-private abbrev OSIIStep4PartialKernelFlatBase (q k : Nat) :=
+abbrev OSIIStep4PartialKernelFlatBase (q k : Nat) :=
   Fin ((k * q) + ((k * q) + (k * q))) → Real
 
-private def osiiStep4PartialKernelFlatX (q k : Nat)
+def osiiStep4PartialKernelFlatX (q k : Nat)
     (u : OSIIStep4PartialKernelFlatBase q k) : Fin (k * q) → Real :=
   splitFirst (k * q) ((k * q) + (k * q)) u
 
-private def osiiStep4PartialKernelFlatY (q k : Nat)
+def osiiStep4PartialKernelFlatY (q k : Nat)
     (u : OSIIStep4PartialKernelFlatBase q k) : Fin (k * q) → Real :=
   splitFirst (k * q) (k * q)
     (splitLast (k * q) ((k * q) + (k * q)) u)
 
-private def osiiStep4PartialKernelFlatY' (q k : Nat)
+def osiiStep4PartialKernelFlatY' (q k : Nat)
     (u : OSIIStep4PartialKernelFlatBase q k) : Fin (k * q) → Real :=
   splitLast (k * q) (k * q)
     (splitLast (k * q) ((k * q) + (k * q)) u)
 
 @[simp]
-private theorem osiiStep4PartialKernelFlatX_append
+theorem osiiStep4PartialKernelFlatX_append
     (q k : Nat) (x y y' : Fin (k * q) → Real) :
     osiiStep4PartialKernelFlatX q k (Fin.append x (Fin.append y y')) = x := by
   simp [osiiStep4PartialKernelFlatX]
 
 @[simp]
-private theorem osiiStep4PartialKernelFlatY_append
+theorem osiiStep4PartialKernelFlatY_append
     (q k : Nat) (x y y' : Fin (k * q) → Real) :
     osiiStep4PartialKernelFlatY q k (Fin.append x (Fin.append y y')) = y := by
   simp [osiiStep4PartialKernelFlatY]
 
 @[simp]
-private theorem osiiStep4PartialKernelFlatY'_append
+theorem osiiStep4PartialKernelFlatY'_append
     (q k : Nat) (x y y' : Fin (k * q) → Real) :
     osiiStep4PartialKernelFlatY' q k (Fin.append x (Fin.append y y')) = y' := by
   simp [osiiStep4PartialKernelFlatY']
 
-private theorem osiiStep4_finAppendCLE_eq_append
+theorem osiiStep4_finAppendCLE_eq_append
     {m n : Nat} (p : (Fin m → Real) × (Fin n → Real)) :
     SCV.finAppendCLE m n p = Fin.append p.1 p.2 := by
   ext i
@@ -119,7 +123,7 @@ theorem osiiStep4ComplexOfRealImag_imag_norm_le
 
 /-- The joint real integrand whose fiber integral is the block partial
 convolution kernel.  The flat base stores `(x,y,y')`, in that order. -/
-private def osiiStep4PartialConvolutionKernelJointIntegrand
+def osiiStep4PartialConvolutionKernelJointIntegrand
     (q k : Nat) (rho : Real)
     (p : OSIIStep4PartialKernelFlatBase q k × (Fin (k * q) → Real)) :
     Complex :=
@@ -132,7 +136,7 @@ private def osiiStep4PartialConvolutionKernelJointIntegrand
       (osiiStep4ComplexOfRealImag p.2
         (osiiStep4PartialKernelFlatY' q k p.1)) : Complex)
 
-private theorem osiiStep4PartialConvolutionKernelJointIntegrand_contDiff
+theorem osiiStep4PartialConvolutionKernelJointIntegrand_contDiff
     (q k : Nat) {rho : Real} (hrho : 0 < rho) :
     ContDiff Real (⊤ : ℕ∞)
       (osiiStep4PartialConvolutionKernelJointIntegrand q k rho) := by
@@ -185,7 +189,7 @@ private theorem osiiStep4PartialConvolutionKernelJointIntegrand_contDiff
   exact (Complex.ofRealCLM.contDiff.comp hleft).mul
     (Complex.ofRealCLM.contDiff.comp hright)
 
-private theorem
+theorem
     osiiStep4PartialConvolutionKernelJointIntegrand_support_subset_closedBall
     (q k : Nat) {rho : Real} (hrho : 0 < rho) :
     Function.support
@@ -260,7 +264,7 @@ private theorem
   · exact hu.trans (by nlinarith)
   · exact ht.trans (by nlinarith)
 
-private theorem
+theorem
     osiiStep4PartialConvolutionKernelJointIntegrand_hasCompactSupport
     (q k : Nat) {rho : Real} (hrho : 0 < rho) :
     HasCompactSupport
@@ -273,7 +277,7 @@ private theorem
       q k hrho
 
 /-- The compactly supported joint integrand as a Schwartz test. -/
-private noncomputable def osiiStep4PartialConvolutionKernelJointIntegrandSchwartz
+noncomputable def osiiStep4PartialConvolutionKernelJointIntegrandSchwartz
     (q k : Nat) {rho : Real} (hrho : 0 < rho) :
     SchwartzMap
       (OSIIStep4PartialKernelFlatBase q k × (Fin (k * q) → Real)) Complex :=
@@ -282,7 +286,7 @@ private noncomputable def osiiStep4PartialConvolutionKernelJointIntegrandSchwart
     (osiiStep4PartialConvolutionKernelJointIntegrand_contDiff q k hrho)
 
 @[simp]
-private theorem osiiStep4PartialConvolutionKernelJointIntegrandSchwartz_apply
+theorem osiiStep4PartialConvolutionKernelJointIntegrandSchwartz_apply
     (q k : Nat) {rho : Real} (hrho : 0 < rho)
     (p : OSIIStep4PartialKernelFlatBase q k × (Fin (k * q) → Real)) :
     osiiStep4PartialConvolutionKernelJointIntegrandSchwartz q k hrho p =
@@ -588,7 +592,7 @@ theorem osiiStep4PartialConvolutionKernelComplexSchwartz_seminorm_scale
               ((16 / rho) • y) ((16 / rho) • y')) := by
       rfl
 
-private theorem
+theorem
     osiiStep4PartialConvolutionClosedImaginaryBox_scale_to_reference_local
     (q k : Nat) {rho : Real} (hrho : 0 < rho)
     {p : (Fin (k * q) → Real) × (Fin (k * q) → Real)}

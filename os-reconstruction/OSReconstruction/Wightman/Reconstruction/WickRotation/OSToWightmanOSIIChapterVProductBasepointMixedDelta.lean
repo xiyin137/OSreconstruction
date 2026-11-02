@@ -1,4 +1,8 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVProductBasepointMixedMovingSlice
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVProductBasepointMixedMovingSlice
+
+@[expose] public section
 
 /-!
 # Product-basepoint mixed delta representation
@@ -23,7 +27,7 @@ namespace OSReconstruction
 namespace OSIIChapterV
 
 /-- Regroup two head/tail pairs into one head pair and one tail pair. -/
-private def pairHeadsTailsMeasurableEquiv (k : ℕ) :
+def pairHeadsTailsMeasurableEquiv (k : ℕ) :
     ((ℝ × (Fin k → ℝ)) × (ℝ × (Fin k → ℝ))) ≃ᵐ
       ((ℝ × ℝ) × ((Fin k → ℝ) × (Fin k → ℝ))) :=
   (MeasurableEquiv.prodAssoc
@@ -45,7 +49,7 @@ private def pairHeadsTailsMeasurableEquiv (k : ℕ) :
         (α := ℝ) (β := ℝ)
         (γ := (Fin k → ℝ) × (Fin k → ℝ))).symm)
 
-@[simp] private theorem pairHeadsTailsMeasurableEquiv_symm_apply
+@[simp] theorem pairHeadsTailsMeasurableEquiv_symm_apply
     (k : ℕ) (heads : ℝ × ℝ)
     (left right : Fin k → ℝ) :
     (pairHeadsTailsMeasurableEquiv k).symm
@@ -53,7 +57,7 @@ private def pairHeadsTailsMeasurableEquiv (k : ℕ) :
       ((heads.1, left), (heads.2, right)) :=
   rfl
 
-@[simp] private theorem splitTwoHeadsMeasurableEquiv_symm_apply
+@[simp] theorem splitTwoHeadsMeasurableEquiv_symm_apply
     (k : ℕ) (heads : ℝ × ℝ)
     (left right : Fin k → ℝ) :
     (MeasurableEquiv.prodCongr
@@ -85,7 +89,7 @@ private def pairHeadsTailsMeasurableEquiv (k : ℕ) :
       rfl
 
 /-- Split both full blocks into heads and tails, then append the two tails. -/
-private def osiiMixedHeadTailMeasurableEquiv (k : ℕ) :
+def osiiMixedHeadTailMeasurableEquiv (k : ℕ) :
     (Fin ((k + 1) + (k + 1)) → ℝ) ≃ᵐ
       ((ℝ × ℝ) × (Fin (k + k) → ℝ)) :=
   (MeasurableEquiv.finAddProd (k + 1) (k + 1) ℝ).trans
@@ -99,7 +103,7 @@ private def osiiMixedHeadTailMeasurableEquiv (k : ℕ) :
           (MeasurableEquiv.refl (ℝ × ℝ))
           (MeasurableEquiv.finAddProd k k ℝ).symm)))
 
-@[simp] private theorem finAddProd_apply_eq_split
+@[simp] theorem finAddProd_apply_eq_split
     (k : ℕ) (tails : Fin (k + k) → ℝ) :
     MeasurableEquiv.finAddProd k k ℝ tails =
       (splitFirst k k tails, splitLast k k tails) := by
@@ -114,7 +118,7 @@ private def osiiMixedHeadTailMeasurableEquiv (k : ℕ) :
     rw [Fin.append_right]
     rfl
 
-private theorem osiiMixedHeadTailMeasurableEquiv_symm_apply
+theorem osiiMixedHeadTailMeasurableEquiv_symm_apply
     (k : ℕ)
     (heads : ℝ × ℝ)
     (tails : Fin (k + k) → ℝ) :
@@ -141,7 +145,7 @@ private theorem osiiMixedHeadTailMeasurableEquiv_symm_apply
   rw [MeasurableEquiv.finAddProd_symm_apply]
   rfl
 
-private theorem pairHeadsTailsMeasurableEquiv_measurePreserving
+theorem pairHeadsTailsMeasurableEquiv_measurePreserving
     (k : ℕ) :
     MeasurePreserving
       (pairHeadsTailsMeasurableEquiv k)
@@ -251,7 +255,7 @@ private theorem pairHeadsTailsMeasurableEquiv_measurePreserving
   simpa [pairHeadsTailsMeasurableEquiv] using
     hAssoc₁.trans (hProd.trans hAssoc₄)
 
-private theorem osiiMixedHeadTailMeasurableEquiv_measurePreserving
+theorem osiiMixedHeadTailMeasurableEquiv_measurePreserving
     (k : ℕ) :
     MeasurePreserving
       (osiiMixedHeadTailMeasurableEquiv k)

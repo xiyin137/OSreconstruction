@@ -5,51 +5,20 @@ Copyright (c) 2025 ModularPhysics Contributors. All rights reserved.
 Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
-import Mathlib.Analysis.Distribution.SchwartzSpace.Deriv
-import Mathlib.Analysis.Distribution.TemperedDistribution
-import Mathlib.Analysis.Calculus.MeanValue
-import Mathlib.Analysis.Calculus.Taylor
-import Mathlib.Analysis.InnerProductSpace.GramSchmidtOrtho
-import Mathlib.MeasureTheory.Constructions.Pi
-import Mathlib.Topology.UniformSpace.Completion
-import OSReconstruction.SCV.DistributionalUniqueness
-import OSReconstruction.Specification.Wightman
-import OSReconstruction.Wightman.SchwartzTensorProduct
+module
 
+public import Mathlib.Analysis.Distribution.SchwartzSpace.Deriv
+public import Mathlib.Analysis.Distribution.TemperedDistribution
+public import Mathlib.Analysis.Calculus.MeanValue
+public import Mathlib.Analysis.Calculus.Taylor
+public import Mathlib.Analysis.InnerProductSpace.GramSchmidtOrtho
+public import Mathlib.MeasureTheory.Constructions.Pi
+public import Mathlib.Topology.UniformSpace.Completion
+public import OSReconstruction.SCV.DistributionalUniqueness
+public import OSReconstruction.Specification.Wightman
+public import OSReconstruction.Wightman.SchwartzTensorProduct
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 set_option backward.isDefEq.respectTransparency false
 
@@ -413,7 +382,7 @@ theorem W_eq_of_cast {d : ℕ}
 
     Both sides reduce to conj(f(A)) * g(B) (after mul_comm), where A, B are
     reindexings of x. The coordinate arithmetic is verified by omega. -/
-private theorem conjTP_eq_borchersConj_conjTP {d n m : ℕ}
+theorem conjTP_eq_borchersConj_conjTP {d n m : ℕ}
     (f : SchwartzNPoint d n) (g : SchwartzNPoint d m)
     (x : NPointDomain d (n + m)) :
     (f.conjTensorProduct g) x =
@@ -636,7 +605,7 @@ def vacuumSequence : BorchersSequence d where
     The (n+1)-th component is the tensor product of f (as a 1-point function) with
     the n-th component of F, giving an (n+1)-point test function:
       (φ(f)F)_{n+1}(x₁,...,x_{n+1}) = f(x₁) · Fₙ(x₂,...,x_{n+1}) -/
-private def fieldOperatorFuncs (f : SchwartzSpacetime d)
+def fieldOperatorFuncs (f : SchwartzSpacetime d)
     (g : (n : ℕ) → SchwartzNPoint d n) : (n : ℕ) → SchwartzNPoint d n
   | 0 => 0
   | k + 1 => SchwartzMap.prependField f (g k)
@@ -802,12 +771,12 @@ theorem VanishesToInfiniteOrderOnCoincidence_of_tsupport_disjoint
   exact hx_not_support (by simpa [Function.mem_support, hx_nonzero])
 
 omit [NeZero d] in
-private def coincidenceCollapse {n : ℕ} (i j : Fin n) (x : NPointDomain d n) :
+def coincidenceCollapse {n : ℕ} (i j : Fin n) (x : NPointDomain d n) :
     NPointDomain d n :=
   fun k => if k = i ∨ k = j then midpoint ℝ (x i) (x j) else x k
 
 omit [NeZero d] in
-private theorem coincidenceCollapse_mem_CoincidenceLocus {n : ℕ}
+theorem coincidenceCollapse_mem_CoincidenceLocus {n : ℕ}
     (x : NPointDomain d n) (i j : Fin n) (hij : i ≠ j) :
     coincidenceCollapse (d := d) i j x ∈ CoincidenceLocus d n := by
   refine ⟨i, j, hij, ?_⟩
@@ -815,7 +784,7 @@ private theorem coincidenceCollapse_mem_CoincidenceLocus {n : ℕ}
   simp [coincidenceCollapse, hij]
 
 omit [NeZero d] in
-private theorem norm_sub_coincidenceCollapse_le_pairDifference {n : ℕ}
+theorem norm_sub_coincidenceCollapse_le_pairDifference {n : ℕ}
     (x : NPointDomain d n) (i j : Fin n) (hij : i ≠ j) :
     ‖x - coincidenceCollapse (d := d) i j x‖ ≤ ‖x i - x j‖ := by
   change ↑(Finset.univ.sup fun k => ‖(x - coincidenceCollapse (d := d) i j x) k‖₊) ≤ ‖x i - x j‖
@@ -859,12 +828,12 @@ private theorem norm_sub_coincidenceCollapse_le_pairDifference {n : ℕ}
   exact_mod_cast hdistNN
 
 omit [NeZero d] in
-private def coincidenceCopy {n : ℕ} (src dst : Fin n) (x : NPointDomain d n) :
+def coincidenceCopy {n : ℕ} (src dst : Fin n) (x : NPointDomain d n) :
     NPointDomain d n :=
   fun k => if k = dst then x src else x k
 
 omit [NeZero d] in
-private theorem coincidenceCopy_mem_CoincidenceLocus {n : ℕ}
+theorem coincidenceCopy_mem_CoincidenceLocus {n : ℕ}
     (x : NPointDomain d n) (src dst : Fin n) (hsrcdst : src ≠ dst) :
     coincidenceCopy (d := d) src dst x ∈ CoincidenceLocus d n := by
   refine ⟨src, dst, hsrcdst, ?_⟩
@@ -872,7 +841,7 @@ private theorem coincidenceCopy_mem_CoincidenceLocus {n : ℕ}
   simp [coincidenceCopy, hsrcdst]
 
 omit [NeZero d] in
-private theorem norm_sub_coincidenceCopy_eq_pairDifference {n : ℕ}
+theorem norm_sub_coincidenceCopy_eq_pairDifference {n : ℕ}
     (x : NPointDomain d n) (src dst : Fin n) :
     ‖x - coincidenceCopy (d := d) src dst x‖ = ‖x src - x dst‖ := by
   change ↑(Finset.univ.sup
@@ -912,7 +881,7 @@ private theorem norm_sub_coincidenceCopy_eq_pairDifference {n : ℕ}
   exact congrArg (fun r : NNReal => (r : ℝ)) hEqNN
 
 omit [NeZero d] in
-private theorem norm_segment_coincidenceCopy_eq_norm {n : ℕ}
+theorem norm_segment_coincidenceCopy_eq_norm {n : ℕ}
     (x : NPointDomain d n) (src dst : Fin n) (hsrcdst : src ≠ dst)
     (hmax : ‖x dst‖ ≤ ‖x src‖) (t : ℝ) (ht : t ∈ Set.Icc (0 : ℝ) 1) :
     ‖coincidenceCopy (d := d) src dst x + t •
@@ -1535,7 +1504,7 @@ theorem VanishesToInfiniteOrderOnCoincidence.smul {d n : ℕ}
   change c • f ∈ zeroDiagonalSubmodule d n
   exact (zeroDiagonalSubmodule d n).smul_mem c hf
 
-private theorem mem_CoincidenceLocus_precomp_equiv {d k l : ℕ}
+theorem mem_CoincidenceLocus_precomp_equiv {d k l : ℕ}
     (σ : Fin k ≃ Fin l) {x : NPointDomain d l}
     (hx : x ∈ CoincidenceLocus d l) :
     (fun i => x (σ i)) ∈ CoincidenceLocus d k := by
@@ -1793,7 +1762,7 @@ theorem timeReflection_timeReflection (x : SpacetimeDim d) :
   funext j; simp only [timeReflection]; by_cases hj : j = 0 <;> simp [hj]
 
 /-- Time reflection preserves the NNNorm of spacetime vectors. -/
-private theorem timeReflection_nnnorm_eq (y : SpacetimeDim d) :
+theorem timeReflection_nnnorm_eq (y : SpacetimeDim d) :
     ‖timeReflection d y‖₊ = ‖y‖₊ := by
   simp only [Pi.nnnorm_def, timeReflection]
   apply Finset.sup_congr rfl; intro j _
@@ -1802,7 +1771,7 @@ private theorem timeReflection_nnnorm_eq (y : SpacetimeDim d) :
   · simp [if_neg hj]
 
 /-- Time reflection preserves the norm of n-point configurations. -/
-private theorem timeReflectionN_norm_eq (x : NPointDomain d n) :
+theorem timeReflectionN_norm_eq (x : NPointDomain d n) :
     ‖timeReflectionN d x‖ = ‖x‖ := by
   simp only [Pi.norm_def, timeReflectionN]
   congr 1
@@ -1810,7 +1779,7 @@ private theorem timeReflectionN_norm_eq (x : NPointDomain d n) :
   exact_mod_cast timeReflection_nnnorm_eq d (x i)
 
 /-- Time reflection on n-point domains is smooth (it is linear). -/
-private theorem contDiff_timeReflectionN {m : WithTop ℕ∞} :
+theorem contDiff_timeReflectionN {m : WithTop ℕ∞} :
     ContDiff ℝ m (timeReflectionN (n := n) d) := by
   apply contDiff_pi.mpr; intro i
   apply contDiff_pi.mpr; intro j
@@ -1930,7 +1899,7 @@ def SchwartzNPoint.osConjTensorProduct {m k : ℕ} (f : SchwartzNPoint d m)
   f.osConj.tensorProduct g
 
 omit [NeZero d] in
-private theorem tsupport_precomp_subset {X Y α : Type*}
+theorem tsupport_precomp_subset_Core {X Y α : Type*}
     [TopologicalSpace X] [TopologicalSpace Y] [Zero α]
     {f : Y → α} {h : X → Y} (hh : Continuous h) :
     tsupport (fun x => f (h x)) ⊆ h ⁻¹' tsupport f := by
@@ -1939,7 +1908,7 @@ private theorem tsupport_precomp_subset {X Y α : Type*}
   exact subset_closure (by simpa [Function.mem_support] using hx)
 
 omit [NeZero d] in
-private theorem continuous_timeReflectionN {n : ℕ} :
+theorem continuous_timeReflectionN {n : ℕ} :
     Continuous (timeReflectionN d (n := n)) := by
   apply continuous_pi
   intro i
@@ -1957,7 +1926,7 @@ private theorem continuous_timeReflectionN {n : ℕ} :
         (continuous_apply i : Continuous fun x : NPointDomain d n => x i)
 
 omit [NeZero d] in
-private theorem continuous_splitFirst {n m : ℕ} :
+theorem continuous_splitFirst {n m : ℕ} :
     Continuous (splitFirst n m : NPointDomain d (n + m) → NPointDomain d n) := by
   apply continuous_pi
   intro i
@@ -1966,7 +1935,7 @@ private theorem continuous_splitFirst {n m : ℕ} :
       Continuous fun x : NPointDomain d (n + m) => x (Fin.castAdd m i))
 
 omit [NeZero d] in
-private theorem continuous_splitLast {n m : ℕ} :
+theorem continuous_splitLast {n m : ℕ} :
     Continuous (splitLast n m : NPointDomain d (n + m) → NPointDomain d m) := by
   apply continuous_pi
   intro i
@@ -1992,7 +1961,7 @@ theorem SchwartzMap.prependField_tsupport_subset_orderedPositiveTimeRegion_of_ba
       tsupport (fun x : NPointDomain d (n + 1) => f (x 0)) ⊆ A := by
     intro x hx
     exact hf <|
-      tsupport_precomp_subset
+      tsupport_precomp_subset_Core
         (f := (f : SpacetimeDim d → ℂ))
         (h := fun y : NPointDomain d (n + 1) => y 0)
         (by simpa using (continuous_apply (0 : Fin (n + 1)))) hx
@@ -2000,7 +1969,7 @@ theorem SchwartzMap.prependField_tsupport_subset_orderedPositiveTimeRegion_of_ba
       tsupport (fun x : NPointDomain d (n + 1) => g (fun i : Fin n => x i.succ)) ⊆ B := by
     intro x hx
     exact hg <|
-      tsupport_precomp_subset
+      tsupport_precomp_subset_Core
         (f := (g : NPointDomain d n → ℂ))
         (h := fun y : NPointDomain d (n + 1) => fun i : Fin n => y i.succ)
         (by
@@ -2092,7 +2061,7 @@ theorem VanishesToInfiniteOrderOnCoincidence_osConjTensorProduct_of_tsupport_sub
     intro x hx i
     have hxpre :
         timeReflectionN d x ∈ tsupport (f : NPointDomain d n → ℂ) := by
-      exact tsupport_precomp_subset (f := (f : NPointDomain d n → ℂ))
+      exact tsupport_precomp_subset_Core (f := (f : NPointDomain d n → ℂ))
         (h := timeReflectionN d) (continuous_timeReflectionN (d := d))
         ((tsupport_comp_subset (g := starRingEnd ℂ) (map_zero _) (fun y : NPointDomain d n =>
           f (timeReflectionN d y))) hx)
@@ -2107,13 +2076,13 @@ theorem VanishesToInfiniteOrderOnCoincidence_osConjTensorProduct_of_tsupport_sub
       tsupport (fun x : NPointDomain d (n + m) => f.osConj (splitFirst n m x)) ⊆ A := by
     intro x hx
     exact hosConj <|
-      tsupport_precomp_subset (f := ((f.osConj : SchwartzNPoint d n) : NPointDomain d n → ℂ))
+      tsupport_precomp_subset_Core (f := ((f.osConj : SchwartzNPoint d n) : NPointDomain d n → ℂ))
         (h := splitFirst n m) (continuous_splitFirst (d := d)) hx
   have hB :
       tsupport (fun x : NPointDomain d (n + m) => g (splitLast n m x)) ⊆ B := by
     intro x hx
     exact hg <|
-      tsupport_precomp_subset (f := (g : NPointDomain d m → ℂ))
+      tsupport_precomp_subset_Core (f := (g : NPointDomain d m → ℂ))
         (h := splitLast n m) (continuous_splitLast (d := d)) hx
   have hsupport :
       tsupport (((f.osConjTensorProduct g : SchwartzNPoint d (n + m)) :

@@ -1,8 +1,12 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.SCV.HasFDerivAtProd
-import OSReconstruction.Wightman.Reconstruction.SchwartzPartialEval
-import Mathlib.Analysis.Distribution.SchwartzSpace.Fourier
+module
+
+public import OSReconstruction.SCV.HasFDerivAtProd
+public import OSReconstruction.Wightman.Reconstruction.SchwartzPartialEval
+public import Mathlib.Analysis.Distribution.SchwartzSpace.Fourier
+
+@[expose] public section
 
 noncomputable section
 
@@ -137,7 +141,7 @@ omit [NeZero d] in
   simp [nPointSpatialTimeSchwartzRealProd, nPointSpatialTimeSchwartzCLE_apply]
 
 omit [NeZero d] in
-private noncomputable def complexPhaseRealProdCLM
+noncomputable def complexPhaseRealProdCLM
     (z : ℂ) :
     (ℝ × ℝ) →L[ℝ] (ℝ × ℝ) :=
   (Complex.equivRealProdCLM.toContinuousLinearMap).comp
@@ -151,7 +155,7 @@ private noncomputable def complexPhaseRealProdCLM
   simp [complexPhaseRealProdCLM, ContinuousLinearMap.mulLeftRight_apply, mul_assoc]
 
 omit [NeZero d] in
-private noncomputable def partialFourierSpatial_timeDerivativeRealProd
+noncomputable def partialFourierSpatial_timeDerivativeRealProd
     (f : SchwartzNPoint d n)
     (ξ η : EuclideanSpace ℝ (Fin n × Fin d)) (t : Fin n → ℝ) :
     (Fin n → ℝ) →L[ℝ] (ℝ × ℝ) :=
@@ -166,7 +170,7 @@ private noncomputable def partialFourierSpatial_timeDerivativeRealProd
 /-- Partial evaluation in the second variable commutes with multiplying a
 product Schwartz function by a temperate factor depending only on the first
 variable. This is the exact algebraic seam needed in branch `3b`. -/
-private theorem partialEval₂_smulLeftCLM_fst
+theorem partialEval₂_smulLeftCLM_fst
     {Eη Et : Type*}
     [NormedAddCommGroup Eη] [NormedSpace ℝ Eη]
     [NormedAddCommGroup Et] [NormedSpace ℝ Et]
@@ -189,7 +193,7 @@ private theorem partialEval₂_smulLeftCLM_fst
 product Schwartz function by a temperate factor depending only on that second
 variable. This is the exact algebra seam needed for time-coordinate weights in
 branch `3b`. -/
-private theorem partialEval₂_smulLeftCLM_snd
+theorem partialEval₂_smulLeftCLM_snd
     {Eη Et : Type*}
     [NormedAddCommGroup Eη] [NormedSpace ℝ Eη]
     [NormedAddCommGroup Et] [NormedSpace ℝ Et]
@@ -700,7 +704,7 @@ theorem partialFourierSpatial_fun_eq_integral_realProd
       𝐞 (-(inner ℝ η p.2)) • nPointTimeSpatialSchwartzCLE (d := d) (n := n) f (p.1, η))).symm
 
 omit [NeZero d] in
-private theorem hasFDerivAt_spatialTimeSlice_time_realProd
+theorem hasFDerivAt_spatialTimeSlice_time_realProd
     (f : SchwartzNPoint d n)
     (η : EuclideanSpace ℝ (Fin n × Fin d)) (t : Fin n → ℝ) :
     HasFDerivAt
@@ -739,7 +743,7 @@ theorem hasFDerivAt_partialFourierSpatial_integrand_time_realProd
   exact hcomp
 
 omit [NeZero d] in
-private noncomputable def partialFourierSpatial_timeDominatingBound
+noncomputable def partialFourierSpatial_timeDominatingBound
     (f : SchwartzNPoint d n) :
     EuclideanSpace ℝ (Fin n × Fin d) → ℝ := by
   let phaseConst : ℝ :=
@@ -755,7 +759,7 @@ private noncomputable def partialFourierSpatial_timeDominatingBound
 
 omit [NeZero d] in
 set_option maxHeartbeats 400000 in
-private theorem norm_partialFourierSpatial_integrand_time_realProd_fderiv_le
+theorem norm_partialFourierSpatial_integrand_time_realProd_fderiv_le
     (f : SchwartzNPoint d n)
     (ξ η : EuclideanSpace ℝ (Fin n × Fin d)) (t : Fin n → ℝ) :
     ‖partialFourierSpatial_timeDerivativeRealProd d n f ξ η t‖ ≤
@@ -865,7 +869,7 @@ private theorem norm_partialFourierSpatial_integrand_time_realProd_fderiv_le
 
 omit [NeZero d] in
 set_option maxHeartbeats 400000 in
-private theorem integrable_partialFourierSpatial_timeDominatingBound
+theorem integrable_partialFourierSpatial_timeDominatingBound
     (f : SchwartzNPoint d n) :
     MeasureTheory.Integrable
       (partialFourierSpatial_timeDominatingBound d n f)
@@ -1372,7 +1376,7 @@ theorem contDiff_partialFourierSpatial_fun_time
   intro k
   exact contDiff_nat_partialFourierSpatial_fun_time (d := d) (n := n) f ξ k
 
-private noncomputable def partialFourierSpatial_jointDerivativeCandidate
+noncomputable def partialFourierSpatial_jointDerivativeCandidate
     (f : SchwartzNPoint d n)
     (p : (Fin n → ℝ) × EuclideanSpace ℝ (Fin n × Fin d)) :
     ((Fin n → ℝ) × EuclideanSpace ℝ (Fin n × Fin d)) →L[ℝ] ℂ :=

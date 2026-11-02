@@ -1,6 +1,10 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIBoostFrequency
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVILorentzSupport
-import Mathlib.Analysis.SpecialFunctions.Artanh
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIBoostFrequency
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVILorentzSupport
+public import Mathlib.Analysis.SpecialFunctions.Artanh
+
+@[expose] public section
 
 /-!
 # Saturating temporal support by actual finite boosts
@@ -92,14 +96,14 @@ theorem osiiFlatBoostWord_pairing_eq
 
 variable [NeZero d]
 
-private theorem planarBoost_mem_forwardCone (a : Fin d) (t : Real)
+theorem planarBoost_mem_forwardCone (a : Fin d) (t : Real)
     {y : Fin (d + 1) -> Real} (hy : InOpenForwardCone d y) :
     InOpenForwardCone d (osiiPlanarBoostCLE d a t y) := by
   exact (inOpenForwardCone_iff _).mp
     (BHW.real_lorentz_preserves_forwardCone (LorentzLieGroup.boostElement d a t) y
       ((inOpenForwardCone_iff y).mpr hy))
 
-private theorem exists_planarBoost_zero_axis (a : Fin d)
+theorem exists_planarBoost_zero_axis (a : Fin d)
     {y : Fin (d + 1) -> Real} (hy : InOpenForwardCone d y) :
     ∃ t : Real, osiiPlanarBoostCLE d a t y a.succ = 0 := by
   have hsum : (y a.succ) ^ 2 ≤ ∑ b : Fin d, (y b.succ) ^ 2 :=
@@ -126,7 +130,7 @@ private theorem exists_planarBoost_zero_axis (a : Fin d)
   rw [osiiPlanarBoostCLE_axis]
   linear_combination heq
 
-private theorem exists_boostWord_zero_on (s : Finset (Fin d))
+theorem exists_boostWord_zero_on (s : Finset (Fin d))
     {y : Fin (d + 1) -> Real} (hy : InOpenForwardCone d y) :
     ∃ w : List (Fin d × Real), InOpenForwardCone d (osiiBoostWordCLE d w y) ∧
       ∀ a ∈ s, osiiBoostWordCLE d w y a.succ = 0 := by

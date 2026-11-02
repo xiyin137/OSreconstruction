@@ -1,13 +1,17 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import Init
-import OSReconstruction.SCV.ConeDefs
-import OSReconstruction.SCV.DistributionalUniqueness
-import OSReconstruction.SCV.LaplaceSchwartz
-import OSReconstruction.SCV.PaleyWienerSchwartz
-import OSReconstruction.Wightman.Reconstruction.ForwardTubeDistributions
-import OSReconstruction.Wightman.SchwartzTensorProduct
-import Mathlib.Analysis.Distribution.SchwartzSpace.Deriv
+module
+
+public import Init
+public import OSReconstruction.SCV.ConeDefs
+public import OSReconstruction.SCV.DistributionalUniqueness
+public import OSReconstruction.SCV.LaplaceSchwartz
+public import OSReconstruction.SCV.PaleyWienerSchwartz
+public import OSReconstruction.Wightman.Reconstruction.ForwardTubeDistributions
+public import OSReconstruction.Wightman.SchwartzTensorProduct
+public import Mathlib.Analysis.Distribution.SchwartzSpace.Deriv
+
+@[expose] public section
 
 /-!
 # Fourier-Laplace representation from supported boundary values

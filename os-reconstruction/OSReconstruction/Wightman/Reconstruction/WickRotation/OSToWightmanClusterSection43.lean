@@ -1,4 +1,8 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceTransformCarrier
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceTransformCarrier
+
+@[expose] public section
 
 /-!
 # Section 4.3 Input for Wightman Clustering
@@ -18,7 +22,7 @@ namespace OSReconstruction
 
 variable {d : ℕ} [NeZero d]
 
-private def section43TranslateNPointDomainHomeomorph {n : ℕ}
+def section43TranslateNPointDomainHomeomorph {n : ℕ}
     (a : SpacetimeDim d) :
     NPointDomain d n ≃ₜ NPointDomain d n where
   toFun := fun x i => x i - a
@@ -51,7 +55,7 @@ theorem translateSchwartzNPoint_hasCompactSupport
 
 /-- Spatial translation on a Section 4.3 positive-energy representative,
 written in cumulative-momentum coordinates. -/
-private noncomputable def section43SpatialTranslationPhaseCLM
+noncomputable def section43SpatialTranslationPhaseCLM
     (d n : ℕ) [NeZero d] (a : Fin d → ℝ) :
     SchwartzNPoint d n →L[ℂ] SchwartzNPoint d n :=
   (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
@@ -60,7 +64,7 @@ private noncomputable def section43SpatialTranslationPhaseCLM
       (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
         (section43CumulativeTailMomentumCLE d n)))
 
-private theorem flatten_translateSchwartzNPoint_spatial
+theorem flatten_translateSchwartzNPoint_spatial
     (n : ℕ) (a : Fin d → ℝ) (ψ : SchwartzNPoint d n) :
     flattenSchwartzNPoint (d := d)
         (translateSchwartzNPoint (d := d) (Fin.cons 0 a) ψ) =
@@ -76,7 +80,7 @@ private theorem flatten_translateSchwartzNPoint_spatial
 
 /-- The deterministic Section 4.3 frequency representative intertwines
 spatial translation with the total-momentum phase. -/
-private theorem section43FrequencyRepresentative_translate_spatial
+theorem section43FrequencyRepresentative_translate_spatial
     (n : ℕ) (a : Fin d → ℝ) (ψ : SchwartzNPoint d n) :
     section43FrequencyRepresentative d n
         (translateSchwartzNPoint (d := d) (Fin.cons 0 a) ψ) =
@@ -101,20 +105,20 @@ private theorem section43FrequencyRepresentative_translate_spatial
 
 /-- A diagonal spatial translation becomes a translation in only the first
 spatial difference coordinate. -/
-private noncomputable def section43FirstSpatialDifference
+noncomputable def section43FirstSpatialDifference
     (n : ℕ) (hn : 0 < n) (a : Fin d → ℝ) :
     EuclideanSpace ℝ (Fin n × Fin d) :=
   (EuclideanSpace.equiv (Fin n × Fin d) ℝ).symm
     (fun p => if p.1 = (⟨0, hn⟩ : Fin n) then a p.2 else 0)
 
 omit [NeZero d] in
-@[simp] private theorem section43FirstSpatialDifference_apply
+@[simp] theorem section43FirstSpatialDifference_apply
     (n : ℕ) (hn : 0 < n) (a : Fin d → ℝ) (p : Fin n × Fin d) :
     section43FirstSpatialDifference (d := d) n hn a p =
       if p.1 = (⟨0, hn⟩ : Fin n) then a p.2 else 0 := by
   simp [section43FirstSpatialDifference]
 
-private theorem section43DiffPullback_translate_spatial_apply
+theorem section43DiffPullback_translate_spatial_apply
     (n : ℕ) (hn : 0 < n) (a : Fin d → ℝ)
     (g : SchwartzNPoint d n)
     (hg_ord : tsupport (g : NPointDomain d n → ℂ) ⊆
@@ -146,7 +150,7 @@ private theorem section43DiffPullback_translate_spatial_apply
   · simp [nPointTimeSpatialCLE, section43FirstSpatialDifference_apply,
       Finset.sum_sub_distrib]
 
-private theorem partialFourierSpatial_diffPullback_translate_spatial
+theorem partialFourierSpatial_diffPullback_translate_spatial
     (n : ℕ) (hn : 0 < n) (a : Fin d → ℝ)
     (g : SchwartzNPoint d n)
     (hg_ord : tsupport (g : NPointDomain d n → ℂ) ⊆
@@ -211,7 +215,7 @@ private theorem partialFourierSpatial_diffPullback_translate_spatial
     inner_neg_left] using hfourier
 
 omit [NeZero d] in
-private theorem sum_section43CumulativeTailMomentumCLE_symm
+theorem sum_section43CumulativeTailMomentumCLE_symm
     (n : ℕ) (hn : 0 < n) (q : NPointDomain d n) (μ : Fin (d + 1)) :
     (∑ k : Fin n,
       (q k μ -
@@ -257,7 +261,7 @@ private theorem sum_section43CumulativeTailMomentumCLE_symm
   rw [hfin]
   simp [f, hn]
 
-private theorem section43TotalMomentumFlat_cumulative_symm
+theorem section43TotalMomentumFlat_cumulative_symm
     (n : ℕ) (hn : 0 < n) (q : NPointDomain d n) (μ : Fin (d + 1)) :
     section43TotalMomentumFlat d n
         ((section43CumulativeTailMomentumCLE d n).symm q) μ =
@@ -273,7 +277,7 @@ private theorem section43TotalMomentumFlat_cumulative_symm
   · simp only [hμ, ↓reduceIte, ← Finset.mul_sum]
     rw [sum_section43CumulativeTailMomentumCLE_symm (d := d) n hn q μ]
 
-private theorem inner_section43FirstSpatialDifference_qSpatial
+theorem inner_section43FirstSpatialDifference_qSpatial
     (n : ℕ) (hn : 0 < n) (a : Fin d → ℝ) (q : NPointDomain d n) :
     inner ℝ (section43FirstSpatialDifference (d := d) n hn a)
         (section43QSpatial (d := d) (n := n) q) =
@@ -297,7 +301,7 @@ private theorem inner_section43FirstSpatialDifference_qSpatial
   · intro hzero
     exact False.elim (hzero (Finset.mem_univ _))
 
-private theorem section43SpatialFourierPhase_eq_totalMomentumPhase
+theorem section43SpatialFourierPhase_eq_totalMomentumPhase
     (n : ℕ) (hn : 0 < n) (a : Fin d → ℝ) (q : NPointDomain d n) :
     ((((𝐞 (-(inner ℝ
         (section43FirstSpatialDifference (d := d) n hn a)
@@ -323,7 +327,7 @@ private theorem section43SpatialFourierPhase_eq_totalMomentumPhase
 
 /-- Spatial translation of an ordered Euclidean source becomes the expected
 total-momentum phase on its Section 4.3 Fourier-Laplace integral. -/
-private theorem section43FourierLaplaceIntegral_translate_spatial
+theorem section43FourierLaplaceIntegral_translate_spatial
     (n : ℕ) (hn : 0 < n) (a : Fin d → ℝ)
     (g : SchwartzNPoint d n)
     (hg_ord : tsupport (g : NPointDomain d n → ℂ) ⊆
@@ -385,7 +389,7 @@ private theorem section43FourierLaplaceIntegral_translate_spatial
 
 /-- A Section 4.3 Fourier-Laplace representative is transported by diagonal
 spatial translation through the total-momentum phase operator. -/
-private theorem section43FourierLaplaceRepresentative_translate_spatial
+theorem section43FourierLaplaceRepresentative_translate_spatial
     (n : ℕ) (hn : 0 < n) (a : Fin d → ℝ)
     (g : SchwartzNPoint d n)
     (hg_ord : tsupport (g : NPointDomain d n → ℂ) ⊆

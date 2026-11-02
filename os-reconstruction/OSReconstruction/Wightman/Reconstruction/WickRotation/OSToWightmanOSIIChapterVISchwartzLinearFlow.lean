@@ -1,6 +1,10 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVISchwartzLinearAction
-import OSReconstruction.Wightman.Reconstruction.SchwartzDensity
-import Mathlib.Analysis.Calculus.MeanValue
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVISchwartzLinearAction
+public import OSReconstruction.Wightman.Reconstruction.SchwartzDensity
+public import Mathlib.Analysis.Calculus.MeanValue
+
+@[expose] public section
 
 /-!
 # Integrating a Schwartz distributional linear Ward identity
@@ -21,7 +25,7 @@ namespace OSReconstruction.OSIIChapterVI
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace Real E]
 variable [FiniteDimensional Real E]
 
-private theorem dense_compact_schwartz :
+theorem dense_compact_schwartz :
     Dense {phi : SchwartzMap E Complex | HasCompactSupport (phi : E -> Complex)} := by
   let m := Module.finrank Real E
   let c := (Module.finBasis Real E).equivFunL

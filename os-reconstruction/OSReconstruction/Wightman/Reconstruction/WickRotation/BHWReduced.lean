@@ -5,30 +5,20 @@ Copyright (c) 2025 ModularPhysics Contributors. All rights reserved.
 Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
-import OSReconstruction.Wightman.Reconstruction.Core
-import Init
-import Mathlib.Analysis.Distribution.SchwartzSpace.Deriv
-import OSReconstruction.Wightman.WightmanAxioms
-import OSReconstruction.Wightman.Reconstruction.TranslationInvariantSchwartz
-import OSReconstruction.ComplexLieGroups.DifferenceCoordinatesReduced
-import OSReconstruction.SCV.DistributionalUniqueness
-import OSReconstruction.Wightman.NuclearSpaces.ComplexSchwartz
-import Mathlib.Analysis.Calculus.BumpFunction.FiniteDimension
-import Mathlib.Analysis.Calculus.BumpFunction.InnerProduct
+module
 
+public import OSReconstruction.Wightman.Reconstruction.Core
+public import Init
+public import Mathlib.Analysis.Distribution.SchwartzSpace.Deriv
+public import OSReconstruction.Wightman.WightmanAxioms
+public import OSReconstruction.Wightman.Reconstruction.TranslationInvariantSchwartz
+public import OSReconstruction.ComplexLieGroups.DifferenceCoordinatesReduced
+public import OSReconstruction.SCV.DistributionalUniqueness
+public import OSReconstruction.Wightman.NuclearSpaces.ComplexSchwartz
+public import Mathlib.Analysis.Calculus.BumpFunction.FiniteDimension
+public import Mathlib.Analysis.Calculus.BumpFunction.InnerProduct
 
-
-
-
-
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -65,11 +55,11 @@ instance : Coe (NormalizedBasepointCutoff d) (SchwartzMap (SpacetimeDim d) ℂ) 
 
 /-- A smooth compactly supported nonneg function on spacetime with f(0) = 1,
 obtained from Mathlib's `exists_contDiff_tsupport_subset`. -/
-private noncomputable def spacetimeBump (d : ℕ) : SpacetimeDim d → ℝ :=
+noncomputable def spacetimeBump (d : ℕ) : SpacetimeDim d → ℝ :=
   (exists_contDiff_tsupport_subset (E := SpacetimeDim d) (n := (⊤ : ℕ∞))
     (s := Set.univ) (x := 0) Filter.univ_mem).choose
 
-private lemma spacetimeBump_spec (d : ℕ) :
+lemma spacetimeBump_spec (d : ℕ) :
     tsupport (spacetimeBump d) ⊆ Set.univ ∧
     HasCompactSupport (spacetimeBump d) ∧
     ContDiff ℝ (⊤ : ℕ∞) (spacetimeBump d) ∧
@@ -78,7 +68,7 @@ private lemma spacetimeBump_spec (d : ℕ) :
   (exists_contDiff_tsupport_subset (E := SpacetimeDim d) (n := (⊤ : ℕ∞))
     (s := Set.univ) (x := 0) Filter.univ_mem).choose_spec
 
-private lemma spacetimeBump_integral_pos (d : ℕ) [NeZero d] :
+lemma spacetimeBump_integral_pos (d : ℕ) [NeZero d] :
     0 < ∫ x : SpacetimeDim d, spacetimeBump d x := by
   have ⟨_, hcs, hcd, hrange, hf0⟩ := spacetimeBump_spec d
   exact hcd.continuous.integral_pos_of_hasCompactSupport_nonneg_nonzero hcs

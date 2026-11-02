@@ -1,19 +1,13 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIEquation621HeadMarginalApproxIdentity
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIEquation621ProductSpatialApproxIdentity
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIEquation621SpatialChartMeasure
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVINormalizedEnvelopeWeightedSourceSpatialGrowth
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIEquation621HeadMarginalApproxIdentity
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIEquation621ProductSpatialApproxIdentity
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIEquation621SpatialChartMeasure
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVINormalizedEnvelopeWeightedSourceSpatialGrowth
 
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -146,7 +140,7 @@ noncomputable def reflectedSelfPairSeparateSpatialTest
     (SchwartzMap.compCLMOfContinuousLinearEquiv Complex
       (reflectedSelfPairHeadTailCastCLE d r) G)
 
-private theorem integrateHeadBlock_eq_scv
+theorem integrateHeadBlock_eq_scv
     {head tail : Nat}
     (F : SchwartzMap (Fin (head + tail) -> Real) Complex) :
     integrateHeadBlock (m := head) (n := tail) F =

@@ -1,4 +1,8 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVINativeHermiticity
+module
+
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVINativeHermiticity
+
+@[expose] public section
 
 /-!
 # All-degree source pairing and native Wightman positivity
@@ -83,7 +87,7 @@ theorem strictGeneratedFullBoundary_sourcePairing
                   lgc 0 n psi phi g f hg hf hpsi hphi)
             _ = _ := hOS.symm
 
-private theorem finiteSourceQuadratic_nonneg
+theorem finiteSourceQuadratic_nonneg
     (initial : InitialGeneratedLogarithmicStageLevelData (d := d) OS)
     (lgc : OSLinearGrowthCondition d OS) (B : Nat)
     (p : (n : Fin (B + 1)) -> SchwartzNPoint d n.val) :

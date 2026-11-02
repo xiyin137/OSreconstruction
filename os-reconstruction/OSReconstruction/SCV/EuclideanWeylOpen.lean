@@ -3,8 +3,12 @@ Copyright (c) 2026 ModularPhysics Contributors.
 Released under Apache 2.0 license
 Authors: ModularPhysics Contributors
 -/
-import OSReconstruction.SCV.EuclideanWeylRepresentation
-import Mathlib.Geometry.Manifold.PartitionOfUnity
+module
+
+public import OSReconstruction.SCV.EuclideanWeylRepresentation
+public import Mathlib.Geometry.Manifold.PartitionOfUnity
+
+@[expose] public section
 
 /-!
 # Euclidean Weyl Open-Set Assembly

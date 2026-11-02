@@ -1,16 +1,10 @@
 /- Modified for source distribution, 2026-09-10: unused declarations/imports
 and development comments removed; retained mathematical statements unchanged. -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIFullFrequencyTemporalSupport
+module
 
+public import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanOSIIChapterVIFullFrequencyTemporalSupport
 
-
-
-
-
-
-
-
-
+@[expose] public section
 
 noncomputable section
 
@@ -19,7 +13,7 @@ open scoped Classical
 
 namespace OSReconstruction
 
-private def osiiFlatProductSplitMeasurableEquiv (a b : Nat) :
+def osiiFlatProductSplitMeasurableEquiv (a b : Nat) :
     (Fin (a + b) -> Real) ≃ᵐ
       ((Fin a -> Real) × (Fin b -> Real)) :=
   ((MeasurableEquiv.piCongrLeft (fun _ : Fin (a + b) => Real)
@@ -27,7 +21,7 @@ private def osiiFlatProductSplitMeasurableEquiv (a b : Nat) :
       (MeasurableEquiv.sumPiEquivProdPi
         (fun _ : Fin a ⊕ Fin b => Real))
 
-private theorem osiiFlatProductSplitMeasurableEquiv_measurePreserving
+theorem osiiFlatProductSplitMeasurableEquiv_measurePreserving
     (a b : Nat) :
     MeasurePreserving
       (osiiFlatProductSplitMeasurableEquiv a b)
@@ -57,7 +51,7 @@ private theorem osiiFlatProductSplitMeasurableEquiv_measurePreserving
   filter_upwards with x
   rfl
 
-private theorem osiiFlatProductSplitMeasurableEquiv_fst_eq_splitFirst
+theorem osiiFlatProductSplitMeasurableEquiv_fst_eq_splitFirst
     (a b : Nat) (x : Fin (a + b) -> Real) :
     (osiiFlatProductSplitMeasurableEquiv a b x).1 =
       splitFirst a b x := by
@@ -78,7 +72,7 @@ private theorem osiiFlatProductSplitMeasurableEquiv_fst_eq_splitFirst
   rw [← h]
   simp [finSumFinEquiv_apply_left]
 
-private theorem osiiFlatProductSplitMeasurableEquiv_snd_eq_splitLast
+theorem osiiFlatProductSplitMeasurableEquiv_snd_eq_splitLast
     (a b : Nat) (x : Fin (a + b) -> Real) :
     (osiiFlatProductSplitMeasurableEquiv a b x).2 =
       splitLast a b x := by
@@ -99,7 +93,7 @@ private theorem osiiFlatProductSplitMeasurableEquiv_snd_eq_splitLast
   rw [← h]
   simp [finSumFinEquiv_apply_right]
 
-private theorem osiiFlat_pair_eq_split_pair
+theorem osiiFlat_pair_eq_split_pair
     (a b : Nat) (x xi : Fin (a + b) -> Real) :
     (∑ i : Fin (a + b), (x i : Complex) * (xi i : Complex)) =
       (∑ i : Fin a,
