@@ -10,9 +10,9 @@ the Ruelle 1962 textbook content, packaged as a `RuelleAnalyticClusterHypotheses
 call site that supplies a hypothesis value.
 
 The KL / spectral-route axioms recorded here as entries 4–7 are parked
-in `Proofideas/kallen_lehmann.lean`. Entries 2–3
+in `Proofideas/kallen_lehmann.lean.txt`. Entries 2–3
 (`spectral_riemann_lebesgue`, `continuous_translate_schwartz`) are
-parked in `Proofideas/spectral_analysis.lean`. Entry 1 (`snag_theorem`)
+parked in `Proofideas/spectral_analysis.lean.txt`. Entry 1 (`snag_theorem`)
 remains in production via `GeneralResults/SNAGTheorem.lean`.
 
 The "Pivot" section below describes the route to Ruelle and what the
@@ -36,7 +36,7 @@ fixed to use `MeasurableSet`-gated indexing.
 **Verdict (Gemini chat, 2026-05-04)**: **Likely correct** with cosmetic fix.
 Replaced ad-hoc null-set pull-back form with idiomatic
 `Measure.map (...) μ ≪ MeasureTheory.volume`.
-**Status**: parked in `Proofideas/spectral_analysis.lean` (per PR #82 review).
+**Status**: parked in `Proofideas/spectral_analysis.lean.txt` (per PR #82 review).
 
 ### 3. `continuous_translate_schwartz`
 **Verdict (Gemini chat, 2026-05-04)**: **Initially FALSE** — operator-norm
@@ -44,21 +44,21 @@ continuity was the form I'd used; Gemini correctly noted that translation is
 **not** continuous in operator norm even on `L²`/Schwartz (oscillatory test
 functions show this). Only **strong continuity** holds (`∀ f, Continuous (a ↦ T_a f)`).
 Fixed accordingly. Matches Hörmander I 7.1.18.
-**Status**: parked in `Proofideas/spectral_analysis.lean` (per PR #82 review).
+**Status**: parked in `Proofideas/spectral_analysis.lean.txt` (per PR #82 review).
 
 ### 4. `W2_spectral_support_in_forwardCone`
 **Verdict (Gemini chat, 2026-05-03)**: **Standard** — matches Streater-Wightman 3-2.
-**Status**: parked in `Proofideas/kallen_lehmann.lean` (per PR #82 review).
+**Status**: parked in `Proofideas/kallen_lehmann.lean.txt` (per PR #82 review).
 
 ### 5. `W2_spectral_atom_at_zero`
 **Verdict (Gemini chat, 2026-05-03)**: **Likely correct** — matches Streater-Wightman 3-3.
-**Status**: parked in `Proofideas/kallen_lehmann.lean` (per PR #82 review).
+**Status**: parked in `Proofideas/kallen_lehmann.lean.txt` (per PR #82 review).
 
 ### 6. `vacuum_spectral_measure_W2`
 **Verdict (Gemini chat, 2026-05-03)**: **Standard** — direct Bochner application
 to the continuous PD function `a ↦ ⟨ψ, U(a) ψ⟩`. Mathematical content is a
 corollary of the proved `bochner_theorem` (BochnerMinlos).
-**Status**: parked in `Proofideas/kallen_lehmann.lean` (per PR #82 review).
+**Status**: parked in `Proofideas/kallen_lehmann.lean.txt` (per PR #82 review).
 
 ### 7. `WightmanTruncated_decomposition_formula`
 **Verdict (Gemini chat, 2026-05-04)**: **Likely correct** with caveat.
@@ -68,7 +68,7 @@ corollary of the proved `bochner_theorem` (BochnerMinlos).
   `SchwartzNPoint`, and continuity of `W_n` and `W^T_k` extends the
   identity to general Schwartz tests automatically (no separate
   justification needed).
-**Status**: parked in `Proofideas/cluster_from_kallen_lehmann.lean`
+**Status**: parked in `Proofideas/cluster_from_kallen_lehmann.lean.txt`
 (per PR #82 review). Factorizable form would be written out
 if/when the file is revived.
 
@@ -340,10 +340,10 @@ directions", Helv. Phys. Acta 35, 164).
   and `schwinger_E4_cluster_OPTR_case` as conditional theorems taking
   `RuelleAnalyticClusterHypotheses` as a parameter.
 * **Källén-Lehmann route**: parked in
-  `Proofideas/cluster_from_kallen_lehmann.lean` and
-  `Proofideas/kallen_lehmann.lean`.
+  `Proofideas/cluster_from_kallen_lehmann.lean.txt` and
+  `Proofideas/kallen_lehmann.lean.txt`.
 * **L1–L7 proof roadmap** for discharging the hypotheses from R4 +
-  spectrum condition: parked in `Proofideas/ruelle_blueprint.lean`.
+  spectrum condition: parked in `Proofideas/ruelle_blueprint.lean.txt`.
 * **L2 (no zero-momentum atom)**: in production at
   `OSReconstruction/Wightman/Spectral/Ruelle/L2_NoZeroMomentumAtom.lean`.
   Conditional reduction `gns_orthogonal_spatial_cobounded_decay_of`
